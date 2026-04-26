@@ -5,11 +5,11 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User, insertClientSchema } from "@shared/schema";
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
@@ -22,14 +22,20 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+function sanitizeUser(user: User) {
+  const { password, ...rest } = user;
+  return rest;
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "r8q2934889q23948",
+    secret: process.env.SESSION_SECRET || "dev-secret-change-me",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       secure: app.get("env") === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   };
 
@@ -42,46 +48,81 @@ export function setupAuth(app: Express) {
   app.use(passport.session());
 
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      const user = await storage.getUserByUsername(username);
-      if (!user || !(await comparePasswords(password, user.password))) {
-        return done(null, false);
-      } else {
+    new LocalStrategy(async (identifier, password, done) => {
+      try {
+        // Try by username first, then by email
+        let user = await storage.getUserByUsername(identifier);
+        if (!user) user = await storage.getUserByEmail(identifier);
+        if (!user) return done(null, false);
+        const ok = await comparePasswords(password, user.password);
+        if (!ok) return done(null, false);
         return done(null, user);
+      } catch (e) {
+        return done(e as Error);
       }
     }),
   );
 
   passport.serializeUser((user, done) => done(null, (user as User).id));
   passport.deserializeUser(async (id, done) => {
-    const user = await storage.getUser(id as number);
-    done(null, user);
+    try {
+      const user = await storage.getUser(id as number);
+      done(null, user || false);
+    } catch (e) {
+      done(e as Error);
+    }
   });
 
+  // Client registration
   app.post("/api/auth/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
-        return res.status(400).send("Username already exists");
+      const parsed = insertClientSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: parsed.error.errors[0]?.message || "Invalid registration data",
+        });
+      }
+      const { email, password, fullName, phone, fitnessGoal, notes } = parsed.data;
+
+      const existingByEmail = await storage.getUserByEmail(email);
+      if (existingByEmail) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      const existingByUsername = await storage.getUserByUsername(email);
+      if (existingByUsername) {
+        return res.status(400).json({ message: "Email already registered" });
       }
 
-      const hashedPassword = await hashPassword(req.body.password);
+      const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
-        ...req.body,
+        username: email,
+        email,
         password: hashedPassword,
+        fullName,
+        phone,
+        fitnessGoal: fitnessGoal || null,
+        notes: notes || null,
+        role: "client",
       });
 
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        res.status(201).json(sanitizeUser(user));
       });
     } catch (err) {
       next(err);
     }
   });
 
-  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/auth/login", (req, res, next) => {
+    passport.authenticate("local", (err: Error, user: User | false) => {
+      if (err) return next(err);
+      if (!user) return res.status(401).json({ message: "Invalid credentials" });
+      req.login(user, (loginErr) => {
+        if (loginErr) return next(loginErr);
+        res.status(200).json(sanitizeUser(user));
+      });
+    })(req, res, next);
   });
 
   app.post("/api/auth/logout", (req, res, next) => {
@@ -92,7 +133,9 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/auth/me", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    if (!req.isAuthenticated() || !req.user) return res.sendStatus(401);
+    res.json(sanitizeUser(req.user as User));
   });
 }
+
+export { sanitizeUser };

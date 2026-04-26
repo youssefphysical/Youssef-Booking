@@ -1,0 +1,184 @@
+Modify the current app into a simple, premium personal trainer profile and booking platform for Youssef Tarek.
+
+Main goal:
+A professional profile website + client booking system + admin dashboard. Keep it clean, premium, mobile responsive, and not crowded.
+
+BRAND / OWNER DETAILS:
+Name: Youssef Tarek Hashim Ahmed
+Role: Certified Personal Trainer & Physical Education Teacher
+Location: Dubai, UAE
+Instagram: @youssef.fitness
+WhatsApp number for all contact and booking confirmation buttons: +971505394754
+Use WhatsApp link: https://wa.me/971505394754
+
+1. HOMEPAGE / PROFILE:
+Create a premium dark fitness-style homepage.
+Add a hero section for Youssef Tarek with:
+- Professional photo placeholder area, so I can upload my photo later.
+- Name, title, short professional intro.
+- Buttons:
+  “Book a Session”
+  “Contact on WhatsApp”
+
+Add these sections:
+- About Youssef
+- Professional Background
+- Certifications & Achievements
+- Client Transformations placeholder
+- Book a Session
+- Contact / WhatsApp
+
+Keep the design luxury, modern, simple, and professional. Use a dark premium background, clean typography, cards, smooth spacing, and soft shadows.
+
+2. PROFILE CONTENT:
+Use this short professional profile text:
+
+Youssef Tarek Hashim Ahmed is a certified personal trainer and physical education teacher based in Dubai. His journey combines academic education, competitive sports experience, professional coaching, and international client service. With experience in personal training, body transformation, weight management, and physical education, Youssef focuses on building safe, structured, and result-driven programs for every client.
+
+His background includes a Bachelor’s Degree in Physical Education from Suez Canal University, REPs UAE registration, EREPS recognition, first aid training, obesity and weight management education, competitive bodybuilding experience, and professional work with clients from different cultures.
+
+3. CERTIFICATIONS & BACKGROUND SECTION:
+Create this section in timeline style but simple:
+
+- Bachelor’s Degree in Physical Education – Suez Canal University
+Faculty of Physical Education, Suez Canal University, Egypt. Completed 150 credit hours with a Very Good grade. This academic foundation supports Youssef’s knowledge in training methods, sports science, anatomy, physiology, coaching, and physical education.
+
+- UAE Academic Qualification Recognition
+Recognized by the UAE Ministry of Higher Education & Scientific Research. This confirms that Youssef’s academic qualification has been officially recognized in the United Arab Emirates.
+
+- REPs UAE – Category A Personal Trainer
+Registered Exercise Professional in Dubai, UAE. This reflects compliance with UAE fitness industry standards for personal trainers.
+
+- EREPS – European Register of Exercise Professionals
+Graduate Exercise Professional, EQF Level 6. This shows recognition under European fitness professional standards.
+
+- Personal Trainer Certification – IATD
+International Academy for Training and Development. This certification supported Youssef’s professional coaching foundation and practical training knowledge.
+
+- Obesity & Weight Management Specialist
+Specialized education in fat loss, obesity management, and safe weight control strategies.
+
+- CPR / First Aid Training
+Safety-focused training to support a safer exercise environment and emergency awareness.
+
+- Competitive Sports Background
+Experience in official bodybuilding and rowing competitions, helping build discipline, athletic mindset, and practical understanding of body transformation.
+
+- UFC Gym / Gold’s Gym / Fitness Zone Experience
+Professional experience in personal training, client coaching, program design, group training, and transformation support.
+
+- International Client Service Experience
+Experience working with international clients in premium environments, including positive client testimonials and professional service standards.
+
+4. AUTHENTICATION:
+Create two different account types:
+A) Admin
+B) Client
+
+Admin login must be separate from client registration.
+
+Create default admin account:
+Username: admin
+Password: change-this-password
+
+Clients register normally with:
+- Full name
+- Phone number
+- Email
+- Password
+- Fitness goal field
+- Optional notes / injuries field
+
+5. ADMIN DASHBOARD:
+Create a clean admin dashboard where Youssef can control everything.
+
+Admin can:
+- View all clients
+- View client details
+- View all bookings
+- Approve bookings
+- Cancel bookings
+- Reschedule bookings
+- Manually add bookings
+- Manually remove bookings
+- Control available time slots
+- Block specific dates
+- Block specific hours
+- Change cancellation cutoff time from dashboard
+- Default cancellation cutoff is 6 hours
+- Override the 6-hour policy manually if needed
+- Mark bookings as:
+  Upcoming
+  Confirmed
+  Completed
+  Cancelled
+  Late Cancellation – Session Charged
+  Free Cancellation
+- Upload/change Youssef profile photo
+- Edit basic homepage/profile text if possible
+
+6. BOOKING RULES:
+Clients can book available sessions.
+
+Default available booking time range:
+6:00 AM to 10:00 PM.
+Last session can be 10:00 PM to 11:00 PM.
+
+Cancellation / reschedule rule:
+- Clients can cancel or reschedule only if there are more than 6 hours before the session start time.
+- If less than 6 hours remain before the session, cancellation and rescheduling must be locked.
+- Once the 6-hour cutoff passes, the booking should be treated as confirmed and the session should be counted/charged.
+- Admin can override this manually from the dashboard.
+- If a client cancels late, mark it as:
+“Late Cancellation – Session Charged”
+
+7. CANCELLATION POLICY:
+Add a professional cancellation policy page and booking popup.
+
+Policy text:
+“All cancellations or rescheduling requests must be made at least 6 hours before the scheduled session time. If a client cancels or requests to reschedule within less than 6 hours before the session, the session will be counted as used and charged. This policy is applied to protect scheduling availability and ensure fairness for all clients. By booking a session, the client confirms that they understand and accept this policy.”
+
+Add required checkbox before booking:
+“I understand and accept the cancellation policy.”
+
+Clients cannot complete a booking without accepting the policy.
+
+8. CLIENT DASHBOARD:
+Clients can:
+- View upcoming sessions
+- View past sessions
+- Cancel or reschedule only before the 6-hour cutoff
+- See clear message when cancellation is locked
+- See cancellation policy
+- Update profile information
+- Contact Youssef on WhatsApp
+
+9. WHATSAPP INTEGRATION:
+Use this WhatsApp number:
++971505394754
+
+Add WhatsApp buttons:
+- Contact Youssef
+- Confirm Booking on WhatsApp
+- Ask About Training
+
+Use link:
+https://wa.me/971505394754
+
+After booking, show message:
+“Your booking request has been submitted. You can also confirm directly with Youssef on WhatsApp.”
+
+10. DESIGN:
+- Premium dark fitness theme
+- Professional background
+- Simple and luxury
+- Mobile responsive
+- Fast loading
+- Clear buttons
+- Clean admin dashboard
+- No packages or payment system for now
+- Manual payment/approval only if needed later
+
+Important:
+Do not make the app too wide or complicated. Focus only on:
+Youssef’s professional profile, client registration, booking system, 6-hour cancellation policy, WhatsApp contact, and admin dashboard control.

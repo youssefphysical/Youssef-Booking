@@ -1,50 +1,43 @@
-import { db } from "./db";
-import { 
-  users, packages, bookings, payments, nutritionPlans, intakeLogs,
-  type User, type InsertUser, type UpdateUserRequest,
-  type Package, type InsertPackage, type UpdatePackageRequest,
-  type Booking, type InsertBooking, type UpdateBookingRequest,
-  type Payment, type InsertPayment, type UpdatePaymentRequest,
-  type NutritionPlan, type InsertNutritionPlan,
-  type IntakeLog, type InsertIntakeLog
+import { db, pool } from "./db";
+import {
+  users, bookings, settings, blockedSlots,
+  type User, type InsertUser, type UpdateProfile,
+  type Booking, type InsertBooking, type UpdateBooking,
+  type Settings, type UpdateSettings,
+  type BlockedSlot, type InsertBlockedSlot,
 } from "@shared/schema";
-import { eq, desc, and, gte } from "drizzle-orm";
+import { eq, and, gte, desc, asc, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  // Auth & Users
+  // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, updates: UpdateUserRequest): Promise<User>;
-  getAllUsers(): Promise<User[]>;
-
-  // Packages
-  getPackages(): Promise<Package[]>;
-  createPackage(pkg: InsertPackage): Promise<Package>;
-  updatePackage(id: number, updates: UpdatePackageRequest): Promise<Package>;
+  updateUser(id: number, updates: UpdateProfile & { password?: string }): Promise<User>;
+  getAllClients(): Promise<User[]>;
 
   // Bookings
-  getBookings(userId?: number, fromDate?: string): Promise<Booking[]>;
+  getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
+  getBooking(id: number): Promise<Booking | undefined>;
   createBooking(booking: InsertBooking): Promise<Booking>;
-  updateBooking(id: number, updates: UpdateBookingRequest): Promise<Booking>;
+  updateBooking(id: number, updates: Partial<Booking>): Promise<Booking>;
+  deleteBooking(id: number): Promise<void>;
+  getBookingByDateAndSlot(date: string, timeSlot: string): Promise<Booking | undefined>;
 
-  // Payments
-  getPayments(): Promise<Payment[]>;
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  updatePayment(id: number, updates: UpdatePaymentRequest): Promise<Payment>;
+  // Settings
+  getSettings(): Promise<Settings>;
+  updateSettings(updates: UpdateSettings): Promise<Settings>;
 
-  // Nutrition
-  getNutritionPlans(userId?: number): Promise<NutritionPlan[]>;
-  createNutritionPlan(plan: InsertNutritionPlan): Promise<NutritionPlan>;
-  getIntakeLogs(userId?: number, date?: string): Promise<IntakeLog[]>;
-  createIntakeLog(log: InsertIntakeLog): Promise<IntakeLog>;
+  // Blocked Slots
+  getBlockedSlots(): Promise<BlockedSlot[]>;
+  createBlockedSlot(slot: InsertBlockedSlot): Promise<BlockedSlot>;
+  deleteBlockedSlot(id: number): Promise<void>;
 
-  // Session Store
   sessionStore: session.Store;
 }
 
@@ -60,114 +53,117 @@ export class DatabaseStorage implements IStorage {
 
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const [u] = await db.select().from(users).where(eq(users.id, id));
+    return u;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const [u] = await db.select().from(users).where(eq(users.username, username));
+    return u;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [u] = await db.select().from(users).where(eq(users.email, email));
+    return u;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const [u] = await db.insert(users).values(insertUser).returning();
+    return u;
   }
 
-  async updateUser(id: number, updates: UpdateUserRequest): Promise<User> {
-    const [user] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
-    return user;
+  async updateUser(
+    id: number,
+    updates: UpdateProfile & { password?: string },
+  ): Promise<User> {
+    const [u] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return u;
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return db.select().from(users).orderBy(desc(users.createdAt));
-  }
-
-  // Packages
-  async getPackages(): Promise<Package[]> {
-    return db.select().from(packages).where(eq(packages.isActive, true));
-  }
-
-  async createPackage(pkg: InsertPackage): Promise<Package> {
-    const [newPkg] = await db.insert(packages).values(pkg).returning();
-    return newPkg;
-  }
-
-  async updatePackage(id: number, updates: UpdatePackageRequest): Promise<Package> {
-    const [pkg] = await db.update(packages).set(updates).where(eq(packages.id, id)).returning();
-    return pkg;
+  async getAllClients(): Promise<User[]> {
+    return db
+      .select()
+      .from(users)
+      .where(eq(users.role, "client"))
+      .orderBy(desc(users.createdAt));
   }
 
   // Bookings
-  async getBookings(userId?: number, fromDate?: string): Promise<Booking[]> {
-    let query = db.select().from(bookings).orderBy(desc(bookings.date));
-    
-    if (userId) {
-      if (fromDate) {
-        // @ts-ignore
-        query = query.where(and(eq(bookings.userId, userId), gte(bookings.date, fromDate)));
-      } else {
-        // @ts-ignore
-        query = query.where(eq(bookings.userId, userId));
-      }
+  async getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]> {
+    const conds = [];
+    if (filters?.userId) conds.push(eq(bookings.userId, filters.userId));
+    if (filters?.from) conds.push(gte(bookings.date, filters.from));
+    if (conds.length > 0) {
+      return db
+        .select()
+        .from(bookings)
+        .where(and(...conds))
+        .orderBy(asc(bookings.date), asc(bookings.timeSlot));
     }
-    
-    return query;
+    return db.select().from(bookings).orderBy(asc(bookings.date), asc(bookings.timeSlot));
+  }
+
+  async getBooking(id: number): Promise<Booking | undefined> {
+    const [b] = await db.select().from(bookings).where(eq(bookings.id, id));
+    return b;
   }
 
   async createBooking(booking: InsertBooking): Promise<Booking> {
-    const [newBooking] = await db.insert(bookings).values(booking).returning();
-    return newBooking;
+    const [b] = await db.insert(bookings).values(booking).returning();
+    return b;
   }
 
-  async updateBooking(id: number, updates: UpdateBookingRequest): Promise<Booking> {
-    const [booking] = await db.update(bookings).set(updates).where(eq(bookings.id, id)).returning();
-    return booking;
+  async updateBooking(id: number, updates: Partial<Booking>): Promise<Booking> {
+    const [b] = await db
+      .update(bookings)
+      .set(updates)
+      .where(eq(bookings.id, id))
+      .returning();
+    return b;
   }
 
-  // Payments
-  async getPayments(): Promise<Payment[]> {
-    return db.select().from(payments).orderBy(desc(payments.createdAt));
+  async deleteBooking(id: number): Promise<void> {
+    await db.delete(bookings).where(eq(bookings.id, id));
   }
 
-  async createPayment(payment: InsertPayment): Promise<Payment> {
-    const [newPayment] = await db.insert(payments).values(payment).returning();
-    return newPayment;
+  async getBookingByDateAndSlot(date: string, timeSlot: string): Promise<Booking | undefined> {
+    const [b] = await db
+      .select()
+      .from(bookings)
+      .where(and(eq(bookings.date, date), eq(bookings.timeSlot, timeSlot)));
+    return b;
   }
 
-  async updatePayment(id: number, updates: UpdatePaymentRequest): Promise<Payment> {
-    const [payment] = await db.update(payments).set(updates).where(eq(payments.id, id)).returning();
-    return payment;
+  // Settings
+  async getSettings(): Promise<Settings> {
+    const [s] = await db.select().from(settings).limit(1);
+    if (s) return s;
+    const [created] = await db.insert(settings).values({}).returning();
+    return created;
   }
 
-  // Nutrition
-  async getNutritionPlans(userId?: number): Promise<NutritionPlan[]> {
-    if (userId) {
-      return db.select().from(nutritionPlans).where(eq(nutritionPlans.userId, userId)).orderBy(desc(nutritionPlans.createdAt));
-    }
-    return db.select().from(nutritionPlans).orderBy(desc(nutritionPlans.createdAt));
+  async updateSettings(updates: UpdateSettings): Promise<Settings> {
+    const current = await this.getSettings();
+    const [updated] = await db
+      .update(settings)
+      .set(updates)
+      .where(eq(settings.id, current.id))
+      .returning();
+    return updated;
   }
 
-  async createNutritionPlan(plan: InsertNutritionPlan): Promise<NutritionPlan> {
-    const [newPlan] = await db.insert(nutritionPlans).values(plan).returning();
-    return newPlan;
+  // Blocked slots
+  async getBlockedSlots(): Promise<BlockedSlot[]> {
+    return db.select().from(blockedSlots).orderBy(asc(blockedSlots.date));
   }
 
-  async getIntakeLogs(userId?: number, date?: string): Promise<IntakeLog[]> {
-    let conditions = [];
-    if (userId) conditions.push(eq(intakeLogs.userId, userId));
-    if (date) conditions.push(eq(intakeLogs.date, date));
-    
-    if (conditions.length > 0) {
-      // @ts-ignore
-      return db.select().from(intakeLogs).where(and(...conditions));
-    }
-    return db.select().from(intakeLogs);
+  async createBlockedSlot(slot: InsertBlockedSlot): Promise<BlockedSlot> {
+    const [b] = await db.insert(blockedSlots).values(slot).returning();
+    return b;
   }
 
-  async createIntakeLog(log: InsertIntakeLog): Promise<IntakeLog> {
-    const [newLog] = await db.insert(intakeLogs).values(log).returning();
-    return newLog;
+  async deleteBlockedSlot(id: number): Promise<void> {
+    await db.delete(blockedSlots).where(eq(blockedSlots.id, id));
   }
 }
 
