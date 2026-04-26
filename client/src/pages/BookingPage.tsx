@@ -11,11 +11,18 @@ import {
   Lock,
   CheckCircle2,
   ShieldAlert,
+  Coffee,
+  AlertTriangle,
+  Users,
+  Package as PackageIcon,
+  Sparkles,
 } from "lucide-react";
 import { useCreateBooking, useBookings } from "@/hooks/use-bookings";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
+import { usePackages } from "@/hooks/use-packages";
+import type { Package } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,8 +51,21 @@ export default function BookingPage() {
   const { data: blocked = [] } = useBlockedSlots();
   const { data: settings } = useSettings();
   const { data: existing = [] } = useBookings({ from: format(new Date(), "yyyy-MM-dd") });
+  const { data: packages = [] } = usePackages({ userId: user?.id });
+
+  const isAdmin = user?.role === "admin";
+  const activePackage = (packages as Package[]).find(
+    (p) => p.isActive && p.usedSessions < p.totalSessions,
+  );
+  const sessionsLeft = activePackage
+    ? activePackage.totalSessions - activePackage.usedSessions
+    : 0;
 
   const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+
+  const wholeDayBlock = useMemo(() => {
+    return blocked.find((b) => b.date === dateStr && b.timeSlot === null);
+  }, [blocked, dateStr]);
 
   // Determine which slots are unavailable on the selected date
   const slotState = useMemo(() => {
@@ -94,6 +114,7 @@ export default function BookingPage() {
         timeSlot: selectedSlot,
         notes: notes || undefined,
         acceptedPolicy: true,
+        ...(isAdmin ? { override: true } : {}),
       } as any,
       {
         onSuccess: () => {
@@ -199,7 +220,9 @@ export default function BookingPage() {
           />
         </div>
 
-        {date && (
+        {date && wholeDayBlock && <HolidayNotice block={wholeDayBlock} />}
+
+        {date && !wholeDayBlock && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <h3 className="font-bold mb-4 flex items-center gap-2">
               <Clock size={16} className="text-primary" />
@@ -245,6 +268,7 @@ export default function BookingPage() {
 
         {selectedSlot && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            <PackageBalance pkg={activePackage} sessionsLeft={sessionsLeft} isAdmin={!!isAdmin} />
             <div>
               <label className="text-sm font-semibold block mb-2">Notes (optional)</label>
               <Textarea
@@ -337,6 +361,101 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex justify-between items-start gap-3 text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-right">{value}</span>
+    </div>
+  );
+}
+
+function HolidayNotice({ block }: { block: { blockType?: string | null; reason?: string | null } }) {
+  const cfg = {
+    "off-day": {
+      icon: <Coffee size={20} />,
+      title: "Youssef Fitness is unavailable on this day",
+      subtitle: "Please choose another date.",
+      colors: "border-amber-500/30 bg-amber-500/5 text-amber-200",
+      iconBg: "bg-amber-500/15 text-amber-400",
+    },
+    emergency: {
+      icon: <AlertTriangle size={20} />,
+      title: "Sessions cancelled due to an emergency",
+      subtitle: "We apologise for the inconvenience. Please choose another date.",
+      colors: "border-red-500/30 bg-red-500/5 text-red-200",
+      iconBg: "bg-red-500/15 text-red-400",
+    },
+    "fully-booked": {
+      icon: <Users size={20} />,
+      title: "Fully booked on this day",
+      subtitle: "All slots are taken. Please choose another date.",
+      colors: "border-blue-500/30 bg-blue-500/5 text-blue-200",
+      iconBg: "bg-blue-500/15 text-blue-400",
+    },
+  } as const;
+
+  const type = (block.blockType || "off-day") as keyof typeof cfg;
+  const c = cfg[type] || cfg["off-day"];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-3xl border p-6 flex items-start gap-4 ${c.colors}`}
+      data-testid={`holiday-notice-${type}`}
+    >
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${c.iconBg}`}>
+        {c.icon}
+      </div>
+      <div className="flex-1">
+        <p className="font-display font-bold text-base">{c.title}</p>
+        <p className="text-sm opacity-80 mt-0.5">{c.subtitle}</p>
+        {block.reason && (
+          <p className="text-xs opacity-60 italic mt-2">"{block.reason}"</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; sessionsLeft: number; isAdmin: boolean }) {
+  if (isAdmin) {
+    return (
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200/90 inline-flex items-center gap-2">
+        <Sparkles size={13} /> Admin booking — package checks bypassed.
+      </div>
+    );
+  }
+
+  if (!pkg) {
+    return (
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
+        <PackageIcon size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-amber-100/90">
+          <p className="font-semibold mb-0.5">No active package</p>
+          <p className="opacity-80">
+            Your booking will still be submitted. Contact Youssef on WhatsApp to purchase a package and confirm your slot.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const lowBalance = sessionsLeft <= 2;
+  return (
+    <div
+      className={`rounded-2xl border p-4 flex items-center gap-3 ${
+        lowBalance
+          ? "border-amber-500/30 bg-amber-500/5"
+          : "border-primary/20 bg-primary/5"
+      }`}
+      data-testid="package-balance"
+    >
+      <PackageIcon size={18} className={lowBalance ? "text-amber-400" : "text-primary"} />
+      <div className="text-xs flex-1">
+        <p className="font-semibold">
+          {sessionsLeft} session{sessionsLeft === 1 ? "" : "s"} remaining
+        </p>
+        <p className="text-muted-foreground">
+          From your active package. This session will be deducted when marked completed.
+        </p>
+      </div>
     </div>
   );
 }

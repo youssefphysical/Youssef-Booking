@@ -86,7 +86,7 @@ export default function HomePage() {
   const { data: settings } = useSettings();
   const bio =
     settings?.profileBio ||
-    "Youssef Tarek Hashim Ahmed is a certified personal trainer and physical education teacher based in Dubai.";
+    "Certified personal trainer and physical education teacher based in Dubai. Safe, structured, result-driven programs in personal training, body transformation, weight management, and physical education.";
 
   return (
     <div className="min-h-screen pt-16">
@@ -105,12 +105,15 @@ export default function HomePage() {
               <span>Certified Personal Trainer</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-display font-bold leading-[1.05]" data-testid="text-hero-name">
-              Youssef Tarek
+              Youssef
               <br />
-              <span className="text-gradient-gold">Hashim Ahmed</span>
+              <span className="text-gradient-gold">Fitness</span>
             </h1>
+            <p className="text-base md:text-lg uppercase tracking-[0.18em] text-primary/90 mt-4">
+              Certified Personal Trainer & Transformation Specialist
+            </p>
             <p className="text-muted-foreground text-lg mt-5 max-w-xl">
-              Certified Personal Trainer & Physical Education Teacher. Safe, structured, result-driven programs for every client.
+              Safe, structured, result-driven programs for every client. Personal training, body transformation, weight management, and physical education in Dubai.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/book" data-testid="link-book-session">
@@ -144,7 +147,7 @@ export default function HomePage() {
               {settings?.profilePhotoUrl ? (
                 <img
                   src={settings.profilePhotoUrl}
-                  alt="Youssef Tarek"
+                  alt="Youssef Fitness"
                   className="w-full h-full object-cover"
                   data-testid="img-profile"
                 />
@@ -261,7 +264,7 @@ export default function HomePage() {
       {/* FOOTER */}
       <footer className="border-t border-white/5 py-10 mt-10">
         <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Youssef Tarek. Personal Training, Dubai.</p>
+          <p>© {new Date().getFullYear()} Youssef Fitness. Personal Training, Dubai.</p>
           <div className="flex items-center gap-5">
             <Link href="/policy" className="hover:text-primary" data-testid="link-footer-policy">
               Cancellation Policy

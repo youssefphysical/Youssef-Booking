@@ -1,0 +1,330 @@
+You are updating an existing web application.
+
+The goal is to transform it into a **clean, professional, stable personal trainer platform** called:
+
+**Youssef Fitness**
+
+This is NOT a complex SaaS app.
+This is a **premium personal trainer profile + booking + admin system**.
+
+---
+
+🔴 CORE REQUIREMENTS:
+
+The app MUST be:
+
+* Simple
+* Professional
+* Stable (NO errors)
+* Fast
+* Mobile responsive
+
+DO NOT overcomplicate anything.
+
+---
+
+🔴 SCOPE (STRICT):
+
+ONLY include:
+
+* Trainer profile (homepage)
+* Client registration/login
+* Booking system
+* Session packages
+* Admin dashboard (full control)
+* InBody tracking (Hybrid AI + manual fallback)
+* Client progress tracking (photos + history)
+* WhatsApp integration
+
+DO NOT include:
+
+* Nutrition plans
+* Meal plans
+* Payment gateway
+* Subscriptions
+* Complex AI dependencies
+* Any feature not mentioned
+
+---
+
+🔴 BRANDING:
+
+Display everywhere:
+Youssef Fitness
+Certified Personal Trainer & Transformation Specialist
+
+DO NOT display the full legal name on homepage.
+
+---
+
+🔴 HOMEPAGE (PROFILE):
+
+Create a premium dark fitness design.
+
+Sections:
+
+* Hero section with strong presence
+* Placeholder for professional trainer photo (admin editable)
+* About section
+* Certifications timeline (clean, simple)
+* Transformations (placeholder)
+* Booking CTA
+* WhatsApp buttons
+
+Design rules:
+
+* Luxury dark theme
+* Clean typography
+* Not crowded
+* Smooth layout
+
+---
+
+🔴 AUTH SYSTEM:
+
+Two roles:
+
+1. Admin
+2. Client
+
+Separate login.
+
+Default admin:
+Username: admin
+Password: change-this-password
+
+Admin must be able to change password.
+
+---
+
+🔴 ADMIN DASHBOARD (VERY IMPORTANT):
+
+This must be powerful but clean.
+
+Admin capabilities:
+
+* View all clients
+* Open full client profile
+* View/edit bookings
+* Add bookings manually
+* Cancel / reschedule
+* Override any rule
+* Manage packages
+* Manage session counts
+* Control time slots
+* Block specific hours
+* Block full days
+* Set OFF days / holidays
+* Change cancellation cutoff (default 6h)
+* Upload profile photo
+* Edit homepage bio
+* Manage InBody data
+* Manage progress photos
+
+---
+
+🔴 CLIENT PROFILE (ADMIN VIEW):
+
+Must include:
+
+* Full name
+* Phone
+* Email
+* Area / city
+* Emergency contact name
+* Emergency contact phone
+* Fitness goal
+* Injuries / notes
+* Package info
+* Session balance
+* Booking history
+* InBody history
+* Progress photos
+* Registration date
+
+DO NOT include job or personal life questions.
+
+Tabs:
+Overview / Bookings / Sessions / InBody / Progress / Notes
+
+---
+
+🔴 HOLIDAY / OFF DAY SYSTEM:
+
+Admin can block full days.
+
+Types:
+
+* Off Day
+* Emergency
+* Fully Booked
+
+Client sees clean message:
+“Youssef Fitness is unavailable on this day. Please select another date.”
+
+No system errors.
+
+---
+
+🔴 BOOKING SYSTEM:
+
+Time range:
+6:00 AM → 10:00 PM
+Last session: 10–11 PM
+
+Rules:
+
+* Clients can cancel/reschedule ONLY if > 6 hours
+* If < 6 hours → locked
+* Session is automatically counted
+
+Message:
+“This session is within the cancellation cutoff and will be counted as used.”
+
+Admin override allowed.
+
+---
+
+🔴 SESSION PACKAGES:
+
+ONLY include:
+
+* 10 sessions
+* 20 sessions
+* 25 sessions
+* Duo package – 30 sessions
+
+Each client has:
+
+* Total sessions
+* Used sessions
+* Remaining sessions
+
+Every completed session OR late cancellation deducts 1 session.
+
+---
+
+🔴 DUO PACKAGE:
+
+* Client enters second participant
+* Second participant MUST already have account
+* Admin links both accounts
+* Both see same session
+
+If missing:
+“Second participant must register first.”
+
+---
+
+🔴 INBODY SYSTEM (CRITICAL – HYBRID):
+
+During registration:
+
+* Require InBody upload (PDF / JPG / PNG)
+
+System must:
+
+* Save file
+* Attempt AI extraction (optional)
+* NEVER depend fully on AI
+
+If AI fails:
+
+* NO error shown
+* Show message:
+  “We received your InBody scan. Youssef will review and update your analysis.”
+
+Admin can manually edit ALL values.
+
+Fields:
+
+* Weight
+* Body fat %
+* Muscle mass
+* BMI
+* Visceral fat
+* BMR
+* Water
+* Score
+
+---
+
+🔴 CLIENT PROGRESS SYSTEM:
+
+Clients can upload:
+
+* Before photos
+* Current photos
+* After photos
+* Notes
+
+Each entry includes:
+
+* Date/time (auto)
+* Linked to InBody if available
+
+---
+
+🔴 REGISTRATION:
+
+Fields:
+
+* Name
+* Phone
+* Email
+* Password
+* Area
+* Emergency contact
+* Goal
+* Notes
+* Required InBody upload
+* Optional progress photo
+
+---
+
+🔴 WHATSAPP:
+
+Number:
++971505394754
+
+Link:
+https://wa.me/971505394754
+
+Buttons:
+
+* Contact
+* Confirm booking
+* Ask questions
+
+---
+
+🔴 ERROR HANDLING (CRITICAL):
+
+* NEVER show technical errors
+* ALWAYS show clean user-friendly messages
+* System must not crash
+* AI must not break anything
+
+---
+
+🔴 DESIGN:
+
+* Premium dark fitness style
+* Clean UI
+* Soft shadows
+* Modern layout
+* Mobile responsive
+* Fast
+
+---
+
+🔴 FINAL GOAL:
+
+Deliver a **simple, powerful, premium personal trainer system** where:
+
+* Clients can register, upload InBody, book sessions
+* Admin has FULL control over everything
+* System is stable and clean
+* No unnecessary features
+
+---

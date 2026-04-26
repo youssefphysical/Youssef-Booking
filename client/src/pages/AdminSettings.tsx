@@ -44,8 +44,21 @@ const blockSchema = z.object({
   date: z.string().min(1, "Date required"),
   scope: z.enum(["whole-day", "specific-hour"]),
   timeSlot: z.string().optional(),
+  blockType: z.enum(["off-day", "emergency", "fully-booked"]).optional(),
   reason: z.string().optional(),
 });
+
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+  "off-day": "Off Day",
+  emergency: "Emergency",
+  "fully-booked": "Fully Booked",
+};
+
+const BLOCK_TYPE_COLORS: Record<string, string> = {
+  "off-day": "bg-amber-500/10 text-amber-300 border-amber-500/20",
+  emergency: "bg-red-500/10 text-red-300 border-red-500/20",
+  "fully-booked": "bg-blue-500/10 text-blue-300 border-blue-500/20",
+};
 
 export default function AdminSettings() {
   return (
@@ -268,6 +281,7 @@ function BlockedSlotsSection() {
       date: new Date().toISOString().slice(0, 10),
       scope: "whole-day",
       timeSlot: "",
+      blockType: "off-day",
       reason: "",
     },
   });
@@ -287,12 +301,13 @@ function BlockedSlotsSection() {
               {
                 date: d.date,
                 timeSlot: d.scope === "whole-day" ? null : d.timeSlot || null,
+                blockType: d.scope === "whole-day" ? d.blockType || "off-day" : "off-day",
                 reason: d.reason || null,
               } as any,
               { onSuccess: () => form.reset({ ...form.getValues(), reason: "" }) },
             );
           })}
-          className="grid sm:grid-cols-4 gap-3 items-end mb-6"
+          className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end mb-6"
         >
           <FormField
             control={form.control}
@@ -352,6 +367,30 @@ function BlockedSlotsSection() {
               )}
             />
           )}
+          {scope === "whole-day" && (
+            <FormField
+              control={form.control}
+              name="blockType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Type</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="off-day">Off Day</SelectItem>
+                        <SelectItem value="emergency">Emergency</SelectItem>
+                        <SelectItem value="fully-booked">Fully Booked</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="reason"
@@ -365,7 +404,7 @@ function BlockedSlotsSection() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="rounded-xl h-10 sm:col-start-4" disabled={createMutation.isPending} data-testid="button-add-block">
+          <Button type="submit" className="rounded-xl h-10 lg:col-start-5" disabled={createMutation.isPending} data-testid="button-add-block">
             {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} className="mr-1" /> Block</>}
           </Button>
         </form>
@@ -383,9 +422,16 @@ function BlockedSlotsSection() {
               className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.02]"
               data-testid={`block-row-${b.id}`}
             >
-              <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d")}</span>
                 <span className="text-muted-foreground">{b.timeSlot ?? "Whole day"}</span>
+                {!b.timeSlot && b.blockType && (
+                  <span
+                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${BLOCK_TYPE_COLORS[b.blockType] || "bg-white/5 border-white/10"}`}
+                  >
+                    {BLOCK_TYPE_LABELS[b.blockType] || b.blockType}
+                  </span>
+                )}
                 {b.reason && <span className="text-xs text-muted-foreground italic">"{b.reason}"</span>}
               </div>
               <Button

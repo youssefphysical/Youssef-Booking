@@ -82,7 +82,17 @@ export function setupAuth(app: Express) {
           message: parsed.error.errors[0]?.message || "Invalid registration data",
         });
       }
-      const { email, password, fullName, phone, fitnessGoal, notes } = parsed.data;
+      const {
+        email,
+        password,
+        fullName,
+        phone,
+        area,
+        emergencyContactName,
+        emergencyContactPhone,
+        fitnessGoal,
+        notes,
+      } = parsed.data;
 
       const existingByEmail = await storage.getUserByEmail(email);
       if (existingByEmail) {
@@ -100,6 +110,9 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         fullName,
         phone,
+        area: area || null,
+        emergencyContactName: emergencyContactName || null,
+        emergencyContactPhone: emergencyContactPhone || null,
         fitnessGoal: fitnessGoal || null,
         notes: notes || null,
         role: "client",

@@ -26,8 +26,21 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (data: CreateBookingInput) => {
-      const res = await apiRequest("POST", api.bookings.create.path, data);
+    mutationFn: async (data: CreateBookingInput & { override?: boolean }) => {
+      const res = await fetch(api.bookings.create.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const err = new Error(errData.message || "Booking failed");
+        (err as any).blockType = errData.blockType;
+        (err as any).code = errData.code;
+        (err as any).status = res.status;
+        throw err;
+      }
       return (await res.json()) as Booking;
     },
     onSuccess: () => {

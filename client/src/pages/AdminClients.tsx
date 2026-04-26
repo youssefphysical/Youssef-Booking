@@ -1,20 +1,11 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Mail, Phone, Search, Target, Notebook, ExternalLink, X } from "lucide-react";
+import { Mail, Phone, MapPin, Search, Target, ExternalLink } from "lucide-react";
 import { useClients } from "@/hooks/use-clients";
-import { useBookings } from "@/hooks/use-bookings";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { useSettings } from "@/hooks/use-settings";
-import { formatStatus, statusColor } from "@/lib/booking-utils";
 import type { UserResponse } from "@shared/schema";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -78,141 +69,65 @@ function ClientCard({ client }: { client: UserResponse }) {
   const { data: settings } = useSettings();
 
   return (
-    <Dialog>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-white/5 bg-card/60 p-5 flex flex-col gap-3"
-        data-testid={`client-card-${client.id}`}
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-bold">
-            {client.fullName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold truncate" data-testid={`client-name-${client.id}`}>{client.fullName}</p>
-            {client.email && (
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
-                <Mail size={11} /> {client.email}
-              </p>
-            )}
-            {client.phone && (
-              <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
-                <Phone size={11} /> {client.phone}
-              </p>
-            )}
-          </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-white/5 bg-card/60 p-5 flex flex-col gap-3"
+      data-testid={`client-card-${client.id}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-12 h-12 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-bold">
+          {client.fullName.charAt(0).toUpperCase()}
         </div>
-
-        {client.fitnessGoal && (
-          <p className="text-xs text-amber-200/70 inline-flex items-start gap-1.5 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-            <Target size={12} className="mt-0.5 shrink-0" /> {client.fitnessGoal}
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold truncate" data-testid={`client-name-${client.id}`}>
+            {client.fullName}
           </p>
-        )}
-
-        <div className="flex items-center gap-2 pt-1 mt-auto">
-          <DialogTrigger asChild>
-            <button
-              data-testid={`button-view-client-${client.id}`}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5"
-            >
-              View details <ExternalLink size={11} />
-            </button>
-          </DialogTrigger>
+          {client.email && (
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+              <Mail size={11} /> {client.email}
+            </p>
+          )}
           {client.phone && (
-            <a
-              href={whatsappUrl(settings?.whatsappNumber || client.phone)}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid={`button-whatsapp-${client.id}`}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25"
-              title="WhatsApp this client"
-            >
-              <SiWhatsapp size={14} />
-            </a>
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+              <Phone size={11} /> {client.phone}
+            </p>
+          )}
+          {client.area && (
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+              <MapPin size={11} /> {client.area}
+            </p>
           )}
         </div>
-      </motion.div>
-
-      <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-display flex items-center gap-3">
-            {client.fullName}
-          </DialogTitle>
-        </DialogHeader>
-        <ClientDetails client={client} />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ClientDetails({ client }: { client: UserResponse }) {
-  const { data: bookings = [] } = useBookings({ userId: client.id });
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <Field icon={<Mail size={12} />} label="Email" value={client.email || "—"} />
-        <Field icon={<Phone size={12} />} label="Phone" value={client.phone || "—"} />
-        <Field
-          icon={<Target size={12} />}
-          label="Fitness Goal"
-          value={client.fitnessGoal || "—"}
-          className="col-span-2"
-        />
-        <Field
-          icon={<Notebook size={12} />}
-          label="Notes"
-          value={client.notes || "—"}
-          className="col-span-2"
-        />
       </div>
 
-      <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Recent Bookings</p>
-        {bookings.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No bookings yet.</p>
-        ) : (
-          <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-            {bookings.slice(0, 20).map((b: any) => (
-              <div
-                key={b.id}
-                className="flex items-center justify-between text-sm p-2.5 rounded-lg bg-white/5"
-              >
-                <span>
-                  {format(new Date(b.date), "MMM d, yyyy")} • {b.timeSlot}
-                </span>
-                <span
-                  className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
-                >
-                  {formatStatus(b.status)}
-                </span>
-              </div>
-            ))}
-          </div>
+      {client.fitnessGoal && (
+        <p className="text-xs text-amber-200/70 inline-flex items-start gap-1.5 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <Target size={12} className="mt-0.5 shrink-0" /> {client.fitnessGoal}
+        </p>
+      )}
+
+      <div className="flex items-center gap-2 pt-1 mt-auto">
+        <Link
+          href={`/admin/clients/${client.id}`}
+          data-testid={`link-view-client-${client.id}`}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5"
+        >
+          Open profile <ExternalLink size={11} />
+        </Link>
+        {client.phone && (
+          <a
+            href={whatsappUrl(settings?.whatsappNumber || client.phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid={`button-whatsapp-${client.id}`}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25"
+            title="WhatsApp this client"
+          >
+            <SiWhatsapp size={14} />
+          </a>
         )}
       </div>
-    </div>
-  );
-}
-
-function Field({
-  icon,
-  label,
-  value,
-  className,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  className?: string;
-}) {
-  return (
-    <div className={`p-3 rounded-lg bg-white/5 border border-white/5 ${className ?? ""}`}>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1">
-        {icon} {label}
-      </p>
-      <p className="mt-1 text-sm break-words">{value}</p>
-    </div>
+    </motion.div>
   );
 }

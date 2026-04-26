@@ -17,6 +17,8 @@ import CancellationPolicyPage from "@/pages/CancellationPolicyPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
+import AdminClientDetail from "@/pages/AdminClientDetail";
+import AdminPackages from "@/pages/AdminPackages";
 import AdminSettings from "@/pages/AdminSettings";
 import NotFound from "@/pages/not-found";
 
@@ -80,6 +82,12 @@ function Router() {
         </Route>
         <Route path="/admin/clients">
           <ProtectedRoute component={AdminClients} adminOnly />
+        </Route>
+        <Route path="/admin/clients/:id">
+          <ProtectedRoute component={AdminClientDetail} adminOnly />
+        </Route>
+        <Route path="/admin/packages">
+          <ProtectedRoute component={AdminPackages} adminOnly />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />

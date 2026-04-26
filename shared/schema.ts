@@ -1,4 +1,13 @@
-import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  doublePrecision,
+  timestamp,
+  date,
+  boolean,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -14,24 +23,37 @@ export const users = pgTable("users", {
   email: text("email"),
   phone: text("phone"),
   role: text("role").notNull().default("client"), // 'admin' | 'client'
+  area: text("area"),
+  emergencyContactName: text("emergency_contact_name"),
+  emergencyContactPhone: text("emergency_contact_phone"),
   fitnessGoal: text("fitness_goal"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 // =============================
+// PACKAGES (session credits)
+// =============================
+// type values: '10' | '20' | '25' | 'duo30'
+export const packages = pgTable("packages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  partnerUserId: integer("partner_user_id").references(() => users.id), // for duo
+  type: text("type").notNull(), // '10' | '20' | '25' | 'duo30'
+  totalSessions: integer("total_sessions").notNull(),
+  usedSessions: integer("used_sessions").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  notes: text("notes"),
+  purchasedAt: timestamp("purchased_at").defaultNow(),
+});
+
+// =============================
 // BOOKINGS
 // =============================
-// status values:
-//   'upcoming'             - awaiting admin approval
-//   'confirmed'            - confirmed by admin (or auto after cutoff)
-//   'completed'            - session done
-//   'cancelled'            - free cancellation by admin
-//   'free_cancelled'       - cancelled in time by client (>= cutoff)
-//   'late_cancelled'       - cancelled after cutoff (charged)
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
+  packageId: integer("package_id").references(() => packages.id),
   date: date("date").notNull(),
   timeSlot: text("time_slot").notNull(), // "HH:MM"
   status: text("status").notNull().default("upcoming"),
@@ -52,16 +74,52 @@ export const settings = pgTable("settings", {
 });
 
 // =============================
-// BLOCKED SLOTS (date or specific time)
+// BLOCKED SLOTS / HOLIDAYS
 // =============================
+// blockType: 'off-day' | 'emergency' | 'fully-booked' (only for whole-day blocks)
 // If timeSlot is null -> entire date is blocked.
-// If timeSlot is set  -> only that hour on that date is blocked.
 export const blockedSlots = pgTable("blocked_slots", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
   timeSlot: text("time_slot"),
+  blockType: text("block_type").default("off-day"),
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// =============================
+// INBODY RECORDS
+// =============================
+export const inbodyRecords = pgTable("inbody_records", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  fileUrl: text("file_url"), // path under /uploads/inbody/
+  fileName: text("file_name"),
+  mimeType: text("mime_type"),
+  weight: doublePrecision("weight"),
+  bodyFat: doublePrecision("body_fat"),
+  muscleMass: doublePrecision("muscle_mass"),
+  bmi: doublePrecision("bmi"),
+  visceralFat: doublePrecision("visceral_fat"),
+  bmr: doublePrecision("bmr"),
+  water: doublePrecision("water"),
+  score: doublePrecision("score"),
+  aiExtracted: boolean("ai_extracted").notNull().default(false),
+  notes: text("notes"),
+  recordedAt: timestamp("recorded_at").defaultNow(),
+});
+
+// =============================
+// PROGRESS PHOTOS
+// =============================
+// type: 'before' | 'current' | 'after'
+export const progressPhotos = pgTable("progress_photos", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  photoUrl: text("photo_url").notNull(),
+  type: text("type").notNull().default("current"),
+  notes: text("notes"),
+  recordedAt: timestamp("recorded_at").defaultNow(),
 });
 
 // =============================
@@ -69,19 +127,25 @@ export const blockedSlots = pgTable("blocked_slots", {
 // =============================
 export const usersRelations = relations(users, ({ many }) => ({
   bookings: many(bookings),
+  packages: many(packages),
+  inbodyRecords: many(inbodyRecords),
+  progressPhotos: many(progressPhotos),
 }));
 
 export const bookingsRelations = relations(bookings, ({ one }) => ({
-  user: one(users, {
-    fields: [bookings.userId],
-    references: [users.id],
-  }),
+  user: one(users, { fields: [bookings.userId], references: [users.id] }),
+  package: one(packages, { fields: [bookings.packageId], references: [packages.id] }),
+}));
+
+export const packagesRelations = relations(packages, ({ one, many }) => ({
+  user: one(users, { fields: [packages.userId], references: [users.id], relationName: "owner" }),
+  partner: one(users, { fields: [packages.partnerUserId], references: [users.id], relationName: "partner" }),
+  bookings: many(bookings),
 }));
 
 // =============================
-// SCHEMAS
+// SCHEMAS (Zod)
 // =============================
-// Public client registration: cannot set role
 export const insertClientSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, role: true, username: true })
   .extend({
@@ -89,16 +153,17 @@ export const insertClientSchema = createInsertSchema(users)
     email: z.string().email("Valid email is required"),
     phone: z.string().min(7, "Phone number is required"),
     password: z.string().min(6, "Password must be at least 6 characters"),
+    area: z.string().optional(),
+    emergencyContactName: z.string().optional(),
+    emergencyContactPhone: z.string().optional(),
     fitnessGoal: z.string().optional(),
     notes: z.string().optional(),
   });
 
-// For seeding/admin (can set role)
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 
-// Profile update (no password / role / username)
 export const updateProfileSchema = createInsertSchema(users)
-  .omit({ id: true, createdAt: true, role: true, username: true, password: true })
+  .omit({ id: true, createdAt: true, role: true, username: true })
   .partial();
 
 export const insertBookingSchema = createInsertSchema(bookings)
@@ -106,20 +171,17 @@ export const insertBookingSchema = createInsertSchema(bookings)
   .extend({
     date: z.string(),
     timeSlot: z.string(),
+    packageId: z.number().int().nullable().optional(),
   });
 
 export const updateBookingSchema = z.object({
-  status: z.enum([
-    "upcoming",
-    "confirmed",
-    "completed",
-    "cancelled",
-    "free_cancelled",
-    "late_cancelled",
-  ]).optional(),
+  status: z
+    .enum(["upcoming", "confirmed", "completed", "cancelled", "free_cancelled", "late_cancelled"])
+    .optional(),
   date: z.string().optional(),
   timeSlot: z.string().optional(),
   notes: z.string().optional(),
+  packageId: z.number().int().nullable().optional(),
 });
 
 export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
@@ -127,6 +189,7 @@ export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
   .extend({
     date: z.string(),
     timeSlot: z.string().nullable().optional(),
+    blockType: z.enum(["off-day", "emergency", "fully-booked"]).optional(),
     reason: z.string().nullable().optional(),
   });
 
@@ -136,6 +199,47 @@ export const updateSettingsSchema = z.object({
   profileBio: z.string().nullable().optional(),
   whatsappNumber: z.string().optional(),
 });
+
+export const insertPackageSchema = createInsertSchema(packages)
+  .omit({ id: true, purchasedAt: true })
+  .extend({
+    type: z.enum(["10", "20", "25", "duo30"]),
+    totalSessions: z.number().int().min(1),
+    usedSessions: z.number().int().min(0).optional(),
+    notes: z.string().optional(),
+    partnerUserId: z.number().int().nullable().optional(),
+    isActive: z.boolean().optional(),
+  });
+
+export const updatePackageSchema = insertPackageSchema.partial().omit({ userId: true });
+
+export const insertInbodySchema = createInsertSchema(inbodyRecords)
+  .omit({ id: true, recordedAt: true })
+  .extend({
+    weight: z.number().positive().nullable().optional(),
+    bodyFat: z.number().nullable().optional(),
+    muscleMass: z.number().nullable().optional(),
+    bmi: z.number().nullable().optional(),
+    visceralFat: z.number().nullable().optional(),
+    bmr: z.number().nullable().optional(),
+    water: z.number().nullable().optional(),
+    score: z.number().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    fileUrl: z.string().nullable().optional(),
+    fileName: z.string().nullable().optional(),
+    mimeType: z.string().nullable().optional(),
+    aiExtracted: z.boolean().optional(),
+  });
+
+export const updateInbodySchema = insertInbodySchema.partial().omit({ userId: true });
+
+export const insertProgressPhotoSchema = createInsertSchema(progressPhotos)
+  .omit({ id: true, recordedAt: true })
+  .extend({
+    photoUrl: z.string().min(1),
+    type: z.enum(["before", "current", "after"]).optional(),
+    notes: z.string().nullable().optional(),
+  });
 
 // =============================
 // TYPES
@@ -149,12 +253,28 @@ export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type UpdateBooking = z.infer<typeof updateBookingSchema>;
+export type BookingWithUser = Booking & { user: UserResponse };
 
 export type Settings = typeof settings.$inferSelect;
 export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
 
 export type BlockedSlot = typeof blockedSlots.$inferSelect;
 export type InsertBlockedSlot = z.infer<typeof insertBlockedSlotSchema>;
+
+export type Package = typeof packages.$inferSelect;
+export type InsertPackage = z.infer<typeof insertPackageSchema>;
+export type UpdatePackage = z.infer<typeof updatePackageSchema>;
+export type PackageWithUser = Package & {
+  user?: UserResponse;
+  partner?: UserResponse | null;
+};
+
+export type InbodyRecord = typeof inbodyRecords.$inferSelect;
+export type InsertInbody = z.infer<typeof insertInbodySchema>;
+export type UpdateInbody = z.infer<typeof updateInbodySchema>;
+
+export type ProgressPhoto = typeof progressPhotos.$inferSelect;
+export type InsertProgressPhoto = z.infer<typeof insertProgressPhotoSchema>;
 
 export type LoginRequest = { username: string; password: string };
 export type AuthResponse = { user: UserResponse };
@@ -164,6 +284,12 @@ export type DashboardStats = {
   upcomingBookings: number;
   bookingsToday: number;
   completedThisMonth: number;
+  activePackages: number;
 };
 
-export type BookingWithUser = Booking & { user: UserResponse };
+export const PACKAGE_DEFINITIONS: Record<string, { label: string; sessions: number; isDuo?: boolean }> = {
+  "10": { label: "10 Sessions", sessions: 10 },
+  "20": { label: "20 Sessions", sessions: 20 },
+  "25": { label: "25 Sessions", sessions: 25 },
+  duo30: { label: "Duo Package — 30 Sessions", sessions: 30, isDuo: true },
+};

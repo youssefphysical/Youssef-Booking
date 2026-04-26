@@ -5,6 +5,7 @@ import {
   User,
   LayoutDashboard,
   Users,
+  Package as PackageIcon,
   Settings as SettingsIcon,
   LogOut,
   LogIn,
@@ -43,7 +44,7 @@ export function Navigation() {
           )}
         >
           <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
-            <h1 className="text-xl font-bold font-display text-gradient-gold">Youssef Tarek</h1>
+            <h1 className="text-xl font-bold font-display text-gradient-gold">Youssef Fitness</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
               Admin Portal
             </p>
@@ -53,6 +54,7 @@ export function Navigation() {
             <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label="Dashboard" active={location === "/admin"} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label="Bookings" active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/clients" icon={<Users size={18} />} label="Clients" active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label="Packages" active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label="Settings" active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
           </div>
 
@@ -83,7 +85,7 @@ export function Navigation() {
     <header className="fixed top-0 inset-x-0 z-40 bg-background/70 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
         <Link href="/" className="font-display font-bold text-lg" data-testid="link-brand">
-          <span className="text-gradient-gold">Youssef Tarek</span>
+          <span className="text-gradient-gold">Youssef Fitness</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
