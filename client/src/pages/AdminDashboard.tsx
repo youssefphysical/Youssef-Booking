@@ -1,12 +1,72 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Users, CalendarCheck, Clock, TrendingUp, ArrowRight, ExternalLink } from "lucide-react";
+import {
+  Users,
+  CalendarCheck,
+  Clock,
+  TrendingUp,
+  ArrowRight,
+  ExternalLink,
+  LayoutDashboard,
+  Calendar,
+  Package as PackageIcon,
+  Activity,
+  Camera,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { format } from "date-fns";
 import { api } from "@shared/routes";
 import type { DashboardStats, BookingWithUser } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
 import { formatStatus, statusColor } from "@/lib/booking-utils";
+import { cn } from "@/lib/utils";
+
+const ADMIN_TABS: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  matches: (path: string) => boolean;
+  hint?: string;
+}[] = [
+  { href: "/admin", label: "Overview", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
+  { href: "/admin/clients", label: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
+  { href: "/admin/bookings", label: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
+  { href: "/admin/packages", label: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
+  { href: "/admin/clients", label: "InBody", icon: <Activity size={15} />, matches: () => false, hint: "Open a client to manage InBody scans" },
+  { href: "/admin/clients", label: "Progress", icon: <Camera size={15} />, matches: () => false, hint: "Open a client to manage progress photos" },
+  { href: "/admin/settings", label: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
+];
+
+export function AdminTabs() {
+  const [location] = useLocation();
+  return (
+    <div className="rounded-2xl border border-white/5 bg-card/60 p-1.5 mb-8 overflow-x-auto">
+      <div className="flex gap-1 min-w-max">
+        {ADMIN_TABS.map((t) => {
+          const active = t.matches(location);
+          return (
+            <Link
+              key={t.label}
+              href={t.href}
+              data-testid={`admintab-${t.label.toLowerCase()}`}
+              title={t.hint}
+              className={cn(
+                "inline-flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5",
+              )}
+            >
+              {t.icon}
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { data: stats } = useQuery<DashboardStats>({
@@ -26,13 +86,15 @@ export default function AdminDashboard() {
 
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
-      <div className="mb-8">
+      <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Overview</p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-admin-title">
           Admin Dashboard
         </h1>
-        <p className="text-muted-foreground text-sm">Manage clients, bookings, and settings</p>
+        <p className="text-muted-foreground text-sm">Manage clients, bookings, packages, and settings — all in one place.</p>
       </div>
+
+      <AdminTabs />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={<Users size={20} />} label="Total Clients" value={stats?.totalClients ?? 0} testId="stat-clients" />
@@ -87,11 +149,15 @@ export default function AdminDashboard() {
         <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
           <h3 className="font-display font-bold text-lg mb-5">Quick actions</h3>
           <div className="space-y-2">
+            <QuickAction href="/admin/clients" label="View & edit clients" />
             <QuickAction href="/admin/bookings" label="Manage bookings" />
-            <QuickAction href="/admin/clients" label="View clients" />
-            <QuickAction href="/admin/settings" label="Time slots & settings" />
+            <QuickAction href="/admin/packages" label="Sessions & packages" />
+            <QuickAction href="/admin/settings" label="Off days, blocked hours, profile" />
             <QuickAction href="/" label="View public site" external />
           </div>
+          <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
+            InBody scans and progress photos are managed inside each client's profile — open any client from the Clients tab.
+          </p>
         </div>
       </div>
     </div>

@@ -83,9 +83,12 @@ export default function AuthPage() {
 
         <div className="bg-card/80 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-display font-bold text-gradient-gold">Youssef Fitness</h1>
-            <p className="text-[10px] text-primary/80 uppercase tracking-[0.2em] mt-2">
-              Certified Personal Trainer & Transformation Specialist
+            <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold">
+              Youssef Fitness
+            </p>
+            <h1 className="text-2xl font-display font-bold text-gradient-blue mt-1">Youssef Ahmed</h1>
+            <p className="text-[11px] text-muted-foreground tracking-wide mt-2 leading-relaxed">
+              Certified Personal Trainer · Physical Education Teacher · Movement & Kinesiology Specialist
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
               {mode === "admin-login" ? "Admin Access" : "Client Portal"}
@@ -238,7 +241,7 @@ function AdminLoginForm() {
         onSubmit={form.handleSubmit((d) => loginMutation.mutate(d))}
         className="space-y-4"
       >
-        <div className="text-xs px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200/80 mb-1">
+        <div className="text-xs px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary/90 mb-1">
           Admin access only. Default username: <span className="font-mono">admin</span>
         </div>
         <FormField

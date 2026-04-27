@@ -1,0 +1,221 @@
+Update the current Youssef Fitness platform with a final clean luxury design direction and simplified structure.
+
+IMPORTANT:
+Do not overbuild. Keep only what is important now. Make it stable, clean, and premium.
+
+1. BRANDING:
+Use public display name:
+Youssef Ahmed
+
+Brand name:
+Youssef Fitness
+
+Professional title:
+Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+
+Optional short subtitle:
+Science-based coaching for body transformation, movement quality, and long-term performance.
+
+Mention that Youssef trains:
+- Adults
+- Beginners
+- Fat-loss clients
+- Muscle-gain clients
+- Kids and youth fitness clients
+- Clients who need safe, structured movement coaching
+
+2. DESIGN COLORS:
+Change the visual identity to match a premium high-end fitness style using:
+
+- Black
+- White
+- Light Blue accents
+- Deep Navy / Dark Blue tones
+
+Avoid gold as the main accent now.
+Use light blue carefully and professionally.
+Keep the design luxury, modern, clean, and high-trust.
+
+Background style:
+- Professional dark luxury background
+- Subtle blue gradients
+- Clean fitness atmosphere
+- No messy or flashy graphics
+- High-end gym feeling
+
+3. HOMEPAGE:
+Make the homepage focused on Youssef’s profile and booking.
+
+Sections:
+- Hero
+- About Youssef
+- Coaching Specialties
+- Certifications & Professional Background
+- Transformations placeholder
+- Book a Session
+- WhatsApp Contact
+
+Hero section:
+Show:
+Youssef Ahmed
+Youssef Fitness
+Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+
+Add a professional trainer photo placeholder, editable by admin.
+
+Hero buttons:
+- Book a Session
+- Contact on WhatsApp
+
+4. ABOUT SECTION:
+Rewrite the About section professionally.
+
+Use this tone:
+Premium, confident, scientific, not arrogant.
+
+Suggested copy:
+“Youssef Ahmed is a certified personal trainer and physical education teacher based in Dubai, specializing in body transformation, movement quality, and structured performance coaching. His background combines academic physical education, competitive sports experience, personal training, and real-world coaching with clients of different ages and fitness levels.
+
+Through Youssef Fitness, he focuses on building safe, personalized, and result-driven training systems for adults, beginners, athletes, kids, and clients looking to improve strength, body composition, confidence, and overall movement.”
+
+Keep it elegant and not too long.
+
+5. COACHING SPECIALTIES:
+Add a clean section called:
+Coaching Specialties
+
+Include cards:
+- Body Transformation
+- Fat Loss & Weight Management
+- Muscle Building
+- Movement & Kinesiology-Based Training
+- Kids & Youth Fitness
+- Beginner-Friendly Coaching
+- Strength & Conditioning
+- Safe Training for Different Fitness Levels
+
+6. ADMIN DASHBOARD:
+Admin dashboard is for Youssef only.
+Keep it separate and professional.
+
+Admin must control:
+- Clients
+- Bookings
+- Packages
+- Session balances
+- InBody uploads
+- Progress photos
+- Off days / blocked days
+- Blocked hours
+- Homepage profile photo
+- About text
+- Certifications text
+- Client notes
+
+Admin can edit any client:
+- Name
+- Phone
+- Email
+- Area / city
+- Emergency contact
+- Goal
+- Injuries / notes
+- Package
+- Sessions
+- InBody data
+- Progress photos
+- Booking status
+
+Make admin dashboard clean with tabs:
+Overview / Clients / Bookings / Sessions / InBody / Progress / Settings
+
+7. CLIENT DASHBOARD:
+Keep client dashboard simple.
+Clients only need:
+- Their profile
+- Their package/session balance
+- Upcoming sessions
+- Past sessions
+- InBody history
+- Progress photos
+- Cancel/reschedule if allowed
+- WhatsApp contact button
+
+Do not make client dashboard complicated.
+
+8. BOOKING:
+Keep current booking system:
+- 6 AM to 10 PM
+- Last session 10 PM to 11 PM
+- 6-hour cancellation/reschedule cutoff
+- Inside 6 hours = locked and session counted
+- Admin override allowed
+
+9. OFF DAY / HOLIDAY:
+Admin can block a full day or specific hour.
+
+Client message:
+“Youssef Fitness is unavailable on this day. Please choose another available date.”
+
+For emergency:
+“Due to an urgent schedule change, this day is currently unavailable. Please select another date.”
+
+10. PACKAGES:
+Keep only:
+- 10 Sessions
+- 20 Sessions
+- 25 Sessions
+- Duo Package – 30 Sessions
+
+Do not add payments now.
+
+11. INBODY HYBRID:
+Keep InBody upload required during registration.
+AI extraction optional only.
+If AI fails, no error.
+Admin can manually update all values.
+
+Show friendly message:
+“We received your InBody scan. Youssef will review and update your analysis shortly.”
+
+12. CLIENT PROGRESS:
+Client can optionally upload:
+- Profile photo
+- Before photo
+- Current photo
+- After photo
+- Notes
+
+No photo is required except InBody upload during registration.
+
+13. CERTIFICATIONS:
+Keep certifications displayed cleanly and professionally.
+For each certificate, show:
+- Certificate name
+- Issuing organization
+- Country / region
+- Short value statement
+
+Small country/region flags may be used only if they look elegant and professional.
+If flags make the design look cheap or childish, do not use them.
+
+14. WHATSAPP:
+Use:
++971505394754
+https://wa.me/971505394754
+
+Add WhatsApp buttons:
+- Contact Youssef
+- Confirm Booking
+- Ask About Training
+
+15. STABILITY:
+Very important:
+- Do not show raw technical errors
+- Do not break existing working booking/auth/admin logic
+- Keep everything simple and stable
+- Make visual updates carefully
+- Remove any nutrition/meal-plan wording if still present
+
+FINAL GOAL:
+A clean luxury blue/black/white personal trainer booking platform for Youssef Fitness, with a professional public profile, simple client dashboard, and powerful admin dashboard for Youssef only.

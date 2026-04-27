@@ -44,7 +44,7 @@ export function Navigation() {
           )}
         >
           <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
-            <h1 className="text-xl font-bold font-display text-gradient-gold">Youssef Fitness</h1>
+            <h1 className="text-xl font-bold font-display text-gradient-blue">Youssef Fitness</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
               Admin Portal
             </p>
@@ -85,7 +85,7 @@ export function Navigation() {
     <header className="fixed top-0 inset-x-0 z-40 bg-background/70 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
         <Link href="/" className="font-display font-bold text-lg" data-testid="link-brand">
-          <span className="text-gradient-gold">Youssef Fitness</span>
+          <span className="text-gradient-blue">Youssef Fitness</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">

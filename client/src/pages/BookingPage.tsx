@@ -370,23 +370,23 @@ function HolidayNotice({ block }: { block: { blockType?: string | null; reason?:
     "off-day": {
       icon: <Coffee size={20} />,
       title: "Youssef Fitness is unavailable on this day",
-      subtitle: "Please choose another date.",
-      colors: "border-amber-500/30 bg-amber-500/5 text-amber-200",
-      iconBg: "bg-amber-500/15 text-amber-400",
+      subtitle: "Please choose another available date.",
+      colors: "border-sky-400/30 bg-sky-400/5 text-sky-100",
+      iconBg: "bg-sky-400/15 text-sky-300",
     },
     emergency: {
       icon: <AlertTriangle size={20} />,
-      title: "Sessions cancelled due to an emergency",
-      subtitle: "We apologise for the inconvenience. Please choose another date.",
-      colors: "border-red-500/30 bg-red-500/5 text-red-200",
-      iconBg: "bg-red-500/15 text-red-400",
+      title: "This day is currently unavailable",
+      subtitle: "Due to an urgent schedule change, this day is currently unavailable. Please select another date.",
+      colors: "border-red-500/30 bg-red-500/5 text-red-100",
+      iconBg: "bg-red-500/15 text-red-300",
     },
     "fully-booked": {
       icon: <Users size={20} />,
       title: "Fully booked on this day",
-      subtitle: "All slots are taken. Please choose another date.",
-      colors: "border-blue-500/30 bg-blue-500/5 text-blue-200",
-      iconBg: "bg-blue-500/15 text-blue-400",
+      subtitle: "All slots are taken. Please choose another available date.",
+      colors: "border-primary/30 bg-primary/5 text-primary/90",
+      iconBg: "bg-primary/15 text-primary",
     },
   } as const;
 
