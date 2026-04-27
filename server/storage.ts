@@ -7,6 +7,7 @@ import {
   packages,
   inbodyRecords,
   progressPhotos,
+  consentRecords,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -24,6 +25,8 @@ import {
   type UpdateInbody,
   type ProgressPhoto,
   type InsertProgressPhoto,
+  type ConsentRecord,
+  type InsertConsent,
 } from "@shared/schema";
 import { eq, and, gte, desc, asc, isNull } from "drizzle-orm";
 import session from "express-session";
@@ -78,6 +81,10 @@ export interface IStorage {
   getProgressPhotos(filters?: { userId?: number }): Promise<ProgressPhoto[]>;
   createProgressPhoto(photo: InsertProgressPhoto): Promise<ProgressPhoto>;
   deleteProgressPhoto(id: number): Promise<void>;
+
+  // Consent records
+  getConsentRecords(filters?: { userId?: number; consentType?: string }): Promise<ConsentRecord[]>;
+  createConsentRecord(record: InsertConsent): Promise<ConsentRecord>;
 
   sessionStore: session.Store;
 }
@@ -298,6 +305,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProgressPhoto(id: number) {
     await db.delete(progressPhotos).where(eq(progressPhotos.id, id));
+  }
+
+  // ===== Consent Records =====
+  async getConsentRecords(filters?: { userId?: number; consentType?: string }) {
+    const conds: any[] = [];
+    if (filters?.userId) conds.push(eq(consentRecords.userId, filters.userId));
+    if (filters?.consentType) conds.push(eq(consentRecords.consentType, filters.consentType));
+    const q =
+      conds.length > 0
+        ? db.select().from(consentRecords).where(and(...conds))
+        : db.select().from(consentRecords);
+    return q.orderBy(desc(consentRecords.createdAt));
+  }
+
+  async createConsentRecord(record: InsertConsent) {
+    const [r] = await db.insert(consentRecords).values(record).returning();
+    return r;
   }
 }
 

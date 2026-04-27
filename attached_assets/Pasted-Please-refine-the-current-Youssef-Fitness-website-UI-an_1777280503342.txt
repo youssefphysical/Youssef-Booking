@@ -1,0 +1,168 @@
+Please refine the current Youssef Fitness website UI and legal/consent flow. The app is good, but it needs cleaner branding, less repetition, better mobile layout, and professional legal/privacy consent.
+
+IMPORTANT:
+Keep existing working features. Do not break auth, booking, admin dashboard, packages, InBody upload, or cancellation rules.
+
+1. BRANDING CLEANUP:
+The homepage currently repeats the brand/name too many times.
+
+Use this structure:
+- Top navbar logo: “Youssef Fitness”
+- Hero main title: “Youssef Ahmed”
+- Small subtitle/tagline only once:
+  “Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist”
+
+Do NOT repeat “Youssef Fitness” again directly under the hero name in large spacing.
+Keep branding clean, premium, and minimal.
+
+2. HERO SECTION CLEANUP:
+Make the hero section look more professional and less crowded.
+
+Hero should show:
+Youssef Ahmed
+Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+
+Short sentence:
+“Science-based coaching for body transformation, movement quality, and long-term performance.”
+
+Keep the audience tags smaller and cleaner:
+Adults / Beginners / Fat Loss / Muscle Gain / Kids & Youth / Safe Movement Coaching
+
+3. WHATSAPP BUTTON CLEANUP:
+There are too many WhatsApp buttons and they overlap on mobile.
+
+Fix the WhatsApp/contact section:
+- Keep ONE main green WhatsApp button in the hero:
+  “Contact on WhatsApp”
+- In the lower contact section, use smaller clean cards, not huge green buttons.
+- Make sure text never overlaps with buttons.
+- Buttons must be full-width on mobile or aligned properly.
+- Use WhatsApp green only for the main WhatsApp action.
+- Other buttons/cards can use blue/dark style with a small WhatsApp icon.
+
+Remove duplicated WhatsApp actions if they feel repetitive.
+
+Suggested final contact section:
+Title: “Ready to start?”
+Buttons:
+- Book a Session
+- Contact on WhatsApp
+
+Optional small links:
+- Ask About Training
+- Confirm Booking
+
+But make them clean, separated, and not overlapping.
+
+4. MOBILE RESPONSIVENESS:
+Fix all mobile layout issues:
+- No overlapping text
+- No buttons covering text
+- Proper spacing between sections
+- Buttons should stack vertically on mobile
+- Cards should be full width on mobile
+- Footer links should not look crowded
+
+5. COLOR SYSTEM:
+Keep the professional luxury color system:
+- Black / dark navy background
+- White text
+- Light blue accents
+- WhatsApp green only for WhatsApp actions
+
+Do not overuse green.
+Do not make all buttons look the same.
+
+6. LEGAL PAGES:
+Add professional legal pages accessible from footer and booking flow:
+
+A) Privacy Policy
+B) Terms & Conditions
+C) Cancellation Policy
+D) Medical / Fitness Disclaimer
+E) Cookie Policy
+
+Footer links:
+Privacy Policy | Terms | Cancellation Policy | Cookies | WhatsApp | Instagram
+
+7. COOKIE CONSENT:
+Add a clean cookie banner on first visit.
+
+Text:
+“We use cookies to improve your experience, keep the website secure, and understand basic site performance. By continuing, you agree to our Cookie Policy.”
+
+Buttons:
+- Accept
+- Manage Preferences
+
+Cookie preferences:
+- Essential cookies: always enabled
+- Analytics cookies: optional
+- Marketing cookies: optional
+
+Save cookie consent choice.
+
+8. CLIENT CONSENT DURING REGISTRATION:
+During client registration, add required checkboxes:
+
+- I confirm that the information I provided is accurate.
+- I understand and accept the Cancellation Policy.
+- I understand and accept the Terms & Conditions.
+- I understand that training involves physical activity and I confirm that I am fit to participate, or I will consult a medical professional if needed.
+- I consent to Youssef Fitness storing my profile information, booking details, InBody scan, and progress photos for coaching and progress tracking purposes.
+
+Client cannot complete registration unless all required consent checkboxes are accepted.
+
+Store consent record with:
+- Client ID
+- Date/time
+- Accepted policies
+- IP if available
+- Version of policy accepted
+
+9. BOOKING CONSENT:
+Before confirming any booking, show a compact policy checkbox:
+
+“I understand that cancellations or rescheduling must be made at least 6 hours before the session. Late cancellations will be counted as used.”
+
+Booking cannot be completed without accepting this.
+
+10. INBODY / PROGRESS PHOTO CONSENT:
+Before InBody upload or progress photo upload, show:
+“I consent to uploading this file for coaching, progress tracking, and body composition review by Youssef Fitness.”
+
+11. LEGAL COPY:
+Use professional, simple wording. Do not make it too scary.
+
+Cancellation Policy must include:
+“All cancellations or rescheduling requests must be made at least 6 hours before the scheduled session time. If a client cancels or requests to reschedule within less than 6 hours before the session, the session will be counted as used and charged.”
+
+Medical Disclaimer must include:
+“Youssef Fitness provides fitness coaching and training guidance. This service does not replace medical advice, diagnosis, or treatment. Clients should consult a qualified healthcare professional before starting exercise if they have any medical condition, injury, pain, or concern.”
+
+Privacy Policy must mention:
+- Data collected: name, phone, email, area, emergency contact, fitness goal, injury notes, bookings, InBody files, progress photos
+- Purpose: coaching, booking, progress tracking, communication
+- Data access: admin/Youssef Fitness only
+- Data deletion: client can request removal
+- No sale of personal data
+
+12. ADMIN DASHBOARD:
+Add a client consent section inside each client profile:
+- Policies accepted
+- Date/time accepted
+- Latest consent status
+- InBody consent
+- Progress photo consent
+
+Admin must be able to see if a client has accepted all required policies.
+
+13. STABILITY:
+Do not show raw technical errors.
+Use clean messages only.
+Do not break existing features.
+Make small safe changes.
+Test mobile layout after changes.
+
+FINAL GOAL:
+A cleaner, more premium Youssef Fitness homepage with less repeated branding, fixed WhatsApp/contact layout, professional mobile design, and strong privacy/legal/consent flow to protect the business and create trust.

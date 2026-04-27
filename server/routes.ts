@@ -200,6 +200,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       timeSlot: parsed.data.timeSlot,
       notes: parsed.data.notes ?? null,
     });
+
+    try {
+      await storage.createConsentRecord({
+        userId: targetUserId,
+        consentType: "booking",
+        policyVersion: "v1",
+        acceptedItems: ["cancellation_policy"],
+        ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
+        userAgent: (req.get("user-agent") || null) as string | null,
+      });
+    } catch (e) {
+      console.warn("[booking] consent log failed:", e);
+    }
+
     res.status(201).json(booking);
   });
 
@@ -468,6 +482,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         aiExtracted: !!extracted,
         notes: req.body.notes || null,
       });
+
+      // Log upload consent (best-effort)
+      try {
+        await storage.createConsentRecord({
+          userId: targetUserId,
+          consentType: "inbody",
+          policyVersion: "v1",
+          acceptedItems: ["inbody_upload_consent"],
+          ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
+          userAgent: (req.get("user-agent") || null) as string | null,
+        });
+      } catch (e) {
+        console.warn("[inbody] consent log failed:", e);
+      }
+
       res.status(201).json({
         record,
         aiExtracted: !!extracted,
@@ -531,6 +560,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         type,
         notes: req.body.notes || null,
       });
+
+      try {
+        await storage.createConsentRecord({
+          userId: targetUserId,
+          consentType: "progress",
+          policyVersion: "v1",
+          acceptedItems: ["progress_upload_consent"],
+          ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
+          userAgent: (req.get("user-agent") || null) as string | null,
+        });
+      } catch (e) {
+        console.warn("[progress] consent log failed:", e);
+      }
+
       res.status(201).json(created);
     },
   );
@@ -555,6 +598,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     await storage.deleteProgressPhoto(id);
     res.sendStatus(204);
+  });
+
+  // ============== CONSENT RECORDS ==============
+  app.get("/api/consent", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
+    const consentType = (req.query.consentType as string) || undefined;
+    const filters: { userId?: number; consentType?: string } = {};
+    if (me.role !== "admin") filters.userId = me.id;
+    else if (userIdQuery) filters.userId = userIdQuery;
+    if (consentType) filters.consentType = consentType;
+    const list = await storage.getConsentRecords(filters);
+    res.json(list);
+  });
+
+  app.post("/api/consent", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const schema = z.object({
+      consentType: z.enum(["registration", "booking", "inbody", "progress"]),
+      acceptedItems: z.array(z.string()).min(1),
+      policyVersion: z.string().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid consent" });
+    }
+    const created = await storage.createConsentRecord({
+      userId: me.id,
+      consentType: parsed.data.consentType,
+      policyVersion: parsed.data.policyVersion ?? "v1",
+      acceptedItems: parsed.data.acceptedItems,
+      ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
+      userAgent: (req.get("user-agent") || null) as string | null,
+    });
+    res.status(201).json(created);
   });
 
   // ============== DASHBOARD ==============

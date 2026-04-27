@@ -5,7 +5,13 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User, insertClientSchema } from "@shared/schema";
+import {
+  User,
+  insertClientSchema,
+  REGISTRATION_CONSENT_ITEMS,
+  POLICY_VERSION,
+} from "@shared/schema";
+import { registrationConsentSchema } from "@shared/routes";
 
 const scryptAsync = promisify(scrypt);
 
@@ -82,6 +88,14 @@ export function setupAuth(app: Express) {
           message: parsed.error.errors[0]?.message || "Invalid registration data",
         });
       }
+      const consentsParsed = registrationConsentSchema.safeParse(req.body?.consents);
+      if (!consentsParsed.success) {
+        return res.status(400).json({
+          message:
+            consentsParsed.error.errors[0]?.message ||
+            "Please accept all required consents to continue",
+        });
+      }
       const {
         email,
         password,
@@ -117,6 +131,20 @@ export function setupAuth(app: Express) {
         notes: notes || null,
         role: "client",
       });
+
+      // Persist registration consent for legal/audit trail
+      try {
+        await storage.createConsentRecord({
+          userId: user.id,
+          consentType: "registration",
+          policyVersion: POLICY_VERSION,
+          acceptedItems: REGISTRATION_CONSENT_ITEMS as unknown as string[],
+          ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
+          userAgent: (req.get("user-agent") || null) as string | null,
+        });
+      } catch (e) {
+        console.warn("[auth] Failed to write consent record:", e);
+      }
 
       req.login(user, (err) => {
         if (err) return next(err);

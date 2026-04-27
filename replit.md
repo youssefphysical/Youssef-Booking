@@ -2,6 +2,8 @@
 
 A premium dark-luxury website for **Youssef Fitness** (Youssef Tarek Hashim Ahmed), a certified personal trainer in Dubai, UAE. Public profile + private client booking system + full admin dashboard, with packages, InBody body-composition tracking (hybrid AI), progress photos, and holiday/off-day management.
 
+Legal & consent: dedicated Privacy Policy, Terms & Conditions, Cancellation Policy, Medical Disclaimer, and Cookie Policy pages; site-wide cookie consent banner (essential/analytics/marketing); 5 required registration consents + per-upload InBody/progress consent; consent records stored in `consent_records` and visible per client in the admin dashboard.
+
 Branding subtitle: **Certified Personal Trainer & Transformation Specialist**
 
 ## Features

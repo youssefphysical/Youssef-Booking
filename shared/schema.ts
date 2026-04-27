@@ -123,6 +123,21 @@ export const progressPhotos = pgTable("progress_photos", {
 });
 
 // =============================
+// CONSENT RECORDS (legal/audit)
+// =============================
+// consentType: 'registration' | 'booking' | 'inbody' | 'progress'
+export const consentRecords = pgTable("consent_records", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  consentType: text("consent_type").notNull(),
+  policyVersion: text("policy_version").notNull().default("v1"),
+  acceptedItems: text("accepted_items").array(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// =============================
 // RELATIONS
 // =============================
 export const usersRelations = relations(users, ({ many }) => ({
@@ -275,6 +290,29 @@ export type UpdateInbody = z.infer<typeof updateInbodySchema>;
 
 export type ProgressPhoto = typeof progressPhotos.$inferSelect;
 export type InsertProgressPhoto = z.infer<typeof insertProgressPhotoSchema>;
+
+export const insertConsentSchema = createInsertSchema(consentRecords)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    consentType: z.enum(["registration", "booking", "inbody", "progress"]),
+    policyVersion: z.string().optional(),
+    acceptedItems: z.array(z.string()).min(1),
+    ipAddress: z.string().nullable().optional(),
+    userAgent: z.string().nullable().optional(),
+  });
+
+export type ConsentRecord = typeof consentRecords.$inferSelect;
+export type InsertConsent = z.infer<typeof insertConsentSchema>;
+
+export const REGISTRATION_CONSENT_ITEMS = [
+  "info_accurate",
+  "cancellation_policy",
+  "terms_conditions",
+  "medical_fitness",
+  "data_storage",
+] as const;
+
+export const POLICY_VERSION = "v1";
 
 export type LoginRequest = { username: string; password: string };
 export type AuthResponse = { user: UserResponse };

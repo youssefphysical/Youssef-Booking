@@ -14,6 +14,10 @@ import BookingPage from "@/pages/BookingPage";
 import ClientDashboard from "@/pages/ClientDashboard";
 import ProfilePage from "@/pages/ProfilePage";
 import CancellationPolicyPage from "@/pages/CancellationPolicyPage";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsConditions from "@/pages/TermsConditions";
+import MedicalDisclaimer from "@/pages/MedicalDisclaimer";
+import CookiePolicy from "@/pages/CookiePolicy";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
@@ -21,6 +25,7 @@ import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
 import AdminSettings from "@/pages/AdminSettings";
 import NotFound from "@/pages/not-found";
+import { CookieBanner } from "@/components/CookieBanner";
 
 function ProtectedRoute({
   component: Component,
@@ -56,11 +61,16 @@ function Router() {
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
       <Navigation />
+      <CookieBanner />
       <Switch>
         {/* Public */}
         <Route path="/" component={HomePage} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/policy" component={CancellationPolicyPage} />
+        <Route path="/privacy" component={PrivacyPolicy} />
+        <Route path="/terms" component={TermsConditions} />
+        <Route path="/medical-disclaimer" component={MedicalDisclaimer} />
+        <Route path="/cookies" component={CookiePolicy} />
 
         {/* Client */}
         <Route path="/book">

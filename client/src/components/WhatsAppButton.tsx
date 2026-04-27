@@ -7,7 +7,7 @@ interface Props {
   message?: string;
   label?: string;
   className?: string;
-  variant?: "solid" | "outline" | "ghost";
+  variant?: "solid" | "outline" | "ghost" | "subtle";
   size?: "sm" | "md" | "lg";
   testId?: string;
 }
@@ -31,7 +31,9 @@ export function WhatsAppButton({
       ? "bg-[#25D366] hover:bg-[#1faa55] text-white shadow-lg shadow-[#25D366]/20"
       : variant === "outline"
         ? "border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10"
-        : "text-[#25D366] hover:bg-[#25D366]/10";
+        : variant === "subtle"
+          ? "border border-white/10 bg-white/5 text-foreground hover:border-primary/30 hover:bg-white/10"
+          : "text-[#25D366] hover:bg-[#25D366]/10";
 
   return (
     <a

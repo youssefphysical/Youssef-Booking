@@ -17,6 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConsentNote } from "@/components/ConsentNote";
 import { useLocation, Link } from "wouter";
 import {
   Loader2,
@@ -295,6 +297,69 @@ function AdminLoginForm() {
   );
 }
 
+type ConsentKey =
+  | "info_accurate"
+  | "cancellation_policy"
+  | "terms_conditions"
+  | "medical_fitness"
+  | "data_storage";
+
+const CONSENT_ITEMS: { key: ConsentKey; label: React.ReactNode }[] = [
+  {
+    key: "info_accurate",
+    label: <>I confirm that all the information I've entered is true and accurate.</>,
+  },
+  {
+    key: "cancellation_policy",
+    label: (
+      <>
+        I have read and accept the{" "}
+        <Link href="/policy" className="text-primary underline hover:opacity-80">
+          Cancellation Policy
+        </Link>
+        .
+      </>
+    ),
+  },
+  {
+    key: "terms_conditions",
+    label: (
+      <>
+        I have read and accept the{" "}
+        <Link href="/terms" className="text-primary underline hover:opacity-80">
+          Terms & Conditions
+        </Link>
+        .
+      </>
+    ),
+  },
+  {
+    key: "medical_fitness",
+    label: (
+      <>
+        I confirm I'm medically fit to train and have read the{" "}
+        <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
+          Medical Disclaimer
+        </Link>
+        .
+      </>
+    ),
+  },
+  {
+    key: "data_storage",
+    label: (
+      <>
+        I consent to Youssef Fitness storing my personal, contact, and body composition data as
+        described in the{" "}
+        <Link href="/privacy" className="text-primary underline hover:opacity-80">
+          Privacy Policy
+        </Link>
+        .
+      </>
+    ),
+  },
+];
+
 function RegisterForm() {
   const { registerMutation } = useAuth();
   const uploadInbody = useUploadInbody();
@@ -303,6 +368,15 @@ function RegisterForm() {
   const [step, setStep] = useState<1 | 2>(1);
   const [inbodyFile, setInbodyFile] = useState<File | null>(null);
   const [progressFile, setProgressFile] = useState<File | null>(null);
+  const [inbodyConsent, setInbodyConsent] = useState(false);
+  const [progressConsent, setProgressConsent] = useState(false);
+  const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({
+    info_accurate: false,
+    cancellation_policy: false,
+    terms_conditions: false,
+    medical_fitness: false,
+    data_storage: false,
+  });
   const inbodyRef = useRef<HTMLInputElement>(null);
   const progressRef = useRef<HTMLInputElement>(null);
 
@@ -322,13 +396,35 @@ function RegisterForm() {
     mode: "onTouched",
   });
 
+  const allConsentsAccepted = CONSENT_ITEMS.every((c) => consents[c.key]);
+
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     if (!inbodyFile) {
       form.setError("root" as any, { message: "Please upload your InBody scan to continue." });
       return;
     }
+    if (!inbodyConsent) {
+      form.setError("root" as any, {
+        message: "Please confirm consent to upload your InBody scan.",
+      });
+      return;
+    }
+    if (progressFile && !progressConsent) {
+      form.setError("root" as any, {
+        message: "Please confirm consent to upload your progress photo (or remove it).",
+      });
+      return;
+    }
+    if (!allConsentsAccepted) {
+      form.setError("root" as any, {
+        message: "Please review and accept all required consents to continue.",
+      });
+      return;
+    }
 
-    const newUser = await registerMutation.mutateAsync(values).catch(() => null);
+    const newUser = await registerMutation
+      .mutateAsync({ ...values, consents } as any)
+      .catch(() => null);
     if (!newUser) return;
 
     try {
@@ -565,6 +661,14 @@ function RegisterForm() {
               accept="image/*,application/pdf"
               testId="input-inbody-file"
             />
+            {inbodyFile && (
+              <ConsentNote
+                checked={inbodyConsent}
+                onChange={setInbodyConsent}
+                testId="checkbox-inbody-consent"
+                text="I consent to uploading this InBody scan for coaching, progress tracking, and body composition review by Youssef Fitness."
+              />
+            )}
             <FileField
               label="Starting Progress Photo (optional)"
               description="Helps Youssef track your transformation."
@@ -574,6 +678,41 @@ function RegisterForm() {
               accept="image/*"
               testId="input-progress-file"
             />
+            {progressFile && (
+              <ConsentNote
+                checked={progressConsent}
+                onChange={setProgressConsent}
+                testId="checkbox-progress-consent"
+                text="I consent to uploading this progress photo for coaching and transformation tracking. It will only be visible to me and Youssef."
+              />
+            )}
+
+            {/* Required consents */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={14} className="text-primary" />
+                <p className="text-xs uppercase tracking-widest text-primary/90 font-semibold">
+                  Required Consents
+                </p>
+              </div>
+              {CONSENT_ITEMS.map((c) => (
+                <label
+                  key={c.key}
+                  className="flex items-start gap-3 cursor-pointer"
+                  data-testid={`label-consent-${c.key}`}
+                >
+                  <Checkbox
+                    checked={consents[c.key]}
+                    onCheckedChange={(v) =>
+                      setConsents((s) => ({ ...s, [c.key]: v === true }))
+                    }
+                    data-testid={`checkbox-consent-${c.key}`}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs text-muted-foreground leading-relaxed">{c.label}</span>
+                </label>
+              ))}
+            </div>
 
             {(form.formState.errors as any).root && (
               <p className="text-xs text-destructive">
@@ -595,7 +734,7 @@ function RegisterForm() {
                 type="submit"
                 data-testid="button-submit-register"
                 className="flex-1 h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={isPending}
+                disabled={isPending || !allConsentsAccepted || !inbodyFile || !inbodyConsent}
               >
                 {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
                 Create Account

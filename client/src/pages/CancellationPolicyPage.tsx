@@ -1,38 +1,21 @@
-import { ShieldAlert, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { LegalPage, LegalSection } from "@/components/LegalPage";
 
 export default function CancellationPolicyPage() {
   const { data: settings } = useSettings();
   const cutoff = settings?.cancellationCutoffHours ?? 6;
 
   return (
-    <div className="max-w-3xl mx-auto px-5 pt-24 pb-20">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-          <ShieldAlert size={24} />
-        </div>
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-1">Policy</p>
-          <h1 className="text-3xl font-display font-bold" data-testid="text-policy-title">
-            Cancellation Policy
-          </h1>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-6 mb-6">
-        <p className="text-base leading-relaxed text-amber-50/90" data-testid="text-policy-body">
-          All cancellations or rescheduling requests must be made at least{" "}
-          <span className="font-bold text-amber-300">{cutoff} hours</span> before the scheduled
-          session time. If a client cancels or requests to reschedule within less than {cutoff}{" "}
-          hours before the session, the session will be counted as used and charged. This policy is
-          applied to protect scheduling availability and ensure fairness for all clients. By booking
-          a session, the client confirms that they understand and accept this policy.
-        </p>
-      </div>
-
-      <div className="grid sm:grid-cols-2 gap-4 mb-8">
+    <LegalPage
+      eyebrow="Policy"
+      title="Cancellation Policy"
+      lastUpdated="April 2026"
+      summary={`All cancellations or rescheduling requests must be made at least ${cutoff} hours before your scheduled session. Within ${cutoff} hours, the session is counted as used and charged. By booking a session you confirm you understand and accept this policy.`}
+    >
+      <div className="grid sm:grid-cols-2 gap-4">
         <PolicyCard
           icon={<Clock />}
           tone="success"
@@ -43,11 +26,42 @@ export default function CancellationPolicyPage() {
           icon={<AlertTriangle />}
           tone="danger"
           title={`Less than ${cutoff} hours`}
-          body="Booking is locked. Session is counted and charged."
+          body="Booking is locked. The session is counted and charged."
         />
       </div>
 
-      <div className="rounded-2xl border border-white/5 bg-card/60 p-6 flex items-center justify-between gap-4 flex-wrap">
+      <LegalSection title="1. Why this policy exists">
+        <p>
+          Personal training relies on protected one-on-one time. Late cancellations make it almost
+          impossible to fill the slot with another client. This policy is applied to protect
+          scheduling availability and ensure fairness for all clients.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="2. How to cancel or reschedule">
+        <p>
+          Open your client dashboard and use the cancel option on the booking, or message Youssef
+          on WhatsApp before the cutoff window. Within the cutoff window the booking is locked
+          inside the dashboard and only Youssef can change it.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="3. Genuine emergencies">
+        <p>
+          We understand emergencies happen. If something serious is going on (medical issue,
+          family emergency, accident), reach out to Youssef directly on WhatsApp. He may, at his
+          discretion, mark the cancellation as free.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="4. Late arrivals & no-shows">
+        <p>
+          Sessions end at the originally scheduled time, even if you arrive late. A complete
+          no-show is treated the same as a late cancellation and counts as a used session.
+        </p>
+      </LegalSection>
+
+      <div className="rounded-2xl border border-white/10 bg-card/60 p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-bold">Have an emergency?</p>
           <p className="text-sm text-muted-foreground">Talk to Youssef directly on WhatsApp.</p>
@@ -63,7 +77,7 @@ export default function CancellationPolicyPage() {
           <WhatsAppButton testId="button-policy-whatsapp" />
         </div>
       </div>
-    </div>
+    </LegalPage>
   );
 }
 
@@ -80,12 +94,12 @@ function PolicyCard({
 }) {
   const styles =
     tone === "success"
-      ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-200"
-      : "bg-red-500/5 border-red-500/20 text-red-200";
+      ? "bg-primary/5 border-primary/20 text-foreground/90"
+      : "bg-red-500/5 border-red-500/20 text-foreground/90";
   const iconWrap =
     tone === "success"
-      ? "bg-emerald-500/15 text-emerald-400"
-      : "bg-red-500/15 text-red-400";
+      ? "bg-primary/15 border border-primary/25 text-primary"
+      : "bg-red-500/15 border border-red-500/25 text-red-300";
 
   return (
     <div className={`rounded-2xl border p-5 ${styles}`}>
@@ -95,7 +109,7 @@ function PolicyCard({
         </div>
         <p className="font-display font-bold">{title}</p>
       </div>
-      <p className="text-sm opacity-80">{body}</p>
+      <p className="text-sm opacity-85">{body}</p>
     </div>
   );
 }

@@ -11,7 +11,29 @@ import {
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
+  REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
+
+export const registrationConsentSchema = z.object({
+  info_accurate: z.literal(true, {
+    errorMap: () => ({ message: "Please confirm your information is accurate" }),
+  }),
+  cancellation_policy: z.literal(true, {
+    errorMap: () => ({ message: "Please accept the cancellation policy" }),
+  }),
+  terms_conditions: z.literal(true, {
+    errorMap: () => ({ message: "Please accept the terms & conditions" }),
+  }),
+  medical_fitness: z.literal(true, {
+    errorMap: () => ({ message: "Please confirm your medical/fitness statement" }),
+  }),
+  data_storage: z.literal(true, {
+    errorMap: () => ({ message: "Please accept the data storage consent" }),
+  }),
+});
+
+export type RegistrationConsents = z.infer<typeof registrationConsentSchema>;
+export { REGISTRATION_CONSENT_ITEMS };
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -34,7 +56,9 @@ export const api = {
     register: {
       method: "POST" as const,
       path: "/api/auth/register",
-      input: insertClientSchema,
+      input: insertClientSchema.extend({
+        consents: registrationConsentSchema,
+      }),
     },
     logout: { method: "POST" as const, path: "/api/auth/logout" },
     me: { method: "GET" as const, path: "/api/auth/me" },
@@ -138,6 +162,19 @@ export const api = {
 
   uploads: {
     file: { method: "POST" as const, path: "/api/upload" }, // generic multipart - returns {url, fileName, mimeType}
+  },
+
+  consent: {
+    list: { method: "GET" as const, path: "/api/consent" }, // ?userId=
+    create: {
+      method: "POST" as const,
+      path: "/api/consent",
+      input: z.object({
+        consentType: z.enum(["registration", "booking", "inbody", "progress"]),
+        acceptedItems: z.array(z.string()).min(1),
+        policyVersion: z.string().optional(),
+      }),
+    },
   },
 
   dashboard: {

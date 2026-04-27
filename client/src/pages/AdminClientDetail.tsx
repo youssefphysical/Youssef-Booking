@@ -170,24 +170,100 @@ export default function AdminClientDetail() {
 
 function OverviewTab({ client }: { client: UserResponse }) {
   return (
-    <div className="grid sm:grid-cols-2 gap-3">
-      <InfoCard icon={<Target size={13} />} label="Fitness Goal" value={client.fitnessGoal || "—"} />
-      <InfoCard icon={<MapPin size={13} />} label="Area" value={client.area || "—"} />
-      <InfoCard
-        icon={<HeartPulse size={13} />}
-        label="Emergency Contact"
-        value={
-          client.emergencyContactName || client.emergencyContactPhone
-            ? `${client.emergencyContactName || ""} ${client.emergencyContactPhone ? `• ${client.emergencyContactPhone}` : ""}`
-            : "—"
-        }
-      />
-      <InfoCard
-        icon={<Calendar size={13} />}
-        label="Member Since"
-        value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}
-      />
-      <InfoCard icon={<Notebook size={13} />} label="Notes" value={client.notes || "—"} className="sm:col-span-2" />
+    <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-3">
+        <InfoCard icon={<Target size={13} />} label="Fitness Goal" value={client.fitnessGoal || "—"} />
+        <InfoCard icon={<MapPin size={13} />} label="Area" value={client.area || "—"} />
+        <InfoCard
+          icon={<HeartPulse size={13} />}
+          label="Emergency Contact"
+          value={
+            client.emergencyContactName || client.emergencyContactPhone
+              ? `${client.emergencyContactName || ""} ${client.emergencyContactPhone ? `• ${client.emergencyContactPhone}` : ""}`
+              : "—"
+          }
+        />
+        <InfoCard
+          icon={<Calendar size={13} />}
+          label="Member Since"
+          value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}
+        />
+        <InfoCard icon={<Notebook size={13} />} label="Notes" value={client.notes || "—"} className="sm:col-span-2" />
+      </div>
+      <ConsentsCard userId={client.id} />
+    </div>
+  );
+}
+
+function ConsentsCard({ userId }: { userId: number }) {
+  const { data: consents = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/consent", { userId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/consent?userId=${userId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load consents");
+      return res.json();
+    },
+  });
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+          <HeartPulse size={13} /> Consent Records
+        </p>
+        <span className="text-[10px] text-muted-foreground">
+          {consents.length} {consents.length === 1 ? "record" : "records"}
+        </span>
+      </div>
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground">Loading…</p>
+      ) : consents.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No consent records on file.</p>
+      ) : (
+        <div className="space-y-2" data-testid="list-consents">
+          {consents
+            .slice()
+            .sort((a: any, b: any) =>
+              String(b.createdAt).localeCompare(String(a.createdAt)),
+            )
+            .map((c: any) => (
+              <div
+                key={c.id}
+                className="rounded-xl border border-white/5 bg-white/[0.02] p-3"
+                data-testid={`consent-row-${c.id}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
+                    {String(c.consentType).replace("_", " ")}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {c.createdAt ? format(new Date(c.createdAt), "PPp") : ""}
+                    {c.policyVersion ? ` · ${c.policyVersion}` : ""}
+                  </span>
+                </div>
+                {Array.isArray(c.acceptedItems) && c.acceptedItems.length > 0 && (
+                  <ul className="mt-2 flex flex-wrap gap-1">
+                    {c.acceptedItems.map((item: string) => (
+                      <li
+                        key={item}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary/90"
+                      >
+                        {item.replace(/_/g, " ")}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(c.ipAddress || c.userAgent) && (
+                  <p className="mt-2 text-[10px] text-muted-foreground/80 truncate">
+                    {c.ipAddress ? `IP ${c.ipAddress}` : ""}
+                    {c.ipAddress && c.userAgent ? " · " : ""}
+                    {c.userAgent ? c.userAgent.slice(0, 80) : ""}
+                  </p>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

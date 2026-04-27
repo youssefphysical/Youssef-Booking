@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { Footer } from "@/components/Footer";
+import { MessageCircle, HelpCircle } from "lucide-react";
 
 const PROFESSIONAL_TITLE =
   "Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist";
@@ -180,33 +182,35 @@ export default function HomePage() {
               <br />
               <span className="text-gradient-blue">Ahmed</span>
             </h1>
-            <p className="mt-3 text-sm uppercase tracking-[0.32em] text-primary/90 font-semibold">
-              Youssef Fitness
-            </p>
-            <p className="text-sm md:text-base text-muted-foreground mt-4 leading-relaxed max-w-xl">
+            <p className="text-sm md:text-base text-muted-foreground mt-5 leading-relaxed max-w-xl">
               {PROFESSIONAL_TITLE}
             </p>
-            <p className="text-base text-foreground/80 mt-5 max-w-xl">{SUBTITLE}</p>
+            <p className="text-base text-foreground/80 mt-4 max-w-xl">{SUBTITLE}</p>
 
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-1.5">
               {TRAINS.map((t) => (
                 <span
                   key={t}
-                  className="text-[11px] uppercase tracking-wider px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary/90"
+                  className="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary/90"
                 >
                   {t}
                 </span>
               ))}
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/book" data-testid="link-book-session">
-                <button className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
+            <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
                   <Calendar size={18} />
                   Book a Session
                 </button>
               </Link>
-              <WhatsAppButton label="Contact on WhatsApp" size="md" testId="button-hero-whatsapp" />
+              <WhatsAppButton
+                label="Contact on WhatsApp"
+                size="md"
+                testId="button-hero-whatsapp"
+                className="w-full sm:w-auto"
+              />
             </div>
             <div className="mt-8 flex items-center gap-4 text-sm text-muted-foreground">
               <a
@@ -357,77 +361,53 @@ export default function HomePage() {
 
       {/* BOOK & CONTACT CTA */}
       <section className="max-w-5xl mx-auto px-5 py-20" id="contact">
-        <div className="rounded-3xl border border-white/10 navy-panel p-8 md:p-12 relative overflow-hidden">
+        <div className="rounded-3xl border border-white/10 navy-panel p-6 sm:p-8 md:p-12 relative overflow-hidden">
           <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-          <div className="relative grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <SectionHeader eyebrow="Get Started" title="Book your first session" />
-              <p className="text-muted-foreground max-w-lg">
-                Reserve a training slot online, or message Youssef directly on WhatsApp to ask about
-                programs, packages, and availability.
+          <div className="relative">
+            <div className="text-center max-w-xl mx-auto">
+              <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Get Started</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">Ready to start?</h2>
+              <p className="text-muted-foreground mt-3">
+                Book a session online or message Youssef directly. He usually replies within a few
+                hours.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/book" data-testid="link-cta-book">
-                  <button className="inline-flex items-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
-                    Book a Session <ArrowRight size={16} />
-                  </button>
-                </Link>
-                <WhatsAppButton
-                  label="Contact Youssef"
-                  message="Hi Youssef, I'd like to ask about your training programs."
-                  testId="button-cta-whatsapp"
-                />
-              </div>
             </div>
-            <div className="space-y-3">
-              <ContactRow
-                label="Confirm a Booking"
-                helper="Already booked? Send a quick confirmation."
-                buttonLabel="Confirm on WhatsApp"
-                message="Hi Youssef, I'd like to confirm my upcoming session."
-                testId="button-confirm-whatsapp"
+
+            <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
+              <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
+                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
+                  Book a Session <ArrowRight size={16} />
+                </button>
+              </Link>
+              <WhatsAppButton
+                label="Message on WhatsApp"
+                message="Hi Youssef, I'd like to ask about your training programs."
+                testId="button-cta-whatsapp"
+                className="w-full sm:w-auto"
               />
+            </div>
+
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
               <ContactRow
-                label="Ask About Training"
-                helper="Questions about packages, schedule, or specialties."
-                buttonLabel="Ask About Training"
+                icon={<HelpCircle size={16} />}
+                label="Ask about training"
+                helper="Packages, schedule, specialties."
                 message="Hi Youssef, I'd like to ask about your training packages."
                 testId="button-ask-whatsapp"
+              />
+              <ContactRow
+                icon={<MessageCircle size={16} />}
+                label="Confirm a booking"
+                helper="Already booked? Confirm with Youssef."
+                message="Hi Youssef, I'd like to confirm my upcoming session."
+                testId="button-confirm-whatsapp"
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 py-10 mt-10">
-        <div className="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Youssef Fitness. Personal Training, Dubai.</p>
-          <div className="flex items-center gap-5">
-            <Link href="/policy" className="hover:text-primary" data-testid="link-footer-policy">
-              Cancellation Policy
-            </Link>
-            <a
-              href="https://instagram.com/youssef.fitness"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary"
-              data-testid="link-footer-instagram"
-            >
-              Instagram
-            </a>
-            <a
-              href="https://wa.me/971505394754"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary"
-              data-testid="link-footer-whatsapp"
-            >
-              WhatsApp
-            </a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
@@ -453,23 +433,32 @@ function SectionHeader({
 function ContactRow({
   label,
   helper,
-  buttonLabel,
   message,
   testId,
+  icon,
 }: {
   label: string;
   helper: string;
-  buttonLabel: string;
   message: string;
   testId: string;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-card/60 p-4 flex items-center justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{helper}</p>
+    <a
+      href={`https://wa.me/971505394754?text=${encodeURIComponent(message)}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid={testId}
+      className="group rounded-2xl border border-white/10 bg-card/60 p-4 flex items-center gap-3 hover:border-primary/30 hover:bg-white/[0.04] transition-colors"
+    >
+      <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+        {icon}
       </div>
-      <WhatsAppButton label={buttonLabel} message={message} size="sm" testId={testId} />
-    </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold leading-tight">{label}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{helper}</p>
+      </div>
+      <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary shrink-0" />
+    </a>
   );
 }
