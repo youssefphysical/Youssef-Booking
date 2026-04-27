@@ -1,0 +1,121 @@
+Update the registration/auth flow with these changes. Keep everything stable and do not break existing features.
+
+1. AREA FIELD:
+Remove the word “address”.
+Do NOT ask for full address.
+
+Use only:
+Area / Neighbourhood
+
+Label:
+Area / Neighbourhood
+
+Placeholder:
+e.g. Dubai Marina, JBR, Downtown, Business Bay
+
+The client should only provide the area they live in, not full address.
+
+2. AREA AUTOCOMPLETE:
+Add Google Maps-style autocomplete for area/neighbourhood if possible.
+
+Requirements:
+- User starts typing area name
+- Show professional suggestions
+- Correct common misspellings when possible
+- Prefer Dubai/UAE areas
+- If Google Maps API key is not available, create a local fallback list of common UAE areas:
+Dubai Marina, JBR, Downtown Dubai, Business Bay, Jumeirah, Jumeirah Village Circle, JVC, Jumeirah Lake Towers, JLT, Dubai Hills, Al Barsha, Barsha Heights, City Walk, Deira, Bur Dubai, Mirdif, Arabian Ranches, Motor City, Sports City, Dubai Silicon Oasis, International City, Al Warqa, Nad Al Sheba, Meydan, Palm Jumeirah, Dubai Creek Harbour, Dubai Festival City, Sharjah, Ajman.
+
+3. PHONE COUNTRY CODE:
+Improve phone input.
+
+Add country selector with:
+- Country flag
+- Country calling code
+- Phone number input
+
+Default:
+UAE 🇦🇪 +971
+
+Allow users to choose another country if needed.
+
+Use a clean phone input UI.
+
+4. REMOVE EMERGENCY CONTACT:
+Remove these fields completely from registration:
+- Emergency Contact Name
+- Emergency Phone
+
+Also remove emergency contact from client profile unless already stored internally. Do not show it as required.
+
+5. FORGOT PASSWORD:
+Add “Forgot password?” link on login page.
+
+Flow:
+- User enters email
+- Show friendly message:
+“If an account exists with this email, password reset instructions will be sent.”
+
+Do not expose whether email exists or not.
+
+If real email sending is not configured, create the frontend flow and backend placeholder safely without errors.
+
+6. WELCOME EMAIL / SMS:
+After successful client registration, send a professional welcome message by email if email service is configured.
+Also prepare SMS/WhatsApp welcome message if messaging service is configured.
+
+If email/SMS service is not configured:
+- Do not show error
+- Log internally only
+- Registration must still succeed
+
+Welcome message email subject:
+Welcome to Youssef Fitness
+
+Welcome message body:
+Hi {{clientName}},
+
+Welcome to Youssef Fitness — I’m happy to have you here.
+
+Your profile has been created successfully, and your InBody scan has been received. I’ll review your details and use them to better understand your current condition, goals, and starting point.
+
+Through Youssef Fitness, the goal is to provide you with structured, safe, and result-driven coaching based on your body, your schedule, and your progress.
+
+You can now use your account to:
+- Book your training sessions
+- View your upcoming sessions
+- Track your session balance
+- Upload progress photos
+- Follow your InBody history
+
+Please remember that cancellations or rescheduling must be made at least 6 hours before your session time. Late cancellations will be counted as used.
+
+If you have any questions, you can contact me directly on WhatsApp:
++971505394754
+
+Welcome again,
+Youssef Ahmed
+Youssef Fitness
+Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+
+7. SMS / WHATSAPP SHORT WELCOME MESSAGE:
+Hi {{clientName}}, welcome to Youssef Fitness. Your profile has been created and your InBody scan has been received. You can now book sessions, track your progress, and manage your training through your account. For any questions, WhatsApp: +971505394754
+
+8. ADMIN DASHBOARD:
+Update admin client profile:
+- Show Area / Neighbourhood only
+- Remove emergency contact display from main profile
+- Keep client details clean:
+  Name, phone, email, country code, area/neighbourhood, goal, notes, package, sessions, bookings, InBody, progress photos, consent records.
+
+9. VALIDATION:
+Make Area / Neighbourhood required.
+Phone is required.
+Email is required.
+InBody upload remains required.
+
+10. DESIGN:
+Keep the registration form clean and premium.
+No crowded fields.
+Make mobile layout comfortable.
+No raw technical errors.

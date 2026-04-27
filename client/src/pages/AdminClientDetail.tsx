@@ -175,15 +175,6 @@ function OverviewTab({ client }: { client: UserResponse }) {
         <InfoCard icon={<Target size={13} />} label="Fitness Goal" value={client.fitnessGoal || "—"} />
         <InfoCard icon={<MapPin size={13} />} label="Area" value={client.area || "—"} />
         <InfoCard
-          icon={<HeartPulse size={13} />}
-          label="Emergency Contact"
-          value={
-            client.emergencyContactName || client.emergencyContactPhone
-              ? `${client.emergencyContactName || ""} ${client.emergencyContactPhone ? `• ${client.emergencyContactPhone}` : ""}`
-              : "—"
-          }
-        />
-        <InfoCard
           icon={<Calendar size={13} />}
           label="Member Since"
           value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}

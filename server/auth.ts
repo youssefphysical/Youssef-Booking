@@ -12,6 +12,11 @@ import {
   POLICY_VERSION,
 } from "@shared/schema";
 import { registrationConsentSchema } from "@shared/routes";
+import {
+  sendWelcomeNotifications,
+  sendPasswordResetNotification,
+} from "./notifications";
+import { z } from "zod";
 
 const scryptAsync = promisify(scrypt);
 
@@ -102,8 +107,6 @@ export function setupAuth(app: Express) {
         fullName,
         phone,
         area,
-        emergencyContactName,
-        emergencyContactPhone,
         fitnessGoal,
         notes,
       } = parsed.data;
@@ -125,8 +128,8 @@ export function setupAuth(app: Express) {
         fullName,
         phone,
         area: area || null,
-        emergencyContactName: emergencyContactName || null,
-        emergencyContactPhone: emergencyContactPhone || null,
+        emergencyContactName: null,
+        emergencyContactPhone: null,
         fitnessGoal: fitnessGoal || null,
         notes: notes || null,
         role: "client",
@@ -146,6 +149,13 @@ export function setupAuth(app: Express) {
         console.warn("[auth] Failed to write consent record:", e);
       }
 
+      // Best-effort welcome email / SMS — never blocks registration.
+      sendWelcomeNotifications({
+        clientName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+      }).catch((e) => console.warn("[auth] welcome notifications failed:", e));
+
       req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json(sanitizeUser(user));
@@ -153,6 +163,29 @@ export function setupAuth(app: Express) {
     } catch (err) {
       next(err);
     }
+  });
+
+  // Forgot password — always returns the same friendly message.
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const schema = z.object({ email: z.string().email() });
+    const parsed = schema.safeParse(req.body);
+    const friendly = {
+      message:
+        "If an account exists with this email, password reset instructions will be sent.",
+    };
+    if (!parsed.success) {
+      // Still return the friendly message — never disclose validity.
+      return res.status(200).json(friendly);
+    }
+    try {
+      const user = await storage.getUserByEmail(parsed.data.email);
+      if (user) {
+        await sendPasswordResetNotification({ email: parsed.data.email });
+      }
+    } catch (e) {
+      console.warn("[auth] forgot-password lookup failed:", e);
+    }
+    return res.status(200).json(friendly);
   });
 
   app.post("/api/auth/login", (req, res, next) => {

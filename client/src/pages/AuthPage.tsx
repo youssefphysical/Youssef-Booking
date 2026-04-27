@@ -19,6 +19,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConsentNote } from "@/components/ConsentNote";
+import { AreaAutocomplete } from "@/components/AreaAutocomplete";
+import { PhoneInput } from "@/components/PhoneInput";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation, Link } from "wouter";
 import {
   Loader2,
@@ -28,6 +39,7 @@ import {
   User as UserIcon,
   Upload,
   CheckCircle2,
+  KeyRound,
 } from "lucide-react";
 
 const clientLoginSchema = z.object({
@@ -45,9 +57,7 @@ const registerSchema = z.object({
   email: z.string().email("Valid email is required"),
   phone: z.string().min(7, "Phone number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  area: z.string().min(2, "Area is required"),
-  emergencyContactName: z.string().min(2, "Emergency contact name is required"),
-  emergencyContactPhone: z.string().min(7, "Emergency contact phone is required"),
+  area: z.string().min(2, "Area / Neighbourhood is required"),
   fitnessGoal: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -165,68 +175,195 @@ export default function AuthPage() {
 
 function ClientLoginForm() {
   const { loginMutation } = useAuth();
+  const [forgotOpen, setForgotOpen] = useState(false);
   const form = useForm<z.infer<typeof clientLoginSchema>>({
     resolver: zodResolver(clientLoginSchema),
     defaultValues: { username: "", password: "" },
   });
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((d) =>
-          loginMutation.mutate({ username: d.username, password: d.password }),
-        )}
-        className="space-y-4"
-      >
-        <FormField
-          control={form.control}
-          name="username"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="you@example.com"
-                  {...field}
-                  data-testid="input-email"
-                  className="bg-white/5 border-white/10 h-11"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+    <>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((d) =>
+            loginMutation.mutate({ username: d.username, password: d.password }),
           )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  {...field}
-                  data-testid="input-password"
-                  className="bg-white/5 border-white/10 h-11"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button
-          type="submit"
-          data-testid="button-submit-login"
-          className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
-          disabled={loginMutation.isPending}
+          className="space-y-4"
         >
-          {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
-          Sign In
-        </Button>
-      </form>
-    </Form>
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    {...field}
+                    data-testid="input-email"
+                    className="bg-white/5 border-white/10 h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Password</FormLabel>
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="text-xs text-primary hover:opacity-80"
+                    data-testid="button-forgot-password"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    {...field}
+                    data-testid="input-password"
+                    className="bg-white/5 border-white/10 h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type="submit"
+            data-testid="button-submit-login"
+            className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={loginMutation.isPending}
+          >
+            {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
+            Sign In
+          </Button>
+        </form>
+      </Form>
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
+    </>
+  );
+}
+
+function ForgotPasswordDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setPending(true);
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+        credentials: "include",
+      });
+    } catch {
+      // Even on network error, show the same friendly state.
+    }
+    setPending(false);
+    setSubmitted(true);
+    toast({ title: "Check your email" });
+  }
+
+  function close() {
+    onOpenChange(false);
+    setTimeout(() => {
+      setSubmitted(false);
+      setEmail("");
+      setError(null);
+    }, 200);
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) close();
+        else onOpenChange(true);
+      }}
+    >
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center mb-2">
+            <KeyRound size={18} />
+          </div>
+          <DialogTitle>Reset your password</DialogTitle>
+          <DialogDescription>
+            Enter the email associated with your account. We'll send you reset instructions.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!submitted ? (
+          <form onSubmit={submit} className="space-y-3">
+            <Input
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              data-testid="input-forgot-email"
+              className="bg-white/5 border-white/10 h-11"
+            />
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={close} className="rounded-xl">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={pending}
+                data-testid="button-submit-forgot"
+                className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {pending && <Loader2 className="animate-spin mr-2" size={14} />}
+                Send instructions
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div
+              className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground/85 leading-relaxed"
+              data-testid="text-forgot-confirmation"
+            >
+              If an account exists with this email, password reset instructions will be sent.
+            </div>
+            <DialogFooter>
+              <Button onClick={close} className="rounded-xl" data-testid="button-forgot-done">
+                Done
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -385,11 +522,9 @@ function RegisterForm() {
     defaultValues: {
       fullName: "",
       email: "",
-      phone: "",
+      phone: "+971",
       password: "",
       area: "",
-      emergencyContactName: "",
-      emergencyContactPhone: "",
       fitnessGoal: "",
       notes: "",
     },
@@ -448,8 +583,6 @@ function RegisterForm() {
       "phone",
       "password",
       "area",
-      "emergencyContactName",
-      "emergencyContactPhone",
     ]);
     if (valid) setStep(2);
   }
@@ -510,12 +643,10 @@ function RegisterForm() {
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input
-                        type="tel"
-                        placeholder="+971 50 ..."
-                        {...field}
-                        data-testid="input-register-phone"
-                        className="bg-white/5 border-white/10 h-11"
+                      <PhoneInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        testId="input-register-phone"
                       />
                     </FormControl>
                     <FormMessage />
@@ -547,58 +678,18 @@ function RegisterForm() {
               name="area"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Area / Neighbourhood (Dubai)</FormLabel>
+                  <FormLabel>Area / Neighbourhood</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="e.g. JBR, Downtown, Marina..."
-                      {...field}
-                      data-testid="input-area"
-                      className="bg-white/5 border-white/10 h-11"
+                    <AreaAutocomplete
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      testId="input-area"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="emergencyContactName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Emergency Contact Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Full name"
-                        {...field}
-                        data-testid="input-emergency-name"
-                        className="bg-white/5 border-white/10 h-11"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="emergencyContactPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Emergency Phone</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        placeholder="+971 ..."
-                        {...field}
-                        data-testid="input-emergency-phone"
-                        className="bg-white/5 border-white/10 h-11"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <Button
               type="button"

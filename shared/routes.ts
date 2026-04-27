@@ -62,6 +62,11 @@ export const api = {
     },
     logout: { method: "POST" as const, path: "/api/auth/logout" },
     me: { method: "GET" as const, path: "/api/auth/me" },
+    forgotPassword: {
+      method: "POST" as const,
+      path: "/api/auth/forgot-password",
+      input: z.object({ email: z.string().email("Enter a valid email") }),
+    },
   },
 
   users: {
