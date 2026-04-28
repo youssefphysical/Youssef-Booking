@@ -98,9 +98,15 @@ export const api = {
     cancel: {
       method: "POST" as const,
       path: "/api/bookings/:id/cancel",
-      input: z.object({}).optional(),
+      input: z
+        .object({ useEmergencyCancel: z.boolean().optional() })
+        .optional(),
     },
     delete: { method: "DELETE" as const, path: "/api/bookings/:id" },
+    resetEmergencyCancel: {
+      method: "POST" as const,
+      path: "/api/users/:id/reset-emergency-cancel",
+    },
   },
 
   settings: {

@@ -142,10 +142,27 @@ function BookingsTab({ userId }: { userId: number }) {
 
 function BookingCard({ booking, cutoff, canCancel }: { booking: Booking; cutoff: number; canCancel?: boolean }) {
   const cancelMutation = useCancelBooking();
+  const { user } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [emergencyOpen, setEmergencyOpen] = useState(false);
 
   const cancellable = canCancel && isCancellable(booking.date, booking.timeSlot, cutoff);
   const hours = Math.round(hoursUntil(booking.date, booking.timeSlot));
+  const monthKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const emergencyCancelAvailable =
+    !!user && user.emergencyCancelLastMonth !== monthKey;
+  const isStarted = hours <= 0;
+  const sessionLabel =
+    booking.sessionType === "trial"
+      ? "Free Trial"
+      : booking.sessionType === "single"
+        ? "Single Session"
+        : booking.sessionType === "duo"
+          ? "Duo Session"
+          : "Session";
 
   return (
     <motion.div
@@ -161,7 +178,9 @@ function BookingCard({ booking, cutoff, canCancel }: { booking: Booking; cutoff:
         </div>
         <div className="min-w-0">
           <p className="font-semibold">{format(new Date(booking.date), "EEEE")}</p>
-          <p className="text-sm text-muted-foreground">{booking.timeSlot} • Session</p>
+          <p className="text-sm text-muted-foreground">
+            {booking.timeSlot} • {sessionLabel}
+          </p>
           <span
             className={`inline-block mt-1.5 text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(booking.status)}`}
             data-testid={`status-${booking.id}`}
@@ -172,7 +191,7 @@ function BookingCard({ booking, cutoff, canCancel }: { booking: Booking; cutoff:
       </div>
 
       {canCancel && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-end gap-2">
           {cancellable ? (
             <Button
               variant="ghost"
@@ -184,9 +203,22 @@ function BookingCard({ booking, cutoff, canCancel }: { booking: Booking; cutoff:
               <X size={14} className="mr-1" /> Cancel
             </Button>
           ) : (
-            <div className="text-xs text-amber-300/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <Lock size={12} /> Locked ({hours <= 0 ? "started" : `${hours}h left`})
-            </div>
+            <>
+              <div className="text-xs text-amber-300/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <Lock size={12} /> Locked ({isStarted ? "started" : `${hours}h left`})
+              </div>
+              {!isStarted && emergencyCancelAvailable && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 text-xs"
+                  onClick={() => setEmergencyOpen(true)}
+                  data-testid={`button-emergency-cancel-${booking.id}`}
+                >
+                  Use Emergency Cancel
+                </Button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -204,10 +236,48 @@ function BookingCard({ booking, cutoff, canCancel }: { booking: Booking; cutoff:
             <AlertDialogCancel data-testid="button-keep-booking">Keep it</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-confirm-cancel"
-              onClick={() => cancelMutation.mutate(booking.id, { onSuccess: () => setConfirmOpen(false) })}
+              onClick={() =>
+                cancelMutation.mutate(
+                  { id: booking.id },
+                  { onSuccess: () => setConfirmOpen(false) },
+                )
+              }
               className="bg-red-500 hover:bg-red-600"
             >
               Yes, cancel
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={emergencyOpen} onOpenChange={setEmergencyOpen}>
+        <AlertDialogContent className="bg-card border-white/10 sm:rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Use your Emergency Cancel?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                You have <span className="text-amber-300 font-semibold">1 Emergency Cancel</span>{" "}
+                available this month. Use it for a true emergency only.
+              </span>
+              <span className="block">
+                Once used, you cannot cancel another session for free this month — late cancellations will be
+                counted as a used session.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-emergency">Not now</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-emergency-cancel"
+              onClick={() =>
+                cancelMutation.mutate(
+                  { id: booking.id, useEmergencyCancel: true },
+                  { onSuccess: () => setEmergencyOpen(false) },
+                )
+              }
+              className="bg-amber-500 hover:bg-amber-600 text-black"
+            >
+              Yes, use Emergency Cancel
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

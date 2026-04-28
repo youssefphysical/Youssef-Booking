@@ -3,7 +3,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import {
   Loader2,
   Calendar as CalendarIcon,
@@ -16,6 +16,9 @@ import {
   Users,
   Package as PackageIcon,
   Sparkles,
+  Gift,
+  Wallet,
+  CreditCard,
 } from "lucide-react";
 import { useCreateBooking, useBookings } from "@/hooks/use-bookings";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
@@ -23,6 +26,13 @@ import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { usePackages } from "@/hooks/use-packages";
 import type { Package } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +47,8 @@ import {
 import { ALL_TIME_SLOTS, buildSessionDate } from "@/lib/booking-utils";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
+type SessionTypeChoice = "package" | "single" | "trial" | "duo";
+
 export default function BookingPage() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
@@ -46,6 +58,7 @@ export default function BookingPage() {
   const [accepted, setAccepted] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
 
   const createBooking = useCreateBooking();
   const { data: blocked = [] } = useBlockedSlots();
@@ -54,6 +67,7 @@ export default function BookingPage() {
   const { data: packages = [] } = usePackages({ userId: user?.id });
 
   const isAdmin = user?.role === "admin";
+  const hasUsedFreeTrial = !!user?.hasUsedFreeTrial;
   const activePackage = (packages as Package[]).find(
     (p) => p.isActive && p.usedSessions < p.totalSessions,
   );
@@ -112,6 +126,7 @@ export default function BookingPage() {
         userId: user.id,
         date: dateStr,
         timeSlot: selectedSlot,
+        sessionType,
         notes: notes || undefined,
         acceptedPolicy: true,
         ...(isAdmin ? { override: true } : {}),
@@ -124,6 +139,25 @@ export default function BookingPage() {
       },
     );
   };
+
+  const sessionTypeOptions: { value: SessionTypeChoice; label: string; disabled?: boolean; hint?: string }[] = [
+    {
+      value: "package",
+      label: "Package Session",
+      disabled: !isAdmin && !activePackage,
+      hint: activePackage
+        ? `${sessionsLeft} session${sessionsLeft === 1 ? "" : "s"} left`
+        : "No active package",
+    },
+    { value: "single", label: "Single Session", hint: "Pay-per-session" },
+    {
+      value: "trial",
+      label: "Free Trial Session",
+      disabled: !isAdmin && hasUsedFreeTrial,
+      hint: hasUsedFreeTrial && !isAdmin ? "Already used" : "New clients only",
+    },
+    { value: "duo", label: "Duo Session", hint: "Train with a partner" },
+  ];
 
   if (!user) {
     return (
@@ -268,7 +302,46 @@ export default function BookingPage() {
 
         {selectedSlot && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <PackageBalance pkg={activePackage} sessionsLeft={sessionsLeft} isAdmin={!!isAdmin} />
+            <div>
+              <label className="text-sm font-semibold block mb-2">Session Type</label>
+              <Select
+                value={sessionType}
+                onValueChange={(v) => setSessionType(v as SessionTypeChoice)}
+              >
+                <SelectTrigger
+                  data-testid="select-session-type"
+                  className="bg-white/5 border-white/10 h-11"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessionTypeOptions.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      disabled={opt.disabled}
+                      data-testid={`option-session-${opt.value}`}
+                    >
+                      <div className="flex flex-col">
+                        <span>{opt.label}</span>
+                        {opt.hint && (
+                          <span className="text-[11px] text-muted-foreground">{opt.hint}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <SessionTypeNotice
+              sessionType={sessionType}
+              activePackage={activePackage}
+              sessionsLeft={sessionsLeft}
+              isAdmin={!!isAdmin}
+              hasUsedFreeTrial={hasUsedFreeTrial}
+            />
+
             <div>
               <label className="text-sm font-semibold block mb-2">Notes (optional)</label>
               <Textarea
@@ -411,6 +484,74 @@ function HolidayNotice({ block }: { block: { blockType?: string | null; reason?:
         )}
       </div>
     </motion.div>
+  );
+}
+
+function SessionTypeNotice({
+  sessionType,
+  activePackage,
+  sessionsLeft,
+  isAdmin,
+  hasUsedFreeTrial,
+}: {
+  sessionType: SessionTypeChoice;
+  activePackage?: Package;
+  sessionsLeft: number;
+  isAdmin: boolean;
+  hasUsedFreeTrial: boolean;
+}) {
+  if (sessionType === "package" || sessionType === "duo") {
+    return <PackageBalance pkg={activePackage} sessionsLeft={sessionsLeft} isAdmin={isAdmin} />;
+  }
+  if (sessionType === "trial") {
+    if (hasUsedFreeTrial && !isAdmin) {
+      return (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
+          <div className="text-xs text-red-100/90">
+            <p className="font-semibold mb-0.5">Free trial already used</p>
+            <p className="opacity-80">
+              Each client can book one free trial session, lifetime. Please choose Single Session or
+              Package instead.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
+        <Gift size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-emerald-100/90">
+          <p className="font-semibold mb-0.5">Free Trial Session — New Clients Only</p>
+          <p className="opacity-80">
+            One trial per client, lifetime. No charge. Use this to meet Youssef and try a session
+            before committing to a package.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  // single
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <Wallet size={18} className="text-amber-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-amber-100/90 flex-1">
+          <p className="font-semibold mb-0.5">Single Session — Pay Per Session</p>
+          <p className="opacity-80">
+            This session will be marked unpaid until payment is confirmed. You can pay directly to
+            Youssef's bank account, or via WhatsApp.
+          </p>
+        </div>
+      </div>
+      <Link
+        href="/direct-payment"
+        data-testid="link-direct-payment"
+        className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/10 border border-white/10 hover:bg-white/15 text-xs font-semibold"
+      >
+        <CreditCard size={13} /> View Direct Payment Details
+      </Link>
+    </div>
   );
 }
 

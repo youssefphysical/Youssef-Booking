@@ -70,11 +70,24 @@ Branding subtitle: **Certified Personal Trainer & Transformation Specialist**
 
 ## Routes
 - `/` Public homepage
-- `/auth` Combined client/admin auth (2-step register for clients)
+- `/auth` Combined client/admin auth (2-step register for clients, primaryGoal Select)
 - `/policy` Cancellation policy
-- `/book` Booking
+- `/direct-payment` Bank account details + WhatsApp confirmation (gated when admin disables public visibility)
+- `/book` Booking (with Session Type selector: Package / Single / Free Trial / Duo)
 - `/dashboard`, `/profile` Client area
 - `/admin`, `/admin/bookings`, `/admin/clients`, `/admin/clients/:id`, `/admin/packages`, `/admin/settings` Admin area
+
+## Session Types & Payment
+- `package` — auto-paid, deducts a session on completion
+- `single` — pay-per-session, defaults to `unpaid`; clients see Direct Payment link
+- `trial` — free trial, one-per-lifetime via `users.hasUsedFreeTrial`; admin can reset
+- `duo` — paid, requires admin to assign duo package
+- Payment statuses: `paid`, `unpaid`, `pending`, `direct_payment_requested`, `free`
+
+## Emergency Cancel
+- One free late-cancellation per calendar month per client (`users.emergencyCancelLastMonth = "YYYY-MM"`)
+- Overrides the cancellation cutoff window; status saved as `emergency_cancelled` (no package deduction)
+- Admin can reset via Client Detail → Privileges card
 
 ## Booking Rules
 - Slots: every hour from 06:00 to 22:00 (17 slots/day)
@@ -98,3 +111,6 @@ Branding subtitle: **Certified Personal Trainer & Transformation Specialist**
 - Booking utilities: `client/src/lib/booking-utils.ts`
 - WhatsApp helper: `client/src/lib/whatsapp.ts`
 - AI extraction logic: `server/ai/inbody-extract.ts` (returns `null` when key missing or parse fails)
+- Image optimization: `server/image-utils.ts` uses `sharp` to convert InBody/photo uploads to webp + thumbnail
+- Workout log: bookings carry `workoutCategory`, `adminNotes`, `clientNotes`; admin manages via the Log dialog in `/admin/bookings`
+- Bank settings: `settings.bankAccountName` / `bankIban` / `showBankDetailsPublicly` defaults to Youssef's IBAN, hidden from logged-out visitors by default

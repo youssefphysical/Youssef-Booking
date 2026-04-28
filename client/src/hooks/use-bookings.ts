@@ -81,15 +81,31 @@ export function useCancelBooking() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (
+      input: number | { id: number; useEmergencyCancel?: boolean },
+    ) => {
+      const id = typeof input === "number" ? input : input.id;
+      const useEmergencyCancel =
+        typeof input === "number" ? false : !!input.useEmergencyCancel;
       const url = buildUrl(api.bookings.cancel.path, { id });
-      const res = await apiRequest("POST", url);
+      const res = await apiRequest("POST", url, { useEmergencyCancel });
       return (await res.json()) as Booking;
     },
-    onSuccess: () => {
+    onSuccess: (booking) => {
       qc.invalidateQueries({ queryKey: [api.bookings.list.path] });
       qc.invalidateQueries({ queryKey: [api.dashboard.stats.path] });
-      toast({ title: "Booking cancelled" });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title:
+          booking.status === "emergency_cancelled"
+            ? "Emergency cancel applied"
+            : "Booking cancelled",
+        description:
+          booking.status === "emergency_cancelled"
+            ? "Your session was cancelled without charge using your monthly Emergency Cancel."
+            : undefined,
+      });
     },
     onError: (err: Error) => {
       toast({ title: "Cancel failed", description: err.message, variant: "destructive" });

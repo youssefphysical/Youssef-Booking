@@ -24,6 +24,7 @@ import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
 import AdminSettings from "@/pages/AdminSettings";
+import DirectPaymentPage from "@/pages/DirectPaymentPage";
 import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
 
@@ -71,6 +72,7 @@ function Router() {
         <Route path="/terms" component={TermsConditions} />
         <Route path="/medical-disclaimer" component={MedicalDisclaimer} />
         <Route path="/cookies" component={CookiePolicy} />
+        <Route path="/direct-payment" component={DirectPaymentPage} />
 
         {/* Client */}
         <Route path="/book">

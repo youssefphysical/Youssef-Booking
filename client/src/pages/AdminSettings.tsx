@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare } from "lucide-react";
+import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare, CreditCard, Eye, EyeOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   useSettings,
   useUpdateSettings,
@@ -73,6 +74,7 @@ export default function AdminSettings() {
 
       <div className="space-y-6">
         <GeneralSettingsSection />
+        <BankDetailsSection />
         <ProfileContentSection />
         <BlockedSlotsSection />
       </div>
@@ -171,6 +173,141 @@ function GeneralSettingsSection() {
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
             Save Rules
+          </Button>
+        </form>
+      </Form>
+    </section>
+  );
+}
+
+const bankSchema = z.object({
+  bankAccountName: z.string().min(2, "Account name required"),
+  bankIban: z.string().min(5, "IBAN required"),
+  showBankDetailsPublicly: z.boolean(),
+});
+
+function BankDetailsSection() {
+  const { data: settings } = useSettings();
+  const updateMutation = useUpdateSettings();
+
+  const form = useForm<z.infer<typeof bankSchema>>({
+    resolver: zodResolver(bankSchema),
+    defaultValues: {
+      bankAccountName: "Youssef Tarek Hashim Ahmed",
+      bankIban: "AE230260001015917468101",
+      showBankDetailsPublicly: false,
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        bankAccountName: settings.bankAccountName || "Youssef Tarek Hashim Ahmed",
+        bankIban: settings.bankIban || "AE230260001015917468101",
+        showBankDetailsPublicly: settings.showBankDetailsPublicly ?? false,
+      });
+    }
+  }, [settings]);
+
+  const isPublic = form.watch("showBankDetailsPublicly");
+
+  return (
+    <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
+      <div className="flex items-start gap-3 mb-5">
+        <div className="p-2 rounded-xl bg-primary/15 text-primary">
+          <CreditCard size={18} />
+        </div>
+        <div>
+          <h2 className="font-display font-bold text-lg">Direct Payment / Bank Details</h2>
+          <p className="text-sm text-muted-foreground">
+            Account info shown to clients on the Direct Payment page.
+          </p>
+        </div>
+      </div>
+
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((d) =>
+            updateMutation.mutate({
+              bankAccountName: d.bankAccountName,
+              bankIban: d.bankIban,
+              showBankDetailsPublicly: d.showBankDetailsPublicly,
+            } as any),
+          )}
+          className="space-y-4"
+        >
+          <FormField
+            control={form.control}
+            name="bankAccountName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Account Holder Name</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="bg-white/5 border-white/10"
+                    data-testid="input-bank-name"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="bankIban"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>IBAN</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="bg-white/5 border-white/10 font-mono tracking-wider"
+                    data-testid="input-bank-iban"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="showBankDetailsPublicly"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <div className="flex items-start gap-3 flex-1">
+                  {field.value ? (
+                    <Eye size={16} className="text-emerald-400 mt-0.5 shrink-0" />
+                  ) : (
+                    <EyeOff size={16} className="text-amber-400 mt-0.5 shrink-0" />
+                  )}
+                  <div>
+                    <FormLabel className="cursor-pointer">Show bank details publicly</FormLabel>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isPublic
+                        ? "Visible to anyone visiting the Direct Payment page."
+                        : "Only signed-in clients see the details — others see a request prompt."}
+                    </p>
+                  </div>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    data-testid="switch-show-bank"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <Button
+            type="submit"
+            disabled={updateMutation.isPending}
+            data-testid="button-save-bank"
+            className="rounded-xl"
+          >
+            {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
+            Save Bank Details
           </Button>
         </form>
       </Form>

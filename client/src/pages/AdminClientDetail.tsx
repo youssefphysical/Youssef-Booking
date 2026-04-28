@@ -75,12 +75,31 @@ import { SiWhatsapp } from "react-icons/si";
 import { formatStatus, statusColor } from "@/lib/booking-utils";
 import {
   PACKAGE_DEFINITIONS,
+  PRIMARY_GOAL_OPTIONS,
+  PAYMENT_STATUS_LABELS,
+  WORKOUT_CATEGORY_LABELS,
+  SESSION_TYPE_LABELS,
   type UserResponse,
   type Package,
   type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
 import { api } from "@shared/routes";
+import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { RotateCcw, AlertTriangle } from "lucide-react";
 
 export default function AdminClientDetail() {
   const params = useParams<{ id: string }>();
@@ -169,10 +188,14 @@ export default function AdminClientDetail() {
 }
 
 function OverviewTab({ client }: { client: UserResponse }) {
+  const goalLabel =
+    PRIMARY_GOAL_OPTIONS.find((g) => g.value === client.primaryGoal)?.label ||
+    client.fitnessGoal ||
+    "—";
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-3">
-        <InfoCard icon={<Target size={13} />} label="Fitness Goal" value={client.fitnessGoal || "—"} />
+        <InfoCard icon={<Target size={13} />} label="Primary Goal" value={goalLabel} />
         <InfoCard icon={<MapPin size={13} />} label="Area" value={client.area || "—"} />
         <InfoCard
           icon={<Calendar size={13} />}
@@ -181,7 +204,132 @@ function OverviewTab({ client }: { client: UserResponse }) {
         />
         <InfoCard icon={<Notebook size={13} />} label="Notes" value={client.notes || "—"} className="sm:col-span-2" />
       </div>
+      <ClientPrivilegesCard client={client} />
       <ConsentsCard userId={client.id} />
+    </div>
+  );
+}
+
+function ClientPrivilegesCard({ client }: { client: UserResponse }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const monthKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const usedThisMonth = client.emergencyCancelLastMonth === monthKey;
+
+  const resetEmergency = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/users/${client.id}/reset-emergency-cancel`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Emergency Cancel reset", description: "Client can now use it again this month." });
+    },
+    onError: (e: Error) => toast({ title: "Reset failed", description: e.message, variant: "destructive" }),
+  });
+
+  const resetTrial = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/users/${client.id}/reset-free-trial`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Free trial reset", description: "Client can book the free trial session again." });
+    },
+    onError: (e: Error) => toast({ title: "Reset failed", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+        <AlertTriangle size={13} /> Client Privileges
+      </p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+          <p className="text-xs font-semibold mb-1">Emergency Cancel</p>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            {usedThisMonth
+              ? `Used this month (${client.emergencyCancelLastMonth}). Reset to allow another use this month.`
+              : "Available this month. Each client gets one per calendar month."}
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={!usedThisMonth || resetEmergency.isPending}
+                data-testid="button-reset-emergency-cancel"
+              >
+                <RotateCcw size={12} className="mr-1.5" /> Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-white/10">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Emergency Cancel?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This client will be able to use Emergency Cancel again this month. Use sparingly.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resetEmergency.mutate()}
+                  data-testid="button-confirm-reset-emergency"
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+          <p className="text-xs font-semibold mb-1">Free Trial Session</p>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            {client.hasUsedFreeTrial
+              ? "Already used. Reset only if appropriate (e.g., trial didn't happen)."
+              : "Not used yet — client can book one free trial."}
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={!client.hasUsedFreeTrial || resetTrial.isPending}
+                data-testid="button-reset-free-trial"
+              >
+                <RotateCcw size={12} className="mr-1.5" /> Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-white/10">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Free Trial?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This client will be able to book another free trial session.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resetTrial.mutate()}
+                  data-testid="button-confirm-reset-trial"
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
     </div>
   );
 }
@@ -284,19 +432,54 @@ function BookingsList({ userId }: { userId: number }) {
         .map((b) => (
           <div
             key={b.id}
-            className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/[0.02]"
+            className="flex flex-col gap-2 p-3 rounded-xl border border-white/5 bg-white/[0.02]"
             data-testid={`detail-booking-${b.id}`}
           >
-            <div className="text-sm">
-              <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d, yyyy")}</span>
-              <span className="text-muted-foreground ml-3">{b.timeSlot}</span>
-              {b.notes && <span className="text-xs text-muted-foreground ml-3 italic">"{b.notes}"</span>}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-sm">
+                <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d, yyyy")}</span>
+                <span className="text-muted-foreground ml-3">{b.timeSlot}</span>
+                {b.sessionType && (
+                  <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
+                    {SESSION_TYPE_LABELS[b.sessionType as keyof typeof SESSION_TYPE_LABELS] || b.sessionType}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span
+                  className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
+                >
+                  {formatStatus(b.status)}
+                </span>
+                <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-muted-foreground">
+                  {PAYMENT_STATUS_LABELS[(b.paymentStatus || "unpaid") as keyof typeof PAYMENT_STATUS_LABELS] || b.paymentStatus || "Unpaid"}
+                </span>
+                {b.workoutCategory && (
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                    {WORKOUT_CATEGORY_LABELS[b.workoutCategory as keyof typeof WORKOUT_CATEGORY_LABELS] || b.workoutCategory}
+                  </span>
+                )}
+              </div>
             </div>
-            <span
-              className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
-            >
-              {formatStatus(b.status)}
-            </span>
+            {(b.notes || b.clientNotes || b.adminNotes) && (
+              <div className="space-y-1 pt-1 border-t border-white/5">
+                {b.notes && (
+                  <p className="text-[11px] text-muted-foreground italic">"{b.notes}"</p>
+                )}
+                {b.clientNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-blue-300/80 font-semibold">Client: </span>
+                    <span className="text-foreground/80">{b.clientNotes}</span>
+                  </p>
+                )}
+                {b.adminNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-amber-300/80 font-semibold">Admin: </span>
+                    <span className="text-foreground/80">{b.adminNotes}</span>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
     </div>

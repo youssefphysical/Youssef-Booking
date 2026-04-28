@@ -22,6 +22,13 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
+import { optimizeImageFile } from "./image-utils";
+
+function currentMonthKey(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
@@ -183,14 +190,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(400).json({ message: "Slot already booked" });
     }
 
-    // Auto-link active package for client (or use provided one for admin)
+    // Determine session type — defaults to package
+    const sessionType = parsed.data.sessionType ?? "package";
+
+    // Free trial check: once per lifetime per user
+    if (sessionType === "trial") {
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) return res.status(404).json({ message: "Client not found" });
+      if (targetUser.hasUsedFreeTrial && me.role !== "admin") {
+        return res.status(400).json({
+          message:
+            "Your free trial has already been used. Please choose a Single Session or a Package to continue training.",
+        });
+      }
+    }
+
+    // Auto-link active package for package/duo bookings
     let packageId: number | null = parsed.data.packageId ?? null;
-    if (!packageId && me.role !== "admin") {
+    if (!packageId && (sessionType === "package" || sessionType === "duo")) {
       const active = await storage.getActivePackageForUser(targetUserId);
       if (active && active.usedSessions < active.totalSessions) {
         packageId = active.id;
       }
-      // Note: clients without packages can still book; admin will assign later.
+    }
+
+    // For single & trial sessions, never link to a package.
+    if (sessionType === "single" || sessionType === "trial") {
+      packageId = null;
+    }
+
+    // Default payment status by session type
+    let paymentStatus: string =
+      parsed.data.paymentStatus ?? (sessionType === "trial" ? "free" : "unpaid");
+    if (sessionType === "package" || sessionType === "duo") {
+      // Package sessions are pre-paid by virtue of the package.
+      paymentStatus = "paid";
     }
 
     const booking = await storage.createBooking({
@@ -198,8 +232,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       packageId: packageId ?? null,
       date: parsed.data.date,
       timeSlot: parsed.data.timeSlot,
+      sessionType,
+      paymentStatus: paymentStatus as any,
+      workoutCategory: (parsed.data.workoutCategory ?? null) as any,
       notes: parsed.data.notes ?? null,
+      adminNotes: null,
+      clientNotes: parsed.data.clientNotes ?? null,
     });
+
+    // Mark trial as used if successful (clients only — admin overrides remain)
+    if (sessionType === "trial" && me.role !== "admin") {
+      try {
+        await storage.updateUser(targetUserId, { hasUsedFreeTrial: true });
+      } catch {
+        /* ignore */
+      }
+    }
 
     try {
       await storage.createConsentRecord({
@@ -226,28 +274,59 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const useEmergencyCancel = !!(req.body && req.body.useEmergencyCancel);
+
     const settings = await storage.getSettings();
     const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
     const sessionAt = buildSessionDate(booking.date, booking.timeSlot);
     const msUntil = sessionAt.getTime() - Date.now();
+    const isWithinCutoff = msUntil < cutoffMs;
 
     let newStatus: string;
+    let usedEmergency = false;
+
     if (me.role === "admin") {
       newStatus = "cancelled";
-    } else if (msUntil >= cutoffMs) {
+    } else if (!isWithinCutoff) {
+      // Plenty of notice — free cancel
       newStatus = "free_cancelled";
+    } else if (useEmergencyCancel) {
+      // Within cutoff, client requested emergency cancel
+      const owner = await storage.getUser(booking.userId);
+      const monthKey = currentMonthKey();
+      const alreadyUsedThisMonth = owner?.emergencyCancelLastMonth === monthKey;
+      if (alreadyUsedThisMonth) {
+        return res.status(400).json({
+          message:
+            "You have already used your Emergency Cancel for this month. Please contact Youssef directly.",
+        });
+      }
+      newStatus = "emergency_cancelled";
+      usedEmergency = true;
     } else {
       return res.status(400).json({
-        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain.`,
+        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain. You can use your Emergency Cancel if available, or contact Youssef directly.`,
       });
     }
 
     const updated = await storage.updateBooking(id, {
       status: newStatus,
       cancelledAt: new Date(),
+      isEmergencyCancel: usedEmergency,
     });
 
-    // late_cancelled deducts; free_cancelled / cancelled does not.
+    if (usedEmergency) {
+      try {
+        await storage.updateUser(booking.userId, {
+          emergencyCancelLastMonth: currentMonthKey(),
+          emergencyCancelLastUsedAt: new Date(),
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Only late_cancelled deducts; emergency_cancelled / free_cancelled / cancelled do not.
     if (newStatus === "late_cancelled" && booking.packageId) {
       try {
         await storage.incrementPackageUsage(booking.packageId);
@@ -256,6 +335,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
     res.json(updated);
+  });
+
+  // Admin: clear emergency cancel usage so the client can use it again
+  app.post("/api/users/:id/reset-emergency-cancel", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const updated = await storage.updateUser(id, {
+      emergencyCancelLastMonth: null,
+      emergencyCancelLastUsedAt: null,
+    } as any);
+    res.json(sanitizeUser(updated));
+  });
+
+  // Admin: clear free trial usage so the client can book a free trial again
+  app.post("/api/users/:id/reset-free-trial", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const updated = await storage.updateUser(id, { hasUsedFreeTrial: false } as any);
+    res.json(sanitizeUser(updated));
   });
 
   app.patch("/api/bookings/:id", requireAuth, async (req, res) => {
@@ -274,25 +370,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (me.role !== "admin") {
       if (booking.userId !== me.id) return res.status(403).json({ message: "Forbidden" });
       if (parsed.data.status) return res.status(403).json({ message: "Cannot change status" });
+      if (parsed.data.paymentStatus)
+        return res.status(403).json({ message: "Cannot change payment status" });
+      if (parsed.data.adminNotes !== undefined)
+        return res.status(403).json({ message: "Cannot change admin notes" });
+      if (parsed.data.workoutCategory !== undefined)
+        return res.status(403).json({ message: "Cannot change workout category" });
 
-      const settings = await storage.getSettings();
-      const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
-      const sessionAt = buildSessionDate(booking.date, booking.timeSlot);
-      if (sessionAt.getTime() - Date.now() < cutoffMs) {
-        return res.status(400).json({
-          message: `Reschedule locked. Less than ${settings.cancellationCutoffHours} hours remain.`,
-        });
-      }
-      const newDate = parsed.data.date ?? booking.date;
-      const newSlot = parsed.data.timeSlot ?? booking.timeSlot;
-      if (parsed.data.date || parsed.data.timeSlot) {
-        const taken = await storage.getBookingByDateAndSlot(newDate, newSlot);
-        if (
-          taken &&
-          taken.id !== id &&
-          !["cancelled", "free_cancelled", "late_cancelled"].includes(taken.status)
-        ) {
-          return res.status(400).json({ message: "Slot already booked" });
+      // If the client is only adding a personal note, skip cutoff/conflict checks.
+      const onlyNoteEdit =
+        parsed.data.date === undefined &&
+        parsed.data.timeSlot === undefined &&
+        parsed.data.notes === undefined &&
+        parsed.data.clientNotes !== undefined;
+
+      if (!onlyNoteEdit) {
+        const settings = await storage.getSettings();
+        const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
+        const sessionAt = buildSessionDate(booking.date, booking.timeSlot);
+        if (sessionAt.getTime() - Date.now() < cutoffMs) {
+          return res.status(400).json({
+            message: `Reschedule locked. Less than ${settings.cancellationCutoffHours} hours remain.`,
+          });
+        }
+        const newDate = parsed.data.date ?? booking.date;
+        const newSlot = parsed.data.timeSlot ?? booking.timeSlot;
+        if (parsed.data.date || parsed.data.timeSlot) {
+          const taken = await storage.getBookingByDateAndSlot(newDate, newSlot);
+          if (
+            taken &&
+            taken.id !== id &&
+            !["cancelled", "free_cancelled", "late_cancelled", "emergency_cancelled"].includes(
+              taken.status,
+            )
+          ) {
+            return res.status(400).json({ message: "Slot already booked" });
+          }
         }
       }
     }
@@ -455,22 +568,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const targetUserId =
         me.role === "admin" && req.body.userId ? Number(req.body.userId) : me.id;
-      const fileUrl = fileToPublicUrl(req.file, "inbody");
+      const originalFullPath = path.join(UPLOAD_ROOT, "inbody", req.file.filename);
 
-      // AI extraction (image only). For PDFs we skip and rely on admin manual entry.
+      // AI extraction first (uses original quality), then optimize to webp
       let extracted: Awaited<ReturnType<typeof extractInbodyMetricsFromImage>> = null;
       if (req.file.mimetype.startsWith("image/")) {
         extracted = await extractInbodyMetricsFromImage(
-          path.join(UPLOAD_ROOT, "inbody", req.file.filename),
+          originalFullPath,
           req.file.mimetype,
         );
       }
+
+      const opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
+        maxWidth: 1800,
+        quality: 86,
+      });
+      const finalFilename = opt.optimized && opt.optimizedFilename
+        ? opt.optimizedFilename
+        : req.file.filename;
+      const fileUrl = `/uploads/inbody/${finalFilename}`;
+      const finalMime = opt.optimized ? "image/webp" : req.file.mimetype;
 
       const record = await storage.createInbodyRecord({
         userId: targetUserId,
         fileUrl,
         fileName: req.file.originalname,
-        mimeType: req.file.mimetype,
+        mimeType: finalMime,
         weight: extracted?.weight ?? null,
         bodyFat: extracted?.bodyFat ?? null,
         muscleMass: extracted?.muscleMass ?? null,
@@ -551,7 +674,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!req.file) return res.status(400).json({ message: "File is required" });
       const targetUserId =
         me.role === "admin" && req.body.userId ? Number(req.body.userId) : me.id;
-      const photoUrl = fileToPublicUrl(req.file, "photos");
+
+      const originalFullPath = path.join(UPLOAD_ROOT, "photos", req.file.filename);
+      const opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
+        maxWidth: 1600,
+        quality: 82,
+      });
+      const finalFilename = opt.optimized && opt.optimizedFilename
+        ? opt.optimizedFilename
+        : req.file.filename;
+      const photoUrl = `/uploads/photos/${finalFilename}`;
+
       const type =
         ["before", "current", "after"].includes(req.body.type) ? req.body.type : "current";
       const created = await storage.createProgressPhoto({

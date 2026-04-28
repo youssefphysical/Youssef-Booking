@@ -18,6 +18,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PRIMARY_GOAL_OPTIONS } from "@shared/schema";
 import { ConsentNote } from "@/components/ConsentNote";
 import { AreaAutocomplete } from "@/components/AreaAutocomplete";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -58,7 +66,9 @@ const registerSchema = z.object({
   phone: z.string().min(7, "Phone number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   area: z.string().min(2, "Area / Neighbourhood is required"),
-  fitnessGoal: z.string().optional(),
+  primaryGoal: z.enum(["fat_loss", "muscle_gain", "recomposition"], {
+    errorMap: () => ({ message: "Please choose your primary goal" }),
+  }),
   notes: z.string().optional(),
 });
 
@@ -525,7 +535,7 @@ function RegisterForm() {
       phone: "+971",
       password: "",
       area: "",
-      fitnessGoal: "",
+      primaryGoal: undefined as any,
       notes: "",
     },
     mode: "onTouched",
@@ -706,18 +716,34 @@ function RegisterForm() {
           <>
             <FormField
               control={form.control}
-              name="fitnessGoal"
+              name="primaryGoal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Fitness Goal</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g. Lose 5kg, build muscle..."
-                      {...field}
-                      data-testid="input-fitness-goal"
-                      className="bg-white/5 border-white/10 h-11"
-                    />
-                  </FormControl>
+                  <FormLabel>Primary Goal *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        data-testid="select-primary-goal"
+                        className="bg-white/5 border-white/10 h-11"
+                      >
+                        <SelectValue placeholder="Choose your primary goal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PRIMARY_GOAL_OPTIONS.map((opt) => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                          data-testid={`option-goal-${opt.value}`}
+                        >
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

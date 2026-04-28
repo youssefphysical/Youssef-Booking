@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Filter, Loader2 } from "lucide-react";
+import { Plus, Trash2, Filter, Loader2, Notebook, Wallet } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,12 @@ import {
 } from "@/hooks/use-bookings";
 import { useClients } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  PAYMENT_STATUS_LABELS,
+  WORKOUT_CATEGORY_LABELS,
+  SESSION_TYPE_LABELS,
+} from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +64,16 @@ const STATUSES = [
   "cancelled",
   "free_cancelled",
   "late_cancelled",
+  "emergency_cancelled",
 ];
+
+const PAYMENT_BADGE: Record<string, string> = {
+  paid: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+  unpaid: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+  pending: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+  direct_payment_requested: "bg-violet-500/10 text-violet-300 border-violet-500/20",
+  free: "bg-white/5 text-muted-foreground border-white/10",
+};
 
 export default function AdminBookings() {
   const { data: rawBookings = [], isLoading } = useBookings({ includeUser: true });
@@ -66,6 +81,8 @@ export default function AdminBookings() {
   const deleteMutation = useDeleteBooking();
   const [filter, setFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [workoutFilter, setWorkoutFilter] = useState<string>("all");
 
   const bookings = rawBookings as BookingWithUser[];
 
@@ -73,9 +90,14 @@ export default function AdminBookings() {
     return bookings.filter((b) => {
       if (filter !== "all" && b.status !== filter) return false;
       if (dateFilter && b.date !== dateFilter) return false;
+      if (paymentFilter !== "all" && (b.paymentStatus || "unpaid") !== paymentFilter) return false;
+      if (workoutFilter !== "all") {
+        if (workoutFilter === "none" && b.workoutCategory) return false;
+        if (workoutFilter !== "none" && b.workoutCategory !== workoutFilter) return false;
+      }
       return true;
     });
-  }, [bookings, filter, dateFilter]);
+  }, [bookings, filter, dateFilter, paymentFilter, workoutFilter]);
 
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
@@ -111,13 +133,38 @@ export default function AdminBookings() {
           className="w-44 bg-white/5 border-white/10 h-9"
           data-testid="input-date-filter"
         />
-        {(filter !== "all" || dateFilter) && (
+        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+          <SelectTrigger className="w-44 bg-white/5 border-white/10 h-9" data-testid="select-payment-filter">
+            <SelectValue placeholder="Payment" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All payments</SelectItem>
+            {Object.entries(PAYMENT_STATUS_LABELS).map(([k, l]) => (
+              <SelectItem key={k} value={k}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={workoutFilter} onValueChange={setWorkoutFilter}>
+          <SelectTrigger className="w-44 bg-white/5 border-white/10 h-9" data-testid="select-workout-filter">
+            <SelectValue placeholder="Workout" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All workouts</SelectItem>
+            <SelectItem value="none">Not logged</SelectItem>
+            {Object.entries(WORKOUT_CATEGORY_LABELS).map(([k, l]) => (
+              <SelectItem key={k} value={k}>{l}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {(filter !== "all" || dateFilter || paymentFilter !== "all" || workoutFilter !== "all") && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
               setFilter("all");
               setDateFilter("");
+              setPaymentFilter("all");
+              setWorkoutFilter("all");
             }}
             data-testid="button-clear-filters"
           >
@@ -162,14 +209,40 @@ export default function AdminBookings() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {format(new Date(b.date), "EEE, MMM d")} • {b.timeSlot}
+                    {b.sessionType && (
+                      <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
+                        {SESSION_TYPE_LABELS[b.sessionType as keyof typeof SESSION_TYPE_LABELS] || b.sessionType}
+                      </span>
+                    )}
                   </p>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                    <span
+                      className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
+                    >
+                      {formatStatus(b.status)}
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${PAYMENT_BADGE[b.paymentStatus || "unpaid"] || PAYMENT_BADGE.unpaid}`}
+                      data-testid={`payment-badge-${b.id}`}
+                    >
+                      {PAYMENT_STATUS_LABELS[(b.paymentStatus || "unpaid") as keyof typeof PAYMENT_STATUS_LABELS] || b.paymentStatus}
+                    </span>
+                    {b.workoutCategory && (
+                      <span
+                        className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-violet-500/20 bg-violet-500/10 text-violet-300"
+                        data-testid={`workout-badge-${b.id}`}
+                      >
+                        {WORKOUT_CATEGORY_LABELS[b.workoutCategory as keyof typeof WORKOUT_CATEGORY_LABELS] || b.workoutCategory}
+                      </span>
+                    )}
+                    {b.isEmergencyCancel && (
+                      <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                        Emergency
+                      </span>
+                    )}
+                  </div>
                   {b.notes && <p className="text-xs text-muted-foreground/70 mt-1">{b.notes}</p>}
                 </div>
-                <span
-                  className={`hidden sm:inline-block text-[9px] uppercase tracking-wider font-bold px-2 py-1 rounded-md border ${statusColor(b.status)}`}
-                >
-                  {formatStatus(b.status)}
-                </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -178,7 +251,7 @@ export default function AdminBookings() {
                   onValueChange={(v) => updateMutation.mutate({ id: b.id, status: v as any, override: true })}
                 >
                   <SelectTrigger
-                    className="w-44 bg-white/5 border-white/10 h-9 text-xs"
+                    className="w-40 bg-white/5 border-white/10 h-9 text-xs"
                     data-testid={`select-status-${b.id}`}
                   >
                     <SelectValue />
@@ -189,6 +262,28 @@ export default function AdminBookings() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Select
+                  value={b.paymentStatus || "unpaid"}
+                  onValueChange={(v) =>
+                    updateMutation.mutate({ id: b.id, paymentStatus: v as any, override: true } as any)
+                  }
+                >
+                  <SelectTrigger
+                    className="w-40 bg-white/5 border-white/10 h-9 text-xs"
+                    data-testid={`select-payment-${b.id}`}
+                  >
+                    <Wallet size={12} className="mr-1" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PAYMENT_STATUS_LABELS).map(([k, l]) => (
+                      <SelectItem key={k} value={k}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <WorkoutLogButton booking={b} />
 
                 <RescheduleButton booking={b} />
 
@@ -229,6 +324,134 @@ export default function AdminBookings() {
         </div>
       )}
     </div>
+  );
+}
+
+const workoutLogSchema = z.object({
+  workoutCategory: z.string().optional(),
+  adminNotes: z.string().optional(),
+});
+
+function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
+  const [open, setOpen] = useState(false);
+  const updateMutation = useUpdateBooking();
+
+  const form = useForm<z.infer<typeof workoutLogSchema>>({
+    resolver: zodResolver(workoutLogSchema),
+    defaultValues: {
+      workoutCategory: booking.workoutCategory || "",
+      adminNotes: booking.adminNotes || "",
+    },
+  });
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) {
+          form.reset({
+            workoutCategory: booking.workoutCategory || "",
+            adminNotes: booking.adminNotes || "",
+          });
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 text-xs"
+          data-testid={`button-workout-log-${booking.id}`}
+        >
+          <Notebook size={12} className="mr-1.5" />
+          {booking.workoutCategory ? "Log" : "Log"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
+        <DialogHeader>
+          <DialogTitle>Workout Log</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((data) =>
+              updateMutation.mutate(
+                {
+                  id: booking.id,
+                  workoutCategory: data.workoutCategory || null,
+                  adminNotes: data.adminNotes || null,
+                  override: true,
+                } as any,
+                { onSuccess: () => setOpen(false) },
+              ),
+            )}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="workoutCategory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Workout Category</FormLabel>
+                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      className="bg-white/5 border-white/10"
+                      data-testid={`select-workout-category-${booking.id}`}
+                    >
+                      <SelectValue placeholder="Pick a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(WORKOUT_CATEGORY_LABELS).map(([k, l]) => (
+                        <SelectItem key={k} value={k}>{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="adminNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Admin Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      rows={4}
+                      placeholder="Notes about this session — exercises, weights, observations..."
+                      className="bg-white/5 border-white/10"
+                      data-testid={`input-admin-notes-${booking.id}`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {booking.clientNotes && (
+              <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Client Notes
+                </p>
+                <p className="text-foreground/90 whitespace-pre-wrap">{booking.clientNotes}</p>
+              </div>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button
+                type="submit"
+                disabled={updateMutation.isPending}
+                data-testid={`button-save-workout-log-${booking.id}`}
+              >
+                {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
+                Save Log
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

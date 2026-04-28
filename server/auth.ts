@@ -108,6 +108,7 @@ export function setupAuth(app: Express) {
         phone,
         area,
         fitnessGoal,
+        primaryGoal,
         notes,
       } = parsed.data;
 
@@ -131,6 +132,7 @@ export function setupAuth(app: Express) {
         emergencyContactName: null,
         emergencyContactPhone: null,
         fitnessGoal: fitnessGoal || null,
+        primaryGoal: primaryGoal || null,
         notes: notes || null,
         role: "client",
       });

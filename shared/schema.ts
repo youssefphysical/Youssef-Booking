@@ -27,6 +27,12 @@ export const users = pgTable("users", {
   emergencyContactName: text("emergency_contact_name"),
   emergencyContactPhone: text("emergency_contact_phone"),
   fitnessGoal: text("fitness_goal"),
+  // Primary goal: 'fat_loss' | 'muscle_gain' | 'recomposition'
+  primaryGoal: text("primary_goal"),
+  hasUsedFreeTrial: boolean("has_used_free_trial").notNull().default(false),
+  // Tracks last calendar month an emergency cancel was used (e.g. "2026-04")
+  emergencyCancelLastMonth: text("emergency_cancel_last_month"),
+  emergencyCancelLastUsedAt: timestamp("emergency_cancel_last_used_at"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -34,7 +40,7 @@ export const users = pgTable("users", {
 // =============================
 // PACKAGES (session credits)
 // =============================
-// type values: '10' | '20' | '25' | 'duo30'
+// type values: 'single' | '10' | '20' | '25' | 'duo30' | 'trial'
 export const packages = pgTable("packages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -50,6 +56,11 @@ export const packages = pgTable("packages", {
 // =============================
 // BOOKINGS
 // =============================
+// sessionType: 'package' | 'single' | 'trial' | 'duo'
+// status:      'upcoming' | 'confirmed' | 'completed' | 'cancelled'
+//            | 'free_cancelled' | 'late_cancelled' | 'emergency_cancelled'
+//            | 'no_show'
+// paymentStatus: 'unpaid' | 'paid' | 'pending' | 'direct_payment_requested' | 'free'
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -57,7 +68,13 @@ export const bookings = pgTable("bookings", {
   date: date("date").notNull(),
   timeSlot: text("time_slot").notNull(), // "HH:MM"
   status: text("status").notNull().default("upcoming"),
+  sessionType: text("session_type").notNull().default("package"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  workoutCategory: text("workout_category"),
   notes: text("notes"),
+  adminNotes: text("admin_notes"),
+  clientNotes: text("client_notes"),
+  isEmergencyCancel: boolean("is_emergency_cancel").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -71,6 +88,9 @@ export const settings = pgTable("settings", {
   profilePhotoUrl: text("profile_photo_url"),
   profileBio: text("profile_bio"),
   whatsappNumber: text("whatsapp_number").default("971505394754"),
+  bankAccountName: text("bank_account_name").default("Youssef Tarek Hashim Ahmed"),
+  bankIban: text("bank_iban").default("AE230260001015917468101"),
+  showBankDetailsPublicly: boolean("show_bank_details_publicly").notNull().default(false),
 });
 
 // =============================
@@ -172,6 +192,9 @@ export const insertClientSchema = createInsertSchema(users)
     emergencyContactName: z.string().optional(),
     emergencyContactPhone: z.string().optional(),
     fitnessGoal: z.string().optional(),
+    primaryGoal: z
+      .enum(["fat_loss", "muscle_gain", "recomposition"])
+      .optional(),
     notes: z.string().optional(),
   });
 
@@ -181,22 +204,69 @@ export const updateProfileSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, role: true, username: true })
   .partial();
 
+export const SESSION_TYPES = ["package", "single", "trial", "duo"] as const;
+export const BOOKING_STATUSES = [
+  "upcoming",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "free_cancelled",
+  "late_cancelled",
+  "emergency_cancelled",
+  "no_show",
+] as const;
+export const PAYMENT_STATUSES = [
+  "unpaid",
+  "paid",
+  "pending",
+  "direct_payment_requested",
+  "free",
+] as const;
+export const WORKOUT_CATEGORIES = [
+  "chest",
+  "shoulders",
+  "back",
+  "legs",
+  "core",
+  "arms",
+  "crossfit",
+  "cardio",
+  "mobility",
+  "full_body",
+  "other",
+] as const;
+
 export const insertBookingSchema = createInsertSchema(bookings)
-  .omit({ id: true, createdAt: true, status: true, cancelledAt: true })
+  .omit({
+    id: true,
+    createdAt: true,
+    status: true,
+    cancelledAt: true,
+    isEmergencyCancel: true,
+  })
   .extend({
     date: z.string(),
     timeSlot: z.string(),
     packageId: z.number().int().nullable().optional(),
+    sessionType: z.enum(SESSION_TYPES).optional(),
+    paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+    workoutCategory: z.enum(WORKOUT_CATEGORIES).nullable().optional(),
+    notes: z.string().nullable().optional(),
+    adminNotes: z.string().nullable().optional(),
+    clientNotes: z.string().nullable().optional(),
   });
 
 export const updateBookingSchema = z.object({
-  status: z
-    .enum(["upcoming", "confirmed", "completed", "cancelled", "free_cancelled", "late_cancelled"])
-    .optional(),
+  status: z.enum(BOOKING_STATUSES).optional(),
   date: z.string().optional(),
   timeSlot: z.string().optional(),
-  notes: z.string().optional(),
+  notes: z.string().nullable().optional(),
+  adminNotes: z.string().nullable().optional(),
+  clientNotes: z.string().nullable().optional(),
+  workoutCategory: z.enum(WORKOUT_CATEGORIES).nullable().optional(),
   packageId: z.number().int().nullable().optional(),
+  sessionType: z.enum(SESSION_TYPES).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
 });
 
 export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
@@ -213,12 +283,24 @@ export const updateSettingsSchema = z.object({
   profilePhotoUrl: z.string().nullable().optional(),
   profileBio: z.string().nullable().optional(),
   whatsappNumber: z.string().optional(),
+  bankAccountName: z.string().nullable().optional(),
+  bankIban: z.string().nullable().optional(),
+  showBankDetailsPublicly: z.boolean().optional(),
 });
+
+export const PACKAGE_TYPES = [
+  "single",
+  "10",
+  "20",
+  "25",
+  "duo30",
+  "trial",
+] as const;
 
 export const insertPackageSchema = createInsertSchema(packages)
   .omit({ id: true, purchasedAt: true })
   .extend({
-    type: z.enum(["10", "20", "25", "duo30"]),
+    type: z.enum(PACKAGE_TYPES),
     totalSessions: z.number().int().min(1),
     usedSessions: z.number().int().min(0).optional(),
     notes: z.string().optional(),
@@ -325,9 +407,60 @@ export type DashboardStats = {
   activePackages: number;
 };
 
-export const PACKAGE_DEFINITIONS: Record<string, { label: string; sessions: number; isDuo?: boolean }> = {
+export const PACKAGE_DEFINITIONS: Record<
+  string,
+  { label: string; sessions: number; isDuo?: boolean; isTrial?: boolean; isSingle?: boolean }
+> = {
+  single: { label: "Single Session", sessions: 1, isSingle: true },
   "10": { label: "10 Sessions", sessions: 10 },
   "20": { label: "20 Sessions", sessions: 20 },
   "25": { label: "25 Sessions", sessions: 25 },
   duo30: { label: "Duo Package — 30 Sessions", sessions: 30, isDuo: true },
+  trial: { label: "Free Trial Session — New Client Only", sessions: 1, isTrial: true },
+};
+
+export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
+  { value: "fat_loss", label: "Fat Loss" },
+  { value: "muscle_gain", label: "Muscle Gain" },
+  { value: "recomposition", label: "Body Recomposition – Build Muscle & Lose Fat" },
+];
+
+export const SESSION_TYPE_LABELS: Record<string, string> = {
+  package: "Package Session",
+  single: "Single Session",
+  trial: "Free Trial Session – New Client Only",
+  duo: "Duo Package Session",
+};
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  unpaid: "Unpaid",
+  paid: "Paid",
+  pending: "Pending",
+  direct_payment_requested: "Direct Payment Requested",
+  free: "Free",
+};
+
+export const WORKOUT_CATEGORY_LABELS: Record<string, string> = {
+  chest: "Chest",
+  shoulders: "Shoulders",
+  back: "Back",
+  legs: "Legs",
+  core: "Core",
+  arms: "Arms",
+  crossfit: "CrossFit",
+  cardio: "Cardio",
+  mobility: "Mobility",
+  full_body: "Full Body",
+  other: "Other",
+};
+
+export const BOOKING_STATUS_LABELS: Record<string, string> = {
+  upcoming: "Upcoming",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  free_cancelled: "Cancelled (Free)",
+  late_cancelled: "Late Cancellation – Session Charged",
+  emergency_cancelled: "Emergency Cancel Used",
+  no_show: "No Show",
 };

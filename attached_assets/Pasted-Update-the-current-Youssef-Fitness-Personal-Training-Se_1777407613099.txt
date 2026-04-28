@@ -1,0 +1,603 @@
+Update the current Youssef Fitness / Personal Training Service app with the following professional business, booking, client tracking, legal, payment, and admin-control features.
+
+IMPORTANT:
+Do not break existing working features.
+Keep the app stable, fast, clean, mobile responsive, and professional.
+Do not show raw technical errors.
+Use friendly messages only.
+Admin must have full control over everything.
+
+==================================================
+1. BRANDING
+==================================================
+
+Public service name:
+Personal Training Service
+
+Trainer display name:
+Youssef Ahmed
+
+Do NOT show the full legal name publicly on homepage/about/client UI.
+
+Professional title:
+Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+
+Use dark luxury sports design:
+- Black
+- Deep navy
+- White
+- Light blue accents
+- WhatsApp green only for WhatsApp actions
+
+==================================================
+2. CLIENT REGISTRATION – GOAL OPTIONS
+==================================================
+
+During client registration, add a required field:
+
+Primary Goal
+
+Options:
+1. Fat Loss
+2. Muscle Gain
+3. Body Recomposition – Build Muscle & Lose Fat
+
+Use professional wording.
+
+Also keep:
+- Full name
+- Email
+- Phone with international country selector and flags
+- Area / neighbourhood only, not full address
+- Password
+- Required InBody upload
+- Optional progress photo
+- Notes / injuries
+
+Remove emergency contact fields.
+
+==================================================
+3. SESSION TYPES
+==================================================
+
+Add these booking/session types:
+
+1. Package Session
+Used for clients with active package balance.
+
+2. Single Session
+For clients who want only one session.
+
+Rules:
+- Single Session does not require package balance.
+- Admin can mark as Paid / Unpaid / Pending.
+- Status label: “Single Session Booking”
+
+3. Free Trial Session – New Client Only
+For new clients only.
+
+Rules:
+- One free trial per client lifetime.
+- No package deduction.
+- Admin can approve/cancel/complete.
+- Status label: “Free Trial Session – New Client Only”
+
+4. Duo Package Session
+For Duo Package clients.
+
+Rules:
+- Second participant must already be registered.
+- Admin links both accounts.
+- Both clients can see the shared session.
+
+==================================================
+4. PACKAGES
+==================================================
+
+Keep only:
+
+- Single Session
+- 10 Sessions
+- 20 Sessions
+- 25 Sessions
+- Duo Package – 30 Sessions
+- Free Trial Session – New Client Only
+
+For every client show:
+- Package type
+- Total sessions
+- Used sessions
+- Remaining sessions
+- Completed sessions
+- Late cancellations
+- Emergency cancellations used
+- Free trial used / not used
+
+Every completed package session deducts 1 session.
+Every late cancellation deducts 1 session unless Emergency Cancel is used.
+
+==================================================
+5. EMERGENCY CANCEL SYSTEM
+==================================================
+
+Add monthly Emergency Cancel.
+
+Rules:
+- Each active client gets 1 Emergency Cancel per month.
+- It can be used even inside the 6-hour cancellation cutoff.
+- If used, session is NOT deducted.
+- After use, client cannot use another Emergency Cancel until next calendar month.
+- Admin can override manually.
+
+When client cancels within 6 hours, show:
+
+“This cancellation is inside the 6-hour cutoff. You can use your monthly Emergency Cancel to avoid losing this session.”
+
+If already used:
+
+“Emergency Cancel is not available. This session will be counted as used.”
+
+Admin dashboard must show:
+- Emergency cancel available / used
+- Date used
+- Manual reset option
+
+==================================================
+6. BOOKING RULES
+==================================================
+
+Available time:
+6:00 AM to 10:00 PM
+Last session:
+10:00 PM to 11:00 PM
+
+Cancellation rule:
+- More than 6 hours before session: free cancellation/reschedule
+- Less than 6 hours: locked and session counted
+- Emergency Cancel can override once per month
+- Admin can override manually
+
+Booking statuses:
+- Pending
+- Confirmed
+- Completed
+- Cancelled
+- Late Cancellation – Session Charged
+- Emergency Cancel Used
+- No Show
+- Free Trial
+- Single Session
+
+==================================================
+7. TRAINING LOG / WORKOUT TRACKING
+==================================================
+
+Add a clean workout tracking table for every client.
+
+Each session should allow admin and/or client to record what was trained.
+
+Workout categories:
+- Chest
+- Shoulders
+- Back
+- Legs
+- Core
+- Arms
+- CrossFit
+- Cardio
+- Mobility
+- Full Body
+- Other
+
+For each session, save:
+- Date
+- Time
+- Session type
+- Workout category
+- Optional notes
+- Admin notes
+- Client notes
+- Status
+- Linked booking
+
+Client dashboard:
+- Client can see workout history
+- Client can see what they trained each session
+
+Admin dashboard:
+- Admin can edit each workout log
+- Admin can filter by client, date, muscle group/category, package, and status
+
+Make it visually clean and premium, like a professional training record.
+
+==================================================
+8. INBODY HYBRID SYSTEM + STORAGE OPTIMIZATION
+==================================================
+
+InBody upload remains required during registration.
+
+Accept:
+PDF, JPG, JPEG, PNG
+
+Very important:
+InBody files can be large, so optimize storage.
+
+Requirements:
+- Compress uploaded images while keeping text readable
+- Convert image to optimized web format if possible
+- Create a smaller preview image
+- Keep original only if needed or store optimized version safely
+- File must remain clear enough for admin/client review
+- Avoid wasting storage
+
+AI extraction:
+- Try to extract InBody data automatically
+- If AI fails, registration must still succeed
+- Never crash the app
+- Admin can manually edit all extracted fields
+
+Fields:
+- Weight
+- Body Fat %
+- Skeletal Muscle Mass
+- BMI
+- Visceral Fat Level
+- BMR
+- Total Body Water
+- InBody Score
+- Notes
+
+Show friendly message if AI fails:
+“We received your InBody scan. Youssef will review and update your analysis shortly.”
+
+Admin must be able to:
+- View/download InBody files
+- Edit extracted values
+- Upload new InBody for client
+- See InBody history
+- Delete incorrect uploads if needed
+
+Client can:
+- See latest InBody
+- See InBody history
+- Upload new InBody later
+
+==================================================
+9. CLIENT PROGRESS PHOTOS
+==================================================
+
+Client can optionally upload:
+- Profile photo
+- Before photo
+- Current photo
+- After photo
+- Notes
+
+Optimize uploaded photos:
+- Compress images
+- Keep good visual quality
+- Reduce file size as much as possible
+- Create thumbnails for dashboard
+
+Each progress record includes:
+- Date/time
+- Type: before/current/after
+- Notes
+- Linked InBody if available
+
+Admin can view, edit, delete, and manage all photos.
+
+==================================================
+10. ADMIN DASHBOARD – FULL CONTROL
+==================================================
+
+Admin dashboard must be powerful and professional.
+
+Admin can manage:
+- Clients
+- Bookings
+- Packages
+- Payments
+- Session balances
+- Emergency cancels
+- Free trials
+- Workout logs
+- InBody uploads
+- Progress photos
+- Off days
+- Blocked hours
+- Legal consent records
+- Admin notes
+- Homepage photo/text
+
+Client admin profile tabs:
+- Overview
+- Bookings
+- Sessions
+- Workout Log
+- Package / Balance
+- InBody
+- Progress Photos
+- Payments
+- Consent Records
+- Notes
+
+Admin can edit any client field:
+- Name
+- Phone
+- Email
+- Country code
+- Area / neighbourhood
+- Goal
+- Notes / injuries
+- Package
+- Session count
+- Payment status
+- Bookings
+- Workout logs
+- InBody data
+- Progress photos
+
+Admin notes are private and never visible to client.
+
+==================================================
+11. OFF DAY / BLOCKED DAY SYSTEM
+==================================================
+
+Admin can block:
+- Full day
+- Specific hour
+- Emergency unavailable
+- Fully booked
+- Off day
+
+Client message:
+“Youssef Fitness is unavailable on this day. Please choose another available date.”
+
+Emergency message:
+“Due to an urgent schedule change, this day is currently unavailable. Please select another date.”
+
+No technical errors.
+
+==================================================
+12. DIRECT PAYMENT / BANK TRANSFER
+==================================================
+
+Add a professional Direct Payment section.
+
+Do NOT call it donation.
+
+Use title:
+Direct Payment
+
+Text:
+“If you prefer to pay directly, you can request the approved payment details from Youssef Fitness.”
+
+Add button:
+Request Payment Details on WhatsApp
+
+WhatsApp link:
+https://wa.me/971505394754?text=Hi%20Youssef%2C%20I%20would%20like%20to%20request%20direct%20payment%20details.
+
+Admin can choose whether to show bank details publicly or only after request.
+
+Bank transfer details for admin/payment page:
+Account Name:
+Youssef Tarek Hashim Ahmed
+
+IBAN / Account:
+AE230260001015917468101
+
+Important:
+- Do not collect card details.
+- Do not add payment gateway now.
+- Admin can manually mark bookings/payments:
+  Unpaid
+  Paid
+  Pending
+  Direct Payment Requested
+
+Payment status should exist for:
+- Single Session
+- Packages
+- Duo Package
+- Free Trial should be free/no payment
+
+==================================================
+13. LEGAL AGREEMENT BASED ON PT CONTRACT
+==================================================
+
+Use the uploaded one-on-one training agreement as inspiration.
+
+Add digital agreement/consent before booking and registration.
+
+Include these key rules:
+
+A) Sessions must be booked through the system.
+B) Client must sign/accept terms before training.
+C) Cancellation less than 6 hours before session = session counted.
+D) Packages are non-refundable and non-transferable unless admin approves.
+E) Client must be physically able to train.
+F) Client confirms they disclosed injuries/medical concerns.
+G) Training does not replace medical advice.
+H) Client understands exercise involves risk.
+I) Client agrees to follow trainer instructions and gym rules.
+J) Photos/InBody/progress data are stored only for coaching/progress tracking.
+K) Free trial is one time only for new clients.
+L) Emergency Cancel is limited to 1 per month.
+M) Package validity can be controlled by admin.
+
+Add required checkboxes:
+- I confirm my information is accurate.
+- I accept the Terms & Conditions.
+- I accept the Cancellation Policy.
+- I understand training involves physical activity and risk.
+- I confirm I am fit to train or will consult a doctor if needed.
+- I consent to Youssef Fitness storing my InBody, progress photos, bookings, and training records for coaching purposes.
+
+Store consent records with:
+- Client ID
+- Date/time
+- Policies accepted
+- Policy version
+- IP if available
+
+Admin can view consent history.
+
+==================================================
+14. LEGAL PAGES
+==================================================
+
+Footer links:
+- Privacy Policy
+- Terms & Conditions
+- Cancellation Policy
+- Medical Disclaimer
+- Cookie Policy
+
+Privacy Policy must mention:
+- Data collected: name, phone, email, area, goal, notes, bookings, InBody, progress photos, workout logs
+- Purpose: coaching, booking, progress tracking, communication
+- Data access: admin/Youssef Fitness only
+- Data deletion: client can request removal
+- No sale of personal data
+
+Medical Disclaimer:
+“Youssef Fitness provides fitness coaching and training guidance. This service does not replace medical advice, diagnosis, or treatment. Clients should consult a qualified healthcare professional before starting exercise if they have any medical condition, injury, pain, or concern.”
+
+Cancellation Policy:
+“All cancellations or rescheduling requests must be made at least 6 hours before the scheduled session time. If a client cancels or requests to reschedule within less than 6 hours before the session, the session will be counted as used unless an available Emergency Cancel is applied.”
+
+==================================================
+15. COOKIE CONSENT
+==================================================
+
+Add cookie banner:
+“We use cookies to improve your experience, keep the website secure, and understand basic site performance. By continuing, you agree to our Cookie Policy.”
+
+Buttons:
+- Accept
+- Manage Preferences
+
+Preferences:
+- Essential cookies: always enabled
+- Analytics cookies: optional
+- Marketing cookies: optional
+
+==================================================
+16. WELCOME MESSAGE
+==================================================
+
+After successful registration, prepare welcome email/SMS/WhatsApp message.
+
+If email/SMS service is not configured:
+- Do not fail registration
+- Log internally only
+
+Welcome email subject:
+Welcome to Youssef Fitness
+
+Message:
+Hi {{clientName}},
+
+Welcome to Youssef Fitness — I’m happy to have you here.
+
+Your profile has been created successfully, and your InBody scan has been received. I’ll review your details and use them to better understand your current condition, goals, and starting point.
+
+Through Youssef Fitness, the goal is to provide you with structured, safe, and result-driven coaching based on your body, your schedule, and your progress.
+
+You can now use your account to:
+- Book your training sessions
+- View your upcoming sessions
+- Track your session balance
+- Upload progress photos
+- Follow your InBody history
+
+Please remember that cancellations or rescheduling must be made at least 6 hours before your session time. Late cancellations will be counted as used unless your Emergency Cancel is available and applied.
+
+If you have any questions, you can contact me directly on WhatsApp:
++971505394754
+
+Welcome again,
+Youssef Ahmed
+Personal Training Service
+
+==================================================
+17. PHONE INPUT
+==================================================
+
+Use professional international phone input:
+- All countries
+- Flags
+- Calling codes
+- Search country
+- Default UAE +971
+- If user pastes full number with country code, auto-detect country
+- Store full international number
+
+==================================================
+18. PERFORMANCE + MEMORY / STORAGE WARNING
+==================================================
+
+The app will store client data, InBody scans, and progress photos.
+
+Optimize for storage and performance:
+- Compress images
+- Generate thumbnails
+- Avoid storing unnecessary duplicates
+- Keep files readable
+- Lazy-load images in dashboards
+- Paginate client lists
+- Paginate bookings
+- Paginate progress photos
+- Do not load all client files at once
+
+If storage is limited, implement a clean warning for admin:
+“Storage usage is getting high. Please review old files or upgrade storage.”
+
+Do not show this to clients.
+
+==================================================
+19. STABILITY TESTS
+==================================================
+
+After implementation, test:
+- Client registration with InBody
+- AI extraction failure fallback
+- Login
+- Admin login
+- Single Session booking
+- Free Trial booking
+- Package booking
+- Duo package linking
+- 6-hour cancellation
+- Emergency Cancel
+- Workout log
+- Admin edit client
+- InBody view/edit
+- Progress photos upload
+- Payment status
+- Mobile layout
+
+Do not finish until the app runs cleanly.
+
+==================================================
+FINAL GOAL
+==================================================
+
+A premium, stable, sports-focused personal training platform for Youssef Ahmed.
+
+It must include:
+- Clean public profile
+- Client registration
+- InBody upload and analysis
+- Booking system
+- Single session
+- Free trial
+- Packages
+- Emergency cancel
+- Workout tracking
+- Direct payment option
+- Full admin control
+- Legal consent and privacy protection
+- Optimized storage and performance
