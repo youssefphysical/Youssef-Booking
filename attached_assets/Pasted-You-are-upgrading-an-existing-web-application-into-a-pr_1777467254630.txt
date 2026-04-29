@@ -1,0 +1,307 @@
+You are upgrading an existing web application into a premium, stable, high-end personal training platform.
+
+Brand:
+Youssef Fitness
+
+Trainer public name:
+Youssef Ahmed
+
+IMPORTANT:
+
+- Do NOT break existing working features.
+- No runtime errors.
+- No raw technical errors shown to users.
+- Keep performance fast and storage optimized.
+- All UI must be clean, premium, mobile-friendly.
+
+==================================================
+
+1. CRITICAL FIX – AUTH ERROR
+   ==================================================
+
+Fix:
+"useAuth must be used within an AuthProvider"
+
+- Wrap entire app with AuthProvider at root.
+- Ensure Navigation, Header, Dashboard, Booking pages are inside provider.
+
+Correct structure:
+
+<AuthProvider>
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
+</AuthProvider>Do NOT suppress error.
+Fix root cause properly.
+
+==================================================
+2. BRANDING + NAMING SYSTEM (LUXURY)
+
+Use:
+
+- Training Session
+- Essential Plan (10)
+- Progress Plan (20)
+- Elite Plan (25)
+- Duo Performance Plan (30)
+- Intro Assessment Session
+- Protected Cancellation
+- Same-Day Adjustment
+- Your Training Hub
+- Schedule Session
+- Connect on WhatsApp
+- Complete Your Booking
+
+Client Levels:
+
+- Elite Client
+- Consistent Client
+- Developing Consistency
+
+==================================================
+3. REGISTRATION
+
+Fields:
+
+- Full name
+- Email
+- Phone (international with flags + auto-detect)
+- Area / neighbourhood (NOT full address)
+- Goal (required):
+  • Fat Loss
+  • Muscle Gain
+  • Body Recomposition
+- Password
+- Required InBody upload
+- Optional progress photo
+- Notes / injuries
+
+Remove emergency contact fields.
+
+==================================================
+4. BOOKING SYSTEM
+
+Time:
+6 AM – 10 PM
+Last session: 10–11 PM
+
+Rules:
+
+- «6 hours → free cancel»
+- <6 hours → session counted
+
+Session types:
+
+- Training Session (package)
+- Single Session
+- Intro Assessment Session (1 lifetime)
+- Duo session
+
+==================================================
+5. EMERGENCY SYSTEMS
+
+Protected Cancellation:
+
+- 1/month
+- VIP: 2/month
+- Works even inside 6 hours
+
+Same-Day Adjustment:
+
+- Same day only
+- Minimum 1 hour before session
+- Cannot change to another day
+- Uses separate monthly quota
+
+==================================================
+6. VIP SYSTEM (AUTO)
+
+Based on weekly sessions:
+
+4+ → Elite Client
+2–3 → Consistent Client
+<2 → Developing Consistency
+
+VIP gets:
+
+- 2 Protected Cancellation
+- Priority booking
+
+Auto update weekly.
+
+==================================================
+7. WORKOUT TRACKING
+
+Categories:
+Chest, Shoulders, Back, Legs, Core, Arms, CrossFit, Cardio, Mobility
+
+Each session logs:
+
+- Category
+- Notes
+- Status
+- Date
+
+==================================================
+8. INBODY SYSTEM (AI + STORAGE OPTIMIZED)
+
+Flow:
+
+1. Upload
+2. AI extraction
+3. Preview
+4. Confirm
+5. Save structured data
+6. Optional delete original file
+
+NEVER delete before confirmation.
+
+Extract:
+Weight, Fat %, Muscle, BMI, Visceral Fat, BMR, Score, etc.
+
+If fail:
+Show friendly message, no crash.
+
+==================================================
+9. INBODY VISUALIZATION
+
+Charts:
+
+- Weight
+- Body fat %
+- Muscle mass
+
+Colors:
+
+- Green = improvement
+- Red = negative
+- Yellow = stable
+
+Add simple insights:
+“Fat improving”
+“Muscle stable”
+
+==================================================
+10. STORAGE OPTIMIZATION
+
+- Compress images
+- Convert formats
+- Create thumbnails
+- Lazy load
+- Paginate
+
+==================================================
+11. PROGRESS PHOTOS
+
+Types:
+Before / Current / After
+
+Compress all images.
+Keep high clarity but small size.
+
+==================================================
+12. PAYMENT SYSTEM (CONTROLLED)
+
+NO public bank details.
+
+Flow:
+Booking → Complete Your Booking → WhatsApp request
+
+Message auto-filled:
+Name + session + time
+
+Admin controls payment:
+
+- Pending
+- Paid
+- Confirmed
+
+Optional:
+Show IBAN only in dashboard if enabled.
+
+==================================================
+13. ADMIN DASHBOARD (FULL CONTROL)
+
+Admin can:
+
+- Edit all client data
+- Manage bookings
+- Override rules
+- Control payments
+- Manage InBody
+- Manage photos
+- View consent
+- Add notes
+
+==================================================
+14. LEGAL SYSTEM
+
+Include:
+
+- Terms
+- Privacy
+- Cancellation Policy
+- Medical Disclaimer
+- Cookie Policy
+
+Mandatory checkboxes:
+
+- Accept terms
+- Accept cancellation
+- Health responsibility
+- Data consent
+
+==================================================
+15. CLIENT GUIDE PAGE
+
+Create:
+“How Youssef Fitness Works”
+
+Explain:
+
+- Registration
+- InBody
+- Booking
+- Policies
+- Progress
+- Payment
+
+NO technical details.
+
+==================================================
+16. PDF + IMAGE EXPORT
+
+Allow:
+
+- Download PDF
+- Export image
+
+Include:
+
+- Profile
+- InBody
+- Progress
+- Sessions
+
+Design:
+Premium report style.
+
+==================================================
+17. UI / UX
+
+- Dark luxury theme
+- Blue accents
+- Clean layout
+- No overlapping elements
+- Smooth mobile experience
+
+==================================================
+FINAL GOAL
+
+A premium, stable, high-end coaching platform with:
+
+- Full control
+- Smart client system
+- Accurate InBody tracking
+- Clean UI
+- No errors
