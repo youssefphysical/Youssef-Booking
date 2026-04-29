@@ -1,0 +1,272 @@
+Make these targeted updates to the current Youssef Fitness platform. Do not rebuild the whole app. Keep existing working features stable.
+
+==================================================
+1. PDF EXPORT – INBODY ONLY
+==================================================
+
+Move the PDF export feature so it appears ONLY inside the InBody section.
+
+Remove general PDF/image export buttons from:
+- General client profile
+- General dashboard
+- Progress section
+- Session history
+
+Keep export only for:
+Client Dashboard → InBody section
+Admin Dashboard → Client Profile → InBody tab
+
+Button name:
+Download InBody Report PDF
+
+The PDF should include only:
+- Client name
+- Test date
+- InBody extracted values
+- Key InBody metrics
+- InBody progress chart if available
+- Youssef Fitness branding
+
+Do not export full client profile, bookings, or progress photos.
+
+==================================================
+2. INBODY AI AUTO-EXTRACTION
+==================================================
+
+When a client uploads an InBody scan, AI/OCR must automatically read the scan and fill the InBody data fields.
+
+The client should NOT have to enter the numbers manually.
+
+Flow:
+1. Client uploads InBody file.
+2. System shows loading:
+“Reading your InBody scan…”
+3. AI/OCR extracts the numbers automatically.
+4. Save the extracted data into the client’s InBody profile.
+5. If confidence is low, mark it as:
+Needs Review
+6. Admin can review/edit manually.
+
+Important:
+- Do not guess missing values.
+- If a value is not detected, show “Not available”.
+- If AI extraction fails, registration/upload must still succeed.
+- Show friendly message:
+“We received your InBody scan. Youssef will review and update your analysis shortly.”
+
+Extract these fields if available:
+- Weight
+- Body Fat %
+- Skeletal Muscle Mass
+- BMI
+- Visceral Fat Level
+- BMR
+- Total Body Water
+- InBody Score
+- Body Fat Mass
+- Segmental Lean Analysis
+- Segmental Fat Analysis
+- Test Date
+
+==================================================
+3. BOOKING MUST BE SELF-SERVICE
+==================================================
+
+Clients must be able to book training sessions directly through the website.
+
+Do NOT require clients to contact Youssef to book a normal session.
+
+WhatsApp should be only for:
+- Emergency help
+- Questions
+- Payment details
+- Special support
+
+Booking flow:
+Client selects date/time → selects session/plan type → confirms policy → booking is created.
+
+Do not add “contact trainer to book” as the main flow.
+
+==================================================
+4. WEEKLY FREQUENCY SELECTION DURING REGISTRATION
+==================================================
+
+During registration, add required field:
+
+Preferred Weekly Training Frequency
+
+Options:
+- 1 session per week
+- 2 sessions per week
+- 3 sessions per week
+- 4 sessions per week
+- 5 sessions per week
+- 6 sessions per week
+
+This field determines the client category/level.
+
+==================================================
+5. CLIENT LEVELS BASED ON WEEKLY FREQUENCY
+==================================================
+
+Create professional client categories based on selected weekly frequency.
+
+Use these names:
+
+A) Foundation Member
+Condition:
+1 session per week
+
+Benefits:
+- No Protected Cancellation included
+- No Same-Day Adjustment included
+- Normal 6-hour cancellation rule applies
+
+Message:
+“Foundation Member – Best for maintaining activity and building consistency.”
+
+B) Progress Member
+Condition:
+2–3 sessions per week
+
+Benefits:
+- 1 Protected Cancellation per month
+- 1 Same-Day Adjustment per month
+
+Message:
+“Progress Member – A consistent training rhythm for steady results.”
+
+C) Elite Member
+Condition:
+4–6 sessions per week
+
+Benefits:
+- 2 Protected Cancellations per month
+- 2 Same-Day Adjustments per month
+- Priority booking badge
+
+Message:
+“Elite Member – High consistency and priority training support.”
+
+==================================================
+6. PROTECTED CANCELLATION RULES
+==================================================
+
+Rename Emergency Cancel to:
+Protected Cancellation
+
+Rules by category:
+
+Foundation Member:
+- 0 per month
+
+Progress Member:
+- 1 per month
+
+Elite Member:
+- 2 per month
+
+Protected Cancellation allows the client to cancel inside the 6-hour cutoff without losing the session.
+
+If not available:
+“This session is within the cancellation cutoff and will be counted as used.”
+
+==================================================
+7. SAME-DAY ADJUSTMENT RULES
+==================================================
+
+Rename reschedule feature to:
+Same-Day Adjustment
+
+Rules by category:
+
+Foundation Member:
+- 0 per month
+
+Progress Member:
+- 1 per month
+
+Elite Member:
+- 2 per month
+
+Conditions:
+- Can only move the session to another available time on the SAME DAY
+- Must be at least 1 hour before the original session time
+- Cannot move the session to another day
+
+If client wants another day:
+“To move this session to another day, you may use Protected Cancellation if available.”
+
+If less than 1 hour:
+“Same-Day Adjustment is no longer available. This session will be counted as used.”
+
+==================================================
+8. CLEAR CATEGORY EXPLANATION
+==================================================
+
+Add a clean page/section:
+Membership Levels
+
+Explain:
+
+Foundation Member
+1 session/week
+Basic training access with standard cancellation policy.
+
+Progress Member
+2–3 sessions/week
+Includes 1 Protected Cancellation and 1 Same-Day Adjustment monthly.
+
+Elite Member
+4–6 sessions/week
+Includes 2 Protected Cancellations, 2 Same-Day Adjustments, and priority booking.
+
+Make this very simple, professional, and easy for clients to understand.
+
+==================================================
+9. CLIENT DASHBOARD DISPLAY
+==================================================
+
+In client dashboard show:
+- Client level badge
+- Weekly frequency
+- Remaining Protected Cancellations this month
+- Remaining Same-Day Adjustments this month
+- Explanation of their benefits
+
+Example:
+Elite Member
+4 sessions/week
+Protected Cancellations left: 2
+Same-Day Adjustments left: 2
+
+==================================================
+10. ADMIN CONTROL
+==================================================
+
+Admin can:
+- View/edit weekly frequency
+- View/edit client level
+- Override client level manually
+- Reset Protected Cancellation usage
+- Reset Same-Day Adjustment usage
+- View monthly usage history
+
+==================================================
+11. IMPORTANT STABILITY RULES
+==================================================
+
+Do not break:
+- Login
+- Registration
+- Booking
+- Admin dashboard
+- InBody upload
+- Existing data
+
+No raw technical errors.
+No app crashes.
+Keep UI mobile-friendly and clean.
+
+FINAL GOAL:
+Self-service booking, AI-filled InBody data, InBody-only PDF export, and a clear professional membership level system based on weekly training frequency.

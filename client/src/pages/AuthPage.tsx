@@ -67,6 +67,11 @@ const registerSchema = z.object({
   phone: z.string().min(7, "Phone number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   area: z.string().min(2, "Area / Neighbourhood is required"),
+  weeklyFrequency: z.coerce
+    .number({ invalid_type_error: "Choose your preferred weekly training frequency" })
+    .int()
+    .min(1, "Choose your preferred weekly training frequency")
+    .max(6),
   primaryGoal: z.enum(["fat_loss", "muscle_gain", "recomposition"], {
     errorMap: () => ({ message: "Please choose your primary goal" }),
   }),
@@ -569,6 +574,7 @@ function RegisterForm({
       phone: "+971",
       password: "",
       area: "",
+      weeklyFrequency: undefined as any,
       primaryGoal: undefined as any,
       notes: "",
     },
@@ -660,6 +666,7 @@ function RegisterForm({
       "phone",
       "password",
       "area",
+      "weeklyFrequency",
     ]);
     if (valid) setStep(2);
   }
@@ -763,6 +770,41 @@ function RegisterForm({
                       testId="input-area"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="weeklyFrequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Weekly Training Frequency *</FormLabel>
+                  <Select
+                    onValueChange={(v) => field.onChange(Number(v))}
+                    value={field.value ? String(field.value) : ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        data-testid="select-weekly-frequency"
+                        className="bg-white/5 border-white/10 h-11"
+                      >
+                        <SelectValue placeholder="How many sessions per week?" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="1">1 session / week — Foundation</SelectItem>
+                      <SelectItem value="2">2 sessions / week — Progress</SelectItem>
+                      <SelectItem value="3">3 sessions / week — Progress</SelectItem>
+                      <SelectItem value="4">4 sessions / week — Elite</SelectItem>
+                      <SelectItem value="5">5 sessions / week — Elite</SelectItem>
+                      <SelectItem value="6">6 sessions / week — Elite</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-white/50 mt-1">
+                    This sets your membership level. You can change it later with Youssef.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

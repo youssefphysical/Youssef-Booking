@@ -18,7 +18,9 @@ import {
   updateInbodySchema,
   insertProgressPhotoSchema,
   protectedCancellationQuota,
-  SAME_DAY_ADJUST_QUOTA,
+  sameDayAdjustQuota,
+  tierFromFrequency,
+  normaliseTier,
   type User,
   type Package,
 } from "@shared/schema";
@@ -55,30 +57,31 @@ function todayDateString(): string {
   return `${y}-${m}-${d}`;
 }
 
-// Recompute the client's VIP tier based on the count of completed sessions
-// in the past 7 calendar days. Best-effort: never throws.
+// Recompute the client's VIP tier based on their declared weekly frequency.
+// Skips silently when an admin has set a manual override on the account.
+// Best-effort: never throws.
 async function recomputeVipTier(userId: number): Promise<string> {
   try {
-    const all = await storage.getBookings({ userId });
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 7);
-    const completedLastWeek = all.filter((b) => {
-      if (b.status !== "completed") return false;
-      const at = buildSessionDate(b.date, b.timeSlot);
-      return at.getTime() >= cutoff.getTime();
-    }).length;
-    let tier: "elite" | "consistent" | "developing";
-    if (completedLastWeek >= 4) tier = "elite";
-    else if (completedLastWeek >= 2) tier = "consistent";
-    else tier = "developing";
-    await storage.updateUser(userId, {
-      vipTier: tier,
-      vipUpdatedAt: new Date(),
-    } as any);
+    const user = await storage.getUser(userId);
+    if (!user) return "foundation";
+    if (user.vipTierManualOverride) return user.vipTier || "foundation";
+    // Legacy users may not have a weeklyFrequency yet. Don't silently downgrade
+    // them to foundation — preserve their current tier (normalised) until they
+    // (or an admin) set a frequency explicitly.
+    if (user.weeklyFrequency == null) {
+      return normaliseTier(user.vipTier);
+    }
+    const tier = tierFromFrequency(user.weeklyFrequency);
+    if (user.vipTier !== tier) {
+      await storage.updateUser(userId, {
+        vipTier: tier,
+        vipUpdatedAt: new Date(),
+      } as any);
+    }
     return tier;
   } catch (e) {
     console.warn("[vip] recompute failed:", e);
-    return "developing";
+    return "foundation";
   }
 }
 
@@ -150,6 +153,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (parsed.data.password) {
       updates.password = await hashPassword(parsed.data.password);
     }
+
+    // Non-admins cannot change membership fields
+    if (me.role !== "admin") {
+      delete updates.vipTier;
+      delete updates.vipTierManualOverride;
+      delete updates.weeklyFrequency;
+      delete updates.role;
+    } else {
+      // Admin override semantics:
+      // - if admin sends `vipTier` directly, mark it as a manual override
+      // - if admin only changes weeklyFrequency (no vipTier in body), drop
+      //   the override so auto-recompute resumes, and refresh the tier now.
+      const vipTierInBody = Object.prototype.hasOwnProperty.call(req.body, "vipTier");
+      const freqInBody = Object.prototype.hasOwnProperty.call(req.body, "weeklyFrequency");
+      if (vipTierInBody) {
+        updates.vipTierManualOverride = true;
+        updates.vipUpdatedAt = new Date();
+      } else if (freqInBody) {
+        updates.vipTierManualOverride = false;
+        updates.vipTier = tierFromFrequency(parsed.data.weeklyFrequency as number | null | undefined);
+        updates.vipUpdatedAt = new Date();
+      }
+    }
+
     const updated = await storage.updateUser(id, updates as any);
     res.json(sanitizeUser(updated));
   });
@@ -447,9 +474,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const monthKey = currentMonthKey();
       const usedThisMonth =
         owner?.sameDayAdjustMonth === monthKey ? (owner.sameDayAdjustCount ?? 0) : 0;
-      if (usedThisMonth >= SAME_DAY_ADJUST_QUOTA) {
+      const quota = sameDayAdjustQuota(owner?.vipTier);
+      if (quota === 0) {
         return res.status(400).json({
-          message: `You have used all ${SAME_DAY_ADJUST_QUOTA} Same-Day Adjustments for this month.`,
+          message:
+            "Same-Day Adjustments are not available on your current membership level. Contact Youssef on WhatsApp if you need help.",
+        });
+      }
+      if (usedThisMonth >= quota) {
+        return res.status(400).json({
+          message: `You have used all ${quota} Same-Day Adjustment${quota === 1 ? "" : "s"} for this month.`,
         });
       }
     }
@@ -506,6 +540,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       emergencyCancelLastUsedAt: null,
       protectedCancelMonth: null,
       protectedCancelCount: 0,
+    } as any);
+    res.json(sanitizeUser(updated));
+  });
+
+  // Admin: clear Same-Day Adjustment usage so the client can use it again
+  app.post("/api/users/:id/reset-same-day-adjust", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const updated = await storage.updateUser(id, {
+      sameDayAdjustMonth: null,
+      sameDayAdjustCount: 0,
     } as any);
     res.json(sanitizeUser(updated));
   });

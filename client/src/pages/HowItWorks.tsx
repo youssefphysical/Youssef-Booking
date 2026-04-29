@@ -32,7 +32,7 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: "4. Cancel safely if life happens",
-    body: "Cancel for free up to 6 hours before. Inside that window, use a Protected Cancellation (1/month — 2/month for Elite Clients). For same-day timing changes, use a Same-Day Adjustment.",
+    body: "Cancel for free up to 6 hours before. Inside that window, Progress and Elite members can use a Protected Cancellation, plus Same-Day Adjustments to shift today's session to a different time.",
   },
   {
     icon: TrendingUp,
@@ -57,19 +57,34 @@ const PLANS = [
 
 const TIERS = [
   {
-    name: "Elite Client",
-    rule: "4+ sessions per week",
-    perks: "Priority booking · 2 Protected Cancellations / month",
+    name: "Foundation Member",
+    rule: "1 session per week",
+    tagline: "Best for maintaining activity and building consistency.",
+    perks: [
+      "Standard 6-hour cancellation policy",
+      "No Protected Cancellations",
+      "No Same-Day Adjustments",
+    ],
   },
   {
-    name: "Consistent Client",
-    rule: "2-3 sessions per week",
-    perks: "1 Protected Cancellation / month",
+    name: "Progress Member",
+    rule: "2–3 sessions per week",
+    tagline: "A consistent training rhythm for steady results.",
+    perks: [
+      "1 Protected Cancellation per month",
+      "1 Same-Day Adjustment per month",
+      "Standard 6-hour cancellation policy",
+    ],
   },
   {
-    name: "Developing Consistency",
-    rule: "Less than 2 sessions per week",
-    perks: "1 Protected Cancellation / month",
+    name: "Elite Member",
+    rule: "4–6 sessions per week",
+    tagline: "High consistency and priority training support.",
+    perks: [
+      "2 Protected Cancellations per month",
+      "2 Same-Day Adjustments per month",
+      "Priority booking",
+    ],
   },
 ];
 
@@ -144,15 +159,19 @@ export default function HowItWorks() {
         </p>
       </section>
 
-      {/* Tiers */}
-      <section className="rounded-3xl border border-white/10 bg-card/60 p-8 mb-12">
+      {/* Membership Levels */}
+      <section
+        id="membership-levels"
+        className="rounded-3xl border border-white/10 bg-card/60 p-8 mb-12"
+      >
         <div className="flex items-center gap-3 mb-2">
           <HeartPulse className="text-primary" size={20} />
-          <h2 className="font-display font-bold text-2xl">Client Levels</h2>
+          <h2 className="font-display font-bold text-2xl">Membership Levels</h2>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
-          Your level updates automatically every week based on completed sessions. The more
-          consistent you are, the more flexibility you unlock.
+          You choose your level when you sign up by picking your weekly training frequency.
+          Each level comes with its own monthly flexibility allowances. To change levels,
+          message Youssef on WhatsApp.
         </p>
         <div className="grid md:grid-cols-3 gap-3">
           {TIERS.map((t) => (
@@ -163,7 +182,18 @@ export default function HowItWorks() {
             >
               <p className="font-display font-bold text-lg">{t.name}</p>
               <p className="text-xs text-primary mt-1">{t.rule}</p>
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{t.perks}</p>
+              <p className="text-xs text-muted-foreground mt-2 italic">{t.tagline}</p>
+              <ul className="mt-3 space-y-1.5">
+                {t.perks.map((p) => (
+                  <li
+                    key={p}
+                    className="text-xs text-foreground/80 flex gap-2"
+                  >
+                    <span className="text-primary">•</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>

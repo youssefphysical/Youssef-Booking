@@ -79,6 +79,11 @@ import {
   PAYMENT_STATUS_LABELS,
   WORKOUT_CATEGORY_LABELS,
   SESSION_TYPE_LABELS,
+  WEEKLY_FREQUENCY_OPTIONS,
+  VIP_TIER_LABELS,
+  normaliseTier,
+  protectedCancellationQuota,
+  sameDayAdjustQuota,
   type UserResponse,
   type Package,
   type InbodyRecord,
@@ -220,6 +225,15 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
   })();
   const usedThisMonth = client.emergencyCancelLastMonth === monthKey;
 
+  // Monthly usage numbers
+  const tier = normaliseTier(client.vipTier);
+  const protQuota = protectedCancellationQuota(tier);
+  const protUsed =
+    client.protectedCancelMonth === monthKey ? client.protectedCancelCount ?? 0 : 0;
+  const adjQuota = sameDayAdjustQuota(tier);
+  const adjUsed =
+    client.sameDayAdjustMonth === monthKey ? client.sameDayAdjustCount ?? 0 : 0;
+
   const resetEmergency = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", `/api/users/${client.id}/reset-emergency-cancel`);
@@ -228,9 +242,39 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       qc.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({ title: "Emergency Cancel reset", description: "Client can now use it again this month." });
+      toast({ title: "Protected Cancel reset", description: "Client can now use it again this month." });
     },
     onError: (e: Error) => toast({ title: "Reset failed", description: e.message, variant: "destructive" }),
+  });
+
+  const resetSameDay = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/users/${client.id}/reset-same-day-adjust`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Same-Day Adjustment reset",
+        description: "Client can use Same-Day Adjustments again this month.",
+      });
+    },
+    onError: (e: Error) => toast({ title: "Reset failed", description: e.message, variant: "destructive" }),
+  });
+
+  const updateMembership = useMutation({
+    mutationFn: async (body: Partial<UserResponse>) => {
+      const res = await apiRequest("PATCH", `/api/users/${client.id}`, body);
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Membership updated" });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Update failed", description: e.message, variant: "destructive" }),
   });
 
   const resetTrial = useMutation({
@@ -251,13 +295,96 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
         <AlertTriangle size={13} /> Client Privileges
       </p>
+
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-3">
+        <p className="text-xs font-semibold">Membership Level</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[11px] text-muted-foreground block mb-1">
+              Weekly Frequency
+            </label>
+            <Select
+              value={String(client.weeklyFrequency ?? "")}
+              onValueChange={(v) =>
+                updateMembership.mutate({ weeklyFrequency: Number(v) } as any)
+              }
+            >
+              <SelectTrigger
+                className="h-9 text-xs"
+                data-testid="select-weekly-frequency"
+              >
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {WEEKLY_FREQUENCY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={String(opt.value)}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[11px] text-muted-foreground block mb-1">
+              Tier Override
+              {client.vipTierManualOverride ? (
+                <span className="ml-1 text-primary">(manual)</span>
+              ) : (
+                <span className="ml-1">(auto from frequency)</span>
+              )}
+            </label>
+            <Select
+              value={tier}
+              onValueChange={(v) => updateMembership.mutate({ vipTier: v } as any)}
+            >
+              <SelectTrigger className="h-9 text-xs" data-testid="select-tier-override">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="foundation">{VIP_TIER_LABELS.foundation}</SelectItem>
+                <SelectItem value="progress">{VIP_TIER_LABELS.progress}</SelectItem>
+                <SelectItem value="elite">{VIP_TIER_LABELS.elite}</SelectItem>
+              </SelectContent>
+            </Select>
+            {client.vipTierManualOverride && (
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground underline mt-1"
+                onClick={() =>
+                  updateMembership.mutate({
+                    weeklyFrequency: client.weeklyFrequency ?? 1,
+                  } as any)
+                }
+                data-testid="button-clear-tier-override"
+              >
+                Clear override (recompute from frequency)
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3 text-[11px] text-muted-foreground">
+          <p data-testid="text-protected-usage">
+            Protected Cancellations used this month:{" "}
+            <span className="text-foreground font-semibold">
+              {protUsed}/{protQuota}
+            </span>
+          </p>
+          <p data-testid="text-same-day-usage">
+            Same-Day Adjustments used this month:{" "}
+            <span className="text-foreground font-semibold">
+              {adjUsed}/{adjQuota}
+            </span>
+          </p>
+        </div>
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-3">
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-          <p className="text-xs font-semibold mb-1">Emergency Cancel</p>
+          <p className="text-xs font-semibold mb-1">Protected Cancel (legacy reset)</p>
           <p className="text-[11px] text-muted-foreground mb-2">
             {usedThisMonth
               ? `Used this month (${client.emergencyCancelLastMonth}). Reset to allow another use this month.`
-              : "Available this month. Each client gets one per calendar month."}
+              : "Available this month. Resets the legacy emergency cancel counter."}
           </p>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -292,6 +419,45 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
         </div>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+          <p className="text-xs font-semibold mb-1">Same-Day Adjustment</p>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            {adjUsed > 0
+              ? `Used ${adjUsed}/${adjQuota} this month. Reset to refill the counter.`
+              : `Available (${adjQuota}/month for this tier).`}
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={adjUsed === 0 || resetSameDay.isPending}
+                data-testid="button-reset-same-day-adjust"
+              >
+                <RotateCcw size={12} className="mr-1.5" /> Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-white/10">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset Same-Day Adjustment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This client will be able to use Same-Day Adjustments again this month.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => resetSameDay.mutate()}
+                  data-testid="button-confirm-reset-same-day"
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 sm:col-span-2">
           <p className="text-xs font-semibold mb-1">Free Trial Session</p>
           <p className="text-[11px] text-muted-foreground mb-2">
             {client.hasUsedFreeTrial

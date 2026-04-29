@@ -33,9 +33,13 @@ export const users = pgTable("users", {
   // Tracks last calendar month an emergency cancel was used (e.g. "2026-04")
   emergencyCancelLastMonth: text("emergency_cancel_last_month"),
   emergencyCancelLastUsedAt: timestamp("emergency_cancel_last_used_at"),
-  // VIP tier: 'elite' | 'consistent' | 'developing'
-  vipTier: text("vip_tier").default("developing"),
+  // VIP tier: 'elite' | 'progress' | 'foundation' (legacy: 'consistent','developing')
+  vipTier: text("vip_tier").default("foundation"),
   vipUpdatedAt: timestamp("vip_updated_at"),
+  // True when an admin has manually set the tier — auto-recompute should skip
+  vipTierManualOverride: boolean("vip_tier_manual_override").notNull().default(false),
+  // 1..6 sessions per week (declared at registration)
+  weeklyFrequency: integer("weekly_frequency"),
   // Protected Cancellation monthly quota tracking ("YYYY-MM" / count)
   protectedCancelMonth: text("protected_cancel_month"),
   protectedCancelCount: integer("protected_cancel_count").notNull().default(0),
@@ -209,6 +213,11 @@ export const insertClientSchema = createInsertSchema(users)
     primaryGoal: z
       .enum(["fat_loss", "muscle_gain", "recomposition"])
       .optional(),
+    weeklyFrequency: z
+      .number()
+      .int()
+      .min(1, "Choose your preferred weekly training frequency")
+      .max(6),
     notes: z.string().optional(),
   });
 
@@ -445,21 +454,72 @@ export const PACKAGE_DEFINITIONS: Record<
   },
 };
 
-export const VIP_TIERS = ["elite", "consistent", "developing"] as const;
+// Canonical tiers. Legacy values are normalised via `normaliseTier`.
+export const VIP_TIERS = ["elite", "progress", "foundation"] as const;
 export const VIP_TIER_LABELS: Record<string, string> = {
-  elite: "Elite Client",
-  consistent: "Consistent Client",
-  developing: "Developing Consistency",
+  elite: "Elite Member",
+  progress: "Progress Member",
+  foundation: "Foundation Member",
+  // Legacy aliases (older accounts before the rename)
+  consistent: "Progress Member",
+  developing: "Foundation Member",
 };
 export const VIP_TIER_DESCRIPTIONS: Record<string, string> = {
-  elite: "4+ sessions per week. Priority booking + 2 Protected Cancellations / month.",
-  consistent: "2-3 sessions per week. 1 Protected Cancellation / month.",
-  developing: "Less than 2 sessions per week. 1 Protected Cancellation / month.",
+  elite:
+    "4–6 sessions per week. Priority booking, 2 Protected Cancellations and 2 Same-Day Adjustments each month.",
+  progress:
+    "2–3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
+  foundation:
+    "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
+  consistent:
+    "2–3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
+  developing:
+    "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
 };
-export function protectedCancellationQuota(tier: string | null | undefined): number {
-  return tier === "elite" ? 2 : 1;
+export const VIP_TIER_TAGLINES: Record<string, string> = {
+  foundation: "Best for maintaining activity and building consistency.",
+  progress: "A consistent training rhythm for steady results.",
+  elite: "High consistency and priority training support.",
+};
+
+export function normaliseTier(tier: string | null | undefined): "elite" | "progress" | "foundation" {
+  if (tier === "elite") return "elite";
+  if (tier === "progress" || tier === "consistent") return "progress";
+  return "foundation"; // covers null, undefined, "developing", "foundation", anything else
 }
+
+export function tierFromFrequency(freq: number | null | undefined): "elite" | "progress" | "foundation" {
+  if (!freq || freq < 1) return "foundation";
+  if (freq >= 4) return "elite";
+  if (freq >= 2) return "progress";
+  return "foundation";
+}
+
+export function protectedCancellationQuota(tier: string | null | undefined): number {
+  const t = normaliseTier(tier);
+  if (t === "elite") return 2;
+  if (t === "progress") return 1;
+  return 0;
+}
+
+export function sameDayAdjustQuota(tier: string | null | undefined): number {
+  const t = normaliseTier(tier);
+  if (t === "elite") return 2;
+  if (t === "progress") return 1;
+  return 0;
+}
+
+// Kept for backward compatibility with older callers; do not use in new code.
 export const SAME_DAY_ADJUST_QUOTA = 2;
+
+export const WEEKLY_FREQUENCY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: "1 session per week" },
+  { value: 2, label: "2 sessions per week" },
+  { value: 3, label: "3 sessions per week" },
+  { value: 4, label: "4 sessions per week" },
+  { value: 5, label: "5 sessions per week" },
+  { value: 6, label: "6 sessions per week" },
+];
 
 export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
   { value: "fat_loss", label: "Fat Loss" },

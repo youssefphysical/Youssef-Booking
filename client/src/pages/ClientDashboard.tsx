@@ -22,6 +22,7 @@ import {
   Star,
   Sparkles,
   Dumbbell,
+  Info,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -32,11 +33,7 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
-import {
-  useInbodyRecords,
-  useUploadInbody,
-  useUpdateInbody,
-} from "@/hooks/use-inbody";
+import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +72,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { InbodyTrends } from "@/components/InbodyTrends";
-import { exportElementToPdf } from "@/lib/pdf-export";
+import { exportInbodyReportPdf } from "@/lib/pdf-export";
+import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 import {
   ALL_TIME_SLOTS,
   formatStatus,
@@ -89,7 +87,9 @@ import {
   VIP_TIER_DESCRIPTIONS,
   WORKOUT_CATEGORY_LABELS,
   protectedCancellationQuota,
-  SAME_DAY_ADJUST_QUOTA,
+  sameDayAdjustQuota,
+  normaliseTier,
+  WEEKLY_FREQUENCY_OPTIONS,
   type Booking,
   type Package,
   type InbodyRecord,
@@ -108,30 +108,12 @@ function todayDateString() {
 
 export default function ClientDashboard() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const exportRef = useRef<HTMLDivElement>(null);
-  const [exporting, setExporting] = useState(false);
 
   if (!user) return null;
 
-  const handleExport = async () => {
-    if (!exportRef.current) return;
-    try {
-      setExporting(true);
-      await exportElementToPdf(exportRef.current, {
-        filename: `${user.fullName.replace(/\s+/g, "_")}_dashboard.pdf`,
-      });
-      toast({ title: "PDF exported" });
-    } catch (e: any) {
-      toast({ title: "Export failed", description: e?.message || "Unknown error", variant: "destructive" });
-    } finally {
-      setExporting(false);
-    }
-  };
-
   return (
-    <div className="max-w-5xl mx-auto px-5 pt-24 pb-20" ref={exportRef}>
-      <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
+    <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">My Training</p>
           <h1 className="text-3xl font-display font-bold" data-testid="text-greeting">
@@ -141,24 +123,10 @@ export default function ClientDashboard() {
             Manage your sessions, packages and progress
           </p>
           <div className="mt-3">
-            <VipBadge tier={user.vipTier ?? "developing"} />
+            <VipBadge tier={user.vipTier ?? "foundation"} />
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            className="h-11 rounded-xl border-white/10"
-            onClick={handleExport}
-            disabled={exporting}
-            data-testid="button-export-pdf"
-          >
-            {exporting ? (
-              <Loader2 size={16} className="mr-1.5 animate-spin" />
-            ) : (
-              <FileDown size={16} className="mr-1.5" />
-            )}
-            Export PDF
-          </Button>
           <Link href="/book" data-testid="link-new-booking">
             <Button className="h-11 rounded-xl">
               <Plus size={16} className="mr-1.5" /> New Booking
@@ -166,6 +134,8 @@ export default function ClientDashboard() {
           </Link>
         </div>
       </div>
+
+      <MembershipBlock user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-white/5 mb-6 h-11">
@@ -195,11 +165,12 @@ export default function ClientDashboard() {
 // =============== VIP BADGE ===============
 
 function VipBadge({ tier }: { tier: string }) {
-  const Icon = tier === "elite" ? Crown : tier === "consistent" ? Star : Sparkles;
+  const t = normaliseTier(tier);
+  const Icon = t === "elite" ? Crown : t === "progress" ? Star : Sparkles;
   const colour =
-    tier === "elite"
+    t === "elite"
       ? "bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-amber-400/30 text-amber-200"
-      : tier === "consistent"
+      : t === "progress"
       ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
       : "bg-blue-500/10 border-blue-400/30 text-blue-200";
   return (
@@ -208,17 +179,119 @@ function VipBadge({ tier }: { tier: string }) {
         <TooltipTrigger asChild>
           <span
             className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-full border ${colour}`}
-            data-testid={`vip-badge-${tier}`}
+            data-testid={`vip-badge-${t}`}
           >
             <Icon size={12} />
-            {VIP_TIER_LABELS[tier] || "Client"}
+            {VIP_TIER_LABELS[t] || "Member"}
           </span>
         </TooltipTrigger>
         <TooltipContent side="right" className="max-w-xs">
-          <p className="text-xs">{VIP_TIER_DESCRIPTIONS[tier]}</p>
+          <p className="text-xs">{VIP_TIER_DESCRIPTIONS[t]}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+  );
+}
+
+// =============== MEMBERSHIP BLOCK ===============
+
+function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequency: number | null; protectedCancelMonth: string | null; protectedCancelCount: number | null; sameDayAdjustMonth: string | null; sameDayAdjustCount: number | null } }) {
+  const tier = normaliseTier(user.vipTier);
+  const monthKey = currentMonthKey();
+  const protUsed =
+    user.protectedCancelMonth === monthKey ? user.protectedCancelCount ?? 0 : 0;
+  const protQuota = protectedCancellationQuota(tier);
+  const protRemaining = Math.max(0, protQuota - protUsed);
+
+  const adjUsed =
+    user.sameDayAdjustMonth === monthKey ? user.sameDayAdjustCount ?? 0 : 0;
+  const adjQuota = sameDayAdjustQuota(tier);
+  const adjRemaining = Math.max(0, adjQuota - adjUsed);
+
+  const freqOption = WEEKLY_FREQUENCY_OPTIONS.find(
+    (o) => o.value === user.weeklyFrequency,
+  );
+
+  return (
+    <div
+      className="rounded-3xl border border-white/10 bg-card/40 p-5 mb-6"
+      data-testid="block-membership"
+    >
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
+            <Info size={12} /> My Membership
+          </p>
+          <p className="text-sm">
+            <span className="font-semibold" data-testid="text-membership-tier">
+              {VIP_TIER_LABELS[tier]}
+            </span>
+            <span className="text-muted-foreground">
+              {" "}
+              · {freqOption?.label ?? "Weekly frequency not set"}
+            </span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1.5 max-w-xl">
+            {VIP_TIER_DESCRIPTIONS[tier]}
+          </p>
+        </div>
+        <Link href="/how-it-works" className="text-xs text-primary hover:underline self-start">
+          View all levels
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <div
+          className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3"
+          data-testid="block-protected-remaining"
+        >
+          <p className="text-[10px] uppercase tracking-wider text-amber-200/80 inline-flex items-center gap-1.5">
+            <Shield size={11} /> Protected Cancellations
+          </p>
+          <p className="text-lg font-display font-bold mt-1">
+            {protQuota === 0 ? (
+              <span className="text-muted-foreground text-base">Not on this level</span>
+            ) : (
+              <span>
+                {protRemaining}{" "}
+                <span className="text-sm text-muted-foreground font-normal">/ {protQuota} left this month</span>
+              </span>
+            )}
+          </p>
+        </div>
+        <div
+          className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-3"
+          data-testid="block-sameday-remaining"
+        >
+          <p className="text-[10px] uppercase tracking-wider text-blue-200/80 inline-flex items-center gap-1.5">
+            <Clock size={11} /> Same-Day Adjustments
+          </p>
+          <p className="text-lg font-display font-bold mt-1">
+            {adjQuota === 0 ? (
+              <span className="text-muted-foreground text-base">Not on this level</span>
+            ) : (
+              <span>
+                {adjRemaining}{" "}
+                <span className="text-sm text-muted-foreground font-normal">/ {adjQuota} left this month</span>
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-muted-foreground mt-3">
+        Need to change your weekly frequency?{" "}
+        <a
+          href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER, "Hi Youssef, I'd like to update my weekly training frequency.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:underline"
+        >
+          Message Youssef on WhatsApp
+        </a>
+        .
+      </p>
+    </div>
   );
 }
 
@@ -331,7 +404,8 @@ function BookingCard({
 
   const usedAdjustsThisMonth =
     user?.sameDayAdjustMonth === monthKey ? user?.sameDayAdjustCount ?? 0 : 0;
-  const adjustRemaining = Math.max(0, SAME_DAY_ADJUST_QUOTA - usedAdjustsThisMonth);
+  const adjustQuota = sameDayAdjustQuota(user?.vipTier);
+  const adjustRemaining = Math.max(0, adjustQuota - usedAdjustsThisMonth);
 
   const isToday = booking.date === todayDateString();
   // Same-Day Adjust is allowed >=60 min before original slot, not yet started
@@ -449,7 +523,7 @@ function BookingCard({
               data-testid={`button-same-day-adjust-${booking.id}`}
             >
               <Clock size={12} className="mr-1" />
-              Same-Day Adjustment ({adjustRemaining}/{SAME_DAY_ADJUST_QUOTA} left)
+              Same-Day Adjustment ({adjustRemaining}/{adjustQuota} left)
             </Button>
           )}
         </div>
@@ -734,55 +808,27 @@ function PackagesTab({ userId }: { userId: number }) {
 
 // =============== INBODY TAB ===============
 
-type EditableInbody = {
-  weight: string;
-  bodyFat: string;
-  muscleMass: string;
-  bmi: string;
-  visceralFat: string;
-  bmr: string;
-  water: string;
-  score: string;
-  notes: string;
-};
-
-function recordToEditable(r: InbodyRecord | null): EditableInbody {
-  return {
-    weight: r?.weight != null ? String(r.weight) : "",
-    bodyFat: r?.bodyFat != null ? String(r.bodyFat) : "",
-    muscleMass: r?.muscleMass != null ? String(r.muscleMass) : "",
-    bmi: r?.bmi != null ? String(r.bmi) : "",
-    visceralFat: r?.visceralFat != null ? String(r.visceralFat) : "",
-    bmr: r?.bmr != null ? String(r.bmr) : "",
-    water: r?.water != null ? String(r.water) : "",
-    score: r?.score != null ? String(r.score) : "",
-    notes: r?.notes ?? "",
-  };
-}
-
-function editableToPatch(e: EditableInbody) {
-  const num = (v: string) => (v.trim() === "" ? null : Number(v));
-  return {
-    weight: num(e.weight),
-    bodyFat: num(e.bodyFat),
-    muscleMass: num(e.muscleMass),
-    bmi: num(e.bmi),
-    visceralFat: num(e.visceralFat),
-    bmr: num(e.bmr),
-    water: num(e.water),
-    score: num(e.score),
-    notes: e.notes.trim() || null,
-  };
+function hasMetrics(r: InbodyRecord) {
+  return (
+    r.weight != null ||
+    r.bodyFat != null ||
+    r.muscleMass != null ||
+    r.bmi != null ||
+    r.visceralFat != null ||
+    r.bmr != null ||
+    r.water != null ||
+    r.score != null
+  );
 }
 
 function InbodyTab({ userId }: { userId: number }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { data: records = [], isLoading } = useInbodyRecords({ userId });
   const upload = useUploadInbody();
-  const updateInbody = useUpdateInbody();
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const [previewRecord, setPreviewRecord] = useState<InbodyRecord | null>(null);
-  const [editable, setEditable] = useState<EditableInbody>(recordToEditable(null));
+  const trendsRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
 
   const list = records as InbodyRecord[];
   const sorted = [...list].sort(
@@ -797,8 +843,26 @@ function InbodyTab({ userId }: { userId: number }) {
         { file },
         {
           onSuccess: (result) => {
-            setPreviewRecord(result.record);
-            setEditable(recordToEditable(result.record));
+            const r = result.record;
+            if (r.aiExtracted && hasMetrics(r)) {
+              toast({
+                title: "InBody scan added",
+                description: "We read your numbers automatically.",
+              });
+            } else {
+              toast({
+                title: "Scan uploaded — needs review",
+                description:
+                  "We couldn't read every value with confidence. Youssef will review and update it for you.",
+              });
+            }
+          },
+          onError: (err: any) => {
+            toast({
+              title: "Upload failed",
+              description: err?.message || "Please try a clearer photo or contact Youssef.",
+              variant: "destructive",
+            });
           },
         },
       );
@@ -806,12 +870,24 @@ function InbodyTab({ userId }: { userId: number }) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const onConfirm = () => {
-    if (!previewRecord) return;
-    updateInbody.mutate(
-      { id: previewRecord.id, ...editableToPatch(editable) },
-      { onSuccess: () => setPreviewRecord(null) },
-    );
+  const handleDownloadPdf = async () => {
+    try {
+      setExporting(true);
+      await exportInbodyReportPdf({
+        clientName: user?.fullName || "Client",
+        records: sorted,
+        trendsElement: trendsRef.current,
+      });
+      toast({ title: "InBody report ready", description: "PDF saved to your device." });
+    } catch (e: any) {
+      toast({
+        title: "Couldn't generate PDF",
+        description: e?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -820,34 +896,60 @@ function InbodyTab({ userId }: { userId: number }) {
         <div>
           <h2 className="text-lg font-display font-bold">Body Composition History</h2>
           <p className="text-xs text-muted-foreground">
-            Upload InBody scans to track your progress
+            Upload InBody scans — we'll read the numbers automatically.
           </p>
         </div>
-        <Button
-          onClick={() => fileRef.current?.click()}
-          className="rounded-xl"
-          disabled={upload.isPending}
-          data-testid="button-upload-inbody"
-        >
-          {upload.isPending ? (
-            <Loader2 size={14} className="animate-spin mr-1.5" />
-          ) : (
-            <Upload size={14} className="mr-1.5" />
-          )}
-          Upload Scan
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*,application/pdf"
-          className="hidden"
-          onChange={onFile}
-        />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleDownloadPdf}
+            disabled={exporting || sorted.length === 0}
+            className="rounded-xl border-white/10"
+            data-testid="button-download-inbody-pdf"
+          >
+            {exporting ? (
+              <Loader2 size={14} className="animate-spin mr-1.5" />
+            ) : (
+              <FileDown size={14} className="mr-1.5" />
+            )}
+            Download InBody Report PDF
+          </Button>
+          <Button
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl"
+            disabled={upload.isPending}
+            data-testid="button-upload-inbody"
+          >
+            {upload.isPending ? (
+              <Loader2 size={14} className="animate-spin mr-1.5" />
+            ) : (
+              <Upload size={14} className="mr-1.5" />
+            )}
+            {upload.isPending ? "Reading your InBody scan…" : "Upload Scan"}
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={onFile}
+          />
+        </div>
       </div>
 
-      {/* Trends */}
+      {upload.isPending && (
+        <div
+          className="rounded-2xl border border-primary/30 bg-primary/5 p-4 inline-flex items-center gap-3"
+          data-testid="status-inbody-reading"
+        >
+          <Loader2 size={16} className="animate-spin text-primary" />
+          <span className="text-sm">Reading your InBody scan… this usually takes a few seconds.</span>
+        </div>
+      )}
+
+      {/* Trends — wrapped in a ref so the InBody PDF can snapshot it */}
       {sorted.length >= 2 && (
-        <div>
+        <div ref={trendsRef}>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Trends
           </h3>
@@ -857,11 +959,13 @@ function InbodyTab({ userId }: { userId: number }) {
 
       {isLoading && <SkeletonCards />}
 
-      {!isLoading && list.length === 0 && <EmptyState title="No InBody scans yet" />}
+      {!isLoading && list.length === 0 && !upload.isPending && (
+        <EmptyState title="No InBody scans yet" />
+      )}
 
       {latest && (
         <div className="rounded-3xl border border-primary/30 bg-primary/5 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 inline-flex items-center gap-2">
                 <TrendingUp size={12} /> Latest Scan
@@ -871,18 +975,14 @@ function InbodyTab({ userId }: { userId: number }) {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={() => {
-                  setPreviewRecord(latest);
-                  setEditable(recordToEditable(latest));
-                }}
-                data-testid="button-edit-latest-inbody"
-              >
-                Edit
-              </Button>
+              {!latest.aiExtracted && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  data-testid="badge-needs-review"
+                >
+                  <AlertCircle size={11} /> Needs Review
+                </span>
+              )}
               {latest.fileUrl && (
                 <a
                   href={latest.fileUrl}
@@ -909,10 +1009,12 @@ function InbodyTab({ userId }: { userId: number }) {
           {latest.notes && (
             <p className="text-xs text-muted-foreground mt-4 italic">"{latest.notes}"</p>
           )}
-          {!latest.aiExtracted && !hasMetrics(latest) && (
+          {!latest.aiExtracted && (
             <p className="text-xs text-amber-300/80 mt-4 inline-flex items-start gap-1.5">
               <AlertCircle size={12} className="mt-0.5" />
-              We received your scan. Youssef will review and update your numbers shortly.
+              {hasMetrics(latest)
+                ? "Some values came through with low confidence. Youssef will double-check this scan."
+                : "We received your scan but couldn't read the numbers automatically. Youssef will update them shortly."}
             </p>
           )}
         </div>
@@ -935,8 +1037,8 @@ function InbodyTab({ userId }: { userId: number }) {
                     {r.recordedAt && format(new Date(r.recordedAt), "MMM d, yyyy")}
                   </span>
                   <span className="text-muted-foreground ml-3">
-                    {r.weight ? `${r.weight}kg` : "—"} •{" "}
-                    {r.bodyFat ? `${r.bodyFat}% BF` : "—"}
+                    {r.weight != null ? `${r.weight}kg` : "Not available"} •{" "}
+                    {r.bodyFat != null ? `${r.bodyFat}% BF` : "Not available"}
                   </span>
                 </div>
                 {r.fileUrl && (
@@ -954,93 +1056,23 @@ function InbodyTab({ userId }: { userId: number }) {
           </div>
         </div>
       )}
-
-      {/* Preview & confirm dialog */}
-      <Dialog
-        open={!!previewRecord}
-        onOpenChange={(v) => {
-          if (!v) setPreviewRecord(null);
-        }}
-      >
-        <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Confirm your InBody numbers</DialogTitle>
-            <DialogDescription>
-              {previewRecord?.aiExtracted
-                ? "We extracted these values automatically. Review and adjust anything that doesn't match your scan."
-                : "Edit your InBody values."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <NumField label="Weight (kg)" value={editable.weight} onChange={(v) => setEditable({ ...editable, weight: v })} testId="input-inbody-weight" />
-            <NumField label="Body Fat (%)" value={editable.bodyFat} onChange={(v) => setEditable({ ...editable, bodyFat: v })} testId="input-inbody-bodyFat" />
-            <NumField label="Muscle Mass (kg)" value={editable.muscleMass} onChange={(v) => setEditable({ ...editable, muscleMass: v })} testId="input-inbody-muscleMass" />
-            <NumField label="BMI" value={editable.bmi} onChange={(v) => setEditable({ ...editable, bmi: v })} testId="input-inbody-bmi" />
-            <NumField label="Visceral Fat" value={editable.visceralFat} onChange={(v) => setEditable({ ...editable, visceralFat: v })} testId="input-inbody-visceralFat" />
-            <NumField label="BMR (kcal)" value={editable.bmr} onChange={(v) => setEditable({ ...editable, bmr: v })} testId="input-inbody-bmr" />
-            <NumField label="Body Water (L)" value={editable.water} onChange={(v) => setEditable({ ...editable, water: v })} testId="input-inbody-water" />
-            <NumField label="Score" value={editable.score} onChange={(v) => setEditable({ ...editable, score: v })} testId="input-inbody-score" />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setPreviewRecord(null)}
-              data-testid="button-skip-inbody"
-            >
-              Skip for now
-            </Button>
-            <Button
-              onClick={onConfirm}
-              disabled={updateInbody.isPending}
-              data-testid="button-save-inbody"
-            >
-              {updateInbody.isPending && <Loader2 size={14} className="mr-1.5 animate-spin" />}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
-function NumField({
-  label,
-  value,
-  onChange,
-  testId,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  testId?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        inputMode="decimal"
-        className="bg-white/5 border-white/10 h-10 mt-1"
-        data-testid={testId}
-      />
-    </label>
-  );
-}
-
-function hasMetrics(r: InbodyRecord) {
-  return r.weight || r.bodyFat || r.muscleMass || r.bmi;
-}
-
 function Metric({ label, value, unit }: { label: string; value: number | null; unit?: string }) {
+  const display =
+    value != null ? `${value}${unit ? ` ${unit}` : ""}` : "Not available";
   return (
     <div className="rounded-xl bg-background/40 border border-white/5 p-3">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="font-display font-bold text-lg mt-0.5">
-        {value != null ? `${value}${unit ? ` ${unit}` : ""}` : "—"}
+      <p
+        className={`font-display font-bold text-lg mt-0.5 ${
+          value == null ? "text-muted-foreground/60 text-base" : ""
+        }`}
+        data-testid={`metric-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      >
+        {display}
       </p>
     </div>
   );

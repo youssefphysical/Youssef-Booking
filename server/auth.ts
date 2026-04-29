@@ -9,6 +9,7 @@ import {
   User,
   insertClientSchema,
   REGISTRATION_CONSENT_ITEMS,
+  tierFromFrequency,
   POLICY_VERSION,
 } from "@shared/schema";
 import { registrationConsentSchema } from "@shared/routes";
@@ -110,6 +111,7 @@ export function setupAuth(app: Express) {
         fitnessGoal,
         primaryGoal,
         notes,
+        weeklyFrequency,
       } = parsed.data;
 
       const existingByEmail = await storage.getUserByEmail(email);
@@ -122,6 +124,7 @@ export function setupAuth(app: Express) {
       }
 
       const hashedPassword = await hashPassword(password);
+      const initialTier = tierFromFrequency(weeklyFrequency);
       const user = await storage.createUser({
         username: email,
         email,
@@ -135,7 +138,10 @@ export function setupAuth(app: Express) {
         primaryGoal: primaryGoal || null,
         notes: notes || null,
         role: "client",
-      });
+        weeklyFrequency,
+        vipTier: initialTier,
+        vipUpdatedAt: new Date(),
+      } as any);
 
       // Persist registration consent for legal/audit trail
       try {
