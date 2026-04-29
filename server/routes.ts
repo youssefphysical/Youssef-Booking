@@ -17,6 +17,8 @@ import {
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
+  protectedCancellationQuota,
+  SAME_DAY_ADJUST_QUOTA,
   type User,
   type Package,
 } from "@shared/schema";
@@ -43,6 +45,41 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00`);
+}
+
+function todayDateString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// Recompute the client's VIP tier based on the count of completed sessions
+// in the past 7 calendar days. Best-effort: never throws.
+async function recomputeVipTier(userId: number): Promise<string> {
+  try {
+    const all = await storage.getBookings({ userId });
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    const completedLastWeek = all.filter((b) => {
+      if (b.status !== "completed") return false;
+      const at = buildSessionDate(b.date, b.timeSlot);
+      return at.getTime() >= cutoff.getTime();
+    }).length;
+    let tier: "elite" | "consistent" | "developing";
+    if (completedLastWeek >= 4) tier = "elite";
+    else if (completedLastWeek >= 2) tier = "consistent";
+    else tier = "developing";
+    await storage.updateUser(userId, {
+      vipTier: tier,
+      vipUpdatedAt: new Date(),
+    } as any);
+    return tier;
+  } catch (e) {
+    console.warn("[vip] recompute failed:", e);
+    return "developing";
+  }
 }
 
 // =============================
@@ -274,7 +311,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const useEmergencyCancel = !!(req.body && req.body.useEmergencyCancel);
+    // New: useProtectedCancel. Backwards-compatible: also accept the legacy
+    // useEmergencyCancel flag from older clients.
+    const useProtectedCancel = !!(
+      req.body && (req.body.useProtectedCancel || req.body.useEmergencyCancel)
+    );
 
     const settings = await storage.getSettings();
     const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
@@ -283,50 +324,63 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const isWithinCutoff = msUntil < cutoffMs;
 
     let newStatus: string;
-    let usedEmergency = false;
+    let usedProtected = false;
 
     if (me.role === "admin") {
       newStatus = "cancelled";
     } else if (!isWithinCutoff) {
       // Plenty of notice — free cancel
       newStatus = "free_cancelled";
-    } else if (useEmergencyCancel) {
-      // Within cutoff, client requested emergency cancel
+    } else if (useProtectedCancel) {
       const owner = await storage.getUser(booking.userId);
       const monthKey = currentMonthKey();
-      const alreadyUsedThisMonth = owner?.emergencyCancelLastMonth === monthKey;
-      if (alreadyUsedThisMonth) {
+      const usedThisMonth =
+        owner?.protectedCancelMonth === monthKey
+          ? (owner.protectedCancelCount ?? 0)
+          : 0;
+      const quota = protectedCancellationQuota(owner?.vipTier);
+      if (usedThisMonth >= quota) {
         return res.status(400).json({
-          message:
-            "You have already used your Emergency Cancel for this month. Please contact Youssef directly.",
+          message: `You have used all ${quota} Protected Cancellation${
+            quota === 1 ? "" : "s"
+          } for this month. Please contact Youssef directly.`,
         });
       }
-      newStatus = "emergency_cancelled";
-      usedEmergency = true;
+      newStatus = "free_cancelled";
+      usedProtected = true;
     } else {
       return res.status(400).json({
-        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain. You can use your Emergency Cancel if available, or contact Youssef directly.`,
+        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain. You can use a Protected Cancellation if available, or contact Youssef directly.`,
       });
     }
 
     const updated = await storage.updateBooking(id, {
       status: newStatus,
       cancelledAt: new Date(),
-      isEmergencyCancel: usedEmergency,
-    });
+      isEmergencyCancel: usedProtected, // legacy column, kept in sync
+      protectedCancellation: usedProtected,
+    } as any);
 
-    if (usedEmergency) {
+    if (usedProtected) {
       try {
+        const owner = await storage.getUser(booking.userId);
+        const monthKey = currentMonthKey();
+        const sameMonth = owner?.protectedCancelMonth === monthKey;
         await storage.updateUser(booking.userId, {
-          emergencyCancelLastMonth: currentMonthKey(),
+          protectedCancelMonth: monthKey,
+          protectedCancelCount: sameMonth
+            ? (owner?.protectedCancelCount ?? 0) + 1
+            : 1,
+          // Keep legacy column populated so older admin tooling keeps working
+          emergencyCancelLastMonth: monthKey,
           emergencyCancelLastUsedAt: new Date(),
-        });
+        } as any);
       } catch {
         /* ignore */
       }
     }
 
-    // Only late_cancelled deducts; emergency_cancelled / free_cancelled / cancelled do not.
+    // Only late_cancelled deducts; protected/free/cancelled do not.
     if (newStatus === "late_cancelled" && booking.packageId) {
       try {
         await storage.incrementPackageUsage(booking.packageId);
@@ -337,12 +391,121 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(updated);
   });
 
-  // Admin: clear emergency cancel usage so the client can use it again
+  // Same-Day Adjustment: shift a session to a different time the SAME day.
+  // Rules: same calendar day, ≥60 minutes before original slot, target slot
+  // must be free, and the user's monthly quota must not be exhausted.
+  app.post("/api/bookings/:id/same-day-adjust", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    const newTimeSlot: string | undefined = req.body?.newTimeSlot;
+    if (!newTimeSlot || !/^\d{2}:\d{2}$/.test(newTimeSlot)) {
+      return res.status(400).json({ message: "Provide a valid new time slot (HH:MM)." });
+    }
+    const booking = await storage.getBooking(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (me.role !== "admin" && booking.userId !== me.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    if (
+      ["cancelled", "free_cancelled", "late_cancelled", "emergency_cancelled", "completed", "no_show"].includes(
+        booking.status,
+      )
+    ) {
+      return res.status(400).json({ message: "This booking can no longer be adjusted." });
+    }
+
+    // Must be the same calendar day as today
+    if (booking.date !== todayDateString()) {
+      return res.status(400).json({
+        message: "Same-Day Adjustment is only available for today's bookings.",
+      });
+    }
+    // ≥60 min before the original slot
+    const originalAt = buildSessionDate(booking.date, booking.timeSlot);
+    if (originalAt.getTime() - Date.now() < 60 * 60 * 1000) {
+      return res.status(400).json({
+        message: "Same-Day Adjustments must be requested at least 1 hour before your session.",
+      });
+    }
+    // No-op guard: don't burn a quota for an unchanged slot
+    if (newTimeSlot === booking.timeSlot) {
+      return res.status(400).json({
+        message: "Pick a different time slot to adjust your session.",
+      });
+    }
+    // The new slot must also be later today (no day change)
+    const newAt = buildSessionDate(booking.date, newTimeSlot);
+    if (newAt.getTime() - Date.now() < 30 * 60 * 1000) {
+      return res.status(400).json({
+        message: "Pick a slot at least 30 minutes from now.",
+      });
+    }
+
+    // Quota check (skip for admin)
+    if (me.role !== "admin") {
+      const owner = await storage.getUser(booking.userId);
+      const monthKey = currentMonthKey();
+      const usedThisMonth =
+        owner?.sameDayAdjustMonth === monthKey ? (owner.sameDayAdjustCount ?? 0) : 0;
+      if (usedThisMonth >= SAME_DAY_ADJUST_QUOTA) {
+        return res.status(400).json({
+          message: `You have used all ${SAME_DAY_ADJUST_QUOTA} Same-Day Adjustments for this month.`,
+        });
+      }
+    }
+
+    // Slot must be free (and not blocked)
+    const taken = await storage.getBookingByDateAndSlot(booking.date, newTimeSlot);
+    if (
+      taken &&
+      taken.id !== id &&
+      !["cancelled", "free_cancelled", "late_cancelled", "emergency_cancelled"].includes(
+        taken.status,
+      )
+    ) {
+      return res.status(400).json({ message: "That slot is already booked." });
+    }
+    const blocks = await storage.getBlockedSlots();
+    const conflict = blocks.find(
+      (b) => b.date === booking.date && (b.timeSlot === null || b.timeSlot === newTimeSlot),
+    );
+    if (conflict && me.role !== "admin") {
+      return res.status(400).json({ message: "That time is blocked." });
+    }
+
+    const rescheduledFrom = `${booking.date} ${booking.timeSlot}`;
+    const updated = await storage.updateBooking(id, {
+      timeSlot: newTimeSlot,
+      rescheduledFrom,
+    } as any);
+
+    if (me.role !== "admin") {
+      try {
+        const owner = await storage.getUser(booking.userId);
+        const monthKey = currentMonthKey();
+        const sameMonth = owner?.sameDayAdjustMonth === monthKey;
+        await storage.updateUser(booking.userId, {
+          sameDayAdjustMonth: monthKey,
+          sameDayAdjustCount: sameMonth
+            ? (owner?.sameDayAdjustCount ?? 0) + 1
+            : 1,
+        } as any);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    res.json(updated);
+  });
+
+  // Admin: clear protected (legacy: emergency) cancel usage so the client can use it again
   app.post("/api/users/:id/reset-emergency-cancel", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const updated = await storage.updateUser(id, {
       emergencyCancelLastMonth: null,
       emergencyCancelLastUsedAt: null,
+      protectedCancelMonth: null,
+      protectedCancelCount: 0,
     } as any);
     res.json(sanitizeUser(updated));
   });
@@ -427,6 +590,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       try {
         await storage.decrementPackageUsage(booking.packageId);
       } catch {}
+    }
+    // Recompute the client's VIP tier whenever a session is marked completed
+    // (or unmarked). Best-effort, never throws.
+    if (
+      previousStatus !== newStatus &&
+      (previousStatus === "completed" || newStatus === "completed")
+    ) {
+      void recomputeVipTier(booking.userId);
     }
     res.json(updated);
   });
@@ -650,13 +821,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.status(201).json(created);
   });
 
-  app.patch("/api/inbody/:id", requireAdmin, async (req, res) => {
+  app.patch("/api/inbody/:id", requireAuth, async (req, res) => {
+    const me = req.user as User;
     const id = Number(req.params.id);
+    const existing = await storage.getInbodyRecord(id);
+    if (!existing) return res.status(404).json({ message: "Record not found" });
+    if (me.role !== "admin" && existing.userId !== me.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     const parsed = updateInbodySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
     }
-    const updated = await storage.updateInbodyRecord(id, parsed.data);
+    // Clients can only edit their own metric values + notes — never the file
+    // path, ownership, or AI-extraction flag.
+    const data: Record<string, unknown> = { ...parsed.data };
+    if (me.role !== "admin") {
+      delete (data as any).userId;
+      delete (data as any).fileUrl;
+      delete (data as any).aiExtracted;
+      delete (data as any).recordedAt;
+    }
+    const updated = await storage.updateInbodyRecord(id, data as any);
     res.json(updated);
   });
 

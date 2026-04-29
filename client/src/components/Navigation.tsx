@@ -91,6 +91,7 @@ export function Navigation() {
         <nav className="hidden md:flex items-center gap-1">
           <TopNavLink href="/" label="Home" active={location === "/"} />
           <TopNavLink href="/book" label="Book" active={location === "/book"} />
+          <TopNavLink href="/how-it-works" label="How it Works" active={location === "/how-it-works"} />
           <TopNavLink href="/policy" label="Policy" active={location === "/policy"} />
           {user?.role === "client" && (
             <TopNavLink href="/dashboard" label="My Sessions" active={location.startsWith("/dashboard")} />
@@ -142,6 +143,7 @@ export function Navigation() {
           <div className="px-5 py-4 space-y-1">
             <MobileLink href="/" label="Home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/book" label="Book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/how-it-works" label="How it Works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/policy" label="Cancellation Policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
             {user?.role === "client" && (
               <>

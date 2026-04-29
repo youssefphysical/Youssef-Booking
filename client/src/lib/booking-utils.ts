@@ -14,6 +14,8 @@ export function formatStatus(status: string): string {
     case "cancelled": return "Cancelled";
     case "free_cancelled": return "Free Cancellation";
     case "late_cancelled": return "Late Cancellation – Session Charged";
+    case "emergency_cancelled": return "Protected Cancellation";
+    case "no_show": return "No-Show";
     default: return status;
   }
 }
@@ -25,6 +27,8 @@ export function statusColor(status: string): string {
     case "completed": return "bg-blue-500/15 text-blue-300 border-blue-500/30";
     case "cancelled":
     case "free_cancelled": return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+    case "emergency_cancelled": return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "no_show":
     case "late_cancelled": return "bg-red-500/15 text-red-300 border-red-500/30";
     default: return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
   }

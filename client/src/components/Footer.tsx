@@ -4,10 +4,20 @@ export function Footer() {
   return (
     <footer className="border-t border-white/5 py-10 mt-10">
       <div className="max-w-6xl mx-auto px-5 flex flex-col items-center gap-5 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p className="text-center md:text-left">
-          © {new Date().getFullYear()} Youssef Fitness. Personal Training, Dubai.
-        </p>
+        <div className="text-center md:text-left">
+          <p className="font-display text-foreground/90 text-sm tracking-wide">
+            <span className="text-gradient-blue font-semibold">Youssef Fitness</span>
+            <span className="text-muted-foreground/60 mx-2">·</span>
+            Personal Training, Dubai
+          </p>
+          <p className="text-[11px] text-muted-foreground/70 mt-1">
+            © {new Date().getFullYear()} Youssef Ahmed. All rights reserved.
+          </p>
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <Link href="/how-it-works" className="hover:text-primary" data-testid="link-footer-how-it-works">
+            How it Works
+          </Link>
           <Link href="/privacy" className="hover:text-primary" data-testid="link-footer-privacy">
             Privacy Policy
           </Link>

@@ -99,8 +99,16 @@ export const api = {
       method: "POST" as const,
       path: "/api/bookings/:id/cancel",
       input: z
-        .object({ useEmergencyCancel: z.boolean().optional() })
+        .object({
+          useProtectedCancel: z.boolean().optional(),
+          useEmergencyCancel: z.boolean().optional(),
+        })
         .optional(),
+    },
+    sameDayAdjust: {
+      method: "POST" as const,
+      path: "/api/bookings/:id/same-day-adjust",
+      input: z.object({ newTimeSlot: z.string().regex(/^\d{2}:\d{2}$/) }),
     },
     delete: { method: "DELETE" as const, path: "/api/bookings/:id" },
     resetEmergencyCancel: {

@@ -33,6 +33,15 @@ export const users = pgTable("users", {
   // Tracks last calendar month an emergency cancel was used (e.g. "2026-04")
   emergencyCancelLastMonth: text("emergency_cancel_last_month"),
   emergencyCancelLastUsedAt: timestamp("emergency_cancel_last_used_at"),
+  // VIP tier: 'elite' | 'consistent' | 'developing'
+  vipTier: text("vip_tier").default("developing"),
+  vipUpdatedAt: timestamp("vip_updated_at"),
+  // Protected Cancellation monthly quota tracking ("YYYY-MM" / count)
+  protectedCancelMonth: text("protected_cancel_month"),
+  protectedCancelCount: integer("protected_cancel_count").notNull().default(0),
+  // Same-Day Adjustment monthly quota tracking
+  sameDayAdjustMonth: text("same_day_adjust_month"),
+  sameDayAdjustCount: integer("same_day_adjust_count").notNull().default(0),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -71,10 +80,15 @@ export const bookings = pgTable("bookings", {
   sessionType: text("session_type").notNull().default("package"),
   paymentStatus: text("payment_status").notNull().default("unpaid"),
   workoutCategory: text("workout_category"),
+  workoutNotes: text("workout_notes"),
   notes: text("notes"),
   adminNotes: text("admin_notes"),
   clientNotes: text("client_notes"),
   isEmergencyCancel: boolean("is_emergency_cancel").notNull().default(false),
+  // True if a Protected Cancellation was used (counts toward monthly quota; no session deducted)
+  protectedCancellation: boolean("protected_cancellation").notNull().default(false),
+  // Audit trail: original "YYYY-MM-DD HH:MM" before a Same-Day Adjustment
+  rescheduledFrom: text("rescheduled_from"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -264,9 +278,11 @@ export const updateBookingSchema = z.object({
   adminNotes: z.string().nullable().optional(),
   clientNotes: z.string().nullable().optional(),
   workoutCategory: z.enum(WORKOUT_CATEGORIES).nullable().optional(),
+  workoutNotes: z.string().nullable().optional(),
   packageId: z.number().int().nullable().optional(),
   sessionType: z.enum(SESSION_TYPES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
+  protectedCancellation: z.boolean().optional(),
 });
 
 export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
@@ -409,15 +425,41 @@ export type DashboardStats = {
 
 export const PACKAGE_DEFINITIONS: Record<
   string,
-  { label: string; sessions: number; isDuo?: boolean; isTrial?: boolean; isSingle?: boolean }
+  { label: string; tagline?: string; sessions: number; isDuo?: boolean; isTrial?: boolean; isSingle?: boolean }
 > = {
   single: { label: "Single Session", sessions: 1, isSingle: true },
-  "10": { label: "10 Sessions", sessions: 10 },
-  "20": { label: "20 Sessions", sessions: 20 },
-  "25": { label: "25 Sessions", sessions: 25 },
-  duo30: { label: "Duo Package — 30 Sessions", sessions: 30, isDuo: true },
-  trial: { label: "Free Trial Session — New Client Only", sessions: 1, isTrial: true },
+  "10": { label: "Essential Plan", tagline: "10 sessions", sessions: 10 },
+  "20": { label: "Progress Plan", tagline: "20 sessions", sessions: 20 },
+  "25": { label: "Elite Plan", tagline: "25 sessions", sessions: 25 },
+  duo30: {
+    label: "Duo Performance Plan",
+    tagline: "30 sessions · train together",
+    sessions: 30,
+    isDuo: true,
+  },
+  trial: {
+    label: "Intro Assessment Session",
+    tagline: "New client only",
+    sessions: 1,
+    isTrial: true,
+  },
 };
+
+export const VIP_TIERS = ["elite", "consistent", "developing"] as const;
+export const VIP_TIER_LABELS: Record<string, string> = {
+  elite: "Elite Client",
+  consistent: "Consistent Client",
+  developing: "Developing Consistency",
+};
+export const VIP_TIER_DESCRIPTIONS: Record<string, string> = {
+  elite: "4+ sessions per week. Priority booking + 2 Protected Cancellations / month.",
+  consistent: "2-3 sessions per week. 1 Protected Cancellation / month.",
+  developing: "Less than 2 sessions per week. 1 Protected Cancellation / month.",
+};
+export function protectedCancellationQuota(tier: string | null | undefined): number {
+  return tier === "elite" ? 2 : 1;
+}
+export const SAME_DAY_ADJUST_QUOTA = 2;
 
 export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
   { value: "fat_loss", label: "Fat Loss" },

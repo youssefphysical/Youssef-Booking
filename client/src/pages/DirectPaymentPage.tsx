@@ -27,8 +27,13 @@ export default function DirectPaymentPage() {
 
   const bankName = settings?.bankAccountName || FALLBACK_BANK_NAME;
   const iban = settings?.bankIban || FALLBACK_IBAN;
-  const isHidden =
-    settings && settings.showBankDetailsPublicly === false && !user;
+  // Bank details are NEVER public. They're only shown to the admin, OR when
+  // the admin has explicitly enabled `showBankDetailsPublicly` AND the visitor
+  // is a signed-in client. Anyone else sees the WhatsApp request panel.
+  const canSeeBank =
+    user?.role === "admin" ||
+    (user?.role === "client" && settings?.showBankDetailsPublicly === true);
+  const isHidden = !canSeeBank;
 
   const copy = async (label: string, value: string) => {
     try {
@@ -74,22 +79,26 @@ export default function DirectPaymentPage() {
           <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6 flex items-start gap-3">
             <Info className="text-amber-400 shrink-0 mt-1" size={20} />
             <div className="text-sm text-amber-100/90">
-              <p className="font-semibold">Sign in to view payment details</p>
+              <p className="font-semibold">Confirm your payment on WhatsApp</p>
               <p className="mt-1 opacity-80">
-                Bank details are shared privately with active clients. Please log in to your client
-                account, or contact Youssef on WhatsApp to receive the bank details.
+                Bank details are shared privately. Message Youssef on WhatsApp and he will share
+                the payment details and confirm your session.
               </p>
               <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                <Link
-                  href="/auth"
-                  className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm"
-                  data-testid="link-sign-in"
-                >
-                  Sign in
-                </Link>
+                {!user && (
+                  <Link
+                    href="/auth"
+                    className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-sm"
+                    data-testid="link-sign-in"
+                  >
+                    Sign in
+                  </Link>
+                )}
                 <WhatsAppButton
-                  label="Request via WhatsApp"
-                  message="Hi Youssef, please share the bank details so I can pay for my session."
+                  label="Request payment details"
+                  message={`Hi Youssef, please share the payment details${
+                    user ? ` (account: ${user.fullName}).` : "."
+                  }`}
                   testId="button-request-whatsapp"
                 />
               </div>
@@ -152,7 +161,7 @@ export default function DirectPaymentPage() {
             </div>
 
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-muted-foreground leading-relaxed">
-              Payments are handled directly between you and Youssef Fitness. Receipts and refunds
+              Payments are handled directly between you and Youssef. Receipts and refunds
               are at Youssef's discretion. Sessions are confirmed once payment is received.
             </div>
           </>

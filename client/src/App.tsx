@@ -18,6 +18,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsConditions from "@/pages/TermsConditions";
 import MedicalDisclaimer from "@/pages/MedicalDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
+import HowItWorks from "@/pages/HowItWorks";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
@@ -72,6 +73,7 @@ function Router() {
         <Route path="/terms" component={TermsConditions} />
         <Route path="/medical-disclaimer" component={MedicalDisclaimer} />
         <Route path="/cookies" component={CookiePolicy} />
+        <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/direct-payment" component={DirectPaymentPage} />
 
         {/* Client */}

@@ -82,13 +82,22 @@ export function useCancelBooking() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (
-      input: number | { id: number; useEmergencyCancel?: boolean },
+      input:
+        | number
+        | {
+            id: number;
+            // New name. Old name kept for backward compatibility.
+            useProtectedCancel?: boolean;
+            useEmergencyCancel?: boolean;
+          },
     ) => {
       const id = typeof input === "number" ? input : input.id;
-      const useEmergencyCancel =
-        typeof input === "number" ? false : !!input.useEmergencyCancel;
+      const useProtectedCancel =
+        typeof input === "number"
+          ? false
+          : !!(input.useProtectedCancel || input.useEmergencyCancel);
       const url = buildUrl(api.bookings.cancel.path, { id });
-      const res = await apiRequest("POST", url, { useEmergencyCancel });
+      const res = await apiRequest("POST", url, { useProtectedCancel });
       return (await res.json()) as Booking;
     },
     onSuccess: (booking) => {
@@ -97,18 +106,39 @@ export function useCancelBooking() {
       qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title:
-          booking.status === "emergency_cancelled"
-            ? "Emergency cancel applied"
-            : "Booking cancelled",
-        description:
-          booking.status === "emergency_cancelled"
-            ? "Your session was cancelled without charge using your monthly Emergency Cancel."
-            : undefined,
+        title: (booking as any).protectedCancellation
+          ? "Protected Cancellation applied"
+          : "Booking cancelled",
+        description: (booking as any).protectedCancellation
+          ? "Your session was cancelled without charge using your monthly Protected Cancellation."
+          : undefined,
       });
     },
     onError: (err: Error) => {
       toast({ title: "Cancel failed", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useSameDayAdjust() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ id, newTimeSlot }: { id: number; newTimeSlot: string }) => {
+      const url = buildUrl(api.bookings.sameDayAdjust.path, { id });
+      const res = await apiRequest("POST", url, { newTimeSlot });
+      return (await res.json()) as Booking;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [api.bookings.list.path] });
+      qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({
+        title: "Session moved",
+        description: "Your session has been moved to the new time today.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Couldn't adjust", description: err.message, variant: "destructive" });
     },
   });
 }
