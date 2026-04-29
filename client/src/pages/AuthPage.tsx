@@ -52,7 +52,7 @@ import {
 } from "lucide-react";
 
 const clientLoginSchema = z.object({
-  username: z.string().email("Enter a valid email"),
+  email: z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -80,8 +80,14 @@ const registerSchema = z.object({
 
 type Mode = "client-login" | "client-register" | "admin-login";
 
-export default function AuthPage() {
-  const [mode, setMode] = useState<Mode>("client-login");
+export default function AuthPage({
+  initialMode = "client-login",
+  adminOnly = false,
+}: {
+  initialMode?: Mode;
+  adminOnly?: boolean;
+} = {}) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   // Suppress the auto-redirect while a multi-step registration flow is running
@@ -131,7 +137,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          {mode !== "admin-login" && (
+          {mode !== "admin-login" && !adminOnly && (
             <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-white/5 rounded-xl">
               <button
                 onClick={() => setMode("client-login")}
@@ -180,25 +186,6 @@ export default function AuthPage() {
             </motion.div>
           </AnimatePresence>
 
-          <div className="mt-6 pt-5 border-t border-white/5 text-center">
-            {mode === "admin-login" ? (
-              <button
-                onClick={() => setMode("client-login")}
-                data-testid="button-switch-client"
-                className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1.5"
-              >
-                <UserIcon size={12} /> Client login
-              </button>
-            ) : (
-              <button
-                onClick={() => setMode("admin-login")}
-                data-testid="button-switch-admin"
-                className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1.5"
-              >
-                <ShieldCheck size={12} /> Admin login
-              </button>
-            )}
-          </div>
         </div>
       </motion.div>
     </div>
@@ -210,7 +197,7 @@ function ClientLoginForm() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const form = useForm<z.infer<typeof clientLoginSchema>>({
     resolver: zodResolver(clientLoginSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { email: "", password: "" },
   });
 
   return (
@@ -218,13 +205,14 @@ function ClientLoginForm() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit((d) =>
-            loginMutation.mutate({ username: d.username, password: d.password }),
+            loginMutation.mutate({ username: d.email, password: d.password }),
           )}
           className="space-y-4"
+          autoComplete="on"
         >
           <FormField
             control={form.control}
-            name="username"
+            name="email"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Email</FormLabel>
@@ -233,7 +221,10 @@ function ClientLoginForm() {
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
+                    inputMode="email"
                     {...field}
+                    name="email"
+                    id="login-email"
                     data-testid="input-email"
                     className="bg-white/5 border-white/10 h-11"
                   />
@@ -264,6 +255,8 @@ function ClientLoginForm() {
                     placeholder="••••••••"
                     autoComplete="current-password"
                     {...field}
+                    name="password"
+                    id="login-password"
                     data-testid="input-password"
                     className="bg-white/5 border-white/10 h-11"
                   />
@@ -424,7 +417,10 @@ function AdminLoginForm() {
               <FormControl>
                 <Input
                   placeholder="admin"
+                  autoComplete="username"
                   {...field}
+                  name="username"
+                  id="admin-username"
                   data-testid="input-admin-username"
                   className="bg-white/5 border-white/10 h-11"
                 />
@@ -443,7 +439,10 @@ function AdminLoginForm() {
                 <Input
                   type="password"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   {...field}
+                  name="password"
+                  id="admin-password"
                   data-testid="input-admin-password"
                   className="bg-white/5 border-white/10 h-11"
                 />
@@ -711,7 +710,11 @@ function RegisterForm({
                       <Input
                         type="email"
                         placeholder="you@example.com"
+                        autoComplete="email"
+                        inputMode="email"
                         {...field}
+                        name="email"
+                        id="register-email"
                         data-testid="input-register-email"
                         className="bg-white/5 border-white/10 h-11"
                       />
@@ -748,7 +751,10 @@ function RegisterForm({
                     <Input
                       type="password"
                       placeholder="••••••••"
+                      autoComplete="new-password"
                       {...field}
+                      name="password"
+                      id="register-password"
                       data-testid="input-register-password"
                       className="bg-white/5 border-white/10 h-11"
                     />
@@ -795,11 +801,11 @@ function RegisterForm({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="1">1 session / week — Foundation</SelectItem>
-                      <SelectItem value="2">2 sessions / week — Progress</SelectItem>
-                      <SelectItem value="3">3 sessions / week — Progress</SelectItem>
+                      <SelectItem value="2">2 sessions / week — Starter</SelectItem>
+                      <SelectItem value="3">3 sessions / week — Momentum</SelectItem>
                       <SelectItem value="4">4 sessions / week — Elite</SelectItem>
-                      <SelectItem value="5">5 sessions / week — Elite</SelectItem>
-                      <SelectItem value="6">6 sessions / week — Elite</SelectItem>
+                      <SelectItem value="5">5 sessions / week — Pro Elite</SelectItem>
+                      <SelectItem value="6">6 sessions / week — Diamond Elite</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-white/50 mt-1">

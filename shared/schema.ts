@@ -455,70 +455,132 @@ export const PACKAGE_DEFINITIONS: Record<
 };
 
 // Canonical tiers. Legacy values are normalised via `normaliseTier`.
-export const VIP_TIERS = ["elite", "progress", "foundation"] as const;
+export type VipTier =
+  | "foundation"
+  | "starter"
+  | "momentum"
+  | "elite"
+  | "pro_elite"
+  | "diamond_elite";
+
+export const VIP_TIERS: readonly VipTier[] = [
+  "diamond_elite",
+  "pro_elite",
+  "elite",
+  "momentum",
+  "starter",
+  "foundation",
+] as const;
+
 export const VIP_TIER_LABELS: Record<string, string> = {
-  elite: "Elite Member",
-  progress: "Progress Member",
-  foundation: "Foundation Member",
-  // Legacy aliases (older accounts before the rename)
-  consistent: "Progress Member",
-  developing: "Foundation Member",
+  diamond_elite: "Diamond Elite",
+  pro_elite: "Pro Elite",
+  elite: "Elite",
+  momentum: "Momentum",
+  starter: "Starter",
+  foundation: "Foundation",
+  // Legacy aliases (older accounts from earlier tier systems)
+  progress: "Momentum",
+  consistent: "Momentum",
+  developing: "Foundation",
 };
+
 export const VIP_TIER_DESCRIPTIONS: Record<string, string> = {
+  diamond_elite:
+    "6 sessions per week. Priority booking, 2 Protected Cancellations and 2 Same-Day Adjustments each month.",
+  pro_elite:
+    "5 sessions per week. Priority booking, 2 Protected Cancellations and 2 Same-Day Adjustments each month.",
   elite:
-    "4–6 sessions per week. Priority booking, 2 Protected Cancellations and 2 Same-Day Adjustments each month.",
-  progress:
-    "2–3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
+    "4 sessions per week. Priority booking, 2 Protected Cancellations and 2 Same-Day Adjustments each month.",
+  momentum:
+    "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
+  starter:
+    "2 sessions per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
   foundation:
     "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
+  // Legacy aliases
+  progress:
+    "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
   consistent:
-    "2–3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
+    "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
   developing:
     "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
 };
+
 export const VIP_TIER_TAGLINES: Record<string, string> = {
-  foundation: "Best for maintaining activity and building consistency.",
-  progress: "A consistent training rhythm for steady results.",
-  elite: "High consistency and priority training support.",
+  foundation: "A simple starting point to build consistency.",
+  starter: "A steady entry level for structured training.",
+  momentum: "A strong rhythm for visible progress.",
+  elite: "High consistency with priority training support.",
+  pro_elite: "Advanced commitment and stronger weekly structure.",
+  diamond_elite: "The highest consistency level for serious transformation.",
 };
 
-export function normaliseTier(tier: string | null | undefined): "elite" | "progress" | "foundation" {
-  if (tier === "elite") return "elite";
-  if (tier === "progress" || tier === "consistent") return "progress";
-  return "foundation"; // covers null, undefined, "developing", "foundation", anything else
+export function normaliseTier(tier: string | null | undefined): VipTier {
+  switch (tier) {
+    case "diamond_elite":
+      return "diamond_elite";
+    case "pro_elite":
+      return "pro_elite";
+    case "elite":
+      return "elite";
+    case "momentum":
+      return "momentum";
+    case "starter":
+      return "starter";
+    case "foundation":
+      return "foundation";
+    // Legacy aliases (pre-rename data)
+    case "progress":
+    case "consistent":
+      return "momentum";
+    case "developing":
+      return "foundation";
+    default:
+      return "foundation";
+  }
 }
 
-export function tierFromFrequency(freq: number | null | undefined): "elite" | "progress" | "foundation" {
+export function tierFromFrequency(freq: number | null | undefined): VipTier {
   if (!freq || freq < 1) return "foundation";
+  if (freq >= 6) return "diamond_elite";
+  if (freq >= 5) return "pro_elite";
   if (freq >= 4) return "elite";
-  if (freq >= 2) return "progress";
+  if (freq >= 3) return "momentum";
+  if (freq >= 2) return "starter";
   return "foundation";
 }
 
 export function protectedCancellationQuota(tier: string | null | undefined): number {
   const t = normaliseTier(tier);
-  if (t === "elite") return 2;
-  if (t === "progress") return 1;
+  if (t === "elite" || t === "pro_elite" || t === "diamond_elite") return 2;
+  if (t === "momentum") return 1;
   return 0;
 }
 
 export function sameDayAdjustQuota(tier: string | null | undefined): number {
   const t = normaliseTier(tier);
-  if (t === "elite") return 2;
-  if (t === "progress") return 1;
+  if (t === "elite" || t === "pro_elite" || t === "diamond_elite") return 2;
+  if (t === "momentum") return 1;
   return 0;
+}
+
+// True for tiers that get the "Priority" badge / priority booking benefit.
+export function tierHasPriority(tier: string | null | undefined): boolean {
+  const t = normaliseTier(tier);
+  return t === "elite" || t === "pro_elite" || t === "diamond_elite";
 }
 
 // Kept for backward compatibility with older callers; do not use in new code.
 export const SAME_DAY_ADJUST_QUOTA = 2;
 
 export const WEEKLY_FREQUENCY_OPTIONS: { value: number; label: string }[] = [
-  { value: 1, label: "1 session per week" },
-  { value: 2, label: "2 sessions per week" },
-  { value: 3, label: "3 sessions per week" },
-  { value: 4, label: "4 sessions per week" },
-  { value: 5, label: "5 sessions per week" },
-  { value: 6, label: "6 sessions per week" },
+  { value: 1, label: "1 session / week — Foundation" },
+  { value: 2, label: "2 sessions / week — Starter" },
+  { value: 3, label: "3 sessions / week — Momentum" },
+  { value: 4, label: "4 sessions / week — Elite" },
+  { value: 5, label: "5 sessions / week — Pro Elite" },
+  { value: 6, label: "6 sessions / week — Diamond Elite" },
 ];
 
 export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [

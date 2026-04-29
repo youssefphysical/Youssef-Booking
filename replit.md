@@ -8,6 +8,26 @@ Public-facing brand: **Personal Training Service** (top nav) · Hero name: **You
 
 The legal name "Youssef Tarek Hashim Ahmed" appears only on the bank-transfer details inside the private direct-payment flow (it is the actual account holder for IBAN AE230260001015917468101) — never on public pages.
 
+## Membership tiers (Apr 2026 — 6-tier expansion)
+The system now has 6 training levels, derived from the client's chosen weekly training frequency at registration. Tier can also be manually overridden by the admin.
+
+| Frequency | Tier | Protected Cancellations / mo | Same-Day Adjustments / mo | Priority booking |
+|-----------|------|------------------------------|---------------------------|------------------|
+| 1 / week  | Foundation     | 0 | 0 | — |
+| 2 / week  | Starter        | 0 | 0 | — |
+| 3 / week  | Momentum       | 1 | 1 | — |
+| 4 / week  | Elite          | 2 | 2 | yes |
+| 5 / week  | Pro Elite      | 2 | 2 | yes |
+| 6 / week  | Diamond Elite  | 2 | 2 | yes |
+
+Tier helpers live in `shared/schema.ts`: `tierFromFrequency`, `protectedCancellationQuota`, `sameDayAdjustQuota`, `tierHasPriority`, `normaliseTier` (legacy `developing`→foundation, `progress`/`consistent`→momentum), plus `VIP_TIER_LABELS`, `VIP_TIER_DESCRIPTIONS`, `VIP_TIER_TAGLINES`. Surfaces: AuthPage register select, ClientDashboard MembershipBlock + VipBadge, AdminClientDetail tier override Select, HowItWorks membership-levels cards.
+
+## Auth routes (Apr 2026)
+- `/auth` — public client login + create-account only. The admin login control is no longer rendered here.
+- `/admin-access` — hidden admin login (renders `<AuthPage initialMode="admin-login" adminOnly />`). Not linked from any public surface; share the URL directly with admins.
+
+All auth inputs ship explicit `name` / `id` / `autoComplete` attributes (`email`, `current-password`, `new-password`, `username`, `email` inputMode) to prevent random browser autofill.
+
 ## Recent stability fixes (Apr 2026)
 - Registration + InBody upload no longer crashes / kicks the user out mid-flow. The auth page now suppresses its auto-redirect via a `submitting` flag and shows a staged status indicator (Creating account → Uploading InBody → Finalizing) before navigating to `/dashboard`.
 - AI extraction (OpenAI Vision) and image optimization (sharp → webp) on InBody and progress uploads are wrapped in try/catch — registration and uploads always persist even when AI/sharp fail.
@@ -38,7 +58,7 @@ The legal name "Youssef Tarek Hashim Ahmed" appears only on the bank-transfer de
 - Profile page (update info, change password, contact Youssef on WhatsApp)
 - Cancellations within the cutoff window are locked; clients are directed to WhatsApp for emergencies
 
-### Admin Portal (`/auth` → "Admin login")
+### Admin Portal (`/admin-access` — hidden route, not linked publicly)
 - Dashboard with KPIs (clients, upcoming, today, completed-this-month, active packages) and quick actions
 - Bookings management: filter, status changes (incl. `late_cancelled`), reschedule, delete, manual booking on behalf of client
 - Clients list with search, contact actions; each card links to a full client detail page

@@ -32,7 +32,7 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: "4. Cancel safely if life happens",
-    body: "Cancel for free up to 6 hours before. Inside that window, Progress and Elite members can use a Protected Cancellation, plus Same-Day Adjustments to shift today's session to a different time.",
+    body: "Cancel for free up to 6 hours before. Inside that window, Momentum members and the Elite tiers (Elite, Pro Elite, Diamond Elite) can use a Protected Cancellation, plus Same-Day Adjustments to shift today's session to a different time.",
   },
   {
     icon: TrendingUp,
@@ -57,34 +57,72 @@ const PLANS = [
 
 const TIERS = [
   {
-    name: "Foundation Member",
+    name: "Foundation",
     rule: "1 session per week",
-    tagline: "Best for maintaining activity and building consistency.",
+    tagline: "A simple starting point to build consistency.",
     perks: [
       "Standard 6-hour cancellation policy",
-      "No Protected Cancellations",
-      "No Same-Day Adjustments",
+      "0 Protected Cancellations per month",
+      "0 Same-Day Adjustments per month",
     ],
+    priority: false,
   },
   {
-    name: "Progress Member",
-    rule: "2–3 sessions per week",
-    tagline: "A consistent training rhythm for steady results.",
+    name: "Starter",
+    rule: "2 sessions per week",
+    tagline: "A steady entry level for structured training.",
+    perks: [
+      "Standard 6-hour cancellation policy",
+      "0 Protected Cancellations per month",
+      "0 Same-Day Adjustments per month",
+    ],
+    priority: false,
+  },
+  {
+    name: "Momentum",
+    rule: "3 sessions per week",
+    tagline: "A strong rhythm for visible progress.",
     perks: [
       "1 Protected Cancellation per month",
       "1 Same-Day Adjustment per month",
       "Standard 6-hour cancellation policy",
     ],
+    priority: false,
   },
   {
-    name: "Elite Member",
-    rule: "4–6 sessions per week",
-    tagline: "High consistency and priority training support.",
+    name: "Elite",
+    rule: "4 sessions per week",
+    tagline: "High consistency with priority training support.",
     perks: [
       "2 Protected Cancellations per month",
       "2 Same-Day Adjustments per month",
       "Priority booking",
     ],
+    priority: true,
+  },
+  {
+    name: "Pro Elite",
+    rule: "5 sessions per week",
+    tagline: "Advanced commitment and stronger weekly structure.",
+    perks: [
+      "2 Protected Cancellations per month",
+      "2 Same-Day Adjustments per month",
+      "Priority booking",
+      "Higher consistency status",
+    ],
+    priority: true,
+  },
+  {
+    name: "Diamond Elite",
+    rule: "6 sessions per week",
+    tagline: "The highest consistency level for serious transformation.",
+    perks: [
+      "2 Protected Cancellations per month",
+      "2 Same-Day Adjustments per month",
+      "Priority booking",
+      "Highest consistency status",
+    ],
+    priority: true,
   },
 ];
 
@@ -173,14 +211,21 @@ export default function HowItWorks() {
           Each level comes with its own monthly flexibility allowances. To change levels,
           message Youssef on WhatsApp.
         </p>
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {TIERS.map((t) => (
             <div
               key={t.name}
               className="rounded-2xl border border-white/10 bg-white/[0.02] p-5"
               data-testid={`card-tier-${t.name.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <p className="font-display font-bold text-lg">{t.name}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-display font-bold text-lg">{t.name}</p>
+                {t.priority && (
+                  <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
+                    Priority
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-primary mt-1">{t.rule}</p>
               <p className="text-xs text-muted-foreground mt-2 italic">{t.tagline}</p>
               <ul className="mt-3 space-y-1.5">

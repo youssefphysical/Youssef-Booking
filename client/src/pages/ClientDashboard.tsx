@@ -74,6 +74,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { InbodyTrends } from "@/components/InbodyTrends";
 import { exportInbodyReportPdf } from "@/lib/pdf-export";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
+import { tierHasPriority, VIP_TIER_TAGLINES } from "@shared/schema";
 import {
   ALL_TIME_SLOTS,
   formatStatus,
@@ -166,12 +167,23 @@ export default function ClientDashboard() {
 
 function VipBadge({ tier }: { tier: string }) {
   const t = normaliseTier(tier);
-  const Icon = t === "elite" ? Crown : t === "progress" ? Star : Sparkles;
+  const Icon =
+    t === "diamond_elite" || t === "pro_elite" || t === "elite"
+      ? Crown
+      : t === "momentum"
+      ? Star
+      : Sparkles;
   const colour =
-    t === "elite"
+    t === "diamond_elite"
+      ? "bg-gradient-to-r from-cyan-400/20 to-violet-500/20 border-cyan-300/40 text-cyan-100"
+      : t === "pro_elite"
+      ? "bg-gradient-to-r from-fuchsia-500/15 to-purple-500/15 border-fuchsia-400/30 text-fuchsia-200"
+      : t === "elite"
       ? "bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-amber-400/30 text-amber-200"
-      : t === "progress"
+      : t === "momentum"
       ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
+      : t === "starter"
+      ? "bg-sky-500/10 border-sky-400/30 text-sky-200"
       : "bg-blue-500/10 border-blue-400/30 text-blue-200";
   return (
     <TooltipProvider>
@@ -220,18 +232,28 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
-            <Info size={12} /> My Membership
+            <Info size={12} /> My Training Level
           </p>
-          <p className="text-sm">
+          <p className="text-sm flex items-center gap-2 flex-wrap">
             <span className="font-semibold" data-testid="text-membership-tier">
               {VIP_TIER_LABELS[tier]}
             </span>
+            {tierHasPriority(tier) && (
+              <span
+                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200"
+                data-testid="badge-priority"
+              >
+                <Crown size={10} /> Priority
+              </span>
+            )}
             <span className="text-muted-foreground">
-              {" "}
-              · {freqOption?.label ?? "Weekly frequency not set"}
+              · {freqOption?.label.split(" — ")[0] ?? "Weekly frequency not set"}
             </span>
           </p>
-          <p className="text-xs text-muted-foreground mt-1.5 max-w-xl">
+          <p className="text-xs text-primary/80 mt-1.5 italic" data-testid="text-membership-tagline">
+            {VIP_TIER_TAGLINES[tier] ?? ""}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
             {VIP_TIER_DESCRIPTIONS[tier]}
           </p>
         </div>

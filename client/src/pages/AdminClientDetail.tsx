@@ -342,8 +342,11 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="foundation">{VIP_TIER_LABELS.foundation}</SelectItem>
-                <SelectItem value="progress">{VIP_TIER_LABELS.progress}</SelectItem>
+                <SelectItem value="starter">{VIP_TIER_LABELS.starter}</SelectItem>
+                <SelectItem value="momentum">{VIP_TIER_LABELS.momentum}</SelectItem>
                 <SelectItem value="elite">{VIP_TIER_LABELS.elite}</SelectItem>
+                <SelectItem value="pro_elite">{VIP_TIER_LABELS.pro_elite}</SelectItem>
+                <SelectItem value="diamond_elite">{VIP_TIER_LABELS.diamond_elite}</SelectItem>
               </SelectContent>
             </Select>
             {client.vipTierManualOverride && (

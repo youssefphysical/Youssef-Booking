@@ -1,0 +1,220 @@
+Make these targeted UI/UX and membership-level updates. Do not rebuild the whole app. Keep everything stable.
+
+==================================================
+1. REMOVE BROWSER / REPLIT AUTOFILL CONFUSION
+==================================================
+
+The login email/password fields are showing confusing saved suggestions related to the Replit preview domain.
+
+Improve login/register input behavior:
+
+- Set proper autocomplete attributes:
+  Email input: autocomplete="email"
+  Password login: autocomplete="current-password"
+  Register password: autocomplete="new-password"
+
+- Make field names clean and stable:
+  email
+  password
+
+- Do NOT use weird dynamic names that trigger Replit-domain saved credentials.
+
+- Keep login simple:
+  Client enters email + password → sign in.
+
+Note:
+Browser password suggestions cannot be fully controlled, but improve the field attributes so it suggests the correct email only.
+
+==================================================
+2. HIDE ADMIN LOGIN FROM PUBLIC VIEW
+==================================================
+
+Remove visible “Admin login” link/button from the public auth page.
+
+Clients should only see:
+- Client Login
+- Create Account
+
+Admin access should be hidden.
+
+Create a private admin route:
+/admin-access
+
+Only Youssef knows this route.
+
+Admin login page:
+- URL: /admin-access
+- Username/password login
+- No public link to it from navbar, footer, or auth page.
+
+If admin is already logged in, redirect to admin dashboard.
+
+Keep admin secure and functional.
+
+==================================================
+3. WEEKLY FREQUENCY LEVELS – NEW PROFESSIONAL NAMES
+==================================================
+
+Update the weekly training frequency options and level names so each level feels premium and different.
+
+Registration dropdown should show:
+
+1 session / week — Foundation
+2 sessions / week — Starter
+3 sessions / week — Momentum
+4 sessions / week — Elite
+5 sessions / week — Pro Elite
+6 sessions / week — Diamond Elite
+
+==================================================
+4. LEVEL RULES + BENEFITS
+==================================================
+
+Create the following logic:
+
+A) Foundation
+Frequency:
+1 session/week
+
+Benefits:
+- 0 Protected Cancellations per month
+- 0 Same-Day Adjustments per month
+
+Message:
+“Foundation — A simple starting point to build consistency.”
+
+--------------------------------------------------
+
+B) Starter
+Frequency:
+2 sessions/week
+
+Benefits:
+- 0 Protected Cancellations per month
+- 0 Same-Day Adjustments per month
+
+Message:
+“Starter — A steady entry level for structured training.”
+
+--------------------------------------------------
+
+C) Momentum
+Frequency:
+3 sessions/week
+
+Benefits:
+- 1 Protected Cancellation per month
+- 1 Same-Day Adjustment per month
+
+Message:
+“Momentum — A strong rhythm for visible progress.”
+
+--------------------------------------------------
+
+D) Elite
+Frequency:
+4 sessions/week
+
+Benefits:
+- 2 Protected Cancellations per month
+- 2 Same-Day Adjustments per month
+- Priority badge
+
+Message:
+“Elite — High consistency with priority training support.”
+
+--------------------------------------------------
+
+E) Pro Elite
+Frequency:
+5 sessions/week
+
+Benefits:
+- 2 Protected Cancellations per month
+- 2 Same-Day Adjustments per month
+- Priority badge
+- Higher consistency status
+
+Message:
+“Pro Elite — Advanced commitment and stronger weekly structure.”
+
+--------------------------------------------------
+
+F) Diamond Elite
+Frequency:
+6 sessions/week
+
+Benefits:
+- 2 Protected Cancellations per month
+- 2 Same-Day Adjustments per month
+- Priority badge
+- Highest consistency status
+
+Message:
+“Diamond Elite — The highest consistency level for serious transformation.”
+
+==================================================
+5. CLIENT DASHBOARD LEVEL DISPLAY
+==================================================
+
+In the client dashboard, show a premium card:
+
+Your Training Level:
+[Level Name]
+
+Weekly Frequency:
+[X sessions/week]
+
+Monthly Benefits:
+Protected Cancellations: X remaining
+Same-Day Adjustments: X remaining
+
+Add a short motivational message based on their level.
+
+Use elegant badges:
+Foundation / Starter / Momentum / Elite / Pro Elite / Diamond Elite
+
+==================================================
+6. ADMIN DASHBOARD CONTROL
+==================================================
+
+Admin can:
+- View weekly frequency
+- Edit weekly frequency
+- Auto-update level based on frequency
+- Manually override level if needed
+- Reset Protected Cancellation count
+- Reset Same-Day Adjustment count
+
+==================================================
+7. PUBLIC MEMBERSHIP EXPLANATION
+==================================================
+
+Add or update “Membership Levels” / “How It Works” section to explain simply:
+
+Foundation: 1 session/week
+Starter: 2 sessions/week
+Momentum: 3 sessions/week
+Elite: 4 sessions/week
+Pro Elite: 5 sessions/week
+Diamond Elite: 6 sessions/week
+
+Make it clean and motivational.
+Do not make lower levels sound bad.
+
+==================================================
+8. STABILITY
+==================================================
+
+Do not break:
+- Client login
+- Registration
+- Admin login
+- Booking
+- Dashboard
+- InBody upload
+- Existing data
+
+No raw technical errors.
+No app crashes.
+Mobile layout must remain clean.

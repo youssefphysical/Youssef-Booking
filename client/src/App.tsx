@@ -10,6 +10,7 @@ import { Loader } from "@/components/Loader";
 
 import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
+import AdminAccessPage from "@/pages/AdminAccessPage";
 import BookingPage from "@/pages/BookingPage";
 import ClientDashboard from "@/pages/ClientDashboard";
 import ProfilePage from "@/pages/ProfilePage";
@@ -67,7 +68,11 @@ function Router() {
       <Switch>
         {/* Public */}
         <Route path="/" component={HomePage} />
-        <Route path="/auth" component={AuthPage} />
+        <Route path="/auth">
+          <AuthPage />
+        </Route>
+        {/* Hidden admin login — not linked from public surfaces */}
+        <Route path="/admin-access" component={AdminAccessPage} />
         <Route path="/policy" component={CancellationPolicyPage} />
         <Route path="/privacy" component={PrivacyPolicy} />
         <Route path="/terms" component={TermsConditions} />
