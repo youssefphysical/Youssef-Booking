@@ -28,6 +28,32 @@ Tier helpers live in `shared/schema.ts`: `tierFromFrequency`, `protectedCancella
 
 All auth inputs ship explicit `name` / `id` / `autoComplete` attributes (`email`, `current-password`, `new-password`, `username`, `email` inputMode) to prevent random browser autofill.
 
+## Admin Staff Management + Manual Sessions (Apr 2026)
+A full role/permission system was added on top of the existing single-admin model.
+
+### Roles
+- **Super Admin** — full access; can manage other admins. Only `youssef.physical@gmail.com` (constant `SUPER_ADMIN_EMAIL` in `shared/schema.ts`) is auto-promoted to super_admin on login or seed. The legacy hardcoded `admin` user (`adminRole=null`) is treated as an *effective* super-admin via `isEffectiveSuperAdmin` so existing logins keep working.
+- **Manager** — sensible default permission grid (everything except staff management).
+- **Viewer** — read-only.
+- 23 permission keys across groups (clients, bookings, sessions, packages, inbody, settings, etc.) — see `ADMIN_PERMISSION_KEYS` and `DEFAULT_PERMISSIONS_BY_ROLE`.
+
+### New endpoints (super-admin only unless noted)
+- `GET/POST/PATCH/DELETE /api/admin/admins` — staff CRUD; cannot delete/demote/deactivate the canonical super-admin or yourself.
+- `POST /api/admin/clients/:id/manual-bookings` — single historical session (permission `sessions.addManual`).
+- `POST /api/admin/clients/:id/manual-bookings/bulk` — bulk historical sessions (count + spacing days).
+
+### Security guards
+- `requireSuperAdmin` (now checks `isEffectiveSuperAdmin`) and `requirePermission(key)` middleware.
+- `PATCH /api/users/:id` strips `adminRole`, `permissions`, `isActive` — these can ONLY be changed via `/api/admin/admins/*`. Prevents privilege escalation through the generic profile route.
+- Manual booking endpoints validate: target user has `role==='client'`; supplied `packageId` belongs to that client, is active, and has remaining capacity for the requested credits.
+- Package usage uses an atomic SQL `UPDATE … SET used_sessions = LEAST(total_sessions, used_sessions + $by)` to avoid lost updates under concurrent bulk creates. If deduction fails, the just-created bookings are deleted so balance and bookings stay consistent.
+- `manual_historical` added to `SESSION_TYPES`; `bookings.isManualHistorical` boolean tags retroactively-added sessions.
+
+### UI
+- New page `/admin/staff` (`AdminStaffPage.tsx`) — table of admins with role badge, permissions count, active status; add/edit dialogs with grouped permission grid (Switch toggles per key); destructive actions hidden for canonical super-admin and self; legacy admins are labelled `legacy`.
+- `AdminClientDetail.tsx` Bookings tab now has **Add manual session** and **Bulk add** buttons that open dialogs with date / time / status / workout / package picker / admin notes / share-with-client switch.
+- Sidebar Staff link is gated behind `isEffectiveSuperAdmin(user)`; route is wrapped in `<ProtectedRoute superAdminOnly />`.
+
 ## Recent stability fixes (Apr 2026)
 - Registration + InBody upload no longer crashes / kicks the user out mid-flow. The auth page now suppresses its auto-redirect via a `submitting` flag and shows a staged status indicator (Creating account → Uploading InBody → Finalizing) before navigating to `/dashboard`.
 - AI extraction (OpenAI Vision) and image optimization (sharp → webp) on InBody and progress uploads are wrapped in try/catch — registration and uploads always persist even when AI/sharp fail.

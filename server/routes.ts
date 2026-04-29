@@ -21,8 +21,17 @@ import {
   sameDayAdjustQuota,
   tierFromFrequency,
   normaliseTier,
+  insertAdminUserSchema,
+  updateAdminUserSchema,
+  insertManualBookingSchema,
+  bulkManualBookingSchema,
+  hasPermission,
+  isEffectiveSuperAdmin,
+  SUPER_ADMIN_EMAIL,
+  DEFAULT_PERMISSIONS_BY_ROLE,
   type User,
   type Package,
+  type AdminPermissionKey,
 } from "@shared/schema";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
@@ -41,8 +50,30 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
-  if ((req.user as User).role !== "admin") return res.status(403).json({ message: "Admins only" });
+  const u = req.user as User;
+  if (u.role !== "admin") return res.status(403).json({ message: "Admins only" });
+  if (u.isActive === false) return res.status(403).json({ message: "Your admin access is currently disabled." });
   next();
+}
+
+function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+  const u = req.user as User;
+  if (!isEffectiveSuperAdmin(u)) {
+    return res.status(403).json({ message: "Super admins only" });
+  }
+  next();
+}
+
+function requirePermission(key: AdminPermissionKey) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+    const u = req.user as User;
+    if (u.role !== "admin") return res.status(403).json({ message: "Admins only" });
+    if (u.isActive === false) return res.status(403).json({ message: "Your admin access is currently disabled." });
+    if (hasPermission(u, key)) return next();
+    return res.status(403).json({ message: "You do not have permission to perform this action." });
+  };
 }
 
 function buildSessionDate(date: string, timeSlot: string): Date {
@@ -154,7 +185,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       updates.password = await hashPassword(parsed.data.password);
     }
 
-    // Non-admins cannot change membership fields
+    // SECURITY: admin role/permission/active fields are managed exclusively
+    // through the dedicated /api/admin/admins endpoints (super-admin only).
+    // Stripping here prevents privilege escalation via this generic route.
+    delete updates.adminRole;
+    delete updates.permissions;
+    delete updates.isActive;
+
+    // Non-admins cannot change membership or role fields
     if (me.role !== "admin") {
       delete updates.vipTier;
       delete updates.vipTierManualOverride;
@@ -1046,6 +1084,255 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
   });
 
+  // ============== ADMIN USERS / STAFF ==============
+  // Super-admin-only management of admin/staff accounts.
+  app.get("/api/admin/admins", requireSuperAdmin, async (_req, res) => {
+    const list = await storage.getAllAdmins();
+    res.json(list.map(sanitizeUser));
+  });
+
+  app.post("/api/admin/admins", requireSuperAdmin, async (req, res) => {
+    const parsed = insertAdminUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid admin data" });
+    }
+    const { email, fullName, password, adminRole, permissions, isActive } = parsed.data;
+    const existing =
+      (await storage.getUserByEmail(email)) || (await storage.getUserByUsername(email));
+    if (existing) {
+      return res.status(400).json({ message: "An account with this email already exists." });
+    }
+    // Only the canonical SUPER_ADMIN_EMAIL can be a super admin.
+    if (
+      adminRole === "super_admin" &&
+      email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()
+    ) {
+      return res.status(400).json({
+        message: `Only ${SUPER_ADMIN_EMAIL} can be assigned the Super Admin role.`,
+      });
+    }
+    const finalPerms = permissions ?? DEFAULT_PERMISSIONS_BY_ROLE[adminRole];
+    const hashed = await hashPassword(password);
+    const created = await storage.createUser({
+      username: email,
+      email,
+      password: hashed,
+      fullName,
+      role: "admin",
+      adminRole,
+      permissions: finalPerms,
+      isActive: isActive ?? true,
+    } as any);
+    res.status(201).json(sanitizeUser(created));
+  });
+
+  app.patch("/api/admin/admins/:id", requireSuperAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const target = await storage.getUser(id);
+    if (!target || target.role !== "admin") {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    const parsed = updateAdminUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
+    }
+    const updates: any = { ...parsed.data };
+    // Protect the canonical super-admin account from being demoted/deactivated.
+    const isCanonicalSuperAdmin =
+      target.email && target.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+    if (isCanonicalSuperAdmin) {
+      delete updates.adminRole;
+      delete updates.isActive;
+    }
+    if (updates.password) {
+      updates.password = await hashPassword(updates.password);
+    }
+    if (updates.adminRole && updates.adminRole === "super_admin" && !isCanonicalSuperAdmin) {
+      return res.status(400).json({
+        message: `Only ${SUPER_ADMIN_EMAIL} can be assigned the Super Admin role.`,
+      });
+    }
+    const updated = await storage.updateUser(id, updates);
+    res.json(sanitizeUser(updated));
+  });
+
+  app.delete("/api/admin/admins/:id", requireSuperAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const target = await storage.getUser(id);
+    if (!target || target.role !== "admin") {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    if (target.email && target.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+      return res.status(400).json({ message: "The Super Admin account cannot be deleted." });
+    }
+    if (target.id === (req.user as User).id) {
+      return res.status(400).json({ message: "You cannot delete your own admin account." });
+    }
+    await storage.deleteUser(id);
+    res.sendStatus(204);
+  });
+
+  // ============== MANUAL SESSION MANAGEMENT ==============
+  // Admin can retroactively log a session that happened before the app was used,
+  // or manually backfill any historical session for the client.
+  // Helper: validate target is a real client and (if a package is referenced)
+  // that the package belongs to that client and has remaining capacity.
+  async function validateManualBookingTarget(
+    userId: number,
+    packageId: number | null | undefined,
+    creditsNeeded: number,
+  ): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+    const client = await storage.getUser(userId);
+    if (!client) return { ok: false, status: 404, message: "Client not found" };
+    if (client.role !== "client") {
+      return { ok: false, status: 400, message: "Manual sessions can only be added for client accounts" };
+    }
+    if (packageId) {
+      const pkg = await storage.getPackage(packageId);
+      if (!pkg) return { ok: false, status: 404, message: "Package not found" };
+      if (pkg.userId !== userId) {
+        return { ok: false, status: 403, message: "Package does not belong to this client" };
+      }
+      if (!pkg.isActive) {
+        return { ok: false, status: 400, message: "Package is not active" };
+      }
+      if (pkg.usedSessions + creditsNeeded > pkg.totalSessions) {
+        return {
+          ok: false,
+          status: 400,
+          message: `Package only has ${pkg.totalSessions - pkg.usedSessions} session(s) remaining`,
+        };
+      }
+    }
+    return { ok: true };
+  }
+
+  app.post(
+    "/api/admin/clients/:id/manual-bookings",
+    requirePermission("sessions.addManual"),
+    async (req, res) => {
+      const userId = Number(req.params.id);
+      const parsed = insertManualBookingSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ message: parsed.error.errors[0]?.message || "Invalid manual session" });
+      }
+      const data = parsed.data;
+      const finalStatus = data.status ?? "completed";
+      const consumingStates = ["completed", "late_cancelled"];
+      const willConsume = !!data.packageId && consumingStates.includes(finalStatus);
+      const guard = await validateManualBookingTarget(
+        userId,
+        data.packageId ?? null,
+        willConsume ? 1 : 0,
+      );
+      if (!guard.ok) return res.status(guard.status).json({ message: guard.message });
+
+      // If the admin chooses to share their note with the client, copy it across
+      // and store the same text in clientNotes so it surfaces on the client side.
+      const clientNotes = data.showNoteToClient
+        ? data.clientNotes ?? data.adminNotes ?? null
+        : data.clientNotes ?? null;
+      const created = await storage.createBooking({
+        userId,
+        packageId: data.packageId ?? null,
+        date: data.date,
+        timeSlot: data.timeSlot,
+        sessionType: data.sessionType,
+        workoutCategory: data.workoutCategory ?? null,
+        workoutNotes: data.workoutNotes ?? null,
+        notes: null,
+        adminNotes: data.adminNotes ?? null,
+        clientNotes,
+      } as any);
+      // Apply final status (createBooking defaults to 'upcoming') and the manual flag.
+      const finalized = await storage.updateBooking(created.id, {
+        status: finalStatus,
+        isManualHistorical: data.isManualHistorical ?? true,
+      } as any);
+      // Consume a session credit (atomic SQL increment, capped at totalSessions).
+      if (willConsume) {
+        try {
+          await storage.incrementPackageUsage(data.packageId!);
+        } catch (e) {
+          console.error("[manual-booking] increment package usage failed:", e);
+          // Roll the booking back so balance stays consistent with bookings.
+          await storage.deleteBooking(created.id).catch(() => {});
+          return res
+            .status(500)
+            .json({ message: "Failed to deduct session from package; booking rolled back" });
+        }
+      }
+      res.status(201).json(finalized);
+    },
+  );
+
+  app.post(
+    "/api/admin/clients/:id/manual-bookings/bulk",
+    requirePermission("sessions.addManual"),
+    async (req, res) => {
+      const userId = Number(req.params.id);
+      const parsed = bulkManualBookingSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ message: parsed.error.errors[0]?.message || "Invalid bulk request" });
+      }
+      const data = parsed.data;
+      const finalStatus = data.status ?? "completed";
+      const consumingStates = ["completed", "late_cancelled"];
+      const willConsume = !!data.packageId && consumingStates.includes(finalStatus);
+      const guard = await validateManualBookingTarget(
+        userId,
+        data.packageId ?? null,
+        willConsume ? data.count : 0,
+      );
+      if (!guard.ok) return res.status(guard.status).json({ message: guard.message });
+
+      const start = new Date(data.startDate + "T00:00:00");
+      if (Number.isNaN(start.getTime())) {
+        return res.status(400).json({ message: "Invalid start date" });
+      }
+      const created: any[] = [];
+      for (let i = 0; i < data.count; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i * data.spacingDays);
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const booking = await storage.createBooking({
+          userId,
+          packageId: data.packageId ?? null,
+          date: dateStr,
+          timeSlot: data.timeSlot,
+          sessionType: "manual_historical",
+          workoutCategory: data.workoutCategory ?? null,
+          notes: null,
+          adminNotes:
+            data.adminNotes ?? `Historical session added by admin (bulk entry ${i + 1}/${data.count}).`,
+          clientNotes: null,
+        } as any);
+        await storage.updateBooking(booking.id, {
+          status: finalStatus,
+          isManualHistorical: true,
+        } as any);
+        created.push(booking);
+      }
+      // Atomic single increment for the whole batch.
+      if (willConsume) {
+        try {
+          await storage.incrementPackageUsage(data.packageId!, data.count);
+        } catch (e) {
+          console.error("[manual-booking-bulk] increment package usage failed:", e);
+          await Promise.all(created.map((b) => storage.deleteBooking(b.id).catch(() => {})));
+          return res
+            .status(500)
+            .json({ message: "Failed to deduct sessions from package; bookings rolled back" });
+        }
+      }
+      res.status(201).json({ count: created.length });
+    },
+  );
+
   // ============== SEED ==============
   await seedDatabase();
 
@@ -1083,6 +1370,28 @@ async function seedDatabase() {
     } catch {
       /* ignore */
     }
+  }
+
+  // Auto-promote the canonical super-admin email if such a user already exists
+  // (e.g. they registered as a client first). Best-effort: never throws.
+  try {
+    const candidate = await storage.getUserByEmail(SUPER_ADMIN_EMAIL);
+    if (
+      candidate &&
+      (candidate.role !== "admin" ||
+        candidate.adminRole !== "super_admin" ||
+        candidate.isActive === false)
+    ) {
+      await storage.updateUser(candidate.id, {
+        role: "admin",
+        adminRole: "super_admin",
+        isActive: true,
+        permissions: DEFAULT_PERMISSIONS_BY_ROLE.super_admin,
+      } as any);
+      console.log(`Promoted ${SUPER_ADMIN_EMAIL} to super_admin.`);
+    }
+  } catch (e) {
+    console.warn("[seed] super-admin auto-promotion failed:", e);
   }
 
   const s = await storage.getSettings();

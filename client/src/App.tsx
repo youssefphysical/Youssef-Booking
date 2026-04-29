@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Navigation } from "@/components/Navigation";
 import { Loader } from "@/components/Loader";
+import { isEffectiveSuperAdmin } from "@shared/schema";
 
 import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
@@ -26,6 +27,7 @@ import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminStaffPage from "@/pages/AdminStaffPage";
 import DirectPaymentPage from "@/pages/DirectPaymentPage";
 import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
@@ -34,10 +36,12 @@ function ProtectedRoute({
   component: Component,
   adminOnly = false,
   clientOnly = false,
+  superAdminOnly = false,
 }: {
   component: React.ComponentType;
   adminOnly?: boolean;
   clientOnly?: boolean;
+  superAdminOnly?: boolean;
 }) {
   const { user, isLoading } = useAuth();
   const [, navigate] = useLocation();
@@ -46,15 +50,18 @@ function ProtectedRoute({
     if (isLoading) return;
     if (!user) {
       navigate("/auth");
+    } else if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) {
+      navigate("/admin");
     } else if (adminOnly && user.role !== "admin") {
       navigate("/");
     } else if (clientOnly && user.role !== "client") {
       navigate("/admin");
     }
-  }, [user, isLoading, adminOnly, clientOnly, navigate]);
+  }, [user, isLoading, adminOnly, clientOnly, superAdminOnly, navigate]);
 
   if (isLoading) return <Loader />;
   if (!user) return null;
+  if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) return null;
   if (adminOnly && user.role !== "admin") return null;
   if (clientOnly && user.role !== "client") return null;
   return <Component />;
@@ -110,6 +117,9 @@ function Router() {
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />
+        </Route>
+        <Route path="/admin/staff">
+          <ProtectedRoute component={AdminStaffPage} superAdminOnly />
         </Route>
 
         <Route component={NotFound} />

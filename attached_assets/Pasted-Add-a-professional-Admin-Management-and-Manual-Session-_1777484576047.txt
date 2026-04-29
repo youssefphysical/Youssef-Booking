@@ -1,0 +1,306 @@
+Add a professional Admin Management and Manual Session Management system.
+
+IMPORTANT:
+Do not break existing login, registration, booking, InBody, client dashboard, or admin dashboard.
+Keep the system stable, clean, and secure.
+
+==================================================
+1. SUPER ADMIN ACCOUNT
+==================================================
+
+Set this email as the main Super Admin:
+
+youssef.physical@gmail.com
+
+This Super Admin has full access to everything:
+- All clients
+- All bookings
+- All packages/plans
+- Payments
+- InBody
+- Progress photos
+- Workout logs
+- Admin users
+- Settings
+- Legal/consent records
+- Manual session edits
+- Delete/edit/update anything
+
+Do NOT show public “Admin Login” button.
+
+Admin access should work by:
+- Normal login with admin email redirects to admin dashboard
+- Hidden route: /admin-access
+
+==================================================
+2. ADMIN USERS / STAFF MANAGEMENT
+==================================================
+
+Inside Super Admin dashboard, add a section:
+
+Admin & Staff Access
+
+Super Admin can:
+- Add admin/staff by email
+- Remove admin/staff
+- Edit permissions
+- Activate/deactivate access
+
+Each admin/staff account must have role and permissions.
+
+Roles:
+1. Super Admin
+2. Manager
+3. Viewer
+
+==================================================
+3. PERMISSIONS SYSTEM
+==================================================
+
+Super Admin can control what each admin/staff can see or edit.
+
+Permissions:
+
+Clients:
+- View clients
+- Edit clients
+- Delete clients
+
+Bookings:
+- View bookings
+- Add bookings
+- Edit bookings
+- Cancel bookings
+
+Sessions:
+- View session history
+- Add manual sessions
+- Edit manual sessions
+- Delete sessions
+
+Packages/Plans:
+- View plans
+- Assign plans
+- Edit session balance
+
+InBody:
+- View InBody
+- Edit InBody
+- Delete InBody files/data
+
+Payments:
+- View payments
+- Edit payment status
+
+Progress:
+- View progress photos
+- Manage progress photos
+
+Settings:
+- View settings
+- Edit settings
+
+Admin Management:
+- Only Super Admin can manage admins
+
+Viewer role:
+- Can only view selected data
+- Cannot edit unless permission is enabled
+
+==================================================
+4. MANUAL SESSION MANAGEMENT
+==================================================
+
+Admin must be able to manually add old/completed sessions for any client.
+
+Use case:
+A client has a 25-session plan and already completed 15 sessions before using the app.
+Admin must be able to add those 15 sessions manually with details.
+
+Add button:
+Add Manual Session
+
+Fields:
+- Client
+- Date
+- Start time
+- End time
+- Training category
+- Session type
+- Status
+- Notes
+
+Training categories:
+- Chest
+- Shoulders
+- Back
+- Legs
+- Core
+- Arms
+- CrossFit
+- Cardio
+- Mobility
+- Full Body
+- Other
+
+Session type:
+- Training Session
+- Single Session
+- Intro Assessment Session
+- Duo Performance Session
+- Manual Historical Session
+
+Status:
+- Completed
+- Cancelled
+- Late Cancellation
+- Protected Cancellation Used
+- No Show
+
+==================================================
+5. SESSION BALANCE LOGIC
+==================================================
+
+When admin adds a manual completed session:
+- It should count as used session
+- Deduct from remaining balance
+- Increase used sessions
+
+Example:
+Client has Elite Plan 25 sessions.
+Admin adds 15 completed manual sessions.
+System shows:
+Total: 25
+Used: 15
+Remaining: 10
+
+Admin can override totals manually if needed.
+
+==================================================
+6. SESSION HISTORY DISPLAY
+==================================================
+
+Client profile must show all sessions:
+
+- Booked sessions
+- Completed sessions
+- Manually added historical sessions
+- Cancelled sessions
+- No-show sessions
+
+Each session row shows:
+- Date
+- Time
+- Training category
+- Session type
+- Status
+- Notes if visible to client
+
+Admin notes must remain private.
+
+==================================================
+7. ADMIN NOTES VS CLIENT NOTES
+==================================================
+
+For each manual session:
+
+Admin notes:
+- Private
+- Only visible to admin/staff with permission
+
+Client-facing notes:
+- Visible to client if admin chooses
+
+Add toggle:
+Show note to client: yes/no
+
+==================================================
+8. BULK ADD OPTION
+==================================================
+
+Optional but useful:
+Add quick bulk manual session creation.
+
+Example:
+Client completed 15 sessions historically.
+
+Admin can add:
+- Number of sessions
+- Date range
+- Default category
+- Default status completed
+
+If exact dates are unknown:
+Allow admin to add placeholder historical sessions with note:
+“Historical session added by admin.”
+
+But best option is still individual date/time entries.
+
+==================================================
+9. CLIENT DASHBOARD
+==================================================
+
+Client should see:
+- Total sessions
+- Used sessions
+- Remaining sessions
+- Session history
+- Training categories completed
+- Upcoming sessions
+
+Manual sessions should appear as:
+“Completed Training Session”
+
+Do not show internal/admin notes.
+
+==================================================
+10. SECURITY
+==================================================
+
+Protect all admin routes.
+
+Rules:
+- Only Super Admin can add/edit/remove admins.
+- Admin users can only access what their permissions allow.
+- If user has no permission, show:
+“You do not have permission to access this section.”
+
+Do not show technical errors.
+
+==================================================
+11. UI
+==================================================
+
+Admin dashboard should have clean sections:
+
+- Overview
+- Clients
+- Bookings
+- Sessions
+- Manual Sessions
+- Plans
+- InBody
+- Payments
+- Admin & Staff Access
+- Settings
+
+Keep layout premium, clean, and mobile/tablet friendly.
+
+==================================================
+12. STABILITY TESTS
+==================================================
+
+After implementation, test:
+
+- Login with youssef.physical@gmail.com
+- Redirect to admin dashboard
+- Add staff admin email
+- Give view-only permission
+- Add manual session to a client
+- Confirm session balance updates
+- Confirm client can see session history
+- Confirm admin private notes are hidden from client
+- Confirm unauthorized users cannot access admin pages
+
+FINAL GOAL:
+Youssef is the Super Admin with full control, can add other admins/staff with limited permissions, and can manually enter old completed sessions with date, time, workout category, notes, and automatic session balance updates.

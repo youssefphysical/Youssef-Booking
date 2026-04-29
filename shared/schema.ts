@@ -7,8 +7,9 @@ import {
   timestamp,
   date,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,6 +48,13 @@ export const users = pgTable("users", {
   sameDayAdjustMonth: text("same_day_adjust_month"),
   sameDayAdjustCount: integer("same_day_adjust_count").notNull().default(0),
   notes: text("notes"),
+  // Admin/staff access fields (only meaningful when role='admin')
+  // adminRole: 'super_admin' | 'manager' | 'viewer' (null for clients)
+  adminRole: text("admin_role"),
+  // Granular permission grid: { [permissionKey]: boolean }. Super admins bypass.
+  permissions: jsonb("permissions").$type<Record<string, boolean>>().default(sql`'{}'::jsonb`),
+  // Soft-disable an admin/staff account without deleting it
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -93,6 +101,8 @@ export const bookings = pgTable("bookings", {
   protectedCancellation: boolean("protected_cancellation").notNull().default(false),
   // Audit trail: original "YYYY-MM-DD HH:MM" before a Same-Day Adjustment
   rescheduledFrom: text("rescheduled_from"),
+  // True for sessions that an admin retroactively logged (i.e. happened before the app was used)
+  isManualHistorical: boolean("is_manual_historical").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -227,7 +237,13 @@ export const updateProfileSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, role: true, username: true })
   .partial();
 
-export const SESSION_TYPES = ["package", "single", "trial", "duo"] as const;
+export const SESSION_TYPES = [
+  "package",
+  "single",
+  "trial",
+  "duo",
+  "manual_historical",
+] as const;
 export const BOOKING_STATUSES = [
   "upcoming",
   "confirmed",
@@ -590,10 +606,11 @@ export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const SESSION_TYPE_LABELS: Record<string, string> = {
-  package: "Package Session",
+  package: "Training Session",
   single: "Single Session",
-  trial: "Free Trial Session – New Client Only",
-  duo: "Duo Package Session",
+  trial: "Intro Assessment Session",
+  duo: "Duo Performance Session",
+  manual_historical: "Manual Historical Session",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -628,3 +645,184 @@ export const BOOKING_STATUS_LABELS: Record<string, string> = {
   emergency_cancelled: "Emergency Cancel Used",
   no_show: "No Show",
 };
+
+// =============================
+// ADMIN ROLES & PERMISSIONS
+// =============================
+// The single super admin email — auto-promoted to super_admin on login or seed.
+export const SUPER_ADMIN_EMAIL = "youssef.physical@gmail.com";
+
+export const ADMIN_ROLES = ["super_admin", "manager", "viewer"] as const;
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
+  super_admin: "Super Admin",
+  manager: "Manager",
+  viewer: "Viewer",
+};
+
+// Flat list of permission keys. Group prefix (`clients.*`, `bookings.*`, …) is just convention.
+export const ADMIN_PERMISSION_KEYS = [
+  "clients.view",
+  "clients.edit",
+  "clients.delete",
+  "bookings.view",
+  "bookings.add",
+  "bookings.edit",
+  "bookings.cancel",
+  "sessions.view",
+  "sessions.addManual",
+  "sessions.editManual",
+  "sessions.delete",
+  "packages.view",
+  "packages.assign",
+  "packages.editBalance",
+  "inbody.view",
+  "inbody.edit",
+  "inbody.delete",
+  "payments.view",
+  "payments.edit",
+  "progress.view",
+  "progress.manage",
+  "settings.view",
+  "settings.edit",
+] as const;
+export type AdminPermissionKey = (typeof ADMIN_PERMISSION_KEYS)[number];
+
+export const ADMIN_PERMISSION_LABELS: Record<AdminPermissionKey, string> = {
+  "clients.view": "View clients",
+  "clients.edit": "Edit clients",
+  "clients.delete": "Delete clients",
+  "bookings.view": "View bookings",
+  "bookings.add": "Add bookings",
+  "bookings.edit": "Edit bookings",
+  "bookings.cancel": "Cancel bookings",
+  "sessions.view": "View session history",
+  "sessions.addManual": "Add manual sessions",
+  "sessions.editManual": "Edit manual sessions",
+  "sessions.delete": "Delete sessions",
+  "packages.view": "View plans",
+  "packages.assign": "Assign plans",
+  "packages.editBalance": "Edit session balance",
+  "inbody.view": "View InBody",
+  "inbody.edit": "Edit InBody",
+  "inbody.delete": "Delete InBody data",
+  "payments.view": "View payments",
+  "payments.edit": "Edit payment status",
+  "progress.view": "View progress photos",
+  "progress.manage": "Manage progress photos",
+  "settings.view": "View settings",
+  "settings.edit": "Edit settings",
+};
+
+export const ADMIN_PERMISSION_GROUPS: { key: string; label: string; perms: AdminPermissionKey[] }[] = [
+  { key: "clients", label: "Clients", perms: ["clients.view", "clients.edit", "clients.delete"] },
+  { key: "bookings", label: "Bookings", perms: ["bookings.view", "bookings.add", "bookings.edit", "bookings.cancel"] },
+  { key: "sessions", label: "Sessions", perms: ["sessions.view", "sessions.addManual", "sessions.editManual", "sessions.delete"] },
+  { key: "packages", label: "Packages / Plans", perms: ["packages.view", "packages.assign", "packages.editBalance"] },
+  { key: "inbody", label: "InBody", perms: ["inbody.view", "inbody.edit", "inbody.delete"] },
+  { key: "payments", label: "Payments", perms: ["payments.view", "payments.edit"] },
+  { key: "progress", label: "Progress photos", perms: ["progress.view", "progress.manage"] },
+  { key: "settings", label: "Settings", perms: ["settings.view", "settings.edit"] },
+];
+
+const allTrue: Record<AdminPermissionKey, boolean> = ADMIN_PERMISSION_KEYS.reduce(
+  (acc, k) => ((acc[k] = true), acc),
+  {} as Record<AdminPermissionKey, boolean>,
+);
+const viewerOnly: Record<AdminPermissionKey, boolean> = ADMIN_PERMISSION_KEYS.reduce(
+  (acc, k) => ((acc[k] = k.endsWith(".view")), acc),
+  {} as Record<AdminPermissionKey, boolean>,
+);
+const managerDefault: Record<AdminPermissionKey, boolean> = ADMIN_PERMISSION_KEYS.reduce((acc, k) => {
+  // Managers: everything except destructive deletes and Settings.edit. Cannot manage admins.
+  if (k.endsWith(".delete")) acc[k] = false;
+  else if (k === "settings.edit") acc[k] = false;
+  else acc[k] = true;
+  return acc;
+}, {} as Record<AdminPermissionKey, boolean>);
+
+export const DEFAULT_PERMISSIONS_BY_ROLE: Record<AdminRole, Record<AdminPermissionKey, boolean>> = {
+  super_admin: allTrue,
+  manager: managerDefault,
+  viewer: viewerOnly,
+};
+
+export function hasPermission(
+  user: Pick<User, "role" | "adminRole" | "permissions" | "isActive"> | null | undefined,
+  key: AdminPermissionKey,
+): boolean {
+  if (!user) return false;
+  if (user.role !== "admin") return false;
+  if (user.isActive === false) return false;
+  if (user.adminRole === "super_admin") return true;
+  // Legacy admins predating the role system: treated as full-access.
+  if (user.adminRole == null) return true;
+  const perms = (user.permissions ?? {}) as Record<string, boolean>;
+  return perms[key] === true;
+}
+
+// True for super admins AND legacy admins (no adminRole assigned yet).
+export function isEffectiveSuperAdmin(
+  user: Pick<User, "role" | "adminRole" | "isActive"> | null | undefined,
+): boolean {
+  if (!user) return false;
+  if (user.role !== "admin") return false;
+  if (user.isActive === false) return false;
+  return user.adminRole === "super_admin" || user.adminRole == null;
+}
+
+// =============================
+// ADMIN USER (CRUD) SCHEMAS
+// =============================
+const permissionsRecord = z.record(z.string(), z.boolean());
+
+export const insertAdminUserSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  fullName: z.string().min(2, "Full name is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  adminRole: z.enum(ADMIN_ROLES),
+  permissions: permissionsRecord.optional(),
+  isActive: z.boolean().optional(),
+});
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+
+export const updateAdminUserSchema = z.object({
+  fullName: z.string().min(2).optional(),
+  adminRole: z.enum(ADMIN_ROLES).optional(),
+  permissions: permissionsRecord.optional(),
+  isActive: z.boolean().optional(),
+  password: z.string().min(6).optional(),
+});
+export type UpdateAdminUser = z.infer<typeof updateAdminUserSchema>;
+
+// =============================
+// MANUAL BOOKING (admin-created) SCHEMAS
+// =============================
+export const insertManualBookingSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  timeSlot: z.string().min(1, "Time is required"),
+  status: z.enum(BOOKING_STATUSES).default("completed"),
+  sessionType: z.enum(SESSION_TYPES).default("manual_historical"),
+  workoutCategory: z.enum(WORKOUT_CATEGORIES).nullable().optional(),
+  workoutNotes: z.string().nullable().optional(),
+  packageId: z.number().int().nullable().optional(),
+  adminNotes: z.string().nullable().optional(),
+  clientNotes: z.string().nullable().optional(),
+  showNoteToClient: z.boolean().optional(),
+  isManualHistorical: z.boolean().optional().default(true),
+});
+export type InsertManualBooking = z.infer<typeof insertManualBookingSchema>;
+
+export const bulkManualBookingSchema = z.object({
+  count: z.number().int().min(1).max(50),
+  startDate: z.string().min(1, "Start date is required"),
+  // Defaults applied to every generated session
+  timeSlot: z.string().default("12:00"),
+  workoutCategory: z.enum(WORKOUT_CATEGORIES).nullable().optional(),
+  packageId: z.number().int().nullable().optional(),
+  status: z.enum(BOOKING_STATUSES).default("completed"),
+  // One session per day, advancing forward by 1 day per entry
+  spacingDays: z.number().int().min(1).max(30).default(1),
+  adminNotes: z.string().nullable().optional(),
+});
+export type BulkManualBooking = z.infer<typeof bulkManualBookingSchema>;

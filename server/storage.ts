@@ -41,7 +41,9 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
   getAllClients(): Promise<User[]>;
+  getAllAdmins(): Promise<User[]>;
 
   // Bookings
   getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
@@ -131,6 +133,18 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, "client"))
       .orderBy(desc(users.createdAt));
+  }
+
+  async getAllAdmins() {
+    return db
+      .select()
+      .from(users)
+      .where(eq(users.role, "admin"))
+      .orderBy(asc(users.createdAt));
+  }
+
+  async deleteUser(id: number) {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // ===== Bookings =====
@@ -246,10 +260,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async incrementPackageUsage(id: number, by = 1) {
-    const pkg = await this.getPackage(id);
-    if (!pkg) throw new Error("Package not found");
-    const newUsed = Math.min(pkg.totalSessions, pkg.usedSessions + by);
-    return this.updatePackage(id, { usedSessions: newUsed });
+    // Atomic SQL increment, capped at total_sessions to avoid lost updates
+    // under concurrent manual / bulk operations.
+    const result = await pool.query(
+      `UPDATE packages
+         SET used_sessions = LEAST(total_sessions, used_sessions + $1)
+       WHERE id = $2`,
+      [by, id],
+    );
+    if (result.rowCount === 0) throw new Error("Package not found");
+    const refreshed = await this.getPackage(id);
+    if (!refreshed) throw new Error("Package not found after increment");
+    return refreshed;
   }
 
   async decrementPackageUsage(id: number, by = 1) {

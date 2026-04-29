@@ -72,13 +72,17 @@ import {
 } from "@/components/ui/form";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
-import { formatStatus, statusColor } from "@/lib/booking-utils";
+import { formatStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
+import { Switch } from "@/components/ui/switch";
 import {
   PACKAGE_DEFINITIONS,
   PRIMARY_GOAL_OPTIONS,
   PAYMENT_STATUS_LABELS,
   WORKOUT_CATEGORY_LABELS,
+  WORKOUT_CATEGORIES,
   SESSION_TYPE_LABELS,
+  BOOKING_STATUSES,
+  BOOKING_STATUS_LABELS,
   WEEKLY_FREQUENCY_OPTIONS,
   VIP_TIER_LABELS,
   normaliseTier,
@@ -183,7 +187,7 @@ export default function AdminClientDetail() {
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab client={client} /></TabsContent>
-        <TabsContent value="bookings"><BookingsList userId={client.id} /></TabsContent>
+        <TabsContent value="bookings"><BookingsTab client={client} /></TabsContent>
         <TabsContent value="packages"><PackagesPanel client={client} /></TabsContent>
         <TabsContent value="inbody"><InbodyPanel userId={client.id} /></TabsContent>
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
@@ -583,6 +587,623 @@ function InfoCard({ icon, label, value, className }: { icon: React.ReactNode; la
         {icon} {label}
       </p>
       <p className="mt-1.5 text-sm break-words whitespace-pre-wrap">{value}</p>
+    </div>
+  );
+}
+
+// =============== BOOKINGS TAB (header + manual session dialogs + list) ===============
+
+const manualSingleSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  timeSlot: z.string().min(1, "Time is required"),
+  status: z.enum(BOOKING_STATUSES),
+  workoutCategory: z.string().optional(),
+  packageId: z.string().optional(),
+  adminNotes: z.string().optional(),
+  clientNotes: z.string().optional(),
+  showNoteToClient: z.boolean(),
+});
+type ManualSingleValues = z.infer<typeof manualSingleSchema>;
+
+const manualBulkSchema = z.object({
+  count: z.coerce.number().int().min(1).max(50),
+  startDate: z.string().min(1, "Start date is required"),
+  spacingDays: z.coerce.number().int().min(1).max(30),
+  timeSlot: z.string().min(1, "Time is required"),
+  workoutCategory: z.string().optional(),
+  packageId: z.string().optional(),
+  status: z.enum(BOOKING_STATUSES),
+  adminNotes: z.string().optional(),
+});
+type ManualBulkValues = z.infer<typeof manualBulkSchema>;
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function BookingsTab({ client }: { client: UserResponse }) {
+  const { data: packages = [] } = usePackages({ userId: client.id });
+  const activePackages = (packages as Package[]).filter((p) => p.isActive);
+  const [singleOpen, setSingleOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const singleForm = useForm<ManualSingleValues>({
+    resolver: zodResolver(manualSingleSchema),
+    defaultValues: {
+      date: todayIso(),
+      timeSlot: "12:00",
+      status: "completed",
+      workoutCategory: "none",
+      packageId: "none",
+      adminNotes: "",
+      clientNotes: "",
+      showNoteToClient: false,
+    },
+  });
+
+  const bulkForm = useForm<ManualBulkValues>({
+    resolver: zodResolver(manualBulkSchema),
+    defaultValues: {
+      count: 5,
+      startDate: todayIso(),
+      spacingDays: 1,
+      timeSlot: "12:00",
+      workoutCategory: "none",
+      packageId: "none",
+      status: "completed",
+      adminNotes: "",
+    },
+  });
+
+  const createSingle = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/clients/${client.id}/manual-bookings`,
+        body,
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/bookings"] });
+      qc.invalidateQueries({ queryKey: ["/api/packages"] });
+      toast({ title: "Manual session added" });
+      setSingleOpen(false);
+      singleForm.reset({
+        date: todayIso(),
+        timeSlot: "12:00",
+        status: "completed",
+        workoutCategory: "none",
+        packageId: "none",
+        adminNotes: "",
+        clientNotes: "",
+        showNoteToClient: false,
+      });
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Could not add session",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
+
+  const createBulk = useMutation({
+    mutationFn: async (body: any) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/clients/${client.id}/manual-bookings/bulk`,
+        body,
+      );
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["/api/bookings"] });
+      qc.invalidateQueries({ queryKey: ["/api/packages"] });
+      toast({ title: `Added ${data.count} historical sessions` });
+      setBulkOpen(false);
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Bulk add failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
+
+  function onSubmitSingle(values: ManualSingleValues) {
+    createSingle.mutate({
+      date: values.date,
+      timeSlot: values.timeSlot,
+      status: values.status,
+      sessionType: "manual_historical",
+      workoutCategory:
+        values.workoutCategory && values.workoutCategory !== "none"
+          ? values.workoutCategory
+          : null,
+      packageId:
+        values.packageId && values.packageId !== "none" ? Number(values.packageId) : null,
+      adminNotes: values.adminNotes || null,
+      clientNotes: values.clientNotes || null,
+      showNoteToClient: values.showNoteToClient,
+      isManualHistorical: true,
+    });
+  }
+
+  function onSubmitBulk(values: ManualBulkValues) {
+    createBulk.mutate({
+      count: values.count,
+      startDate: values.startDate,
+      spacingDays: values.spacingDays,
+      timeSlot: values.timeSlot,
+      workoutCategory:
+        values.workoutCategory && values.workoutCategory !== "none"
+          ? values.workoutCategory
+          : null,
+      packageId:
+        values.packageId && values.packageId !== "none" ? Number(values.packageId) : null,
+      status: values.status,
+      adminNotes: values.adminNotes || null,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">Session History</h3>
+          <p className="text-xs text-muted-foreground">
+            Includes manual historical sessions added by admin.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => setBulkOpen(true)}
+            data-testid="button-bulk-manual-session"
+          >
+            <Plus size={14} className="mr-1.5" /> Bulk add
+          </Button>
+          <Button
+            size="sm"
+            className="rounded-xl"
+            onClick={() => setSingleOpen(true)}
+            data-testid="button-add-manual-session"
+          >
+            <Plus size={14} className="mr-1.5" /> Add manual session
+          </Button>
+        </div>
+      </div>
+
+      <BookingsList userId={client.id} />
+
+      {/* SINGLE MANUAL SESSION DIALOG */}
+      <Dialog open={singleOpen} onOpenChange={setSingleOpen}>
+        <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add manual session</DialogTitle>
+            <p className="text-xs text-muted-foreground">
+              Backfill a historical 1-hour session. Marking it Completed deducts a session
+              from the linked package.
+            </p>
+          </DialogHeader>
+          <Form {...singleForm}>
+            <form onSubmit={singleForm.handleSubmit(onSubmitSingle)} className="space-y-3">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <FormField
+                  control={singleForm.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          className="bg-white/5 border-white/10"
+                          data-testid="input-manual-date"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={singleForm.control}
+                  name="timeSlot"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-manual-time"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_TIME_SLOTS.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <FormField
+                  control={singleForm.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-manual-status"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BOOKING_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {BOOKING_STATUS_LABELS[s] || s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={singleForm.control}
+                  name="workoutCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Workout</FormLabel>
+                      <Select value={field.value || "none"} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-manual-workout"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          {WORKOUT_CATEGORIES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {WORKOUT_CATEGORY_LABELS[c as keyof typeof WORKOUT_CATEGORY_LABELS] || c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={singleForm.control}
+                name="packageId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deduct from package</FormLabel>
+                    <Select value={field.value || "none"} onValueChange={field.onChange}>
+                      <SelectTrigger
+                        className="bg-white/5 border-white/10"
+                        data-testid="select-manual-package"
+                      >
+                        <SelectValue placeholder="No package (no balance change)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No package (no balance change)</SelectItem>
+                        {activePackages.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.type} — {p.totalSessions - p.usedSessions}/{p.totalSessions} left
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={singleForm.control}
+                name="adminNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Admin note</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        {...field}
+                        className="bg-white/5 border-white/10"
+                        data-testid="input-manual-admin-notes"
+                        placeholder="Internal note (not shared by default)"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={singleForm.control}
+                name="showNoteToClient"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2">
+                    <div className="text-xs">
+                      <FormLabel className="text-xs">Share note with client</FormLabel>
+                      <p className="text-[11px] text-muted-foreground">
+                        If on, the admin note also appears in the client's session history.
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="switch-manual-share-note"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSingleOpen(false)}
+                  data-testid="button-cancel-manual-single"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createSingle.isPending}
+                  data-testid="button-submit-manual-single"
+                >
+                  {createSingle.isPending && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                  Add session
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* BULK MANUAL SESSIONS DIALOG */}
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bulk add historical sessions</DialogTitle>
+            <p className="text-xs text-muted-foreground">
+              Generates N consecutive 1-hour sessions starting from the chosen date. Useful
+              when a client used several sessions before joining the app.
+            </p>
+          </DialogHeader>
+          <Form {...bulkForm}>
+            <form onSubmit={bulkForm.handleSubmit(onSubmitBulk)} className="space-y-3">
+              <div className="grid sm:grid-cols-3 gap-3">
+                <FormField
+                  control={bulkForm.control}
+                  name="count"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>How many?</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={50}
+                          {...field}
+                          className="bg-white/5 border-white/10"
+                          data-testid="input-bulk-count"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={bulkForm.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          className="bg-white/5 border-white/10"
+                          data-testid="input-bulk-start"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={bulkForm.control}
+                  name="spacingDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Days apart</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={30}
+                          {...field}
+                          className="bg-white/5 border-white/10"
+                          data-testid="input-bulk-spacing"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <FormField
+                  control={bulkForm.control}
+                  name="timeSlot"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Time of day</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-bulk-time"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_TIME_SLOTS.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={bulkForm.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status for all</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-bulk-status"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BOOKING_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {BOOKING_STATUS_LABELS[s] || s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <FormField
+                  control={bulkForm.control}
+                  name="workoutCategory"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Workout type</FormLabel>
+                      <Select value={field.value || "none"} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-bulk-workout"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">— None —</SelectItem>
+                          {WORKOUT_CATEGORIES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {WORKOUT_CATEGORY_LABELS[c as keyof typeof WORKOUT_CATEGORY_LABELS] || c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={bulkForm.control}
+                  name="packageId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Deduct from package</FormLabel>
+                      <Select value={field.value || "none"} onValueChange={field.onChange}>
+                        <SelectTrigger
+                          className="bg-white/5 border-white/10"
+                          data-testid="select-bulk-package"
+                        >
+                          <SelectValue placeholder="No package" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No package (no balance change)</SelectItem>
+                          {activePackages.map((p) => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.type} — {p.totalSessions - p.usedSessions}/{p.totalSessions} left
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={bulkForm.control}
+                name="adminNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Admin note (applied to all)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        {...field}
+                        className="bg-white/5 border-white/10"
+                        data-testid="input-bulk-notes"
+                        placeholder="e.g. Imported pre-app sessions"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setBulkOpen(false)}
+                  data-testid="button-cancel-bulk"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createBulk.isPending}
+                  data-testid="button-submit-bulk"
+                >
+                  {createBulk.isPending && <Loader2 size={14} className="mr-1.5 animate-spin" />}
+                  Create sessions
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

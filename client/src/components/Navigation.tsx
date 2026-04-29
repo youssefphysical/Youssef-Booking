@@ -7,6 +7,7 @@ import {
   Users,
   Package as PackageIcon,
   Settings as SettingsIcon,
+  ShieldCheck,
   LogOut,
   LogIn,
   Menu,
@@ -15,6 +16,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { isEffectiveSuperAdmin } from "@shared/schema";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
@@ -22,6 +24,7 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
 
   const isAdmin = user?.role === "admin";
+  const isSuperAdmin = isEffectiveSuperAdmin(user as any);
   const isAdminPage = location.startsWith("/admin");
 
   // ============= ADMIN SIDEBAR =============
@@ -55,6 +58,9 @@ export function Navigation() {
             <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label="Bookings" active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/clients" icon={<Users size={18} />} label="Clients" active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label="Packages" active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
+            {isSuperAdmin && (
+              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label="Staff" active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
+            )}
             <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label="Settings" active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
           </div>
 

@@ -11,6 +11,8 @@ import {
   REGISTRATION_CONSENT_ITEMS,
   tierFromFrequency,
   POLICY_VERSION,
+  SUPER_ADMIN_EMAIL,
+  DEFAULT_PERMISSIONS_BY_ROLE,
 } from "@shared/schema";
 import { registrationConsentSchema } from "@shared/routes";
 import {
@@ -68,6 +70,29 @@ export function setupAuth(app: Express) {
         if (!user) return done(null, false);
         const ok = await comparePasswords(password, user.password);
         if (!ok) return done(null, false);
+        // Inactive admins/staff cannot sign in
+        if (user.role === "admin" && user.isActive === false) {
+          return done(null, false);
+        }
+        // Auto-promote the canonical super-admin email on every successful login.
+        // Best-effort: never blocks the login on failure.
+        try {
+          if (
+            user.email &&
+            user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() &&
+            (user.role !== "admin" || user.adminRole !== "super_admin")
+          ) {
+            const promoted = await storage.updateUser(user.id, {
+              role: "admin",
+              adminRole: "super_admin",
+              isActive: true,
+              permissions: DEFAULT_PERMISSIONS_BY_ROLE.super_admin,
+            } as any);
+            if (promoted) user = promoted;
+          }
+        } catch (e) {
+          console.warn("[auth] super-admin auto-promotion failed:", e);
+        }
         return done(null, user);
       } catch (e) {
         return done(e as Error);
