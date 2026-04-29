@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,6 +48,7 @@ import {
   Upload,
   CheckCircle2,
   KeyRound,
+  AlertCircle,
 } from "lucide-react";
 
 const clientLoginSchema = z.object({
@@ -78,11 +79,19 @@ export default function AuthPage() {
   const [mode, setMode] = useState<Mode>("client-login");
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  // Suppress the auto-redirect while a multi-step registration flow is running
+  // (account creation, InBody upload, optional progress photo). Without this,
+  // the form unmounts mid-upload the moment the auth user is set.
+  const [submitting, setSubmitting] = useState(false);
 
-  if (user) {
-    setLocation(user.role === "admin" ? "/admin" : "/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (user && !submitting) {
+      setLocation(user.role === "admin" ? "/admin" : "/dashboard");
+    }
+  }, [user, submitting, setLocation]);
+
+  // Keep the form mounted while the registration flow is finishing.
+  if (user && !submitting) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-16 pt-24 relative overflow-hidden">
@@ -106,11 +115,11 @@ export default function AuthPage() {
         <div className="bg-card/80 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-6">
             <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold">
-              Youssef Fitness
+              Personal Training Service
             </p>
             <h1 className="text-2xl font-display font-bold text-gradient-blue mt-1">Youssef Ahmed</h1>
             <p className="text-[11px] text-muted-foreground tracking-wide mt-2 leading-relaxed">
-              Certified Personal Trainer · Physical Education Teacher · Movement & Kinesiology Specialist
+              Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
               {mode === "admin-login" ? "Admin Access" : "Client Portal"}
@@ -128,7 +137,7 @@ export default function AuthPage() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Sign In
+                Client Login
               </button>
               <button
                 onClick={() => setMode("client-register")}
@@ -139,7 +148,7 @@ export default function AuthPage() {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Register
+                Create Account
               </button>
             </div>
           )}
@@ -153,7 +162,15 @@ export default function AuthPage() {
               transition={{ duration: 0.18 }}
             >
               {mode === "client-login" && <ClientLoginForm />}
-              {mode === "client-register" && <RegisterForm />}
+              {mode === "client-register" && (
+                <RegisterForm
+                  onSubmittingChange={setSubmitting}
+                  onComplete={() => {
+                    setSubmitting(false);
+                    setLocation("/dashboard");
+                  }}
+                />
+              )}
               {mode === "admin-login" && <AdminLoginForm />}
             </motion.div>
           </AnimatePresence>
@@ -496,8 +513,8 @@ const CONSENT_ITEMS: { key: ConsentKey; label: React.ReactNode }[] = [
     key: "data_storage",
     label: (
       <>
-        I consent to Youssef Fitness storing my personal, contact, and body composition data as
-        described in the{" "}
+        I consent to Youssef Ahmed Personal Training Service storing my personal, contact, and
+        body composition data as described in the{" "}
         <Link href="/privacy" className="text-primary underline hover:opacity-80">
           Privacy Policy
         </Link>
@@ -507,7 +524,22 @@ const CONSENT_ITEMS: { key: ConsentKey; label: React.ReactNode }[] = [
   },
 ];
 
-function RegisterForm() {
+type RegistrationStep = "idle" | "creating" | "uploading-inbody" | "uploading-photo" | "finalizing";
+
+const STEP_MESSAGES: Record<Exclude<RegistrationStep, "idle">, string> = {
+  creating: "Creating your account…",
+  "uploading-inbody": "Uploading your InBody scan…",
+  "uploading-photo": "Saving your starting photo…",
+  finalizing: "Finalizing your profile…",
+};
+
+function RegisterForm({
+  onSubmittingChange,
+  onComplete,
+}: {
+  onSubmittingChange: (v: boolean) => void;
+  onComplete: () => void;
+}) {
   const { registerMutation } = useAuth();
   const uploadInbody = useUploadInbody();
   const uploadPhoto = useUploadProgressPhoto();
@@ -524,6 +556,8 @@ function RegisterForm() {
     medical_fitness: false,
     data_storage: false,
   });
+  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>("idle");
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const inbodyRef = useRef<HTMLInputElement>(null);
   const progressRef = useRef<HTMLInputElement>(null);
 
@@ -544,47 +578,80 @@ function RegisterForm() {
   const allConsentsAccepted = CONSENT_ITEMS.every((c) => consents[c.key]);
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
+    setInlineError(null);
     if (!inbodyFile) {
-      form.setError("root" as any, { message: "Please upload your InBody scan to continue." });
+      setInlineError("Please upload your InBody scan to continue.");
       return;
     }
     if (!inbodyConsent) {
-      form.setError("root" as any, {
-        message: "Please confirm consent to upload your InBody scan.",
-      });
+      setInlineError("Please confirm consent to upload your InBody scan.");
       return;
     }
     if (progressFile && !progressConsent) {
-      form.setError("root" as any, {
-        message: "Please confirm consent to upload your progress photo (or remove it).",
-      });
+      setInlineError(
+        "Please confirm consent to upload your progress photo (or remove it).",
+      );
       return;
     }
     if (!allConsentsAccepted) {
-      form.setError("root" as any, {
-        message: "Please review and accept all required consents to continue.",
-      });
+      setInlineError("Please review and accept all required consents to continue.");
       return;
     }
 
-    const newUser = await registerMutation
-      .mutateAsync({ ...values, consents } as any)
-      .catch(() => null);
-    if (!newUser) return;
+    // Tell the parent to suppress the auto-redirect until we're done.
+    onSubmittingChange(true);
+    setRegistrationStep("creating");
 
+    let newUser: unknown = null;
+    try {
+      newUser = await registerMutation.mutateAsync({ ...values, consents } as any);
+    } catch (err: any) {
+      // Account creation failed — surface a friendly message and abort.
+      setInlineError(
+        err?.message?.includes("already")
+          ? "This email is already registered. Try signing in instead."
+          : "We couldn't create your account. Please review your details and try again.",
+      );
+      setRegistrationStep("idle");
+      onSubmittingChange(false);
+      return;
+    }
+    if (!newUser) {
+      setRegistrationStep("idle");
+      onSubmittingChange(false);
+      return;
+    }
+
+    // Account exists. From here on, image uploads are best-effort —
+    // the user is signed in and registration is considered successful.
+    setRegistrationStep("uploading-inbody");
     try {
       await uploadInbody.mutateAsync({ file: inbodyFile });
     } catch {
-      // toast already shown
+      // The upload hook already surfaces a toast; we keep going so the
+      // user reaches the dashboard and can re-upload from there.
     }
+
     if (progressFile) {
+      setRegistrationStep("uploading-photo");
       try {
         await uploadPhoto.mutateAsync({ file: progressFile, type: "before" });
-      } catch {}
+      } catch {
+        /* best-effort */
+      }
     }
+
+    setRegistrationStep("finalizing");
+    // Small delay so the user can see the final status before navigation.
+    await new Promise((r) => setTimeout(r, 350));
+    onComplete();
   }
 
-  const isPending = registerMutation.isPending || uploadInbody.isPending || uploadPhoto.isPending;
+  const isPending =
+    registrationStep !== "idle" ||
+    registerMutation.isPending ||
+    uploadInbody.isPending ||
+    uploadPhoto.isPending;
 
   async function handleNext() {
     const valid = await form.trigger([
@@ -831,10 +898,25 @@ function RegisterForm() {
               ))}
             </div>
 
-            {(form.formState.errors as any).root && (
-              <p className="text-xs text-destructive">
-                {(form.formState.errors as any).root.message}
-              </p>
+            {inlineError && (
+              <div
+                role="alert"
+                data-testid="text-register-error"
+                className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive"
+              >
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                <p className="text-xs leading-relaxed">{inlineError}</p>
+              </div>
+            )}
+
+            {registrationStep !== "idle" && (
+              <div
+                data-testid="status-registering"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary"
+              >
+                <Loader2 size={14} className="animate-spin shrink-0" />
+                <p className="text-xs leading-relaxed">{STEP_MESSAGES[registrationStep]}</p>
+              </div>
             )}
 
             <div className="flex gap-2 pt-1">
@@ -844,6 +926,7 @@ function RegisterForm() {
                 onClick={() => setStep(1)}
                 data-testid="button-back-step"
                 className="flex-1 h-12 rounded-xl"
+                disabled={isPending}
               >
                 Back
               </Button>

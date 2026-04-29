@@ -25,7 +25,6 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Footer } from "@/components/Footer";
-import { MessageCircle, HelpCircle } from "lucide-react";
 
 const PROFESSIONAL_TITLE =
   "Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist";
@@ -235,7 +234,7 @@ export default function HomePage() {
               {settings?.profilePhotoUrl ? (
                 <img
                   src={settings.profilePhotoUrl}
-                  alt="Youssef Ahmed — Youssef Fitness"
+                  alt="Youssef Ahmed — Personal Training Service"
                   className="w-full h-full object-cover"
                   data-testid="img-profile"
                 />
@@ -267,9 +266,9 @@ export default function HomePage() {
           {bio}
         </p>
         <p className="text-base text-muted-foreground/85 leading-relaxed mt-6">
-          Through Youssef Fitness, he focuses on building safe, personalized, and result-driven training systems
-          for adults, beginners, athletes, kids, and clients looking to improve strength, body composition,
-          confidence, and overall movement.
+          Youssef Ahmed Personal Training Service focuses on building safe, personalized, and
+          result-driven training systems for adults, beginners, athletes, kids, and clients looking
+          to improve strength, body composition, confidence, and overall movement.
         </p>
       </section>
 
@@ -387,22 +386,9 @@ export default function HomePage() {
               />
             </div>
 
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
-              <ContactRow
-                icon={<HelpCircle size={16} />}
-                label="Ask about training"
-                helper="Packages, schedule, specialties."
-                message="Hi Youssef, I'd like to ask about your training packages."
-                testId="button-ask-whatsapp"
-              />
-              <ContactRow
-                icon={<MessageCircle size={16} />}
-                label="Confirm a booking"
-                helper="Already booked? Confirm with Youssef."
-                message="Hi Youssef, I'd like to confirm my upcoming session."
-                testId="button-confirm-whatsapp"
-              />
-            </div>
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Replies usually within a few hours · Dubai, UAE
+            </p>
           </div>
         </div>
       </section>
@@ -430,35 +416,3 @@ function SectionHeader({
   );
 }
 
-function ContactRow({
-  label,
-  helper,
-  message,
-  testId,
-  icon,
-}: {
-  label: string;
-  helper: string;
-  message: string;
-  testId: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <a
-      href={`https://wa.me/971505394754?text=${encodeURIComponent(message)}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      data-testid={testId}
-      className="group rounded-2xl border border-white/10 bg-card/60 p-4 flex items-center gap-3 hover:border-primary/30 hover:bg-white/[0.04] transition-colors"
-    >
-      <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary shrink-0">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold leading-tight">{label}</p>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{helper}</p>
-      </div>
-      <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary shrink-0" />
-    </a>
-  );
-}

@@ -570,19 +570,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         me.role === "admin" && req.body.userId ? Number(req.body.userId) : me.id;
       const originalFullPath = path.join(UPLOAD_ROOT, "inbody", req.file.filename);
 
-      // AI extraction first (uses original quality), then optimize to webp
+      // AI extraction first (uses original quality). Best-effort — if it
+      // throws or the API key is missing, registration must still succeed.
       let extracted: Awaited<ReturnType<typeof extractInbodyMetricsFromImage>> = null;
       if (req.file.mimetype.startsWith("image/")) {
-        extracted = await extractInbodyMetricsFromImage(
-          originalFullPath,
-          req.file.mimetype,
-        );
+        try {
+          extracted = await extractInbodyMetricsFromImage(
+            originalFullPath,
+            req.file.mimetype,
+          );
+        } catch (e) {
+          console.warn("[inbody] AI extraction threw, continuing without it:", e);
+        }
       }
 
-      const opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
-        maxWidth: 1800,
-        quality: 86,
-      });
+      // Image optimization is best-effort; never blocks the upload
+      let opt: Awaited<ReturnType<typeof optimizeImageFile>> = { optimized: false };
+      try {
+        opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
+          maxWidth: 1800,
+          quality: 86,
+        });
+      } catch (e) {
+        console.warn("[inbody] image optimization failed, keeping original:", e);
+      }
       const finalFilename = opt.optimized && opt.optimizedFilename
         ? opt.optimizedFilename
         : req.file.filename;
@@ -676,10 +687,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         me.role === "admin" && req.body.userId ? Number(req.body.userId) : me.id;
 
       const originalFullPath = path.join(UPLOAD_ROOT, "photos", req.file.filename);
-      const opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
-        maxWidth: 1600,
-        quality: 82,
-      });
+      let opt: Awaited<ReturnType<typeof optimizeImageFile>> = { optimized: false };
+      try {
+        opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
+          maxWidth: 1600,
+          quality: 82,
+        });
+      } catch (e) {
+        console.warn("[progress] image optimization failed, keeping original:", e);
+      }
       const finalFilename = opt.optimized && opt.optimizedFilename
         ? opt.optimizedFilename
         : req.file.filename;
@@ -813,23 +829,50 @@ async function seedDatabase() {
     const hashed = await hashPassword("change-this-password");
     await storage.createUser({
       username: adminUsername,
-      email: "admin@youssef.fitness",
+      email: "admin@youssef-ahmed.fit",
       password: hashed,
-      fullName: "Youssef Fitness",
+      fullName: "Youssef Ahmed",
       phone: "+971505394754",
       role: "admin",
       fitnessGoal: null,
       notes: null,
     });
     console.log("Seeded admin account: admin / change-this-password");
+  } else if (process.env.RESEED_ADMIN === "1") {
+    // Optional safety net: reset admin password to default if explicitly requested.
+    const hashed = await hashPassword("change-this-password");
+    await storage.updateUser(existing.id, {
+      password: hashed,
+      fullName: existing.fullName === "Youssef Fitness" ? "Youssef Ahmed" : existing.fullName,
+    } as any);
+    console.log("Admin password reset to: change-this-password (RESEED_ADMIN=1)");
+  } else if (existing.fullName === "Youssef Fitness") {
+    // Quietly correct the admin display name without touching the password.
+    try {
+      await storage.updateUser(existing.id, { fullName: "Youssef Ahmed" } as any);
+    } catch {
+      /* ignore */
+    }
   }
 
   const s = await storage.getSettings();
-  if (!s.profileBio) {
+  const cleanBio =
+    "Youssef Ahmed provides premium personal training services in Dubai, combining academic physical education, movement science, competitive sports experience, and structured coaching systems. His approach focuses on safe, personalized, and result-driven training for adults, beginners, fat-loss clients, muscle-gain clients, and kids & youth fitness.";
+
+  // Only replace the bio when it's empty OR when it still matches one of the
+  // known legacy auto-seeded prefixes. A startsWith check prevents clobbering
+  // any custom bio an admin may have written that incidentally mentions one of
+  // the legacy phrases later in the text.
+  const LEGACY_BIO_PREFIXES = [
+    "Youssef Tarek Hashim Ahmed is a certified",
+    "Certified personal trainer and physical education teacher based in Dubai",
+  ];
+  const trimmedBio = (s.profileBio || "").trim();
+  const isLegacySeededBio = LEGACY_BIO_PREFIXES.some((p) => trimmedBio.startsWith(p));
+  if (!trimmedBio || isLegacySeededBio) {
     await storage.updateSettings({
-      profileBio:
-        "Certified personal trainer and physical education teacher based in Dubai. Combining academic education, competitive sports experience, and international client coaching, Youssef builds safe, structured, and result-driven programs in personal training, body transformation, weight management, and physical education.",
-      whatsappNumber: "971505394754",
+      profileBio: cleanBio,
+      whatsappNumber: s.whatsappNumber || "971505394754",
     });
   }
 }

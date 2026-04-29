@@ -1,10 +1,21 @@
-# Youssef Fitness — Personal Trainer Booking Platform
+# Personal Training Service — Youssef Ahmed Booking Platform
 
-A premium dark-luxury website for **Youssef Fitness** (Youssef Tarek Hashim Ahmed), a certified personal trainer in Dubai, UAE. Public profile + private client booking system + full admin dashboard, with packages, InBody body-composition tracking (hybrid AI), progress photos, and holiday/off-day management.
+A premium dark-luxury website for **Youssef Ahmed Personal Training Service**, a certified personal trainer in Dubai, UAE. Public profile + private client booking system + full admin dashboard, with packages, InBody body-composition tracking (hybrid AI), progress photos, and holiday/off-day management.
 
 Legal & consent: dedicated Privacy Policy, Terms & Conditions, Cancellation Policy, Medical Disclaimer, and Cookie Policy pages; site-wide cookie consent banner (essential/analytics/marketing); 5 required registration consents + per-upload InBody/progress consent; consent records stored in `consent_records` and visible per client in the admin dashboard.
 
-Branding subtitle: **Certified Personal Trainer & Transformation Specialist**
+Public-facing brand: **Personal Training Service** (top nav) · Hero name: **Youssef Ahmed** · Subtitle: **Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist**
+
+The legal name "Youssef Tarek Hashim Ahmed" appears only on the bank-transfer details inside the private direct-payment flow (it is the actual account holder for IBAN AE230260001015917468101) — never on public pages.
+
+## Recent stability fixes (Apr 2026)
+- Registration + InBody upload no longer crashes / kicks the user out mid-flow. The auth page now suppresses its auto-redirect via a `submitting` flag and shows a staged status indicator (Creating account → Uploading InBody → Finalizing) before navigating to `/dashboard`.
+- AI extraction (OpenAI Vision) and image optimization (sharp → webp) on InBody and progress uploads are wrapped in try/catch — registration and uploads always persist even when AI/sharp fail.
+- `seedDatabase` now force-cleans the legacy seeded `profile_bio` (only when it still starts with one of the known legacy prefixes) without clobbering an admin-customized bio.
+- `PhoneInput` ships with the full ITU country list (~240 entries) with paste detection (`+44 7700…` / `00`-prefixed numbers), default UAE +971.
+- Auth page split into Client Login / Create Account / Admin login with smaller inline error styling.
+- Single primary WhatsApp button on the home page (hero + CTA), removed duplicate ContactRow blocks.
+- Admin login: `admin` / `change-this-password`. Set `RESEED_ADMIN=1` env var to force-reset the admin password on next startup if it was accidentally changed.
 
 ## Features
 
