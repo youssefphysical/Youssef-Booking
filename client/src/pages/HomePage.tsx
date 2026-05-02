@@ -197,7 +197,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow whitespace-nowrap">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
                   <Calendar size={18} />
                   {t("hero.bookSession", "Book a Session")}
                 </button>
@@ -290,7 +290,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.04 }}
-              className="rounded-2xl border border-white/5 bg-card/60 p-5 hover:border-primary/30 hover:bg-card/80 transition-colors"
+              className="rounded-2xl border border-white/5 bg-card/60 p-6 hover:bg-card/80 card-lift"
               data-testid={`specialty-card-${i}`}
             >
               <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mb-4">
@@ -319,7 +319,7 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.03 }}
-              className="rounded-2xl border border-white/5 bg-card/60 p-5 hover:border-primary/25 transition-colors"
+              className="rounded-2xl border border-white/5 bg-card/60 p-5 card-lift"
               data-testid={`cert-card-${i}`}
             >
               <div className="flex items-start gap-4">
@@ -380,7 +380,7 @@ export default function HomePage() {
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
               <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
-                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow whitespace-nowrap">
+                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
                   {t("section.cta.bookSession", "Book a Session")} <ArrowRight size={16} />
                 </button>
               </Link>

@@ -221,7 +221,7 @@ export default function HowItWorks() {
           <Link
             href="/auth"
             data-testid="link-cta-signup"
-            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap btn-press"
           >
             {t("howItWorks.ctaCreate")} <ArrowRight size={16} />
           </Link>

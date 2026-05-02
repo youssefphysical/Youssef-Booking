@@ -84,14 +84,14 @@ export function CookieBanner() {
               <button
                 onClick={acceptAll}
                 data-testid="button-cookie-accept"
-                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap"
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap btn-press"
               >
                 {t("cookie.acceptAll")}
               </button>
               <button
                 onClick={() => setShowPrefs(true)}
                 data-testid="button-cookie-manage"
-                className="h-10 px-4 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold hover:bg-white/10 whitespace-nowrap"
+                className="h-10 px-4 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold hover:bg-white/10 hover:border-white/20 whitespace-nowrap btn-soft"
               >
                 {t("cookie.manage")}
               </button>
@@ -153,7 +153,7 @@ export function CookieBanner() {
               </button>
               <button
                 onClick={savePrefs}
-                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap"
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap btn-press"
                 data-testid="button-cookie-save"
               >
                 {t("cookie.savePrefs")}

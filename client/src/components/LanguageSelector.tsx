@@ -30,7 +30,7 @@ export function LanguageSelector({
           data-testid="button-language-selector"
           aria-label={t("nav.language", "Language")}
           className={cn(
-            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-sm whitespace-nowrap shrink-0",
+            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-sm whitespace-nowrap shrink-0 btn-soft",
             variant === "compact" ? "px-2 sm:px-2.5" : "px-3",
             className,
           )}

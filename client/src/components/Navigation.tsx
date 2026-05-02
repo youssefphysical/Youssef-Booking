@@ -133,7 +133,7 @@ export function Navigation() {
                 <Link
                   href="/profile"
                   data-testid="link-nav-profile-avatar"
-                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 transition-colors"
+                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 hover:border-white/20 btn-soft"
                   title="Your profile"
                 >
                   <UserAvatar
@@ -155,7 +155,7 @@ export function Navigation() {
                   navigate("/");
                 }}
                 data-testid="button-logout"
-                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors whitespace-nowrap"
+                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 whitespace-nowrap btn-soft"
               >
                 <LogOut size={14} className="shrink-0" />
                 <span className="whitespace-nowrap">{t("nav.signOut", "Sign out")}</span>
@@ -165,14 +165,14 @@ export function Navigation() {
             <Link
               href="/auth"
               data-testid="link-signin"
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press"
             >
               <LogIn size={14} className="shrink-0" />
               <span className="whitespace-nowrap">{t("nav.signIn", "Sign in")}</span>
             </Link>
           )}
           <button
-            className="md:hidden p-2 rounded-lg border border-white/10 shrink-0"
+            className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
             aria-label="Menu"
             data-testid="button-mobile-menu"
@@ -229,8 +229,10 @@ function TopNavLink({ href, label, active, testKey }: { href: string; label: str
     <Link href={href} data-testid={`link-top-${testKey}`}>
       <div
         className={cn(
-          "px-3 h-9 inline-flex items-center text-sm rounded-lg transition-colors",
-          active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+          "px-3.5 h-9 inline-flex items-center text-sm font-medium rounded-lg transition-colors whitespace-nowrap",
+          active
+            ? "text-primary bg-primary/10"
+            : "text-muted-foreground hover:text-foreground hover:bg-white/5",
         )}
       >
         {label}
@@ -242,9 +244,9 @@ function TopNavLink({ href, label, active, testKey }: { href: string; label: str
 function MobileLink({ href, label, icon, onClose, testKey }: { href: string; label: string; icon: React.ReactNode; onClose: () => void; testKey: string }) {
   return (
     <Link href={href} onClick={onClose} data-testid={`link-mobile-${testKey}`}>
-      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-white/5">
-        {icon}
-        <span>{label}</span>
+      <div className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-white/5 active:bg-white/10 btn-soft">
+        <span className="shrink-0 text-muted-foreground">{icon}</span>
+        <span className="whitespace-nowrap">{label}</span>
       </div>
     </Link>
   );
