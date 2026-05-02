@@ -70,6 +70,7 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
+import { motion } from "framer-motion";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -1426,19 +1427,21 @@ function PackagesPanel({ client }: { client: UserResponse }) {
           {list.map((p) => {
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
+            const bonus = def?.bonusSessions ?? 0;
+            const base = (def?.sessions ?? p.totalSessions) - bonus;
+            const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
             return (
-              <div
+              <motion.div
                 key={p.id}
-                className={`rounded-2xl border p-4 ${p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-white/[0.02] opacity-70"}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-2xl border p-4 card-lift ${p.isActive ? "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent" : "border-white/5 bg-white/[0.02] opacity-70"}`}
                 data-testid={`admin-package-${p.id}`}
               >
-                <div className="flex justify-between items-start gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-primary">{def?.label}</p>
-                    <p className="text-2xl font-display font-bold mt-1">
-                      {remaining} <span className="text-sm text-muted-foreground font-normal">/ {p.totalSessions}</span>
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                <div className="flex justify-between items-start gap-3 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">{def?.label || p.type}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {p.purchasedAt && format(new Date(p.purchasedAt), "MMM d, yyyy")}
                       {!p.isActive && " • Closed"}
                     </p>
@@ -1447,13 +1450,37 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                     size="icon"
                     variant="ghost"
                     onClick={() => del.mutate(p.id)}
-                    className="h-8 w-8 text-red-400 hover:bg-red-500/10"
+                    className="h-7 w-7 text-red-400 hover:bg-red-500/10"
                     data-testid={`button-delete-package-${p.id}`}
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={12} />
                   </Button>
                 </div>
-              </div>
+
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <SessionStat label="Base" value={base} />
+                  <SessionStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
+                  <SessionStat label="Total" value={p.totalSessions} accent="text-primary" />
+                </div>
+
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-3xl font-display font-bold leading-none tabular-nums">
+                      {remaining}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">remaining</span>
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{p.usedSessions} of {p.totalSessions} used</p>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden mt-2">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
+                  />
+                </div>
+              </motion.div>
             );
           })}
         </div>
@@ -1709,6 +1736,25 @@ function ProgressPanel({ userId }: { userId: number }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SessionStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-lg bg-white/5 border border-white/5 px-2 py-1.5 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={`text-sm font-display font-bold tabular-nums leading-tight mt-0.5 ${accent || ""}`}>
+        {value}
+      </p>
     </div>
   );
 }

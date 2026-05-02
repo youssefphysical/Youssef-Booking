@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Search, Package as PackageIcon, ExternalLink, Users } from "lucide-react";
 import { usePackages } from "@/hooks/use-packages";
@@ -97,17 +98,22 @@ export default function AdminPackages() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filtered.map((p) => {
+          {filtered.map((p, i) => {
             const owner = p.user || clientById.get(p.userId);
             const partner = p.partnerUserId ? clientById.get(p.partnerUserId) : null;
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
             const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
+            const bonus = def?.bonusSessions ?? 0;
+            const base = (def?.sessions ?? p.totalSessions) - bonus;
 
             return (
-              <div
+              <motion.div
                 key={p.id}
-                className={`rounded-2xl border p-5 ${p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.02, 0.2) }}
+                className={`rounded-2xl border p-5 card-lift ${p.isActive ? "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent" : "border-white/5 bg-card/60 opacity-70"}`}
                 data-testid={`packages-row-${p.id}`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -127,30 +133,56 @@ export default function AdminPackages() {
                       </p>
                     )}
                   </div>
-                  <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary">
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary whitespace-nowrap">
                     {def?.label || p.type}
                   </span>
                 </div>
 
-                <div className="flex items-end justify-between gap-3 mb-2">
-                  <div>
-                    <p className="text-2xl font-display font-bold">
-                      {remaining} <span className="text-sm font-normal text-muted-foreground">/ {p.totalSessions}</span>
-                    </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">sessions left</p>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    Started {p.purchasedAt && format(new Date(p.purchasedAt), "MMM d, yyyy")}
-                  </p>
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  <PackageStat label="Base" value={base} />
+                  <PackageStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
+                  <PackageStat label="Total" value={p.totalSessions} accent="text-primary" />
+                  <PackageStat label="Left" value={remaining} accent="text-emerald-300" />
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                  <span>{p.usedSessions} of {p.totalSessions} used</span>
+                  <span>{p.purchasedAt && `Started ${format(new Date(p.purchasedAt), "MMM d, yyyy")}`}</span>
                 </div>
                 <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary to-primary/60" style={{ width: `${pct}%` }} />
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
+                  />
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function PackageStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-lg bg-white/5 border border-white/5 px-2 py-1.5 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p
+        className={`text-base font-display font-bold tabular-nums leading-tight mt-0.5 ${accent || ""}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
