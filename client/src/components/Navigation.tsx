@@ -17,6 +17,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { isEffectiveSuperAdmin } from "@shared/schema";
+import { UserAvatar } from "@/components/UserAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
@@ -112,17 +114,39 @@ export function Navigation() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <button
-              onClick={() => {
-                logoutMutation.mutate();
-                navigate("/");
-              }}
-              data-testid="button-logout"
-              className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
-            >
-              <LogOut size={14} />
-              Sign out
-            </button>
+            <>
+              {user.role === "client" && (
+                <Link
+                  href="/profile"
+                  data-testid="link-nav-profile-avatar"
+                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 transition-colors"
+                  title="Your profile"
+                >
+                  <UserAvatar
+                    src={user.profilePictureUrl}
+                    name={user.fullName}
+                    size={28}
+                    testId="img-nav-avatar"
+                    className="border-0"
+                  />
+                  <span className="text-xs font-medium max-w-[120px] truncate">
+                    {user.fullName.split(" ")[0]}
+                  </span>
+                  {user.isVerified && <VerifiedBadge size="xs" showTooltip={false} testId="badge-nav-verified" />}
+                </Link>
+              )}
+              <button
+                onClick={() => {
+                  logoutMutation.mutate();
+                  navigate("/");
+                }}
+                data-testid="button-logout"
+                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
+              >
+                <LogOut size={14} />
+                Sign out
+              </button>
+            </>
           ) : (
             <Link
               href="/auth"

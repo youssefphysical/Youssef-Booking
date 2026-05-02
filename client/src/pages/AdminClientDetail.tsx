@@ -72,6 +72,8 @@ import {
 } from "@/components/ui/form";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
+import { UserAvatar } from "@/components/UserAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { formatStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -143,12 +145,20 @@ export default function AdminClientDetail() {
       </Link>
 
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6 flex flex-wrap gap-5 items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-bold text-2xl">
-            {client.fullName.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h1 className="text-2xl font-display font-bold" data-testid="text-client-name">{client.fullName}</h1>
+        <div className="flex items-start gap-4 min-w-0">
+          <UserAvatar
+            src={client.profilePictureUrl}
+            name={client.fullName}
+            size={64}
+            testId="img-client-detail-avatar"
+          />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-display font-bold leading-tight" data-testid="text-client-name">
+                {client.fullName}
+              </h1>
+              {client.isVerified && <VerifiedBadge size="md" testId="badge-client-detail-verified" />}
+            </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
               {client.email && <span className="inline-flex items-center gap-1.5"><Mail size={11} /> {client.email}</span>}
               {client.phone && <span className="inline-flex items-center gap-1.5"><Phone size={11} /> {client.phone}</span>}

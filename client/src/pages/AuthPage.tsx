@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
-import { useUploadInbody } from "@/hooks/use-inbody";
-import { useUploadProgressPhoto } from "@/hooks/use-progress";
 import {
   Form,
   FormControl,
@@ -26,7 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PRIMARY_GOAL_OPTIONS } from "@shared/schema";
-import { ConsentNote } from "@/components/ConsentNote";
 import { AreaAutocomplete } from "@/components/AreaAutocomplete";
 import { PhoneInput } from "@/components/PhoneInput";
 import {
@@ -44,8 +41,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ShieldCheck,
-  User as UserIcon,
-  Upload,
   CheckCircle2,
   KeyRound,
   AlertCircle,
@@ -61,6 +56,10 @@ const adminLoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// Simpler registration: account basics + a primary goal + the legal consents.
+// InBody scans, profile pictures, training level/goal and progress photos all
+// live on the dashboard / profile page now — the user can fill them in at
+// their own pace after creating an account.
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Valid email is required"),
@@ -90,19 +89,14 @@ export default function AuthPage({
   const [mode, setMode] = useState<Mode>(initialMode);
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  // Suppress the auto-redirect while a multi-step registration flow is running
-  // (account creation, InBody upload, optional progress photo). Without this,
-  // the form unmounts mid-upload the moment the auth user is set.
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user && !submitting) {
+    if (user) {
       setLocation(user.role === "admin" ? "/admin" : "/dashboard");
     }
-  }, [user, submitting, setLocation]);
+  }, [user, setLocation]);
 
-  // Keep the form mounted while the registration flow is finishing.
-  if (user && !submitting) return null;
+  if (user) return null;
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-16 pt-24 relative overflow-hidden">
@@ -174,13 +168,7 @@ export default function AuthPage({
             >
               {mode === "client-login" && <ClientLoginForm />}
               {mode === "client-register" && (
-                <RegisterForm
-                  onSubmittingChange={setSubmitting}
-                  onComplete={() => {
-                    setSubmitting(false);
-                    setLocation("/dashboard");
-                  }}
-                />
+                <RegisterForm onComplete={() => setLocation("/dashboard")} />
               )}
               {mode === "admin-login" && <AdminLoginForm />}
             </motion.div>
@@ -528,31 +516,9 @@ const CONSENT_ITEMS: { key: ConsentKey; label: React.ReactNode }[] = [
   },
 ];
 
-type RegistrationStep = "idle" | "creating" | "uploading-inbody" | "uploading-photo" | "finalizing";
-
-const STEP_MESSAGES: Record<Exclude<RegistrationStep, "idle">, string> = {
-  creating: "Creating your account…",
-  "uploading-inbody": "Uploading your InBody scan…",
-  "uploading-photo": "Saving your starting photo…",
-  finalizing: "Finalizing your profile…",
-};
-
-function RegisterForm({
-  onSubmittingChange,
-  onComplete,
-}: {
-  onSubmittingChange: (v: boolean) => void;
-  onComplete: () => void;
-}) {
+function RegisterForm({ onComplete }: { onComplete: () => void }) {
   const { registerMutation } = useAuth();
-  const uploadInbody = useUploadInbody();
-  const uploadPhoto = useUploadProgressPhoto();
-
   const [step, setStep] = useState<1 | 2>(1);
-  const [inbodyFile, setInbodyFile] = useState<File | null>(null);
-  const [progressFile, setProgressFile] = useState<File | null>(null);
-  const [inbodyConsent, setInbodyConsent] = useState(false);
-  const [progressConsent, setProgressConsent] = useState(false);
   const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({
     info_accurate: false,
     cancellation_policy: false,
@@ -560,10 +526,7 @@ function RegisterForm({
     medical_fitness: false,
     data_storage: false,
   });
-  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>("idle");
   const [inlineError, setInlineError] = useState<string | null>(null);
-  const inbodyRef = useRef<HTMLInputElement>(null);
-  const progressRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -584,79 +547,25 @@ function RegisterForm({
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setInlineError(null);
-    if (!inbodyFile) {
-      setInlineError("Please upload your InBody scan to continue.");
-      return;
-    }
-    if (!inbodyConsent) {
-      setInlineError("Please confirm consent to upload your InBody scan.");
-      return;
-    }
-    if (progressFile && !progressConsent) {
-      setInlineError(
-        "Please confirm consent to upload your progress photo (or remove it).",
-      );
-      return;
-    }
     if (!allConsentsAccepted) {
       setInlineError("Please review and accept all required consents to continue.");
       return;
     }
 
-    // Tell the parent to suppress the auto-redirect until we're done.
-    onSubmittingChange(true);
-    setRegistrationStep("creating");
-
-    let newUser: unknown = null;
     try {
-      newUser = await registerMutation.mutateAsync({ ...values, consents } as any);
+      await registerMutation.mutateAsync({ ...values, consents } as any);
     } catch (err: any) {
-      // Account creation failed — surface a friendly message and abort.
       setInlineError(
         err?.message?.includes("already")
           ? "This email is already registered. Try signing in instead."
           : "We couldn't create your account. Please review your details and try again.",
       );
-      setRegistrationStep("idle");
-      onSubmittingChange(false);
       return;
     }
-    if (!newUser) {
-      setRegistrationStep("idle");
-      onSubmittingChange(false);
-      return;
-    }
-
-    // Account exists. From here on, image uploads are best-effort —
-    // the user is signed in and registration is considered successful.
-    setRegistrationStep("uploading-inbody");
-    try {
-      await uploadInbody.mutateAsync({ file: inbodyFile });
-    } catch {
-      // The upload hook already surfaces a toast; we keep going so the
-      // user reaches the dashboard and can re-upload from there.
-    }
-
-    if (progressFile) {
-      setRegistrationStep("uploading-photo");
-      try {
-        await uploadPhoto.mutateAsync({ file: progressFile, type: "before" });
-      } catch {
-        /* best-effort */
-      }
-    }
-
-    setRegistrationStep("finalizing");
-    // Small delay so the user can see the final status before navigation.
-    await new Promise((r) => setTimeout(r, 350));
     onComplete();
   }
 
-  const isPending =
-    registrationStep !== "idle" ||
-    registerMutation.isPending ||
-    uploadInbody.isPending ||
-    uploadPhoto.isPending;
+  const isPending = registerMutation.isPending;
 
   async function handleNext() {
     const valid = await form.trigger([
@@ -676,7 +585,7 @@ function RegisterForm({
         <div className="flex items-center gap-2 mb-2">
           <StepDot active={step === 1} done={step > 1} label="Account" />
           <div className="flex-1 h-px bg-white/10" />
-          <StepDot active={step === 2} done={false} label="Health Info" />
+          <StepDot active={step === 2} done={false} label="Goals & Consents" />
         </div>
 
         {step === 1 && (
@@ -883,41 +792,14 @@ function RegisterForm({
               )}
             />
 
-            <FileField
-              required
-              label="InBody Scan (required)"
-              description="JPG, PNG or PDF accepted. We'll auto-read your numbers when possible."
-              file={inbodyFile}
-              onChange={setInbodyFile}
-              inputRef={inbodyRef}
-              accept="image/*,application/pdf"
-              testId="input-inbody-file"
-            />
-            {inbodyFile && (
-              <ConsentNote
-                checked={inbodyConsent}
-                onChange={setInbodyConsent}
-                testId="checkbox-inbody-consent"
-                text="I consent to uploading this InBody scan for coaching, progress tracking, and body composition review by Youssef Fitness."
-              />
-            )}
-            <FileField
-              label="Starting Progress Photo (optional)"
-              description="Helps Youssef track your transformation."
-              file={progressFile}
-              onChange={setProgressFile}
-              inputRef={progressRef}
-              accept="image/*"
-              testId="input-progress-file"
-            />
-            {progressFile && (
-              <ConsentNote
-                checked={progressConsent}
-                onChange={setProgressConsent}
-                testId="checkbox-progress-consent"
-                text="I consent to uploading this progress photo for coaching and transformation tracking. It will only be visible to me and Youssef."
-              />
-            )}
+            <div
+              className="rounded-xl border border-primary/15 bg-primary/[0.04] p-3 text-xs leading-relaxed text-muted-foreground"
+              data-testid="hint-after-register"
+            >
+              <p className="text-foreground/85 font-medium mb-1">After you sign up</p>
+              You'll be able to upload your profile picture, your InBody scan, and set your training
+              level &amp; goal from your profile page — all at your own pace.
+            </div>
 
             {/* Required consents */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
@@ -957,16 +839,6 @@ function RegisterForm({
               </div>
             )}
 
-            {registrationStep !== "idle" && (
-              <div
-                data-testid="status-registering"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary"
-              >
-                <Loader2 size={14} className="animate-spin shrink-0" />
-                <p className="text-xs leading-relaxed">{STEP_MESSAGES[registrationStep]}</p>
-              </div>
-            )}
-
             <div className="flex gap-2 pt-1">
               <Button
                 type="button"
@@ -982,7 +854,7 @@ function RegisterForm({
                 type="submit"
                 data-testid="button-submit-register"
                 className="flex-1 h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={isPending || !allConsentsAccepted || !inbodyFile || !inbodyConsent}
+                disabled={isPending || !allConsentsAccepted}
               >
                 {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
                 Create Account
@@ -1016,68 +888,6 @@ function StepDot({ active, done, label }: { active: boolean; done: boolean; labe
       >
         {label}
       </span>
-    </div>
-  );
-}
-
-function FileField({
-  label,
-  description,
-  file,
-  onChange,
-  inputRef,
-  accept,
-  testId,
-  required,
-}: {
-  label: string;
-  description?: string;
-  file: File | null;
-  onChange: (f: File | null) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
-  accept?: string;
-  testId?: string;
-  required?: boolean;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </label>
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        data-testid={testId}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors text-left ${
-          file
-            ? "border-primary/40 bg-primary/5"
-            : "border-dashed border-white/15 bg-white/[0.02] hover:bg-white/5"
-        }`}
-      >
-        <div
-          className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-            file ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
-          }`}
-        >
-          {file ? <CheckCircle2 size={18} /> : <Upload size={18} />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">
-            {file ? file.name : "Click to upload"}
-          </p>
-          {description && (
-            <p className="text-xs text-muted-foreground truncate">{description}</p>
-          )}
-        </div>
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        className="hidden"
-        onChange={(e) => onChange(e.target.files?.[0] || null)}
-      />
     </div>
   );
 }

@@ -48,6 +48,14 @@ export const users = pgTable("users", {
   sameDayAdjustMonth: text("same_day_adjust_month"),
   sameDayAdjustCount: integer("same_day_adjust_count").notNull().default(0),
   notes: text("notes"),
+  // Profile picture: stored as base64 data URL (image/webp, ~256x256)
+  // Kept in DB so it works on both Replit (disk) and Vercel (read-only FS) without
+  // requiring object storage. Compressed to ~10-25KB per user.
+  profilePictureUrl: text("profile_picture_url"),
+  // Self-declared training level: 'beginner' | 'intermediate' | 'advanced'
+  trainingLevel: text("training_level"),
+  // Self-declared training goal: 'hypertrophy' | 'strength' | 'endurance'
+  trainingGoal: text("training_goal"),
   // Admin/staff access fields (only meaningful when role='admin')
   // adminRole: 'super_admin' | 'manager' | 'viewer' (null for clients)
   adminRole: text("admin_role"),
@@ -383,7 +391,12 @@ export const insertProgressPhotoSchema = createInsertSchema(progressPhotos)
 // TYPES
 // =============================
 export type User = typeof users.$inferSelect;
-export type UserResponse = Omit<User, "password">;
+// UserResponse is the public-safe shape served by the API. We strip `password`
+// and optionally augment with derived flags like `isVerified` (computed from
+// profile completion + InBody/completed-session signals).
+export type UserResponse = Omit<User, "password"> & {
+  isVerified?: boolean;
+};
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
@@ -604,6 +617,56 @@ export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
   { value: "muscle_gain", label: "Muscle Gain" },
   { value: "recomposition", label: "Body Recomposition – Build Muscle & Lose Fat" },
 ];
+
+// =============================
+// TRAINING LEVEL & GOAL TYPE
+// =============================
+// Self-declared by the client. Editable from the profile page at any time.
+export const TRAINING_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+export type TrainingLevel = (typeof TRAINING_LEVELS)[number];
+export const TRAINING_LEVEL_LABELS: Record<TrainingLevel, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+};
+export const TRAINING_LEVEL_DESCRIPTIONS: Record<TrainingLevel, string> = {
+  beginner: "New to structured training or returning after a long break.",
+  intermediate: "Comfortable with most movements, training consistently for 6+ months.",
+  advanced: "Experienced lifter, deep technical knowledge, multi-year training history.",
+};
+
+export const TRAINING_GOALS = ["hypertrophy", "strength", "endurance"] as const;
+export type TrainingGoal = (typeof TRAINING_GOALS)[number];
+export const TRAINING_GOAL_LABELS: Record<TrainingGoal, string> = {
+  hypertrophy: "Hypertrophy",
+  strength: "Strength",
+  endurance: "Endurance",
+};
+export const TRAINING_GOAL_DESCRIPTIONS: Record<TrainingGoal, string> = {
+  hypertrophy: "Build muscle size & shape with high-volume training.",
+  strength: "Maximize raw force production through low-rep, heavy-load work.",
+  endurance: "Improve work capacity, conditioning and stamina.",
+};
+
+// =============================
+// VERIFIED CLIENT BADGE
+// =============================
+// A client earns the verified blue-check when their profile is reasonably
+// complete: a profile picture is uploaded AND they have at least one
+// InBody scan OR one completed coaching session on file.
+//
+// This is a pure function so both server (computed in API responses) and
+// client (graceful UI fallback when serving lists) can derive the same flag.
+export function isVerifiedClient(
+  user: Pick<User, "profilePictureUrl" | "role"> | null | undefined,
+  hasInbody: boolean,
+  hasCompletedSession: boolean,
+): boolean {
+  if (!user) return false;
+  if (user.role !== "client") return false;
+  if (!user.profilePictureUrl) return false;
+  return hasInbody || hasCompletedSession;
+}
 
 export const SESSION_TYPE_LABELS: Record<string, string> = {
   package: "Training Session",

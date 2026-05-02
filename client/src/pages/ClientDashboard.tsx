@@ -96,6 +96,8 @@ import {
   type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
+import { UserAvatar } from "@/components/UserAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 function currentMonthKey() {
   const d = new Date();
@@ -115,16 +117,29 @@ export default function ClientDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">My Training</p>
-          <h1 className="text-3xl font-display font-bold" data-testid="text-greeting">
-            Hello, {user.fullName.split(" ")[0]}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage your sessions, packages and progress
-          </p>
-          <div className="mt-3">
-            <VipBadge tier={user.vipTier ?? "foundation"} />
+        <div className="flex items-start gap-4 min-w-0">
+          <Link href="/profile" data-testid="link-dashboard-avatar" className="shrink-0">
+            <UserAvatar
+              src={user.profilePictureUrl}
+              name={user.fullName}
+              size={64}
+              testId="img-dashboard-avatar"
+            />
+          </Link>
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">My Training</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-3xl font-display font-bold leading-tight" data-testid="text-greeting">
+                Hello, {user.fullName.split(" ")[0]}
+              </h1>
+              {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
+            </div>
+            <p className="text-muted-foreground text-sm mt-1">
+              Manage your sessions, packages and progress
+            </p>
+            <div className="mt-3">
+              <VipBadge tier={user.vipTier ?? "foundation"} />
+            </div>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">

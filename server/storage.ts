@@ -28,7 +28,7 @@ import {
   type ConsentRecord,
   type InsertConsent,
 } from "@shared/schema";
-import { eq, and, gte, desc, asc, isNull } from "drizzle-orm";
+import { eq, and, gte, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -44,6 +44,13 @@ export interface IStorage {
   deleteUser(id: number): Promise<void>;
   getAllClients(): Promise<User[]>;
   getAllAdmins(): Promise<User[]>;
+  /**
+   * Batched lookup for the verified-badge flag. Returns a Map keyed by userId
+   * so callers can enrich a list of users without N+1 queries.
+   */
+  getVerificationFlagsForUsers(
+    userIds: number[],
+  ): Promise<Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>>;
 
   // Bookings
   getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
@@ -344,6 +351,38 @@ export class DatabaseStorage implements IStorage {
   async createConsentRecord(record: InsertConsent) {
     const [r] = await db.insert(consentRecords).values(record).returning();
     return r;
+  }
+
+  // ===== Verification flags (batched) =====
+  // Two grouped EXISTS-style queries instead of 2*N per-user fetches. Used
+  // by /api/users to enrich the admin client list without scanning every
+  // booking/inbody row per client.
+  async getVerificationFlagsForUsers(userIds: number[]) {
+    const out = new Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>();
+    if (userIds.length === 0) return out;
+    for (const id of userIds) out.set(id, { hasInbody: false, hasCompletedSession: false });
+
+    const inbodyRows = await db
+      .select({ userId: inbodyRecords.userId })
+      .from(inbodyRecords)
+      .where(inArray(inbodyRecords.userId, userIds))
+      .groupBy(inbodyRecords.userId);
+    for (const r of inbodyRows) {
+      const v = out.get(r.userId);
+      if (v) v.hasInbody = true;
+    }
+
+    const sessionRows = await db
+      .select({ userId: bookings.userId })
+      .from(bookings)
+      .where(and(inArray(bookings.userId, userIds), eq(bookings.status, "completed")))
+      .groupBy(bookings.userId);
+    for (const r of sessionRows) {
+      const v = out.get(r.userId);
+      if (v) v.hasCompletedSession = true;
+    }
+
+    return out;
   }
 }
 

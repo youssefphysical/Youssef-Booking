@@ -8,6 +8,8 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { useSettings } from "@/hooks/use-settings";
 import type { UserResponse } from "@shared/schema";
 import { SiWhatsapp } from "react-icons/si";
+import { UserAvatar } from "@/components/UserAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export default function AdminClients() {
   const { data: clients = [], isLoading } = useClients();
@@ -76,16 +78,28 @@ function ClientCard({ client }: { client: UserResponse }) {
       data-testid={`client-card-${client.id}`}
     >
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary font-bold">
-          {client.fullName.charAt(0).toUpperCase()}
-        </div>
+        <UserAvatar
+          src={client.profilePictureUrl}
+          name={client.fullName}
+          size={48}
+          testId={`img-client-avatar-${client.id}`}
+        />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold truncate" data-testid={`client-name-${client.id}`}>
-            {client.fullName}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p
+              className="font-semibold truncate"
+              data-testid={`client-name-${client.id}`}
+            >
+              {client.fullName}
+            </p>
+            {client.isVerified && (
+              <VerifiedBadge size="xs" testId={`badge-verified-${client.id}`} />
+            )}
+          </div>
           {client.email && (
             <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
-              <Mail size={11} /> {client.email}
+              <Mail size={11} />
+              <span className="truncate">{client.email}</span>
             </p>
           )}
           {client.phone && (

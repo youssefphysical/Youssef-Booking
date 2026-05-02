@@ -4,7 +4,8 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { setupAuth, hashPassword, sanitizeUser } from "./auth";
+import { setupAuth, hashPassword, sanitizeUser, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
+import sharp from "sharp";
 import { storage } from "./storage";
 import {
   insertBookingSchema,
@@ -151,10 +152,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOAD_ROOT));
 
+  // ============== HEALTH ==============
+  // Public, auth-free liveness probe — used by Vercel's health checks and
+  // by the Replit deployment platform. Kept extremely cheap (no DB call).
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true, env: process.env.VERCEL ? "vercel" : "replit" });
+  });
+
   // ============== USERS ==============
   app.get("/api/users", requireAdmin, async (_req, res) => {
     const clients = await storage.getAllClients();
-    res.json(clients.map(sanitizeUser));
+    // Batched enrichment — two grouped queries instead of 2*N per-user
+    // fetches. Scales gracefully as bookings/inbody history grows.
+    const enriched = await sanitizeAndEnrichMany(clients);
+    res.json(enriched);
   });
 
   app.get("/api/users/:id", requireAuth, async (req, res) => {
@@ -165,7 +176,100 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const user = await storage.getUser(id);
     if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(sanitizeUser(user));
+    const enriched = await sanitizeAndEnrich(user);
+    res.json(enriched);
+  });
+
+  // ============== PROFILE PICTURE ==============
+  // Accepts a base64 data-URL produced by the client-side cropper, re-encodes
+  // it through sharp into a 256×256 WebP, and persists the result inline on
+  // the user row. Storing the picture in the DB (not on disk) keeps the
+  // feature working on read-only filesystems like Vercel without needing
+  // object storage.
+  app.post("/api/users/:id/profile-picture", requireAuth, async (req, res) => {
+    const id = Number(req.params.id);
+    const me = req.user as User;
+    if (me.role !== "admin" && me.id !== id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const schema = z.object({
+      imageDataUrl: z
+        .string()
+        .min(40, "Image data is required")
+        .max(8 * 1024 * 1024, "Image is too large"),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid image" });
+    }
+    const match = parsed.data.imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) {
+      return res.status(400).json({ message: "Image must be a base64 data URL" });
+    }
+    // Raster allowlist — explicitly reject SVG (XML parser surface, scriptable)
+    // and other non-bitmap image MIME types. The cropper only ever produces
+    // png/jpeg/webp anyway, so a strict allowlist is safe.
+    const ALLOWED_MIME = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ]);
+    if (!ALLOWED_MIME.has(match[1].toLowerCase())) {
+      return res
+        .status(400)
+        .json({ message: "Unsupported image type. Use PNG, JPEG, WebP, or HEIC." });
+    }
+    // Confirm the target user exists before doing any heavy image work — both
+    // saves CPU and lets us return a clean 404 instead of a 500 from
+    // sanitizeAndEnrich(undefined). Owner-or-admin guard above already passed.
+    const targetUser = await storage.getUser(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    try {
+      const buffer = Buffer.from(match[2], "base64");
+      // Hard cap on raw bytes — protects sharp from oversized inputs even when
+      // the encoded data-URL slips past the schema-level guard.
+      if (buffer.byteLength > 6 * 1024 * 1024) {
+        return res.status(400).json({ message: "Image is too large after decoding" });
+      }
+      // `limitInputPixels` is a hard ceiling on decoded pixel count — protects
+      // sharp/libvips from "pixel bomb" inputs (small compressed payloads that
+      // expand to massive bitmaps). 24MP is plenty for an avatar source.
+      const webp = await sharp(buffer, { failOn: "none", limitInputPixels: 24_000_000 })
+        .rotate()
+        .resize(256, 256, { fit: "cover", position: "center" })
+        .webp({ quality: 75, effort: 4 })
+        .toBuffer();
+      const dataUrl = `data:image/webp;base64,${webp.toString("base64")}`;
+      const updated = await storage.updateUser(id, { profilePictureUrl: dataUrl } as any);
+      const enriched = await sanitizeAndEnrich(updated);
+      res.json(enriched);
+    } catch (e) {
+      console.error("[profile-picture] processing failed:", e);
+      res.status(400).json({ message: "Could not process image. Try a different photo." });
+    }
+  });
+
+  // Allow removing the profile picture. Works for the user themselves or admin.
+  app.delete("/api/users/:id/profile-picture", requireAuth, async (req, res) => {
+    const id = Number(req.params.id);
+    const me = req.user as User;
+    if (me.role !== "admin" && me.id !== id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    // Existence check first so a missing id returns 404 instead of crashing
+    // through updateUser → sanitizeAndEnrich(undefined).
+    const targetUser = await storage.getUser(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const updated = await storage.updateUser(id, { profilePictureUrl: null } as any);
+    const enriched = await sanitizeAndEnrich(updated);
+    res.json(enriched);
   });
 
   app.patch("/api/users/:id", requireAuth, async (req, res) => {

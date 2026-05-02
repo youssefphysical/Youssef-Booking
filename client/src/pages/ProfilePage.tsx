@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +18,29 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { api, buildUrl } from "@shared/routes";
-import { Loader2, User as UserIcon } from "lucide-react";
+import {
+  Loader2,
+  Camera,
+  Activity,
+  Trash2,
+  ArrowRight,
+} from "lucide-react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useMutation } from "@tanstack/react-query";
+import { UserAvatar } from "@/components/UserAvatar";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ProfilePictureCropper } from "@/components/ProfilePictureCropper";
+import {
+  TRAINING_LEVELS,
+  TRAINING_LEVEL_LABELS,
+  TRAINING_LEVEL_DESCRIPTIONS,
+  TRAINING_GOALS,
+  TRAINING_GOAL_LABELS,
+  TRAINING_GOAL_DESCRIPTIONS,
+  type TrainingLevel,
+  type TrainingGoal,
+} from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 const schema = z.object({
   fullName: z.string().min(2, "Required"),
@@ -35,6 +57,7 @@ const schema = z.object({
 export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [cropperOpen, setCropperOpen] = useState(false);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -48,6 +71,21 @@ export default function ProfilePage() {
     },
   });
 
+  // Re-sync form whenever the auth user updates (e.g. after a save).
+  useEffect(() => {
+    if (!user) return;
+    form.reset({
+      fullName: user.fullName ?? "",
+      phone: user.phone ?? "",
+      email: user.email ?? "",
+      fitnessGoal: user.fitnessGoal ?? "",
+      notes: user.notes ?? "",
+      password: "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.fullName, user?.phone, user?.email, user?.fitnessGoal, user?.notes]);
+
+  // ============== INFO MUTATION ==============
   const updateMutation = useMutation({
     mutationFn: async (data: z.infer<typeof schema>) => {
       if (!user) throw new Error("Not signed in");
@@ -73,23 +111,182 @@ export default function ProfilePage() {
     },
   });
 
+  // ============== TRAINING LEVEL / GOAL MUTATION ==============
+  const trainingMutation = useMutation({
+    mutationFn: async (patch: { trainingLevel?: TrainingLevel | null; trainingGoal?: TrainingGoal | null }) => {
+      if (!user) throw new Error("Not signed in");
+      const url = buildUrl(api.users.update.path, { id: user.id });
+      const res = await apiRequest("PATCH", url, patch);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Could not save", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // ============== PROFILE PICTURE MUTATIONS ==============
+  const uploadPictureMutation = useMutation({
+    mutationFn: async (imageDataUrl: string) => {
+      if (!user) throw new Error("Not signed in");
+      const res = await apiRequest("POST", `/api/users/${user.id}/profile-picture`, {
+        imageDataUrl,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
+      queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
+      toast({ title: "Profile picture updated" });
+      setCropperOpen(false);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const removePictureMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not signed in");
+      const res = await apiRequest("DELETE", `/api/users/${user.id}/profile-picture`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
+      queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
+      toast({ title: "Profile picture removed" });
+    },
+  });
+
   if (!user) return null;
+
+  const isVerified = user.isVerified === true;
 
   return (
     <div className="max-w-2xl mx-auto px-5 pt-24 pb-20">
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-primary">
-          <UserIcon size={22} />
+      {/* ===== Profile picture & header ===== */}
+      <div className="flex items-center gap-5 mb-8 flex-wrap">
+        <div className="relative">
+          <UserAvatar
+            src={user.profilePictureUrl}
+            name={user.fullName}
+            size={88}
+            testId="img-profile-picture"
+          />
+          <button
+            type="button"
+            onClick={() => setCropperOpen(true)}
+            data-testid="button-edit-profile-picture"
+            className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-primary text-primary-foreground border-2 border-background flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
+            aria-label="Edit profile picture"
+          >
+            <Camera size={15} />
+          </button>
         </div>
-        <div>
-          <h1 className="text-2xl font-display font-bold" data-testid="text-profile-name">
-            {user.fullName}
-          </h1>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1
+              className="text-2xl font-display font-bold leading-tight"
+              data-testid="text-profile-name"
+            >
+              {user.fullName}
+            </h1>
+            {isVerified && <VerifiedBadge size="md" />}
+          </div>
           <p className="text-sm text-muted-foreground">Manage your account</p>
+          {user.profilePictureUrl && (
+            <button
+              type="button"
+              onClick={() => removePictureMutation.mutate()}
+              disabled={removePictureMutation.isPending}
+              data-testid="button-remove-profile-picture"
+              className="inline-flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 size={11} /> Remove photo
+            </button>
+          )}
         </div>
       </div>
 
+      {/* ===== Training level & goal ===== */}
+      <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">Training</p>
+            <h2 className="text-base font-semibold">Level &amp; goal</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Helps Youssef tailor your sessions. You can change these any time.
+            </p>
+          </div>
+          {trainingMutation.isPending && (
+            <Loader2 size={14} className="animate-spin text-primary" />
+          )}
+        </div>
+
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Level</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
+          {TRAINING_LEVELS.map((lvl) => (
+            <PillButton
+              key={lvl}
+              active={user.trainingLevel === lvl}
+              onClick={() =>
+                trainingMutation.mutate({
+                  trainingLevel: user.trainingLevel === lvl ? null : lvl,
+                })
+              }
+              testId={`button-training-level-${lvl}`}
+              title={TRAINING_LEVEL_LABELS[lvl]}
+              description={TRAINING_LEVEL_DESCRIPTIONS[lvl]}
+            />
+          ))}
+        </div>
+
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Goal</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {TRAINING_GOALS.map((g) => (
+            <PillButton
+              key={g}
+              active={user.trainingGoal === g}
+              onClick={() =>
+                trainingMutation.mutate({
+                  trainingGoal: user.trainingGoal === g ? null : g,
+                })
+              }
+              testId={`button-training-goal-${g}`}
+              title={TRAINING_GOAL_LABELS[g]}
+              description={TRAINING_GOAL_DESCRIPTIONS[g]}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ===== InBody pointer (lives on the dashboard) ===== */}
+      <Link
+        href="/dashboard"
+        data-testid="link-profile-inbody"
+        className="block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] hover:bg-primary/[0.07] transition-colors p-5"
+      >
+        <div className="flex items-start gap-4">
+          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+            <Activity size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold">InBody scans &amp; progress photos</p>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Upload your latest InBody scan from the InBody tab on your dashboard. Uploading a
+              scan unlocks your verified profile badge.
+            </p>
+          </div>
+          <ArrowRight size={16} className="text-primary mt-1 shrink-0" />
+        </div>
+      </Link>
+
+      {/* ===== Account info form ===== */}
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">Account</p>
+        <h2 className="text-base font-semibold mb-4">Personal info</h2>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((d) => updateMutation.mutate(d))}
@@ -148,7 +345,50 @@ export default function ProfilePage() {
         </div>
         <WhatsAppButton message={`Hi Youssef, this is ${user.fullName}.`} testId="button-profile-whatsapp" />
       </div>
+
+      <ProfilePictureCropper
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        saving={uploadPictureMutation.isPending}
+        onCropped={async (dataUrl) => {
+          await uploadPictureMutation.mutateAsync(dataUrl);
+        }}
+      />
     </div>
+  );
+}
+
+function PillButton({
+  active,
+  onClick,
+  testId,
+  title,
+  description,
+}: {
+  active: boolean;
+  onClick: () => void;
+  testId: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      aria-pressed={active}
+      className={cn(
+        "text-left rounded-2xl border px-3 py-3 transition-colors",
+        active
+          ? "bg-primary/15 border-primary/40 text-foreground"
+          : "bg-white/[0.02] border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <p className={cn("text-sm font-semibold", active ? "text-primary" : "text-foreground")}>
+        {title}
+      </p>
+      <p className="text-[11px] leading-snug mt-0.5">{description}</p>
+    </button>
   );
 }
 

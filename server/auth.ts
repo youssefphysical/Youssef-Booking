@@ -41,6 +41,66 @@ function sanitizeUser(user: User) {
   return rest;
 }
 
+/**
+ * Compute the `isVerified` flag for a single user. A client is verified once
+ * they've uploaded a profile picture AND have either at least one InBody
+ * record or one completed coaching session on file.
+ *
+ * Two small COUNT queries — fast enough for per-request use on /api/auth/me
+ * and /api/users/:id where we always know the userId up front.
+ */
+async function computeIsVerified(user: User): Promise<boolean> {
+  if (user.role !== "client") return false;
+  if (!user.profilePictureUrl) return false;
+  try {
+    const [inbody, sessions] = await Promise.all([
+      storage.getInbodyRecords({ userId: user.id }),
+      storage.getBookings({ userId: user.id }),
+    ]);
+    if (inbody.length > 0) return true;
+    if (sessions.some((b) => b.status === "completed")) return true;
+    return false;
+  } catch (e) {
+    console.warn("[auth] isVerified compute failed:", e);
+    return false;
+  }
+}
+
+async function sanitizeAndEnrich(user: User) {
+  const base = sanitizeUser(user);
+  const isVerified = await computeIsVerified(user);
+  return { ...base, isVerified };
+}
+
+/**
+ * Batch-enrich a list of users with the verified flag using a single
+ * grouped query per signal (instead of 2*N per-user fetches). Used by
+ * /api/users to keep the admin client list O(1) in queries.
+ */
+async function sanitizeAndEnrichMany(usersList: User[]) {
+  if (usersList.length === 0) return [];
+  const clientIds = usersList
+    .filter((u) => u.role === "client" && u.profilePictureUrl)
+    .map((u) => u.id);
+  const flags =
+    clientIds.length > 0
+      ? await storage.getVerificationFlagsForUsers(clientIds).catch((e) => {
+          console.warn("[auth] batched isVerified compute failed:", e);
+          return new Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>();
+        })
+      : new Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>();
+
+  return usersList.map((u) => {
+    const base = sanitizeUser(u);
+    let isVerified = false;
+    if (u.role === "client" && u.profilePictureUrl) {
+      const f = flags.get(u.id);
+      isVerified = !!(f && (f.hasInbody || f.hasCompletedSession));
+    }
+    return { ...base, isVerified };
+  });
+}
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "dev-secret-change-me",
@@ -189,9 +249,15 @@ export function setupAuth(app: Express) {
         phone: user.phone,
       }).catch((e) => console.warn("[auth] welcome notifications failed:", e));
 
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
-        res.status(201).json(sanitizeUser(user));
+        // Enrich so the frontend immediately sees `isVerified: false` (not
+        // `undefined`) right after registration. Verification can only flip to
+        // true later — once a profile picture AND inbody/completed-session
+        // exist — but returning the field keeps the shape consistent with
+        // /api/auth/me and avoids special-casing in React.
+        const enriched = await sanitizeAndEnrich(user);
+        res.status(201).json(enriched);
       });
     } catch (err) {
       next(err);
@@ -225,9 +291,11 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: Error, user: User | false) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      req.login(user, (loginErr) => {
+      req.login(user, async (loginErr) => {
         if (loginErr) return next(loginErr);
-        res.status(200).json(sanitizeUser(user));
+        // Same shape as /api/auth/me — frontend can rely on `isVerified`.
+        const enriched = await sanitizeAndEnrich(user);
+        res.status(200).json(enriched);
       });
     })(req, res, next);
   });
@@ -239,10 +307,11 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/auth/me", (req, res) => {
+  app.get("/api/auth/me", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) return res.sendStatus(401);
-    res.json(sanitizeUser(req.user as User));
+    const enriched = await sanitizeAndEnrich(req.user as User);
+    res.json(enriched);
   });
 }
 
-export { sanitizeUser };
+export { sanitizeUser, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified };
