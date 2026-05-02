@@ -88,7 +88,7 @@ export default function DirectPaymentPage() {
                 {!user && (
                   <Link
                     href="/auth"
-                    className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-sm"
+                    className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-sm whitespace-nowrap"
                     data-testid="link-sign-in"
                   >
                     {t("nav.signIn")}

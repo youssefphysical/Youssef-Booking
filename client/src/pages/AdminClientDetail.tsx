@@ -172,7 +172,7 @@ export default function AdminClientDetail() {
             target="_blank"
             rel="noopener noreferrer"
             data-testid="button-whatsapp"
-            className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-sm font-semibold"
+            className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-sm font-semibold whitespace-nowrap"
           >
             <SiWhatsapp size={14} /> WhatsApp
           </a>

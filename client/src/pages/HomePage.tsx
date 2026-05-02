@@ -197,7 +197,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow whitespace-nowrap">
                   <Calendar size={18} />
                   {t("hero.bookSession", "Book a Session")}
                 </button>
@@ -380,7 +380,7 @@ export default function HomePage() {
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
               <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
-                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
+                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow whitespace-nowrap">
                   {t("section.cta.bookSession", "Book a Session")} <ArrowRight size={16} />
                 </button>
               </Link>

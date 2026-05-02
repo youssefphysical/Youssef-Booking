@@ -84,21 +84,21 @@ export function CookieBanner() {
               <button
                 onClick={acceptAll}
                 data-testid="button-cookie-accept"
-                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap"
               >
                 {t("cookie.acceptAll")}
               </button>
               <button
                 onClick={() => setShowPrefs(true)}
                 data-testid="button-cookie-manage"
-                className="h-10 px-4 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold hover:bg-white/10"
+                className="h-10 px-4 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold hover:bg-white/10 whitespace-nowrap"
               >
                 {t("cookie.manage")}
               </button>
               <button
                 onClick={rejectAll}
                 data-testid="button-cookie-reject"
-                className="h-10 px-4 rounded-xl border border-white/10 text-muted-foreground text-sm font-semibold hover:text-foreground hover:bg-white/5"
+                className="h-10 px-4 rounded-xl border border-white/10 text-muted-foreground text-sm font-semibold hover:text-foreground hover:bg-white/5 whitespace-nowrap"
               >
                 {t("cookie.essentialOnly")}
               </button>
@@ -146,14 +146,14 @@ export function CookieBanner() {
             <div className="mt-5 flex flex-wrap gap-2 justify-end">
               <button
                 onClick={rejectAll}
-                className="h-10 px-4 rounded-xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5"
+                className="h-10 px-4 rounded-xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5 whitespace-nowrap"
                 data-testid="button-cookie-reject-prefs"
               >
                 {t("cookie.rejectAll")}
               </button>
               <button
                 onClick={savePrefs}
-                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 whitespace-nowrap"
                 data-testid="button-cookie-save"
               >
                 {t("cookie.savePrefs")}

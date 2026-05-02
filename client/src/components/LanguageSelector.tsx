@@ -30,22 +30,22 @@ export function LanguageSelector({
           data-testid="button-language-selector"
           aria-label={t("nav.language", "Language")}
           className={cn(
-            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-sm",
-            variant === "compact" ? "px-2.5" : "px-3",
+            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors text-sm whitespace-nowrap shrink-0",
+            variant === "compact" ? "px-2 sm:px-2.5" : "px-3",
             className,
           )}
         >
-          <Globe size={14} className="text-muted-foreground" />
-          <span className="text-base leading-none" aria-hidden="true">
+          <Globe size={14} className="text-muted-foreground hidden sm:inline-block shrink-0" />
+          <span className="text-base leading-none shrink-0" aria-hidden="true">
             {current.flag}
           </span>
           {variant === "full" && (
-            <span className="font-medium">{current.nativeName}</span>
+            <span className="font-medium whitespace-nowrap">{current.nativeName}</span>
           )}
           <span className="hidden sm:inline text-xs uppercase tracking-wider text-muted-foreground">
             {current.code}
           </span>
-          <ChevronDown size={12} className="text-muted-foreground/70" />
+          <ChevronDown size={12} className="text-muted-foreground/70 shrink-0" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[200px]">

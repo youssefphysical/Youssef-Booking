@@ -97,12 +97,19 @@ export function Navigation() {
   // ============= PUBLIC TOP NAV =============
   return (
     <header className="fixed top-0 inset-x-0 z-40 bg-background/70 backdrop-blur-xl border-b border-white/5">
-      <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-        <Link href="/" className="font-display font-bold text-lg" data-testid="link-brand">
-          <span className="text-gradient-blue">{t("nav.brand", "Personal Training Service")}</span>
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
+        <Link
+          href="/"
+          className="font-display font-bold text-base sm:text-lg shrink-0 min-w-0"
+          data-testid="link-brand"
+        >
+          <span className="text-gradient-blue whitespace-nowrap">
+            <span className="hidden sm:inline">{t("nav.brand", "Personal Training Service")}</span>
+            <span className="sm:hidden">Youssef Ahmed</span>
+          </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
           <TopNavLink href="/" label={t("nav.home", "Home")} testKey="home" active={location === "/"} />
           <TopNavLink href="/book" label={t("nav.book", "Book")} testKey="book" active={location === "/book"} />
           <TopNavLink href="/how-it-works" label={t("nav.howItWorks", "How it Works")} testKey="how-it-works" active={location === "/how-it-works"} />
@@ -118,7 +125,7 @@ export function Navigation() {
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <LanguageSelector />
           {user ? (
             <>
@@ -148,24 +155,24 @@ export function Navigation() {
                   navigate("/");
                 }}
                 data-testid="button-logout"
-                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
+                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors whitespace-nowrap"
               >
-                <LogOut size={14} />
-                {t("nav.signOut", "Sign out")}
+                <LogOut size={14} className="shrink-0" />
+                <span className="whitespace-nowrap">{t("nav.signOut", "Sign out")}</span>
               </button>
             </>
           ) : (
             <Link
               href="/auth"
               data-testid="link-signin"
-              className="inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors whitespace-nowrap shrink-0"
             >
-              <LogIn size={14} />
-              {t("nav.signIn", "Sign in")}
+              <LogIn size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{t("nav.signIn", "Sign in")}</span>
             </Link>
           )}
           <button
-            className="md:hidden p-2 rounded-lg border border-white/10"
+            className="md:hidden p-2 rounded-lg border border-white/10 shrink-0"
             onClick={() => setOpen(!open)}
             aria-label="Menu"
             data-testid="button-mobile-menu"

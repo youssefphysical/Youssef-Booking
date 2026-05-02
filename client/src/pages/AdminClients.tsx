@@ -125,7 +125,7 @@ function ClientCard({ client }: { client: UserResponse }) {
         <Link
           href={`/admin/clients/${client.id}`}
           data-testid={`link-view-client-${client.id}`}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5"
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5 whitespace-nowrap"
         >
           Open profile <ExternalLink size={11} />
         </Link>
