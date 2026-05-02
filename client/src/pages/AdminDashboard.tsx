@@ -20,6 +20,7 @@ import { api } from "@shared/routes";
 import type { DashboardStats, BookingWithUser } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
 import { formatStatus, statusColor } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 import { cn } from "@/lib/utils";
 
 const ADMIN_TABS: {
@@ -132,7 +133,7 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{b.user?.fullName || "Client"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {b.timeSlot} • {b.user?.phone || ""}
+                      {formatTime12(b.timeSlot)} • {b.user?.phone || ""}
                     </p>
                   </div>
                   <span

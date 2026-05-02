@@ -75,6 +75,7 @@ import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { formatStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 import { Switch } from "@/components/ui/switch";
 import {
   PACKAGE_DEFINITIONS,
@@ -158,6 +159,7 @@ export default function AdminClientDetail() {
                 {client.fullName}
               </h1>
               {client.isVerified && <VerifiedBadge size="md" testId="badge-client-detail-verified" />}
+              <VerifiedToggle clientId={client.id} verifiedOverride={client.verifiedOverride} isVerified={!!client.isVerified} />
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
               {client.email && <span className="inline-flex items-center gap-1.5"><Mail size={11} /> {client.email}</span>}
@@ -1238,7 +1240,7 @@ function BookingsList({ userId }: { userId: number }) {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-sm">
                 <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d, yyyy")}</span>
-                <span className="text-muted-foreground ml-3">{b.timeSlot}</span>
+                <span className="text-muted-foreground ml-3">{formatTime12(b.timeSlot)}</span>
                 {b.sessionType && (
                   <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
                     {SESSION_TYPE_LABELS[b.sessionType as keyof typeof SESSION_TYPE_LABELS] || b.sessionType}
@@ -1725,6 +1727,66 @@ function Skeleton() {
       {[1, 2, 3].map((i) => (
         <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
       ))}
+    </div>
+  );
+}
+
+// --- Admin verified-badge override -------------------------------------
+import { ShieldCheck, ShieldOff, RotateCcw as ResetIcon } from "lucide-react";
+
+function VerifiedToggle({
+  clientId,
+  verifiedOverride,
+  isVerified,
+}: {
+  clientId: number;
+  verifiedOverride: boolean | null | undefined;
+  isVerified: boolean;
+}) {
+  const qc = useQueryClient();
+  const m = useMutation({
+    mutationFn: async (value: boolean | null) => {
+      const res = await apiRequest("PATCH", `/api/users/${clientId}`, {
+        verifiedOverride: value,
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      qc.invalidateQueries({ queryKey: [`/api/users/${clientId}`] });
+    },
+  });
+
+  const isManual = verifiedOverride === true || verifiedOverride === false;
+  const label = isVerified ? "Remove verified" : "Mark verified";
+  const Icon = isVerified ? ShieldOff : ShieldCheck;
+  const next = isVerified ? false : true;
+
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => m.mutate(next)}
+        disabled={m.isPending}
+        data-testid="button-toggle-verified"
+        className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-md text-[11px] font-semibold border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50"
+        title={label}
+      >
+        <Icon size={12} /> {label}
+      </button>
+      {isManual && (
+        <button
+          type="button"
+          onClick={() => m.mutate(null)}
+          disabled={m.isPending}
+          data-testid="button-reset-verified"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[11px] border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50"
+          title="Reset to automatic"
+        >
+          <ResetIcon size={12} />
+        </button>
+      )}
     </div>
   );
 }

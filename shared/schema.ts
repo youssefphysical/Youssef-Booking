@@ -52,6 +52,9 @@ export const users = pgTable("users", {
   // Kept in DB so it works on both Replit (disk) and Vercel (read-only FS) without
   // requiring object storage. Compressed to ~10-25KB per user.
   profilePictureUrl: text("profile_picture_url"),
+  // Manual verified-badge override by admin. null = auto-compute (default),
+  // true = force-verified, false = force-unverified. Admin-only field.
+  verifiedOverride: boolean("verified_override"),
   // Self-declared training level: 'beginner' | 'intermediate' | 'advanced'
   trainingLevel: text("training_level"),
   // Self-declared training goal: 'hypertrophy' | 'strength' | 'endurance'
@@ -257,7 +260,11 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 
 export const updateProfileSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, role: true, username: true })
-  .partial();
+  .partial()
+  .extend({
+    // Admin-only: manual verified-badge override (null = auto-compute)
+    verifiedOverride: z.boolean().nullable().optional(),
+  });
 
 export const SESSION_TYPES = [
   "package",
@@ -488,12 +495,35 @@ export type DashboardStats = {
 
 export const PACKAGE_DEFINITIONS: Record<
   string,
-  { label: string; tagline?: string; sessions: number; isDuo?: boolean; isTrial?: boolean; isSingle?: boolean }
+  {
+    label: string;
+    tagline?: string;
+    sessions: number;
+    bonusSessions?: number;
+    isDuo?: boolean;
+    isTrial?: boolean;
+    isSingle?: boolean;
+  }
 > = {
   single: { label: "Single Session", sessions: 1, isSingle: true },
-  "10": { label: "Essential Plan", tagline: "10 sessions", sessions: 10 },
-  "20": { label: "Progress Plan", tagline: "20 sessions", sessions: 20 },
-  "25": { label: "Elite Plan", tagline: "25 sessions", sessions: 25 },
+  "10": {
+    label: "Essential Plan",
+    tagline: "10 + 1 bonus sessions",
+    sessions: 11,
+    bonusSessions: 1,
+  },
+  "20": {
+    label: "Progress Plan",
+    tagline: "20 + 3 bonus sessions",
+    sessions: 23,
+    bonusSessions: 3,
+  },
+  "25": {
+    label: "Elite Plan",
+    tagline: "25 + 5 bonus sessions",
+    sessions: 30,
+    bonusSessions: 5,
+  },
   duo30: {
     label: "Duo Performance Plan",
     tagline: "30 sessions · train together",

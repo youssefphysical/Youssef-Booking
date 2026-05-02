@@ -55,6 +55,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ALL_TIME_SLOTS, formatStatus, statusColor } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 import type { BookingWithUser } from "@shared/schema";
 
 const STATUSES = [
@@ -208,7 +209,7 @@ export default function AdminBookings() {
                     {b.user?.fullName || `User #${b.userId}`}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {format(new Date(b.date), "EEE, MMM d")} • {b.timeSlot}
+                    {format(new Date(b.date), "EEE, MMM d")} • {formatTime12(b.timeSlot)}
                     {b.sessionType && (
                       <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
                         {SESSION_TYPE_LABELS[b.sessionType as keyof typeof SESSION_TYPE_LABELS] || b.sessionType}

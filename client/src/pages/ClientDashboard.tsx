@@ -82,6 +82,7 @@ import {
   hoursUntil,
   isCancellable,
 } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 import {
   PACKAGE_DEFINITIONS,
   VIP_TIER_LABELS,
@@ -488,7 +489,7 @@ function BookingCard({
         <div className="min-w-0">
           <p className="font-semibold">{format(new Date(booking.date), "EEEE")}</p>
           <p className="text-sm text-muted-foreground">
-            {booking.timeSlot} • {sessionLabel}
+            {formatTime12(booking.timeSlot)} • {sessionLabel}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             <span

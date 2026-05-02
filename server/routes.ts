@@ -298,6 +298,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     delete updates.permissions;
     delete updates.isActive;
 
+    // Non-admins cannot toggle their own verified badge
+    if (me.role !== "admin") {
+      delete updates.verifiedOverride;
+    }
     // Non-admins cannot change membership or role fields
     if (me.role !== "admin") {
       delete updates.vipTier;

@@ -51,6 +51,9 @@ function sanitizeUser(user: User) {
  */
 async function computeIsVerified(user: User): Promise<boolean> {
   if (user.role !== "client") return false;
+  // Admin manual override takes precedence over auto-computation.
+  if (user.verifiedOverride === true) return true;
+  if (user.verifiedOverride === false) return false;
   if (!user.profilePictureUrl) return false;
   try {
     const [inbody, sessions] = await Promise.all([
@@ -93,9 +96,13 @@ async function sanitizeAndEnrichMany(usersList: User[]) {
   return usersList.map((u) => {
     const base = sanitizeUser(u);
     let isVerified = false;
-    if (u.role === "client" && u.profilePictureUrl) {
-      const f = flags.get(u.id);
-      isVerified = !!(f && (f.hasInbody || f.hasCompletedSession));
+    if (u.role === "client") {
+      if (u.verifiedOverride === true) isVerified = true;
+      else if (u.verifiedOverride === false) isVerified = false;
+      else if (u.profilePictureUrl) {
+        const f = flags.get(u.id);
+        isVerified = !!(f && (f.hasInbody || f.hasCompletedSession));
+      }
     }
     return { ...base, isVerified };
   });
@@ -210,6 +217,11 @@ export function setupAuth(app: Express) {
 
       const hashedPassword = await hashPassword(password);
       const initialTier = tierFromFrequency(weeklyFrequency);
+      // If the canonical super-admin email registers, auto-create as super_admin
+      // (not a client). Permission grid + active flag set immediately so the
+      // user is fully operational on first login.
+      const isSuperAdminSignup =
+        email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
       const user = await storage.createUser({
         username: email,
         email,
@@ -222,7 +234,12 @@ export function setupAuth(app: Express) {
         fitnessGoal: fitnessGoal || null,
         primaryGoal: primaryGoal || null,
         notes: notes || null,
-        role: "client",
+        role: isSuperAdminSignup ? "admin" : "client",
+        adminRole: isSuperAdminSignup ? "super_admin" : null,
+        permissions: isSuperAdminSignup
+          ? DEFAULT_PERMISSIONS_BY_ROLE.super_admin
+          : {},
+        isActive: true,
         weeklyFrequency,
         vipTier: initialTier,
         vipUpdatedAt: new Date(),
