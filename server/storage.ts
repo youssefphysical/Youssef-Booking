@@ -8,6 +8,7 @@ import {
   inbodyRecords,
   progressPhotos,
   consentRecords,
+  heroImages,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -27,6 +28,8 @@ import {
   type InsertProgressPhoto,
   type ConsentRecord,
   type InsertConsent,
+  type HeroImage,
+  type InsertHeroImage,
 } from "@shared/schema";
 import { eq, and, gte, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -68,6 +71,12 @@ export interface IStorage {
   getBlockedSlots(): Promise<BlockedSlot[]>;
   createBlockedSlot(slot: InsertBlockedSlot): Promise<BlockedSlot>;
   deleteBlockedSlot(id: number): Promise<void>;
+
+  // Hero images (homepage slider)
+  getHeroImages(): Promise<HeroImage[]>;
+  createHeroImage(image: InsertHeroImage): Promise<HeroImage>;
+  updateHeroImageOrder(id: number, sortOrder: number): Promise<HeroImage>;
+  deleteHeroImage(id: number): Promise<void>;
 
   // Packages
   getPackages(filters?: { userId?: number; activeOnly?: boolean }): Promise<Package[]>;
@@ -223,6 +232,32 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBlockedSlot(id: number) {
     await db.delete(blockedSlots).where(eq(blockedSlots.id, id));
+  }
+
+  // ===== Hero Images =====
+  async getHeroImages() {
+    return db
+      .select()
+      .from(heroImages)
+      .orderBy(asc(heroImages.sortOrder), asc(heroImages.id));
+  }
+
+  async createHeroImage(image: InsertHeroImage) {
+    const [created] = await db.insert(heroImages).values(image).returning();
+    return created;
+  }
+
+  async updateHeroImageOrder(id: number, sortOrder: number) {
+    const [updated] = await db
+      .update(heroImages)
+      .set({ sortOrder })
+      .where(eq(heroImages.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteHeroImage(id: number) {
+    await db.delete(heroImages).where(eq(heroImages.id, id));
   }
 
   // ===== Packages =====

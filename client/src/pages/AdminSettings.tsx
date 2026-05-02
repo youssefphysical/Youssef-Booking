@@ -3,7 +3,14 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare, CreditCard, Eye, EyeOff } from "lucide-react";
+import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare, CreditCard, Eye, EyeOff, ArrowUp, ArrowDown, UploadCloud } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useHeroImages,
+  useUploadHeroImage,
+  useUpdateHeroImageOrder,
+  useDeleteHeroImage,
+} from "@/hooks/use-hero-images";
 import { Switch } from "@/components/ui/switch";
 import {
   useSettings,
@@ -76,9 +83,175 @@ export default function AdminSettings() {
         <GeneralSettingsSection />
         <BankDetailsSection />
         <ProfileContentSection />
+        <HeroImagesSection />
         <BlockedSlotsSection />
       </div>
     </div>
+  );
+}
+
+// =====================================================================
+// HERO IMAGES — admin slider on the homepage
+// =====================================================================
+function HeroImagesSection() {
+  const { data: images = [], isLoading } = useHeroImages();
+  const uploadMutation = useUploadHeroImage();
+  const reorderMutation = useUpdateHeroImageOrder();
+  const deleteMutation = useDeleteHeroImage();
+  const { toast } = useToast();
+  const MAX_IMAGES = 12;
+
+  async function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please choose an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      toast({ title: "Image is too large (max 12 MB)", variant: "destructive" });
+      return;
+    }
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+    try {
+      await uploadMutation.mutateAsync(dataUrl);
+      toast({ title: "Hero image uploaded" });
+    } catch (e: any) {
+      toast({
+        title: "Upload failed",
+        description: e?.message || "Try a smaller or different image.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= images.length) return;
+    const a = images[index];
+    const b = images[target];
+    // Swap their sortOrder values.
+    reorderMutation.mutate({ id: a.id, sortOrder: b.sortOrder });
+    reorderMutation.mutate({ id: b.id, sortOrder: a.sortOrder });
+  }
+
+  return (
+    <section
+      className="rounded-3xl border border-white/5 bg-card/60 p-6"
+      data-testid="section-hero-images"
+    >
+      <h2 className="font-display font-bold text-lg mb-1">Homepage Hero Slider</h2>
+      <p className="text-sm text-muted-foreground mb-5">
+        Up to {MAX_IMAGES} images. They auto-advance every 3 seconds with a fade
+        transition on the homepage. Recommended size: 1920×1080.
+      </p>
+
+      <label
+        htmlFor="hero-image-upload"
+        className="flex flex-col items-center justify-center gap-2 w-full p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 hover:bg-white/[0.02] transition-colors cursor-pointer mb-5"
+        data-testid="label-hero-upload"
+      >
+        {uploadMutation.isPending ? (
+          <Loader2 size={22} className="animate-spin text-primary" />
+        ) : (
+          <UploadCloud size={22} className="text-primary" />
+        )}
+        <p className="text-sm font-medium">
+          {uploadMutation.isPending ? "Uploading…" : "Click to upload an image"}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          PNG, JPEG, WebP, or HEIC · resized to 1920×1080 WebP
+        </p>
+        <input
+          id="hero-image-upload"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          data-testid="input-hero-image"
+          disabled={uploadMutation.isPending || images.length >= MAX_IMAGES}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) {
+              handleFile(f);
+              // Reset so re-uploading the same file still triggers change.
+              e.target.value = "";
+            }
+          }}
+        />
+      </label>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+          <Loader2 size={16} className="animate-spin mr-2" /> Loading hero images…
+        </div>
+      ) : images.length === 0 ? (
+        <p
+          className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl"
+          data-testid="text-no-hero-images"
+        >
+          No hero images yet. The slider stays hidden until you add at least one.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {images.map((img, i) => (
+            <div
+              key={img.id}
+              className="relative group rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-video"
+              data-testid={`hero-image-tile-${img.id}`}
+            >
+              <img
+                src={img.imageDataUrl}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-2 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent">
+                <span className="text-[10px] uppercase tracking-wider text-white/80 font-bold">
+                  #{i + 1}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0 || reorderMutation.isPending}
+                    aria-label="Move up"
+                    data-testid={`button-hero-up-${img.id}`}
+                    className="w-7 h-7 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(i, 1)}
+                    disabled={i === images.length - 1 || reorderMutation.isPending}
+                    aria-label="Move down"
+                    data-testid={`button-hero-down-${img.id}`}
+                    className="w-7 h-7 rounded-md bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"
+                  >
+                    <ArrowDown size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Delete this hero image?")) {
+                        deleteMutation.mutate(img.id);
+                      }
+                    }}
+                    aria-label="Delete"
+                    data-testid={`button-hero-delete-${img.id}`}
+                    className="w-7 h-7 rounded-md bg-red-500/20 hover:bg-red-500/40 text-red-200 flex items-center justify-center"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

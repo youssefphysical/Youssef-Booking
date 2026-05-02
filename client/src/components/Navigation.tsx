@@ -19,10 +19,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { isEffectiveSuperAdmin } from "@shared/schema";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useTranslation } from "@/i18n";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const isAdmin = user?.role === "admin";
@@ -67,6 +70,9 @@ export function Navigation() {
           </div>
 
           <div className="pt-4 border-t border-border space-y-2">
+            <div className="px-2 pb-1">
+              <LanguageSelector variant="full" className="w-full justify-between" />
+            </div>
             <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm hover:bg-white/5 text-muted-foreground" data-testid="link-public-site">
               <Home size={16} />
               <span>View public site</span>
@@ -80,7 +86,7 @@ export function Navigation() {
               className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10"
             >
               <LogOut size={16} />
-              <span>Logout</span>
+              <span>{t("nav.signOut", "Logout")}</span>
             </button>
           </div>
         </nav>
@@ -93,26 +99,27 @@ export function Navigation() {
     <header className="fixed top-0 inset-x-0 z-40 bg-background/70 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
         <Link href="/" className="font-display font-bold text-lg" data-testid="link-brand">
-          <span className="text-gradient-blue">Personal Training Service</span>
+          <span className="text-gradient-blue">{t("nav.brand", "Personal Training Service")}</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
-          <TopNavLink href="/" label="Home" active={location === "/"} />
-          <TopNavLink href="/book" label="Book" active={location === "/book"} />
-          <TopNavLink href="/how-it-works" label="How it Works" active={location === "/how-it-works"} />
-          <TopNavLink href="/policy" label="Policy" active={location === "/policy"} />
+          <TopNavLink href="/" label={t("nav.home", "Home")} testKey="home" active={location === "/"} />
+          <TopNavLink href="/book" label={t("nav.book", "Book")} testKey="book" active={location === "/book"} />
+          <TopNavLink href="/how-it-works" label={t("nav.howItWorks", "How it Works")} testKey="how-it-works" active={location === "/how-it-works"} />
+          <TopNavLink href="/policy" label={t("nav.policy", "Policy")} testKey="policy" active={location === "/policy"} />
           {user?.role === "client" && (
-            <TopNavLink href="/dashboard" label="My Sessions" active={location.startsWith("/dashboard")} />
+            <TopNavLink href="/dashboard" label={t("nav.mySessions", "My Sessions")} testKey="my-sessions" active={location.startsWith("/dashboard")} />
           )}
           {user?.role === "client" && (
-            <TopNavLink href="/profile" label="Profile" active={location === "/profile"} />
+            <TopNavLink href="/profile" label={t("nav.profile", "Profile")} testKey="profile" active={location === "/profile"} />
           )}
           {user?.role === "admin" && (
-            <TopNavLink href="/admin" label="Admin" active={location.startsWith("/admin")} />
+            <TopNavLink href="/admin" label={t("nav.admin", "Admin")} testKey="admin" active={location.startsWith("/admin")} />
           )}
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageSelector />
           {user ? (
             <>
               {user.role === "client" && (
@@ -144,7 +151,7 @@ export function Navigation() {
                 className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 transition-colors"
               >
                 <LogOut size={14} />
-                Sign out
+                {t("nav.signOut", "Sign out")}
               </button>
             </>
           ) : (
@@ -154,7 +161,7 @@ export function Navigation() {
               className="inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
             >
               <LogIn size={14} />
-              Sign in
+              {t("nav.signIn", "Sign in")}
             </Link>
           )}
           <button
@@ -171,19 +178,22 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl">
           <div className="px-5 py-4 space-y-1">
-            <MobileLink href="/" label="Home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/book" label="Book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/how-it-works" label="How it Works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/policy" label="Cancellation Policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/" label={t("nav.home", "Home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/book" label={t("nav.book", "Book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/how-it-works" label={t("nav.howItWorks", "How it Works")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/policy" label={t("nav.policy", "Policy")} testKey="policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
             {user?.role === "client" && (
               <>
-                <MobileLink href="/dashboard" label="My Sessions" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
-                <MobileLink href="/profile" label="Profile" icon={<User size={16} />} onClose={() => setOpen(false)} />
+                <MobileLink href="/dashboard" label={t("nav.mySessions", "My Sessions")} testKey="my-sessions" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+                <MobileLink href="/profile" label={t("nav.profile", "Profile")} testKey="profile" icon={<User size={16} />} onClose={() => setOpen(false)} />
               </>
             )}
             {user?.role === "admin" && (
-              <MobileLink href="/admin" label="Admin Dashboard" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+              <MobileLink href="/admin" label={t("nav.admin", "Admin Dashboard")} testKey="admin" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
             )}
+            <div className="pt-3 mt-3 border-t border-white/5">
+              <LanguageSelector variant="full" className="w-full justify-between" />
+            </div>
           </div>
         </div>
       )}
@@ -207,9 +217,9 @@ function SidebarLink({ href, icon, label, active, onClick }: { href: string; ico
   );
 }
 
-function TopNavLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+function TopNavLink({ href, label, active, testKey }: { href: string; label: string; active: boolean; testKey: string }) {
   return (
-    <Link href={href} data-testid={`link-top-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+    <Link href={href} data-testid={`link-top-${testKey}`}>
       <div
         className={cn(
           "px-3 h-9 inline-flex items-center text-sm rounded-lg transition-colors",
@@ -222,9 +232,9 @@ function TopNavLink({ href, label, active }: { href: string; label: string; acti
   );
 }
 
-function MobileLink({ href, label, icon, onClose }: { href: string; label: string; icon: React.ReactNode; onClose: () => void }) {
+function MobileLink({ href, label, icon, onClose, testKey }: { href: string; label: string; icon: React.ReactNode; onClose: () => void; testKey: string }) {
   return (
-    <Link href={href} onClick={onClose} data-testid={`link-mobile-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+    <Link href={href} onClick={onClose} data-testid={`link-mobile-${testKey}`}>
       <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-white/5">
         {icon}
         <span>{label}</span>

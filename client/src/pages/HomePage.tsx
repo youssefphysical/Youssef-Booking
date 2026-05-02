@@ -25,21 +25,17 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Footer } from "@/components/Footer";
+import { HeroSlider } from "@/components/HeroSlider";
+import { useTranslation } from "@/i18n";
 
-const PROFESSIONAL_TITLE =
-  "Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist";
-
-const SUBTITLE =
-  "Science-based coaching for body transformation, movement quality, and long-term performance.";
-
-const TRAINS = [
-  "Adults",
-  "Beginners",
-  "Fat-Loss Clients",
-  "Muscle-Gain Clients",
-  "Kids & Youth",
-  "Safe Movement Coaching",
-];
+const TRAIN_KEYS = [
+  "trains.adults",
+  "trains.beginners",
+  "trains.fatLoss",
+  "trains.muscleGain",
+  "trains.kidsYouth",
+  "trains.safeMovement",
+] as const;
 
 const specialties = [
   {
@@ -153,12 +149,16 @@ const certifications = [
 
 export default function HomePage() {
   const { data: settings } = useSettings();
+  const { t } = useTranslation();
   const bio =
     settings?.profileBio ||
     "Youssef Ahmed is a certified personal trainer and physical education teacher based in Dubai, specializing in body transformation, movement quality, and structured performance coaching. His background combines academic physical education, competitive sports experience, personal training, and real-world coaching with clients of different ages and fitness levels.";
 
   return (
     <div className="min-h-screen pt-16">
+      {/* ADMIN HERO IMAGE SLIDER (full-width, only renders when admin has uploaded slides) */}
+      <HeroSlider />
+
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background pointer-events-none" />
@@ -169,30 +169,28 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">
               <MapPin size={12} className="text-primary" />
-              <span>Dubai, UAE</span>
+              <span>{t("hero.location", "Dubai, UAE")}</span>
               <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-              <span>Personal Training & Coaching</span>
+              <span>{t("hero.tagline", "Personal Training & Coaching")}</span>
             </div>
             <h1
               className="text-4xl md:text-6xl font-display font-bold leading-[1.05]"
               data-testid="text-hero-name"
             >
-              Youssef
-              <br />
-              <span className="text-gradient-blue">Ahmed</span>
+              {t("hero.title", "Youssef Ahmed")}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground mt-5 leading-relaxed max-w-xl">
-              {PROFESSIONAL_TITLE}
+              {t("hero.role")}
             </p>
-            <p className="text-base text-foreground/80 mt-4 max-w-xl">{SUBTITLE}</p>
+            <p className="text-base text-foreground/80 mt-4 max-w-xl">{t("hero.subtitle")}</p>
 
             <div className="mt-6 flex flex-wrap gap-1.5">
-              {TRAINS.map((t) => (
+              {TRAIN_KEYS.map((key) => (
                 <span
-                  key={t}
+                  key={key}
                   className="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary/90"
                 >
-                  {t}
+                  {t(key)}
                 </span>
               ))}
             </div>
@@ -201,11 +199,11 @@ export default function HomePage() {
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
                 <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
                   <Calendar size={18} />
-                  Book a Session
+                  {t("hero.bookSession", "Book a Session")}
                 </button>
               </Link>
               <WhatsAppButton
-                label="Contact on WhatsApp"
+                label={t("hero.contactWhatsapp", "Contact on WhatsApp")}
                 size="md"
                 testId="button-hero-whatsapp"
                 className="w-full sm:w-auto"
@@ -241,8 +239,12 @@ export default function HomePage() {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60">
                   <UserIcon size={64} />
-                  <p className="mt-4 text-xs uppercase tracking-widest">Profile photo coming soon</p>
-                  <p className="mt-1 text-[10px] text-muted-foreground/50">Editable from admin settings</p>
+                  <p className="mt-4 text-xs uppercase tracking-widest">
+                    {t("hero.imageComingSoon", "Profile photo coming soon")}
+                  </p>
+                  <p className="mt-1 text-[10px] text-muted-foreground/50">
+                    {t("hero.imageHint", "Editable from admin settings")}
+                  </p>
                 </div>
               )}
               <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/85 to-transparent" />
@@ -261,23 +263,24 @@ export default function HomePage() {
 
       {/* ABOUT */}
       <section className="max-w-4xl mx-auto px-5 py-20" id="about">
-        <SectionHeader eyebrow="About Youssef" title="A foundation built on academics, sport, and service" />
+        <SectionHeader
+          eyebrow={t("section.about.eyebrow", "About Youssef")}
+          title={t("section.about.title", "A foundation built on academics, sport, and service")}
+        />
         <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
           {bio}
         </p>
         <p className="text-base text-muted-foreground/85 leading-relaxed mt-6">
-          Youssef Ahmed Personal Training Service focuses on building safe, personalized, and
-          result-driven training systems for adults, beginners, athletes, kids, and clients looking
-          to improve strength, body composition, confidence, and overall movement.
+          {t("section.about.extra")}
         </p>
       </section>
 
       {/* COACHING SPECIALTIES */}
       <section className="max-w-6xl mx-auto px-5 py-12" id="specialties">
         <SectionHeader
-          eyebrow="What I Coach"
-          title="Coaching Specialties"
-          subtitle="Programs designed around your goal, your level, and your safety."
+          eyebrow={t("section.specialties.eyebrow", "What I Coach")}
+          title={t("section.specialties.title", "Coaching Specialties")}
+          subtitle={t("section.specialties.subtitle")}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {specialties.map((s, i) => (
@@ -303,9 +306,9 @@ export default function HomePage() {
       {/* CERTIFICATIONS */}
       <section className="max-w-5xl mx-auto px-5 py-20" id="certifications">
         <SectionHeader
-          eyebrow="Credentials"
-          title="Certifications & Professional Background"
-          subtitle="Education, recognitions, and professional experience."
+          eyebrow={t("section.certs.eyebrow", "Credentials")}
+          title={t("section.certs.title", "Certifications & Professional Background")}
+          subtitle={t("section.certs.subtitle")}
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,9 +343,9 @@ export default function HomePage() {
       {/* TRANSFORMATIONS PLACEHOLDER */}
       <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
         <SectionHeader
-          eyebrow="Results"
-          title="Client Transformations"
-          subtitle="Real progress, structured programs."
+          eyebrow={t("section.transformations.eyebrow", "Results")}
+          title={t("section.transformations.title", "Client Transformations")}
+          subtitle={t("section.transformations.subtitle")}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
@@ -352,7 +355,9 @@ export default function HomePage() {
               data-testid={`transformation-placeholder-${i}`}
             >
               <Dumbbell size={32} />
-              <p className="mt-3 text-xs uppercase tracking-widest">Photo coming soon</p>
+              <p className="mt-3 text-xs uppercase tracking-widest">
+                {t("section.transformations.placeholder", "Photo coming soon")}
+              </p>
             </div>
           ))}
         </div>
@@ -364,22 +369,23 @@ export default function HomePage() {
           <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
           <div className="relative">
             <div className="text-center max-w-xl mx-auto">
-              <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Get Started</p>
-              <h2 className="text-3xl md:text-4xl font-display font-bold">Ready to start?</h2>
-              <p className="text-muted-foreground mt-3">
-                Book a session online or message Youssef directly. He usually replies within a few
-                hours.
+              <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+                {t("section.cta.eyebrow", "Get Started")}
               </p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold">
+                {t("section.cta.title", "Ready to start?")}
+              </h2>
+              <p className="text-muted-foreground mt-3">{t("section.cta.subtitle")}</p>
             </div>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
               <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
                 <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors blue-glow">
-                  Book a Session <ArrowRight size={16} />
+                  {t("section.cta.bookSession", "Book a Session")} <ArrowRight size={16} />
                 </button>
               </Link>
               <WhatsAppButton
-                label="Message on WhatsApp"
+                label={t("section.cta.message", "Message on WhatsApp")}
                 message="Hi Youssef, I'd like to ask about your training programs."
                 testId="button-cta-whatsapp"
                 className="w-full sm:w-auto"
@@ -387,7 +393,7 @@ export default function HomePage() {
             </div>
 
             <p className="mt-6 text-center text-xs text-muted-foreground">
-              Replies usually within a few hours · Dubai, UAE
+              {t("section.cta.replies")}
             </p>
           </div>
         </div>

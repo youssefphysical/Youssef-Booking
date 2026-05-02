@@ -18,6 +18,8 @@ import {
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
+  insertHeroImageSchema,
+  updateHeroImageSchema,
   protectedCancellationQuota,
   sameDayAdjustQuota,
   tierFromFrequency,
@@ -807,6 +809,100 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const updated = await storage.updateSettings(parsed.data);
     res.json(updated);
+  });
+
+  // ============== HERO IMAGES (homepage slider) ==============
+  // Public read — used by HomePage. Returns slides ordered by sortOrder.
+  app.get("/api/hero-images", async (_req, res) => {
+    const list = await storage.getHeroImages();
+    res.json(list);
+  });
+
+  // Admin upload. Same sharp pipeline as profile pictures but bigger
+  // canvas (1920x1080, cover) and stored as a base64 WebP data URL so it
+  // works on Vercel's read-only filesystem without needing object storage.
+  app.post("/api/admin/hero-images", requireAdmin, async (req, res) => {
+    const schema = z.object({
+      imageDataUrl: z
+        .string()
+        .min(40, "Image data is required")
+        .max(20 * 1024 * 1024, "Image is too large"),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid image" });
+    }
+    const match = parsed.data.imageDataUrl.match(
+      /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/,
+    );
+    if (!match) {
+      return res
+        .status(400)
+        .json({ message: "Image must be a base64 data URL" });
+    }
+    const ALLOWED_MIME = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ]);
+    if (!ALLOWED_MIME.has(match[1].toLowerCase())) {
+      return res
+        .status(400)
+        .json({ message: "Unsupported image type. Use PNG, JPEG, WebP, or HEIC." });
+    }
+    try {
+      const buffer = Buffer.from(match[2], "base64");
+      if (buffer.byteLength > 15 * 1024 * 1024) {
+        return res
+          .status(400)
+          .json({ message: "Image is too large after decoding" });
+      }
+      const webp = await sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 })
+        .rotate()
+        .resize(1920, 1080, { fit: "cover", position: "center" })
+        .webp({ quality: 78, effort: 4 })
+        .toBuffer();
+      const dataUrl = `data:image/webp;base64,${webp.toString("base64")}`;
+      // New images go to the end of the slider by default.
+      const existing = await storage.getHeroImages();
+      const nextOrder = existing.length
+        ? Math.max(...existing.map((h) => h.sortOrder)) + 1
+        : 0;
+      const created = await storage.createHeroImage({
+        imageDataUrl: dataUrl,
+        sortOrder: nextOrder,
+      });
+      res.status(201).json(created);
+    } catch (e) {
+      console.error("[hero-images] processing failed:", e);
+      res
+        .status(400)
+        .json({ message: "Could not process image. Try a different photo." });
+    }
+  });
+
+  app.patch("/api/admin/hero-images/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = updateHeroImageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid order" });
+    }
+    const updated = await storage.updateHeroImageOrder(id, parsed.data.sortOrder);
+    if (!updated) return res.status(404).json({ message: "Hero image not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/hero-images/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    await storage.deleteHeroImage(id);
+    res.sendStatus(204);
   });
 
   // ============== BLOCKED SLOTS / HOLIDAYS ==============

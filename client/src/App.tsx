@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { I18nProvider } from "@/i18n";
 import { Navigation } from "@/components/Navigation";
 import { Loader } from "@/components/Loader";
 import { isEffectiveSuperAdmin } from "@shared/schema";
@@ -131,12 +132,14 @@ function Router() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Router />
-          <Toaster />
-        </AuthProvider>
-      </TooltipProvider>
+      <I18nProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <Router />
+            <Toaster />
+          </AuthProvider>
+        </TooltipProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

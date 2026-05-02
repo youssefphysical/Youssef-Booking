@@ -144,6 +144,20 @@ export const blockedSlots = pgTable("blocked_slots", {
 });
 
 // =============================
+// HERO IMAGES (homepage slider)
+// =============================
+// Images stored as base64 data URLs (image/webp). Same rationale as
+// users.profile_picture_url — keeps the feature working on read-only
+// filesystems (Vercel) without requiring object storage. Compressed by
+// sharp on the server to ~80–150KB per slide.
+export const heroImages = pgTable("hero_images", {
+  id: serial("id").primaryKey(),
+  imageDataUrl: text("image_data_url").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// =============================
 // INBODY RECORDS
 // =============================
 export const inbodyRecords = pgTable("inbody_records", {
@@ -411,6 +425,17 @@ export type UpdateSettings = z.infer<typeof updateSettingsSchema>;
 
 export type BlockedSlot = typeof blockedSlots.$inferSelect;
 export type InsertBlockedSlot = z.infer<typeof insertBlockedSlotSchema>;
+
+export const insertHeroImageSchema = createInsertSchema(heroImages).omit({
+  id: true,
+  createdAt: true,
+});
+export const updateHeroImageSchema = z.object({
+  sortOrder: z.number().int().min(0).max(999),
+});
+export type HeroImage = typeof heroImages.$inferSelect;
+export type InsertHeroImage = z.infer<typeof insertHeroImageSchema>;
+export type UpdateHeroImage = z.infer<typeof updateHeroImageSchema>;
 
 export type Package = typeof packages.$inferSelect;
 export type InsertPackage = z.infer<typeof insertPackageSchema>;
