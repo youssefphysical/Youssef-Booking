@@ -145,20 +145,20 @@ export default function BookingPage() {
   const sessionTypeOptions: { value: SessionTypeChoice; label: string; disabled?: boolean; hint?: string }[] = [
     {
       value: "package",
-      label: t("booking.typePackage"),
+      label: t("booking.sessionPackage"),
       disabled: !isAdmin && !activePackage,
       hint: activePackage
-        ? t("booking.sessionsLeft").replace("{n}", String(sessionsLeft))
-        : t("booking.noActivePackage"),
+        ? t("booking.hintSessionsLeft").replace("{n}", String(sessionsLeft))
+        : t("booking.hintNoActivePackage"),
     },
-    { value: "single", label: t("booking.typeSingle"), hint: t("booking.singleHint") },
+    { value: "single", label: t("booking.sessionSingle"), hint: t("booking.hintPayPerSession") },
     {
       value: "trial",
-      label: t("booking.typeTrial"),
+      label: t("booking.sessionTrial"),
       disabled: !isAdmin && hasUsedFreeTrial,
-      hint: hasUsedFreeTrial && !isAdmin ? t("booking.alreadyUsed") : t("booking.newOnly"),
+      hint: hasUsedFreeTrial && !isAdmin ? t("booking.hintAlreadyUsed") : t("booking.hintNewClientsOnly"),
     },
-    { value: "duo", label: t("booking.typeDuo"), hint: t("booking.duoHint") },
+    { value: "duo", label: t("booking.sessionDuo"), hint: t("booking.hintTrainPartner") },
   ];
 
   if (!user) {
@@ -166,7 +166,7 @@ export default function BookingPage() {
       <div className="max-w-md mx-auto px-5 pt-32 pb-20 text-center">
         <div className="rounded-3xl border border-white/10 bg-card/80 p-8">
           <CalendarIcon size={32} className="text-primary mx-auto mb-3" />
-          <h2 className="text-2xl font-display font-bold mb-2">{t("booking.signInToBook")}</h2>
+          <h2 className="text-2xl font-display font-bold mb-2">{t("booking.signInTitle")}</h2>
           <p className="text-muted-foreground text-sm mb-6">
             {t("booking.signInBody")}
           </p>
@@ -175,7 +175,7 @@ export default function BookingPage() {
             className="w-full h-12 rounded-xl"
             data-testid="button-go-auth"
           >
-            {t("booking.signInOrCreate")}
+            {t("booking.signInCta")}
           </Button>
         </div>
       </div>
@@ -201,8 +201,8 @@ export default function BookingPage() {
           </p>
           <div className="flex flex-col gap-3">
             <WhatsAppButton
-              label={t("booking.confirmWa")}
-              message={t("booking.successWaMsg").replace("{date}", dateStr).replace("{time}", selectedSlot ?? "")}
+              label={t("booking.successConfirmWa")}
+              message={t("booking.successWaMessage").replace("{date}", dateStr).replace("{time}", selectedSlot ?? "")}
               size="lg"
               testId="button-confirm-whatsapp"
             />
@@ -212,7 +212,7 @@ export default function BookingPage() {
               data-testid="button-go-dashboard"
               className="h-12 rounded-xl"
             >
-              {t("booking.viewSessions")}
+              {t("booking.viewMySessions")}
             </Button>
           </div>
         </motion.div>
@@ -286,7 +286,7 @@ export default function BookingPage() {
                     {slot}
                     {state === "taken" && (
                       <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
-                        {t("booking.taken")}
+                        {t("booking.slotTaken")}
                       </span>
                     )}
                     {state === "blocked" && (
@@ -305,7 +305,7 @@ export default function BookingPage() {
         {selectedSlot && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div>
-              <label className="text-sm font-semibold block mb-2">{t("booking.sessionType")}</label>
+              <label className="text-sm font-semibold block mb-2">{t("booking.sessionTypeLabel")}</label>
               <Select
                 value={sessionType}
                 onValueChange={(v) => setSessionType(v as SessionTypeChoice)}
@@ -390,17 +390,17 @@ export default function BookingPage() {
           <div className="bg-white/5 p-4 rounded-xl space-y-2 my-2">
             <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
             <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{selectedSlot}</span>} />
-            {notes && <Row label={t("booking.notesShort")} value={notes} />}
+            {notes && <Row label={t("booking.notesLabel")} value={notes} />}
           </div>
 
           <div className="flex gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs leading-relaxed">
             <ShieldAlert className="text-amber-400 shrink-0 mt-0.5" size={16} />
             <p className="text-amber-100/80">
-              {t("booking.cancelWarn1")}{" "}
+              {t("booking.cancellationWarningBefore")}{" "}
               <span className="font-bold">
-                {t("booking.cancelHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
+                {t("booking.cancellationWarningHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
               </span>{" "}
-              {t("booking.cancelWarn2")}
+              {t("booking.cancellationWarningAfter")}
             </p>
           </div>
 
@@ -447,22 +447,22 @@ function HolidayNotice({ block }: { block: { blockType?: string | null; reason?:
   const cfg = {
     "off-day": {
       icon: <Coffee size={20} />,
-      title: t("booking.offDayTitle"),
-      subtitle: t("booking.offDaySubtitle"),
+      title: t("booking.holidayOffTitle"),
+      subtitle: t("booking.holidayOffSubtitle"),
       colors: "border-sky-400/30 bg-sky-400/5 text-sky-100",
       iconBg: "bg-sky-400/15 text-sky-300",
     },
     emergency: {
       icon: <AlertTriangle size={20} />,
-      title: t("booking.emergencyTitle"),
-      subtitle: t("booking.emergencySubtitle"),
+      title: t("booking.holidayEmergencyTitle"),
+      subtitle: t("booking.holidayEmergencySubtitle"),
       colors: "border-red-500/30 bg-red-500/5 text-red-100",
       iconBg: "bg-red-500/15 text-red-300",
     },
     "fully-booked": {
       icon: <Users size={20} />,
-      title: t("booking.fullyBookedTitle"),
-      subtitle: t("booking.fullyBookedSubtitle"),
+      title: t("booking.holidayFullTitle"),
+      subtitle: t("booking.holidayFullSubtitle"),
       colors: "border-primary/30 bg-primary/5 text-primary/90",
       iconBg: "bg-primary/15 text-primary",
     },
@@ -525,8 +525,8 @@ function SessionTypeNotice({
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
         <Gift size={18} className="text-emerald-400 shrink-0 mt-0.5" />
         <div className="text-xs text-emerald-100/90">
-          <p className="font-semibold mb-0.5">{t("booking.trialNoticeTitle")}</p>
-          <p className="opacity-80">{t("booking.trialNoticeBody")}</p>
+          <p className="font-semibold mb-0.5">{t("booking.trialNewTitle")}</p>
+          <p className="opacity-80">{t("booking.trialNewBody")}</p>
         </div>
       </div>
     );
@@ -536,8 +536,8 @@ function SessionTypeNotice({
       <div className="flex items-start gap-3">
         <Wallet size={18} className="text-amber-400 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-100/90 flex-1">
-          <p className="font-semibold mb-0.5">{t("booking.singleNoticeTitle")}</p>
-          <p className="opacity-80">{t("booking.singleNoticeBody")}</p>
+          <p className="font-semibold mb-0.5">{t("booking.singleTitle")}</p>
+          <p className="opacity-80">{t("booking.singleBody")}</p>
         </div>
       </div>
       <Link
@@ -566,8 +566,8 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
       <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
         <PackageIcon size={18} className="text-amber-400 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-100/90">
-          <p className="font-semibold mb-0.5">{t("booking.noActivePackage")}</p>
-          <p className="opacity-80">{t("booking.noActivePackageBody")}</p>
+          <p className="font-semibold mb-0.5">{t("booking.hintNoActivePackage")}</p>
+          <p className="opacity-80">{t("booking.noPackageBody")}</p>
         </div>
       </div>
     );

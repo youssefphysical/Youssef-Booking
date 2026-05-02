@@ -13,7 +13,7 @@ export default function CancellationPolicyPage() {
   return (
     <LegalPage
       eyebrow={t("legal.policyEyebrow")}
-      title={t("legal.cancelTitle")}
+      title={t("legal.cancellationTitle")}
       lastUpdated={t("legal.aprilDate")}
       summary={t("legal.cancelSummary").replace(/\{cutoff\}/g, String(cutoff))}
     >

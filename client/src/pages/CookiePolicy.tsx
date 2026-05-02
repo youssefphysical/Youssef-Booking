@@ -6,7 +6,7 @@ export default function CookiePolicy() {
   return (
     <LegalPage
       eyebrow={t("legal.eyebrow")}
-      title={t("legal.cookieTitle")}
+      title={t("legal.cookiesTitle")}
       lastUpdated={t("legal.aprilDate")}
       summary={t("legal.cookieSummary")}
     >
