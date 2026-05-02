@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, ScrollText } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   eyebrow?: string;
@@ -11,7 +12,9 @@ interface Props {
   children: ReactNode;
 }
 
-export function LegalPage({ eyebrow = "Legal", title, lastUpdated, summary, children }: Props) {
+export function LegalPage({ eyebrow, title, lastUpdated, summary, children }: Props) {
+  const { t } = useTranslation();
+  const eyebrowText = eyebrow ?? t("legal.eyebrow");
   return (
     <div className="min-h-screen pt-24 pb-10">
       <div className="max-w-3xl mx-auto px-5">
@@ -20,7 +23,7 @@ export function LegalPage({ eyebrow = "Legal", title, lastUpdated, summary, chil
           data-testid="link-back-home"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6"
         >
-          <ArrowLeft size={14} /> Back to home
+          <ArrowLeft size={14} /> {t("legal.backHome")}
         </Link>
 
         <div className="flex items-start gap-4 mb-8">
@@ -28,7 +31,7 @@ export function LegalPage({ eyebrow = "Legal", title, lastUpdated, summary, chil
             <ScrollText size={22} />
           </div>
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-1">{eyebrow}</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-1">{eyebrowText}</p>
             <h1
               className="text-3xl md:text-4xl font-display font-bold leading-tight"
               data-testid="text-legal-title"
@@ -36,7 +39,7 @@ export function LegalPage({ eyebrow = "Legal", title, lastUpdated, summary, chil
               {title}
             </h1>
             {lastUpdated && (
-              <p className="text-xs text-muted-foreground mt-2">Last updated: {lastUpdated}</p>
+              <p className="text-xs text-muted-foreground mt-2">{t("legal.lastUpdated").replace("{date}", lastUpdated)}</p>
             )}
           </div>
         </div>

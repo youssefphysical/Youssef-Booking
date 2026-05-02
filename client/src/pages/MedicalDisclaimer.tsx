@@ -1,12 +1,14 @@
 import { LegalPage, LegalSection } from "@/components/LegalPage";
+import { useTranslation } from "@/i18n";
 
 export default function MedicalDisclaimer() {
+  const { t } = useTranslation();
   return (
     <LegalPage
-      eyebrow="Legal"
-      title="Medical Disclaimer"
-      lastUpdated="April 2026"
-      summary="Youssef Fitness provides personal training and fitness coaching. It is not a medical service and does not provide medical diagnosis, treatment, or rehabilitation."
+      eyebrow={t("legal.eyebrow")}
+      title={t("legal.medicalTitle")}
+      lastUpdated={t("legal.aprilDate")}
+      summary={t("legal.medicalSummary")}
     >
       <LegalSection title="1. Not medical advice">
         <p>

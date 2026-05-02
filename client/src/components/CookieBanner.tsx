@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Cookie, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslation } from "@/i18n";
 
 const STORAGE_KEY = "yf_cookie_consent_v1";
 
@@ -13,6 +14,7 @@ type Prefs = {
 };
 
 export function CookieBanner() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showPrefs, setShowPrefs] = useState(false);
   const [analytics, setAnalytics] = useState(false);
@@ -64,17 +66,15 @@ export function CookieBanner() {
                 <Cookie size={18} />
               </div>
               <div className="min-w-0">
-                <p className="font-display font-bold text-sm sm:text-base">We use cookies</p>
+                <p className="font-display font-bold text-sm sm:text-base">{t("cookie.title")}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed">
-                  We use essential cookies to keep your session and the site working. With your
-                  permission we may also use analytics & marketing cookies to improve the
-                  experience. Read our{" "}
+                  {t("cookie.body")}{" "}
                   <Link
                     href="/cookies"
                     className="text-primary underline hover:opacity-80"
                     data-testid="link-cookie-policy"
                   >
-                    Cookie Policy
+                    {t("cookie.policyLink")}
                   </Link>
                   .
                 </p>
@@ -86,21 +86,21 @@ export function CookieBanner() {
                 data-testid="button-cookie-accept"
                 className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
               >
-                Accept all
+                {t("cookie.acceptAll")}
               </button>
               <button
                 onClick={() => setShowPrefs(true)}
                 data-testid="button-cookie-manage"
                 className="h-10 px-4 rounded-xl border border-white/10 bg-white/5 text-sm font-semibold hover:bg-white/10"
               >
-                Manage
+                {t("cookie.manage")}
               </button>
               <button
                 onClick={rejectAll}
                 data-testid="button-cookie-reject"
                 className="h-10 px-4 rounded-xl border border-white/10 text-muted-foreground text-sm font-semibold hover:text-foreground hover:bg-white/5"
               >
-                Essential only
+                {t("cookie.essentialOnly")}
               </button>
             </div>
           </div>
@@ -108,14 +108,12 @@ export function CookieBanner() {
           <div className="p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <p className="font-display font-bold text-base">Cookie preferences</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Choose which cookies you'd like to allow.
-                </p>
+                <p className="font-display font-bold text-base">{t("cookie.prefsTitle")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("cookie.prefsBody")}</p>
               </div>
               <button
                 onClick={() => setShowPrefs(false)}
-                aria-label="Close"
+                aria-label={t("cookie.closeAria")}
                 className="text-muted-foreground hover:text-foreground"
                 data-testid="button-cookie-close"
               >
@@ -124,22 +122,22 @@ export function CookieBanner() {
             </div>
             <div className="space-y-3">
               <PrefRow
-                title="Essential"
-                desc="Required for sign-in, sessions, and core features. Always on."
+                title={t("cookie.prefEssential")}
+                desc={t("cookie.prefEssentialDesc")}
                 checked
                 disabled
                 onChange={() => {}}
               />
               <PrefRow
-                title="Analytics"
-                desc="Anonymous usage data so we can improve the site."
+                title={t("cookie.prefAnalytics")}
+                desc={t("cookie.prefAnalyticsDesc")}
                 checked={analytics}
                 onChange={setAnalytics}
                 testId="checkbox-cookie-analytics"
               />
               <PrefRow
-                title="Marketing"
-                desc="Used to personalize content and marketing where allowed."
+                title={t("cookie.prefMarketing")}
+                desc={t("cookie.prefMarketingDesc")}
                 checked={marketing}
                 onChange={setMarketing}
                 testId="checkbox-cookie-marketing"
@@ -151,14 +149,14 @@ export function CookieBanner() {
                 className="h-10 px-4 rounded-xl border border-white/10 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-white/5"
                 data-testid="button-cookie-reject-prefs"
               >
-                Reject all
+                {t("cookie.rejectAll")}
               </button>
               <button
                 onClick={savePrefs}
                 className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
                 data-testid="button-cookie-save"
               >
-                Save preferences
+                {t("cookie.savePrefs")}
               </button>
             </div>
           </div>

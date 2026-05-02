@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/i18n";
 import {
   Form,
   FormControl,
@@ -89,6 +90,7 @@ export default function AuthPage({
   const [mode, setMode] = useState<Mode>(initialMode);
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (user) {
@@ -114,20 +116,20 @@ export default function AuthPage({
           data-testid="link-back-home"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6"
         >
-          <ArrowLeft size={14} /> Back to home
+          <ArrowLeft size={14} /> {t("auth.backToHome")}
         </Link>
 
         <div className="bg-card/80 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-6">
             <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold">
-              Personal Training Service
+              {t("nav.brand")}
             </p>
-            <h1 className="text-2xl font-display font-bold text-gradient-blue mt-1">Youssef Ahmed</h1>
+            <h1 className="text-2xl font-display font-bold text-gradient-blue mt-1">{t("hero.title")}</h1>
             <p className="text-[11px] text-muted-foreground tracking-wide mt-2 leading-relaxed">
-              Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist
+              {t("hero.role")}
             </p>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
-              {mode === "admin-login" ? "Admin Access" : "Client Portal"}
+              {mode === "admin-login" ? t("auth.adminAccess") : t("auth.clientPortal")}
             </p>
           </div>
 
@@ -142,7 +144,7 @@ export default function AuthPage({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Client Login
+                {t("auth.tabLogin")}
               </button>
               <button
                 onClick={() => setMode("client-register")}
@@ -153,7 +155,7 @@ export default function AuthPage({
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Create Account
+                {t("auth.tabRegister")}
               </button>
             </div>
           )}
@@ -182,6 +184,7 @@ export default function AuthPage({
 
 function ClientLoginForm() {
   const { loginMutation } = useAuth();
+  const { t } = useTranslation();
   const [forgotOpen, setForgotOpen] = useState(false);
   const form = useForm<z.infer<typeof clientLoginSchema>>({
     resolver: zodResolver(clientLoginSchema),
@@ -203,7 +206,7 @@ function ClientLoginForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>{t("auth.email")}</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -227,14 +230,14 @@ function ClientLoginForm() {
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t("auth.password")}</FormLabel>
                   <button
                     type="button"
                     onClick={() => setForgotOpen(true)}
                     className="text-xs text-primary hover:opacity-80"
                     data-testid="button-forgot-password"
                   >
-                    Forgot password?
+                    {t("auth.forgotPassword")}
                   </button>
                 </div>
                 <FormControl>
@@ -260,7 +263,7 @@ function ClientLoginForm() {
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
-            Sign In
+            {t("auth.signIn")}
           </Button>
         </form>
       </Form>
@@ -277,6 +280,7 @@ function ForgotPasswordDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
@@ -286,7 +290,7 @@ function ForgotPasswordDialog({
     e.preventDefault();
     setError(null);
     if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError("Please enter a valid email address.");
+      setError(t("auth.invalidEmail"));
       return;
     }
     setPending(true);
@@ -302,7 +306,7 @@ function ForgotPasswordDialog({
     }
     setPending(false);
     setSubmitted(true);
-    toast({ title: "Check your email" });
+    toast({ title: t("auth.checkYourEmail") });
   }
 
   function close() {
@@ -327,9 +331,9 @@ function ForgotPasswordDialog({
           <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center mb-2">
             <KeyRound size={18} />
           </div>
-          <DialogTitle>Reset your password</DialogTitle>
+          <DialogTitle>{t("auth.resetTitle")}</DialogTitle>
           <DialogDescription>
-            Enter the email associated with your account. We'll send you reset instructions.
+            {t("auth.resetBody")}
           </DialogDescription>
         </DialogHeader>
 
@@ -347,7 +351,7 @@ function ForgotPasswordDialog({
             {error && <p className="text-xs text-destructive">{error}</p>}
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={close} className="rounded-xl">
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -356,7 +360,7 @@ function ForgotPasswordDialog({
                 className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {pending && <Loader2 className="animate-spin mr-2" size={14} />}
-                Send instructions
+                {t("auth.sendInstructions")}
               </Button>
             </DialogFooter>
           </form>
@@ -366,11 +370,11 @@ function ForgotPasswordDialog({
               className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-foreground/85 leading-relaxed"
               data-testid="text-forgot-confirmation"
             >
-              If an account exists with this email, password reset instructions will be sent.
+              {t("auth.resetSent")}
             </div>
             <DialogFooter>
               <Button onClick={close} className="rounded-xl" data-testid="button-forgot-done">
-                Done
+                {t("auth.done")}
               </Button>
             </DialogFooter>
           </div>
@@ -382,6 +386,7 @@ function ForgotPasswordDialog({
 
 function AdminLoginForm() {
   const { loginMutation } = useAuth();
+  const { t } = useTranslation();
   const form = useForm<z.infer<typeof adminLoginSchema>>({
     resolver: zodResolver(adminLoginSchema),
     defaultValues: { username: "admin", password: "" },
@@ -394,14 +399,14 @@ function AdminLoginForm() {
         className="space-y-4"
       >
         <div className="text-xs px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary/90 mb-1">
-          Admin access only. Default username: <span className="font-mono">admin</span>
+          {t("auth.adminOnlyHint")} <span className="font-mono">admin</span>
         </div>
         <FormField
           control={form.control}
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Username</FormLabel>
+              <FormLabel>{t("auth.username")}</FormLabel>
               <FormControl>
                 <Input
                   placeholder="admin"
@@ -422,7 +427,7 @@ function AdminLoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>{t("auth.password")}</FormLabel>
               <FormControl>
                 <Input
                   type="password"
@@ -446,7 +451,7 @@ function AdminLoginForm() {
           disabled={loginMutation.isPending}
         >
           {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
-          Admin Sign In
+          {t("auth.adminSignIn")}
         </Button>
       </form>
     </Form>
@@ -460,64 +465,65 @@ type ConsentKey =
   | "medical_fitness"
   | "data_storage";
 
-const CONSENT_ITEMS: { key: ConsentKey; label: React.ReactNode }[] = [
-  {
-    key: "info_accurate",
-    label: <>I confirm that all the information I've entered is true and accurate.</>,
-  },
-  {
-    key: "cancellation_policy",
-    label: (
-      <>
-        I have read and accept the{" "}
-        <Link href="/policy" className="text-primary underline hover:opacity-80">
-          Cancellation Policy
-        </Link>
-        .
-      </>
-    ),
-  },
-  {
-    key: "terms_conditions",
-    label: (
-      <>
-        I have read and accept the{" "}
-        <Link href="/terms" className="text-primary underline hover:opacity-80">
-          Terms & Conditions
-        </Link>
-        .
-      </>
-    ),
-  },
-  {
-    key: "medical_fitness",
-    label: (
-      <>
-        I confirm I'm medically fit to train and have read the{" "}
-        <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
-          Medical Disclaimer
-        </Link>
-        .
-      </>
-    ),
-  },
-  {
-    key: "data_storage",
-    label: (
-      <>
-        I consent to Youssef Ahmed Personal Training Service storing my personal, contact, and
-        body composition data as described in the{" "}
-        <Link href="/privacy" className="text-primary underline hover:opacity-80">
-          Privacy Policy
-        </Link>
-        .
-      </>
-    ),
-  },
-];
+function useConsentItems(): { key: ConsentKey; label: React.ReactNode }[] {
+  const { t } = useTranslation();
+  return [
+    { key: "info_accurate", label: <>{t("auth.consentInfoAccurate")}</> },
+    {
+      key: "cancellation_policy",
+      label: (
+        <>
+          {t("auth.consentCancellationBefore")}{" "}
+          <Link href="/policy" className="text-primary underline hover:opacity-80">
+            {t("auth.consentCancellationLink")}
+          </Link>
+          .
+        </>
+      ),
+    },
+    {
+      key: "terms_conditions",
+      label: (
+        <>
+          {t("auth.consentTermsBefore")}{" "}
+          <Link href="/terms" className="text-primary underline hover:opacity-80">
+            {t("auth.consentTermsLink")}
+          </Link>
+          .
+        </>
+      ),
+    },
+    {
+      key: "medical_fitness",
+      label: (
+        <>
+          {t("auth.consentMedicalBefore")}{" "}
+          <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
+            {t("auth.consentMedicalLink")}
+          </Link>
+          .
+        </>
+      ),
+    },
+    {
+      key: "data_storage",
+      label: (
+        <>
+          {t("auth.consentDataBefore")}{" "}
+          <Link href="/privacy" className="text-primary underline hover:opacity-80">
+            {t("auth.consentDataLink")}
+          </Link>
+          .
+        </>
+      ),
+    },
+  ];
+}
 
 function RegisterForm({ onComplete }: { onComplete: () => void }) {
   const { registerMutation } = useAuth();
+  const { t } = useTranslation();
+  const CONSENT_ITEMS = useConsentItems();
   const [step, setStep] = useState<1 | 2>(1);
   const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({
     info_accurate: false,
@@ -548,7 +554,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setInlineError(null);
     if (!allConsentsAccepted) {
-      setInlineError("Please review and accept all required consents to continue.");
+      setInlineError(t("auth.errAcceptAll"));
       return;
     }
 
@@ -557,8 +563,8 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
     } catch (err: any) {
       setInlineError(
         err?.message?.includes("already")
-          ? "This email is already registered. Try signing in instead."
-          : "We couldn't create your account. Please review your details and try again.",
+          ? t("auth.errEmailExists")
+          : t("auth.errGeneric"),
       );
       return;
     }
@@ -583,9 +589,9 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <StepDot active={step === 1} done={step > 1} label="Account" />
+          <StepDot active={step === 1} done={step > 1} label={t("auth.stepAccount")} />
           <div className="flex-1 h-px bg-white/10" />
-          <StepDot active={step === 2} done={false} label="Goals & Consents" />
+          <StepDot active={step === 2} done={false} label={t("auth.stepGoals")} />
         </div>
 
         {step === 1 && (
@@ -595,7 +601,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>{t("auth.fullName")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="John Doe"
@@ -614,7 +620,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t("auth.email")}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -637,7 +643,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>{t("auth.phone")}</FormLabel>
                     <FormControl>
                       <PhoneInput
                         value={field.value || ""}
@@ -655,7 +661,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t("auth.password")}</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -677,7 +683,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="area"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Area / Neighbourhood</FormLabel>
+                  <FormLabel>{t("auth.area")}</FormLabel>
                   <FormControl>
                     <AreaAutocomplete
                       value={field.value || ""}
@@ -695,7 +701,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="weeklyFrequency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Weekly Training Frequency *</FormLabel>
+                  <FormLabel>{t("auth.weeklyFrequency")}</FormLabel>
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
                     value={field.value ? String(field.value) : ""}
@@ -705,21 +711,19 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                         data-testid="select-weekly-frequency"
                         className="bg-white/5 border-white/10 h-11"
                       >
-                        <SelectValue placeholder="How many sessions per week?" />
+                        <SelectValue placeholder={t("auth.weeklyFrequencyPlaceholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="1">1 session / week — Foundation</SelectItem>
-                      <SelectItem value="2">2 sessions / week — Starter</SelectItem>
-                      <SelectItem value="3">3 sessions / week — Momentum</SelectItem>
-                      <SelectItem value="4">4 sessions / week — Elite</SelectItem>
-                      <SelectItem value="5">5 sessions / week — Pro Elite</SelectItem>
-                      <SelectItem value="6">6 sessions / week — Diamond Elite</SelectItem>
+                      <SelectItem value="1">{t("auth.freq1")}</SelectItem>
+                      <SelectItem value="2">{t("auth.freq2")}</SelectItem>
+                      <SelectItem value="3">{t("auth.freq3")}</SelectItem>
+                      <SelectItem value="4">{t("auth.freq4")}</SelectItem>
+                      <SelectItem value="5">{t("auth.freq5")}</SelectItem>
+                      <SelectItem value="6">{t("auth.freq6")}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-white/50 mt-1">
-                    This sets your membership level. You can change it later with Youssef.
-                  </p>
+                  <p className="text-xs text-white/50 mt-1">{t("auth.weeklyFrequencyHelp")}</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -731,7 +735,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               data-testid="button-next-step"
               className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              Continue <ArrowRight size={16} className="ml-2" />
+              {t("auth.continue")} <ArrowRight size={16} className="ml-2" />
             </Button>
           </>
         )}
@@ -743,7 +747,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="primaryGoal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Primary Goal *</FormLabel>
+                  <FormLabel>{t("auth.primaryGoal")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
@@ -753,7 +757,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                         data-testid="select-primary-goal"
                         className="bg-white/5 border-white/10 h-11"
                       >
-                        <SelectValue placeholder="Choose your primary goal" />
+                        <SelectValue placeholder={t("auth.primaryGoalPlaceholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -777,10 +781,10 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes / Injuries (optional)</FormLabel>
+                  <FormLabel>{t("auth.notes")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Anything Youssef should know..."
+                      placeholder={t("auth.notesPlaceholder")}
                       {...field}
                       rows={2}
                       data-testid="input-notes"
@@ -796,17 +800,15 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               className="rounded-xl border border-primary/15 bg-primary/[0.04] p-3 text-xs leading-relaxed text-muted-foreground"
               data-testid="hint-after-register"
             >
-              <p className="text-foreground/85 font-medium mb-1">After you sign up</p>
-              You'll be able to upload your profile picture, your InBody scan, and set your training
-              level &amp; goal from your profile page — all at your own pace.
+              <p className="text-foreground/85 font-medium mb-1">{t("auth.afterSignupTitle")}</p>
+              {t("auth.afterSignUpBody")}
             </div>
 
-            {/* Required consents */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={14} className="text-primary" />
                 <p className="text-xs uppercase tracking-widest text-primary/90 font-semibold">
-                  Required Consents
+                  {t("auth.requiredConsents")}
                 </p>
               </div>
               {CONSENT_ITEMS.map((c) => (
@@ -848,7 +850,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                 className="flex-1 h-12 rounded-xl"
                 disabled={isPending}
               >
-                Back
+                {t("common.back")}
               </Button>
               <Button
                 type="submit"
@@ -857,7 +859,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                 disabled={isPending || !allConsentsAccepted}
               >
                 {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
-                Create Account
+                {t("auth.createAccount")}
               </Button>
             </div>
           </>

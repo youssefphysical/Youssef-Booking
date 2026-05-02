@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "@/i18n";
 
 type VerifiedBadgeProps = {
   size?: "xs" | "sm" | "md" | "lg";
@@ -32,11 +33,12 @@ export function VerifiedBadge({
   className,
   testId = "badge-verified",
 }: VerifiedBadgeProps) {
+  const { t } = useTranslation();
   const px = SIZE_PX[size];
   const node = (
     <span
       data-testid={testId}
-      aria-label="Verified profile"
+      aria-label={t("verified.label")}
       className={cn(
         "inline-flex items-center justify-center text-sky-400 drop-shadow-[0_0_4px_rgba(56,189,248,0.55)]",
         className,
@@ -53,7 +55,7 @@ export function VerifiedBadge({
       <Tooltip>
         <TooltipTrigger asChild>{node}</TooltipTrigger>
         <TooltipContent side="top" className="max-w-[220px] text-xs leading-relaxed">
-          Verified profile — picture uploaded and InBody / completed session on file.
+          {t("verified.tooltip")}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

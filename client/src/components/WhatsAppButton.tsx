@@ -2,6 +2,7 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { useSettings } from "@/hooks/use-settings";
 import { SiWhatsapp } from "react-icons/si";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 interface Props {
   message?: string;
@@ -14,14 +15,16 @@ interface Props {
 
 export function WhatsAppButton({
   message,
-  label = "Contact on WhatsApp",
+  label,
   className,
   variant = "solid",
   size = "md",
   testId = "button-whatsapp",
 }: Props) {
   const { data: settings } = useSettings();
+  const { t } = useTranslation();
   const url = whatsappUrl(settings?.whatsappNumber, message);
+  const buttonLabel = label ?? t("whatsapp.label");
 
   const sizeStyles =
     size === "lg" ? "h-14 px-6 text-base" : size === "sm" ? "h-9 px-4 text-sm" : "h-12 px-5 text-sm";
@@ -49,7 +52,7 @@ export function WhatsAppButton({
       )}
     >
       <SiWhatsapp className="shrink-0" size={size === "lg" ? 20 : size === "sm" ? 14 : 18} />
-      <span>{label}</span>
+      <span>{buttonLabel}</span>
     </a>
   );
 }

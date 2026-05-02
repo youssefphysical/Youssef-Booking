@@ -41,6 +41,7 @@ import {
   type TrainingGoal,
 } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 const schema = z.object({
   fullName: z.string().min(2, "Required"),
@@ -57,6 +58,7 @@ const schema = z.object({
 export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [cropperOpen, setCropperOpen] = useState(false);
 
   const form = useForm<z.infer<typeof schema>>({
@@ -71,7 +73,6 @@ export default function ProfilePage() {
     },
   });
 
-  // Re-sync form whenever the auth user updates (e.g. after a save).
   useEffect(() => {
     if (!user) return;
     form.reset({
@@ -85,7 +86,6 @@ export default function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.fullName, user?.phone, user?.email, user?.fitnessGoal, user?.notes]);
 
-  // ============== INFO MUTATION ==============
   const updateMutation = useMutation({
     mutationFn: async (data: z.infer<typeof schema>) => {
       if (!user) throw new Error("Not signed in");
@@ -103,15 +103,14 @@ export default function ProfilePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
-      toast({ title: "Profile updated" });
+      toast({ title: t("profile.profileUpdated") });
       form.setValue("password", "");
     },
     onError: (e: Error) => {
-      toast({ title: "Update failed", description: e.message, variant: "destructive" });
+      toast({ title: t("profile.updateFailed"), description: e.message, variant: "destructive" });
     },
   });
 
-  // ============== TRAINING LEVEL / GOAL MUTATION ==============
   const trainingMutation = useMutation({
     mutationFn: async (patch: { trainingLevel?: TrainingLevel | null; trainingGoal?: TrainingGoal | null }) => {
       if (!user) throw new Error("Not signed in");
@@ -123,11 +122,10 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
     },
     onError: (e: Error) => {
-      toast({ title: "Could not save", description: e.message, variant: "destructive" });
+      toast({ title: t("profile.couldNotSave"), description: e.message, variant: "destructive" });
     },
   });
 
-  // ============== PROFILE PICTURE MUTATIONS ==============
   const uploadPictureMutation = useMutation({
     mutationFn: async (imageDataUrl: string) => {
       if (!user) throw new Error("Not signed in");
@@ -139,11 +137,11 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
       queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
-      toast({ title: "Profile picture updated" });
+      toast({ title: t("profile.pictureUpdated") });
       setCropperOpen(false);
     },
     onError: (e: Error) => {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      toast({ title: t("profile.uploadFailed"), description: e.message, variant: "destructive" });
     },
   });
 
@@ -156,7 +154,7 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.auth.me.path] });
       queryClient.invalidateQueries({ queryKey: [api.users.list.path] });
-      toast({ title: "Profile picture removed" });
+      toast({ title: t("profile.pictureRemoved") });
     },
   });
 
@@ -166,7 +164,6 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-5 pt-24 pb-20">
-      {/* ===== Profile picture & header ===== */}
       <div className="flex items-center gap-5 mb-8 flex-wrap">
         <div className="relative">
           <UserAvatar
@@ -180,7 +177,7 @@ export default function ProfilePage() {
             onClick={() => setCropperOpen(true)}
             data-testid="button-edit-profile-picture"
             className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-primary text-primary-foreground border-2 border-background flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
-            aria-label="Edit profile picture"
+            aria-label={t("profile.editPhoto")}
           >
             <Camera size={15} />
           </button>
@@ -195,7 +192,7 @@ export default function ProfilePage() {
             </h1>
             {isVerified && <VerifiedBadge size="md" />}
           </div>
-          <p className="text-sm text-muted-foreground">Manage your account</p>
+          <p className="text-sm text-muted-foreground">{t("profile.manageAccount")}</p>
           {user.profilePictureUrl && (
             <button
               type="button"
@@ -204,28 +201,29 @@ export default function ProfilePage() {
               data-testid="button-remove-profile-picture"
               className="inline-flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
             >
-              <Trash2 size={11} /> Remove photo
+              <Trash2 size={11} /> {t("profile.removePhoto")}
             </button>
           )}
         </div>
       </div>
 
-      {/* ===== Training level & goal ===== */}
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">Training</p>
-            <h2 className="text-base font-semibold">Level &amp; goal</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Helps Youssef tailor your sessions. You can change these any time.
+            <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">
+              {t("profile.trainingEyebrow")}
             </p>
+            <h2 className="text-base font-semibold">{t("profile.trainingTitle")}</h2>
+            <p className="text-xs text-muted-foreground mt-1">{t("profile.trainingHelp")}</p>
           </div>
           {trainingMutation.isPending && (
             <Loader2 size={14} className="animate-spin text-primary" />
           )}
         </div>
 
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Level</p>
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+          {t("profile.levelLabel")}
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-5">
           {TRAINING_LEVELS.map((lvl) => (
             <PillButton
@@ -243,7 +241,9 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Goal</p>
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
+          {t("profile.goalLabel")}
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {TRAINING_GOALS.map((g) => (
             <PillButton
@@ -262,7 +262,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ===== InBody pointer (lives on the dashboard) ===== */}
       <Link
         href="/dashboard"
         data-testid="link-profile-inbody"
@@ -273,36 +272,36 @@ export default function ProfilePage() {
             <Activity size={18} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">InBody scans &amp; progress photos</p>
+            <p className="text-sm font-semibold">{t("profile.inbodyTitle")}</p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              Upload your latest InBody scan from the InBody tab on your dashboard. Uploading a
-              scan unlocks your verified profile badge.
+              {t("profile.inbodyBody")}
             </p>
           </div>
           <ArrowRight size={16} className="text-primary mt-1 shrink-0" />
         </div>
       </Link>
 
-      {/* ===== Account info form ===== */}
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
-        <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">Account</p>
-        <h2 className="text-base font-semibold mb-4">Personal info</h2>
+        <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">
+          {t("profile.accountEyebrow")}
+        </p>
+        <h2 className="text-base font-semibold mb-4">{t("profile.personalInfo")}</h2>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((d) => updateMutation.mutate(d))}
             className="space-y-4"
           >
-            <Field form={form} name="fullName" label="Full Name" testId="input-profile-fullname" />
-            <Field form={form} name="email" label="Email" testId="input-profile-email" type="email" />
-            <Field form={form} name="phone" label="Phone" testId="input-profile-phone" />
-            <Field form={form} name="fitnessGoal" label="Fitness Goal" testId="input-profile-goal" />
+            <Field form={form} name="fullName" label={t("profile.fieldFullName")} testId="input-profile-fullname" />
+            <Field form={form} name="email" label={t("profile.fieldEmail")} testId="input-profile-email" type="email" />
+            <Field form={form} name="phone" label={t("profile.fieldPhone")} testId="input-profile-phone" />
+            <Field form={form} name="fitnessGoal" label={t("profile.fieldFitnessGoal")} testId="input-profile-goal" />
 
             <FormField
               control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes / Injuries</FormLabel>
+                  <FormLabel>{t("profile.fieldNotes")}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
@@ -319,7 +318,7 @@ export default function ProfilePage() {
             <Field
               form={form}
               name="password"
-              label="New Password (leave empty to keep)"
+              label={t("profile.fieldPassword")}
               testId="input-profile-password"
               type="password"
               placeholder="••••••••"
@@ -332,7 +331,7 @@ export default function ProfilePage() {
               data-testid="button-save-profile"
             >
               {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={16} />}
-              Save Changes
+              {t("profile.saveChanges")}
             </Button>
           </form>
         </Form>
@@ -340,10 +339,13 @@ export default function ProfilePage() {
 
       <div className="mt-8 rounded-2xl border border-white/5 bg-card/60 p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="font-bold">Need to talk to Youssef?</p>
-          <p className="text-sm text-muted-foreground">Reach out directly on WhatsApp</p>
+          <p className="font-bold">{t("profile.talkYoussef")}</p>
+          <p className="text-sm text-muted-foreground">{t("profile.reachOutWa")}</p>
         </div>
-        <WhatsAppButton message={`Hi Youssef, this is ${user.fullName}.`} testId="button-profile-whatsapp" />
+        <WhatsAppButton
+          message={t("profile.waMessage").replace("{name}", user.fullName)}
+          testId="button-profile-whatsapp"
+        />
       </div>
 
       <ProfilePictureCropper

@@ -1,12 +1,14 @@
 import { LegalPage, LegalSection } from "@/components/LegalPage";
+import { useTranslation } from "@/i18n";
 
 export default function PrivacyPolicy() {
+  const { t } = useTranslation();
   return (
     <LegalPage
-      eyebrow="Legal"
-      title="Privacy Policy"
-      lastUpdated="April 2026"
-      summary="This Privacy Policy explains how Youssef Fitness collects, uses, stores, and protects your personal data when you register, book sessions, or upload health information through this platform."
+      eyebrow={t("legal.eyebrow")}
+      title={t("legal.privacyTitle")}
+      lastUpdated={t("legal.aprilDate")}
+      summary={t("legal.privacySummary")}
     >
       <LegalSection title="1. Who we are">
         <p>

@@ -46,10 +46,12 @@ import {
 } from "@/components/ui/dialog";
 import { ALL_TIME_SLOTS, buildSessionDate } from "@/lib/booking-utils";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useTranslation } from "@/i18n";
 
 type SessionTypeChoice = "package" | "single" | "trial" | "duo";
 
 export default function BookingPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -143,20 +145,20 @@ export default function BookingPage() {
   const sessionTypeOptions: { value: SessionTypeChoice; label: string; disabled?: boolean; hint?: string }[] = [
     {
       value: "package",
-      label: "Package Session",
+      label: t("booking.typePackage"),
       disabled: !isAdmin && !activePackage,
       hint: activePackage
-        ? `${sessionsLeft} session${sessionsLeft === 1 ? "" : "s"} left`
-        : "No active package",
+        ? t("booking.sessionsLeft").replace("{n}", String(sessionsLeft))
+        : t("booking.noActivePackage"),
     },
-    { value: "single", label: "Single Session", hint: "Pay-per-session" },
+    { value: "single", label: t("booking.typeSingle"), hint: t("booking.singleHint") },
     {
       value: "trial",
-      label: "Free Trial Session",
+      label: t("booking.typeTrial"),
       disabled: !isAdmin && hasUsedFreeTrial,
-      hint: hasUsedFreeTrial && !isAdmin ? "Already used" : "New clients only",
+      hint: hasUsedFreeTrial && !isAdmin ? t("booking.alreadyUsed") : t("booking.newOnly"),
     },
-    { value: "duo", label: "Duo Session", hint: "Train with a partner" },
+    { value: "duo", label: t("booking.typeDuo"), hint: t("booking.duoHint") },
   ];
 
   if (!user) {
@@ -164,16 +166,16 @@ export default function BookingPage() {
       <div className="max-w-md mx-auto px-5 pt-32 pb-20 text-center">
         <div className="rounded-3xl border border-white/10 bg-card/80 p-8">
           <CalendarIcon size={32} className="text-primary mx-auto mb-3" />
-          <h2 className="text-2xl font-display font-bold mb-2">Sign in to book</h2>
+          <h2 className="text-2xl font-display font-bold mb-2">{t("booking.signInToBook")}</h2>
           <p className="text-muted-foreground text-sm mb-6">
-            You need a client account to book a session with Youssef.
+            {t("booking.signInBody")}
           </p>
           <Button
             onClick={() => navigate("/auth")}
             className="w-full h-12 rounded-xl"
             data-testid="button-go-auth"
           >
-            Sign in or Create Account
+            {t("booking.signInOrCreate")}
           </Button>
         </div>
       </div>
@@ -192,15 +194,15 @@ export default function BookingPage() {
             <CheckCircle2 size={32} className="text-emerald-400" />
           </div>
           <h2 className="text-2xl font-display font-bold mb-2" data-testid="text-success-title">
-            Booking submitted
+            {t("booking.successTitle")}
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            Your booking request has been submitted. You can also confirm directly with Youssef on WhatsApp.
+            {t("booking.successBody")}
           </p>
           <div className="flex flex-col gap-3">
             <WhatsAppButton
-              label="Confirm Booking on WhatsApp"
-              message={`Hi Youssef, I just booked a session for ${dateStr} at ${selectedSlot}.`}
+              label={t("booking.confirmWa")}
+              message={t("booking.successWaMsg").replace("{date}", dateStr).replace("{time}", selectedSlot ?? "")}
               size="lg"
               testId="button-confirm-whatsapp"
             />
@@ -210,7 +212,7 @@ export default function BookingPage() {
               data-testid="button-go-dashboard"
               className="h-12 rounded-xl"
             >
-              View My Sessions
+              {t("booking.viewSessions")}
             </Button>
           </div>
         </motion.div>
@@ -226,9 +228,9 @@ export default function BookingPage() {
         </div>
         <div>
           <h1 className="text-3xl font-display font-bold" data-testid="text-page-title">
-            Book a Session
+            {t("booking.pageTitle")}
           </h1>
-          <p className="text-muted-foreground text-sm">Choose a date and a free time slot</p>
+          <p className="text-muted-foreground text-sm">{t("booking.pageSubtitle")}</p>
         </div>
       </div>
 
@@ -260,7 +262,7 @@ export default function BookingPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <h3 className="font-bold mb-4 flex items-center gap-2">
               <Clock size={16} className="text-primary" />
-              Slots for {format(date, "EEEE, MMM d")}
+              {t("booking.slotsFor").replace("{date}", format(date, "EEEE, MMM d"))}
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
               {ALL_TIME_SLOTS.map((slot) => {
@@ -284,7 +286,7 @@ export default function BookingPage() {
                     {slot}
                     {state === "taken" && (
                       <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
-                        Taken
+                        {t("booking.taken")}
                       </span>
                     )}
                     {state === "blocked" && (
@@ -295,7 +297,7 @@ export default function BookingPage() {
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              Available hours: 06:00 – 22:00. Last session 22:00.
+              {t("booking.hoursNote")}
             </p>
           </motion.div>
         )}
@@ -303,7 +305,7 @@ export default function BookingPage() {
         {selectedSlot && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div>
-              <label className="text-sm font-semibold block mb-2">Session Type</label>
+              <label className="text-sm font-semibold block mb-2">{t("booking.sessionType")}</label>
               <Select
                 value={sessionType}
                 onValueChange={(v) => setSessionType(v as SessionTypeChoice)}
@@ -343,12 +345,12 @@ export default function BookingPage() {
             />
 
             <div>
-              <label className="text-sm font-semibold block mb-2">Notes (optional)</label>
+              <label className="text-sm font-semibold block mb-2">{t("booking.notesLabel")}</label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                placeholder="Anything Youssef should know about this session?"
+                placeholder={t("booking.notesPlaceholder")}
                 className="bg-white/5 border-white/10"
                 data-testid="input-booking-notes"
               />
@@ -371,7 +373,7 @@ export default function BookingPage() {
                 data-testid="button-open-confirm"
                 className="w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20"
               >
-                Continue • {format(date, "MMM d")} at {selectedSlot}
+                {t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", selectedSlot ?? "")}
               </Button>
             </div>
           </motion.div>
@@ -381,22 +383,24 @@ export default function BookingPage() {
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-display">Confirm your booking</DialogTitle>
-            <DialogDescription>Please review and accept the policy below.</DialogDescription>
+            <DialogTitle className="text-xl font-display">{t("booking.confirmTitle")}</DialogTitle>
+            <DialogDescription>{t("booking.confirmReview")}</DialogDescription>
           </DialogHeader>
 
           <div className="bg-white/5 p-4 rounded-xl space-y-2 my-2">
-            <Row label="Date" value={date && format(date, "PPPP")} />
-            <Row label="Time" value={<span className="text-primary font-bold">{selectedSlot}</span>} />
-            {notes && <Row label="Notes" value={notes} />}
+            <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
+            <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{selectedSlot}</span>} />
+            {notes && <Row label={t("booking.notesShort")} value={notes} />}
           </div>
 
           <div className="flex gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs leading-relaxed">
             <ShieldAlert className="text-amber-400 shrink-0 mt-0.5" size={16} />
             <p className="text-amber-100/80">
-              All cancellations or rescheduling requests must be made at least{" "}
-              <span className="font-bold">{settings?.cancellationCutoffHours ?? 6} hours</span> before the scheduled session
-              time. Within this window, the session will be counted as used and charged.
+              {t("booking.cancelWarn1")}{" "}
+              <span className="font-bold">
+                {t("booking.cancelHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
+              </span>{" "}
+              {t("booking.cancelWarn2")}
             </p>
           </div>
 
@@ -407,12 +411,12 @@ export default function BookingPage() {
               data-testid="checkbox-accept-policy"
               className="mt-0.5"
             />
-            <span className="text-sm">I understand and accept the cancellation policy.</span>
+            <span className="text-sm">{t("booking.acceptPolicy")}</span>
           </label>
 
           <DialogFooter className="mt-2">
             <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} data-testid="button-cancel-confirm">
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleBook}
@@ -420,7 +424,7 @@ export default function BookingPage() {
               data-testid="button-confirm-booking"
             >
               {createBooking.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirm Booking
+              {t("booking.confirmBooking")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -439,25 +443,26 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function HolidayNotice({ block }: { block: { blockType?: string | null; reason?: string | null } }) {
+  const { t } = useTranslation();
   const cfg = {
     "off-day": {
       icon: <Coffee size={20} />,
-      title: "Youssef Fitness is unavailable on this day",
-      subtitle: "Please choose another available date.",
+      title: t("booking.offDayTitle"),
+      subtitle: t("booking.offDaySubtitle"),
       colors: "border-sky-400/30 bg-sky-400/5 text-sky-100",
       iconBg: "bg-sky-400/15 text-sky-300",
     },
     emergency: {
       icon: <AlertTriangle size={20} />,
-      title: "This day is currently unavailable",
-      subtitle: "Due to an urgent schedule change, this day is currently unavailable. Please select another date.",
+      title: t("booking.emergencyTitle"),
+      subtitle: t("booking.emergencySubtitle"),
       colors: "border-red-500/30 bg-red-500/5 text-red-100",
       iconBg: "bg-red-500/15 text-red-300",
     },
     "fully-booked": {
       icon: <Users size={20} />,
-      title: "Fully booked on this day",
-      subtitle: "All slots are taken. Please choose another available date.",
+      title: t("booking.fullyBookedTitle"),
+      subtitle: t("booking.fullyBookedSubtitle"),
       colors: "border-primary/30 bg-primary/5 text-primary/90",
       iconBg: "bg-primary/15 text-primary",
     },
@@ -500,6 +505,7 @@ function SessionTypeNotice({
   isAdmin: boolean;
   hasUsedFreeTrial: boolean;
 }) {
+  const { t } = useTranslation();
   if (sessionType === "package" || sessionType === "duo") {
     return <PackageBalance pkg={activePackage} sessionsLeft={sessionsLeft} isAdmin={isAdmin} />;
   }
@@ -509,11 +515,8 @@ function SessionTypeNotice({
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 flex items-start gap-3">
           <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
           <div className="text-xs text-red-100/90">
-            <p className="font-semibold mb-0.5">Free trial already used</p>
-            <p className="opacity-80">
-              Each client can book one free trial session, lifetime. Please choose Single Session or
-              Package instead.
-            </p>
+            <p className="font-semibold mb-0.5">{t("booking.trialUsedTitle")}</p>
+            <p className="opacity-80">{t("booking.trialUsedBody")}</p>
           </div>
         </div>
       );
@@ -522,26 +525,19 @@ function SessionTypeNotice({
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
         <Gift size={18} className="text-emerald-400 shrink-0 mt-0.5" />
         <div className="text-xs text-emerald-100/90">
-          <p className="font-semibold mb-0.5">Free Trial Session — New Clients Only</p>
-          <p className="opacity-80">
-            One trial per client, lifetime. No charge. Use this to meet Youssef and try a session
-            before committing to a package.
-          </p>
+          <p className="font-semibold mb-0.5">{t("booking.trialNoticeTitle")}</p>
+          <p className="opacity-80">{t("booking.trialNoticeBody")}</p>
         </div>
       </div>
     );
   }
-  // single
   return (
     <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
       <div className="flex items-start gap-3">
         <Wallet size={18} className="text-amber-400 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-100/90 flex-1">
-          <p className="font-semibold mb-0.5">Single Session — Pay Per Session</p>
-          <p className="opacity-80">
-            This session will be marked unpaid until payment is confirmed. You can pay directly to
-            Youssef's bank account, or via WhatsApp.
-          </p>
+          <p className="font-semibold mb-0.5">{t("booking.singleNoticeTitle")}</p>
+          <p className="opacity-80">{t("booking.singleNoticeBody")}</p>
         </div>
       </div>
       <Link
@@ -549,17 +545,18 @@ function SessionTypeNotice({
         data-testid="link-direct-payment"
         className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/10 border border-white/10 hover:bg-white/15 text-xs font-semibold"
       >
-        <CreditCard size={13} /> View Direct Payment Details
+        <CreditCard size={13} /> {t("booking.viewPaymentDetails")}
       </Link>
     </div>
   );
 }
 
 function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; sessionsLeft: number; isAdmin: boolean }) {
+  const { t } = useTranslation();
   if (isAdmin) {
     return (
       <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200/90 inline-flex items-center gap-2">
-        <Sparkles size={13} /> Admin booking — package checks bypassed.
+        <Sparkles size={13} /> {t("booking.adminBypass")}
       </div>
     );
   }
@@ -569,10 +566,8 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
       <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
         <PackageIcon size={18} className="text-amber-400 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-100/90">
-          <p className="font-semibold mb-0.5">No active package</p>
-          <p className="opacity-80">
-            Your booking will still be submitted. Contact Youssef on WhatsApp to purchase a package and confirm your slot.
-          </p>
+          <p className="font-semibold mb-0.5">{t("booking.noActivePackage")}</p>
+          <p className="opacity-80">{t("booking.noActivePackageBody")}</p>
         </div>
       </div>
     );
@@ -591,11 +586,9 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
       <PackageIcon size={18} className={lowBalance ? "text-amber-400" : "text-primary"} />
       <div className="text-xs flex-1">
         <p className="font-semibold">
-          {sessionsLeft} session{sessionsLeft === 1 ? "" : "s"} remaining
+          {t("booking.sessionsRemaining").replace("{n}", String(sessionsLeft))}
         </p>
-        <p className="text-muted-foreground">
-          From your active package. This session will be deducted when marked completed.
-        </p>
+        <p className="text-muted-foreground">{t("booking.deductedNote")}</p>
       </div>
     </div>
   );

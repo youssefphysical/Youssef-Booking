@@ -1,12 +1,14 @@
 import { LegalPage, LegalSection } from "@/components/LegalPage";
+import { useTranslation } from "@/i18n";
 
 export default function TermsConditions() {
+  const { t } = useTranslation();
   return (
     <LegalPage
-      eyebrow="Legal"
-      title="Terms & Conditions"
-      lastUpdated="April 2026"
-      summary="These Terms govern your use of the Youssef Fitness platform and your training relationship with Youssef Ahmed. By creating an account or booking a session, you agree to these Terms."
+      eyebrow={t("legal.eyebrow")}
+      title={t("legal.termsTitle")}
+      lastUpdated={t("legal.aprilDate")}
+      summary={t("legal.termsSummary")}
     >
       <LegalSection title="1. The service">
         <p>

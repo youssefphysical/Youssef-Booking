@@ -1,12 +1,14 @@
 import { LegalPage, LegalSection } from "@/components/LegalPage";
+import { useTranslation } from "@/i18n";
 
 export default function CookiePolicy() {
+  const { t } = useTranslation();
   return (
     <LegalPage
-      eyebrow="Legal"
-      title="Cookie Policy"
-      lastUpdated="April 2026"
-      summary="This Cookie Policy explains how Youssef Fitness uses cookies and similar technologies on this website."
+      eyebrow={t("legal.eyebrow")}
+      title={t("legal.cookieTitle")}
+      lastUpdated={t("legal.aprilDate")}
+      summary={t("legal.cookieSummary")}
     >
       <LegalSection title="1. What cookies are">
         <p>

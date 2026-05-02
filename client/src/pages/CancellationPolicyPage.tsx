@@ -3,17 +3,19 @@ import { Link } from "wouter";
 import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { LegalPage, LegalSection } from "@/components/LegalPage";
+import { useTranslation } from "@/i18n";
 
 export default function CancellationPolicyPage() {
   const { data: settings } = useSettings();
   const cutoff = settings?.cancellationCutoffHours ?? 6;
+  const { t } = useTranslation();
 
   return (
     <LegalPage
-      eyebrow="Policy"
-      title="Cancellation Policy"
-      lastUpdated="April 2026"
-      summary={`All cancellations or rescheduling requests must be made at least ${cutoff} hours before your scheduled session. Within ${cutoff} hours, the session is counted as used and charged. By booking a session you confirm you understand and accept this policy.`}
+      eyebrow={t("legal.policyEyebrow")}
+      title={t("legal.cancelTitle")}
+      lastUpdated={t("legal.aprilDate")}
+      summary={t("legal.cancelSummary").replace(/\{cutoff\}/g, String(cutoff))}
     >
       <div className="grid sm:grid-cols-2 gap-4">
         <PolicyCard

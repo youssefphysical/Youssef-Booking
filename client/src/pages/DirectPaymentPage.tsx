@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/i18n";
 
 const FALLBACK_BANK_NAME = "Youssef Tarek Hashim Ahmed";
 const FALLBACK_IBAN = "AE230260001015917468101";
@@ -23,13 +24,11 @@ export default function DirectPaymentPage() {
   const { data: settings } = useSettings();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const bankName = settings?.bankAccountName || FALLBACK_BANK_NAME;
   const iban = settings?.bankIban || FALLBACK_IBAN;
-  // Bank details are NEVER public. They're only shown to the admin, OR when
-  // the admin has explicitly enabled `showBankDetailsPublicly` AND the visitor
-  // is a signed-in client. Anyone else sees the WhatsApp request panel.
   const canSeeBank =
     user?.role === "admin" ||
     (user?.role === "client" && settings?.showBankDetailsPublicly === true);
@@ -39,12 +38,18 @@ export default function DirectPaymentPage() {
     try {
       await navigator.clipboard.writeText(value);
       setCopiedField(label);
-      toast({ title: `${label} copied` });
+      toast({ title: t("payment.copySuccess").replace("{label}", label) });
       setTimeout(() => setCopiedField(null), 1800);
     } catch {
-      toast({ title: "Copy failed", description: "Please copy manually.", variant: "destructive" });
+      toast({
+        title: t("payment.copyFail"),
+        description: t("payment.copyFailHint"),
+        variant: "destructive",
+      });
     }
   };
+
+  const accountSuffix = user ? " " + t("payment.accountSuffix").replace("{name}", user.fullName) : ".";
 
   return (
     <div className="max-w-2xl mx-auto px-5 pt-24 pb-20">
@@ -53,7 +58,7 @@ export default function DirectPaymentPage() {
         data-testid="link-back"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6"
       >
-        <ArrowLeft size={14} /> Back
+        <ArrowLeft size={14} /> {t("common.back")}
       </Link>
 
       <motion.div
@@ -67,11 +72,9 @@ export default function DirectPaymentPage() {
           </div>
           <div>
             <h1 className="text-3xl font-display font-bold" data-testid="text-page-title">
-              Direct Payment
+              {t("payment.pageTitle")}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Pay directly to Youssef's bank account, then confirm via WhatsApp.
-            </p>
+            <p className="text-sm text-muted-foreground">{t("payment.pageSubtitle")}</p>
           </div>
         </div>
 
@@ -79,11 +82,8 @@ export default function DirectPaymentPage() {
           <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6 flex items-start gap-3">
             <Info className="text-amber-400 shrink-0 mt-1" size={20} />
             <div className="text-sm text-amber-100/90">
-              <p className="font-semibold">Confirm your payment on WhatsApp</p>
-              <p className="mt-1 opacity-80">
-                Bank details are shared privately. Message Youssef on WhatsApp and he will share
-                the payment details and confirm your session.
-              </p>
+              <p className="font-semibold">{t("payment.confirmOnWa")}</p>
+              <p className="mt-1 opacity-80">{t("payment.privateBody")}</p>
               <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 {!user && (
                   <Link
@@ -91,14 +91,12 @@ export default function DirectPaymentPage() {
                     className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 font-semibold text-sm"
                     data-testid="link-sign-in"
                   >
-                    Sign in
+                    {t("nav.signIn")}
                   </Link>
                 )}
                 <WhatsAppButton
-                  label="Request payment details"
-                  message={`Hi Youssef, please share the payment details${
-                    user ? ` (account: ${user.fullName}).` : "."
-                  }`}
+                  label={t("payment.requestDetails")}
+                  message={`${t("payment.requestWaMsg")}${accountSuffix}`}
                   testId="button-request-whatsapp"
                 />
               </div>
@@ -110,31 +108,37 @@ export default function DirectPaymentPage() {
               <div className="flex items-center gap-2">
                 <ShieldCheck size={16} className="text-primary" />
                 <p className="text-xs uppercase tracking-widest text-primary font-semibold">
-                  Bank Details
+                  {t("payment.bankDetails")}
                 </p>
               </div>
 
               <BankRow
-                label="Account Holder"
+                label={t("payment.accountHolder")}
                 value={bankName}
-                copyKey="Account name"
-                copied={copiedField === "Account name"}
-                onCopy={() => copy("Account name", bankName)}
+                copyKey={t("payment.copyAccountName")}
+                copied={copiedField === t("payment.copyAccountName")}
+                onCopy={() => copy(t("payment.copyAccountName"), bankName)}
                 testId="row-bank-name"
+                copyLabel={t("common.copy")}
+                copiedLabel={t("common.copied")}
               />
               <BankRow
-                label="IBAN"
+                label={t("payment.iban")}
                 value={iban}
-                copyKey="IBAN"
-                copied={copiedField === "IBAN"}
-                onCopy={() => copy("IBAN", iban)}
+                copyKey={t("payment.copyIban")}
+                copied={copiedField === t("payment.copyIban")}
+                onCopy={() => copy(t("payment.copyIban"), iban)}
                 testId="row-bank-iban"
                 mono
+                copyLabel={t("common.copy")}
+                copiedLabel={t("common.copied")}
               />
               <BankRow
-                label="Bank Country"
-                value="United Arab Emirates"
+                label={t("payment.bankCountry")}
+                value={t("payment.countryUae")}
                 testId="row-bank-country"
+                copyLabel={t("common.copy")}
+                copiedLabel={t("common.copied")}
               />
             </div>
 
@@ -142,27 +146,24 @@ export default function DirectPaymentPage() {
               <div className="flex items-start gap-3">
                 <Wallet size={18} className="text-primary shrink-0 mt-0.5" />
                 <div className="text-sm text-foreground/90">
-                  <p className="font-semibold">After You Pay</p>
+                  <p className="font-semibold">{t("payment.afterPayTitle")}</p>
                   <ol className="list-decimal pl-5 mt-2 space-y-1 text-muted-foreground text-[13px] leading-relaxed">
-                    <li>Send a WhatsApp message confirming the transfer.</li>
-                    <li>Include the session date/time you've booked.</li>
-                    <li>Youssef will mark the session as paid in your dashboard.</li>
+                    <li>{t("payment.afterPayStep1")}</li>
+                    <li>{t("payment.afterPayStep2")}</li>
+                    <li>{t("payment.afterPayStep3")}</li>
                   </ol>
                 </div>
               </div>
               <WhatsAppButton
-                label="Confirm Payment on WhatsApp"
-                message={`Hi Youssef, I've just sent a direct payment for my session${
-                  user ? ` (account: ${user.fullName}).` : "."
-                } Please confirm.`}
+                label={t("payment.confirmPay")}
+                message={`${t("payment.confirmPayMsg")}${accountSuffix} ${t("payment.confirmPayMsgEnd")}`}
                 size="lg"
                 testId="button-confirm-payment-whatsapp"
               />
             </div>
 
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs text-muted-foreground leading-relaxed">
-              Payments are handled directly between you and Youssef. Receipts and refunds
-              are at Youssef's discretion. Sessions are confirmed once payment is received.
+              {t("payment.disclaimer")}
             </div>
           </>
         )}
@@ -179,6 +180,8 @@ function BankRow({
   onCopy,
   testId,
   mono = false,
+  copyLabel,
+  copiedLabel,
 }: {
   label: string;
   value: string;
@@ -187,6 +190,8 @@ function BankRow({
   onCopy?: () => void;
   testId: string;
   mono?: boolean;
+  copyLabel: string;
+  copiedLabel: string;
 }) {
   return (
     <div
@@ -217,7 +222,7 @@ function BankRow({
             ) : (
               <Copy size={13} />
             )}
-            <span className="ml-1.5 hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
+            <span className="ml-1.5 hidden sm:inline">{copied ? copiedLabel : copyLabel}</span>
           </Button>
         )}
       </div>

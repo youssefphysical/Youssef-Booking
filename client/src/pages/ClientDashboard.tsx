@@ -98,6 +98,7 @@ import {
 } from "@shared/schema";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useTranslation } from "@/i18n";
 
 function currentMonthKey() {
   const d = new Date();
@@ -111,6 +112,7 @@ function todayDateString() {
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   if (!user) return null;
 
@@ -127,15 +129,15 @@ export default function ClientDashboard() {
             />
           </Link>
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">My Training</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("dashboard.eyebrow")}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-3xl font-display font-bold leading-tight" data-testid="text-greeting">
-                Hello, {user.fullName.split(" ")[0]}
+                {t("dashboard.greeting").replace("{name}", user.fullName.split(" ")[0])}
               </h1>
               {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
             </div>
             <p className="text-muted-foreground text-sm mt-1">
-              Manage your sessions, packages and progress
+              {t("dashboard.subtitle")}
             </p>
             <div className="mt-3">
               <VipBadge tier={user.vipTier ?? "foundation"} />
@@ -145,7 +147,7 @@ export default function ClientDashboard() {
         <div className="flex gap-2 flex-wrap">
           <Link href="/book" data-testid="link-new-booking">
             <Button className="h-11 rounded-xl">
-              <Plus size={16} className="mr-1.5" /> New Booking
+              <Plus size={16} className="mr-1.5" /> {t("dashboard.newBooking")}
             </Button>
           </Link>
         </div>
@@ -156,16 +158,16 @@ export default function ClientDashboard() {
       <Tabs defaultValue="bookings" className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-white/5 mb-6 h-11">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
-            <Calendar size={14} className="mr-1.5" /> Bookings
+            <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-packages">
-            <PackageIcon size={14} className="mr-1.5" /> Sessions
+            <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.tabPackages")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
-            <Activity size={14} className="mr-1.5" /> InBody
+            <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">
-            <ImageIcon size={14} className="mr-1.5" /> Progress
+            <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.tabProgress")}
           </TabsTrigger>
         </TabsList>
 
@@ -181,23 +183,24 @@ export default function ClientDashboard() {
 // =============== VIP BADGE ===============
 
 function VipBadge({ tier }: { tier: string }) {
-  const t = normaliseTier(tier);
+  const { t: trans } = useTranslation();
+  const tg = normaliseTier(tier);
   const Icon =
-    t === "diamond_elite" || t === "pro_elite" || t === "elite"
+    tg === "diamond_elite" || tg === "pro_elite" || tg === "elite"
       ? Crown
-      : t === "momentum"
+      : tg === "momentum"
       ? Star
       : Sparkles;
   const colour =
-    t === "diamond_elite"
+    tg === "diamond_elite"
       ? "bg-gradient-to-r from-cyan-400/20 to-violet-500/20 border-cyan-300/40 text-cyan-100"
-      : t === "pro_elite"
+      : tg === "pro_elite"
       ? "bg-gradient-to-r from-fuchsia-500/15 to-purple-500/15 border-fuchsia-400/30 text-fuchsia-200"
-      : t === "elite"
+      : tg === "elite"
       ? "bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-amber-400/30 text-amber-200"
-      : t === "momentum"
+      : tg === "momentum"
       ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
-      : t === "starter"
+      : tg === "starter"
       ? "bg-sky-500/10 border-sky-400/30 text-sky-200"
       : "bg-blue-500/10 border-blue-400/30 text-blue-200";
   return (
@@ -206,14 +209,14 @@ function VipBadge({ tier }: { tier: string }) {
         <TooltipTrigger asChild>
           <span
             className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-full border ${colour}`}
-            data-testid={`vip-badge-${t}`}
+            data-testid={`vip-badge-${tg}`}
           >
             <Icon size={12} />
-            {VIP_TIER_LABELS[t] || "Member"}
+            {VIP_TIER_LABELS[tg] || trans("dashboard.member")}
           </span>
         </TooltipTrigger>
         <TooltipContent side="right" className="max-w-xs">
-          <p className="text-xs">{VIP_TIER_DESCRIPTIONS[t]}</p>
+          <p className="text-xs">{VIP_TIER_DESCRIPTIONS[tg]}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -223,6 +226,7 @@ function VipBadge({ tier }: { tier: string }) {
 // =============== MEMBERSHIP BLOCK ===============
 
 function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequency: number | null; protectedCancelMonth: string | null; protectedCancelCount: number | null; sameDayAdjustMonth: string | null; sameDayAdjustCount: number | null } }) {
+  const { t } = useTranslation();
   const tier = normaliseTier(user.vipTier);
   const monthKey = currentMonthKey();
   const protUsed =
@@ -247,7 +251,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1.5 inline-flex items-center gap-1.5">
-            <Info size={12} /> My Training Level
+            <Info size={12} /> {t("dashboard.membershipLevel")}
           </p>
           <p className="text-sm flex items-center gap-2 flex-wrap">
             <span className="font-semibold" data-testid="text-membership-tier">
@@ -258,11 +262,11 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
                 className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200"
                 data-testid="badge-priority"
               >
-                <Crown size={10} /> Priority
+                <Crown size={10} /> {t("dashboard.priorityChip")}
               </span>
             )}
             <span className="text-muted-foreground">
-              · {freqOption?.label.split(" — ")[0] ?? "Weekly frequency not set"}
+              · {freqOption?.label.split(" — ")[0] ?? t("dashboard.weeklyFreqNotSet")}
             </span>
           </p>
           <p className="text-xs text-primary/80 mt-1.5 italic" data-testid="text-membership-tagline">
@@ -273,7 +277,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           </p>
         </div>
         <Link href="/how-it-works" className="text-xs text-primary hover:underline self-start">
-          View all levels
+          {t("dashboard.viewAllLevels")}
         </Link>
       </div>
 
@@ -283,15 +287,15 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           data-testid="block-protected-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-amber-200/80 inline-flex items-center gap-1.5">
-            <Shield size={11} /> Protected Cancellations
+            <Shield size={11} /> {t("dashboard.protectedCancellations")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
             {protQuota === 0 ? (
-              <span className="text-muted-foreground text-base">Not on this level</span>
+              <span className="text-muted-foreground text-base">{t("dashboard.notOnLevel")}</span>
             ) : (
               <span>
                 {protRemaining}{" "}
-                <span className="text-sm text-muted-foreground font-normal">/ {protQuota} left this month</span>
+                <span className="text-sm text-muted-foreground font-normal">{t("dashboard.leftThisMonth").replace("{quota}", String(protQuota))}</span>
               </span>
             )}
           </p>
@@ -301,15 +305,15 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           data-testid="block-sameday-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-blue-200/80 inline-flex items-center gap-1.5">
-            <Clock size={11} /> Same-Day Adjustments
+            <Clock size={11} /> {t("dashboard.sameDayAdjustments")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
             {adjQuota === 0 ? (
-              <span className="text-muted-foreground text-base">Not on this level</span>
+              <span className="text-muted-foreground text-base">{t("dashboard.notOnLevel")}</span>
             ) : (
               <span>
                 {adjRemaining}{" "}
-                <span className="text-sm text-muted-foreground font-normal">/ {adjQuota} left this month</span>
+                <span className="text-sm text-muted-foreground font-normal">{t("dashboard.leftThisMonth").replace("{quota}", String(adjQuota))}</span>
               </span>
             )}
           </p>
@@ -317,14 +321,14 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
       </div>
 
       <p className="text-[11px] text-muted-foreground mt-3">
-        Need to change your weekly frequency?{" "}
+        {t("dashboard.needChangeFreq")}{" "}
         <a
-          href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER, "Hi Youssef, I'd like to update my weekly training frequency.")}
+          href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER, t("dashboard.waChangeFreq"))}
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:underline"
         >
-          Message Youssef on WhatsApp
+          {t("dashboard.messageWaLink")}
         </a>
         .
       </p>
@@ -335,6 +339,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 // =============== BOOKINGS TAB ===============
 
 function BookingsTab({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: bookings = [], isLoading } = useBookings({ userId });
   const { data: settings } = useSettings();
   const cutoff = settings?.cancellationCutoffHours ?? 6;
@@ -364,14 +369,14 @@ function BookingsTab({ userId }: { userId: number }) {
   return (
     <>
       <Section
-        title="Upcoming"
+        title={t("dashboard.sectionUpcoming")}
         count={upcoming.length}
         empty={
           <EmptyState
-            title="No upcoming sessions"
+            title={t("dashboard.noUpcoming")}
             cta={
               <Link href="/book">
-                <Button className="rounded-xl mt-4">Book a Session</Button>
+                <Button className="rounded-xl mt-4">{t("dashboard.bookSessionCta")}</Button>
               </Link>
             }
           />
@@ -393,9 +398,9 @@ function BookingsTab({ userId }: { userId: number }) {
       </Section>
 
       <Section
-        title="Past sessions"
+        title={t("dashboard.sectionPast")}
         count={past.length}
-        empty={<EmptyState title="No past sessions yet" />}
+        empty={<EmptyState title={t("dashboard.noPast")} />}
       >
         {past.slice(0, 25).map((b) => (
           <BookingCard
@@ -421,6 +426,7 @@ function BookingCard({
   allBookings: Booking[];
   canCancel?: boolean;
 }) {
+  const { t } = useTranslation();
   const cancelMutation = useCancelBooking();
   const adjustMutation = useSameDayAdjust();
   const { user } = useAuth();
@@ -456,12 +462,12 @@ function BookingCard({
   const isStarted = hours <= 0;
   const sessionLabel =
     booking.sessionType === "trial"
-      ? "Intro Assessment"
+      ? t("dashboard.sessionTrial")
       : booking.sessionType === "single"
-      ? "Single Session"
+      ? t("dashboard.sessionSingle")
       : booking.sessionType === "duo"
-      ? "Duo Session"
-      : "Session";
+      ? t("dashboard.sessionDuo")
+      : t("dashboard.sessionDefault");
 
   return (
     <motion.div
@@ -504,7 +510,7 @@ function BookingCard({
             )}
             {booking.protectedCancellation && (
               <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300">
-                <Shield size={10} /> Protected
+                <Shield size={10} /> {t("dashboard.chipProtected")}
               </span>
             )}
             {booking.rescheduledFrom && (
@@ -512,7 +518,7 @@ function BookingCard({
                 className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300"
                 title={`Originally ${booking.rescheduledFrom}`}
               >
-                <Clock size={10} /> Adjusted
+                <Clock size={10} /> {t("dashboard.chipAdjusted")}
               </span>
             )}
           </div>
@@ -529,13 +535,13 @@ function BookingCard({
               onClick={() => setConfirmOpen(true)}
               data-testid={`button-cancel-${booking.id}`}
             >
-              <X size={14} className="mr-1" /> Cancel
+              <X size={14} className="mr-1" /> {t("dashboard.cancel")}
             </Button>
           ) : (
             <>
               <div className="text-xs text-amber-300/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 self-start sm:self-end">
                 <Lock size={12} />
-                Locked ({isStarted ? "started" : `${hoursDisplay}h left`})
+                {t("dashboard.locked")} ({isStarted ? t("dashboard.lockedStarted") : t("dashboard.lockedHoursLeft").replace("{h}", String(hoursDisplay))})
               </div>
               {!isStarted && protectedAvailable && (
                 <Button
@@ -546,7 +552,7 @@ function BookingCard({
                   data-testid={`button-protected-cancel-${booking.id}`}
                 >
                   <Shield size={12} className="mr-1" />
-                  Use Protected Cancellation ({protectedRemaining}/{protectedQuota} left)
+                  {t("dashboard.useProtected").replace("{left}", String(protectedRemaining)).replace("{quota}", String(protectedQuota))}
                 </Button>
               )}
             </>
@@ -560,7 +566,7 @@ function BookingCard({
               data-testid={`button-same-day-adjust-${booking.id}`}
             >
               <Clock size={12} className="mr-1" />
-              Same-Day Adjustment ({adjustRemaining}/{adjustQuota} left)
+              {t("dashboard.sameDayAdjust").replace("{left}", String(adjustRemaining)).replace("{quota}", String(adjustQuota))}
             </Button>
           )}
         </div>
@@ -570,14 +576,16 @@ function BookingCard({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="bg-card border-white/10 sm:rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this session?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dashboard.cancelTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {format(new Date(booking.date), "PPPP")} at {booking.timeSlot}. Since you're
-              cancelling more than {cutoff} hours in advance, this won't be charged.
+              {t("dashboard.cancelDesc")
+                .replace("{date}", format(new Date(booking.date), "PPPP"))
+                .replace("{time}", booking.timeSlot)
+                .replace("{hours}", String(cutoff))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-keep-booking">Keep it</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-keep-booking">{t("dashboard.keepIt")}</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-confirm-cancel"
               onClick={() =>
@@ -588,7 +596,7 @@ function BookingCard({
               }
               className="bg-red-500 hover:bg-red-600"
             >
-              Yes, cancel
+              {t("dashboard.yesCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -600,24 +608,21 @@ function BookingCard({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Shield className="text-amber-300" size={18} />
-              Use a Protected Cancellation?
+              {t("dashboard.protectedTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">
-                You have{" "}
-                <span className="text-amber-300 font-semibold">
-                  {protectedRemaining} of {protectedQuota}
-                </span>{" "}
-                Protected Cancellations available this month.
+                {t("dashboard.protectedAvailableLine")
+                  .replace("{left}", String(protectedRemaining))
+                  .replace("{quota}", String(protectedQuota))}
               </span>
               <span className="block">
-                Using one cancels this session for free even though it's inside the{" "}
-                {cutoff}-hour window. The session is not deducted from your plan.
+                {t("dashboard.protectedExplain").replace("{hours}", String(cutoff))}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-protected">Not now</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-protected">{t("dashboard.notNow")}</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-confirm-protected-cancel"
               onClick={() =>
@@ -628,7 +633,7 @@ function BookingCard({
               }
               className="bg-amber-500 hover:bg-amber-600 text-black"
             >
-              Yes, use Protected Cancellation
+              {t("dashboard.confirmProtectedFull")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -670,6 +675,7 @@ function SameDayAdjustDialog({
   onSubmit: (newTimeSlot: string) => void;
   submitting: boolean;
 }) {
+  const { t } = useTranslation();
   const [slot, setSlot] = useState<string>("");
   const { data: blocked = [] } = useBlockedSlots();
 
@@ -717,24 +723,24 @@ function SameDayAdjustDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="text-blue-300" size={18} />
-            Same-Day Adjustment
+            {t("dashboard.adjustTitle")}
           </DialogTitle>
           <DialogDescription>
-            Move today's {booking.timeSlot} session to another time the same day. You have{" "}
-            <span className="text-blue-300 font-semibold">{remaining}</span> adjustment
-            {remaining === 1 ? "" : "s"} left this month.
+            {t("dashboard.adjustDescDialog")
+              .replace("{time}", booking.timeSlot)
+              .replace("{n}", String(remaining))}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">New time slot</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dashboard.newTimeSlot")}</p>
           {slots.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No remaining slots are available later today.
+              {t("dashboard.noRemainingSlots")}
             </p>
           ) : (
             <Select value={slot} onValueChange={setSlot}>
               <SelectTrigger className="bg-white/5 border-white/10 h-11" data-testid="select-adjust-slot">
-                <SelectValue placeholder="Pick a new time" />
+                <SelectValue placeholder={t("dashboard.pickNewTime")} />
               </SelectTrigger>
               <SelectContent>
                 {slots.map((s) => (
@@ -748,7 +754,7 @@ function SameDayAdjustDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} data-testid="button-adjust-cancel">
-            Cancel
+            {t("dashboard.cancel")}
           </Button>
           <Button
             disabled={!slot || submitting}
@@ -757,7 +763,7 @@ function SameDayAdjustDialog({
             data-testid="button-adjust-confirm"
           >
             {submitting && <Loader2 size={14} className="mr-1.5 animate-spin" />}
-            Move session
+            {t("dashboard.moveSession")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -768,6 +774,7 @@ function SameDayAdjustDialog({
 // =============== PACKAGES TAB ===============
 
 function PackagesTab({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: packages = [], isLoading } = usePackages({ userId });
   const list = packages as Package[];
 
@@ -776,11 +783,10 @@ function PackagesTab({ userId }: { userId: number }) {
   if (list.length === 0) {
     return (
       <EmptyState
-        title="No active packages yet"
+        title={t("dashboard.packagesNone")}
         cta={
           <p className="text-xs text-muted-foreground mt-3 max-w-sm mx-auto">
-            Contact Youssef on WhatsApp to purchase a session package. Available:
-            Essential Plan (10), Progress Plan (20), Elite Plan (25), or Duo Performance Plan (30 sessions).
+            {t("dashboard.packagesEmptyDesc")}
           </p>
         }
       />
@@ -815,14 +821,14 @@ function PackagesTab({ userId }: { userId: number }) {
                     / {p.totalSessions}
                   </span>
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">sessions remaining</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.sessionsRemaining")}</p>
                 {def?.tagline && (
                   <p className="text-[10px] text-muted-foreground/70 mt-0.5">{def.tagline}</p>
                 )}
               </div>
               {def?.isDuo && (
                 <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                  <Users size={11} /> Duo
+                  <Users size={11} /> {t("dashboard.packageDuo")}
                 </span>
               )}
             </div>
@@ -833,8 +839,8 @@ function PackagesTab({ userId }: { userId: number }) {
               />
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              Started {p.purchasedAt ? format(new Date(p.purchasedAt), "MMM d, yyyy") : "—"}
-              {!p.isActive && " • Closed"}
+              {t("dashboard.packageStarted").replace("{date}", p.purchasedAt ? format(new Date(p.purchasedAt), "MMM d, yyyy") : "—")}
+              {!p.isActive && ` • ${t("dashboard.packageClosed")}`}
             </p>
           </motion.div>
         );
@@ -859,6 +865,7 @@ function hasMetrics(r: InbodyRecord) {
 }
 
 function InbodyTab({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: records = [], isLoading } = useInbodyRecords({ userId });
@@ -883,21 +890,20 @@ function InbodyTab({ userId }: { userId: number }) {
             const r = result.record;
             if (r.aiExtracted && hasMetrics(r)) {
               toast({
-                title: "InBody scan added",
-                description: "We read your numbers automatically.",
+                title: t("dashboard.toastInbodyAdded"),
+                description: t("dashboard.toastInbodyAddedDesc"),
               });
             } else {
               toast({
-                title: "Scan uploaded — needs review",
-                description:
-                  "We couldn't read every value with confidence. Youssef will review and update it for you.",
+                title: t("dashboard.toastInbodyReview"),
+                description: t("dashboard.toastInbodyReviewDesc"),
               });
             }
           },
           onError: (err: any) => {
             toast({
-              title: "Upload failed",
-              description: err?.message || "Please try a clearer photo or contact Youssef.",
+              title: t("dashboard.toastUploadFailed"),
+              description: err?.message || t("dashboard.toastUploadFailedDesc"),
               variant: "destructive",
             });
           },
@@ -911,15 +917,15 @@ function InbodyTab({ userId }: { userId: number }) {
     try {
       setExporting(true);
       await exportInbodyReportPdf({
-        clientName: user?.fullName || "Client",
+        clientName: user?.fullName || t("dashboard.client"),
         records: sorted,
         trendsElement: trendsRef.current,
       });
-      toast({ title: "InBody report ready", description: "PDF saved to your device." });
+      toast({ title: t("dashboard.toastInbodyReportReady"), description: t("dashboard.toastInbodyReportReadyDesc") });
     } catch (e: any) {
       toast({
-        title: "Couldn't generate PDF",
-        description: e?.message || "Please try again.",
+        title: t("dashboard.toastPdfFailed"),
+        description: e?.message || t("dashboard.toastPdfFailedDesc"),
         variant: "destructive",
       });
     } finally {
@@ -931,9 +937,9 @@ function InbodyTab({ userId }: { userId: number }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-lg font-display font-bold">Body Composition History</h2>
+          <h2 className="text-lg font-display font-bold">{t("dashboard.bodyCompHistory")}</h2>
           <p className="text-xs text-muted-foreground">
-            Upload InBody scans — we'll read the numbers automatically.
+            {t("dashboard.uploadHint")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -949,7 +955,7 @@ function InbodyTab({ userId }: { userId: number }) {
             ) : (
               <FileDown size={14} className="mr-1.5" />
             )}
-            Download InBody Report PDF
+            {t("dashboard.downloadInbodyPdf")}
           </Button>
           <Button
             onClick={() => fileRef.current?.click()}
@@ -962,7 +968,7 @@ function InbodyTab({ userId }: { userId: number }) {
             ) : (
               <Upload size={14} className="mr-1.5" />
             )}
-            {upload.isPending ? "Reading your InBody scan…" : "Upload Scan"}
+            {upload.isPending ? t("dashboard.readingScanShort") : t("dashboard.uploadScan")}
           </Button>
           <input
             ref={fileRef}
@@ -980,7 +986,7 @@ function InbodyTab({ userId }: { userId: number }) {
           data-testid="status-inbody-reading"
         >
           <Loader2 size={16} className="animate-spin text-primary" />
-          <span className="text-sm">Reading your InBody scan… this usually takes a few seconds.</span>
+          <span className="text-sm">{t("dashboard.readingScanLong")}</span>
         </div>
       )}
 
@@ -988,7 +994,7 @@ function InbodyTab({ userId }: { userId: number }) {
       {sorted.length >= 2 && (
         <div ref={trendsRef}>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Trends
+            {t("dashboard.inbodyTrendsTitle")}
           </h3>
           <InbodyTrends records={sorted} />
         </div>
@@ -997,7 +1003,7 @@ function InbodyTab({ userId }: { userId: number }) {
       {isLoading && <SkeletonCards />}
 
       {!isLoading && list.length === 0 && !upload.isPending && (
-        <EmptyState title="No InBody scans yet" />
+        <EmptyState title={t("dashboard.inbodyEmpty")} />
       )}
 
       {latest && (
@@ -1005,7 +1011,7 @@ function InbodyTab({ userId }: { userId: number }) {
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 inline-flex items-center gap-2">
-                <TrendingUp size={12} /> Latest Scan
+                <TrendingUp size={12} /> {t("dashboard.latestScan")}
               </p>
               <p className="text-sm text-muted-foreground">
                 {latest.recordedAt && format(new Date(latest.recordedAt), "PPP")}
@@ -1017,7 +1023,7 @@ function InbodyTab({ userId }: { userId: number }) {
                   className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
                   data-testid="badge-needs-review"
                 >
-                  <AlertCircle size={11} /> Needs Review
+                  <AlertCircle size={11} /> {t("dashboard.needsReview")}
                 </span>
               )}
               {latest.fileUrl && (
@@ -1028,20 +1034,20 @@ function InbodyTab({ userId }: { userId: number }) {
                   className="text-xs text-primary hover:underline"
                   data-testid={`link-inbody-file-${latest.id}`}
                 >
-                  View original
+                  {t("dashboard.viewOriginal")}
                 </a>
               )}
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Metric label="Weight" value={latest.weight} unit="kg" />
-            <Metric label="Body Fat" value={latest.bodyFat} unit="%" />
-            <Metric label="Muscle" value={latest.muscleMass} unit="kg" />
-            <Metric label="BMI" value={latest.bmi} />
-            <Metric label="Visceral Fat" value={latest.visceralFat} />
-            <Metric label="BMR" value={latest.bmr} unit="kcal" />
-            <Metric label="Body Water" value={latest.water} unit="L" />
-            <Metric label="Score" value={latest.score} />
+            <Metric label={t("dashboard.metricWeight")} value={latest.weight} unit="kg" />
+            <Metric label={t("dashboard.metricBodyFat")} value={latest.bodyFat} unit="%" />
+            <Metric label={t("dashboard.metricMuscle")} value={latest.muscleMass} unit="kg" />
+            <Metric label={t("dashboard.metricBmi")} value={latest.bmi} />
+            <Metric label={t("dashboard.metricVisceral")} value={latest.visceralFat} />
+            <Metric label={t("dashboard.metricBmr")} value={latest.bmr} unit="kcal" />
+            <Metric label={t("dashboard.metricWater")} value={latest.water} unit="L" />
+            <Metric label={t("dashboard.metricScore")} value={latest.score} />
           </div>
           {latest.notes && (
             <p className="text-xs text-muted-foreground mt-4 italic">"{latest.notes}"</p>
@@ -1049,9 +1055,7 @@ function InbodyTab({ userId }: { userId: number }) {
           {!latest.aiExtracted && (
             <p className="text-xs text-amber-300/80 mt-4 inline-flex items-start gap-1.5">
               <AlertCircle size={12} className="mt-0.5" />
-              {hasMetrics(latest)
-                ? "Some values came through with low confidence. Youssef will double-check this scan."
-                : "We received your scan but couldn't read the numbers automatically. Youssef will update them shortly."}
+              {hasMetrics(latest) ? t("dashboard.lowConfidence") : t("dashboard.couldNotRead")}
             </p>
           )}
         </div>
@@ -1060,7 +1064,7 @@ function InbodyTab({ userId }: { userId: number }) {
       {sorted.length > 1 && (
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Earlier scans
+            {t("dashboard.earlierScans")}
           </h3>
           <div className="space-y-2">
             {sorted.slice(1).map((r) => (
@@ -1074,8 +1078,8 @@ function InbodyTab({ userId }: { userId: number }) {
                     {r.recordedAt && format(new Date(r.recordedAt), "MMM d, yyyy")}
                   </span>
                   <span className="text-muted-foreground ml-3">
-                    {r.weight != null ? `${r.weight}kg` : "Not available"} •{" "}
-                    {r.bodyFat != null ? `${r.bodyFat}% BF` : "Not available"}
+                    {r.weight != null ? `${r.weight}kg` : t("dashboard.notAvailable")} •{" "}
+                    {r.bodyFat != null ? `${r.bodyFat}% BF` : t("dashboard.notAvailable")}
                   </span>
                 </div>
                 {r.fileUrl && (
@@ -1085,7 +1089,7 @@ function InbodyTab({ userId }: { userId: number }) {
                     rel="noopener noreferrer"
                     className="text-xs text-primary hover:underline"
                   >
-                    View
+                    {t("dashboard.view")}
                   </a>
                 )}
               </div>
@@ -1098,8 +1102,9 @@ function InbodyTab({ userId }: { userId: number }) {
 }
 
 function Metric({ label, value, unit }: { label: string; value: number | null; unit?: string }) {
+  const { t } = useTranslation();
   const display =
-    value != null ? `${value}${unit ? ` ${unit}` : ""}` : "Not available";
+    value != null ? `${value}${unit ? ` ${unit}` : ""}` : t("dashboard.notAvailable");
   return (
     <div className="rounded-xl bg-background/40 border border-white/5 p-3">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -1118,6 +1123,7 @@ function Metric({ label, value, unit }: { label: string; value: number | null; u
 // =============== PROGRESS TAB ===============
 
 function ProgressTab({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: photos = [], isLoading } = useProgressPhotos({ userId });
   const upload = useUploadProgressPhoto();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1137,8 +1143,8 @@ function ProgressTab({ userId }: { userId: number }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-lg font-display font-bold">Progress Photos</h2>
-          <p className="text-xs text-muted-foreground">Track your transformation visually</p>
+          <h2 className="text-lg font-display font-bold">{t("dashboard.progressTitle")}</h2>
+          <p className="text-xs text-muted-foreground">{t("dashboard.progressTrack")}</p>
         </div>
         <Button
           onClick={() => fileRef.current?.click()}
@@ -1151,7 +1157,7 @@ function ProgressTab({ userId }: { userId: number }) {
           ) : (
             <Upload size={14} className="mr-1.5" />
           )}
-          Add Photo
+          {t("dashboard.addPhoto")}
         </Button>
         <input
           ref={fileRef}
@@ -1164,7 +1170,7 @@ function ProgressTab({ userId }: { userId: number }) {
 
       {isLoading && <SkeletonCards />}
 
-      {!isLoading && sorted.length === 0 && <EmptyState title="No progress photos yet" />}
+      {!isLoading && sorted.length === 0 && <EmptyState title={t("dashboard.progressEmpty")} />}
 
       {sorted.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
