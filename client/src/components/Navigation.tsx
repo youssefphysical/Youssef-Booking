@@ -54,19 +54,19 @@ export function Navigation() {
           <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
             <h1 className="text-xl font-bold font-display text-gradient-blue">Youssef Ahmed</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
-              Personal Training · Admin
+              {t("nav.adminTagline", "Personal Training · Admin")}
             </p>
           </Link>
 
           <div className="flex-1 space-y-1">
-            <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label="Dashboard" active={location === "/admin"} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label="Bookings" active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/clients" icon={<Users size={18} />} label="Clients" active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label="Packages" active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard", "Dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings", "Bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients", "Clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages", "Packages")} active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
             {isSuperAdmin && (
-              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label="Staff" active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff", "Staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
             )}
-            <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label="Settings" active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings", "Settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
           </div>
 
           <div className="pt-4 border-t border-border space-y-2">
@@ -75,7 +75,7 @@ export function Navigation() {
             </div>
             <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm hover:bg-white/5 text-muted-foreground" data-testid="link-public-site">
               <Home size={16} />
-              <span>View public site</span>
+              <span>{t("nav.publicSite", "View public site")}</span>
             </Link>
             <button
               onClick={() => {

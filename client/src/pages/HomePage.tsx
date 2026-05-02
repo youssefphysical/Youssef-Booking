@@ -37,122 +37,33 @@ const TRAIN_KEYS = [
   "trains.safeMovement",
 ] as const;
 
-const specialties = [
-  {
-    icon: <Sparkles size={22} />,
-    title: "Body Transformation",
-    body: "Structured programs to reshape body composition with sustainable, long-term results.",
-  },
-  {
-    icon: <Flame size={22} />,
-    title: "Fat Loss & Weight Management",
-    body: "Safe, science-based fat-loss systems built around your lifestyle and recovery.",
-  },
-  {
-    icon: <Dumbbell size={22} />,
-    title: "Muscle Building",
-    body: "Progressive resistance training to build lean muscle, strength, and confidence.",
-  },
-  {
-    icon: <Activity size={22} />,
-    title: "Movement & Kinesiology",
-    body: "Quality-of-movement coaching rooted in academic physical education and biomechanics.",
-  },
-  {
-    icon: <Baby size={22} />,
-    title: "Kids & Youth Fitness",
-    body: "Age-appropriate fitness, coordination, and athletic development for young clients.",
-  },
-  {
-    icon: <UsersIcon size={22} />,
-    title: "Beginner-Friendly Coaching",
-    body: "A calm, supportive starting point for clients who are new to structured training.",
-  },
-  {
-    icon: <Target size={22} />,
-    title: "Strength & Conditioning",
-    body: "Performance-driven programming to improve strength, power, and athletic capacity.",
-  },
-  {
-    icon: <ShieldAlert size={22} />,
-    title: "Safe Training for All Levels",
-    body: "Personalized adjustments for injuries, age, and ability — safety first, always.",
-  },
-];
+const SPECIALTY_KEYS = [
+  { key: "bodyTransformation", icon: <Sparkles size={22} /> },
+  { key: "fatLoss", icon: <Flame size={22} /> },
+  { key: "muscleBuilding", icon: <Dumbbell size={22} /> },
+  { key: "movement", icon: <Activity size={22} /> },
+  { key: "kidsYouth", icon: <Baby size={22} /> },
+  { key: "beginner", icon: <UsersIcon size={22} /> },
+  { key: "strengthConditioning", icon: <Target size={22} /> },
+  { key: "safeTraining", icon: <ShieldAlert size={22} /> },
+] as const;
 
-const certifications = [
-  {
-    icon: <GraduationCap size={20} />,
-    name: "Bachelor's Degree in Physical Education",
-    org: "Suez Canal University — Faculty of Physical Education",
-    country: "Egypt",
-    value:
-      "Academic foundation in training methods, sports science, anatomy, physiology, and coaching. 150 credit hours, Very Good grade.",
-  },
-  {
-    icon: <ShieldCheck size={20} />,
-    name: "UAE Academic Qualification Recognition",
-    org: "UAE Ministry of Higher Education & Scientific Research",
-    country: "United Arab Emirates",
-    value: "Official recognition of Youssef's academic qualification in the UAE.",
-  },
-  {
-    icon: <Award size={20} />,
-    name: "REPs UAE — Category A Personal Trainer",
-    org: "Registered Exercise Professional",
-    country: "Dubai, UAE",
-    value: "Compliant with UAE fitness industry standards for personal trainers.",
-  },
-  {
-    icon: <Globe size={20} />,
-    name: "EREPS — Graduate Exercise Professional",
-    org: "European Register of Exercise Professionals",
-    country: "Europe (EQF Level 6)",
-    value: "Recognition under European fitness professional standards.",
-  },
-  {
-    icon: <Award size={20} />,
-    name: "Personal Trainer Certification",
-    org: "International Academy for Training and Development (IATD)",
-    country: "International",
-    value: "Professional coaching foundation and practical training knowledge.",
-  },
-  {
-    icon: <Heart size={20} />,
-    name: "Obesity & Weight Management Specialist",
-    org: "Specialized education",
-    country: "International",
-    value: "Fat loss, obesity management, and safe weight control strategies.",
-  },
-  {
-    icon: <ShieldCheck size={20} />,
-    name: "CPR / First Aid Training",
-    org: "Safety certified",
-    country: "International",
-    value: "Trained to support a safer exercise environment and handle emergencies.",
-  },
-  {
-    icon: <Trophy size={20} />,
-    name: "Competitive Sports Background",
-    org: "Bodybuilding & Rowing",
-    country: "Egypt / International",
-    value: "Official competition experience — discipline, athletic mindset, and practical understanding of body transformation.",
-  },
-  {
-    icon: <Briefcase size={20} />,
-    name: "Professional Gym Experience",
-    org: "UFC Gym, Gold's Gym, Fitness Zone",
-    country: "Egypt / UAE",
-    value: "Personal training, client coaching, program design, and transformation support.",
-  },
-];
+const CERT_KEYS = [
+  { key: "bachelor", icon: <GraduationCap size={20} /> },
+  { key: "uaeRecognition", icon: <ShieldCheck size={20} /> },
+  { key: "repsUae", icon: <Award size={20} /> },
+  { key: "ereps", icon: <Globe size={20} /> },
+  { key: "iatd", icon: <Award size={20} /> },
+  { key: "obesity", icon: <Heart size={20} /> },
+  { key: "cpr", icon: <ShieldCheck size={20} /> },
+  { key: "competitive", icon: <Trophy size={20} /> },
+  { key: "gymExperience", icon: <Briefcase size={20} /> },
+] as const;
 
 export default function HomePage() {
   const { data: settings } = useSettings();
   const { t } = useTranslation();
-  const bio =
-    settings?.profileBio ||
-    "Youssef Ahmed is a certified personal trainer and physical education teacher based in Dubai, specializing in body transformation, movement quality, and structured performance coaching. His background combines academic physical education, competitive sports experience, personal training, and real-world coaching with clients of different ages and fitness levels.";
+  const bio = settings?.profileBio || t("home.bio.fallback");
 
   return (
     <div className="min-h-screen pt-16">
@@ -283,9 +194,9 @@ export default function HomePage() {
           subtitle={t("section.specialties.subtitle")}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {specialties.map((s, i) => (
+          {SPECIALTY_KEYS.map((s, i) => (
             <motion.div
-              key={s.title}
+              key={s.key}
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
@@ -296,8 +207,8 @@ export default function HomePage() {
               <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mb-4">
                 {s.icon}
               </div>
-              <h3 className="font-display font-bold text-base">{s.title}</h3>
-              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{s.body}</p>
+              <h3 className="font-display font-bold text-base">{t(`home.specialty.${s.key}.title`)}</h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{t(`home.specialty.${s.key}.body`)}</p>
             </motion.div>
           ))}
         </div>
@@ -312,9 +223,9 @@ export default function HomePage() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {certifications.map((c, i) => (
+          {CERT_KEYS.map((c, i) => (
             <motion.div
-              key={c.name}
+              key={c.key}
               initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
@@ -327,12 +238,12 @@ export default function HomePage() {
                   {c.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-display font-bold text-base leading-snug">{c.name}</h3>
-                  <p className="text-xs text-primary/80 mt-1">{c.org}</p>
+                  <h3 className="font-display font-bold text-base leading-snug">{t(`home.cert.${c.key}.name`)}</h3>
+                  <p className="text-xs text-primary/80 mt-1">{t(`home.cert.${c.key}.org`)}</p>
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground mt-1">
-                    {c.country}
+                    {t(`home.cert.${c.key}.country`)}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{c.value}</p>
+                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{t(`home.cert.${c.key}.value`)}</p>
                 </div>
               </div>
             </motion.div>
