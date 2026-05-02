@@ -1,0 +1,326 @@
+CRITICAL INSTRUCTIONS:
+
+Do NOT waste credits.
+Do NOT redesign randomly.
+Do NOT change branding, colors, pricing logic, packages, or business structure unless specified.
+Do NOT add unnecessary features.
+
+Work in this exact priority order:
+
+---
+
+PHASE 1: FIX PRODUCTION (MANDATORY FIRST)
+
+Fix Vercel production issues before any design or feature work:
+
+1. Backend must work on Vercel using serverless functions only.
+   
+   - Do NOT use Express listen()
+   - All routes must be inside /api
+
+2. Required API endpoints:
+   
+   - /api/health → returns { "ok": true }
+   - /api/register
+   - /api/login
+   - /api/forgot-password
+
+3. Fix registration:
+   
+   - Create user in Neon database
+   - Hash password securely
+   - Return clear success/error responses
+
+4. Use environment variables:
+   
+   - DATABASE_URL (Neon)
+   - SESSION_SECRET
+
+5. Ensure database schema exists:
+   users table must include:
+   
+   - id
+   - name
+   - email (unique)
+   - password
+   - created_at
+
+6. Fix routing:
+   
+   - No 404 on refresh
+   - Configure vercel.json correctly
+   - Do NOT break /api routes
+
+7. Add logging:
+   
+   - Clear error logs for registration and login
+
+8. After finishing:
+   
+   - Push to GitHub automatically
+
+STOP HERE until everything above works.
+
+---
+
+PHASE 2: REGISTRATION (SIMPLIFY + PROFESSIONAL)
+
+1. Remove body/progress image upload from registration.
+
+2. Add profile picture only:
+   
+   - Upload image
+   - Crop/resize like Instagram/Facebook
+   - Circular preview
+   - High visual quality
+   - Compressed storage (small size)
+
+3. Do NOT store large original images.
+
+4. Registration must be:
+   
+   - Fast
+   - Clean
+   - Minimal fields
+   - Professional UI
+
+---
+
+PHASE 3: CLIENT TRAINING PROFILE
+
+Add simple onboarding or profile fields:
+
+1. Training Level (required):
+   
+   - Beginner
+   - Intermediate
+   - Advanced
+
+2. Training Goal (required):
+   
+   - Hypertrophy
+   - Strength
+   - Endurance
+
+3. Must be:
+   
+   - Button-based (not dropdown)
+   - Editable later in profile
+
+---
+
+PHASE 4: VERIFIED CLIENT SYSTEM
+
+Do NOT include verification during registration.
+
+A user becomes VERIFIED if:
+
+- Profile picture uploaded
+  AND
+- One of:
+  - InBody uploaded
+  - Completed assessment sessions
+
+Verified badge:
+
+- Premium blue check style
+- Subtle next to name
+
+---
+
+PHASE 5: FREE ASSESSMENT SESSIONS
+
+Add 2 free sessions:
+
+1. BMI Assessment
+2. Technical Assessment
+
+Rules:
+
+- Each is one-time only
+- Only for new users
+- Stored in database
+
+No-show policy:
+
+- If user does not attend → mark as used
+- Cannot be reused
+- Rebooking becomes:
+  Single Session = AED 375
+
+Cancellation:
+
+- Free cancel allowed before defined window (e.g., 6 hours)
+- Late cancel = used
+
+Display:
+
+"Free Assessment (New Clients Only)"
+
+---
+
+PHASE 6: BOOKING SYSTEM (ADVANCED)
+
+Add structured booking selection:
+
+Step 1: Training Type (required)
+
+- Push
+- Pull
+- Legs
+- Upper
+- Lower
+- Full Body
+- CrossFit
+
+Step 2: Muscle Focus (multi-select)
+
+Upper:
+
+- Chest
+- Back
+- Shoulders
+- Arms
+- Core
+- Front Upper
+- Back Upper
+
+Lower:
+
+- Legs
+- Front Lower
+- Back Lower
+
+Step 3: Goal (optional)
+
+- Strength
+- Hypertrophy
+- Fat Loss
+- Conditioning
+
+Step 4: Session Notes (optional)
+
+IMPORTANT:
+
+- Does NOT affect pricing
+
+---
+
+PHASE 7: PACKAGES (FIX PRICING)
+
+Display only:
+
+- Single Session: AED 375
+- 10 Sessions +1: AED 3,245
+- 20 Sessions +3: AED 5,750
+- 25 Sessions +5: (keep existing price unless defined)
+- Duo 30 Sessions (2 people): AED 9,900
+
+Do NOT expose hidden packages.
+
+---
+
+PHASE 8: NUTRITION SYSTEM
+
+Add nutrition section:
+
+Types:
+
+- Fat loss
+- Muscle gain
+- Recomposition
+- General health
+
+Includes:
+
+- Monthly plan
+- Supplement timing
+- Follow-up
+
+Supplements:
+
+- Optional
+- Based on consultation (WhatsApp)
+
+IMPORTANT:
+
+- No medical claims
+- Professional tone
+
+---
+
+PHASE 9: ADMIN CONTROL
+
+Admin only:
+
+- Upload coach images
+- Manage cover images
+- Manage packages
+
+Users must NOT see admin upload controls.
+
+---
+
+PHASE 10: COVER IMAGES
+
+- Add auto-rotating cover images
+- Professional slideshow
+- Admin editable
+- Mobile optimized
+
+---
+
+PHASE 11: MULTI-LANGUAGE
+
+Add 10 languages:
+
+- English (default)
+- Arabic (RTL)
+- French
+- Spanish
+- German
+- Russian
+- Chinese
+- Hindi
+- Urdu
+- Portuguese
+
+Requirements:
+
+- Language selector with flags
+- Proper translations
+- Fallback to English
+
+---
+
+PHASE 12: PERFORMANCE & STORAGE
+
+- Compress images
+- Limit file sizes
+- Do NOT store unnecessary files
+- Keep mobile performance high
+
+---
+
+FINAL REQUIREMENTS:
+
+- Do NOT redesign randomly
+- Do NOT change business logic
+- Do NOT add features outside scope
+
+AFTER COMPLETION:
+
+Provide:
+
+1. Working API endpoints
+2. Test steps:
+   - /api/health
+   - register
+   - login
+   - booking
+   - profile upload
+3. Confirmation GitHub push is done
+
+---
+
+END
