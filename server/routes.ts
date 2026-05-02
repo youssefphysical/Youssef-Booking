@@ -870,6 +870,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const dataUrl = `data:image/webp;base64,${webp.toString("base64")}`;
       // New images go to the end of the slider by default.
       const existing = await storage.getHeroImages();
+      // Hard cap on slider length — also matches the UI cap. Prevents
+      // table/payload growth if anyone bypasses the admin form.
+      const MAX_HERO_IMAGES = 12;
+      if (existing.length >= MAX_HERO_IMAGES) {
+        return res.status(400).json({
+          message: `Maximum of ${MAX_HERO_IMAGES} hero images. Delete one before uploading another.`,
+        });
+      }
       const nextOrder = existing.length
         ? Math.max(...existing.map((h) => h.sortOrder)) + 1
         : 0;

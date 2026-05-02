@@ -27,7 +27,12 @@ export function HeroSlider() {
 
   if (images.length === 0) return null;
 
-  const current = images[index];
+  // Clamp inline so a stale `index` (after a delete that shrinks the list)
+  // never produces an out-of-bounds undefined slide before the reset effect
+  // above has had a chance to run.
+  const safeIndex = index >= images.length ? 0 : index;
+  const current = images[safeIndex];
+  if (!current) return null;
 
   return (
     <div
@@ -70,7 +75,7 @@ export function HeroSlider() {
               data-testid={`button-hero-dot-${i}`}
               className={cn(
                 "h-1.5 rounded-full transition-all",
-                i === index
+                i === safeIndex
                   ? "w-8 bg-primary"
                   : "w-1.5 bg-white/40 hover:bg-white/70",
               )}
