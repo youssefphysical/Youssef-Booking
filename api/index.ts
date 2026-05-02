@@ -9,8 +9,12 @@ let bootstrapError: unknown = null;
 function getApp(): Promise<Express> {
   if (!appPromise) {
     appPromise = (async () => {
-      console.log("[api/index] STAGE 2 importing server/app");
-      const mod = await import("../server/app");
+      console.log("[api/index] STAGE 2 importing dist/server.mjs");
+      // The server is pre-bundled at build time by esbuild — see vercel.json
+      // buildCommand. This avoids @vercel/node failing to ship server/* and
+      // shared/* alongside the function.
+      // @ts-ignore — file is generated at build time, not in the TS project
+      const mod = await import("../dist/server.mjs");
       console.log("[api/index] STAGE 3 createApp imported, invoking");
       const app = await mod.createApp();
       console.log("[api/index] STAGE 4 createApp returned");
