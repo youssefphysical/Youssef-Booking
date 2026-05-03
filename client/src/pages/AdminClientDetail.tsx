@@ -75,7 +75,7 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { formatStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
+import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -129,7 +129,7 @@ export default function AdminClientDetail() {
     return (
       <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
         <Link href="/admin/clients" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mb-4">
-          <ArrowLeft size={14} /> {t("admin.clientDetail.backToClients", "Back to clients")}
+          <ArrowLeft size={14} /> {t("admin.clientDetail.back", "All clients")}
         </Link>
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
           {t("admin.clientDetail.loading", "Loading client...")}
@@ -145,7 +145,7 @@ export default function AdminClientDetail() {
         data-testid="link-back-clients"
         className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
       >
-        <ArrowLeft size={14} /> {t("admin.clientDetail.allClients", "All clients")}
+        <ArrowLeft size={14} /> {t("admin.clientDetail.back", "All clients")}
       </Link>
 
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6 flex flex-wrap gap-5 items-start justify-between">
@@ -188,16 +188,16 @@ export default function AdminClientDetail() {
         <TabsList className="bg-white/5 mb-6 h-11 flex flex-wrap">
           <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview", "Overview")}</TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> {t("admin.tabs.bookings", "Bookings")}
+            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabBookings", "Bookings")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> {t("admin.tabs.packages", "Packages")}
+            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackages", "Packages")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <Activity size={13} className="mr-1.5" /> {t("admin.tabs.inbody", "InBody")}
+            <Activity size={13} className="mr-1.5" /> {t("admin.clientDetail.tabInbody", "InBody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> {t("admin.tabs.progress", "Progress")}
+            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress", "Progress")}
           </TabsTrigger>
         </TabsList>
 
@@ -1224,6 +1224,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
 }
 
 function BookingsList({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: bookings = [], isLoading } = useBookings({ userId });
   const list = bookings as any[];
 
@@ -1254,7 +1255,7 @@ function BookingsList({ userId }: { userId: number }) {
                 <span
                   className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
                 >
-                  {formatStatus(b.status)}
+                  {translateStatus(b.status, t)}
                 </span>
                 <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-white/10 bg-white/5 text-muted-foreground">
                   {PAYMENT_STATUS_LABELS[(b.paymentStatus || "unpaid") as keyof typeof PAYMENT_STATUS_LABELS] || b.paymentStatus || "Unpaid"}
