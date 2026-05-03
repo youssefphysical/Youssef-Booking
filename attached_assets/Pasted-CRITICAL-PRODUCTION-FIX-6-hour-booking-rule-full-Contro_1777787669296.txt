@@ -1,0 +1,193 @@
+CRITICAL PRODUCTION FIX: 6-hour booking rule + full Control Panel translations.
+
+STOP unrelated work. Fix only the issues below.
+
+Do NOT change:
+- login/register
+- admin security
+- package/session balance logic
+- unrelated UI
+- Neon DATABASE_URL
+
+====================================
+1. FIX ADVANCE BOOKING RULE TO 6 HOURS
+====================================
+
+Problem:
+The app still allows booking slots less than 6 hours from the current time.
+
+Required rule:
+Clients can ONLY book if the selected session time is at least 6 hours after the current time.
+
+Example:
+- Current time: 04:00 PM
+- Earliest allowed booking: 10:00 PM
+- 04:00 PM to 09:00 PM must be disabled/unavailable
+
+Tasks:
+- Frontend: disable or hide slots less than 6 hours from now
+- Backend: reject booking requests less than 6 hours from now
+- Replace any old “3 hours” rule with “6 hours”
+- Keep cancellation policy at 6 hours
+
+Error message:
+English:
+"Bookings must be made at least 6 hours in advance."
+
+Arabic:
+"يجب حجز الجلسة قبل موعدها بست ساعات على الأقل."
+
+Apply translations for all supported languages.
+
+====================================
+2. KEEP BOOKING HOURS
+====================================
+
+Only allow booking between:
+06:00 AM and 10:00 PM
+
+Show times in 12-hour format everywhere:
+- Booking page
+- Confirmation modal
+- Client dashboard
+- Admin / Control Panel
+- Session history
+
+Examples:
+06:00 AM
+12:00 PM
+01:00 PM
+10:00 PM
+
+====================================
+3. FULL CONTROL PANEL TRANSLATION
+====================================
+
+Problem:
+The Control Panel / Admin Dashboard is still partly English and does not follow the selected language.
+
+Required:
+Control Panel must behave exactly like the public site.
+
+If Arabic selected:
+- Entire Control Panel must be Arabic
+- RTL layout
+- No English text except fixed brand names, emails, URLs, technical IDs
+
+If English selected:
+- Entire Control Panel must be English
+
+If any other supported language selected:
+- Entire Control Panel must use that language
+
+Apply to:
+- Control Panel title
+- Overview
+- Bookings
+- Clients
+- Packages
+- Settings
+- Stats cards
+- Tables
+- Filters
+- Buttons
+- Empty states
+- Tooltips
+- Modals
+- Error messages
+- Success messages
+- Session status labels
+- Package labels
+- Verified/VIP badges
+- Search placeholders
+- Dates/time labels
+
+Supported languages:
+- English
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Turkish
+
+====================================
+4. FIX MIXED LANGUAGE / HARDCODED TEXT
+====================================
+
+Scan Control Panel/Admin files and replace all hardcoded visible English with i18n keys.
+
+Do not leave:
+"Admin Dashboard"
+"Manage clients"
+"Upcoming sessions"
+"Total Clients"
+"Completed"
+"Today"
+"Overview"
+"Bookings"
+"Clients"
+
+Use translation keys instead.
+
+====================================
+5. UI CONSISTENCY FOR RTL/LTR
+====================================
+
+Ensure Control Panel:
+- Arabic is RTL and aligned properly
+- English and other LTR languages are clean
+- No awkward wrapping
+- No broken layout on mobile or desktop
+- Tabs and cards stay aligned
+- Icons spacing works in RTL and LTR
+
+====================================
+6. NEON / DATABASE
+====================================
+
+Do NOT modify Neon unless schema changes are required.
+
+If schema change is required:
+- Explain exactly what table/column is needed
+- Use safe migration only
+- Do not delete/reset existing data
+
+This task should normally NOT require Neon changes.
+
+====================================
+7. FINAL VERIFICATION
+====================================
+
+Verify on production:
+- Arabic public pages fully Arabic
+- Arabic Control Panel fully Arabic
+- English public pages fully English
+- English Control Panel fully English
+- Other languages update Control Panel fully
+- Booking slots less than 6 hours from now are blocked
+- Backend rejects less-than-6-hour booking
+- Times display as AM/PM everywhere
+- Booking range remains 06:00 AM to 10:00 PM
+
+====================================
+8. DEPLOYMENT WORKFLOW
+====================================
+
+Do not leave work in Replit/local only.
+
+After implementation:
+1. Run TypeScript/build check
+2. Commit changes
+3. Push to GitHub main
+4. Wait for Vercel auto-deploy
+5. Confirm Vercel deployment is Ready/Current
+6. Verify on the live production URL
+
+Production path:
+Replit → GitHub main → Vercel
+
+Only touch Neon if required by schema changes.

@@ -1,0 +1,131 @@
+CRITICAL: Global language quality & consistency fix for ALL supported languages.
+
+Goal:
+Every language must be fully complete, natural, and production-ready.
+No fallback. No mixed languages. No robotic translations.
+
+Languages to fix:
+
+- English
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Turkish
+
+---
+
+PHASE 1 — STRUCTURE VALIDATION
+
+1. Ensure ALL languages have EXACT SAME KEYS.
+2. No missing keys in any language.
+3. No extra keys in one language only.
+4. Build a validation script to compare all dictionaries.
+
+If any key is missing:
+→ Add it before continuing.
+
+---
+
+PHASE 2 — REMOVE FALLBACKS
+
+1. Remove ALL fallback patterns like:
+   t("key") || "text"
+
+2. Replace with strict:
+   t("key")
+
+3. If a key is missing → it must be fixed in translation files, NOT UI.
+
+---
+
+PHASE 3 — PROFESSIONAL TRANSLATION QUALITY
+
+Rewrite ALL translations to be:
+
+- Natural
+- Client-friendly
+- Premium tone
+- Context-aware (fitness/business)
+
+DO NOT:
+
+- Use literal translation
+- Use Google Translate style
+- Translate brand names incorrectly
+
+Examples:
+
+"Book a Session"
+→ French: "Réserver une séance"
+→ Arabic: "احجز جلسة تدريب"
+→ German: "Trainingseinheit buchen"
+
+"Contact on WhatsApp"
+→ Arabic: "تواصل عبر واتساب"
+→ Turkish: "WhatsApp üzerinden iletişime geç"
+
+---
+
+PHASE 4 — UI CONSISTENCY CHECK
+
+For EACH language:
+
+1. Switch language
+2. Verify:
+   - No English words remain
+   - No Arabic remains when not selected
+   - No mixed UI
+   - All buttons translated
+   - All forms translated
+   - All errors translated
+   - Admin panel fully translated
+
+---
+
+PHASE 5 — RTL SUPPORT (Arabic only)
+
+Ensure:
+
+- direction: rtl
+- Proper alignment
+- Icons not broken
+- Layout mirrored correctly
+
+---
+
+PHASE 6 — TEST CRITICAL AREAS
+
+Test in ALL languages:
+
+- Homepage
+- Booking page
+- Confirmation modal
+- Policies pages
+- Login/Register
+- Dashboard
+- Admin panel
+
+---
+
+DEPLOYMENT:
+
+- Run TypeScript check
+- Fix all errors
+- Commit changes
+- Push to GitHub main
+- Verify Vercel production deployment
+
+---
+
+FINAL RESULT REQUIRED:
+
+When switching language:
+→ 100% UI in that language only
+→ No fallback English
+→ No broken translations
+→ Premium professional tone across all languages

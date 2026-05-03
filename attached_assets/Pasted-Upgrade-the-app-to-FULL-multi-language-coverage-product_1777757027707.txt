@@ -1,0 +1,164 @@
+Upgrade the app to FULL multi-language coverage (production-ready i18n system).
+
+---
+
+GOAL:
+
+Every visible text in the app must be translated and controlled by the i18n system.
+
+NO hardcoded English text should remain.
+
+---
+
+LANGUAGES (must be fully supported):
+
+- English (default)
+- Arabic (RTL)
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Turkish
+
+---
+
+TASK 1 — Remove ALL hardcoded text
+
+Scan the entire codebase and replace ALL visible text:
+
+Examples:
+
+- headings
+- buttons
+- placeholders
+- labels
+- error messages
+- service descriptions
+- dashboard text
+- admin text
+
+Replace:
+
+"Login"
+"Register"
+"Body Transformation"
+
+WITH:
+
+t('auth.login')
+t('auth.register')
+t('services.bodyTransformation.title')
+
+---
+
+TASK 2 — Build complete translation structure
+
+Create structured translation keys:
+
+auth.*
+profile.*
+dashboard.*
+admin.*
+services.*
+booking.*
+errors.*
+buttons.*
+forms.*
+navigation.*
+
+---
+
+TASK 3 — Create translation files for ALL languages
+
+Files:
+
+- en.json
+- ar.json
+- fr.json
+- es.json
+- de.json
+- it.json
+- ru.json
+- zh.json
+- hi.json
+- tr.json
+
+---
+
+TRANSLATION QUALITY:
+
+- NOT literal translation
+- Use professional, natural wording
+- Fitness / booking tone must be premium
+- Arabic must be clean and modern (not robotic)
+
+---
+
+TASK 4 — RTL Support
+
+- Arabic must:
+  - switch layout to RTL
+  - align text right
+  - flip UI spacing properly
+
+---
+
+TASK 5 — Fallback Handling
+
+If a translation is missing:
+→ fallback to English
+
+---
+
+TASK 6 — Ensure coverage
+
+Verify:
+
+- No English text appears when Arabic is selected
+- All pages are translated:
+  - Home
+  - Login/Register
+  - Dashboard
+  - Profile
+  - Admin panel
+
+---
+
+TASK 7 — Language Selector
+
+- Top right
+- Flag + language name
+- Dropdown (premium UI)
+
+---
+
+IMPORTANT:
+
+- Do NOT break:
+  - backend
+  - auth
+  - API routes
+  - Vercel deployment
+
+---
+
+AFTER:
+
+- Commit changes
+- Push to GitHub
+- Trigger Vercel redeploy
+
+---
+
+FINAL CHECK:
+
+Switch to Arabic:
+→ Entire UI must be Arabic
+
+Switch to any language:
+→ Entire UI must change
+
+---

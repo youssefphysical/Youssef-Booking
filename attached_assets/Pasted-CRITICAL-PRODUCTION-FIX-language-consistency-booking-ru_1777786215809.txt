@@ -1,0 +1,201 @@
+CRITICAL PRODUCTION FIX: language consistency + booking rules + deployment.
+
+STOP unrelated work. Focus only on the tasks below.
+
+Do NOT change:
+- login/register logic
+- admin security logic
+- Neon DATABASE_URL
+- package/session balance logic
+- unrelated UI structure
+
+====================================
+1. FULL LANGUAGE CONSISTENCY
+====================================
+
+Fix remaining mixed-language issues across the entire app.
+
+When a user selects a language, EVERYTHING visible must follow that language.
+
+Apply to:
+- Homepage
+- Booking page
+- Policy/legal pages
+- Cancellation Policy
+- Privacy Policy
+- Terms & Conditions
+- Medical Disclaimer
+- Cookie Policy
+- Control Panel / Admin Dashboard
+- Footer
+- Buttons
+- Empty states
+- Tooltips
+- Error messages
+- WhatsApp / Instagram / contact labels
+
+Rules:
+- Arabic selected → 100% Arabic UI except fixed brand names like “Youssef Ahmed”, URLs, and emails.
+- English selected → 100% English UI.
+- Any other supported language → 100% selected language.
+- No mixed-language cards or sections.
+- Replace remaining hardcoded text with i18n keys.
+
+Platform labels:
+- WhatsApp:
+  - Arabic: واتساب
+  - English: WhatsApp
+- Instagram:
+  - Arabic: إنستجرام
+  - English: Instagram
+
+====================================
+2. FIX LINK / BUTTON VISUAL STYLE
+====================================
+
+Remove ugly underline styling from CTA buttons and contact buttons.
+
+Fix:
+- WhatsApp button must look like a clean premium button, not underlined text.
+- Instagram/contact links must look premium and consistent.
+- Legal links can be subtly underlined only inside paragraph text, not CTA buttons.
+- No broken underline through buttons.
+- No awkward wrapping.
+- Arabic RTL and English LTR must both look clean.
+
+====================================
+3. BOOKING TIME FORMAT
+====================================
+
+Change all booking time displays to 12-hour AM/PM format.
+
+Examples:
+- 06:00 → 06:00 AM
+- 12:00 → 12:00 PM
+- 13:00 → 01:00 PM
+- 22:00 → 10:00 PM
+
+Apply to:
+- Available booking slots
+- Admin booking views
+- Client dashboard
+- Session history
+- Booking confirmation text
+
+====================================
+4. AVAILABLE BOOKING HOURS
+====================================
+
+Only allow booking sessions from:
+
+06:00 AM to 10:00 PM
+
+Allowed slots:
+06:00 AM
+07:00 AM
+08:00 AM
+09:00 AM
+10:00 AM
+11:00 AM
+12:00 PM
+01:00 PM
+02:00 PM
+03:00 PM
+04:00 PM
+05:00 PM
+06:00 PM
+07:00 PM
+08:00 PM
+09:00 PM
+10:00 PM
+
+Do NOT show or allow times outside this range.
+
+====================================
+5. ADVANCE BOOKING RULE
+====================================
+
+Prevent last-minute booking.
+
+Clients must book at least 3 hours before the selected session time.
+
+Example:
+- If current time is 04:00 PM
+- User cannot book 03:00 PM or 04:00 PM
+- Earliest allowed booking should be 07:00 PM or later
+
+Show disabled slots clearly with translated reason:
+
+English:
+"Booking must be made at least 3 hours in advance."
+
+Arabic:
+"يجب حجز الجلسة قبل موعدها بثلاث ساعات على الأقل."
+
+Apply this rule on BOTH:
+- frontend
+- backend
+
+Backend must reject too-soon bookings even if someone bypasses the UI.
+
+====================================
+6. SESSION DURATION POLICY
+====================================
+
+Add clear translated policy text on the booking page:
+
+English:
+"Each personal training session lasts 1 hour. Any extra time must be agreed in advance and may require additional fees."
+
+Arabic:
+"مدة جلسة التدريب الشخصي ساعة واحدة فقط. أي وقت إضافي يجب الاتفاق عليه مسبقًا وقد يتطلب رسومًا إضافية."
+
+Translate this for all supported languages.
+
+====================================
+7. TRAINER AVAILABILITY NOTE
+====================================
+
+Add translated note near booking slots:
+
+English:
+"Advance booking helps ensure the trainer can be available at the training location on time."
+
+Arabic:
+"الحجز المسبق يساعد على ضمان تواجد المدرب في مكان التدريب في الموعد المحدد."
+
+Translate this for all supported languages.
+
+====================================
+8. FINAL VERIFICATION
+====================================
+
+Verify:
+- Arabic policy pages are fully Arabic
+- Arabic Control Panel is fully Arabic
+- English pages are fully English
+- All supported languages update the full UI
+- WhatsApp/Instagram labels are localized properly
+- No ugly underlined CTA buttons
+- Booking slots show AM/PM
+- Only 06:00 AM to 10:00 PM slots appear
+- Slots less than 3 hours from now are disabled
+- Backend rejects bookings less than 3 hours in advance
+- Session duration policy appears correctly
+
+====================================
+9. DEPLOYMENT WORKFLOW
+====================================
+
+Do not leave work only in Replit/local preview.
+
+After implementation:
+1. Run TypeScript/build check
+2. Commit changes
+3. Push to GitHub main
+4. Wait for Vercel auto-deploy
+5. Confirm Vercel deployment is Ready/Current
+6. Verify the feature on the live production URL
+
+Production must be updated through:
+Replit → GitHub main → Vercel

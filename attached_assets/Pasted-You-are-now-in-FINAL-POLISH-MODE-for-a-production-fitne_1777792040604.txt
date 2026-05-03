@@ -1,0 +1,131 @@
+You are now in FINAL POLISH MODE for a production fitness booking platform.
+
+Current state:
+
+- App is LIVE on Vercel
+- i18n system exists with full key parity (all languages)
+- No hardcoded English issues
+- Admin security already fixed
+- Booking system already working
+- Deployment pipeline: Replit → GitHub → Vercel is working
+
+Your task:
+Upgrade ALL languages to PREMIUM, NATURAL, CLIENT-FACING QUALITY.
+
+Languages:
+
+- English (reference tone)
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Turkish
+
+CRITICAL RULES:
+
+1. DO NOT break anything:
+
+- Do NOT modify logic
+- Do NOT modify booking system
+- Do NOT modify authentication
+- Do NOT modify Neon database unless absolutely required
+- Do NOT rename translation keys
+- Only rewrite VALUES (text), not structure
+
+2. Translation Quality:
+
+- No literal or robotic translation
+- Must sound like native speaker wrote it
+- Tone must be:
+  premium, professional, luxury, fitness-coach style
+- Keep consistency across all pages
+
+3. Brand rules:
+
+- Keep these ALWAYS in English:
+  - WhatsApp
+  - Instagram
+  - Youssef Ahmed / Youssef Fitness
+- Never translate brand names
+
+4. Scope (VERY IMPORTANT):
+   Apply rewrite to ALL visible user content:
+
+- Homepage
+- Booking flow
+- Confirmation modal
+- Cancellation policy
+- Legal pages (Privacy / Terms / Medical / Cookies)
+- Dashboard (client + admin)
+- Buttons / labels / alerts / errors
+- WhatsApp contact messages
+- Time & booking messages
+
+5. Booking language clarity:
+   Make sure wording clearly explains:
+
+- Sessions are 1 hour only
+- Extra time requires extra payment
+- Booking must be done at least 6 hours in advance
+- Trainer needs preparation time before session
+- Available hours: 6 AM → 10 PM only
+
+6. Language behavior:
+
+- When a language is selected:
+  EVERYTHING must switch to that language
+  (no mixed English except allowed brand names)
+- Arabic must be RTL clean and natural
+- Dates & time formats must match language
+
+7. UI consistency:
+
+- Remove awkward punctuation (., ? misplaced)
+- Remove broken spacing
+- Ensure smooth reading flow
+- Fix any unnatural phrasing
+
+8. Admin Panel:
+
+- Apply same translation quality to admin pages
+- Keep wording professional and clear
+- No internal/dev-style language
+
+9. Error handling:
+
+- Keep messages simple and user-friendly
+- Never expose technical/internal errors
+
+DEPLOYMENT REQUIREMENT:
+
+- Apply changes in Replit
+- Run TypeScript check (tsc clean)
+- Commit changes
+- Push to GitHub main
+- Wait for Vercel auto-deploy
+- Confirm production is READY
+
+Neon:
+
+- Do NOT touch database unless required
+- If required:
+  - explain clearly
+  - apply safe migration only
+  - never delete or reset data
+
+FINAL VERIFICATION:
+
+Test on production URL:
+
+- Switch between ALL languages
+- Ensure no mixed languages
+- Ensure booking messages are clear
+- Ensure UI is smooth and premium
+- Ensure admin still secure
+
+Goal:
+Make the app feel like a high-end international fitness platform in ALL languages.

@@ -1,0 +1,203 @@
+CRITICAL: Final i18n production lock — ZERO language issues allowed
+
+Goal:
+Lock the entire application to a production-grade internationalization system.
+
+After this task:
+
+- No mixed languages anywhere
+- No fallback English
+- No missing translations
+- No hardcoded text
+- All languages feel native and premium
+
+---
+
+SUPPORTED LANGUAGES:
+
+- English (reference)
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Turkish
+
+---
+
+PHASE 1 — HARD LOCK STRUCTURE
+
+1. Validate ALL translation files:
+   
+   - EXACT same keys across all languages
+   - No missing keys
+   - No extra keys
+
+2. Add a validation script:
+   
+   - Fails build if any key mismatch happens in future
+
+---
+
+PHASE 2 — REMOVE ALL FALLBACKS (MANDATORY)
+
+1. Remove ALL patterns like:
+   t("key") || "text"
+
+2. Replace with:
+   t("key")
+
+3. If key is missing → fail (DO NOT fallback silently)
+
+---
+
+PHASE 3 — ELIMINATE HARDCODED TEXT
+
+Scan entire project:
+
+- .tsx
+- .ts
+- components
+- pages
+- modals
+- forms
+
+Replace ANY visible string with:
+t("...")
+
+Includes:
+
+- Buttons
+- Alerts
+- Errors
+- Titles
+- Placeholders
+- Tooltips
+- Policies
+- Admin UI
+
+---
+
+PHASE 4 — PREMIUM TRANSLATION (ALL LANGUAGES)
+
+Rewrite ALL user-facing text to be:
+
+- Native-level (not AI literal)
+- Smooth and natural
+- Premium / luxury tone
+- Context-aware (fitness + booking + business)
+
+DO NOT:
+
+- Use literal translation
+- Use Google-style phrasing
+- Mix languages
+
+Arabic must:
+
+- Be RTL correct
+- Use UAE-friendly professional tone
+
+---
+
+PHASE 5 — FULL UI CONSISTENCY
+
+For EACH language:
+
+1. Switch language
+2. Verify manually:
+   - Homepage
+   - Booking page
+   - Confirmation modal
+   - Policies
+   - Dashboard
+   - Admin panel
+   - Footer
+
+Must ensure:
+
+- 100% same language
+- No English leakage
+- No Arabic leakage
+- No mixed sentences
+
+---
+
+PHASE 6 — DATE, TIME & FORMAT LOCALIZATION
+
+Fix ALL formats:
+
+- Dates fully localized per language
+- Time format:
+  → 12-hour format (AM/PM)
+- No mixed formats like:
+  "Sunday, May 3 الأوقات المتاحة"
+
+---
+
+PHASE 7 — WHATSAPP / INSTAGRAM / BRAND TERMS
+
+Rules:
+
+- Keep brand names consistent:
+  "WhatsApp"
+  "Instagram"
+
+- Translate surrounding text only:
+  Example:
+  Arabic → "تواصل عبر WhatsApp"
+  French → "Contacter via WhatsApp"
+
+---
+
+PHASE 8 — RTL (ARABIC ONLY)
+
+- Apply direction: rtl
+- Flip layout correctly
+- Ensure icons + spacing correct
+
+---
+
+PHASE 9 — STRICT QA (NO EXCEPTIONS)
+
+Reject build if ANY of these exist:
+
+- Mixed language UI
+- Missing translation
+- Hardcoded English
+- Broken RTL
+- Inconsistent tone
+
+---
+
+PHASE 10 — SAFE DEPLOYMENT
+
+- Run TypeScript check
+- Fix ALL issues
+- Commit changes
+- Push to GitHub main
+- Verify Vercel production is READY
+
+---
+
+DO NOT:
+
+- Modify database
+- Modify auth logic
+- Modify booking logic
+- Modify admin permissions
+- Break current functionality
+
+---
+
+FINAL RESULT:
+
+Every language must feel like:
+→ The app was originally built in that language
+→ Not translated
+→ Premium, clean, consistent UI
+
+This is a production lock — no future regressions allowed.
