@@ -2,7 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import {
@@ -333,7 +333,13 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Forgot password — always returns the same friendly message.
+  // Forgot password — always returns the same friendly message regardless of
+  // whether the email exists, to prevent account enumeration.
+  //
+  // Flow: generate a 32-byte random token, store its sha256 hash + 30 min
+  // expiry on the user, email the *plaintext* token in a reset link. The
+  // /api/auth/reset-password endpoint hashes the supplied token and looks it
+  // up. Email failures are logged but never fail the request.
   app.post("/api/auth/forgot-password", rateLimit({ windowMs: 60_000, max: 5, key: "forgot" }), async (req, res) => {
     const schema = z.object({ email: z.string().email() });
     const parsed = schema.safeParse(req.body);
@@ -347,14 +353,85 @@ export function setupAuth(app: Express) {
     }
     try {
       const user = await storage.getUserByEmail(parsed.data.email);
-      if (user) {
-        await sendPasswordResetNotification({ email: parsed.data.email });
+      if (user && user.email) {
+        const rawToken = randomBytes(32).toString("hex");
+        const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 min
+        await storage.updateUser(user.id, {
+          passwordResetToken: tokenHash,
+          passwordResetExpires: expiresAt,
+        } as any);
+        // Build absolute reset URL. Prefer explicit PUBLIC_APP_URL, then
+        // request origin (works on Vercel via x-forwarded-host), else
+        // localhost for dev.
+        const origin =
+          process.env.PUBLIC_APP_URL ||
+          (() => {
+            const proto =
+              (req.headers["x-forwarded-proto"] as string | undefined) ||
+              req.protocol ||
+              "https";
+            const host =
+              (req.headers["x-forwarded-host"] as string | undefined) ||
+              req.get("host") ||
+              "youssef-booking.vercel.app";
+            return `${proto}://${host}`;
+          })();
+        const resetUrl = `${origin.replace(/\/+$/, "")}/reset-password?token=${rawToken}`;
+        await sendPasswordResetNotification({ email: user.email, resetUrl });
       }
     } catch (e) {
-      console.warn("[auth] forgot-password lookup failed:", e);
+      console.warn("[auth] forgot-password failed:", e);
     }
     return res.status(200).json(friendly);
   });
+
+  // Reset password — verifies the single-use token + sets a new password.
+  // Token is sent as plaintext; server hashes it with sha256 and looks it up.
+  // On success the token + expiry are nulled so it can't be reused.
+  app.post(
+    "/api/auth/reset-password",
+    rateLimit({ windowMs: 60_000, max: 10, key: "reset-password" }),
+    async (req, res) => {
+      const schema = z.object({
+        token: z.string().min(32),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: parsed.error.errors[0]?.message || "Invalid request",
+        });
+      }
+      try {
+        const tokenHash = createHash("sha256")
+          .update(parsed.data.token)
+          .digest("hex");
+        const user = await storage.getUserByPasswordResetToken(tokenHash);
+        if (
+          !user ||
+          !user.passwordResetExpires ||
+          user.passwordResetExpires.getTime() < Date.now()
+        ) {
+          return res.status(400).json({
+            message: "This reset link is invalid or has expired.",
+          });
+        }
+        const hashed = await hashPassword(parsed.data.password);
+        await storage.updateUser(user.id, {
+          password: hashed,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        } as any);
+        return res
+          .status(200)
+          .json({ message: "Password updated. You can now sign in." });
+      } catch (e) {
+        console.error("[auth] reset-password failed:", e);
+        return res.status(500).json({ message: "Could not reset password." });
+      }
+    },
+  );
 
   app.post("/api/auth/login", rateLimit({ windowMs: 60_000, max: 10, key: "login" }), (req, res, next) => {
     passport.authenticate("local", (err: Error, user: User | false) => {

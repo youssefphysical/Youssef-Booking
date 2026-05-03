@@ -85,23 +85,36 @@ export async function sendWelcomeNotifications({
 
 export async function sendPasswordResetNotification({
   email,
-  resetToken,
+  resetUrl,
 }: {
   email: string;
-  resetToken?: string;
+  resetUrl?: string;
 }) {
+  // No-op stub if no reset URL — caller should always pass one for real resets.
+  if (!resetUrl) {
+    console.info(
+      `[notifications] (email) password reset skipped — no reset URL. recipient=${email}`,
+    );
+    return;
+  }
+  const { sendEmail } = await import("./email");
+  const subject = "Reset your Youssef Ahmed password";
+  const text =
+    `Hi,\n\nWe received a request to reset the password for your Youssef Ahmed account.\n\n` +
+    `Reset your password using the link below (valid for 30 minutes):\n${resetUrl}\n\n` +
+    `If you didn't request this, you can safely ignore this email — your password will not change.\n\n` +
+    `— Youssef Ahmed Personal Training`;
+  const html =
+    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#111;max-width:560px">` +
+    `<h2 style="margin:0 0 12px;color:#0a7d4f">Reset your password</h2>` +
+    `<p style="margin:0 0 14px">We received a request to reset the password for your Youssef Ahmed account.</p>` +
+    `<p style="margin:0 0 18px"><a href="${resetUrl}" style="display:inline-block;padding:12px 22px;background:#0a7d4f;color:#fff;border-radius:10px;text-decoration:none;font-weight:600">Reset password</a></p>` +
+    `<p style="margin:0 0 6px;font-size:13px;color:#555">Or paste this link into your browser (valid for 30 minutes):</p>` +
+    `<p style="margin:0 0 22px;font-size:12px;color:#666;word-break:break-all">${resetUrl}</p>` +
+    `<p style="margin:0;font-size:12px;color:#888;border-top:1px solid #eee;padding-top:12px">If you didn't request this, you can safely ignore this email — your password will not change.</p>` +
+    `</div>`;
   try {
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-      console.info(
-        `[notifications] (email) would send password reset to ${email}${
-          resetToken ? ` token=${resetToken.slice(0, 8)}...` : ""
-        }`,
-      );
-    } else {
-      console.info(
-        `[notifications] (email) password reset skipped — provider not configured. recipient=${email}`,
-      );
-    }
+    await sendEmail({ to: email, subject, text, html });
   } catch (e) {
     console.warn("[notifications] password reset email failed:", e);
   }

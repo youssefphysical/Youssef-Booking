@@ -71,6 +71,11 @@ export const users = pgTable("users", {
   // Trainer-only private notes (injuries, preferences, warnings).
   // NEVER returned to the client — server strips this field on UserResponse.
   adminNotes: text("admin_notes"),
+  // Password reset: short-lived single-use token (sha256 hex of the secret
+  // emailed to the user) + expiry. Both null when no reset is in flight.
+  // Server NEVER returns these fields to the client.
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

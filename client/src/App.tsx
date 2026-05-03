@@ -12,6 +12,7 @@ import { isEffectiveSuperAdmin } from "@shared/schema";
 
 import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
+import ResetPassword from "@/pages/ResetPassword";
 import AdminAccessPage from "@/pages/AdminAccessPage";
 import BookingPage from "@/pages/BookingPage";
 import ClientDashboard from "@/pages/ClientDashboard";
@@ -79,6 +80,7 @@ function Router() {
         <Route path="/auth">
           <AuthPage />
         </Route>
+        <Route path="/reset-password" component={ResetPassword} />
         {/* Hidden admin login — not linked from public surfaces */}
         <Route path="/admin-access" component={AdminAccessPage} />
         <Route path="/policy" component={CancellationPolicyPage} />
