@@ -66,3 +66,14 @@ No explicit user preferences were provided in the original `replit.md` file.
 
 ### Verified-Badge Performance
 - `/api/users` (admin client list) uses `sanitizeAndEnrichMany` which calls `storage.getVerificationFlagsForUsers(ids)`. That helper issues exactly two grouped `SELECT ... GROUP BY user_id` queries (one against `inbody_records`, one against completed `bookings`) instead of 2*N per-user fetches. Empirically the full list (11 clients) returns in ~10ms.
+### Schema Self-Heal on Boot (May 2026 emergency recovery)
+- `server/ensureSchema.ts` runs ONCE per cold start (cached promise) before any route is registered. Pure additive `IF NOT EXISTS` DDL — safe to re-run forever, idempotent on every boot. Never destructive.
+- Why: prod Neon and dev's `helium` Postgres are independent. The May-2026 premium-business migration (`no_show_count`, `admin_notes`, `start_date`/`expiry_date`/`status`, attendance audit fields, `renewal_requests`, `extension_requests`, `password_reset_token`/`password_reset_expires`) was pushed to dev only; prod cold-started with `bootstrapError: column "no_show_count" does not exist`. ensureSchema fixes that automatically on first request after deploy.
+- `/api/_debug` exposes `bootstrapError` so this class of failure is one curl away.
+
+### Forgot-Password Reset Flow
+- `POST /api/auth/forgot-password` — generates a 32-byte random token, stores its sha256 hash + 30-min expiry on the user, emails a reset link via Resend (`sendPasswordResetNotification`). Always returns the same friendly message regardless of whether the email exists (no enumeration). Reset URL origin comes from `PUBLIC_APP_URL` env (or hardcoded `youssef-booking.vercel.app` in production) — host headers are NOT trusted, blocking host-header poisoning phishing.
+- `POST /api/auth/reset-password { token, password }` — atomic `UPDATE ... WHERE token=hash AND expires>now() RETURNING id` via `storage.consumePasswordResetToken`, so concurrent requests cannot double-consume a token. Min password length 6.
+- `client/src/pages/ResetPassword.tsx` (route `/reset-password?token=...`) — reads the token once on mount, immediately scrubs it from the URL via `history.replaceState`, then submits new password + confirm.
+- Sanitizers (`sanitizeUser`, `sanitizeUserAdminView`) strip `passwordResetToken`/`passwordResetExpires` so they can never leak through `/api/auth/me` or admin user lists.
+- Rate limiter prefers Express's resolved `req.ip` (with `trust proxy: 1` set in production) over the raw `X-Forwarded-For` header to make spoofing harder.
