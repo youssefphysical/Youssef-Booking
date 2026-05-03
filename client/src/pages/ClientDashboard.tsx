@@ -1053,7 +1053,10 @@ function RenewalRequestDialog({
         requestedPackageLabel: def?.label || selectedType,
       });
       const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
-      setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+      // See ExtensionRequestDialog: open synchronously so iOS Safari permits
+      // the new tab; fall back to same-tab navigation if blocked.
+      const popup = window.open(url, "_blank", "noopener,noreferrer");
+      if (!popup) window.location.href = url;
     },
     onError: (e: any) => {
       toast({
@@ -1190,7 +1193,11 @@ function ExtensionRequestDialog({
         reason,
       });
       const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
-      setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+      // Open WhatsApp synchronously inside the success handler so iOS Safari
+      // still treats it as part of the original user-gesture chain. Falling
+      // back to navigating the current tab if the popup is blocked.
+      const popup = window.open(url, "_blank", "noopener,noreferrer");
+      if (!popup) window.location.href = url;
     },
     onError: (e: any) => {
       toast({
