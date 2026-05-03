@@ -36,12 +36,12 @@ export default function HowItWorks() {
   ];
 
   const TIERS = [
-    { key: "foundation", name: "Foundation", rule: "1", priority: false },
-    { key: "starter", name: "Starter", rule: "2", priority: false },
-    { key: "momentum", name: "Momentum", rule: "3", priority: false },
-    { key: "elite", name: "Elite", rule: "4", priority: true },
-    { key: "pro_elite", name: "Pro Elite", rule: "5", priority: true },
-    { key: "diamond_elite", name: "Diamond Elite", rule: "6", priority: true },
+    { key: "foundation", name: t("howItWorks.tierFoundationName"), rule: "1", priority: false },
+    { key: "starter", name: t("howItWorks.tierStarterName"), rule: "2", priority: false },
+    { key: "momentum", name: t("howItWorks.tierMomentumName"), rule: "3", priority: false },
+    { key: "elite", name: t("howItWorks.tierEliteName"), rule: "4", priority: true },
+    { key: "pro_elite", name: t("howItWorks.tierProEliteName"), rule: "5", priority: true },
+    { key: "diamond_elite", name: t("howItWorks.tierDiamondEliteName"), rule: "6", priority: true },
   ];
 
   // Tagline + perks per tier — fully localized via i18n keys.

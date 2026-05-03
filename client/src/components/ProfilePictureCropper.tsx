@@ -68,20 +68,20 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setError("Please choose an image file (JPG, PNG, HEIC, WebP).");
+      setError(t("cropper.errFileType"));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Image is larger than 10MB. Try a smaller photo.");
+      setError(t("cropper.errFileSize"));
       return;
     }
     setError(null);
     const reader = new FileReader();
-    reader.onerror = () => setError("Could not read this file. Try a different photo.");
+    reader.onerror = () => setError(t("cropper.errReadFile"));
     reader.onload = () => {
       const img = new Image();
       img.onload = () => setImageEl(img);
-      img.onerror = () => setError("Could not decode this image. Try JPG or PNG.");
+      img.onerror = () => setError(t("cropper.errDecode"));
       img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
@@ -158,7 +158,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
       }
       await onCropped(dataUrl);
     } catch (e: any) {
-      setError(e?.message || "Could not save crop. Try a different image.");
+      setError(e?.message || t("cropper.errSave"));
     }
   }
 
@@ -277,7 +277,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
               data-testid="button-cropper-change-photo"
             >
-              Choose a different photo
+              {t("cropper.changePhoto")}
             </button>
             {error && (
               <p className="text-xs text-destructive" data-testid="text-cropper-error">
@@ -296,7 +296,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
             data-testid="button-cropper-cancel"
             className="rounded-xl"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -307,11 +307,11 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
           >
             {saving ? (
               <>
-                <Loader2 className="mr-2 animate-spin" size={14} /> Saving…
+                <Loader2 className="mr-2 animate-spin" size={14} /> {t("common.saving")}
               </>
             ) : (
               <>
-                <Check size={14} className="mr-2" /> Save photo
+                <Check size={14} className="mr-2" /> {t("cropper.savePhoto")}
               </>
             )}
           </Button>

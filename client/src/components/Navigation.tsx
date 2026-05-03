@@ -174,7 +174,7 @@ export function Navigation() {
           <button
             className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
-            aria-label="Menu"
+            aria-label={t("nav.toggleMenu")}
             data-testid="button-mobile-menu"
           >
             {open ? <X size={18} /> : <Menu size={18} />}

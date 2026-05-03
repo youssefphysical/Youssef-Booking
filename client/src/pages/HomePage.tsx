@@ -63,7 +63,7 @@ const CERT_KEYS = [
 export default function HomePage() {
   const { data: settings } = useSettings();
   const { t, lang } = useTranslation();
-  const bio = (lang === "en" && settings?.profileBio) || t("home.bio.fallback");
+  const bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback");
 
   return (
     <div className="min-h-screen pt-16">
