@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -47,36 +47,45 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const clientLoginSchema = z.object({
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(1, "Password is required"),
-});
+type T = (key: string, fallback?: string) => string;
 
-const adminLoginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
+const makeClientLoginSchema = (t: T) =>
+  z.object({
+    email: z.string().email(t("auth.errors.emailInvalid")),
+    password: z.string().min(1, t("auth.errors.passwordRequired")),
+  });
+
+const makeAdminLoginSchema = (t: T) =>
+  z.object({
+    username: z.string().min(1, t("auth.errors.usernameRequired")),
+    password: z.string().min(1, t("auth.errors.passwordRequired")),
+  });
 
 // Simpler registration: account basics + a primary goal + the legal consents.
 // InBody scans, profile pictures, training level/goal and progress photos all
 // live on the dashboard / profile page now — the user can fill them in at
 // their own pace after creating an account.
-const registerSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().min(7, "Phone number is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  area: z.string().min(2, "Area / Neighbourhood is required"),
-  weeklyFrequency: z.coerce
-    .number({ invalid_type_error: "Choose your preferred weekly training frequency" })
-    .int()
-    .min(1, "Choose your preferred weekly training frequency")
-    .max(6),
-  primaryGoal: z.enum(["fat_loss", "muscle_gain", "recomposition"], {
-    errorMap: () => ({ message: "Please choose your primary goal" }),
-  }),
-  notes: z.string().optional(),
-});
+const makeRegisterSchema = (t: T) =>
+  z.object({
+    fullName: z.string().min(2, t("auth.errors.fullNameRequired")),
+    email: z.string().email(t("auth.errors.emailValid")),
+    phone: z.string().min(7, t("auth.errors.phoneRequired")),
+    password: z.string().min(6, t("auth.errors.passwordMin")),
+    area: z.string().min(2, t("auth.errors.areaRequired")),
+    weeklyFrequency: z.coerce
+      .number({ invalid_type_error: t("auth.errors.chooseFrequency") })
+      .int()
+      .min(1, t("auth.errors.chooseFrequency"))
+      .max(6),
+    primaryGoal: z.enum(["fat_loss", "muscle_gain", "recomposition"], {
+      errorMap: () => ({ message: t("auth.errors.choosePrimaryGoal") }),
+    }),
+    notes: z.string().optional(),
+  });
+
+type ClientLoginValues = z.infer<ReturnType<typeof makeClientLoginSchema>>;
+type AdminLoginValues = z.infer<ReturnType<typeof makeAdminLoginSchema>>;
+type RegisterValues = z.infer<ReturnType<typeof makeRegisterSchema>>;
 
 type Mode = "client-login" | "client-register" | "admin-login";
 
@@ -186,8 +195,9 @@ function ClientLoginForm() {
   const { loginMutation } = useAuth();
   const { t } = useTranslation();
   const [forgotOpen, setForgotOpen] = useState(false);
-  const form = useForm<z.infer<typeof clientLoginSchema>>({
-    resolver: zodResolver(clientLoginSchema),
+  const schema = useMemo(() => makeClientLoginSchema(t), [t]);
+  const form = useForm<ClientLoginValues>({
+    resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   });
 
@@ -387,8 +397,9 @@ function ForgotPasswordDialog({
 function AdminLoginForm() {
   const { loginMutation } = useAuth();
   const { t } = useTranslation();
-  const form = useForm<z.infer<typeof adminLoginSchema>>({
-    resolver: zodResolver(adminLoginSchema),
+  const schema = useMemo(() => makeAdminLoginSchema(t), [t]);
+  const form = useForm<AdminLoginValues>({
+    resolver: zodResolver(schema),
     defaultValues: { username: "admin", password: "" },
   });
 
@@ -534,7 +545,8 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
   });
   const [inlineError, setInlineError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof registerSchema>>({
+  const registerSchema = useMemo(() => makeRegisterSchema(t), [t]);
+  const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
@@ -551,7 +563,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
 
   const allConsentsAccepted = CONSENT_ITEMS.every((c) => consents[c.key]);
 
-  async function onSubmit(values: z.infer<typeof registerSchema>) {
+  async function onSubmit(values: RegisterValues) {
     setInlineError(null);
     if (!allConsentsAccepted) {
       setInlineError(t("auth.errAcceptAll"));

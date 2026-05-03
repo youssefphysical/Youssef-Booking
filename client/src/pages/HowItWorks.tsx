@@ -44,31 +44,31 @@ export default function HowItWorks() {
     { key: "diamond_elite", name: "Diamond Elite", rule: "6", priority: true },
   ];
 
-  // Tagline + perks per tier (kept in English for now; brand consistency)
+  // Tagline + perks per tier — fully localized via i18n keys.
   const TIER_DETAILS: Record<string, { tagline: string; perks: string[] }> = {
     foundation: {
-      tagline: "A simple starting point to build consistency.",
-      perks: ["Standard 6-hour cancellation policy", "0 Protected Cancellations per month", "0 Same-Day Adjustments per month"],
+      tagline: t("howItWorks.tierFoundationTagline"),
+      perks: [t("howItWorks.perkStandardCancel"), t("howItWorks.perkProtect0"), t("howItWorks.perkSameDay0")],
     },
     starter: {
-      tagline: "A steady entry level for structured training.",
-      perks: ["Standard 6-hour cancellation policy", "0 Protected Cancellations per month", "0 Same-Day Adjustments per month"],
+      tagline: t("howItWorks.tierStarterTagline"),
+      perks: [t("howItWorks.perkStandardCancel"), t("howItWorks.perkProtect0"), t("howItWorks.perkSameDay0")],
     },
     momentum: {
-      tagline: "A strong rhythm for visible progress.",
-      perks: ["1 Protected Cancellation per month", "1 Same-Day Adjustment per month", "Standard 6-hour cancellation policy"],
+      tagline: t("howItWorks.tierMomentumTagline"),
+      perks: [t("howItWorks.perkProtect1"), t("howItWorks.perkSameDay1"), t("howItWorks.perkStandardCancel")],
     },
     elite: {
-      tagline: "High consistency with priority training support.",
-      perks: ["2 Protected Cancellations per month", "2 Same-Day Adjustments per month", "Priority booking"],
+      tagline: t("howItWorks.tierEliteTagline"),
+      perks: [t("howItWorks.perkProtect2"), t("howItWorks.perkSameDay2"), t("howItWorks.perkPriorityBooking")],
     },
     pro_elite: {
-      tagline: "Advanced commitment and stronger weekly structure.",
-      perks: ["2 Protected Cancellations per month", "2 Same-Day Adjustments per month", "Priority booking", "Higher consistency status"],
+      tagline: t("howItWorks.tierProEliteTagline"),
+      perks: [t("howItWorks.perkProtect2"), t("howItWorks.perkSameDay2"), t("howItWorks.perkPriorityBooking"), t("howItWorks.perkHigherStatus")],
     },
     diamond_elite: {
-      tagline: "The highest consistency level for serious transformation.",
-      perks: ["2 Protected Cancellations per month", "2 Same-Day Adjustments per month", "Priority booking", "Highest consistency status"],
+      tagline: t("howItWorks.tierDiamondEliteTagline"),
+      perks: [t("howItWorks.perkProtect2"), t("howItWorks.perkSameDay2"), t("howItWorks.perkPriorityBooking"), t("howItWorks.perkHighestStatus")],
     },
   };
 
@@ -162,7 +162,7 @@ export default function HowItWorks() {
                   )}
                 </div>
                 <p className="text-xs text-primary mt-1">
-                  {tier.rule} {tier.rule === "1" ? "session per week" : "sessions per week"}
+                  {tier.rule} {tier.rule === "1" ? t("howItWorks.sessionPerWeek") : t("howItWorks.sessionsPerWeek")}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">{details.tagline}</p>
                 <ul className="mt-3 space-y-1.5">

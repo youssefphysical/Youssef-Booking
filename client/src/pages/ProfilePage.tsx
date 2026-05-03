@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,17 +43,22 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 
-const schema = z.object({
-  fullName: z.string().min(2, "Required"),
-  phone: z.string().min(7, "Required"),
-  email: z.string().email("Valid email required"),
-  fitnessGoal: z.string().optional(),
-  notes: z.string().optional(),
-  password: z
-    .string()
-    .optional()
-    .refine((v) => !v || v.length >= 6, { message: "Password must be at least 6 characters" }),
-});
+type T = (key: string, fallback?: string) => string;
+
+const makeProfileSchema = (t: T) =>
+  z.object({
+    fullName: z.string().min(2, t("profile.errors.required")),
+    phone: z.string().min(7, t("profile.errors.required")),
+    email: z.string().email(t("profile.errors.emailValid")),
+    fitnessGoal: z.string().optional(),
+    notes: z.string().optional(),
+    password: z
+      .string()
+      .optional()
+      .refine((v) => !v || v.length >= 6, { message: t("profile.errors.passwordMin") }),
+  });
+
+type ProfileValues = z.infer<ReturnType<typeof makeProfileSchema>>;
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -61,7 +66,8 @@ export default function ProfilePage() {
   const { t } = useTranslation();
   const [cropperOpen, setCropperOpen] = useState(false);
 
-  const form = useForm<z.infer<typeof schema>>({
+  const schema = useMemo(() => makeProfileSchema(t), [t]);
+  const form = useForm<ProfileValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       fullName: user?.fullName ?? "",
@@ -87,7 +93,7 @@ export default function ProfilePage() {
   }, [user?.id, user?.fullName, user?.phone, user?.email, user?.fitnessGoal, user?.notes]);
 
   const updateMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof schema>) => {
+    mutationFn: async (data: ProfileValues) => {
       if (!user) throw new Error("Not signed in");
       const url = buildUrl(api.users.update.path, { id: user.id });
       const payload: Record<string, unknown> = {

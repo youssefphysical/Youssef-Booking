@@ -62,8 +62,8 @@ const CERT_KEYS = [
 
 export default function HomePage() {
   const { data: settings } = useSettings();
-  const { t } = useTranslation();
-  const bio = settings?.profileBio || t("home.bio.fallback");
+  const { t, lang } = useTranslation();
+  const bio = (lang === "en" && settings?.profileBio) || t("home.bio.fallback");
 
   return (
     <div className="min-h-screen pt-16">
@@ -297,7 +297,7 @@ export default function HomePage() {
               </Link>
               <WhatsAppButton
                 label={t("section.cta.message")}
-                message="Hi Youssef, I'd like to ask about your training programs."
+                message={t("home.cta.whatsappMessage")}
                 testId="button-cta-whatsapp"
                 className="w-full sm:w-auto"
               />

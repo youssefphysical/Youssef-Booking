@@ -261,7 +261,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
                   }
                 }}
                 data-testid="button-cropper-reset"
-                title="Reset"
+                title={t("cropper.reset")}
                 className="text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw size={14} />

@@ -40,7 +40,7 @@ export function Navigation() {
           onClick={() => setOpen(!open)}
           className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-card/80 backdrop-blur-md rounded-xl border border-white/10"
           data-testid="button-toggle-sidebar"
-          aria-label="Toggle menu"
+          aria-label={t("nav.toggleMenu")}
         >
           {open ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -134,7 +134,7 @@ export function Navigation() {
                   href="/profile"
                   data-testid="link-nav-profile-avatar"
                   className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 hover:border-white/20 btn-soft"
-                  title="Your profile"
+                  title={t("nav.profileTitle")}
                 >
                   <UserAvatar
                     src={user.profilePictureUrl}
