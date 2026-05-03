@@ -66,6 +66,11 @@ export const users = pgTable("users", {
   permissions: jsonb("permissions").$type<Record<string, boolean>>().default(sql`'{}'::jsonb`),
   // Soft-disable an admin/staff account without deleting it
   isActive: boolean("is_active").notNull().default(true),
+  // Cumulative no-show count for trainer reference (admin-incremented)
+  noShowCount: integer("no_show_count").notNull().default(0),
+  // Trainer-only private notes (injuries, preferences, warnings).
+  // NEVER returned to the client — server strips this field on UserResponse.
+  adminNotes: text("admin_notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -83,6 +88,13 @@ export const packages = pgTable("packages", {
   isActive: boolean("is_active").notNull().default(true),
   notes: text("notes"),
   purchasedAt: timestamp("purchased_at").defaultNow(),
+  // Admin-controlled package validity window (additive, nullable for legacy rows)
+  startDate: date("start_date"),
+  expiryDate: date("expiry_date"),
+  // Lifecycle status — see PACKAGE_STATUSES.
+  // Auto-recomputed by storage layer; admin can override.
+  // 'active' | 'expiring_soon' | 'expired' | 'completed'
+  status: text("status"),
 });
 
 // =============================
@@ -119,6 +131,10 @@ export const bookings = pgTable("bookings", {
   rescheduledFrom: text("rescheduled_from"),
   // True for sessions that an admin retroactively logged (i.e. happened before the app was used)
   isManualHistorical: boolean("is_manual_historical").notNull().default(false),
+  // Attendance audit (admin marks attended | no_show | late_cancel)
+  attendanceMarkedByUserId: integer("attendance_marked_by_user_id"),
+  attendanceMarkedAt: timestamp("attendance_marked_at"),
+  attendanceReason: text("attendance_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -454,6 +470,87 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 
+// =============================
+// PACKAGE STATUS
+// =============================
+export const PACKAGE_STATUSES = [
+  "active",
+  "expiring_soon",
+  "expired",
+  "completed",
+] as const;
+export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
+
+// English labels for trainer notifications.
+export const PACKAGE_STATUS_LABELS_EN: Record<string, string> = {
+  active: "Active",
+  expiring_soon: "Expiring Soon",
+  expired: "Expired",
+  completed: "Completed",
+};
+
+// =============================
+// RENEWAL REQUESTS
+// =============================
+// Client requests a new package; admin approves only after manual payment confirmation.
+// status: 'pending' | 'approved' | 'rejected'
+export const renewalRequests = pgTable("renewal_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  // Package type the client is requesting (matches PACKAGE_TYPES)
+  requestedPackageType: text("requested_package_type").notNull(),
+  status: text("status").notNull().default("pending"),
+  clientNote: text("client_note"),
+  adminNote: text("admin_note"),
+  decidedByUserId: integer("decided_by_user_id"),
+  decidedAt: timestamp("decided_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRenewalRequestSchema = createInsertSchema(renewalRequests)
+  .omit({ id: true, createdAt: true, status: true, decidedByUserId: true, decidedAt: true, adminNote: true })
+  .extend({
+    requestedPackageType: z.string().min(1),
+    clientNote: z.string().nullable().optional(),
+  });
+
+export const RENEWAL_REQUEST_STATUSES = ["pending", "approved", "rejected"] as const;
+export type RenewalRequestStatus = (typeof RENEWAL_REQUEST_STATUSES)[number];
+export type RenewalRequest = typeof renewalRequests.$inferSelect;
+export type InsertRenewalRequest = z.infer<typeof insertRenewalRequestSchema>;
+export type RenewalRequestWithUser = RenewalRequest & { user?: UserResponse };
+
+// =============================
+// EXTENSION REQUESTS
+// =============================
+// Client requests extra days on an existing package; admin manually approves.
+export const extensionRequests = pgTable("extension_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  packageId: integer("package_id").notNull(),
+  requestedDays: integer("requested_days").notNull().default(7),
+  reason: text("reason"),
+  status: text("status").notNull().default("pending"),
+  adminNote: text("admin_note"),
+  decidedByUserId: integer("decided_by_user_id"),
+  decidedAt: timestamp("decided_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertExtensionRequestSchema = createInsertSchema(extensionRequests)
+  .omit({ id: true, createdAt: true, status: true, decidedByUserId: true, decidedAt: true, adminNote: true })
+  .extend({
+    requestedDays: z.number().int().min(1).max(60),
+    reason: z.string().nullable().optional(),
+  });
+
+export type ExtensionRequest = typeof extensionRequests.$inferSelect;
+export type InsertExtensionRequest = z.infer<typeof insertExtensionRequestSchema>;
+export type ExtensionRequestWithDetails = ExtensionRequest & {
+  user?: UserResponse;
+  package?: Package;
+};
+
 export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
   .omit({ id: true, createdAt: true })
   .extend({
@@ -491,9 +588,21 @@ export const insertPackageSchema = createInsertSchema(packages)
     notes: z.string().optional(),
     partnerUserId: z.number().int().nullable().optional(),
     isActive: z.boolean().optional(),
+    startDate: z.string().nullable().optional(),
+    expiryDate: z.string().nullable().optional(),
+    status: z.enum(["active", "expiring_soon", "expired", "completed"]).nullable().optional(),
   });
 
 export const updatePackageSchema = insertPackageSchema.partial().omit({ userId: true });
+
+// Admin-only: extend a package's expiry by N days (or set explicit new expiry)
+export const extendPackageSchema = z.object({
+  addDays: z.number().int().min(1).max(365).optional(),
+  newExpiryDate: z.string().optional(),
+  adminNote: z.string().optional(),
+}).refine((d) => d.addDays || d.newExpiryDate, {
+  message: "Provide addDays or newExpiryDate",
+});
 
 export const insertInbodySchema = createInsertSchema(inbodyRecords)
   .omit({ id: true, recordedAt: true })
@@ -606,7 +715,47 @@ export type DashboardStats = {
   bookingsToday: number;
   completedThisMonth: number;
   activePackages: number;
+  // Premium business stats (additive)
+  expiringPackages: number;
+  expiredPackages: number;
+  pendingRenewals: number;
+  pendingExtensions: number;
+  lowSessionClients: number;
 };
+
+// Admin attendance marker payload
+export const attendanceUpdateSchema = z.object({
+  attendance: z.enum(["attended", "no_show", "late_cancel_charged", "late_cancel_free"]),
+  reason: z.string().nullable().optional(),
+});
+export type AttendanceUpdate = z.infer<typeof attendanceUpdateSchema>;
+
+// Admin: update private notes on a client
+export const adminClientNotesSchema = z.object({
+  adminNotes: z.string().nullable(),
+});
+export type AdminClientNotesUpdate = z.infer<typeof adminClientNotesSchema>;
+
+// Renewal decision payload (admin)
+export const renewalDecisionSchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
+  adminNote: z.string().nullable().optional(),
+  // Required when approving — admin assigns concrete package window
+  startDate: z.string().optional(),
+  expiryDate: z.string().optional(),
+  totalSessions: z.number().int().min(1).optional(),
+  partnerUserId: z.number().int().nullable().optional(),
+});
+export type RenewalDecision = z.infer<typeof renewalDecisionSchema>;
+
+// Extension decision payload (admin)
+export const extensionDecisionSchema = z.object({
+  decision: z.enum(["approved", "rejected"]),
+  adminNote: z.string().nullable().optional(),
+  // Required when approving — confirmed days to add
+  approvedDays: z.number().int().min(1).max(365).optional(),
+});
+export type ExtensionDecision = z.infer<typeof extensionDecisionSchema>;
 
 export const PACKAGE_DEFINITIONS: Record<
   string,

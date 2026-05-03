@@ -82,6 +82,13 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 function sanitizeUser(user: User) {
+  const { password, adminNotes, ...rest } = user as any;
+  return rest;
+}
+
+// Admin-only view of a user that retains private trainer fields
+// (adminNotes, noShowCount). Use this ONLY in admin-gated endpoints.
+function sanitizeUserAdminView(user: User) {
   const { password, ...rest } = user;
   return rest;
 }
@@ -376,4 +383,4 @@ export function setupAuth(app: Express) {
   });
 }
 
-export { sanitizeUser, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified };
+export { sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified };

@@ -4,9 +4,9 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { setupAuth, hashPassword, sanitizeUser, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
+import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
 import sharp from "sharp";
-import { storage } from "./storage";
+import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import {
   insertBookingSchema,
   updateBookingSchema,
@@ -35,6 +35,16 @@ import {
   SESSION_FOCUS_LABELS_EN,
   BOOKING_TRAINING_GOAL_LABELS_EN,
   SESSION_TYPE_LABELS_EN,
+  PACKAGE_STATUS_LABELS_EN,
+  insertRenewalRequestSchema,
+  insertExtensionRequestSchema,
+  renewalDecisionSchema,
+  extensionDecisionSchema,
+  attendanceUpdateSchema,
+  adminClientNotesSchema,
+  extendPackageSchema,
+  PACKAGE_DEFINITIONS,
+  PACKAGE_TYPES,
   type User,
   type Package,
   type Booking,
@@ -232,11 +242,13 @@ async function dispatchBookingNotifications(args: {
       ? Math.max(0, pkg.totalSessions - pkg.usedSessions - 1)
       : null;
 
-  // Package start = purchase date. Expiry isn't tracked on the schema yet, so
-  // we omit it cleanly (the email builder skips empty rows).
-  const packageStartDate = pkg?.purchasedAt
-    ? new Date(pkg.purchasedAt as any).toISOString().slice(0, 10)
-    : null;
+  // Use admin-controlled startDate/expiryDate when present; fall back to purchase date.
+  const packageStartDate = pkg?.startDate
+    ? String(pkg.startDate)
+    : pkg?.purchasedAt
+      ? new Date(pkg.purchasedAt as any).toISOString().slice(0, 10)
+      : null;
+  const packageExpiryDate = pkg?.expiryDate ? String(pkg.expiryDate) : null;
   const packageName = pkg ? `${pkg.type} (${pkg.totalSessions} sessions)` : null;
 
   const data = {
@@ -253,7 +265,7 @@ async function dispatchBookingNotifications(args: {
     clientNotes: booking.clientNotes ?? null,
     packageName,
     packageStartDate,
-    packageExpiryDate: null as string | null,
+    packageExpiryDate,
     currentSessionNumber: pkg ? (pkg.usedSessions ?? 0) + 1 : null,
     totalSessions: pkg?.totalSessions ?? null,
     remainingSessions,
@@ -592,6 +604,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const active = await storage.getActivePackageForUser(targetUserId);
       if (active && active.usedSessions < active.totalSessions) {
         packageId = active.id;
+      }
+    }
+
+    // Block bookings on expired or completed packages (clients only).
+    // Admin-overridden bookings can still go through for manual catch-up.
+    if (me.role !== "admin" && packageId) {
+      const linkedPkg = await storage.getPackage(packageId).catch(() => undefined);
+      if (linkedPkg) {
+        const status = computePackageStatus(linkedPkg);
+        if (status === "expired") {
+          return res.status(400).json({
+            message:
+              "Your package has expired. Please request a renewal or an extension to continue booking.",
+            packageStatus: "expired",
+          });
+        }
+        if (status === "completed") {
+          return res.status(400).json({
+            message:
+              "Your package is fully used. Please request a renewal to continue booking.",
+            packageStatus: "completed",
+          });
+        }
       }
     }
 
@@ -1503,11 +1538,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     monthStart.setDate(1);
     const monthStartStr = monthStart.toISOString().slice(0, 10);
 
-    const [clients, allBookings, allPackages] = await Promise.all([
-      storage.getAllClients(),
-      storage.getBookings(),
-      storage.getPackages({ activeOnly: true }),
-    ]);
+    const [clients, allBookings, allPackages, pendingRenewalsList, pendingExtensionsList] =
+      await Promise.all([
+        storage.getAllClients(),
+        storage.getBookings(),
+        storage.getPackages({ activeOnly: true }),
+        storage.getRenewalRequests({ status: "pending", limit: 500 }).catch(() => []),
+        storage.getExtensionRequests({ status: "pending", limit: 500 }).catch(() => []),
+      ]);
 
     const upcomingBookings = allBookings.filter(
       (b) => ["upcoming", "confirmed"].includes(b.status) && b.date >= todayStr,
@@ -1517,13 +1555,335 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       (b) => b.status === "completed" && b.date >= monthStartStr,
     ).length;
 
+    // Lifecycle buckets — auto-computed from current state.
+    let expiringPackages = 0;
+    let expiredPackages = 0;
+    const lowSessionUserIds = new Set<number>();
+    for (const p of allPackages) {
+      const s = computePackageStatus(p as any);
+      if (s === "expiring_soon") expiringPackages++;
+      if (s === "expired") expiredPackages++;
+      const remaining = (p.totalSessions ?? 0) - (p.usedSessions ?? 0);
+      // Low-session = 3 or fewer sessions remaining and still active
+      if (s === "active" && remaining > 0 && remaining <= 3) {
+        lowSessionUserIds.add(p.userId);
+      }
+    }
+
     res.json({
       totalClients: clients.length,
       upcomingBookings,
       bookingsToday,
       completedThisMonth,
       activePackages: allPackages.filter((p: Package) => p.usedSessions < p.totalSessions).length,
+      expiringPackages,
+      expiredPackages,
+      pendingRenewals: pendingRenewalsList.length,
+      pendingExtensions: pendingExtensionsList.length,
+      lowSessionClients: lowSessionUserIds.size,
     });
+  });
+
+  // ============== RENEWAL REQUESTS ==============
+  app.get("/api/renewal-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const filters: { userId?: number; status?: string } = {};
+    if (me.role !== "admin") {
+      filters.userId = me.id;
+    } else if (req.query.userId) {
+      const uid = Number(req.query.userId);
+      if (Number.isFinite(uid)) filters.userId = uid;
+    }
+    if (typeof req.query.status === "string") filters.status = req.query.status;
+    const list = await storage.getRenewalRequests(filters);
+    res.json(list);
+  });
+
+  app.post("/api/renewal-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const parsed = insertRenewalRequestSchema
+      .extend({ userId: z.number().optional() })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    if (!PACKAGE_TYPES.includes(parsed.data.requestedPackageType as any)) {
+      return res.status(400).json({ message: "Invalid package type" });
+    }
+    const targetUserId = me.role === "admin" && parsed.data.userId ? parsed.data.userId : me.id;
+
+    // Throttle — only one pending renewal per user at a time.
+    const existing = await storage.getRenewalRequests({ userId: targetUserId, status: "pending", limit: 5 });
+    if (existing.length > 0 && me.role !== "admin") {
+      return res.status(400).json({ message: "You already have a pending renewal request." });
+    }
+
+    const created = await storage.createRenewalRequest({
+      userId: targetUserId,
+      requestedPackageType: parsed.data.requestedPackageType,
+      clientNote: parsed.data.clientNote ?? null,
+    });
+
+    // Best-effort admin notification
+    try {
+      const u = await storage.getUser(targetUserId);
+      const def = PACKAGE_DEFINITIONS[parsed.data.requestedPackageType];
+      await storage.createAdminNotification({
+        kind: "system",
+        title: `Renewal request — ${u?.fullName || u?.username || `Client #${targetUserId}`}`,
+        body: `Requested: ${def?.label || parsed.data.requestedPackageType}${parsed.data.clientNote ? ` • ${parsed.data.clientNote}` : ""}`,
+        userId: targetUserId,
+        bookingId: null as any,
+      });
+    } catch (e) {
+      console.warn("[renewal] admin notification failed:", e);
+    }
+    res.status(201).json(created);
+  });
+
+  app.post("/api/admin/renewal-requests/:id/decision", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = renewalDecisionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid decision" });
+    }
+    const reqRow = await storage.getRenewalRequest(id);
+    if (!reqRow) return res.status(404).json({ message: "Renewal request not found" });
+    if (reqRow.status !== "pending") {
+      return res.status(400).json({ message: "This request has already been decided." });
+    }
+
+    if (parsed.data.decision === "approved") {
+      const def = PACKAGE_DEFINITIONS[reqRow.requestedPackageType];
+      if (!def) return res.status(400).json({ message: "Unknown package type on the request" });
+      // Deactivate any existing active packages for this user before assigning the new one
+      const existing = await storage.getPackages({ userId: reqRow.userId, activeOnly: true });
+      for (const p of existing) {
+        try { await storage.updatePackage(p.id, { isActive: false }); } catch {}
+      }
+      const totalSessions = parsed.data.totalSessions ?? def.sessions;
+      await storage.createPackage({
+        userId: reqRow.userId,
+        type: reqRow.requestedPackageType as any,
+        totalSessions,
+        usedSessions: 0,
+        isActive: true,
+        partnerUserId: parsed.data.partnerUserId ?? null,
+        startDate: parsed.data.startDate ?? null,
+        expiryDate: parsed.data.expiryDate ?? null,
+        status: "active",
+      } as any);
+    }
+
+    const updated = await storage.updateRenewalRequest(id, {
+      status: parsed.data.decision,
+      adminNote: parsed.data.adminNote ?? null,
+      decidedByUserId: me.id,
+      decidedAt: new Date(),
+    });
+    res.json(updated);
+  });
+
+  // ============== EXTENSION REQUESTS ==============
+  app.get("/api/extension-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const filters: { userId?: number; status?: string } = {};
+    if (me.role !== "admin") {
+      filters.userId = me.id;
+    } else if (req.query.userId) {
+      const uid = Number(req.query.userId);
+      if (Number.isFinite(uid)) filters.userId = uid;
+    }
+    if (typeof req.query.status === "string") filters.status = req.query.status;
+    const list = await storage.getExtensionRequests(filters);
+    res.json(list);
+  });
+
+  app.post("/api/extension-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const parsed = insertExtensionRequestSchema
+      .extend({ userId: z.number().optional() })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    const targetUserId = me.role === "admin" && parsed.data.userId ? parsed.data.userId : me.id;
+    const pkg = await storage.getPackage(parsed.data.packageId);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    if (pkg.userId !== targetUserId && me.role !== "admin") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const existing = await storage.getExtensionRequests({ userId: targetUserId, status: "pending", limit: 5 });
+    if (existing.some((e) => e.packageId === parsed.data.packageId) && me.role !== "admin") {
+      return res.status(400).json({ message: "You already have a pending extension request for this package." });
+    }
+
+    const created = await storage.createExtensionRequest({
+      userId: targetUserId,
+      packageId: parsed.data.packageId,
+      requestedDays: parsed.data.requestedDays,
+      reason: parsed.data.reason ?? null,
+    });
+
+    try {
+      const u = await storage.getUser(targetUserId);
+      await storage.createAdminNotification({
+        kind: "system",
+        title: `Extension request — ${u?.fullName || u?.username || `Client #${targetUserId}`}`,
+        body: `Package #${pkg.id} (${pkg.type}) • +${parsed.data.requestedDays} days${parsed.data.reason ? ` • ${parsed.data.reason}` : ""}`,
+        userId: targetUserId,
+        bookingId: null as any,
+      });
+    } catch (e) {
+      console.warn("[extension] admin notification failed:", e);
+    }
+    res.status(201).json(created);
+  });
+
+  app.post("/api/admin/extension-requests/:id/decision", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = extensionDecisionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid decision" });
+    }
+    const reqRow = await storage.getExtensionRequest(id);
+    if (!reqRow) return res.status(404).json({ message: "Extension request not found" });
+    if (reqRow.status !== "pending") {
+      return res.status(400).json({ message: "This request has already been decided." });
+    }
+
+    if (parsed.data.decision === "approved") {
+      const days = parsed.data.approvedDays ?? reqRow.requestedDays;
+      const pkg = await storage.getPackage(reqRow.packageId);
+      if (!pkg) return res.status(404).json({ message: "Package not found" });
+      const baseDate = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
+      if (!isFinite(baseDate.getTime())) {
+        return res.status(400).json({ message: "Package has no valid current expiry to extend." });
+      }
+      const newExpiry = new Date(baseDate);
+      newExpiry.setDate(newExpiry.getDate() + days);
+      await storage.updatePackage(pkg.id, {
+        expiryDate: newExpiry.toISOString().slice(0, 10) as any,
+        isActive: true,
+      });
+    }
+
+    const updated = await storage.updateExtensionRequest(id, {
+      status: parsed.data.decision,
+      adminNote: parsed.data.adminNote ?? null,
+      decidedByUserId: me.id,
+      decidedAt: new Date(),
+    });
+    res.json(updated);
+  });
+
+  // ============== ATTENDANCE TRACKING ==============
+  // Admin marks a booking attended | no_show | late_cancel_charged | late_cancel_free.
+  // Drives status, package deduction, and noShowCount on the user.
+  app.patch("/api/bookings/:id/attendance", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    const booking = await storage.getBooking(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    const parsed = attendanceUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid attendance" });
+    }
+    const previousStatus = booking.status;
+    const consumingStates = ["completed", "late_cancelled", "no_show"];
+    const wasConsuming = consumingStates.includes(previousStatus);
+
+    let newStatus: string = previousStatus;
+    let consumesSession = false;
+    if (parsed.data.attendance === "attended") {
+      newStatus = "completed";
+      consumesSession = true;
+    } else if (parsed.data.attendance === "no_show") {
+      newStatus = "no_show";
+      consumesSession = true;
+    } else if (parsed.data.attendance === "late_cancel_charged") {
+      newStatus = "late_cancelled";
+      consumesSession = true;
+    } else if (parsed.data.attendance === "late_cancel_free") {
+      newStatus = "free_cancelled";
+      consumesSession = false;
+    }
+
+    const updated = await storage.updateBooking(id, {
+      status: newStatus as any,
+      attendanceMarkedByUserId: me.id,
+      attendanceMarkedAt: new Date(),
+      attendanceReason: parsed.data.reason ?? null,
+    } as any);
+
+    // Package usage reconciliation
+    if (booking.packageId) {
+      try {
+        if (!wasConsuming && consumesSession) {
+          await storage.incrementPackageUsage(booking.packageId);
+        } else if (wasConsuming && !consumesSession) {
+          await storage.decrementPackageUsage(booking.packageId);
+        }
+      } catch (e) {
+        console.warn("[attendance] package reconciliation failed:", e);
+      }
+    }
+
+    // No-show counter on the user
+    if (parsed.data.attendance === "no_show" && previousStatus !== "no_show") {
+      try { await storage.incrementUserNoShow(booking.userId); } catch {}
+    }
+
+    res.json(updated);
+  });
+
+  // ============== ADMIN: PRIVATE CLIENT NOTES ==============
+  app.get("/api/admin/clients/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const u = await storage.getUser(id);
+    if (!u) return res.status(404).json({ message: "Client not found" });
+    res.json(sanitizeUserAdminView(u));
+  });
+
+  app.patch("/api/admin/clients/:id/admin-notes", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = adminClientNotesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid notes" });
+    }
+    const updated = await storage.updateUser(id, { adminNotes: parsed.data.adminNotes });
+    res.json(sanitizeUserAdminView(updated));
+  });
+
+  // ============== ADMIN: PACKAGE EXTEND (manual) ==============
+  app.post("/api/admin/packages/:id/extend", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = extendPackageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid extension" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+
+    let newExpiryStr: string;
+    if (parsed.data.newExpiryDate) {
+      newExpiryStr = parsed.data.newExpiryDate;
+    } else {
+      const base = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
+      const next = new Date(base);
+      next.setDate(next.getDate() + (parsed.data.addDays ?? 7));
+      newExpiryStr = next.toISOString().slice(0, 10);
+    }
+    const updated = await storage.updatePackage(id, {
+      expiryDate: newExpiryStr as any,
+      isActive: true,
+    });
+    res.json(updated);
   });
 
   // ============== ADMIN USERS / STAFF ==============

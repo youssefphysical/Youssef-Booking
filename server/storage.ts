@@ -10,6 +10,8 @@ import {
   consentRecords,
   heroImages,
   adminNotifications,
+  renewalRequests,
+  extensionRequests,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -33,6 +35,10 @@ import {
   type InsertHeroImage,
   type AdminNotification,
   type InsertAdminNotification,
+  type RenewalRequest,
+  type InsertRenewalRequest,
+  type ExtensionRequest,
+  type InsertExtensionRequest,
 } from "@shared/schema";
 import { eq, and, gte, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -114,7 +120,58 @@ export interface IStorage {
   markAdminNotificationRead(id: number): Promise<AdminNotification | undefined>;
   markAllAdminNotificationsRead(): Promise<void>;
 
+  // Renewal requests
+  getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<RenewalRequest[]>;
+  getRenewalRequest(id: number): Promise<RenewalRequest | undefined>;
+  createRenewalRequest(req: InsertRenewalRequest): Promise<RenewalRequest>;
+  updateRenewalRequest(id: number, updates: Partial<RenewalRequest>): Promise<RenewalRequest>;
+
+  // Extension requests
+  getExtensionRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<ExtensionRequest[]>;
+  getExtensionRequest(id: number): Promise<ExtensionRequest | undefined>;
+  createExtensionRequest(req: InsertExtensionRequest): Promise<ExtensionRequest>;
+  updateExtensionRequest(id: number, updates: Partial<ExtensionRequest>): Promise<ExtensionRequest>;
+
+  // Attendance helper
+  incrementUserNoShow(userId: number): Promise<void>;
+
   sessionStore: session.Store;
+}
+
+/**
+ * Compute the lifecycle status of a package from its session usage and
+ * expiry window. Pure helper — no DB access. Returns one of PACKAGE_STATUSES.
+ *
+ * Rules:
+ * - usedSessions >= totalSessions  -> "completed"
+ * - expiryDate < today             -> "expired"
+ * - expiryDate within 7 days       -> "expiring_soon"
+ * - otherwise                      -> "active"
+ *
+ * Packages without an expiryDate fall back to "active" until completed.
+ */
+export function computePackageStatus(pkg: Pick<Package, "totalSessions" | "usedSessions" | "expiryDate">): "active" | "expiring_soon" | "expired" | "completed" {
+  if (typeof pkg.totalSessions === "number" && typeof pkg.usedSessions === "number" && pkg.usedSessions >= pkg.totalSessions) {
+    return "completed";
+  }
+  if (pkg.expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(pkg.expiryDate as any);
+    if (isFinite(expiry.getTime())) {
+      const diffMs = expiry.getTime() - today.getTime();
+      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+      if (diffDays < 0) return "expired";
+      if (diffDays <= 7) return "expiring_soon";
+    }
+  }
+  return "active";
+}
+
+/** Returns true when a package can no longer be used to book new sessions. */
+export function isPackageBlocking(pkg: Pick<Package, "totalSessions" | "usedSessions" | "expiryDate">): boolean {
+  const s = computePackageStatus(pkg);
+  return s === "expired" || s === "completed";
 }
 
 export class DatabaseStorage implements IStorage {
@@ -431,6 +488,71 @@ export class DatabaseStorage implements IStorage {
 
   async markAllAdminNotificationsRead() {
     await db.update(adminNotifications).set({ isRead: true }).where(eq(adminNotifications.isRead, false));
+  }
+
+  // ===== Renewal requests =====
+  async getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }) {
+    const conds: any[] = [];
+    if (filters?.userId) conds.push(eq(renewalRequests.userId, filters.userId));
+    if (filters?.status) conds.push(eq(renewalRequests.status, filters.status));
+    const q =
+      conds.length > 0
+        ? db.select().from(renewalRequests).where(and(...conds))
+        : db.select().from(renewalRequests);
+    const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 500);
+    return q.orderBy(desc(renewalRequests.createdAt)).limit(limit);
+  }
+
+  async getRenewalRequest(id: number) {
+    const [r] = await db.select().from(renewalRequests).where(eq(renewalRequests.id, id));
+    return r;
+  }
+
+  async createRenewalRequest(req: InsertRenewalRequest) {
+    const [r] = await db.insert(renewalRequests).values(req).returning();
+    return r;
+  }
+
+  async updateRenewalRequest(id: number, updates: Partial<RenewalRequest>) {
+    const [r] = await db.update(renewalRequests).set(updates).where(eq(renewalRequests.id, id)).returning();
+    return r;
+  }
+
+  // ===== Extension requests =====
+  async getExtensionRequests(filters?: { userId?: number; status?: string; limit?: number }) {
+    const conds: any[] = [];
+    if (filters?.userId) conds.push(eq(extensionRequests.userId, filters.userId));
+    if (filters?.status) conds.push(eq(extensionRequests.status, filters.status));
+    const q =
+      conds.length > 0
+        ? db.select().from(extensionRequests).where(and(...conds))
+        : db.select().from(extensionRequests);
+    const limit = Math.min(Math.max(filters?.limit ?? 100, 1), 500);
+    return q.orderBy(desc(extensionRequests.createdAt)).limit(limit);
+  }
+
+  async getExtensionRequest(id: number) {
+    const [r] = await db.select().from(extensionRequests).where(eq(extensionRequests.id, id));
+    return r;
+  }
+
+  async createExtensionRequest(req: InsertExtensionRequest) {
+    const [r] = await db.insert(extensionRequests).values(req).returning();
+    return r;
+  }
+
+  async updateExtensionRequest(id: number, updates: Partial<ExtensionRequest>) {
+    const [r] = await db.update(extensionRequests).set(updates).where(eq(extensionRequests.id, id)).returning();
+    return r;
+  }
+
+  // ===== Attendance helper =====
+  async incrementUserNoShow(userId: number) {
+    // Atomic increment to avoid racing concurrent attendance markers.
+    await pool.query(
+      `UPDATE users SET no_show_count = no_show_count + 1 WHERE id = $1`,
+      [userId],
+    );
   }
 
   // ===== Verification flags (batched) =====
