@@ -282,6 +282,68 @@ function detectCountry(value: string): { country: Country; rest: string } {
   return { country: DEFAULT_COUNTRY, rest: trimmed.replace(/^\+?971/, "").trim() };
 }
 
+// Stable SVG flags from a public CDN — works the same way as the language
+// selector but covers all 240+ ISO country codes without bundling each file.
+function flagSrc(isoCode: string): string {
+  return `https://flagcdn.com/${isoCode.toLowerCase()}.svg`;
+}
+
+function FlagImg({ country, size = 18 }: { country: Country; size?: number }) {
+  return (
+    <img
+      src={flagSrc(country.code)}
+      alt={`${country.name} flag`}
+      width={size}
+      height={Math.round(size * 0.75)}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      className="inline-block shrink-0 rounded-sm object-cover ring-1 ring-white/10"
+      style={{ width: size, height: Math.round(size * 0.75) }}
+      onError={(e) => {
+        // Hide broken flag image silently rather than showing a broken icon.
+        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+      }}
+    />
+  );
+}
+
+// Normalize what the user/autofill typed into the local-number field so that
+// the visible value never contains the country dial code, a leading "+" or a
+// leading "00". Returns { country, local } — country only changes when an
+// international prefix is detected.
+function normalizeLocalInput(
+  raw: string,
+  current: Country,
+): { country: Country; local: string } {
+  const cleaned = (raw || "").replace(/[^\d+\s-]/g, "");
+  const trimmed = cleaned.trim();
+
+  // International prefix → re-detect country and strip the dial code.
+  if (trimmed.startsWith("+") || trimmed.startsWith("00")) {
+    const detected = detectCountry(trimmed);
+    return {
+      country: detected.country,
+      local: detected.rest.replace(/[^\d\s-]/g, ""),
+    };
+  }
+
+  // Pure-digits path: strip the selected country's dial digits if the user
+  // (or Chrome autofill) typed them at the start of the local field.
+  const digitsOnly = trimmed.replace(/\D/g, "");
+  const dialDigits = current.dial.replace(/\D/g, "");
+  if (dialDigits && digitsOnly.startsWith(dialDigits)) {
+    const rest = digitsOnly.slice(dialDigits.length);
+    // Only strip if the remainder still looks like a real local number;
+    // otherwise the user might just be typing matching digits.
+    if (rest.length >= 4) {
+      return { country: current, local: rest };
+    }
+  }
+
+  return { country: current, local: cleaned };
+}
+
 interface Props {
   value: string;
   onChange: (v: string) => void;
@@ -362,6 +424,15 @@ export function PhoneInput({
     }
   }
 
+  // Centralised handler used by both onChange and onBlur — guarantees that
+  // Chrome autofill payloads like "+971505394754" or "00971505394754" never
+  // leave duplicated dial codes in the visible field.
+  function handleLocalChange(raw: string) {
+    const { country: nextCountry, local: nextLocal } = normalizeLocalInput(raw, country);
+    if (nextCountry.code !== country.code) setCountry(nextCountry);
+    setLocal(nextLocal);
+  }
+
   return (
     <div ref={wrapRef} className={`relative ${className ?? ""}`}>
       <div className="flex items-stretch gap-2">
@@ -371,14 +442,15 @@ export function PhoneInput({
           data-testid="button-country-code"
           className="inline-flex items-center gap-1.5 h-11 px-3 rounded-md bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors shrink-0"
         >
-          <span className="text-base leading-none">{country.flag}</span>
+          <FlagImg country={country} size={18} />
           <span className="font-mono">{country.dial}</span>
           <ChevronDown size={14} className="text-muted-foreground" />
         </button>
         <Input
           inputMode="tel"
           value={local}
-          onChange={(e) => setLocal(e.target.value.replace(/[^\d\s-]/g, ""))}
+          onChange={(e) => handleLocalChange(e.target.value)}
+          onBlur={(e) => handleLocalChange(e.target.value)}
           onPaste={handlePaste}
           placeholder={placeholder}
           autoComplete="tel"
@@ -418,7 +490,7 @@ export function PhoneInput({
                   }`}
                   data-testid={`option-country-${c.code}`}
                 >
-                  <span className="text-base leading-none">{c.flag}</span>
+                  <FlagImg country={c} size={20} />
                   <span className="flex-1 truncate">{c.name}</span>
                   <span className="font-mono text-xs">{c.dial}</span>
                   {selected && <Check size={14} className="text-primary" />}
