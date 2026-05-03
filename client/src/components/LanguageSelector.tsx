@@ -12,6 +12,52 @@ import { cn } from "@/lib/utils";
 
 type Variant = "compact" | "full";
 
+// Map each app language code to a stable SVG flag served from /public/flags.
+// Using <img> instead of emoji guarantees consistent rendering on Windows
+// desktop Chrome (which has no native regional-indicator emoji glyphs and
+// would otherwise show "GB", "AE", etc. as fallback text).
+const FLAG_SRC: Record<LanguageCode, string> = {
+  en: "/flags/gb.svg",
+  ar: "/flags/ae.svg",
+  fr: "/flags/fr.svg",
+  es: "/flags/es.svg",
+  de: "/flags/de.svg",
+  it: "/flags/it.svg",
+  ru: "/flags/ru.svg",
+  zh: "/flags/cn.svg",
+  hi: "/flags/in.svg",
+  tr: "/flags/tr.svg",
+};
+
+function FlagImg({
+  code,
+  name,
+  size = 18,
+  className,
+}: {
+  code: LanguageCode;
+  name: string;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <img
+      src={FLAG_SRC[code]}
+      alt={`${name} flag`}
+      width={size}
+      height={Math.round(size * 0.75)}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      className={cn(
+        "inline-block shrink-0 rounded-sm object-cover ring-1 ring-white/10",
+        className,
+      )}
+      style={{ width: size, height: Math.round(size * 0.75) }}
+    />
+  );
+}
+
 export function LanguageSelector({
   variant = "compact",
   className,
@@ -36,9 +82,7 @@ export function LanguageSelector({
           )}
         >
           <Globe size={14} className="text-muted-foreground hidden sm:inline-block shrink-0" />
-          <span className="text-base leading-none shrink-0" aria-hidden="true">
-            {current.flag}
-          </span>
+          <FlagImg code={current.code} name={current.nativeName} size={18} />
           {variant === "full" && (
             <span className="font-medium whitespace-nowrap">{current.nativeName}</span>
           )}
@@ -65,7 +109,7 @@ export function LanguageSelector({
                 active && "bg-primary/10 text-primary",
               )}
             >
-              <span className="text-base leading-none">{l.flag}</span>
+              <FlagImg code={l.code} name={l.nativeName} size={20} />
               <span className="flex-1 text-sm">{l.nativeName}</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {l.code}
