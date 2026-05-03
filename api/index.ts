@@ -61,11 +61,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("Content-Type", "application/json");
+      // Server-side log retains the full stack; the client only sees a generic
+      // message so we don't leak internals (database column names, paths, etc.)
+      // in production.
       res.end(
         JSON.stringify({
+          error: "ServerUnavailable",
           message: "Server failed to start",
-          error: String((err as any)?.message || err),
-          stack: String((err as any)?.stack || "").split("\n").slice(0, 8).join("\n"),
         }),
       );
     }

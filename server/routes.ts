@@ -46,36 +46,57 @@ function currentMonthKey(d: Date = new Date()): string {
   return `${y}-${m}`;
 }
 
+// Auth/role guards — return both `error` (machine-readable) and `message`
+// (human-readable) for backwards compatibility with existing clients.
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Unauthorized", message: "Unauthorized" });
+  }
   next();
 }
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Unauthorized", message: "Unauthorized" });
+  }
   const u = req.user as User;
-  if (u.role !== "admin") return res.status(403).json({ message: "Admins only" });
-  if (u.isActive === false) return res.status(403).json({ message: "Your admin access is currently disabled." });
+  if (u.role !== "admin") {
+    return res.status(403).json({ error: "Forbidden", message: "Admins only" });
+  }
+  if (u.isActive === false) {
+    return res.status(403).json({ error: "Forbidden", message: "Your admin access is currently disabled." });
+  }
   next();
 }
 
 function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Unauthorized", message: "Unauthorized" });
+  }
   const u = req.user as User;
   if (!isEffectiveSuperAdmin(u)) {
-    return res.status(403).json({ message: "Super admins only" });
+    return res.status(403).json({ error: "Forbidden", message: "Super admins only" });
   }
   next();
 }
 
 function requirePermission(key: AdminPermissionKey) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || !req.user) return res.status(401).json({ message: "Unauthorized" });
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: "Unauthorized", message: "Unauthorized" });
+    }
     const u = req.user as User;
-    if (u.role !== "admin") return res.status(403).json({ message: "Admins only" });
-    if (u.isActive === false) return res.status(403).json({ message: "Your admin access is currently disabled." });
+    if (u.role !== "admin") {
+      return res.status(403).json({ error: "Forbidden", message: "Admins only" });
+    }
+    if (u.isActive === false) {
+      return res.status(403).json({ error: "Forbidden", message: "Your admin access is currently disabled." });
+    }
     if (hasPermission(u, key)) return next();
-    return res.status(403).json({ message: "You do not have permission to perform this action." });
+    return res.status(403).json({
+      error: "Forbidden",
+      message: "You do not have permission to perform this action.",
+    });
   };
 }
 

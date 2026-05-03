@@ -23,6 +23,51 @@ import { z } from "zod";
 
 const scryptAsync = promisify(scrypt);
 
+// =============================
+// LIGHTWEIGHT IN-MEMORY RATE LIMITER
+// =============================
+// Best-effort per-IP attempt limiter for unauthenticated auth endpoints. On
+// Replit (single long-running process) it works as expected. On Vercel
+// serverless each warm instance has its own counters, so the effective ceiling
+// is per-instance per-window — still meaningful protection against trivial
+// brute-force/credential-stuffing without requiring a paid Redis service.
+type Bucket = { count: number; resetAt: number };
+const RATE_BUCKETS = new Map<string, Bucket>();
+
+function rateLimit(opts: { windowMs: number; max: number; key: string }) {
+  const { windowMs, max, key: routeKey } = opts;
+  return (req: any, res: any, next: any) => {
+    const ip =
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      "unknown";
+    const k = `${routeKey}:${ip}`;
+    const now = Date.now();
+    const cur = RATE_BUCKETS.get(k);
+    if (!cur || cur.resetAt < now) {
+      RATE_BUCKETS.set(k, { count: 1, resetAt: now + windowMs });
+      // Opportunistic GC: keep the map from growing unbounded across cold starts.
+      if (RATE_BUCKETS.size > 5000) {
+        RATE_BUCKETS.forEach((mv, mk) => {
+          if (mv.resetAt < now) RATE_BUCKETS.delete(mk);
+        });
+      }
+      return next();
+    }
+    if (cur.count >= max) {
+      const retryAfter = Math.ceil((cur.resetAt - now) / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: "TooManyRequests",
+        message: "Too many attempts. Please wait a moment and try again.",
+      });
+    }
+    cur.count += 1;
+    next();
+  };
+}
+
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
@@ -177,8 +222,8 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Client registration
-  app.post("/api/auth/register", async (req, res, next) => {
+  // Client registration — rate-limited to discourage automated signups.
+  app.post("/api/auth/register", rateLimit({ windowMs: 60_000, max: 5, key: "register" }), async (req, res, next) => {
     try {
       const parsed = insertClientSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -282,7 +327,7 @@ export function setupAuth(app: Express) {
   });
 
   // Forgot password — always returns the same friendly message.
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", rateLimit({ windowMs: 60_000, max: 5, key: "forgot" }), async (req, res) => {
     const schema = z.object({ email: z.string().email() });
     const parsed = schema.safeParse(req.body);
     const friendly = {
@@ -304,7 +349,7 @@ export function setupAuth(app: Express) {
     return res.status(200).json(friendly);
   });
 
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post("/api/auth/login", rateLimit({ windowMs: 60_000, max: 10, key: "login" }), (req, res, next) => {
     passport.authenticate("local", (err: Error, user: User | false) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });

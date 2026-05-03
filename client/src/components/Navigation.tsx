@@ -121,7 +121,7 @@ export function Navigation() {
             <TopNavLink href="/profile" label={t("nav.profile", "Profile")} testKey="profile" active={location === "/profile"} />
           )}
           {user?.role === "admin" && (
-            <TopNavLink href="/admin" label={t("nav.admin", "Admin")} testKey="admin" active={location.startsWith("/admin")} />
+            <TopNavLink href="/admin" label={t("nav.controlPanel", "Control Panel")} testKey="control-panel" active={location.startsWith("/admin")} />
           )}
         </nav>
 
@@ -196,7 +196,7 @@ export function Navigation() {
               </>
             )}
             {user?.role === "admin" && (
-              <MobileLink href="/admin" label={t("nav.admin", "Admin Dashboard")} testKey="admin" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+              <MobileLink href="/admin" label={t("nav.controlPanel", "Control Panel")} testKey="control-panel" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
             )}
             <div className="pt-3 mt-3 border-t border-white/5">
               <LanguageSelector variant="full" className="w-full justify-between" />
