@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Loader2, KeyRound, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,20 @@ export default function ResetPassword() {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const token = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("token") || "";
+  // Read the token once on mount, then immediately scrub it from the URL so
+  // it doesn't leak via copy/paste, browser history, or analytics referrers.
+  const [token, setToken] = useState("");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = new URLSearchParams(window.location.search).get("token") || "";
+    setToken(t);
+    if (t) {
+      try {
+        window.history.replaceState({}, "", window.location.pathname);
+      } catch {
+        /* ignore */
+      }
+    }
   }, []);
 
   const [password, setPassword] = useState("");

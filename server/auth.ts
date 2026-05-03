@@ -37,9 +37,13 @@ const RATE_BUCKETS = new Map<string, Bucket>();
 function rateLimit(opts: { windowMs: number; max: number; key: string }) {
   const { windowMs, max, key: routeKey } = opts;
   return (req: any, res: any, next: any) => {
+    // Prefer Express's resolved req.ip — when `trust proxy` is set
+    // (production), Express parses x-forwarded-for honoring our proxy
+    // count, so clients can't trivially spoof their identity. Fall back
+    // to the raw header / socket only if Express couldn't resolve.
     const ip =
-      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
       req.ip ||
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress ||
       "unknown";
     const k = `${routeKey}:${ip}`;
@@ -82,14 +86,22 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 function sanitizeUser(user: User) {
-  const { password, adminNotes, ...rest } = user as any;
+  const {
+    password,
+    adminNotes,
+    passwordResetToken,
+    passwordResetExpires,
+    ...rest
+  } = user as any;
   return rest;
 }
 
 // Admin-only view of a user that retains private trainer fields
 // (adminNotes, noShowCount). Use this ONLY in admin-gated endpoints.
+// Reset-token internals are still stripped — they are never useful to UI.
 function sanitizeUserAdminView(user: User) {
-  const { password, ...rest } = user;
+  const { password, passwordResetToken, passwordResetExpires, ...rest } =
+    user as any;
   return rest;
 }
 
@@ -361,23 +373,19 @@ export function setupAuth(app: Express) {
           passwordResetToken: tokenHash,
           passwordResetExpires: expiresAt,
         } as any);
-        // Build absolute reset URL. Prefer explicit PUBLIC_APP_URL, then
-        // request origin (works on Vercel via x-forwarded-host), else
-        // localhost for dev.
-        const origin =
+        // Build absolute reset URL from a TRUSTED canonical origin only.
+        // We deliberately do NOT trust the request's Host / x-forwarded-host
+        // headers here: an attacker can submit forgot-password for a victim
+        // with a forged Host and trick the server into emailing a phishing
+        // reset URL. In production fall back to the well-known prod domain;
+        // in dev fall back to localhost.
+        const origin = (
           process.env.PUBLIC_APP_URL ||
-          (() => {
-            const proto =
-              (req.headers["x-forwarded-proto"] as string | undefined) ||
-              req.protocol ||
-              "https";
-            const host =
-              (req.headers["x-forwarded-host"] as string | undefined) ||
-              req.get("host") ||
-              "youssef-booking.vercel.app";
-            return `${proto}://${host}`;
-          })();
-        const resetUrl = `${origin.replace(/\/+$/, "")}/reset-password?token=${rawToken}`;
+          (process.env.NODE_ENV === "production"
+            ? "https://youssef-booking.vercel.app"
+            : `http://localhost:${process.env.PORT || 5000}`)
+        ).replace(/\/+$/, "");
+        const resetUrl = `${origin}/reset-password?token=${rawToken}`;
         await sendPasswordResetNotification({ email: user.email, resetUrl });
       }
     } catch (e) {
@@ -407,22 +415,16 @@ export function setupAuth(app: Express) {
         const tokenHash = createHash("sha256")
           .update(parsed.data.token)
           .digest("hex");
-        const user = await storage.getUserByPasswordResetToken(tokenHash);
-        if (
-          !user ||
-          !user.passwordResetExpires ||
-          user.passwordResetExpires.getTime() < Date.now()
-        ) {
+        const hashed = await hashPassword(parsed.data.password);
+        // Atomic consume: succeeds only if the token row is still valid AND
+        // not yet expired. Two concurrent requests cannot both succeed —
+        // the second sees zero rows updated and we return invalid/expired.
+        const user = await storage.consumePasswordResetToken(tokenHash, hashed);
+        if (!user) {
           return res.status(400).json({
             message: "This reset link is invalid or has expired.",
           });
         }
-        const hashed = await hashPassword(parsed.data.password);
-        await storage.updateUser(user.id, {
-          password: hashed,
-          passwordResetToken: null,
-          passwordResetExpires: null,
-        } as any);
         return res
           .status(200)
           .json({ message: "Password updated. You can now sign in." });

@@ -40,7 +40,7 @@ import {
   type ExtensionRequest,
   type InsertExtensionRequest,
 } from "@shared/schema";
-import { eq, and, gte, desc, asc, isNull, inArray } from "drizzle-orm";
+import { eq, and, gte, gt, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -52,6 +52,10 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPasswordResetToken(tokenHash: string): Promise<User | undefined>;
+  consumePasswordResetToken(
+    tokenHash: string,
+    newPasswordHash: string,
+  ): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<void>;
@@ -206,6 +210,31 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(users)
       .where(eq(users.passwordResetToken, tokenHash));
+    return u;
+  }
+
+  /**
+   * Atomically consume a password reset token: sets the new password and
+   * nulls the token+expiry only if the token is still valid (not expired
+   * and not already consumed). Returns the affected user, or undefined if
+   * the token was already used / expired — making the operation safe under
+   * concurrent reset attempts.
+   */
+  async consumePasswordResetToken(tokenHash: string, newPasswordHash: string) {
+    const [u] = await db
+      .update(users)
+      .set({
+        password: newPasswordHash,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      })
+      .where(
+        and(
+          eq(users.passwordResetToken, tokenHash),
+          gt(users.passwordResetExpires, new Date()),
+        ),
+      )
+      .returning();
     return u;
   }
 
