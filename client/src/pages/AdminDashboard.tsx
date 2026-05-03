@@ -19,39 +19,46 @@ import { format } from "date-fns";
 import { api } from "@shared/routes";
 import type { DashboardStats, BookingWithUser } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
-import { formatStatus, statusColor } from "@/lib/booking-utils";
+import { translateStatus, statusColor } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
-const ADMIN_TABS: {
+type TabSpec = {
   href: string;
-  label: string;
+  labelKey: string;
+  fallback: string;
   icon: React.ReactNode;
   matches: (path: string) => boolean;
-  hint?: string;
-}[] = [
-  { href: "/admin", label: "Overview", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
-  { href: "/admin/clients", label: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
-  { href: "/admin/bookings", label: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
-  { href: "/admin/packages", label: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
-  { href: "/admin/clients", label: "InBody", icon: <Activity size={15} />, matches: () => false, hint: "Open a client to manage InBody scans" },
-  { href: "/admin/clients", label: "Progress", icon: <Camera size={15} />, matches: () => false, hint: "Open a client to manage progress photos" },
-  { href: "/admin/settings", label: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
+  hintKey?: string;
+  hintFallback?: string;
+};
+
+const ADMIN_TABS: TabSpec[] = [
+  { href: "/admin", labelKey: "admin.tabs.overview", fallback: "Overview", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
+  { href: "/admin/clients", labelKey: "admin.tabs.clients", fallback: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
+  { href: "/admin/bookings", labelKey: "admin.tabs.bookings", fallback: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
+  { href: "/admin/packages", labelKey: "admin.tabs.sessions", fallback: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
+  { href: "/admin/clients", labelKey: "admin.tabs.inbody", fallback: "InBody", icon: <Activity size={15} />, matches: () => false, hintKey: "admin.tabs.inbodyHint", hintFallback: "Open a client to manage InBody scans" },
+  { href: "/admin/clients", labelKey: "admin.tabs.progress", fallback: "Progress", icon: <Camera size={15} />, matches: () => false, hintKey: "admin.tabs.progressHint", hintFallback: "Open a client to manage progress photos" },
+  { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
 
 export function AdminTabs() {
   const [location] = useLocation();
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-white/5 bg-card/60 p-1.5 mb-8 overflow-x-auto">
       <div className="flex gap-1 min-w-max">
-        {ADMIN_TABS.map((t) => {
-          const active = t.matches(location);
+        {ADMIN_TABS.map((tab) => {
+          const active = tab.matches(location);
+          const label = t(tab.labelKey, tab.fallback);
           return (
             <Link
-              key={t.label}
-              href={t.href}
-              data-testid={`admintab-${t.label.toLowerCase()}`}
-              title={t.hint}
+              key={tab.labelKey + tab.href}
+              href={tab.href}
+              data-testid={`admintab-${tab.fallback.toLowerCase()}`}
+              title={tab.hintKey ? t(tab.hintKey, tab.hintFallback) : undefined}
               className={cn(
                 "inline-flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap",
                 active
@@ -59,8 +66,8 @@ export function AdminTabs() {
                   : "text-muted-foreground hover:text-foreground hover:bg-white/5",
               )}
             >
-              {t.icon}
-              {t.label}
+              {tab.icon}
+              {label}
             </Link>
           );
         })}
@@ -70,6 +77,7 @@ export function AdminTabs() {
 }
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: [api.dashboard.stats.path],
     queryFn: async () => {
@@ -88,32 +96,40 @@ export default function AdminDashboard() {
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Overview</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+          {t("admin.tabs.overview", "Overview")}
+        </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-admin-title">
-          Admin Dashboard
+          {t("admin.dashboardTitle", "Admin Dashboard")}
         </h1>
-        <p className="text-muted-foreground text-sm">Manage clients, bookings, packages, and settings — all in one place.</p>
+        <p className="text-muted-foreground text-sm">
+          {t("admin.dashboard.subtitle", "Manage clients, bookings, packages, and settings — all in one place.")}
+        </p>
       </div>
 
       <AdminTabs />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={<Users size={20} />} label="Total Clients" value={stats?.totalClients ?? 0} testId="stat-clients" />
-        <StatCard icon={<CalendarCheck size={20} />} label="Upcoming" value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
-        <StatCard icon={<Clock size={20} />} label="Today" value={stats?.bookingsToday ?? 0} testId="stat-today" />
-        <StatCard icon={<TrendingUp size={20} />} label="Completed (mo.)" value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
+        <StatCard icon={<Users size={20} />} label={t("admin.dashboard.statTotalClients", "Total Clients")} value={stats?.totalClients ?? 0} testId="stat-clients" />
+        <StatCard icon={<CalendarCheck size={20} />} label={t("admin.dashboard.statUpcoming", "Upcoming")} value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
+        <StatCard icon={<Clock size={20} />} label={t("admin.dashboard.statToday", "Today")} value={stats?.bookingsToday ?? 0} testId="stat-today" />
+        <StatCard icon={<TrendingUp size={20} />} label={t("admin.dashboard.statCompletedMo", "Completed (mo.)")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-3xl border border-white/5 bg-card/60 p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-display font-bold text-lg">Upcoming sessions</h3>
+            <h3 className="font-display font-bold text-lg">
+              {t("admin.dashboard.upcomingSessions", "Upcoming sessions")}
+            </h3>
             <Link href="/admin/bookings" className="text-xs text-primary inline-flex items-center gap-1" data-testid="link-all-bookings">
-              View all <ArrowRight size={12} />
+              {t("admin.dashboard.viewAll", "View all")} <ArrowRight size={12} />
             </Link>
           </div>
           {upcoming.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-10 text-center">No upcoming sessions.</p>
+            <p className="text-sm text-muted-foreground py-10 text-center">
+              {t("admin.dashboard.noUpcoming", "No upcoming sessions.")}
+            </p>
           ) : (
             <div className="space-y-2">
               {upcoming.map((b) => (
@@ -131,7 +147,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{b.user?.fullName || "Client"}</p>
+                    <p className="text-sm font-semibold truncate">{b.user?.fullName || t("admin.bookings.client", "Client")}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatTime12(b.timeSlot)} • {b.user?.phone || ""}
                     </p>
@@ -139,7 +155,7 @@ export default function AdminDashboard() {
                   <span
                     className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
                   >
-                    {formatStatus(b.status)}
+                    {translateStatus(b.status, t)}
                   </span>
                 </div>
               ))}
@@ -148,16 +164,18 @@ export default function AdminDashboard() {
         </div>
 
         <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
-          <h3 className="font-display font-bold text-lg mb-5">Quick actions</h3>
+          <h3 className="font-display font-bold text-lg mb-5">
+            {t("admin.dashboard.quickActions", "Quick actions")}
+          </h3>
           <div className="space-y-2">
-            <QuickAction href="/admin/clients" label="View & edit clients" />
-            <QuickAction href="/admin/bookings" label="Manage bookings" />
-            <QuickAction href="/admin/packages" label="Sessions & packages" />
-            <QuickAction href="/admin/settings" label="Off days, blocked hours, profile" />
-            <QuickAction href="/" label="View public site" external />
+            <QuickAction href="/admin/clients" label={t("admin.dashboard.qaViewClients", "View & edit clients")} testKey="view-clients" />
+            <QuickAction href="/admin/bookings" label={t("admin.dashboard.qaManageBookings", "Manage bookings")} testKey="manage-bookings" />
+            <QuickAction href="/admin/packages" label={t("admin.dashboard.qaSessions", "Sessions & packages")} testKey="sessions-packages" />
+            <QuickAction href="/admin/settings" label={t("admin.dashboard.qaSettings", "Off days, blocked hours, profile")} testKey="settings" />
+            <QuickAction href="/" label={t("admin.dashboard.qaPublic", "View public site")} testKey="public" external />
           </div>
           <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
-            InBody scans and progress photos are managed inside each client's profile — open any client from the Clients tab.
+            {t("admin.dashboard.qaHint", "InBody scans and progress photos are managed inside each client's profile — open any client from the Clients tab.")}
           </p>
         </div>
       </div>
@@ -194,11 +212,11 @@ function StatCard({
   );
 }
 
-function QuickAction({ href, label, external }: { href: string; label: string; external?: boolean }) {
+function QuickAction({ href, label, external, testKey }: { href: string; label: string; external?: boolean; testKey: string }) {
   return (
     <Link
       href={href}
-      data-testid={`quick-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      data-testid={`quick-${testKey}`}
       className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
     >
       <span>{label}</span>

@@ -113,8 +113,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RotateCcw, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 export default function AdminClientDetail() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
 
@@ -127,10 +129,10 @@ export default function AdminClientDetail() {
     return (
       <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
         <Link href="/admin/clients" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mb-4">
-          <ArrowLeft size={14} /> Back to clients
+          <ArrowLeft size={14} /> {t("admin.clientDetail.backToClients", "Back to clients")}
         </Link>
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-          Loading client...
+          {t("admin.clientDetail.loading", "Loading client...")}
         </div>
       </div>
     );
@@ -143,7 +145,7 @@ export default function AdminClientDetail() {
         data-testid="link-back-clients"
         className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
       >
-        <ArrowLeft size={14} /> All clients
+        <ArrowLeft size={14} /> {t("admin.clientDetail.allClients", "All clients")}
       </Link>
 
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6 flex flex-wrap gap-5 items-start justify-between">
@@ -184,18 +186,18 @@ export default function AdminClientDetail() {
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-white/5 mb-6 h-11 flex flex-wrap">
-          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview", "Overview")}</TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> Bookings
+            <Calendar size={13} className="mr-1.5" /> {t("admin.tabs.bookings", "Bookings")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> Packages
+            <PackageIcon size={13} className="mr-1.5" /> {t("admin.tabs.packages", "Packages")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <Activity size={13} className="mr-1.5" /> InBody
+            <Activity size={13} className="mr-1.5" /> {t("admin.tabs.inbody", "InBody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> Progress
+            <ImageIcon size={13} className="mr-1.5" /> {t("admin.tabs.progress", "Progress")}
           </TabsTrigger>
         </TabsList>
 

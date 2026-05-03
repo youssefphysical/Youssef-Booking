@@ -14,8 +14,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PACKAGE_DEFINITIONS, type PackageWithUser, type UserResponse } from "@shared/schema";
+import { useTranslation } from "@/i18n";
 
 export default function AdminPackages() {
+  const { t } = useTranslation();
   const { data: packages = [], isLoading } = usePackages({ includeUser: true });
   const { data: clients = [] } = useClients();
   const [q, setQ] = useState("");
@@ -53,12 +55,16 @@ export default function AdminPackages() {
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-6xl">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Packages</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+          {t("admin.packagesPage.kicker", "Packages")}
+        </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-packages-title">
-          Session Packages
+          {t("admin.packagesPage.title", "Session Packages")}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {totalActive} active • {totalRemaining} sessions remaining across all clients
+          {t("admin.packagesPage.summary", "{active} active • {remaining} sessions remaining across all clients")
+            .replace("{active}", String(totalActive))
+            .replace("{remaining}", String(totalRemaining))}
         </p>
       </div>
 
@@ -68,7 +74,7 @@ export default function AdminPackages() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by client name or email..."
+            placeholder={t("admin.packagesPage.searchPh", "Search by client name or email...")}
             className="pl-9 bg-white/5 border-white/10"
             data-testid="input-search-packages"
           />
@@ -78,9 +84,9 @@ export default function AdminPackages() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">Active only</SelectItem>
-            <SelectItem value="closed">Closed only</SelectItem>
-            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="active">{t("admin.packagesPage.activeOnly", "Active only")}</SelectItem>
+            <SelectItem value="closed">{t("admin.packagesPage.closedOnly", "Closed only")}</SelectItem>
+            <SelectItem value="all">{t("admin.packagesPage.allFilter", "All")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -94,7 +100,9 @@ export default function AdminPackages() {
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
           <PackageIcon className="mx-auto text-muted-foreground/40 mb-3" size={32} />
-          {q ? "No packages match your search." : "No packages assigned yet. Add packages from a client's profile."}
+          {q
+            ? t("admin.packagesPage.noMatch", "No packages match your search.")
+            : t("admin.packagesPage.noneYet", "No packages assigned yet. Add packages from a client's profile.")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -123,13 +131,13 @@ export default function AdminPackages() {
                       data-testid={`link-package-client-${p.id}`}
                       className="font-semibold hover:text-primary inline-flex items-center gap-1.5"
                     >
-                      {owner?.fullName || "Unknown"}
+                      {owner?.fullName || t("admin.packagesPage.unknown", "Unknown")}
                       <ExternalLink size={11} />
                     </Link>
                     <p className="text-xs text-muted-foreground mt-0.5">{owner?.email}</p>
                     {def?.isDuo && partner && (
                       <p className="text-xs text-amber-300/80 mt-1 inline-flex items-center gap-1.5">
-                        <Users size={11} /> Partner: {partner.fullName}
+                        <Users size={11} /> {t("admin.packagesPage.partner", "Partner")}: {partner.fullName}
                       </p>
                     )}
                   </div>
@@ -139,15 +147,25 @@ export default function AdminPackages() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 mb-3">
-                  <PackageStat label="Base" value={base} />
-                  <PackageStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
-                  <PackageStat label="Total" value={p.totalSessions} accent="text-primary" />
-                  <PackageStat label="Left" value={remaining} accent="text-emerald-300" />
+                  <PackageStat label={t("admin.packagesPage.statBase", "Base")} value={base} />
+                  <PackageStat label={t("admin.packagesPage.statBonus", "Bonus")} value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
+                  <PackageStat label={t("admin.packagesPage.statTotal", "Total")} value={p.totalSessions} accent="text-primary" />
+                  <PackageStat label={t("admin.packagesPage.statLeft", "Left")} value={remaining} accent="text-emerald-300" />
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
-                  <span>{p.usedSessions} of {p.totalSessions} used</span>
-                  <span>{p.purchasedAt && `Started ${format(new Date(p.purchasedAt), "MMM d, yyyy")}`}</span>
+                  <span>
+                    {t("admin.packagesPage.usedOf", "{used} of {total} used")
+                      .replace("{used}", String(p.usedSessions))
+                      .replace("{total}", String(p.totalSessions))}
+                  </span>
+                  <span>
+                    {p.purchasedAt &&
+                      t("admin.packagesPage.startedOn", "Started {date}").replace(
+                        "{date}",
+                        format(new Date(p.purchasedAt), "MMM d, yyyy"),
+                      )}
+                  </span>
                 </div>
                 <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                   <motion.div

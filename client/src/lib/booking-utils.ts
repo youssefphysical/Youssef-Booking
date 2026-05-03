@@ -23,6 +23,24 @@ export function formatStatus(status: string): string {
   }
 }
 
+/** i18n-aware status formatter. Pass the t() function from useTranslation. */
+export function translateStatus(
+  status: string,
+  t: (key: string, fallback?: string) => string,
+): string {
+  switch (status) {
+    case "upcoming": return t("admin.status.upcoming", "Upcoming");
+    case "confirmed": return t("admin.status.confirmed", "Confirmed");
+    case "completed": return t("admin.status.completed", "Completed");
+    case "cancelled": return t("admin.status.cancelled", "Cancelled");
+    case "free_cancelled": return t("admin.status.freeCancelled", "Free Cancellation");
+    case "late_cancelled": return t("admin.status.lateCancelled", "Late Cancellation – Session Charged");
+    case "emergency_cancelled": return t("admin.status.emergencyCancelled", "Protected Cancellation");
+    case "no_show": return t("admin.status.noShow", "No-Show");
+    default: return status;
+  }
+}
+
 export function statusColor(status: string): string {
   switch (status) {
     case "upcoming": return "bg-amber-500/15 text-amber-300 border-amber-500/30";

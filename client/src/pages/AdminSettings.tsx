@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/form";
 import { ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
+import { useTranslation } from "@/i18n";
 
 const generalSchema = z.object({
   cancellationCutoffHours: z.coerce.number().int().min(0).max(168),
@@ -70,14 +71,15 @@ const BLOCK_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function AdminSettings() {
+  const { t } = useTranslation();
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-4xl">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Settings</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker", "Settings")}</p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-settings-title">
-          Settings & Availability
+          {t("admin.settingsPage.title", "Settings & Availability")}
         </h1>
-        <p className="text-muted-foreground text-sm">Profile, cancellation policy, and time slot blocking</p>
+        <p className="text-muted-foreground text-sm">{t("admin.settingsPage.subtitle", "Profile, cancellation policy, and time slot blocking")}</p>
       </div>
 
       <div className="space-y-6">
@@ -95,6 +97,7 @@ export default function AdminSettings() {
 // HERO IMAGES — admin slider on the homepage
 // =====================================================================
 function HeroImagesSection() {
+  const { t } = useTranslation();
   const { data: images = [], isLoading } = useHeroImages();
   const uploadMutation = useUploadHeroImage();
   const reorderMutation = useUpdateHeroImageOrder();
@@ -144,10 +147,12 @@ function HeroImagesSection() {
       className="rounded-3xl border border-white/5 bg-card/60 p-6"
       data-testid="section-hero-images"
     >
-      <h2 className="font-display font-bold text-lg mb-1">Homepage Hero Slider</h2>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.heroTitle", "Homepage Hero Slider")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
-        Up to {MAX_IMAGES} images. They auto-advance every 3 seconds with a fade
-        transition on the homepage. Recommended size: 1920×1080.
+        {t(
+          "admin.settingsPage.heroDesc",
+          "Up to {max} images. They auto-advance every 3 seconds with a fade transition on the homepage. Recommended size: 1920×1080.",
+        ).replace("{max}", String(MAX_IMAGES))}
       </p>
 
       <label
@@ -161,10 +166,12 @@ function HeroImagesSection() {
           <UploadCloud size={22} className="text-primary" />
         )}
         <p className="text-sm font-medium">
-          {uploadMutation.isPending ? "Uploading…" : "Click to upload an image"}
+          {uploadMutation.isPending
+            ? t("admin.settingsPage.heroUploading", "Uploading…")
+            : t("admin.settingsPage.heroClick", "Click to upload an image")}
         </p>
         <p className="text-xs text-muted-foreground">
-          PNG, JPEG, WebP, or HEIC · resized to 1920×1080 WebP
+          {t("admin.settingsPage.heroFormats", "PNG, JPEG, WebP, or HEIC · resized to 1920×1080 WebP")}
         </p>
         <input
           id="hero-image-upload"
@@ -186,14 +193,14 @@ function HeroImagesSection() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-          <Loader2 size={16} className="animate-spin mr-2" /> Loading hero images…
+          <Loader2 size={16} className="animate-spin mr-2" /> {t("admin.settingsPage.heroLoading", "Loading hero images…")}
         </div>
       ) : images.length === 0 ? (
         <p
           className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl"
           data-testid="text-no-hero-images"
         >
-          No hero images yet. The slider stays hidden until you add at least one.
+          {t("admin.settingsPage.heroEmpty", "No hero images yet. The slider stays hidden until you add at least one.")}
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -236,7 +243,7 @@ function HeroImagesSection() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm("Delete this hero image?")) {
+                      if (confirm(t("admin.settingsPage.heroDeleteConfirm", "Delete this hero image?"))) {
                         deleteMutation.mutate(img.id);
                       }
                     }}
@@ -257,6 +264,7 @@ function HeroImagesSection() {
 }
 
 function GeneralSettingsSection() {
+  const { t } = useTranslation();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateSettings();
 
@@ -283,8 +291,8 @@ function GeneralSettingsSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">Booking Rules</h2>
-      <p className="text-sm text-muted-foreground mb-5">Cancellation cutoff and contact number</p>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.bookingRules", "Booking Rules")}</h2>
+      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.bookingRulesDesc", "Cancellation cutoff and contact number")}</p>
 
       <Form {...form}>
         <form
@@ -301,7 +309,7 @@ function GeneralSettingsSection() {
             name="cancellationCutoffHours"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cancellation Cutoff (hours)</FormLabel>
+                <FormLabel>{t("admin.settingsPage.cutoff", "Cancellation Cutoff (hours)")}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -313,7 +321,7 @@ function GeneralSettingsSection() {
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  Default 6h. Clients cannot cancel within this window.
+                  {t("admin.settingsPage.cutoffNote", "Default 6h. Clients cannot cancel within this window.")}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -325,7 +333,7 @@ function GeneralSettingsSection() {
             name="whatsappNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>WhatsApp Number (digits only, with country code)</FormLabel>
+                <FormLabel>{t("admin.settingsPage.whatsappLabel", "WhatsApp Number (digits only, with country code)")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -346,7 +354,7 @@ function GeneralSettingsSection() {
             className="rounded-xl"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            Save Rules
+            {t("admin.settingsPage.saveRules", "Save Rules")}
           </Button>
         </form>
       </Form>
@@ -361,6 +369,7 @@ const bankSchema = z.object({
 });
 
 function BankDetailsSection() {
+  const { t } = useTranslation();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateSettings();
 
@@ -392,9 +401,9 @@ function BankDetailsSection() {
           <CreditCard size={18} />
         </div>
         <div>
-          <h2 className="font-display font-bold text-lg">Direct Payment / Bank Details</h2>
+          <h2 className="font-display font-bold text-lg">{t("admin.settingsPage.bankTitle", "Direct Payment / Bank Details")}</h2>
           <p className="text-sm text-muted-foreground">
-            Account info shown to clients on the Direct Payment page.
+            {t("admin.settingsPage.bankDesc", "Account info shown to clients on the Direct Payment page.")}
           </p>
         </div>
       </div>
@@ -415,7 +424,7 @@ function BankDetailsSection() {
             name="bankAccountName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account Holder Name</FormLabel>
+                <FormLabel>{t("admin.settingsPage.bankName", "Account Holder Name")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -432,7 +441,7 @@ function BankDetailsSection() {
             name="bankIban"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>IBAN</FormLabel>
+                <FormLabel>{t("admin.settingsPage.bankIban", "IBAN")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -456,11 +465,11 @@ function BankDetailsSection() {
                     <EyeOff size={16} className="text-amber-400 mt-0.5 shrink-0" />
                   )}
                   <div>
-                    <FormLabel className="cursor-pointer">Show bank details publicly</FormLabel>
+                    <FormLabel className="cursor-pointer">{t("admin.settingsPage.bankShow", "Show bank details publicly")}</FormLabel>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {isPublic
-                        ? "Visible to anyone visiting the Direct Payment page."
-                        : "Only signed-in clients see the details — others see a request prompt."}
+                        ? t("admin.settingsPage.bankShowOn", "Visible to anyone visiting the Direct Payment page.")
+                        : t("admin.settingsPage.bankShowOff", "Only signed-in clients see the details — others see a request prompt.")}
                     </p>
                   </div>
                 </div>
@@ -481,7 +490,7 @@ function BankDetailsSection() {
             className="rounded-xl"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            Save Bank Details
+            {t("admin.settingsPage.saveBank", "Save Bank Details")}
           </Button>
         </form>
       </Form>
@@ -490,6 +499,7 @@ function BankDetailsSection() {
 }
 
 function ProfileContentSection() {
+  const { t } = useTranslation();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateSettings();
 
@@ -508,8 +518,8 @@ function ProfileContentSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">Homepage Content</h2>
-      <p className="text-sm text-muted-foreground mb-5">Profile photo URL and bio shown on the homepage</p>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.homepageTitle", "Homepage Content")}</h2>
+      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.homepageDesc", "Profile photo URL and bio shown on the homepage")}</p>
 
       <Form {...form}>
         <form
@@ -527,7 +537,7 @@ function ProfileContentSection() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <ImageIcon size={14} /> Profile Photo URL
+                  <ImageIcon size={14} /> {t("admin.settingsPage.photoUrl", "Profile Photo URL")}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -538,7 +548,7 @@ function ProfileContentSection() {
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  Paste a public image URL. (Upload functionality can be added later.)
+                  {t("admin.settingsPage.photoUrlNote", "Paste a public image URL. (Upload functionality can be added later.)")}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -551,7 +561,7 @@ function ProfileContentSection() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <MessageSquare size={14} /> Profile Bio
+                  <MessageSquare size={14} /> {t("admin.settingsPage.profileBio", "Profile Bio")}
                 </FormLabel>
                 <FormControl>
                   <Textarea
@@ -573,7 +583,7 @@ function ProfileContentSection() {
             data-testid="button-save-profile-content"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            Save Profile Content
+            {t("admin.settingsPage.saveProfile", "Save Profile Content")}
           </Button>
         </form>
       </Form>
@@ -582,6 +592,7 @@ function ProfileContentSection() {
 }
 
 function BlockedSlotsSection() {
+  const { t } = useTranslation();
   const { data: blocks = [] } = useBlockedSlots();
   const createMutation = useCreateBlockedSlot();
   const deleteMutation = useDeleteBlockedSlot();
@@ -600,9 +611,9 @@ function BlockedSlotsSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">Blocked Time Slots</h2>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.blockedTitle", "Blocked Time Slots")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
-        Block entire days or specific hours so clients can't book them
+        {t("admin.settingsPage.blockedDesc", "Block entire days or specific hours so clients can't book them")}
       </p>
 
       <Form {...form}>
@@ -625,7 +636,7 @@ function BlockedSlotsSection() {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">Date</FormLabel>
+                <FormLabel className="text-xs">{t("admin.bookings.date", "Date")}</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} className="bg-white/5 border-white/10 h-10" data-testid="input-block-date" />
                 </FormControl>
@@ -638,15 +649,15 @@ function BlockedSlotsSection() {
             name="scope"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">Scope</FormLabel>
+                <FormLabel className="text-xs">{t("admin.settingsPage.scope", "Scope")}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-scope">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="whole-day">Whole day</SelectItem>
-                      <SelectItem value="specific-hour">Specific hour</SelectItem>
+                      <SelectItem value="whole-day">{t("admin.settingsPage.wholeDay", "Whole day")}</SelectItem>
+                      <SelectItem value="specific-hour">{t("admin.settingsPage.specificHour", "Specific hour")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -660,11 +671,11 @@ function BlockedSlotsSection() {
               name="timeSlot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Time</FormLabel>
+                  <FormLabel className="text-xs">{t("admin.bookings.time", "Time")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-time">
-                        <SelectValue placeholder="Pick" />
+                        <SelectValue placeholder={t("admin.settingsPage.pickValue", "Pick")} />
                       </SelectTrigger>
                       <SelectContent>
                         {ALL_TIME_SLOTS.map((s) => (
@@ -684,16 +695,16 @@ function BlockedSlotsSection() {
               name="blockType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">Type</FormLabel>
+                  <FormLabel className="text-xs">{t("admin.settingsPage.type", "Type")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="off-day">Off Day</SelectItem>
-                        <SelectItem value="emergency">Emergency</SelectItem>
-                        <SelectItem value="fully-booked">Fully Booked</SelectItem>
+                        <SelectItem value="off-day">{t("admin.settingsPage.offDay", "Off Day")}</SelectItem>
+                        <SelectItem value="emergency">{t("admin.settingsPage.emergency", "Emergency")}</SelectItem>
+                        <SelectItem value="fully-booked">{t("admin.settingsPage.fullyBooked", "Fully Booked")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -707,23 +718,23 @@ function BlockedSlotsSection() {
             name="reason"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">Reason (optional)</FormLabel>
+                <FormLabel className="text-xs">{t("admin.settingsPage.reason", "Reason (optional)")}</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="e.g. travel" className="bg-white/5 border-white/10 h-10" data-testid="input-block-reason" />
+                  <Input {...field} placeholder={t("admin.settingsPage.reasonExample", "e.g. travel")} className="bg-white/5 border-white/10 h-10" data-testid="input-block-reason" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="rounded-xl h-10 lg:col-start-5" disabled={createMutation.isPending} data-testid="button-add-block">
-            {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} className="mr-1" /> Block</>}
+            {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} className="mr-1" /> {t("admin.settingsPage.block", "Block")}</>}
           </Button>
         </form>
       </Form>
 
       {blocks.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl">
-          No blocked slots.
+          {t("admin.settingsPage.noBlocked", "No blocked slots.")}
         </p>
       ) : (
         <div className="space-y-2">
@@ -735,7 +746,7 @@ function BlockedSlotsSection() {
             >
               <div className="flex items-center gap-3 text-sm flex-wrap">
                 <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d")}</span>
-                <span className="text-muted-foreground">{b.timeSlot ?? "Whole day"}</span>
+                <span className="text-muted-foreground">{b.timeSlot ?? t("admin.settingsPage.wholeDayLabel", "Whole day")}</span>
                 {!b.timeSlot && b.blockType && (
                   <span
                     className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${BLOCK_TYPE_COLORS[b.blockType] || "bg-white/5 border-white/10"}`}

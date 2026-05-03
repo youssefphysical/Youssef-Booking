@@ -54,9 +54,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ALL_TIME_SLOTS, formatStatus, statusColor } from "@/lib/booking-utils";
+import { ALL_TIME_SLOTS, translateStatus, statusColor } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import type { BookingWithUser } from "@shared/schema";
+import { useTranslation } from "@/i18n";
 
 const STATUSES = [
   "upcoming",
@@ -77,6 +78,7 @@ const PAYMENT_BADGE: Record<string, string> = {
 };
 
 export default function AdminBookings() {
+  const { t } = useTranslation();
   const { data: rawBookings = [], isLoading } = useBookings({ includeUser: true });
   const updateMutation = useUpdateBooking();
   const deleteMutation = useDeleteBooking();
@@ -104,9 +106,9 @@ export default function AdminBookings() {
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
       <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Bookings</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.bookings.kicker", "Bookings")}</p>
           <h1 className="text-3xl font-display font-bold" data-testid="text-bookings-title">
-            All Bookings
+            {t("admin.bookings.titleAll", "All Bookings")}
           </h1>
         </div>
         <CreateBookingButton />
@@ -114,16 +116,16 @@ export default function AdminBookings() {
 
       <div className="flex flex-wrap items-center gap-3 mb-6 p-4 rounded-2xl border border-white/5 bg-card/60">
         <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-          <Filter size={14} /> Filter:
+          <Filter size={14} /> {t("admin.bookings.filterLabel", "Filter:")}
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-44 bg-white/5 border-white/10 h-9" data-testid="select-status-filter">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{t("admin.bookings.allStatuses", "All statuses")}</SelectItem>
             {STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>
+              <SelectItem key={s} value={s}>{translateStatus(s, t)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -139,7 +141,7 @@ export default function AdminBookings() {
             <SelectValue placeholder="Payment" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All payments</SelectItem>
+            <SelectItem value="all">{t("admin.bookings.allPayments", "All payments")}</SelectItem>
             {Object.entries(PAYMENT_STATUS_LABELS).map(([k, l]) => (
               <SelectItem key={k} value={k}>{l}</SelectItem>
             ))}
@@ -150,8 +152,8 @@ export default function AdminBookings() {
             <SelectValue placeholder="Workout" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All workouts</SelectItem>
-            <SelectItem value="none">Not logged</SelectItem>
+            <SelectItem value="all">{t("admin.bookings.allWorkouts", "All workouts")}</SelectItem>
+            <SelectItem value="none">{t("admin.bookings.notLogged", "Not logged")}</SelectItem>
             {Object.entries(WORKOUT_CATEGORY_LABELS).map(([k, l]) => (
               <SelectItem key={k} value={k}>{l}</SelectItem>
             ))}
@@ -169,10 +171,12 @@ export default function AdminBookings() {
             }}
             data-testid="button-clear-filters"
           >
-            Clear
+            {t("admin.bookings.clear", "Clear")}
           </Button>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">{filtered.length} results</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {t("admin.bookings.results", "{n} results").replace("{n}", String(filtered.length))}
+        </span>
       </div>
 
       {isLoading ? (
@@ -183,7 +187,7 @@ export default function AdminBookings() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-          No bookings match your filters.
+          {t("admin.bookings.noMatch", "No bookings match your filters.")}
         </div>
       ) : (
         <div className="space-y-2">
@@ -220,7 +224,7 @@ export default function AdminBookings() {
                     <span
                       className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
                     >
-                      {formatStatus(b.status)}
+                      {translateStatus(b.status, t)}
                     </span>
                     <span
                       className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${PAYMENT_BADGE[b.paymentStatus || "unpaid"] || PAYMENT_BADGE.unpaid}`}
@@ -238,7 +242,7 @@ export default function AdminBookings() {
                     )}
                     {b.isEmergencyCancel && (
                       <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300">
-                        Emergency
+                        {t("admin.bookings.emergency", "Emergency")}
                       </span>
                     )}
                   </div>
@@ -259,7 +263,7 @@ export default function AdminBookings() {
                   </SelectTrigger>
                   <SelectContent>
                     {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>
+                      <SelectItem key={s} value={s}>{translateStatus(s, t)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -301,20 +305,22 @@ export default function AdminBookings() {
                   </AlertDialogTrigger>
                   <AlertDialogContent className="bg-card border-white/10">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete booking?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("admin.bookings.deleteTitle", "Delete booking?")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This permanently removes the booking. Use cancel/late cancel statuses if you
-                        want to keep a record.
+                        {t(
+                          "admin.bookings.deleteDesc",
+                          "This permanently removes the booking. Use cancel/late cancel statuses if you want to keep a record.",
+                        )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Keep it</AlertDialogCancel>
+                      <AlertDialogCancel>{t("admin.bookings.keepIt", "Keep it")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => deleteMutation.mutate(b.id)}
                         className="bg-red-500 hover:bg-red-600"
                         data-testid={`button-confirm-delete-${b.id}`}
                       >
-                        Delete
+                        {t("admin.bookings.deleteBtn", "Delete")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -334,6 +340,7 @@ const workoutLogSchema = z.object({
 });
 
 function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const updateMutation = useUpdateBooking();
 
@@ -366,12 +373,12 @@ function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
           data-testid={`button-workout-log-${booking.id}`}
         >
           <Notebook size={12} className="mr-1.5" />
-          {booking.workoutCategory ? "Log" : "Log"}
+          {t("admin.bookings.workoutLog", "Log")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Workout Log</DialogTitle>
+          <DialogTitle>{t("admin.bookings.workoutLogTitle", "Workout Log")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -393,13 +400,13 @@ function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
               name="workoutCategory"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Workout Category</FormLabel>
+                  <FormLabel>{t("admin.bookings.workoutCategory", "Workout Category")}</FormLabel>
                   <Select value={field.value || ""} onValueChange={field.onChange}>
                     <SelectTrigger
                       className="bg-white/5 border-white/10"
                       data-testid={`select-workout-category-${booking.id}`}
                     >
-                      <SelectValue placeholder="Pick a category" />
+                      <SelectValue placeholder={t("admin.bookings.pickCategory", "Pick a category")} />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.entries(WORKOUT_CATEGORY_LABELS).map(([k, l]) => (
@@ -416,12 +423,12 @@ function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
               name="adminNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Admin Notes</FormLabel>
+                  <FormLabel>{t("admin.bookings.adminNotes", "Admin Notes")}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
                       rows={4}
-                      placeholder="Notes about this session — exercises, weights, observations..."
+                      placeholder={t("admin.bookings.adminNotesPh", "Notes about this session — exercises, weights, observations...")}
                       className="bg-white/5 border-white/10"
                       data-testid={`input-admin-notes-${booking.id}`}
                     />
@@ -433,20 +440,20 @@ function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
             {booking.clientNotes && (
               <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                  Client Notes
+                  {t("admin.bookings.clientNotesLabel", "Client Notes")}
                 </p>
                 <p className="text-foreground/90 whitespace-pre-wrap">{booking.clientNotes}</p>
               </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("admin.bookings.cancel", "Cancel")}</Button>
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
                 data-testid={`button-save-workout-log-${booking.id}`}
               >
                 {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-                Save Log
+                {t("admin.bookings.saveLog", "Save Log")}
               </Button>
             </DialogFooter>
           </form>
@@ -462,6 +469,7 @@ const rescheduleSchema = z.object({
 });
 
 function RescheduleButton({ booking }: { booking: BookingWithUser }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const updateMutation = useUpdateBooking();
 
@@ -474,12 +482,12 @@ function RescheduleButton({ booking }: { booking: BookingWithUser }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 text-xs" data-testid={`button-reschedule-${booking.id}`}>
-          Reschedule
+          {t("admin.bookings.reschedule", "Reschedule")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Reschedule booking</DialogTitle>
+          <DialogTitle>{t("admin.bookings.rescheduleTitle", "Reschedule booking")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -496,7 +504,7 @@ function RescheduleButton({ booking }: { booking: BookingWithUser }) {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>{t("admin.bookings.date", "Date")}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} className="bg-white/5 border-white/10" data-testid={`input-reschedule-date-${booking.id}`} />
                   </FormControl>
@@ -509,7 +517,7 @@ function RescheduleButton({ booking }: { booking: BookingWithUser }) {
               name="timeSlot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Time</FormLabel>
+                  <FormLabel>{t("admin.bookings.time", "Time")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10" data-testid={`select-reschedule-time-${booking.id}`}>
@@ -527,10 +535,10 @@ function RescheduleButton({ booking }: { booking: BookingWithUser }) {
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("admin.bookings.cancel", "Cancel")}</Button>
               <Button type="submit" disabled={updateMutation.isPending} data-testid={`button-save-reschedule-${booking.id}`}>
                 {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-                Save
+                {t("admin.bookings.save", "Save")}
               </Button>
             </DialogFooter>
           </form>
@@ -548,6 +556,7 @@ const createSchema = z.object({
 });
 
 function CreateBookingButton() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { data: clients = [] } = useClients();
   const createMutation = useCreateBooking();
@@ -566,12 +575,12 @@ function CreateBookingButton() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="h-10 rounded-xl" data-testid="button-add-booking">
-          <Plus size={16} className="mr-1.5" /> Add Booking
+          <Plus size={16} className="mr-1.5" /> {t("admin.bookings.add", "Add Booking")}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Add a booking</DialogTitle>
+          <DialogTitle>{t("admin.bookings.addTitle", "Add a booking")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -593,14 +602,14 @@ function CreateBookingButton() {
               name="userId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Client</FormLabel>
+                  <FormLabel>{t("admin.bookings.client", "Client")}</FormLabel>
                   <FormControl>
                     <Select
                       value={field.value ? String(field.value) : ""}
                       onValueChange={(v) => field.onChange(Number(v))}
                     >
                       <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-add-client">
-                        <SelectValue placeholder="Select a client" />
+                        <SelectValue placeholder={t("admin.bookings.selectClient", "Select a client")} />
                       </SelectTrigger>
                       <SelectContent>
                         {clients.map((c) => (
@@ -620,7 +629,7 @@ function CreateBookingButton() {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>{t("admin.bookings.date", "Date")}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} className="bg-white/5 border-white/10" data-testid="input-add-date" />
                   </FormControl>
@@ -633,7 +642,7 @@ function CreateBookingButton() {
               name="timeSlot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Time</FormLabel>
+                  <FormLabel>{t("admin.bookings.time", "Time")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-add-time">
@@ -655,7 +664,7 @@ function CreateBookingButton() {
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>{t("admin.bookings.notes", "Notes")}</FormLabel>
                   <FormControl>
                     <Input {...field} className="bg-white/5 border-white/10" data-testid="input-add-notes" />
                   </FormControl>
@@ -664,10 +673,10 @@ function CreateBookingButton() {
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("admin.bookings.cancel", "Cancel")}</Button>
               <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-add">
                 {createMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-                Add Booking
+                {t("admin.bookings.add", "Add Booking")}
               </Button>
             </DialogFooter>
           </form>

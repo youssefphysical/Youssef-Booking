@@ -35,6 +35,7 @@ import {
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge, TierBadge } from "@/components/VerifiedBadge";
+import { useTranslation } from "@/i18n";
 
 type Row = {
   client: UserResponse;
@@ -47,18 +48,19 @@ type Row = {
 const PACKAGE_FILTER_KEYS = ["all", "10", "20", "25", "duo30", "single", "trial", "none"] as const;
 type PackageFilterKey = (typeof PACKAGE_FILTER_KEYS)[number];
 
-const PACKAGE_FILTER_LABELS: Record<PackageFilterKey, string> = {
-  all: "All packages",
-  "10": "Essential (10+1)",
-  "20": "Progress (20+3)",
-  "25": "Elite (25+5)",
-  duo30: "Duo Performance",
-  single: "Single Session",
-  trial: "Intro Assessment",
-  none: "No package",
+const PACKAGE_FILTER_I18N: Record<PackageFilterKey, { key: string; fallback: string }> = {
+  all: { key: "admin.clients.pkgAll", fallback: "All packages" },
+  "10": { key: "admin.clients.pkgEssential", fallback: "Essential (10+1)" },
+  "20": { key: "admin.clients.pkgProgress", fallback: "Progress (20+3)" },
+  "25": { key: "admin.clients.pkgElite", fallback: "Elite (25+5)" },
+  duo30: { key: "admin.clients.pkgDuo", fallback: "Duo Performance" },
+  single: { key: "admin.clients.pkgSingle", fallback: "Single Session" },
+  trial: { key: "admin.clients.pkgTrial", fallback: "Intro Assessment" },
+  none: { key: "admin.clients.pkgNone", fallback: "No package" },
 };
 
 export default function AdminClients() {
+  const { t } = useTranslation();
   const { data: clients = [], isLoading } = useClients();
   const { data: packagesData = [] } = usePackages({ includeUser: true });
   const packages = packagesData as PackageWithUser[];
@@ -120,42 +122,41 @@ export default function AdminClients() {
 
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Clients</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+          {t("admin.clients.kicker", "Clients")}
+        </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-clients-title">
-          Clients
+          {t("admin.clientsTitle", "Clients")}
         </h1>
       </motion.div>
 
-      {/* Stat cards */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
       >
-        <StatCard icon={<Users size={16} />} label="Total clients" value={rows.length} accent="text-primary" />
+        <StatCard icon={<Users size={16} />} label={t("admin.clients.statTotal", "Total clients")} value={rows.length} accent="text-primary" />
         <StatCard
           icon={<ShieldCheck size={16} />}
-          label="Verified"
+          label={t("admin.clients.statVerified", "Verified")}
           value={totalVerified}
           accent="text-sky-400"
         />
         <StatCard
           icon={<PackageIcon size={16} />}
-          label="With active plan"
+          label={t("admin.clients.statActivePlan", "With active plan")}
           value={totalActivePkg}
           accent="text-amber-300"
         />
-        <StatCard icon={<Crown size={16} />} label="Sessions remaining" value={totalRemaining} accent="text-emerald-300" />
+        <StatCard icon={<Crown size={16} />} label={t("admin.clients.statSessionsRemaining", "Sessions remaining")} value={totalRemaining} accent="text-emerald-300" />
       </motion.div>
 
-      {/* Filters bar */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -167,7 +168,7 @@ export default function AdminClients() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, email, or phone..."
+            placeholder={t("admin.clients.searchPh", "Search by name, email, or phone...")}
             className="pl-9 bg-white/5 border-white/10"
             data-testid="input-search-clients"
           />
@@ -179,9 +180,9 @@ export default function AdminClients() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
-              <SelectItem value="verified">Verified only</SelectItem>
-              <SelectItem value="unverified">Unverified</SelectItem>
+              <SelectItem value="all">{t("admin.clients.filterAll", "All clients")}</SelectItem>
+              <SelectItem value="verified">{t("admin.clients.filterVerifiedOnly", "Verified only")}</SelectItem>
+              <SelectItem value="unverified">{t("admin.clients.filterUnverified", "Unverified")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={packageFilter} onValueChange={(v) => setPackageFilter(v as PackageFilterKey)}>
@@ -189,17 +190,19 @@ export default function AdminClients() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PACKAGE_FILTER_KEYS.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {PACKAGE_FILTER_LABELS[k]}
-                </SelectItem>
-              ))}
+              {PACKAGE_FILTER_KEYS.map((k) => {
+                const meta = PACKAGE_FILTER_I18N[k];
+                return (
+                  <SelectItem key={k} value={k}>
+                    {t(meta.key, meta.fallback)}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
       </motion.div>
 
-      {/* Table / list */}
       {isLoading ? (
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -209,20 +212,19 @@ export default function AdminClients() {
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
           {q || verifiedFilter !== "all" || packageFilter !== "all"
-            ? "No clients match these filters."
-            : "No clients yet. They'll appear here once they register."}
+            ? t("admin.clients.noMatch", "No clients match these filters.")
+            : t("admin.clients.noneYet", "No clients yet. They'll appear here once they register.")}
         </div>
       ) : (
         <>
-          {/* Desktop table */}
           <div className="hidden md:block rounded-2xl border border-white/10 bg-card/40 overflow-hidden">
             <div className="grid grid-cols-[1.4fr_1.4fr_1fr_1.2fr_1fr_0.8fr] gap-3 px-5 py-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-white/10 bg-white/[0.02]">
-              <div>Client</div>
-              <div>Email</div>
-              <div>Phone</div>
-              <div>Package</div>
-              <div>Sessions left</div>
-              <div className="text-right">Status</div>
+              <div>{t("admin.clients.colClient", "Client")}</div>
+              <div>{t("admin.clients.colEmail", "Email")}</div>
+              <div>{t("admin.clients.colPhone", "Phone")}</div>
+              <div>{t("admin.clients.colPackage", "Package")}</div>
+              <div>{t("admin.clients.colSessionsLeft", "Sessions left")}</div>
+              <div className="text-right">{t("admin.clients.colStatus", "Status")}</div>
             </div>
             <AnimatePresence initial={false}>
               {filtered.map((r, i) => (
@@ -231,7 +233,6 @@ export default function AdminClients() {
             </AnimatePresence>
           </div>
 
-          {/* Mobile cards */}
           <div className="md:hidden space-y-2">
             {filtered.map((r) => (
               <MobileCard key={r.client.id} row={r} />
@@ -239,15 +240,15 @@ export default function AdminClients() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            Showing {filtered.length} of {rows.length} clients
+            {t("admin.clients.showing", "Showing {n} of {total} clients")
+              .replace("{n}", String(filtered.length))
+              .replace("{total}", String(rows.length))}
           </p>
         </>
       )}
     </div>
   );
 }
-
-// ===========================================================================
 
 function StatCard({
   icon,
@@ -272,6 +273,7 @@ function StatCard({
 }
 
 function ClientRow({ row, index }: { row: Row; index: number }) {
+  const { t } = useTranslation();
   const { client, activePkg, remaining, packageLabel } = row;
   const { data: settings } = useSettings();
   const tier = normaliseTier(client.vipTier);
@@ -334,11 +336,13 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
           <>
             <p className="text-xs font-semibold truncate">{packageLabel}</p>
             <p className="text-[10px] text-muted-foreground truncate">
-              {VIP_TIER_LABELS[tier]} tier
+              {VIP_TIER_LABELS[tier]} {t("admin.clients.tier", "tier")}
             </p>
           </>
         ) : (
-          <p className="text-xs text-muted-foreground italic">No active plan</p>
+          <p className="text-xs text-muted-foreground italic">
+            {t("admin.clients.noActivePlan", "No active plan")}
+          </p>
         )}
       </div>
 
@@ -359,7 +363,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
           href={`/admin/clients/${client.id}`}
           data-testid={`link-view-client-${client.id}`}
           className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:bg-white/5 hover:border-primary/40 btn-soft"
-          title="Open profile"
+          title={t("admin.clients.openProfile", "Open profile")}
         >
           <ExternalLink size={12} />
         </Link>
@@ -370,7 +374,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
             rel="noopener noreferrer"
             data-testid={`button-whatsapp-${client.id}`}
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
-            title="WhatsApp"
+            title={t("admin.clients.whatsapp", "WhatsApp")}
           >
             <SiWhatsapp size={12} />
           </a>
@@ -381,6 +385,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
 }
 
 function MobileCard({ row }: { row: Row }) {
+  const { t } = useTranslation();
   const { client, activePkg, remaining, packageLabel } = row;
   const { data: settings } = useSettings();
   const tier = normaliseTier(client.vipTier);
@@ -418,11 +423,15 @@ function MobileCard({ row }: { row: Row }) {
 
       <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
         <div className="rounded-lg bg-white/5 px-2.5 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Package</p>
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {t("admin.clients.colPackage", "Package")}
+          </p>
           <p className="font-semibold truncate mt-0.5">{activePkg ? packageLabel : "—"}</p>
         </div>
         <div className="rounded-lg bg-white/5 px-2.5 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Sessions left</p>
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+            {t("admin.clients.colSessionsLeft", "Sessions left")}
+          </p>
           <p className="font-semibold mt-0.5 tabular-nums">
             {activePkg ? `${remaining} / ${activePkg.totalSessions}` : "—"}
           </p>
@@ -434,7 +443,7 @@ function MobileCard({ row }: { row: Row }) {
           href={`/admin/clients/${client.id}`}
           className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5 btn-soft"
         >
-          Open profile <ExternalLink size={11} />
+          {t("admin.clients.openProfile", "Open profile")} <ExternalLink size={11} />
         </Link>
         {client.phone && (
           <a
