@@ -23,6 +23,8 @@ import {
   Sparkles,
   Dumbbell,
   Info,
+  RefreshCw,
+  CalendarPlus,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -73,7 +75,9 @@ import { useToast } from "@/hooks/use-toast";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { InbodyTrends } from "@/components/InbodyTrends";
 import { exportInbodyReportPdf } from "@/lib/pdf-export";
-import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
+import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER, buildWhatsappMessage } from "@/lib/whatsapp";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 import { tierHasPriority, VIP_TIER_TAGLINES } from "@shared/schema";
 import {
   ALL_TIME_SLOTS,
@@ -85,6 +89,7 @@ import {
 import { formatTime12 } from "@/lib/time-format";
 import {
   PACKAGE_DEFINITIONS,
+  PACKAGE_TYPES,
   VIP_TIER_LABELS,
   VIP_TIER_DESCRIPTIONS,
   WORKOUT_CATEGORY_LABELS,
@@ -774,79 +779,503 @@ function SameDayAdjustDialog({
 
 // =============== PACKAGES TAB ===============
 
+// Mirrors server/storage.ts:computePackageStatus — pure function so we can
+// drive UI badges without an extra API field.
+function computePackageStatus(p: Package): "active" | "expiring_soon" | "expired" | "completed" {
+  if (p.usedSessions >= p.totalSessions) return "completed";
+  if (p.expiryDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp = new Date(p.expiryDate as any);
+    if (isFinite(exp.getTime())) {
+      const diffDays = Math.floor((exp.getTime() - today.getTime()) / 86400000);
+      if (diffDays < 0) return "expired";
+      if (diffDays <= 7) return "expiring_soon";
+    }
+  }
+  return "active";
+}
+
+function daysUntilExpiry(p: Package): number | null {
+  if (!p.expiryDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const exp = new Date(p.expiryDate as any);
+  if (!isFinite(exp.getTime())) return null;
+  return Math.floor((exp.getTime() - today.getTime()) / 86400000);
+}
+
 function PackagesTab({ userId }: { userId: number }) {
   const { t } = useTranslation();
   const { data: packages = [], isLoading } = usePackages({ userId });
   const list = packages as Package[];
 
+  const [renewalOpen, setRenewalOpen] = useState(false);
+  const [extensionPkg, setExtensionPkg] = useState<Package | null>(null);
+
+  // Pick the most-relevant package to anchor the action buttons against.
+  const activePkg =
+    list.find((p) => p.isActive && p.usedSessions < p.totalSessions) ||
+    list.find((p) => p.isActive) ||
+    null;
+
   if (isLoading) return <SkeletonCards />;
 
-  if (list.length === 0) {
-    return (
-      <EmptyState
-        title={t("dashboard.packagesNone")}
-        cta={
-          <p className="text-xs text-muted-foreground mt-3 max-w-sm mx-auto">
-            {t("dashboard.packagesEmptyDesc")}
-          </p>
-        }
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 justify-end">
+        <Button
+          variant="outline"
+          className="rounded-xl h-10"
+          onClick={() => setRenewalOpen(true)}
+          data-testid="button-request-renewal"
+        >
+          <RefreshCw size={14} className="mr-1.5" />
+          {t("dashboard.requestRenewal", "Request Renewal")}
+        </Button>
+        {activePkg && (
+          <Button
+            variant="outline"
+            className="rounded-xl h-10"
+            onClick={() => setExtensionPkg(activePkg)}
+            data-testid="button-request-extension"
+          >
+            <CalendarPlus size={14} className="mr-1.5" />
+            {t("dashboard.requestExtension", "Request Extension")}
+          </Button>
+        )}
+      </div>
+
+      {list.length === 0 ? (
+        <EmptyState
+          title={t("dashboard.packagesNone")}
+          cta={
+            <p className="text-xs text-muted-foreground mt-3 max-w-sm mx-auto">
+              {t("dashboard.packagesEmptyDesc")}
+            </p>
+          }
+        />
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-3">
+          {list.map((p) => {
+            const def = PACKAGE_DEFINITIONS[p.type];
+            const remaining = p.totalSessions - p.usedSessions;
+            const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
+            const status = computePackageStatus(p);
+            const days = daysUntilExpiry(p);
+
+            const statusBadge =
+              status === "expired"
+                ? { label: t("dashboard.packageStatusExpired", "Expired"), cls: "bg-red-500/10 border-red-500/30 text-red-300" }
+                : status === "expiring_soon"
+                  ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-amber-500/10 border-amber-500/30 text-amber-300" }
+                  : status === "completed"
+                    ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
+                    : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
+
+            return (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`rounded-2xl border p-5 ${
+                  p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"
+                }`}
+                data-testid={`package-card-${p.id}`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1">
+                      {def?.label || `${p.type} Package`}
+                    </p>
+                    <p className="text-3xl font-display font-bold">
+                      {remaining}
+                      <span className="text-base text-muted-foreground font-normal">
+                        {" "}
+                        / {p.totalSessions}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("dashboard.sessionsRemaining")}</p>
+                    {def?.tagline && (
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{def.tagline}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg border font-bold ${statusBadge.cls}`}
+                      data-testid={`package-status-${p.id}`}
+                    >
+                      {statusBadge.label}
+                    </span>
+                    {def?.isDuo && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                        <Users size={11} /> {t("dashboard.packageDuo")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground mt-3 space-y-1">
+                  <p>
+                    {t("dashboard.packageStarted").replace(
+                      "{date}",
+                      p.startDate
+                        ? format(new Date(p.startDate as any), "MMM d, yyyy")
+                        : p.purchasedAt
+                          ? format(new Date(p.purchasedAt), "MMM d, yyyy")
+                          : "—",
+                    )}
+                    {!p.isActive && ` • ${t("dashboard.packageClosed")}`}
+                  </p>
+                  {p.expiryDate && (
+                    <p data-testid={`package-expiry-${p.id}`}>
+                      {t("dashboard.packageExpiresOn", "Expires").replace(
+                        "{date}",
+                        format(new Date(p.expiryDate as any), "MMM d, yyyy"),
+                      )}
+                      {days !== null && days >= 0 && status !== "completed" && (
+                        <>
+                          {" • "}
+                          <span className={status === "expiring_soon" ? "text-amber-300 font-semibold" : ""}>
+                            {t("dashboard.packageExpiresIn", "{days} days left").replace("{days}", String(days))}
+                          </span>
+                        </>
+                      )}
+                      {days !== null && days < 0 && (
+                        <>
+                          {" • "}
+                          <span className="text-red-300 font-semibold">
+                            {t("dashboard.packageExpired", "Expired")}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  )}
+                </div>
+                {(status === "expired" || status === "expiring_soon" || status === "completed") && p.isActive && (
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg h-8 text-xs flex-1"
+                      onClick={() => setRenewalOpen(true)}
+                      data-testid={`button-renew-${p.id}`}
+                    >
+                      <RefreshCw size={11} className="mr-1" />
+                      {t("dashboard.requestRenewal", "Request Renewal")}
+                    </Button>
+                    {status !== "completed" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg h-8 text-xs flex-1"
+                        onClick={() => setExtensionPkg(p)}
+                        data-testid={`button-extend-${p.id}`}
+                      >
+                        <CalendarPlus size={11} className="mr-1" />
+                        {t("dashboard.requestExtension", "Request Extension")}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Inline rules card explaining the manual workflow. */}
+      <div className="rounded-2xl border border-white/5 bg-card/60 p-4 text-xs text-muted-foreground leading-relaxed">
+        <p className="text-foreground/85 font-semibold text-xs mb-1">
+          {t("dashboard.requestRulesTitle", "How package requests work")}
+        </p>
+        <ul className="list-disc pl-4 space-y-0.5">
+          <li>{t("dashboard.requestRule1", "Each session is one hour. Extra time must be agreed in advance and may add a fee.")}</li>
+          <li>{t("dashboard.requestRule2", "Renewals and extensions are confirmed manually by Youssef Ahmed after payment.")}</li>
+          <li>{t("dashboard.requestRule3", "All payments are final and non-refundable. Unused sessions expire on the package end date.")}</li>
+        </ul>
+      </div>
+
+      <RenewalRequestDialog
+        open={renewalOpen}
+        onOpenChange={setRenewalOpen}
+        userId={userId}
       />
-    );
-  }
+      <ExtensionRequestDialog
+        pkg={extensionPkg}
+        onClose={() => setExtensionPkg(null)}
+      />
+    </div>
+  );
+}
+
+// ----- Renewal request modal -----
+function RenewalRequestDialog({
+  open,
+  onOpenChange,
+  userId: _userId,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  userId: number;
+}) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const { data: settings } = useSettings();
+  const { toast } = useToast();
+  const [selectedType, setSelectedType] = useState<string>("10");
+  const [note, setNote] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/renewal-requests", {
+        requestedPackageType: selectedType,
+        clientNote: note.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/renewal-requests"] });
+      toast({
+        title: t("dashboard.requestSubmittedTitle", "Request submitted"),
+        description: t("dashboard.requestSubmittedDesc", "Youssef Ahmed will confirm your request shortly. Tap WhatsApp to follow up."),
+      });
+      onOpenChange(false);
+      setNote("");
+      // Open WhatsApp prefilled message after a brief delay so the toast is visible.
+      const def = PACKAGE_DEFINITIONS[selectedType];
+      const msg = buildWhatsappMessage("requestRenewal", {
+        clientName: user?.fullName,
+        requestedPackageLabel: def?.label || selectedType,
+      });
+      const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
+      setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+    },
+    onError: (e: any) => {
+      toast({
+        title: t("common.error", "Something went wrong"),
+        description: e?.message || t("dashboard.requestErrorDesc", "Please try again or contact us on WhatsApp."),
+        variant: "destructive",
+      });
+    },
+  });
 
   return (
-    <div className="grid sm:grid-cols-2 gap-3">
-      {list.map((p) => {
-        const def = PACKAGE_DEFINITIONS[p.type];
-        const remaining = p.totalSessions - p.usedSessions;
-        const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
-        return (
-          <motion.div
-            key={p.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`rounded-2xl border p-5 ${
-              p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"
-            }`}
-            data-testid={`package-card-${p.id}`}
-          >
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1">
-                  {def?.label || `${p.type} Package`}
-                </p>
-                <p className="text-3xl font-display font-bold">
-                  {remaining}
-                  <span className="text-base text-muted-foreground font-normal">
-                    {" "}
-                    / {p.totalSessions}
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">{t("dashboard.sessionsRemaining")}</p>
-                {def?.tagline && (
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">{def.tagline}</p>
-                )}
-              </div>
-              {def?.isDuo && (
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
-                  <Users size={11} /> {t("dashboard.packageDuo")}
-                </span>
-              )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md" data-testid="dialog-renewal">
+        <DialogHeader>
+          <DialogTitle>{t("dashboard.requestRenewalTitle", "Request a renewal")}</DialogTitle>
+          <DialogDescription>
+            {t("dashboard.requestRenewalDesc", "Pick a package and we'll let Youssef Ahmed know. He will confirm pricing and payment via WhatsApp.")}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+              {t("dashboard.choosePackage", "Choose a package")}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {PACKAGE_TYPES.filter((tp) => tp !== "single" && tp !== "trial").map((tp) => {
+                const def = PACKAGE_DEFINITIONS[tp];
+                const active = selectedType === tp;
+                return (
+                  <button
+                    key={tp}
+                    type="button"
+                    onClick={() => setSelectedType(tp)}
+                    data-testid={`renewal-package-${tp}`}
+                    className={`text-left rounded-xl border p-3 transition-colors ${
+                      active
+                        ? "border-primary/60 bg-primary/10"
+                        : "border-white/10 bg-white/5 hover:border-primary/30"
+                    }`}
+                  >
+                    <p className="text-xs uppercase tracking-wider text-primary font-bold">
+                      {def?.label || tp}
+                    </p>
+                    {def?.sessions && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {def.sessions} {t("dashboard.sessions", "sessions")}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all"
-                style={{ width: `${pct}%` }}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+              {t("dashboard.requestNote", "Note (optional)")}
+            </p>
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t("dashboard.requestNotePlaceholder", "Anything Youssef should know")}
+              data-testid="input-renewal-note"
+              className="h-11 rounded-xl"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-cancel-renewal"
+          >
+            {t("common.cancel", "Cancel")}
+          </Button>
+          <Button
+            className="rounded-xl"
+            disabled={mutation.isPending || !selectedType}
+            onClick={() => mutation.mutate()}
+            data-testid="button-submit-renewal"
+          >
+            {mutation.isPending && <Loader2 className="animate-spin mr-2" size={14} />}
+            {t("dashboard.submitAndWhatsapp", "Submit & open WhatsApp")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ----- Extension request modal -----
+function ExtensionRequestDialog({
+  pkg,
+  onClose,
+}: {
+  pkg: Package | null;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const { data: settings } = useSettings();
+  const { toast } = useToast();
+  const [days, setDays] = useState(7);
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (pkg) {
+      setDays(7);
+      setReason("");
+    }
+  }, [pkg?.id]);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!pkg) throw new Error("Missing package");
+      return apiRequest("POST", "/api/extension-requests", {
+        packageId: pkg.id,
+        requestedDays: days,
+        reason: reason.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/extension-requests"] });
+      toast({
+        title: t("dashboard.requestSubmittedTitle", "Request submitted"),
+        description: t("dashboard.requestSubmittedDesc", "Youssef Ahmed will confirm your request shortly. Tap WhatsApp to follow up."),
+      });
+      onClose();
+      const def = pkg ? PACKAGE_DEFINITIONS[pkg.type] : undefined;
+      const msg = buildWhatsappMessage("requestExtension", {
+        clientName: user?.fullName,
+        packageLabel: def?.label || pkg?.type,
+        requestedDays: days,
+        reason,
+      });
+      const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
+      setTimeout(() => window.open(url, "_blank", "noopener,noreferrer"), 250);
+    },
+    onError: (e: any) => {
+      toast({
+        title: t("common.error", "Something went wrong"),
+        description: e?.message || t("dashboard.requestErrorDesc", "Please try again or contact us on WhatsApp."),
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <Dialog open={!!pkg} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="sm:max-w-md" data-testid="dialog-extension">
+        <DialogHeader>
+          <DialogTitle>{t("dashboard.requestExtensionTitle", "Request an extension")}</DialogTitle>
+          <DialogDescription>
+            {t("dashboard.requestExtensionDesc", "Tell Youssef how many extra days you need. Approval is at his discretion.")}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+              {t("dashboard.daysToAdd", "Days to add")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {[3, 7, 14, 30].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDays(d)}
+                  data-testid={`extension-days-${d}`}
+                  className={`px-3 h-9 rounded-xl border text-xs font-semibold transition-colors ${
+                    days === d
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-white/10 bg-white/5 text-muted-foreground hover:border-primary/30"
+                  }`}
+                >
+                  +{d} {t("dashboard.daysShort", "days")}
+                </button>
+              ))}
+              <Input
+                type="number"
+                min={1}
+                max={60}
+                value={days}
+                onChange={(e) => setDays(Math.max(1, Math.min(60, Number(e.target.value) || 0)))}
+                className="h-9 w-20 rounded-xl"
+                data-testid="input-extension-days"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              {t("dashboard.packageStarted").replace("{date}", p.purchasedAt ? format(new Date(p.purchasedAt), "MMM d, yyyy") : "—")}
-              {!p.isActive && ` • ${t("dashboard.packageClosed")}`}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">
+              {t("dashboard.requestReason", "Reason (optional)")}
             </p>
-          </motion.div>
-        );
-      })}
-    </div>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={t("dashboard.requestReasonPlaceholder", "Travel, illness, schedule change...")}
+              data-testid="input-extension-reason"
+              className="h-11 rounded-xl"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            onClick={onClose}
+            data-testid="button-cancel-extension"
+          >
+            {t("common.cancel", "Cancel")}
+          </Button>
+          <Button
+            className="rounded-xl"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate()}
+            data-testid="button-submit-extension"
+          >
+            {mutation.isPending && <Loader2 className="animate-spin mr-2" size={14} />}
+            {t("dashboard.submitAndWhatsapp", "Submit & open WhatsApp")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

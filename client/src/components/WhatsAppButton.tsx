@@ -11,6 +11,9 @@ interface Props {
   variant?: "solid" | "outline" | "ghost" | "subtle";
   size?: "sm" | "md" | "lg";
   testId?: string;
+  // Optional click hook so callers can record/persist the request before
+  // the user is sent off to WhatsApp (best-effort, never blocks the link).
+  onClick?: () => void;
 }
 
 export function WhatsAppButton({
@@ -20,6 +23,7 @@ export function WhatsAppButton({
   variant = "solid",
   size = "md",
   testId = "button-whatsapp",
+  onClick,
 }: Props) {
   const { data: settings } = useSettings();
   const { t } = useTranslation();
@@ -44,6 +48,7 @@ export function WhatsAppButton({
       target="_blank"
       rel="noopener noreferrer"
       data-testid={testId}
+      onClick={onClick}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all",
         sizeStyles,

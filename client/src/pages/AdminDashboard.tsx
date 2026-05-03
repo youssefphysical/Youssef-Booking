@@ -14,6 +14,11 @@ import {
   Activity,
   Camera,
   Settings as SettingsIcon,
+  AlertTriangle,
+  CalendarX,
+  RefreshCw,
+  CalendarPlus,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { api } from "@shared/routes";
@@ -109,11 +114,50 @@ export default function AdminDashboard() {
 
       <AdminTabs />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <StatCard icon={<Users size={20} />} label={t("admin.dashboard.statTotalClients")} value={stats?.totalClients ?? 0} testId="stat-clients" />
         <StatCard icon={<CalendarCheck size={20} />} label={t("admin.dashboard.statUpcoming")} value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
         <StatCard icon={<Clock size={20} />} label={t("admin.dashboard.statToday")} value={stats?.bookingsToday ?? 0} testId="stat-today" />
         <StatCard icon={<TrendingUp size={20} />} label={t("admin.dashboard.statCompletedMo")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
+      </div>
+
+      {/* Premium business management — at-a-glance lifecycle counts. */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <StatCard
+          icon={<AlertTriangle size={20} />}
+          label={t("admin.dashboard.statExpiring", "Expiring soon")}
+          value={stats?.expiringPackages ?? 0}
+          testId="stat-expiring"
+          tone="warning"
+        />
+        <StatCard
+          icon={<CalendarX size={20} />}
+          label={t("admin.dashboard.statExpired", "Expired packages")}
+          value={stats?.expiredPackages ?? 0}
+          testId="stat-expired"
+          tone="danger"
+        />
+        <StatCard
+          icon={<RefreshCw size={20} />}
+          label={t("admin.dashboard.statPendingRenewals", "Pending renewals")}
+          value={stats?.pendingRenewals ?? 0}
+          testId="stat-pending-renewals"
+          tone="info"
+        />
+        <StatCard
+          icon={<CalendarPlus size={20} />}
+          label={t("admin.dashboard.statPendingExtensions", "Pending extensions")}
+          value={stats?.pendingExtensions ?? 0}
+          testId="stat-pending-extensions"
+          tone="info"
+        />
+        <StatCard
+          icon={<AlertCircle size={20} />}
+          label={t("admin.dashboard.statLowSessions", "Low-session clients")}
+          value={stats?.lowSessionClients ?? 0}
+          testId="stat-low-sessions"
+          tone="warning"
+        />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
@@ -188,12 +232,22 @@ function StatCard({
   label,
   value,
   testId,
+  tone = "default",
 }: {
   icon: React.ReactNode;
   label: string;
   value: number | string;
   testId: string;
+  tone?: "default" | "warning" | "danger" | "info";
 }) {
+  const toneStyle =
+    tone === "warning"
+      ? "bg-amber-500/15 text-amber-300"
+      : tone === "danger"
+        ? "bg-red-500/15 text-red-300"
+        : tone === "info"
+          ? "bg-sky-500/15 text-sky-300"
+          : "bg-primary/15 text-primary";
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -202,7 +256,7 @@ function StatCard({
       data-testid={testId}
     >
       <div className="flex items-center justify-between mb-3">
-        <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneStyle}`}>
           {icon}
         </div>
       </div>

@@ -65,6 +65,27 @@ export default function TermsConditions() {
       <LegalSection title={t("legal.terms.sec10Title")}>
         <p>{t("legal.terms.sec10Body")}</p>
       </LegalSection>
+
+      {/* New premium-business clauses */}
+      <LegalSection title={t("legal.terms.sec11Title")}>
+        <p>{t("legal.terms.sec11Body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("legal.terms.sec12Title")}>
+        <p>{t("legal.terms.sec12Body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("legal.terms.sec13Title")}>
+        <p>{t("legal.terms.sec13Body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("legal.terms.sec14Title")}>
+        <p>{t("legal.terms.sec14Body")}</p>
+      </LegalSection>
+
+      <LegalSection title={t("legal.terms.sec15Title")}>
+        <p>{t("legal.terms.sec15Body")}</p>
+      </LegalSection>
     </LegalPage>
   );
 }

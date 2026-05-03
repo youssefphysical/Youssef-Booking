@@ -469,60 +469,43 @@ function AdminLoginForm() {
   );
 }
 
-type ConsentKey =
-  | "info_accurate"
-  | "cancellation_policy"
-  | "terms_conditions"
-  | "medical_fitness"
-  | "data_storage";
+// Collapsed to a single consent that covers Terms, Cancellation Policy,
+// Privacy Policy, and Medical Disclaimer. The server still records every
+// underlying consent item below for audit purposes.
+type ConsentKey = "agree_all";
+
+const ALL_CONSENT_ITEMS: ConsentKey[] = ["agree_all"];
+const RECORDED_CONSENT_ITEMS = [
+  "info_accurate",
+  "cancellation_policy",
+  "terms_conditions",
+  "medical_fitness",
+  "data_storage",
+] as const;
 
 function useConsentItems(): { key: ConsentKey; label: React.ReactNode }[] {
   const { t } = useTranslation();
   return [
-    { key: "info_accurate", label: <>{t("auth.consentInfoAccurate")}</> },
     {
-      key: "cancellation_policy",
+      key: "agree_all",
       label: (
         <>
-          {t("auth.consentCancellationBefore")}{" "}
-          <Link href="/policy" className="text-primary underline hover:opacity-80">
-            {t("auth.consentCancellationLink")}
-          </Link>
-          .
-        </>
-      ),
-    },
-    {
-      key: "terms_conditions",
-      label: (
-        <>
-          {t("auth.consentTermsBefore")}{" "}
+          {t("auth.consentAgreeBefore")}{" "}
           <Link href="/terms" className="text-primary underline hover:opacity-80">
             {t("auth.consentTermsLink")}
           </Link>
-          .
-        </>
-      ),
-    },
-    {
-      key: "medical_fitness",
-      label: (
-        <>
-          {t("auth.consentMedicalBefore")}{" "}
-          <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
-            {t("auth.consentMedicalLink")}
+          {", "}
+          <Link href="/policy" className="text-primary underline hover:opacity-80">
+            {t("auth.consentCancellationLink")}
           </Link>
-          .
-        </>
-      ),
-    },
-    {
-      key: "data_storage",
-      label: (
-        <>
-          {t("auth.consentDataBefore")}{" "}
+          {", "}
           <Link href="/privacy" className="text-primary underline hover:opacity-80">
             {t("auth.consentDataLink")}
+          </Link>
+          {" "}
+          {t("auth.consentAgreeAnd")}{" "}
+          <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
+            {t("auth.consentMedicalLink")}
           </Link>
           .
         </>
@@ -537,11 +520,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
   const CONSENT_ITEMS = useConsentItems();
   const [step, setStep] = useState<1 | 2>(1);
   const [consents, setConsents] = useState<Record<ConsentKey, boolean>>({
-    info_accurate: false,
-    cancellation_policy: false,
-    terms_conditions: false,
-    medical_fitness: false,
-    data_storage: false,
+    agree_all: false,
   });
   const [inlineError, setInlineError] = useState<string | null>(null);
 
@@ -571,7 +550,13 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
     }
 
     try {
-      await registerMutation.mutateAsync({ ...values, consents } as any);
+      // Map the single agree-all checkbox onto every underlying consent item
+      // so the existing audit trail stays intact.
+      const expandedConsents = RECORDED_CONSENT_ITEMS.reduce(
+        (acc, k) => ({ ...acc, [k]: consents.agree_all }),
+        {} as Record<string, boolean>,
+      );
+      await registerMutation.mutateAsync({ ...values, consents: expandedConsents } as any);
     } catch (err: any) {
       setInlineError(
         err?.message?.includes("already")
