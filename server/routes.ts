@@ -104,7 +104,7 @@ function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00`);
 }
 
-const MIN_ADVANCE_BOOKING_MS = 3 * 60 * 60 * 1000;
+const MIN_ADVANCE_BOOKING_MS = 6 * 60 * 60 * 1000;
 const ALLOWED_BOOKING_HOURS = new Set([
   "06:00","07:00","08:00","09:00","10:00","11:00",
   "12:00","13:00","14:00","15:00","16:00","17:00",
@@ -417,7 +417,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       sessionAt.getTime() - Date.now() < MIN_ADVANCE_BOOKING_MS
     ) {
       return res.status(400).json({
-        message: "Booking must be made at least 3 hours in advance.",
+        message: "Bookings must be made at least 6 hours in advance.",
       });
     }
 

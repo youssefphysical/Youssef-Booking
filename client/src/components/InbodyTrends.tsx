@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import type { InbodyRecord } from "@shared/schema";
+import { useTranslation } from "@/i18n";
 
 type Direction = "up" | "down" | "flat";
 type Sentiment = "good" | "bad" | "neutral";
@@ -85,6 +86,7 @@ function strokeColour(sentiment: Sentiment): string {
 }
 
 export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
+  const { t } = useTranslation();
   // Sort oldest -> newest for a left-to-right time axis.
   const ordered = useMemo(
     () =>
@@ -126,7 +128,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
                 {s.label}
               </p>
-              <p className="text-sm text-muted-foreground mt-3">Not enough data</p>
+              <p className="text-sm text-muted-foreground mt-3">{t("common.notEnoughData", "Not enough data")}</p>
             </div>
           );
         }

@@ -6,7 +6,7 @@ export const ALL_TIME_SLOTS = [
   "18:00", "19:00", "20:00", "21:00", "22:00",
 ];
 
-export const MIN_ADVANCE_HOURS = 3;
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 
 export function formatStatus(status: string): string {

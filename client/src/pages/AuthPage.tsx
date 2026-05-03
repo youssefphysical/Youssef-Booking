@@ -604,7 +604,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
                   <FormLabel>{t("auth.fullName")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="John Doe"
+                      placeholder={t("auth.fullNamePlaceholder", "John Doe")}
                       {...field}
                       data-testid="input-fullname"
                       className="bg-white/5 border-white/10 h-11"

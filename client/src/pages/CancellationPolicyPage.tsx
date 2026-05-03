@@ -21,52 +21,37 @@ export default function CancellationPolicyPage() {
         <PolicyCard
           icon={<Clock />}
           tone="success"
-          title={`More than ${cutoff} hours`}
-          body="Free cancellation or reschedule. No charge."
+          title={t("legal.cancel.cardMoreTitle").replace("{h}", String(cutoff))}
+          body={t("legal.cancel.cardMoreBody")}
         />
         <PolicyCard
           icon={<AlertTriangle />}
           tone="danger"
-          title={`Less than ${cutoff} hours`}
-          body="Booking is locked. The session is counted and charged."
+          title={t("legal.cancel.cardLessTitle").replace("{h}", String(cutoff))}
+          body={t("legal.cancel.cardLessBody")}
         />
       </div>
 
-      <LegalSection title="1. Why this policy exists">
-        <p>
-          Personal training relies on protected one-on-one time. Late cancellations make it almost
-          impossible to fill the slot with another client. This policy is applied to protect
-          scheduling availability and ensure fairness for all clients.
-        </p>
+      <LegalSection title={t("legal.cancel.sec1Title")}>
+        <p>{t("legal.cancel.sec1Body")}</p>
       </LegalSection>
 
-      <LegalSection title="2. How to cancel or reschedule">
-        <p>
-          Open your client dashboard and use the cancel option on the booking, or message Youssef
-          on WhatsApp before the cutoff window. Within the cutoff window the booking is locked
-          inside the dashboard and only Youssef can change it.
-        </p>
+      <LegalSection title={t("legal.cancel.sec2Title")}>
+        <p>{t("legal.cancel.sec2Body")}</p>
       </LegalSection>
 
-      <LegalSection title="3. Genuine emergencies">
-        <p>
-          We understand emergencies happen. If something serious is going on (medical issue,
-          family emergency, accident), reach out to Youssef directly on WhatsApp. He may, at his
-          discretion, mark the cancellation as free.
-        </p>
+      <LegalSection title={t("legal.cancel.sec3Title")}>
+        <p>{t("legal.cancel.sec3Body")}</p>
       </LegalSection>
 
-      <LegalSection title="4. Late arrivals & no-shows">
-        <p>
-          Sessions end at the originally scheduled time, even if you arrive late. A complete
-          no-show is treated the same as a late cancellation and counts as a used session.
-        </p>
+      <LegalSection title={t("legal.cancel.sec4Title")}>
+        <p>{t("legal.cancel.sec4Body")}</p>
       </LegalSection>
 
       <div className="rounded-2xl border border-white/10 bg-card/60 p-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-bold">Have an emergency?</p>
-          <p className="text-sm text-muted-foreground">Talk to Youssef directly on WhatsApp.</p>
+          <p className="font-bold">{t("legal.cancel.emergencyTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("legal.cancel.emergencyBody")}</p>
         </div>
         <div className="flex gap-2">
           <Link
