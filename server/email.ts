@@ -21,6 +21,34 @@ export function trainerEmail(): string {
 
 export type SendResult = { sent: boolean; provider?: string; id?: string; error?: string };
 
+/**
+ * Returns a brief diagnosis of why email might not be deliverable, without
+ * exposing any secret values. Safe to surface to admin-only diagnostic
+ * endpoints. Returns null when configuration looks complete.
+ */
+export function emailConfigStatus(): {
+  ready: boolean;
+  reason?: string;
+  from: string;
+  hasApiKey: boolean;
+  hasCustomFrom: boolean;
+} {
+  const hasApiKey = !!process.env.RESEND_API_KEY;
+  const hasCustomFrom = !!process.env.EMAIL_FROM;
+  const from = process.env.EMAIL_FROM || FROM_DEFAULT;
+  if (!hasApiKey) {
+    return {
+      ready: false,
+      reason:
+        "RESEND_API_KEY missing — set it in Vercel env vars (Settings → Environment Variables) for Production.",
+      from,
+      hasApiKey,
+      hasCustomFrom,
+    };
+  }
+  return { ready: true, from, hasApiKey, hasCustomFrom };
+}
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
@@ -32,13 +60,15 @@ export async function sendEmail(opts: {
   const from = process.env.EMAIL_FROM || FROM_DEFAULT;
 
   if (!apiKey) {
-    console.info(
-      `[email] (skipped — no RESEND_API_KEY) to=${opts.to} subject=${JSON.stringify(opts.subject)}`,
+    // LOUD log — this is the #1 cause of "email never arrived" reports.
+    console.warn(
+      `[email] NOT SENT — RESEND_API_KEY missing in env. to=${opts.to} subject=${JSON.stringify(opts.subject)}. ` +
+        `Set RESEND_API_KEY (and optionally EMAIL_FROM) in Vercel → Project → Settings → Environment Variables.`,
     );
     if (process.env.NODE_ENV !== "production") {
       console.info(`--- Email body to ${opts.to} ---\n${opts.text}`);
     }
-    return { sent: false };
+    return { sent: false, error: "RESEND_API_KEY missing" };
   }
 
   try {
@@ -59,10 +89,17 @@ export async function sendEmail(opts: {
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
-      console.warn(`[email] Resend ${res.status}: ${txt.slice(0, 300)}`);
-      return { sent: false, provider: "resend", error: `${res.status}` };
+      console.warn(
+        `[email] Resend ${res.status} — to=${opts.to} from=${from}: ${txt.slice(0, 300)}`,
+      );
+      return {
+        sent: false,
+        provider: "resend",
+        error: `Resend ${res.status}: ${txt.slice(0, 200)}`,
+      };
     }
     const data = (await res.json().catch(() => ({}))) as { id?: string };
+    console.log(`[email] sent via Resend id=${data.id ?? "?"} to=${opts.to}`);
     return { sent: true, provider: "resend", id: data.id };
   } catch (e: any) {
     console.warn("[email] Resend request failed:", e?.message || e);

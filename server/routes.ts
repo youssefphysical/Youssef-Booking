@@ -55,6 +55,7 @@ import {
   trainerEmail,
   buildTrainerBookingEmail,
   buildClientBookingEmail,
+  emailConfigStatus,
 } from "./email";
 import { CLIENT_BOOKING_EMAIL_I18N } from "./email-i18n";
 import { z } from "zod";
@@ -740,6 +741,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/admin/notifications/read-all", requireAdmin, async (_req, res) => {
     await storage.markAllAdminNotificationsRead();
     res.json({ ok: true });
+  });
+
+  // Admin-only email diagnostic. Sends a real test email via the configured
+  // provider and returns a clean status — never exposes secret values.
+  // Use to verify production email delivery without inspecting logs.
+  app.post("/api/admin/test-email", requireAdmin, async (req, res) => {
+    const cfg = emailConfigStatus();
+    if (!cfg.ready) {
+      return res.json({
+        ok: false,
+        reason: cfg.reason,
+        config: {
+          hasApiKey: cfg.hasApiKey,
+          hasCustomFrom: cfg.hasCustomFrom,
+          from: cfg.from,
+        },
+      });
+    }
+    const to =
+      typeof req.body?.to === "string" && /^\S+@\S+\.\S+$/.test(req.body.to)
+        ? (req.body.to as string)
+        : trainerEmail();
+    const result = await sendEmail({
+      to,
+      subject: "Youssef Fitness — email delivery test",
+      text:
+        `This is a test email from the Youssef Fitness admin diagnostic endpoint.\n\n` +
+        `If you received this, Resend + EMAIL_FROM are wired correctly.\n\n` +
+        `Sent at ${new Date().toISOString()}.`,
+      html:
+        `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#111;max-width:520px">` +
+        `<h2 style="margin:0 0 12px;color:#0a7d4f">Email delivery test</h2>` +
+        `<p style="margin:0 0 12px">This is a test email from the Youssef Fitness admin diagnostic endpoint.</p>` +
+        `<p style="margin:0;color:#666;font-size:13px">Sent at ${new Date().toISOString()}.</p>` +
+        `</div>`,
+    });
+    if (result.sent) {
+      return res.json({
+        ok: true,
+        provider: result.provider,
+        id: result.id,
+        to,
+        from: cfg.from,
+      });
+    }
+    return res.json({
+      ok: false,
+      reason: result.error || "send failed",
+      provider: result.provider,
+      to,
+      from: cfg.from,
+    });
   });
 
   app.post("/api/bookings/:id/cancel", requireAuth, async (req, res) => {
