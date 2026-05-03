@@ -129,10 +129,10 @@ export default function AdminClientDetail() {
     return (
       <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
         <Link href="/admin/clients" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mb-4">
-          <ArrowLeft size={14} /> {t("admin.clientDetail.back", "All clients")}
+          <ArrowLeft size={14} /> {t("admin.clientDetail.back")}
         </Link>
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-          {t("admin.clientDetail.loading", "Loading client...")}
+          {t("admin.clientDetail.loading")}
         </div>
       </div>
     );
@@ -145,7 +145,7 @@ export default function AdminClientDetail() {
         data-testid="link-back-clients"
         className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
       >
-        <ArrowLeft size={14} /> {t("admin.clientDetail.back", "All clients")}
+        <ArrowLeft size={14} /> {t("admin.clientDetail.back")}
       </Link>
 
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6 flex flex-wrap gap-5 items-start justify-between">
@@ -186,18 +186,18 @@ export default function AdminClientDetail() {
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-white/5 mb-6 h-11 flex flex-wrap">
-          <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview", "Overview")}</TabsTrigger>
+          <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabBookings", "Bookings")}
+            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabBookings")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackages", "Packages")}
+            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackages")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <Activity size={13} className="mr-1.5" /> {t("admin.clientDetail.tabInbody", "InBody")}
+            <Activity size={13} className="mr-1.5" /> {t("admin.clientDetail.tabInbody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress", "Progress")}
+            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress")}
           </TabsTrigger>
         </TabsList>
 

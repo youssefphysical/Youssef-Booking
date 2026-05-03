@@ -54,19 +54,19 @@ export function Navigation() {
           <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
             <h1 className="text-xl font-bold font-display text-gradient-blue">Youssef Ahmed</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
-              {t("nav.adminTagline", "Personal Training · Admin")}
+              {t("nav.adminTagline")}
             </p>
           </Link>
 
           <div className="flex-1 space-y-1">
-            <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard", "Dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings", "Bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients", "Clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages", "Packages")} active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
             {isSuperAdmin && (
-              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff", "Staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
             )}
-            <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings", "Settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
           </div>
 
           <div className="pt-4 border-t border-border space-y-2">
@@ -75,7 +75,7 @@ export function Navigation() {
             </div>
             <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm hover:bg-white/5 text-muted-foreground" data-testid="link-public-site">
               <Home size={16} />
-              <span>{t("nav.publicSite", "View public site")}</span>
+              <span>{t("nav.publicSite")}</span>
             </Link>
             <button
               onClick={() => {
@@ -86,7 +86,7 @@ export function Navigation() {
               className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10"
             >
               <LogOut size={16} />
-              <span>{t("nav.signOut", "Logout")}</span>
+              <span>{t("nav.signOut")}</span>
             </button>
           </div>
         </nav>
@@ -104,24 +104,24 @@ export function Navigation() {
           data-testid="link-brand"
         >
           <span className="text-gradient-blue whitespace-nowrap">
-            <span className="hidden sm:inline">{t("nav.brand", "Personal Training Service")}</span>
+            <span className="hidden sm:inline">{t("nav.brand")}</span>
             <span className="sm:hidden">Youssef Ahmed</span>
           </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          <TopNavLink href="/" label={t("nav.home", "Home")} testKey="home" active={location === "/"} />
-          <TopNavLink href="/book" label={t("nav.book", "Book")} testKey="book" active={location === "/book"} />
-          <TopNavLink href="/how-it-works" label={t("nav.howItWorks", "How it Works")} testKey="how-it-works" active={location === "/how-it-works"} />
-          <TopNavLink href="/policy" label={t("nav.policy", "Policy")} testKey="policy" active={location === "/policy"} />
+          <TopNavLink href="/" label={t("nav.home")} testKey="home" active={location === "/"} />
+          <TopNavLink href="/book" label={t("nav.book")} testKey="book" active={location === "/book"} />
+          <TopNavLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" active={location === "/how-it-works"} />
+          <TopNavLink href="/policy" label={t("nav.policy")} testKey="policy" active={location === "/policy"} />
           {user?.role === "client" && (
-            <TopNavLink href="/dashboard" label={t("nav.mySessions", "My Sessions")} testKey="my-sessions" active={location.startsWith("/dashboard")} />
+            <TopNavLink href="/dashboard" label={t("nav.mySessions")} testKey="my-sessions" active={location.startsWith("/dashboard")} />
           )}
           {user?.role === "client" && (
-            <TopNavLink href="/profile" label={t("nav.profile", "Profile")} testKey="profile" active={location === "/profile"} />
+            <TopNavLink href="/profile" label={t("nav.profile")} testKey="profile" active={location === "/profile"} />
           )}
           {user?.role === "admin" && (
-            <TopNavLink href="/admin" label={t("nav.controlPanel", "Control Panel")} testKey="control-panel" active={location.startsWith("/admin")} />
+            <TopNavLink href="/admin" label={t("nav.controlPanel")} testKey="control-panel" active={location.startsWith("/admin")} />
           )}
         </nav>
 
@@ -158,7 +158,7 @@ export function Navigation() {
                 className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 whitespace-nowrap btn-soft"
               >
                 <LogOut size={14} className="shrink-0" />
-                <span className="whitespace-nowrap">{t("nav.signOut", "Sign out")}</span>
+                <span className="whitespace-nowrap">{t("nav.signOut")}</span>
               </button>
             </>
           ) : (
@@ -168,7 +168,7 @@ export function Navigation() {
               className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press"
             >
               <LogIn size={14} className="shrink-0" />
-              <span className="whitespace-nowrap">{t("nav.signIn", "Sign in")}</span>
+              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
             </Link>
           )}
           <button
@@ -185,18 +185,18 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl">
           <div className="px-5 py-4 space-y-1">
-            <MobileLink href="/" label={t("nav.home", "Home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/book" label={t("nav.book", "Book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/how-it-works" label={t("nav.howItWorks", "How it Works")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
-            <MobileLink href="/policy" label={t("nav.policy", "Policy")} testKey="policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/" label={t("nav.home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/book" label={t("nav.book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            <MobileLink href="/policy" label={t("nav.policy")} testKey="policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
             {user?.role === "client" && (
               <>
-                <MobileLink href="/dashboard" label={t("nav.mySessions", "My Sessions")} testKey="my-sessions" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
-                <MobileLink href="/profile" label={t("nav.profile", "Profile")} testKey="profile" icon={<User size={16} />} onClose={() => setOpen(false)} />
+                <MobileLink href="/dashboard" label={t("nav.mySessions")} testKey="my-sessions" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+                <MobileLink href="/profile" label={t("nav.profile")} testKey="profile" icon={<User size={16} />} onClose={() => setOpen(false)} />
               </>
             )}
             {user?.role === "admin" && (
-              <MobileLink href="/admin" label={t("nav.controlPanel", "Control Panel")} testKey="control-panel" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+              <MobileLink href="/admin" label={t("nav.controlPanel")} testKey="control-panel" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
             )}
             <div className="pt-3 mt-3 border-t border-white/5">
               <LanguageSelector variant="full" className="w-full justify-between" />

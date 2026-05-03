@@ -29,14 +29,14 @@ export function translateStatus(
   t: (key: string, fallback?: string) => string,
 ): string {
   switch (status) {
-    case "upcoming": return t("admin.status.upcoming", "Upcoming");
-    case "confirmed": return t("admin.status.confirmed", "Confirmed");
-    case "completed": return t("admin.status.completed", "Completed");
-    case "cancelled": return t("admin.status.cancelled", "Cancelled");
-    case "free_cancelled": return t("admin.status.freeCancelled", "Free Cancellation");
-    case "late_cancelled": return t("admin.status.lateCancelled", "Late Cancellation – Session Charged");
-    case "emergency_cancelled": return t("admin.status.emergencyCancelled", "Protected Cancellation");
-    case "no_show": return t("admin.status.noShow", "No-Show");
+    case "upcoming": return t("admin.status.upcoming");
+    case "confirmed": return t("admin.status.confirmed");
+    case "completed": return t("admin.status.completed");
+    case "cancelled": return t("admin.status.cancelled");
+    case "free_cancelled": return t("admin.status.freeCancelled");
+    case "late_cancelled": return t("admin.status.lateCancelled");
+    case "emergency_cancelled": return t("admin.status.emergencyCancelled");
+    case "no_show": return t("admin.status.noShow");
     default: return status;
   }
 }

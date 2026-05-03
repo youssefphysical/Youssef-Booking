@@ -11,35 +11,35 @@ export function Footer() {
           <p className="font-display text-foreground/90 text-sm tracking-wide">
             <span className="text-gradient-blue font-semibold">Youssef Ahmed</span>
             <span className="text-muted-foreground/60 mx-2">·</span>
-            {t("footer.tagline", "Personal Training, Dubai")}
+            {t("footer.tagline")}
           </p>
           <p className="text-[11px] text-muted-foreground/70 mt-1">
-            © {new Date().getFullYear()} Youssef Ahmed. {t("footer.rights", "All rights reserved.")}
+            © {new Date().getFullYear()} Youssef Ahmed. {t("footer.rights")}
           </p>
         </div>
         <div className="flex flex-col items-center gap-4 md:items-end">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 no-underline">
             <Link href="/how-it-works" className="hover:text-primary no-underline" data-testid="link-footer-how-it-works">
-              {t("nav.howItWorks", "How it Works")}
+              {t("nav.howItWorks")}
             </Link>
             <Link href="/privacy" className="hover:text-primary no-underline" data-testid="link-footer-privacy">
-              {t("footer.privacy", "Privacy Policy")}
+              {t("footer.privacy")}
             </Link>
             <Link href="/terms" className="hover:text-primary no-underline" data-testid="link-footer-terms">
-              {t("footer.terms", "Terms & Conditions")}
+              {t("footer.terms")}
             </Link>
             <Link href="/policy" className="hover:text-primary no-underline" data-testid="link-footer-policy">
-              {t("footer.cancellation", "Cancellation Policy")}
+              {t("footer.cancellation")}
             </Link>
             <Link
               href="/medical-disclaimer"
               className="hover:text-primary no-underline"
               data-testid="link-footer-medical"
             >
-              {t("footer.medical", "Medical Disclaimer")}
+              {t("footer.medical")}
             </Link>
             <Link href="/cookies" className="hover:text-primary no-underline" data-testid="link-footer-cookies">
-              {t("footer.cookies", "Cookie Policy")}
+              {t("footer.cookies")}
             </Link>
           </div>
           <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export function Footer() {
               data-testid="link-footer-whatsapp"
             >
               <SiWhatsapp size={14} className="shrink-0" />
-              <span>{t("whatsapp.short", "WhatsApp")}</span>
+              <span>{t("whatsapp.short")}</span>
             </a>
             <a
               href="https://instagram.com/youssef.fitness"
@@ -61,7 +61,7 @@ export function Footer() {
               data-testid="link-footer-instagram"
             >
               <SiInstagram size={14} className="shrink-0" />
-              <span>{t("instagram.short", "Instagram")}</span>
+              <span>{t("instagram.short")}</span>
             </a>
           </div>
         </div>

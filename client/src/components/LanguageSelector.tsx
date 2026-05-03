@@ -28,7 +28,7 @@ export function LanguageSelector({
         <button
           type="button"
           data-testid="button-language-selector"
-          aria-label={t("nav.language", "Language")}
+          aria-label={t("nav.language")}
           className={cn(
             "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-sm whitespace-nowrap shrink-0 btn-soft",
             variant === "compact" ? "px-2 sm:px-2.5" : "px-3",
@@ -50,7 +50,7 @@ export function LanguageSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[200px]">
         <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-          {t("nav.language", "Language")}
+          {t("nav.language")}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {LANGUAGES.map((l) => {

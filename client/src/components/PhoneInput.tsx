@@ -394,7 +394,7 @@ export function PhoneInput({
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("phone.searchCountry", "Search country or code")}
+              placeholder={t("phone.searchCountry")}
               data-testid="input-country-search"
               className="w-full h-9 px-3 rounded-md bg-white/5 border border-white/10 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
             />

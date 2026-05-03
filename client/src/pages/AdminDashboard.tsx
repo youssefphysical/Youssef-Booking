@@ -97,38 +97,38 @@ export default function AdminDashboard() {
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
-          {t("admin.tabs.overview", "Overview")}
+          {t("admin.tabs.overview")}
         </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-admin-title">
-          {t("admin.dashboardTitle", "Admin Dashboard")}
+          {t("admin.dashboardTitle")}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {t("admin.dashboard.subtitle", "Manage clients, bookings, packages, and settings — all in one place.")}
+          {t("admin.dashboard.subtitle")}
         </p>
       </div>
 
       <AdminTabs />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={<Users size={20} />} label={t("admin.dashboard.statTotalClients", "Total Clients")} value={stats?.totalClients ?? 0} testId="stat-clients" />
-        <StatCard icon={<CalendarCheck size={20} />} label={t("admin.dashboard.statUpcoming", "Upcoming")} value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
-        <StatCard icon={<Clock size={20} />} label={t("admin.dashboard.statToday", "Today")} value={stats?.bookingsToday ?? 0} testId="stat-today" />
-        <StatCard icon={<TrendingUp size={20} />} label={t("admin.dashboard.statCompletedMo", "Completed (mo.)")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
+        <StatCard icon={<Users size={20} />} label={t("admin.dashboard.statTotalClients")} value={stats?.totalClients ?? 0} testId="stat-clients" />
+        <StatCard icon={<CalendarCheck size={20} />} label={t("admin.dashboard.statUpcoming")} value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
+        <StatCard icon={<Clock size={20} />} label={t("admin.dashboard.statToday")} value={stats?.bookingsToday ?? 0} testId="stat-today" />
+        <StatCard icon={<TrendingUp size={20} />} label={t("admin.dashboard.statCompletedMo")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-3xl border border-white/5 bg-card/60 p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display font-bold text-lg">
-              {t("admin.dashboard.upcomingSessions", "Upcoming sessions")}
+              {t("admin.dashboard.upcomingSessions")}
             </h3>
             <Link href="/admin/bookings" className="text-xs text-primary inline-flex items-center gap-1" data-testid="link-all-bookings">
-              {t("admin.dashboard.viewAll", "View all")} <ArrowRight size={12} />
+              {t("admin.dashboard.viewAll")} <ArrowRight size={12} />
             </Link>
           </div>
           {upcoming.length === 0 ? (
             <p className="text-sm text-muted-foreground py-10 text-center">
-              {t("admin.dashboard.noUpcoming", "No upcoming sessions.")}
+              {t("admin.dashboard.noUpcoming")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{b.user?.fullName || t("admin.bookings.client", "Client")}</p>
+                    <p className="text-sm font-semibold truncate">{b.user?.fullName || t("admin.bookings.client")}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatTime12(b.timeSlot)} • {b.user?.phone || ""}
                     </p>
@@ -165,17 +165,17 @@ export default function AdminDashboard() {
 
         <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
           <h3 className="font-display font-bold text-lg mb-5">
-            {t("admin.dashboard.quickActions", "Quick actions")}
+            {t("admin.dashboard.quickActions")}
           </h3>
           <div className="space-y-2">
-            <QuickAction href="/admin/clients" label={t("admin.dashboard.qaViewClients", "View & edit clients")} testKey="view-clients" />
-            <QuickAction href="/admin/bookings" label={t("admin.dashboard.qaManageBookings", "Manage bookings")} testKey="manage-bookings" />
-            <QuickAction href="/admin/packages" label={t("admin.dashboard.qaSessions", "Sessions & packages")} testKey="sessions-packages" />
-            <QuickAction href="/admin/settings" label={t("admin.dashboard.qaSettings", "Off days, blocked hours, profile")} testKey="settings" />
-            <QuickAction href="/" label={t("admin.dashboard.qaPublic", "View public site")} testKey="public" external />
+            <QuickAction href="/admin/clients" label={t("admin.dashboard.qaViewClients")} testKey="view-clients" />
+            <QuickAction href="/admin/bookings" label={t("admin.dashboard.qaManageBookings")} testKey="manage-bookings" />
+            <QuickAction href="/admin/packages" label={t("admin.dashboard.qaSessions")} testKey="sessions-packages" />
+            <QuickAction href="/admin/settings" label={t("admin.dashboard.qaSettings")} testKey="settings" />
+            <QuickAction href="/" label={t("admin.dashboard.qaPublic")} testKey="public" external />
           </div>
           <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">
-            {t("admin.dashboard.qaHint", "InBody scans and progress photos are managed inside each client's profile — open any client from the Clients tab.")}
+            {t("admin.dashboard.qaHint")}
           </p>
         </div>
       </div>

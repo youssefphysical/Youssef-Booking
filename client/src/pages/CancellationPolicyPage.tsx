@@ -59,7 +59,7 @@ export default function CancellationPolicyPage() {
             data-testid="link-policy-book"
             className="inline-flex items-center h-11 px-4 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-semibold whitespace-nowrap"
           >
-            {t("hero.bookSession", "Book a Session")}
+            {t("hero.bookSession")}
           </Link>
           <WhatsAppButton testId="button-policy-whatsapp" />
         </div>

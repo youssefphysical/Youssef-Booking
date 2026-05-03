@@ -128,7 +128,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
                 {s.label}
               </p>
-              <p className="text-sm text-muted-foreground mt-3">{t("common.notEnoughData", "Not enough data")}</p>
+              <p className="text-sm text-muted-foreground mt-3">{t("common.notEnoughData")}</p>
             </div>
           );
         }

@@ -80,15 +80,15 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">
               <MapPin size={12} className="text-primary" />
-              <span>{t("hero.location", "Dubai, UAE")}</span>
+              <span>{t("hero.location")}</span>
               <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-              <span>{t("hero.tagline", "Personal Training & Coaching")}</span>
+              <span>{t("hero.tagline")}</span>
             </div>
             <h1
               className="text-4xl md:text-6xl font-display font-bold leading-[1.05]"
               data-testid="text-hero-name"
             >
-              {t("hero.title", "Youssef Ahmed")}
+              {t("hero.title")}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground mt-5 leading-relaxed max-w-xl">
               {t("hero.role")}
@@ -110,11 +110,11 @@ export default function HomePage() {
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
                 <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
                   <Calendar size={18} />
-                  {t("hero.bookSession", "Book a Session")}
+                  {t("hero.bookSession")}
                 </button>
               </Link>
               <WhatsAppButton
-                label={t("hero.contactWhatsapp", "Contact on WhatsApp")}
+                label={t("hero.contactWhatsapp")}
                 size="md"
                 testId="button-hero-whatsapp"
                 className="w-full sm:w-auto"
@@ -151,10 +151,10 @@ export default function HomePage() {
                 <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60">
                   <UserIcon size={64} />
                   <p className="mt-4 text-xs uppercase tracking-widest">
-                    {t("hero.imageComingSoon", "Profile photo coming soon")}
+                    {t("hero.imageComingSoon")}
                   </p>
                   <p className="mt-1 text-[10px] text-muted-foreground/50">
-                    {t("hero.imageHint", "Editable from admin settings")}
+                    {t("hero.imageHint")}
                   </p>
                 </div>
               )}
@@ -175,8 +175,8 @@ export default function HomePage() {
       {/* ABOUT */}
       <section className="max-w-4xl mx-auto px-5 py-20" id="about">
         <SectionHeader
-          eyebrow={t("section.about.eyebrow", "About Youssef")}
-          title={t("section.about.title", "A foundation built on academics, sport, and service")}
+          eyebrow={t("section.about.eyebrow")}
+          title={t("section.about.title")}
         />
         <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
           {bio}
@@ -189,8 +189,8 @@ export default function HomePage() {
       {/* COACHING SPECIALTIES */}
       <section className="max-w-6xl mx-auto px-5 py-12" id="specialties">
         <SectionHeader
-          eyebrow={t("section.specialties.eyebrow", "What I Coach")}
-          title={t("section.specialties.title", "Coaching Specialties")}
+          eyebrow={t("section.specialties.eyebrow")}
+          title={t("section.specialties.title")}
           subtitle={t("section.specialties.subtitle")}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -217,8 +217,8 @@ export default function HomePage() {
       {/* CERTIFICATIONS */}
       <section className="max-w-5xl mx-auto px-5 py-20" id="certifications">
         <SectionHeader
-          eyebrow={t("section.certs.eyebrow", "Credentials")}
-          title={t("section.certs.title", "Certifications & Professional Background")}
+          eyebrow={t("section.certs.eyebrow")}
+          title={t("section.certs.title")}
           subtitle={t("section.certs.subtitle")}
         />
 
@@ -254,8 +254,8 @@ export default function HomePage() {
       {/* TRANSFORMATIONS PLACEHOLDER */}
       <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
         <SectionHeader
-          eyebrow={t("section.transformations.eyebrow", "Results")}
-          title={t("section.transformations.title", "Client Transformations")}
+          eyebrow={t("section.transformations.eyebrow")}
+          title={t("section.transformations.title")}
           subtitle={t("section.transformations.subtitle")}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -267,7 +267,7 @@ export default function HomePage() {
             >
               <Dumbbell size={32} />
               <p className="mt-3 text-xs uppercase tracking-widest">
-                {t("section.transformations.placeholder", "Photo coming soon")}
+                {t("section.transformations.placeholder")}
               </p>
             </div>
           ))}
@@ -281,10 +281,10 @@ export default function HomePage() {
           <div className="relative">
             <div className="text-center max-w-xl mx-auto">
               <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
-                {t("section.cta.eyebrow", "Get Started")}
+                {t("section.cta.eyebrow")}
               </p>
               <h2 className="text-3xl md:text-4xl font-display font-bold">
-                {t("section.cta.title", "Ready to start?")}
+                {t("section.cta.title")}
               </h2>
               <p className="text-muted-foreground mt-3">{t("section.cta.subtitle")}</p>
             </div>
@@ -292,11 +292,11 @@ export default function HomePage() {
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
               <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
                 <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
-                  {t("section.cta.bookSession", "Book a Session")} <ArrowRight size={16} />
+                  {t("section.cta.bookSession")} <ArrowRight size={16} />
                 </button>
               </Link>
               <WhatsAppButton
-                label={t("section.cta.message", "Message on WhatsApp")}
+                label={t("section.cta.message")}
                 message="Hi Youssef, I'd like to ask about your training programs."
                 testId="button-cta-whatsapp"
                 className="w-full sm:w-auto"

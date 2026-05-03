@@ -128,10 +128,10 @@ export default function AdminClients() {
         className="mb-6"
       >
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
-          {t("admin.clients.kicker", "Clients")}
+          {t("admin.clients.kicker")}
         </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-clients-title">
-          {t("admin.clientsTitle", "Clients")}
+          {t("admin.clientsTitle")}
         </h1>
       </motion.div>
 
@@ -141,20 +141,20 @@ export default function AdminClients() {
         transition={{ delay: 0.05 }}
         className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
       >
-        <StatCard icon={<Users size={16} />} label={t("admin.clients.statTotal", "Total clients")} value={rows.length} accent="text-primary" />
+        <StatCard icon={<Users size={16} />} label={t("admin.clients.statTotal")} value={rows.length} accent="text-primary" />
         <StatCard
           icon={<ShieldCheck size={16} />}
-          label={t("admin.clients.statVerified", "Verified")}
+          label={t("admin.clients.statVerified")}
           value={totalVerified}
           accent="text-sky-400"
         />
         <StatCard
           icon={<PackageIcon size={16} />}
-          label={t("admin.clients.statActivePlan", "With active plan")}
+          label={t("admin.clients.statActivePlan")}
           value={totalActivePkg}
           accent="text-amber-300"
         />
-        <StatCard icon={<Crown size={16} />} label={t("admin.clients.statSessionsRemaining", "Sessions remaining")} value={totalRemaining} accent="text-emerald-300" />
+        <StatCard icon={<Crown size={16} />} label={t("admin.clients.statSessionsRemaining")} value={totalRemaining} accent="text-emerald-300" />
       </motion.div>
 
       <motion.div
@@ -168,7 +168,7 @@ export default function AdminClients() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={t("admin.clients.searchPh", "Search by name, email, or phone...")}
+            placeholder={t("admin.clients.searchPh")}
             className="pl-9 bg-white/5 border-white/10"
             data-testid="input-search-clients"
           />
@@ -180,9 +180,9 @@ export default function AdminClients() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("admin.clients.filterAll", "All clients")}</SelectItem>
-              <SelectItem value="verified">{t("admin.clients.filterVerifiedOnly", "Verified only")}</SelectItem>
-              <SelectItem value="unverified">{t("admin.clients.filterUnverified", "Unverified")}</SelectItem>
+              <SelectItem value="all">{t("admin.clients.filterAll")}</SelectItem>
+              <SelectItem value="verified">{t("admin.clients.filterVerifiedOnly")}</SelectItem>
+              <SelectItem value="unverified">{t("admin.clients.filterUnverified")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={packageFilter} onValueChange={(v) => setPackageFilter(v as PackageFilterKey)}>
@@ -212,19 +212,19 @@ export default function AdminClients() {
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
           {q || verifiedFilter !== "all" || packageFilter !== "all"
-            ? t("admin.clients.noMatch", "No clients match these filters.")
-            : t("admin.clients.noneYet", "No clients yet. They'll appear here once they register.")}
+            ? t("admin.clients.noMatch")
+            : t("admin.clients.noneYet")}
         </div>
       ) : (
         <>
           <div className="hidden md:block rounded-2xl border border-white/10 bg-card/40 overflow-hidden">
             <div className="grid grid-cols-[1.4fr_1.4fr_1fr_1.2fr_1fr_0.8fr] gap-3 px-5 py-3 text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-b border-white/10 bg-white/[0.02]">
-              <div>{t("admin.clients.colClient", "Client")}</div>
-              <div>{t("admin.clients.colEmail", "Email")}</div>
-              <div>{t("admin.clients.colPhone", "Phone")}</div>
-              <div>{t("admin.clients.colPackage", "Package")}</div>
-              <div>{t("admin.clients.colSessionsLeft", "Sessions left")}</div>
-              <div className="text-right">{t("admin.clients.colStatus", "Status")}</div>
+              <div>{t("admin.clients.colClient")}</div>
+              <div>{t("admin.clients.colEmail")}</div>
+              <div>{t("admin.clients.colPhone")}</div>
+              <div>{t("admin.clients.colPackage")}</div>
+              <div>{t("admin.clients.colSessionsLeft")}</div>
+              <div className="text-right">{t("admin.clients.colStatus")}</div>
             </div>
             <AnimatePresence initial={false}>
               {filtered.map((r, i) => (
@@ -240,7 +240,7 @@ export default function AdminClients() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            {t("admin.clients.showing", "Showing {n} of {total} clients")
+            {t("admin.clients.showing")
               .replace("{n}", String(filtered.length))
               .replace("{total}", String(rows.length))}
           </p>
@@ -336,12 +336,12 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
           <>
             <p className="text-xs font-semibold truncate">{packageLabel}</p>
             <p className="text-[10px] text-muted-foreground truncate">
-              {VIP_TIER_LABELS[tier]} {t("admin.clients.tier", "tier")}
+              {VIP_TIER_LABELS[tier]} {t("admin.clients.tier")}
             </p>
           </>
         ) : (
           <p className="text-xs text-muted-foreground italic">
-            {t("admin.clients.noActivePlan", "No active plan")}
+            {t("admin.clients.noActivePlan")}
           </p>
         )}
       </div>
@@ -363,7 +363,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
           href={`/admin/clients/${client.id}`}
           data-testid={`link-view-client-${client.id}`}
           className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-white/10 hover:bg-white/5 hover:border-primary/40 btn-soft"
-          title={t("admin.clients.openProfile", "Open profile")}
+          title={t("admin.clients.openProfile")}
         >
           <ExternalLink size={12} />
         </Link>
@@ -374,7 +374,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
             rel="noopener noreferrer"
             data-testid={`button-whatsapp-${client.id}`}
             className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
-            title={t("admin.clients.whatsapp", "WhatsApp")}
+            title={t("admin.clients.whatsapp")}
           >
             <SiWhatsapp size={12} />
           </a>
@@ -424,13 +424,13 @@ function MobileCard({ row }: { row: Row }) {
       <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
         <div className="rounded-lg bg-white/5 px-2.5 py-2">
           <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            {t("admin.clients.colPackage", "Package")}
+            {t("admin.clients.colPackage")}
           </p>
           <p className="font-semibold truncate mt-0.5">{activePkg ? packageLabel : "—"}</p>
         </div>
         <div className="rounded-lg bg-white/5 px-2.5 py-2">
           <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            {t("admin.clients.colSessionsLeft", "Sessions left")}
+            {t("admin.clients.colSessionsLeft")}
           </p>
           <p className="font-semibold mt-0.5 tabular-nums">
             {activePkg ? `${remaining} / ${activePkg.totalSessions}` : "—"}
@@ -443,7 +443,7 @@ function MobileCard({ row }: { row: Row }) {
           href={`/admin/clients/${client.id}`}
           className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-white/10 hover:bg-white/5 btn-soft"
         >
-          {t("admin.clients.openProfile", "Open profile")} <ExternalLink size={11} />
+          {t("admin.clients.openProfile")} <ExternalLink size={11} />
         </Link>
         {client.phone && (
           <a

@@ -75,11 +75,11 @@ export default function AdminSettings() {
   return (
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-4xl">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker", "Settings")}</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker")}</p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-settings-title">
-          {t("admin.settingsPage.title", "Settings & Availability")}
+          {t("admin.settingsPage.title")}
         </h1>
-        <p className="text-muted-foreground text-sm">{t("admin.settingsPage.subtitle", "Profile, cancellation policy, and time slot blocking")}</p>
+        <p className="text-muted-foreground text-sm">{t("admin.settingsPage.subtitle")}</p>
       </div>
 
       <div className="space-y-6">
@@ -147,7 +147,7 @@ function HeroImagesSection() {
       className="rounded-3xl border border-white/5 bg-card/60 p-6"
       data-testid="section-hero-images"
     >
-      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.heroTitle", "Homepage Hero Slider")}</h2>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.heroTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
         {t(
           "admin.settingsPage.heroDesc",
@@ -167,11 +167,11 @@ function HeroImagesSection() {
         )}
         <p className="text-sm font-medium">
           {uploadMutation.isPending
-            ? t("admin.settingsPage.heroUploading", "Uploading…")
-            : t("admin.settingsPage.heroClick", "Click to upload an image")}
+            ? t("admin.settingsPage.heroUploading")
+            : t("admin.settingsPage.heroClick")}
         </p>
         <p className="text-xs text-muted-foreground">
-          {t("admin.settingsPage.heroFormats", "PNG, JPEG, WebP, or HEIC · resized to 1920×1080 WebP")}
+          {t("admin.settingsPage.heroFormats")}
         </p>
         <input
           id="hero-image-upload"
@@ -193,14 +193,14 @@ function HeroImagesSection() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-          <Loader2 size={16} className="animate-spin mr-2" /> {t("admin.settingsPage.heroLoading", "Loading hero images…")}
+          <Loader2 size={16} className="animate-spin mr-2" /> {t("admin.settingsPage.heroLoading")}
         </div>
       ) : images.length === 0 ? (
         <p
           className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl"
           data-testid="text-no-hero-images"
         >
-          {t("admin.settingsPage.heroEmpty", "No hero images yet. The slider stays hidden until you add at least one.")}
+          {t("admin.settingsPage.heroEmpty")}
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -243,7 +243,7 @@ function HeroImagesSection() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm(t("admin.settingsPage.heroDeleteConfirm", "Delete this hero image?"))) {
+                      if (confirm(t("admin.settingsPage.heroDeleteConfirm"))) {
                         deleteMutation.mutate(img.id);
                       }
                     }}
@@ -291,8 +291,8 @@ function GeneralSettingsSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.bookingRules", "Booking Rules")}</h2>
-      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.bookingRulesDesc", "Cancellation cutoff and contact number")}</p>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.bookingRules")}</h2>
+      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.bookingRulesDesc")}</p>
 
       <Form {...form}>
         <form
@@ -309,7 +309,7 @@ function GeneralSettingsSection() {
             name="cancellationCutoffHours"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("admin.settingsPage.cutoff", "Cancellation Cutoff (hours)")}</FormLabel>
+                <FormLabel>{t("admin.settingsPage.cutoff")}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -321,7 +321,7 @@ function GeneralSettingsSection() {
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  {t("admin.settingsPage.cutoffNote", "Default 6h. Clients cannot cancel within this window.")}
+                  {t("admin.settingsPage.cutoffNote")}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -333,7 +333,7 @@ function GeneralSettingsSection() {
             name="whatsappNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("admin.settingsPage.whatsappLabel", "WhatsApp Number (digits only, with country code)")}</FormLabel>
+                <FormLabel>{t("admin.settingsPage.whatsappLabel")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -354,7 +354,7 @@ function GeneralSettingsSection() {
             className="rounded-xl"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            {t("admin.settingsPage.saveRules", "Save Rules")}
+            {t("admin.settingsPage.saveRules")}
           </Button>
         </form>
       </Form>
@@ -401,9 +401,9 @@ function BankDetailsSection() {
           <CreditCard size={18} />
         </div>
         <div>
-          <h2 className="font-display font-bold text-lg">{t("admin.settingsPage.bankTitle", "Direct Payment / Bank Details")}</h2>
+          <h2 className="font-display font-bold text-lg">{t("admin.settingsPage.bankTitle")}</h2>
           <p className="text-sm text-muted-foreground">
-            {t("admin.settingsPage.bankDesc", "Account info shown to clients on the Direct Payment page.")}
+            {t("admin.settingsPage.bankDesc")}
           </p>
         </div>
       </div>
@@ -424,7 +424,7 @@ function BankDetailsSection() {
             name="bankAccountName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("admin.settingsPage.bankName", "Account Holder Name")}</FormLabel>
+                <FormLabel>{t("admin.settingsPage.bankName")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -441,7 +441,7 @@ function BankDetailsSection() {
             name="bankIban"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("admin.settingsPage.bankIban", "IBAN")}</FormLabel>
+                <FormLabel>{t("admin.settingsPage.bankIban")}</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
@@ -465,11 +465,11 @@ function BankDetailsSection() {
                     <EyeOff size={16} className="text-amber-400 mt-0.5 shrink-0" />
                   )}
                   <div>
-                    <FormLabel className="cursor-pointer">{t("admin.settingsPage.bankShow", "Show bank details publicly")}</FormLabel>
+                    <FormLabel className="cursor-pointer">{t("admin.settingsPage.bankShow")}</FormLabel>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {isPublic
-                        ? t("admin.settingsPage.bankShowOn", "Visible to anyone visiting the Direct Payment page.")
-                        : t("admin.settingsPage.bankShowOff", "Only signed-in clients see the details — others see a request prompt.")}
+                        ? t("admin.settingsPage.bankShowOn")
+                        : t("admin.settingsPage.bankShowOff")}
                     </p>
                   </div>
                 </div>
@@ -490,7 +490,7 @@ function BankDetailsSection() {
             className="rounded-xl"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            {t("admin.settingsPage.saveBank", "Save Bank Details")}
+            {t("admin.settingsPage.saveBank")}
           </Button>
         </form>
       </Form>
@@ -518,8 +518,8 @@ function ProfileContentSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.homepageTitle", "Homepage Content")}</h2>
-      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.homepageDesc", "Profile photo URL and bio shown on the homepage")}</p>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.homepageTitle")}</h2>
+      <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.homepageDesc")}</p>
 
       <Form {...form}>
         <form
@@ -537,7 +537,7 @@ function ProfileContentSection() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <ImageIcon size={14} /> {t("admin.settingsPage.photoUrl", "Profile Photo URL")}
+                  <ImageIcon size={14} /> {t("admin.settingsPage.photoUrl")}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -548,7 +548,7 @@ function ProfileContentSection() {
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  {t("admin.settingsPage.photoUrlNote", "Paste a public image URL. (Upload functionality can be added later.)")}
+                  {t("admin.settingsPage.photoUrlNote")}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -561,7 +561,7 @@ function ProfileContentSection() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <MessageSquare size={14} /> {t("admin.settingsPage.profileBio", "Profile Bio")}
+                  <MessageSquare size={14} /> {t("admin.settingsPage.profileBio")}
                 </FormLabel>
                 <FormControl>
                   <Textarea
@@ -583,7 +583,7 @@ function ProfileContentSection() {
             data-testid="button-save-profile-content"
           >
             {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            {t("admin.settingsPage.saveProfile", "Save Profile Content")}
+            {t("admin.settingsPage.saveProfile")}
           </Button>
         </form>
       </Form>
@@ -611,9 +611,9 @@ function BlockedSlotsSection() {
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
-      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.blockedTitle", "Blocked Time Slots")}</h2>
+      <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.blockedTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
-        {t("admin.settingsPage.blockedDesc", "Block entire days or specific hours so clients can't book them")}
+        {t("admin.settingsPage.blockedDesc")}
       </p>
 
       <Form {...form}>
@@ -636,7 +636,7 @@ function BlockedSlotsSection() {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t("admin.bookings.date", "Date")}</FormLabel>
+                <FormLabel className="text-xs">{t("admin.bookings.date")}</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} className="bg-white/5 border-white/10 h-10" data-testid="input-block-date" />
                 </FormControl>
@@ -649,15 +649,15 @@ function BlockedSlotsSection() {
             name="scope"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t("admin.settingsPage.scope", "Scope")}</FormLabel>
+                <FormLabel className="text-xs">{t("admin.settingsPage.scope")}</FormLabel>
                 <FormControl>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-scope">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="whole-day">{t("admin.settingsPage.wholeDay", "Whole day")}</SelectItem>
-                      <SelectItem value="specific-hour">{t("admin.settingsPage.specificHour", "Specific hour")}</SelectItem>
+                      <SelectItem value="whole-day">{t("admin.settingsPage.wholeDay")}</SelectItem>
+                      <SelectItem value="specific-hour">{t("admin.settingsPage.specificHour")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </FormControl>
@@ -671,11 +671,11 @@ function BlockedSlotsSection() {
               name="timeSlot"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">{t("admin.bookings.time", "Time")}</FormLabel>
+                  <FormLabel className="text-xs">{t("admin.bookings.time")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-time">
-                        <SelectValue placeholder={t("admin.settingsPage.pickValue", "Pick")} />
+                        <SelectValue placeholder={t("admin.settingsPage.pickValue")} />
                       </SelectTrigger>
                       <SelectContent>
                         {ALL_TIME_SLOTS.map((s) => (
@@ -695,16 +695,16 @@ function BlockedSlotsSection() {
               name="blockType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs">{t("admin.settingsPage.type", "Type")}</FormLabel>
+                  <FormLabel className="text-xs">{t("admin.settingsPage.type")}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="bg-white/5 border-white/10 h-10" data-testid="select-block-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="off-day">{t("admin.settingsPage.offDay", "Off Day")}</SelectItem>
-                        <SelectItem value="emergency">{t("admin.settingsPage.emergency", "Emergency")}</SelectItem>
-                        <SelectItem value="fully-booked">{t("admin.settingsPage.fullyBooked", "Fully Booked")}</SelectItem>
+                        <SelectItem value="off-day">{t("admin.settingsPage.offDay")}</SelectItem>
+                        <SelectItem value="emergency">{t("admin.settingsPage.emergency")}</SelectItem>
+                        <SelectItem value="fully-booked">{t("admin.settingsPage.fullyBooked")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -718,23 +718,23 @@ function BlockedSlotsSection() {
             name="reason"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs">{t("admin.settingsPage.reason", "Reason (optional)")}</FormLabel>
+                <FormLabel className="text-xs">{t("admin.settingsPage.reason")}</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder={t("admin.settingsPage.reasonExample", "e.g. travel")} className="bg-white/5 border-white/10 h-10" data-testid="input-block-reason" />
+                  <Input {...field} placeholder={t("admin.settingsPage.reasonExample")} className="bg-white/5 border-white/10 h-10" data-testid="input-block-reason" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <Button type="submit" className="rounded-xl h-10 lg:col-start-5" disabled={createMutation.isPending} data-testid="button-add-block">
-            {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} className="mr-1" /> {t("admin.settingsPage.block", "Block")}</>}
+            {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <><Plus size={14} className="mr-1" /> {t("admin.settingsPage.block")}</>}
           </Button>
         </form>
       </Form>
 
       {blocks.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl">
-          {t("admin.settingsPage.noBlocked", "No blocked slots.")}
+          {t("admin.settingsPage.noBlocked")}
         </p>
       ) : (
         <div className="space-y-2">
@@ -746,7 +746,7 @@ function BlockedSlotsSection() {
             >
               <div className="flex items-center gap-3 text-sm flex-wrap">
                 <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d")}</span>
-                <span className="text-muted-foreground">{b.timeSlot ?? t("admin.settingsPage.wholeDayLabel", "Whole day")}</span>
+                <span className="text-muted-foreground">{b.timeSlot ?? t("admin.settingsPage.wholeDayLabel")}</span>
                 {!b.timeSlot && b.blockType && (
                   <span
                     className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${BLOCK_TYPE_COLORS[b.blockType] || "bg-white/5 border-white/10"}`}

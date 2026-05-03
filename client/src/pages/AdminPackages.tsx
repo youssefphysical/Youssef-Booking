@@ -56,13 +56,13 @@ export default function AdminPackages() {
     <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-6xl">
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
-          {t("admin.packagesPage.kicker", "Packages")}
+          {t("admin.packagesPage.kicker")}
         </p>
         <h1 className="text-3xl font-display font-bold" data-testid="text-packages-title">
-          {t("admin.packagesPage.title", "Session Packages")}
+          {t("admin.packagesPage.title")}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {t("admin.packagesPage.summary", "{active} active • {remaining} sessions remaining across all clients")
+          {t("admin.packagesPage.summary")
             .replace("{active}", String(totalActive))
             .replace("{remaining}", String(totalRemaining))}
         </p>
@@ -74,7 +74,7 @@ export default function AdminPackages() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={t("admin.packagesPage.searchPh", "Search by client name or email...")}
+            placeholder={t("admin.packagesPage.searchPh")}
             className="pl-9 bg-white/5 border-white/10"
             data-testid="input-search-packages"
           />
@@ -84,9 +84,9 @@ export default function AdminPackages() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">{t("admin.packagesPage.activeOnly", "Active only")}</SelectItem>
-            <SelectItem value="closed">{t("admin.packagesPage.closedOnly", "Closed only")}</SelectItem>
-            <SelectItem value="all">{t("admin.packagesPage.allFilter", "All")}</SelectItem>
+            <SelectItem value="active">{t("admin.packagesPage.activeOnly")}</SelectItem>
+            <SelectItem value="closed">{t("admin.packagesPage.closedOnly")}</SelectItem>
+            <SelectItem value="all">{t("admin.packagesPage.allFilter")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -101,8 +101,8 @@ export default function AdminPackages() {
         <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
           <PackageIcon className="mx-auto text-muted-foreground/40 mb-3" size={32} />
           {q
-            ? t("admin.packagesPage.noMatch", "No packages match your search.")
-            : t("admin.packagesPage.noneYet", "No packages assigned yet. Add packages from a client's profile.")}
+            ? t("admin.packagesPage.noMatch")
+            : t("admin.packagesPage.noneYet")}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -131,13 +131,13 @@ export default function AdminPackages() {
                       data-testid={`link-package-client-${p.id}`}
                       className="font-semibold hover:text-primary inline-flex items-center gap-1.5"
                     >
-                      {owner?.fullName || t("admin.packagesPage.unknown", "Unknown")}
+                      {owner?.fullName || t("admin.packagesPage.unknown")}
                       <ExternalLink size={11} />
                     </Link>
                     <p className="text-xs text-muted-foreground mt-0.5">{owner?.email}</p>
                     {def?.isDuo && partner && (
                       <p className="text-xs text-amber-300/80 mt-1 inline-flex items-center gap-1.5">
-                        <Users size={11} /> {t("admin.packagesPage.partner", "Partner")}: {partner.fullName}
+                        <Users size={11} /> {t("admin.packagesPage.partner")}: {partner.fullName}
                       </p>
                     )}
                   </div>
@@ -147,21 +147,21 @@ export default function AdminPackages() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-2 mb-3">
-                  <PackageStat label={t("admin.packagesPage.statBase", "Base")} value={base} />
-                  <PackageStat label={t("admin.packagesPage.statBonus", "Bonus")} value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
-                  <PackageStat label={t("admin.packagesPage.statTotal", "Total")} value={p.totalSessions} accent="text-primary" />
-                  <PackageStat label={t("admin.packagesPage.statLeft", "Left")} value={remaining} accent="text-emerald-300" />
+                  <PackageStat label={t("admin.packagesPage.statBase")} value={base} />
+                  <PackageStat label={t("admin.packagesPage.statBonus")} value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
+                  <PackageStat label={t("admin.packagesPage.statTotal")} value={p.totalSessions} accent="text-primary" />
+                  <PackageStat label={t("admin.packagesPage.statLeft")} value={remaining} accent="text-emerald-300" />
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
                   <span>
-                    {t("admin.packagesPage.usedOf", "{used} of {total} used")
+                    {t("admin.packagesPage.usedOf")
                       .replace("{used}", String(p.usedSessions))
                       .replace("{total}", String(p.totalSessions))}
                   </span>
                   <span>
                     {p.purchasedAt &&
-                      t("admin.packagesPage.startedOn", "Started {date}").replace(
+                      t("admin.packagesPage.startedOn").replace(
                         "{date}",
                         format(new Date(p.purchasedAt), "MMM d, yyyy"),
                       )}
