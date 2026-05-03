@@ -107,6 +107,11 @@ export const bookings = pgTable("bookings", {
   notes: text("notes"),
   adminNotes: text("admin_notes"),
   clientNotes: text("client_notes"),
+  // Premium booking fields (additive — nullable for legacy rows)
+  // sessionFocus: muscle group / pattern, see SESSION_FOCUS_OPTIONS
+  sessionFocus: text("session_focus"),
+  // trainingGoal: per-session goal, see BOOKING_TRAINING_GOALS
+  trainingGoal: text("training_goal"),
   isEmergencyCancel: boolean("is_emergency_cancel").notNull().default(false),
   // True if a Protected Cancellation was used (counts toward monthly quota; no session deducted)
   protectedCancellation: boolean("protected_cancellation").notNull().default(false),
@@ -304,6 +309,86 @@ export const WORKOUT_CATEGORIES = [
   "other",
 ] as const;
 
+// =============================
+// SESSION FOCUS — per-booking required pick (premium booking flow)
+// Grouped into Upper / Lower / Conditioning on the UI side.
+// =============================
+export const SESSION_FOCUS_OPTIONS = [
+  // Upper body
+  "chest",
+  "back",
+  "shoulders",
+  "arms",
+  "front_upper",
+  "back_upper",
+  "push",
+  "pull",
+  // Lower body
+  "legs",
+  "front_lower",
+  "back_lower",
+  // Conditioning
+  "core",
+  "full_body",
+  "crossfit",
+] as const;
+
+export const SESSION_FOCUS_GROUPS: Record<
+  "upper" | "lower" | "conditioning",
+  ReadonlyArray<(typeof SESSION_FOCUS_OPTIONS)[number]>
+> = {
+  upper: ["chest", "back", "shoulders", "arms", "front_upper", "back_upper", "push", "pull"],
+  lower: ["legs", "front_lower", "back_lower"],
+  conditioning: ["core", "full_body", "crossfit"],
+};
+
+// =============================
+// BOOKING TRAINING GOAL — per-booking required pick
+// (Distinct from users.trainingGoal which is a long-term self-declared goal.)
+// =============================
+export const BOOKING_TRAINING_GOALS = [
+  "hypertrophy",
+  "strength",
+  "endurance",
+  "fat_loss",
+  "conditioning",
+] as const;
+
+// English fallback labels — used by trainer-facing notifications and as
+// stable English source strings the i18n layer translates from.
+export const SESSION_FOCUS_LABELS_EN: Record<string, string> = {
+  chest: "Chest",
+  back: "Back",
+  shoulders: "Shoulders",
+  arms: "Arms",
+  front_upper: "Front Upper Body",
+  back_upper: "Back Upper Body",
+  push: "Push",
+  pull: "Pull",
+  legs: "Legs",
+  front_lower: "Front Lower Body",
+  back_lower: "Back Lower Body",
+  core: "Core",
+  full_body: "Full Body",
+  crossfit: "CrossFit",
+};
+
+export const BOOKING_TRAINING_GOAL_LABELS_EN: Record<string, string> = {
+  hypertrophy: "Hypertrophy",
+  strength: "Strength",
+  endurance: "Endurance",
+  fat_loss: "Fat Loss",
+  conditioning: "Conditioning",
+};
+
+export const SESSION_TYPE_LABELS_EN: Record<string, string> = {
+  package: "Package Session",
+  single: "Single Session",
+  trial: "Free Trial Session",
+  duo: "Duo Session",
+  manual_historical: "Manual / Historical",
+};
+
 export const insertBookingSchema = createInsertSchema(bookings)
   .omit({
     id: true,
@@ -322,6 +407,10 @@ export const insertBookingSchema = createInsertSchema(bookings)
     notes: z.string().nullable().optional(),
     adminNotes: z.string().nullable().optional(),
     clientNotes: z.string().nullable().optional(),
+    // Optional at the schema level so admin manual bookings still work.
+    // The POST /api/bookings route enforces both for non-admin users.
+    sessionFocus: z.enum(SESSION_FOCUS_OPTIONS).nullable().optional(),
+    trainingGoal: z.enum(BOOKING_TRAINING_GOALS).nullable().optional(),
   });
 
 export const updateBookingSchema = z.object({
@@ -337,7 +426,33 @@ export const updateBookingSchema = z.object({
   sessionType: z.enum(SESSION_TYPES).optional(),
   paymentStatus: z.enum(PAYMENT_STATUSES).optional(),
   protectedCancellation: z.boolean().optional(),
+  sessionFocus: z.enum(SESSION_FOCUS_OPTIONS).nullable().optional(),
+  trainingGoal: z.enum(BOOKING_TRAINING_GOALS).nullable().optional(),
 });
+
+// =============================
+// ADMIN NOTIFICATIONS (in-app trainer inbox)
+// =============================
+// kind: 'booking_new' | 'booking_cancelled' | 'booking_rescheduled' | 'system'
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull().default("system"),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  userId: integer("user_id"),
+  bookingId: integer("booking_id"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).omit({
+  id: true,
+  createdAt: true,
+  isRead: true,
+});
+
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 
 export const insertBlockedSlotSchema = createInsertSchema(blockedSlots)
   .omit({ id: true, createdAt: true })

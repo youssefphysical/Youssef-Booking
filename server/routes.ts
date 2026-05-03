@@ -32,10 +32,21 @@ import {
   isEffectiveSuperAdmin,
   SUPER_ADMIN_EMAIL,
   DEFAULT_PERMISSIONS_BY_ROLE,
+  SESSION_FOCUS_LABELS_EN,
+  BOOKING_TRAINING_GOAL_LABELS_EN,
+  SESSION_TYPE_LABELS_EN,
   type User,
   type Package,
+  type Booking,
   type AdminPermissionKey,
 } from "@shared/schema";
+import {
+  sendEmail,
+  trainerEmail,
+  buildTrainerBookingEmail,
+  buildClientBookingEmail,
+} from "./email";
+import { CLIENT_BOOKING_EMAIL_I18N } from "./email-i18n";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { optimizeImageFile } from "./image-utils";
@@ -174,6 +185,123 @@ const photoUploader = makeUploader("photos");
 
 function fileToPublicUrl(file: Express.Multer.File, subdir: "inbody" | "photos"): string {
   return `/uploads/${subdir}/${file.filename}`;
+}
+
+// =============================================================
+// Booking notifications dispatcher (admin in-app + trainer/client emails).
+// Always best-effort. Caller wraps it in try/catch so booking never fails.
+// =============================================================
+function formatTime12Server(timeSlot: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(timeSlot || "");
+  if (!m) return timeSlot;
+  const h = Number(m[1]);
+  const min = m[2];
+  if (Number.isNaN(h) || h < 0 || h > 23) return timeSlot;
+  const period = h >= 12 ? "PM" : "AM";
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${min} ${period}`;
+}
+
+async function dispatchBookingNotifications(args: {
+  booking: Booking;
+  targetUserId: number;
+  sessionType: string;
+  lang: string;
+}): Promise<void> {
+  const { booking, targetUserId, sessionType, lang } = args;
+
+  // Resolve user + package context (best-effort lookups)
+  const user = await storage.getUser(targetUserId).catch(() => undefined);
+  const pkg = booking.packageId
+    ? await storage.getPackage(booking.packageId).catch(() => undefined)
+    : undefined;
+
+  const clientName =
+    (user?.fullName?.trim() || user?.username || `Client #${targetUserId}`).trim();
+
+  const focusKey = booking.sessionFocus || "";
+  const goalKey = booking.trainingGoal || "";
+  const sessionFocusLabel = SESSION_FOCUS_LABELS_EN[focusKey] || focusKey || "—";
+  const trainingGoalLabel = BOOKING_TRAINING_GOAL_LABELS_EN[goalKey] || goalKey || "—";
+  const sessionTypeLabel = SESSION_TYPE_LABELS_EN[sessionType] || sessionType;
+  const time12 = formatTime12Server(booking.timeSlot);
+
+  const remainingSessions =
+    pkg && typeof pkg.totalSessions === "number" && typeof pkg.usedSessions === "number"
+      ? Math.max(0, pkg.totalSessions - pkg.usedSessions - 1)
+      : null;
+
+  // Package start = purchase date. Expiry isn't tracked on the schema yet, so
+  // we omit it cleanly (the email builder skips empty rows).
+  const packageStartDate = pkg?.purchasedAt
+    ? new Date(pkg.purchasedAt as any).toISOString().slice(0, 10)
+    : null;
+  const packageName = pkg ? `${pkg.type} (${pkg.totalSessions} sessions)` : null;
+
+  const data = {
+    clientName,
+    clientEmail: user?.email ?? null,
+    clientPhone: user?.phone ?? null,
+    date: booking.date,
+    timeSlot: booking.timeSlot,
+    time12,
+    sessionFocusLabel,
+    trainingGoalLabel,
+    sessionTypeLabel,
+    trainingLevel: user?.trainingLevel ?? null,
+    clientNotes: booking.clientNotes ?? null,
+    packageName,
+    packageStartDate,
+    packageExpiryDate: null as string | null,
+    currentSessionNumber: pkg ? (pkg.usedSessions ?? 0) + 1 : null,
+    totalSessions: pkg?.totalSessions ?? null,
+    remainingSessions,
+  };
+
+  // ---- 1. In-app admin notification ----
+  try {
+    await storage.createAdminNotification({
+      kind: "booking_new",
+      title: `New booking — ${clientName}`,
+      body: `${booking.date} at ${time12} • ${sessionFocusLabel} • ${trainingGoalLabel} • ${sessionTypeLabel}`,
+      userId: targetUserId,
+      bookingId: booking.id,
+    });
+  } catch (e) {
+    console.warn("[notif] createAdminNotification failed:", e);
+  }
+
+  // ---- 2. Trainer email (English, always to TRAINER_EMAIL) ----
+  try {
+    const trainerMsg = buildTrainerBookingEmail(data);
+    await sendEmail({
+      to: trainerEmail(),
+      subject: trainerMsg.subject,
+      text: trainerMsg.text,
+      html: trainerMsg.html,
+      replyTo: user?.email ?? undefined,
+    });
+  } catch (e) {
+    console.warn("[notif] trainer email failed:", e);
+  }
+
+  // ---- 3. Client email (localized) ----
+  if (user?.email) {
+    try {
+      const i18n = CLIENT_BOOKING_EMAIL_I18N[lang] || CLIENT_BOOKING_EMAIL_I18N.en;
+      const clientMsg = buildClientBookingEmail(data, i18n);
+      await sendEmail({
+        to: user.email,
+        subject: clientMsg.subject,
+        text: clientMsg.text,
+        html: clientMsg.html,
+        replyTo: trainerEmail(),
+      });
+    } catch (e) {
+      console.warn("[notif] client email failed:", e);
+    }
+  }
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -480,6 +608,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       paymentStatus = "paid";
     }
 
+    // Premium booking flow: clients must pick a session focus and a training
+    // goal. Admin bookings (manual / overrides) may omit them.
+    if (me.role !== "admin") {
+      if (!parsed.data.sessionFocus) {
+        return res.status(400).json({
+          message: "Please choose a session focus before continuing.",
+          field: "sessionFocus",
+        });
+      }
+      if (!parsed.data.trainingGoal) {
+        return res.status(400).json({
+          message: "Please choose a training goal before continuing.",
+          field: "trainingGoal",
+        });
+      }
+    }
+
     const booking = await storage.createBooking({
       userId: targetUserId,
       packageId: packageId ?? null,
@@ -491,7 +636,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       notes: parsed.data.notes ?? null,
       adminNotes: null,
       clientNotes: parsed.data.clientNotes ?? null,
+      sessionFocus: parsed.data.sessionFocus ?? null,
+      trainingGoal: parsed.data.trainingGoal ?? null,
     });
+
+    // ---- Admin notification + emails (best-effort, never blocks booking) ----
+    // Reads `lang` from request body for client-facing email localization.
+    const requestedLang =
+      typeof (req.body as any)?.lang === "string" ? String((req.body as any).lang) : "en";
+    try {
+      await dispatchBookingNotifications({
+        booking,
+        targetUserId,
+        sessionType,
+        lang: requestedLang,
+      });
+    } catch (e) {
+      console.warn("[booking] notification dispatch failed:", e);
+    }
 
     // Mark trial as used if successful (clients only — admin overrides remain)
     if (sessionType === "trial" && me.role !== "admin") {
@@ -516,6 +678,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     res.status(201).json(booking);
+  });
+
+  // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============
+  app.get("/api/admin/notifications", requireAdmin, async (req, res) => {
+    const unreadOnly = req.query.unreadOnly === "true";
+    const limitRaw = Number(req.query.limit ?? 50);
+    const limit = Number.isFinite(limitRaw) ? limitRaw : 50;
+    const list = await storage.getAdminNotifications({ unreadOnly, limit });
+    res.json(list);
+  });
+
+  app.get("/api/admin/notifications/unread-count", requireAdmin, async (_req, res) => {
+    const count = await storage.getAdminUnreadCount();
+    res.json({ count });
+  });
+
+  app.post("/api/admin/notifications/:id/read", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const updated = await storage.markAdminNotificationRead(id);
+    if (!updated) return res.status(404).json({ message: "Notification not found" });
+    res.json(updated);
+  });
+
+  app.post("/api/admin/notifications/read-all", requireAdmin, async (_req, res) => {
+    await storage.markAllAdminNotificationsRead();
+    res.json({ ok: true });
   });
 
   app.post("/api/bookings/:id/cancel", requireAuth, async (req, res) => {

@@ -9,6 +9,7 @@ import {
   progressPhotos,
   consentRecords,
   heroImages,
+  adminNotifications,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -30,6 +31,8 @@ import {
   type InsertConsent,
   type HeroImage,
   type InsertHeroImage,
+  type AdminNotification,
+  type InsertAdminNotification,
 } from "@shared/schema";
 import { eq, and, gte, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -103,6 +106,13 @@ export interface IStorage {
   // Consent records
   getConsentRecords(filters?: { userId?: number; consentType?: string }): Promise<ConsentRecord[]>;
   createConsentRecord(record: InsertConsent): Promise<ConsentRecord>;
+
+  // Admin notifications (in-app trainer inbox)
+  getAdminNotifications(filters?: { unreadOnly?: boolean; limit?: number }): Promise<AdminNotification[]>;
+  getAdminUnreadCount(): Promise<number>;
+  createAdminNotification(notif: InsertAdminNotification): Promise<AdminNotification>;
+  markAdminNotificationRead(id: number): Promise<AdminNotification | undefined>;
+  markAllAdminNotificationsRead(): Promise<void>;
 
   sessionStore: session.Store;
 }
@@ -386,6 +396,41 @@ export class DatabaseStorage implements IStorage {
   async createConsentRecord(record: InsertConsent) {
     const [r] = await db.insert(consentRecords).values(record).returning();
     return r;
+  }
+
+  // ===== Admin notifications =====
+  async getAdminNotifications(filters?: { unreadOnly?: boolean; limit?: number }) {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const q = filters?.unreadOnly
+      ? db.select().from(adminNotifications).where(eq(adminNotifications.isRead, false))
+      : db.select().from(adminNotifications);
+    return q.orderBy(desc(adminNotifications.createdAt)).limit(limit);
+  }
+
+  async getAdminUnreadCount() {
+    const rows = await db
+      .select({ id: adminNotifications.id })
+      .from(adminNotifications)
+      .where(eq(adminNotifications.isRead, false));
+    return rows.length;
+  }
+
+  async createAdminNotification(notif: InsertAdminNotification) {
+    const [n] = await db.insert(adminNotifications).values(notif).returning();
+    return n;
+  }
+
+  async markAdminNotificationRead(id: number) {
+    const [n] = await db
+      .update(adminNotifications)
+      .set({ isRead: true })
+      .where(eq(adminNotifications.id, id))
+      .returning();
+    return n;
+  }
+
+  async markAllAdminNotificationsRead() {
+    await db.update(adminNotifications).set({ isRead: true }).where(eq(adminNotifications.isRead, false));
   }
 
   // ===== Verification flags (batched) =====

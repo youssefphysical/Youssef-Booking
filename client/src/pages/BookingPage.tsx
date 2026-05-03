@@ -19,13 +19,19 @@ import {
   Gift,
   Wallet,
   CreditCard,
+  Dumbbell,
+  Target,
 } from "lucide-react";
 import { useCreateBooking, useBookings } from "@/hooks/use-bookings";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { usePackages } from "@/hooks/use-packages";
-import type { Package } from "@shared/schema";
+import {
+  type Package,
+  SESSION_FOCUS_GROUPS,
+  BOOKING_TRAINING_GOALS,
+} from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -50,6 +56,8 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
 
 type SessionTypeChoice = "package" | "single" | "trial" | "duo";
+type SessionFocus = (typeof SESSION_FOCUS_GROUPS)["upper"][number] | (typeof SESSION_FOCUS_GROUPS)["lower"][number] | (typeof SESSION_FOCUS_GROUPS)["conditioning"][number];
+type TrainingGoal = (typeof BOOKING_TRAINING_GOALS)[number];
 
 export default function BookingPage() {
   const { t } = useTranslation();
@@ -62,6 +70,8 @@ export default function BookingPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
+  const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
+  const [trainingGoal, setTrainingGoal] = useState<TrainingGoal | null>(null);
 
   const createBooking = useCreateBooking();
   const { data: blocked = [] } = useBlockedSlots();
@@ -124,9 +134,17 @@ export default function BookingPage() {
     return map;
   }, [date, dateStr, blocked, existing, isAdmin]);
 
+  const lang = (typeof window !== "undefined" && (localStorage.getItem("lang") || "en")) || "en";
+
+  const canContinue =
+    !!date && !!selectedSlot && (isAdmin || (!!sessionFocus && !!trainingGoal));
+
   const handleBook = () => {
     if (!date || !selectedSlot || !user) {
       if (!user) navigate("/auth");
+      return;
+    }
+    if (!isAdmin && (!sessionFocus || !trainingGoal)) {
       return;
     }
     createBooking.mutate(
@@ -135,8 +153,12 @@ export default function BookingPage() {
         date: dateStr,
         timeSlot: selectedSlot,
         sessionType,
+        sessionFocus: sessionFocus ?? undefined,
+        trainingGoal: trainingGoal ?? undefined,
+        clientNotes: notes || undefined,
         notes: notes || undefined,
         acceptedPolicy: true,
+        lang,
         ...(isAdmin ? { override: true } : {}),
       } as any,
       {
@@ -327,6 +349,75 @@ export default function BookingPage() {
 
         {selectedSlot && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+            {/* ---- SESSION FOCUS PICKER ---- */}
+            <div>
+              <label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <Dumbbell size={14} className="text-primary" />
+                {t("booking.sessionFocusLabel")}
+                {!isAdmin && <span className="text-red-400">*</span>}
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">{t("booking.sessionFocusHelp")}</p>
+              <div className="space-y-3">
+                {(["upper", "lower", "conditioning"] as const).map((groupKey) => (
+                  <div key={groupKey}>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-1.5">
+                      {t(`booking.focusGroup.${groupKey}`)}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {SESSION_FOCUS_GROUPS[groupKey].map((opt) => {
+                        const active = sessionFocus === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setSessionFocus(opt as SessionFocus)}
+                            data-testid={`pill-focus-${opt}`}
+                            className={`px-3 h-9 rounded-full text-xs font-semibold transition-all border ${
+                              active
+                                ? "bg-primary text-black border-primary shadow-md shadow-primary/20"
+                                : "bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10"
+                            }`}
+                          >
+                            {t(`booking.focus.${opt}`)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ---- TRAINING GOAL PICKER ---- */}
+            <div>
+              <label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <Target size={14} className="text-primary" />
+                {t("booking.trainingGoalLabel")}
+                {!isAdmin && <span className="text-red-400">*</span>}
+              </label>
+              <p className="text-xs text-muted-foreground mb-3">{t("booking.trainingGoalHelp")}</p>
+              <div className="flex flex-wrap gap-2">
+                {BOOKING_TRAINING_GOALS.map((opt) => {
+                  const active = trainingGoal === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setTrainingGoal(opt as TrainingGoal)}
+                      data-testid={`pill-goal-${opt}`}
+                      className={`px-3 h-9 rounded-full text-xs font-semibold transition-all border ${
+                        active
+                          ? "bg-primary text-black border-primary shadow-md shadow-primary/20"
+                          : "bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10"
+                      }`}
+                    >
+                      {t(`booking.goal.${opt}`)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-semibold block mb-2">{t("booking.sessionTypeLabel")}</label>
               <Select
@@ -393,10 +484,15 @@ export default function BookingPage() {
             <div className="max-w-3xl mx-auto">
               <Button
                 onClick={() => setIsConfirmOpen(true)}
+                disabled={!canContinue}
                 data-testid="button-open-confirm"
-                className="w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20"
+                className="w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20 disabled:opacity-50"
               >
-                {t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))}
+                {canContinue
+                  ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))
+                  : !sessionFocus
+                    ? t("booking.errors.pickFocus")
+                    : t("booking.errors.pickGoal")}
               </Button>
             </div>
           </motion.div>
@@ -413,6 +509,18 @@ export default function BookingPage() {
           <div className="bg-white/5 p-4 rounded-xl space-y-2 my-2">
             <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
             <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{formatTime12(selectedSlot)}</span>} />
+            {sessionFocus && (
+              <Row
+                label={t("booking.sessionFocusLabel")}
+                value={t(`booking.focus.${sessionFocus}`)}
+              />
+            )}
+            {trainingGoal && (
+              <Row
+                label={t("booking.trainingGoalLabel")}
+                value={t(`booking.goal.${trainingGoal}`)}
+              />
+            )}
             {notes && <Row label={t("booking.notesLabel")} value={notes} />}
           </div>
 
