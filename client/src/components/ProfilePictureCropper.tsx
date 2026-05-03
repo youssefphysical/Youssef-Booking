@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/i18n";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ type Props = {
  *   (when available), so portrait photos won't appear sideways.
  */
 export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }: Props) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
   const [scale, setScale] = useState(1); // 1 = "cover" baseline
@@ -171,9 +173,9 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>Profile picture</DialogTitle>
+          <DialogTitle>{t("cropper.title")}</DialogTitle>
           <DialogDescription>
-            Upload a photo, drag to position, zoom to taste — then save.
+            {t("cropper.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -188,8 +190,8 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
               <div className="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center">
                 <Upload size={20} />
               </div>
-              <p className="text-sm font-medium">Choose a photo</p>
-              <p className="text-xs">JPG, PNG or HEIC · up to 10MB</p>
+              <p className="text-sm font-medium">{t("cropper.choose")}</p>
+              <p className="text-xs">{t("cropper.formatHint")}</p>
             </button>
             <input
               ref={fileInputRef}
