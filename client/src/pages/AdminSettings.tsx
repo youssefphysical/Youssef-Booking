@@ -40,6 +40,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ALL_TIME_SLOTS } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 
 const generalSchema = z.object({
   cancellationCutoffHours: z.coerce.number().int().min(0).max(168),
@@ -667,7 +668,7 @@ function BlockedSlotsSection() {
                       </SelectTrigger>
                       <SelectContent>
                         {ALL_TIME_SLOTS.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectItem key={s} value={s}>{formatTime12(s)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

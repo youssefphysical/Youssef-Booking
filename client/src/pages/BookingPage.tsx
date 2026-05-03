@@ -44,7 +44,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ALL_TIME_SLOTS, buildSessionDate } from "@/lib/booking-utils";
+import { ALL_TIME_SLOTS, buildSessionDate, MIN_ADVANCE_MS } from "@/lib/booking-utils";
+import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
 
@@ -85,7 +86,7 @@ export default function BookingPage() {
 
   // Determine which slots are unavailable on the selected date
   const slotState = useMemo(() => {
-    const map: Record<string, "available" | "blocked" | "taken" | "past"> = {};
+    const map: Record<string, "available" | "blocked" | "taken" | "past" | "tooSoon"> = {};
     if (!date) return map;
     const wholeDayBlocked = blocked.some((b) => b.date === dateStr && b.timeSlot === null);
     for (const slot of ALL_TIME_SLOTS) {
@@ -109,14 +110,19 @@ export default function BookingPage() {
         continue;
       }
       const sessionAt = buildSessionDate(dateStr, slot);
-      if (sessionAt.getTime() < Date.now()) {
+      const msUntil = sessionAt.getTime() - Date.now();
+      if (msUntil < 0) {
         map[slot] = "past";
+        continue;
+      }
+      if (!isAdmin && msUntil < MIN_ADVANCE_MS) {
+        map[slot] = "tooSoon";
         continue;
       }
       map[slot] = "available";
     }
     return map;
-  }, [date, dateStr, blocked, existing]);
+  }, [date, dateStr, blocked, existing, isAdmin]);
 
   const handleBook = () => {
     if (!date || !selectedSlot || !user) {
@@ -202,7 +208,7 @@ export default function BookingPage() {
           <div className="flex flex-col gap-3">
             <WhatsAppButton
               label={t("booking.successConfirmWa")}
-              message={t("booking.successWaMessage").replace("{date}", dateStr).replace("{time}", selectedSlot ?? "")}
+              message={t("booking.successWaMessage").replace("{date}", dateStr).replace("{time}", formatTime12(selectedSlot ?? ""))}
               size="lg"
               testId="button-confirm-whatsapp"
             />
@@ -275,6 +281,7 @@ export default function BookingPage() {
                     disabled={!isAvailable}
                     onClick={() => setSelectedSlot(slot)}
                     data-testid={`slot-${slot}`}
+                    title={state === "tooSoon" ? t("booking.advanceRule") : undefined}
                     className={`relative h-12 rounded-xl text-sm font-semibold transition-all border ${
                       selected
                         ? "bg-primary text-black border-primary scale-[1.02] shadow-lg shadow-primary/20"
@@ -283,10 +290,15 @@ export default function BookingPage() {
                           : "bg-white/[0.02] border-white/5 text-muted-foreground/40 cursor-not-allowed"
                     }`}
                   >
-                    {slot}
+                    {formatTime12(slot)}
                     {state === "taken" && (
                       <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
                         {t("booking.slotTaken")}
+                      </span>
+                    )}
+                    {state === "tooSoon" && (
+                      <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-amber-400/70">
+                        {t("booking.slotTooSoon")}
                       </span>
                     )}
                     {state === "blocked" && (
@@ -299,6 +311,17 @@ export default function BookingPage() {
             <p className="text-xs text-muted-foreground mt-3">
               {t("booking.hoursNote")}
             </p>
+            <div className="mt-4 grid gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-muted-foreground leading-relaxed">
+                <p className="font-semibold text-foreground/90 mb-1">
+                  {t("booking.advanceRule")}
+                </p>
+                <p>{t("booking.trainerNote")}</p>
+              </div>
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-xs text-foreground/80 leading-relaxed">
+                {t("booking.sessionDuration")}
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -373,7 +396,7 @@ export default function BookingPage() {
                 data-testid="button-open-confirm"
                 className="w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20"
               >
-                {t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", selectedSlot ?? "")}
+                {t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))}
               </Button>
             </div>
           </motion.div>
@@ -389,7 +412,7 @@ export default function BookingPage() {
 
           <div className="bg-white/5 p-4 rounded-xl space-y-2 my-2">
             <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
-            <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{selectedSlot}</span>} />
+            <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{formatTime12(selectedSlot)}</span>} />
             {notes && <Row label={t("booking.notesLabel")} value={notes} />}
           </div>
 

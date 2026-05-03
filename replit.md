@@ -59,6 +59,8 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `server/app.ts` exposes `createApp()` which builds the Express app **without** calling `listen`. `server/index.ts` (Replit) wraps it and starts the listener; `api/index.ts` (Vercel) wraps it as a serverless handler.
 - `vercel.json` rewrites `/api/*` → `/api/index.ts` and everything else → `/index.html`; build command is `vite build`, output `dist/public`.
 - `GET /api/health` returns `{ ok: true, env: "replit" | "vercel" }` — easy environment probe.
+- **Database (Vercel):** A separate Neon Postgres project (eu-central-1, pooled endpoint `ep-curly-dream-ali5mvn2-pooler`) is wired in via `DATABASE_URL` on Vercel (production + preview, marked Sensitive). Schema is pushed with `DATABASE_URL=<neon> npm run db:push -- --force`. Replit continues to use its built-in `helium` Postgres for development; the two databases are independent. Tables verified on Neon: `users`, `bookings`, `inbody_records`, `consent_records`, `packages`, `blocked_slots`, `progress_photos`, `settings`.
+- **Production live URL:** `https://youssef-booking.vercel.app` — `/api/health`, registration (`POST /api/auth/register`), login (`POST /api/auth/login`) and `/api/auth/me` all verified end-to-end against Neon.
 - **Caveat:** InBody and progress-photo uploads still write to local `/uploads`. Those will require object storage (Replit Object Storage, S3, R2, etc.) before Vercel can serve them. Profile pictures are unaffected (base64 in DB).
 
 ### Verified-Badge Performance

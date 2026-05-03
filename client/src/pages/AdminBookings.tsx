@@ -517,7 +517,7 @@ function RescheduleButton({ booking }: { booking: BookingWithUser }) {
                       </SelectTrigger>
                       <SelectContent>
                         {ALL_TIME_SLOTS.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectItem key={s} value={s}>{formatTime12(s)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -641,7 +641,7 @@ function CreateBookingButton() {
                       </SelectTrigger>
                       <SelectContent>
                         {ALL_TIME_SLOTS.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectItem key={s} value={s}>{formatTime12(s)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

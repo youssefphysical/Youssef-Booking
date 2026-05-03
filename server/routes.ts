@@ -104,6 +104,13 @@ function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00`);
 }
 
+const MIN_ADVANCE_BOOKING_MS = 3 * 60 * 60 * 1000;
+const ALLOWED_BOOKING_HOURS = new Set([
+  "06:00","07:00","08:00","09:00","10:00","11:00",
+  "12:00","13:00","14:00","15:00","16:00","17:00",
+  "18:00","19:00","20:00","21:00","22:00",
+]);
+
 function todayDateString(): string {
   const now = new Date();
   const y = now.getFullYear();
@@ -397,8 +404,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (isNaN(sessionAt.getTime())) {
       return res.status(400).json({ message: "Invalid date or time" });
     }
+    if (me.role !== "admin" && !ALLOWED_BOOKING_HOURS.has(parsed.data.timeSlot)) {
+      return res.status(400).json({
+        message: "Sessions can only be booked between 06:00 AM and 10:00 PM.",
+      });
+    }
     if (me.role !== "admin" && sessionAt.getTime() < Date.now()) {
       return res.status(400).json({ message: "Cannot book a session in the past" });
+    }
+    if (
+      me.role !== "admin" &&
+      sessionAt.getTime() - Date.now() < MIN_ADVANCE_BOOKING_MS
+    ) {
+      return res.status(400).json({
+        message: "Booking must be made at least 3 hours in advance.",
+      });
     }
 
     const blocked = await storage.getBlockedSlots();

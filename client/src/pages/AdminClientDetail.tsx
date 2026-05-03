@@ -843,7 +843,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
                         <SelectContent>
                           {ALL_TIME_SLOTS.map((s) => (
                             <SelectItem key={s} value={s}>
-                              {s}
+                              {formatTime12(s)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1087,7 +1087,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
                         <SelectContent>
                           {ALL_TIME_SLOTS.map((s) => (
                             <SelectItem key={s} value={s}>
-                              {s}
+                              {formatTime12(s)}
                             </SelectItem>
                           ))}
                         </SelectContent>

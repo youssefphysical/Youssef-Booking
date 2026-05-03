@@ -581,7 +581,7 @@ function BookingCard({
             <AlertDialogDescription>
               {t("dashboard.cancelDesc")
                 .replace("{date}", format(new Date(booking.date), "PPPP"))
-                .replace("{time}", booking.timeSlot)
+                .replace("{time}", formatTime12(booking.timeSlot))
                 .replace("{hours}", String(cutoff))}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -728,7 +728,7 @@ function SameDayAdjustDialog({
           </DialogTitle>
           <DialogDescription>
             {t("dashboard.adjustDescDialog")
-              .replace("{time}", booking.timeSlot)
+              .replace("{time}", formatTime12(booking.timeSlot))
               .replace("{n}", String(remaining))}
           </DialogDescription>
         </DialogHeader>
@@ -746,7 +746,7 @@ function SameDayAdjustDialog({
               <SelectContent>
                 {slots.map((s) => (
                   <SelectItem key={s} value={s} data-testid={`option-adjust-${s}`}>
-                    {s}
+                    {formatTime12(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
