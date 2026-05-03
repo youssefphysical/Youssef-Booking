@@ -1,6 +1,7 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { registerRoutes } from "./routes";
+import { ensureSchema } from "./ensureSchema";
 
 declare module "http" {
   interface IncomingMessage {
@@ -33,6 +34,11 @@ export function log(message: string, source = "express") {
  * server is created that's never bound — adequate for serverless platforms.
  */
 export async function createApp(httpServer?: Server): Promise<Express> {
+  // Self-heal additive schema before any route can call into the DB.
+  // Idempotent — runs once per cold start, then never executes DDL again.
+  // See server/ensureSchema.ts for the full rationale.
+  await ensureSchema();
+
   const app = express();
 
   // Profile pictures are sent as base64 data URLs in JSON bodies. After sharp
