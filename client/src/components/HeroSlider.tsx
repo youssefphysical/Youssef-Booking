@@ -152,10 +152,11 @@ export function HeroSlider() {
         </div>
       </div>
 
-      {/* Pagination dots */}
+      {/* Pagination dots — visually small but wrapped in a 44×44 tap target
+          so they meet WCAG 2.5.5 minimum interactive size on mobile. */}
       {slides.length > 1 && (
         <div
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"
           data-testid="hero-slider-dots"
         >
           {slides.map((img, i) => (
@@ -165,13 +166,17 @@ export function HeroSlider() {
               onClick={() => setIndex(i)}
               aria-label={`Slide ${i + 1}`}
               data-testid={`button-hero-dot-${i}`}
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                i === safeIndex
-                  ? "w-8 bg-primary"
-                  : "w-1.5 bg-white/40 hover:bg-white/70",
-              )}
-            />
+              className="group inline-flex items-center justify-center min-w-[44px] h-[44px] px-2"
+            >
+              <span
+                className={cn(
+                  "block h-1.5 rounded-full transition-all",
+                  i === safeIndex
+                    ? "w-8 bg-primary"
+                    : "w-1.5 bg-white/40 group-hover:bg-white/70",
+                )}
+              />
+            </button>
           ))}
         </div>
       )}

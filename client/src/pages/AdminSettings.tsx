@@ -775,7 +775,8 @@ function TransformationCard(props: TransformationCardProps) {
             onClick={() => "onCancel" in props && props.onCancel()}
             data-testid="button-cancel-new-transformation"
           >
-            {t("admin.transformations.delete")}
+            <X size={14} className="mr-1.5" />
+            {t("admin.transformations.cancel")}
           </Button>
         )}
 

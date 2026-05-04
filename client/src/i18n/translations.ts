@@ -1166,6 +1166,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Save",
   "admin.settingsPage.heroSaved": "Slide updated",
   "admin.settingsPage.heroSaveFailed": "Could not save slide",
+  "admin.transformations.cancel": "Cancel",
 },
   ar: {
   "nav.home": "الرئيسية",
@@ -2256,6 +2257,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "حفظ",
   "admin.settingsPage.heroSaved": "تم تحديث الشريحة",
   "admin.settingsPage.heroSaveFailed": "تعذّر حفظ الشريحة",
+  "admin.transformations.cancel": "إلغاء",
 },
   fr: {
   "nav.home": "Accueil",
@@ -3346,6 +3348,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Enregistrer",
   "admin.settingsPage.heroSaved": "Diapositive mise à jour",
   "admin.settingsPage.heroSaveFailed": "Impossible d'enregistrer la diapositive",
+  "admin.transformations.cancel": "Annuler",
 },
   es: {
   "nav.home": "Inicio",
@@ -4436,6 +4439,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Guardar",
   "admin.settingsPage.heroSaved": "Diapositiva actualizada",
   "admin.settingsPage.heroSaveFailed": "No se pudo guardar la diapositiva",
+  "admin.transformations.cancel": "Cancelar",
 },
   de: {
   "nav.home": "Start",
@@ -5526,6 +5530,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Speichern",
   "admin.settingsPage.heroSaved": "Slide aktualisiert",
   "admin.settingsPage.heroSaveFailed": "Slide konnte nicht gespeichert werden",
+  "admin.transformations.cancel": "Abbrechen",
 },
   it: {
   "nav.home": "Home",
@@ -6616,6 +6621,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Salva",
   "admin.settingsPage.heroSaved": "Slide aggiornata",
   "admin.settingsPage.heroSaveFailed": "Impossibile salvare la slide",
+  "admin.transformations.cancel": "Annulla",
 },
   ru: {
   "nav.home": "Главная",
@@ -7706,6 +7712,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Сохранить",
   "admin.settingsPage.heroSaved": "Слайд обновлён",
   "admin.settingsPage.heroSaveFailed": "Не удалось сохранить слайд",
+  "admin.transformations.cancel": "Отмена",
 },
   zh: {
   "nav.home": "首页",
@@ -8796,6 +8803,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "保存",
   "admin.settingsPage.heroSaved": "幻灯片已更新",
   "admin.settingsPage.heroSaveFailed": "无法保存幻灯片",
+  "admin.transformations.cancel": "取消",
 },
   hi: {
   "nav.home": "होम",
@@ -9886,6 +9894,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "सेव करें",
   "admin.settingsPage.heroSaved": "स्लाइड अपडेट हो गई",
   "admin.settingsPage.heroSaveFailed": "स्लाइड सेव नहीं हो सकी",
+  "admin.transformations.cancel": "रद्द करें",
 },
   tr: {
   "nav.home": "Ana Sayfa",
@@ -10976,5 +10985,6 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "admin.settingsPage.heroSave": "Kaydet",
   "admin.settingsPage.heroSaved": "Slayt güncellendi",
   "admin.settingsPage.heroSaveFailed": "Slayt kaydedilemedi",
+  "admin.transformations.cancel": "İptal",
 },
 };
