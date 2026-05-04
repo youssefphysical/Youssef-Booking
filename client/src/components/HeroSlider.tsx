@@ -173,25 +173,24 @@ export function HeroSlider() {
         aria-hidden="true"
       />
 
-      {/* Image layer — single render path. Plain <img> with a STATIC
-          enhancement filter (contrast + brightness + saturate slightly
-          up) that is baked into the GPU layer once at compositing time
-          and never animates, so it does not cost per-frame work. The
-          slow Ken Burns scale is GPU-only (transform), gated to
-          desktop, and PAUSED while the user is actively scrolling —
-          see the data-scrolling="true" rule in index.css. */}
+      {/* Image layer — TWIN-IMAGE depth-of-field rig.
+          The bottom copy is blurred and serves as the "out of focus"
+          background. The top copy is the sharp original, but it's
+          masked by a soft radial so only the centre (where the
+          subject is) reads as razor-sharp; the corners fade to the
+          blurred copy beneath. This is the same trick a portrait lens
+          gives you optically: subject in focus, surroundings melting
+          into bokeh. Both images share a single Ken Burns transform
+          on the wrapper so the masked seam never moves out of
+          alignment. The browser shares the decoded bitmap between
+          the two <img> tags with the same src, so memory cost is
+          negligible. */}
       {current && (
         <div className="absolute inset-0" aria-hidden="true">
           <AnimatePresence mode="sync">
-            <motion.img
+            <motion.div
               key={current.id}
-              src={current.imageDataUrl}
-              alt=""
-              loading={imageIndex === 0 ? "eager" : "lazy"}
-              // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
-              fetchpriority={imageIndex === 0 ? "high" : "auto"}
-              decoding="async"
-              className="hero-img hero-kenburns absolute inset-0 w-full h-full object-cover"
+              className="hero-kenburns absolute inset-0"
               initial={reduced ? false : { opacity: 0 }}
               animate={reduced ? undefined : { opacity: 1 }}
               exit={reduced ? undefined : { opacity: 0 }}
@@ -200,10 +199,38 @@ export function HeroSlider() {
                   ? undefined
                   : { duration: FADE_MS / 1000, ease: "easeInOut" }
               }
-              data-testid={`img-hero-slide-${current.id}`}
-            />
+            >
+              {/* Background "out of focus" copy — blurred + cool-graded. */}
+              <img
+                src={current.imageDataUrl}
+                alt=""
+                loading={imageIndex === 0 ? "eager" : "lazy"}
+                decoding="async"
+                aria-hidden="true"
+                className="hero-img-blur absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Foreground sharp copy — radial-masked so subject pops. */}
+              <img
+                src={current.imageDataUrl}
+                alt=""
+                loading={imageIndex === 0 ? "eager" : "lazy"}
+                // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
+                fetchpriority={imageIndex === 0 ? "high" : "auto"}
+                decoding="async"
+                className="hero-img hero-img-mask absolute inset-0 w-full h-full object-cover"
+                data-testid={`img-hero-slide-${current.id}`}
+              />
+            </motion.div>
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Subject focus radial — brighter cyan halo right where the
+          subject's face/torso usually sits in the frame. Stacks above
+          the photo to "lift" the subject off the background like a
+          movie poster key light. Pure additive paint, no blend mode. */}
+      {current && (
+        <div className="hero-subject-glow absolute inset-0 pointer-events-none" aria-hidden="true" />
       )}
 
       {/* TRON layer stack — all decorative, all pointer-events:none, NO
@@ -216,16 +243,32 @@ export function HeroSlider() {
       <div className="absolute inset-0 tron-spotlight pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-shaft pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-grid opacity-[0.08] pointer-events-none" aria-hidden="true" />
-      {/* Bottom CTA-readability gradient: top transparent → mid soft
-          tint (~25%) → bottom dark for caption legibility. Mid is
-          deliberately dialled to ~25% (per task spec) so the centre
-          of the frame retains photo clarity while the bottom 30%
-          stays dark enough for the headline + CTAs to read. */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/22 to-transparent md:from-black/86 md:via-black/25 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent md:from-black/45 pointer-events-none" />
-      <div className="absolute inset-0 tron-vignette opacity-55 pointer-events-none" />
-      <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />
-      <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam opacity-60 pointer-events-none" />
+      {/* Smart vertical gradient — NOT a flat black wall. Top 50% is
+          transparent so the subject reads in full clarity, middle is
+          a deep navy soft-tint (~22%) for cinematic depth without
+          losing the photo, bottom is darker so the headline and CTAs
+          land on a high-contrast pad. Cool navy stop instead of pure
+          black so the cyan grade doesn't fight a black underlayer. */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to top, " +
+            "hsl(220 60% 4% / 0.86) 0%, " +
+            "hsl(220 55% 6% / 0.55) 22%, " +
+            "hsl(220 50% 8% / 0.18) 50%, " +
+            "transparent 78%)",
+        }}
+      />
+      {/* Subtle horizontal navy hold on the left so the headline pad
+          stays readable on bright photos without darkening the right
+          side of the frame where the subject usually is. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent md:from-black/40 pointer-events-none" />
+      <div className="absolute inset-0 tron-vignette opacity-60 pointer-events-none" />
+      {/* Animated cyan beam — drifts slowly across the hero. Two
+          beams at different vertical positions and slightly different
+          drift phases so they never feel like a single static line. */}
+      <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam tron-beam-drift pointer-events-none" />
+      <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam tron-beam-drift tron-beam-drift--alt opacity-60 pointer-events-none" />
 
       {/* Overlay copy — staggered reveal. Animates once per copy or
           slide change so the eye is led: badge → headline → subtitle
@@ -255,7 +298,7 @@ export function HeroSlider() {
             )}
             <motion.h1
               variants={reduced ? undefined : copyItem}
-              className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.05] text-white tracking-tight"
+              className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight"
               data-testid="text-hero-headline"
             >
               {headline}

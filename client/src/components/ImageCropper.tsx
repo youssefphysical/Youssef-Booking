@@ -327,18 +327,21 @@ export function ImageCropper({
         outH,
       );
       // WebP first (much smaller); JPEG fallback for legacy Safari.
-      // Quality bumped from 0.85 → 0.92 WebP, 0.90 → 0.94 JPEG so hero
-      // and transformation photos stay sharp even when they contain
-      // fine gym detail (dumbbell racks, fabric, hair). The size cost
-      // of WebP at 0.92 vs 0.85 is ~15% on average — well worth it
-      // for "premium" perceived clarity.
+      // CINEMATIC TIER quality: WebP 0.95 / JPEG 0.96. At these
+      // settings the encoder retains essentially all the perceptual
+      // detail of the source — fine gym texture, fabric weave, hair,
+      // dumbbell rack chrome — which is exactly what the upgraded
+      // cinematic hero (twin-image depth-of-field rig + cyan grade)
+      // needs to look like a premium movie poster. Size cost over
+      // the previous 0.92/0.94 tier is modest (~10–15%) and well
+      // worth it for the "wow… this is different" reaction.
       let dataUrl = forceJpeg
-        ? canvas.toDataURL("image/jpeg", 0.94)
-        : canvas.toDataURL("image/webp", 0.92);
+        ? canvas.toDataURL("image/jpeg", 0.96)
+        : canvas.toDataURL("image/webp", 0.95);
       if (!dataUrl.startsWith("data:image/")) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.94);
+        dataUrl = canvas.toDataURL("image/jpeg", 0.96);
       } else if (!forceJpeg && !dataUrl.startsWith("data:image/webp")) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.94);
+        dataUrl = canvas.toDataURL("image/jpeg", 0.96);
       }
       await onCropped(dataUrl);
     } catch (e: any) {
