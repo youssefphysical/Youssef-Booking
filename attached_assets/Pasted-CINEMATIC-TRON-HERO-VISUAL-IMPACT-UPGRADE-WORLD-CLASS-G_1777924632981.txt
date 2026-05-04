@@ -1,0 +1,187 @@
+CINEMATIC TRON HERO — VISUAL IMPACT UPGRADE (WORLD CLASS)
+
+Goal:
+Upgrade the homepage from “clean & premium” to “cinematic, futuristic, high-impact”.
+The hero must create a WOW effect within 1–2 seconds like a movie poster.
+
+CRITICAL:
+Do NOT break any functionality (booking, auth, admin, cropper, i18n, APIs, Neon, Vercel).
+This is a VISUAL + EXPERIENCE upgrade only.
+
+---
+
+1. HERO IMAGE — TRUE TRON LOOK
+
+Current issue:
+Image is visible but not powerful or cinematic.
+
+Fix:
+
+- Increase subject clarity WITHOUT killing the dark mood
+- Apply layered effects:
+
+Layer 1:
+- Base image
+
+Layer 2:
+- Radial light behind subject (soft cyan glow)
+  center → 20–30% brightness boost
+  edges → fade to dark
+
+Layer 3:
+- Dark gradient bottom (for CTA)
+  from black/80 → transparent mid
+
+Layer 4:
+- Subtle cyan grid / digital lines (VERY subtle, 5–10% opacity)
+
+Layer 5:
+- Glow accent on subject edges (soft halo effect)
+
+CSS filters (balanced):
+- contrast: ~1.1–1.15
+- brightness: ~1.05–1.1
+- saturation: ~1.05–1.1
+
+Result:
+Subject POPS, background stays cinematic.
+
+---
+
+2. ADD DEPTH (VERY IMPORTANT)
+
+Make the hero feel layered:
+
+- Slight parallax effect:
+  background moves slower than content
+
+- Add soft blur to far background only
+- Keep subject sharp
+
+---
+
+3. TEXT — CINEMATIC STYLE
+
+Headline:
+- Add subtle glow:
+  text-shadow: cyan glow (soft, not heavy)
+
+Badge:
+- Make it glass + neon outline
+- Add tiny pulse animation (VERY subtle)
+
+Subtitle:
+- Increase readability (lighter gray, not washed)
+
+Spacing:
+- More breathing space between elements
+
+---
+
+4. BUTTONS — PREMIUM FEEL
+
+Primary CTA:
+- Add glow on hover + soft pulse
+- Add gradient:
+  dark blue → cyan
+
+Secondary CTA:
+- Glass style with border glow
+
+WhatsApp:
+- Keep green but match neon lighting
+
+Animation:
+- Buttons appear with slight fade + slide up
+
+---
+
+5. HERO ENTRY EXPERIENCE
+
+On first load:
+
+- Show TRON dark base instantly (no blank)
+- Then:
+  fade-in image (300–500ms)
+  then text appears (staggered)
+
+Sequence:
+1. Background appears
+2. Badge
+3. Headline
+4. Subtitle
+5. Buttons
+
+---
+
+6. REMOVE “FLAT FEEL”
+
+Add:
+- Subtle vignette
+- Light beam effect behind subject (like TRON poster)
+- Slight noise texture (very subtle)
+
+---
+
+7. FIX “OLD DESIGN FLASH” (IMPORTANT)
+
+Problem:
+Old UI appears before new one
+
+Fix:
+- Ensure hero container renders immediately with dark base
+- Do NOT wait for data before rendering structure
+- Keep layout stable
+- Prevent flicker using:
+  consistent SSR + hydration match
+
+---
+
+8. MOBILE EXPERIENCE
+
+- Reduce overlay darkness more on mobile
+- Keep face/details visible
+- Buttons large + spaced
+- No clutter
+
+---
+
+9. KEEP PERFORMANCE
+
+- No heavy libs
+- No video
+- No lag
+- Keep fast loading
+
+---
+
+10. VALIDATION
+
+Must check:
+
+- Hard refresh → no old design flash
+- Hero loads smoothly
+- Subject clearly visible
+- Text readable
+- WOW effect achieved
+- Mobile looks premium
+- No functionality broken
+
+---
+
+DEPLOY:
+
+Neon:
+- unchanged
+
+GitHub:
+- commit + push
+
+Vercel:
+- deploy → READY
+
+Final result must feel like:
+- Netflix hero
+- Apple-level polish
+- TRON cinematic energy
+- High-end fitness brand
