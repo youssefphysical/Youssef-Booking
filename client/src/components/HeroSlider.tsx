@@ -1,28 +1,33 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AnimatePresence,
-  motion,
-  useScroll,
-  useTransform,
-  type Variants,
-} from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import type { HeroImage } from "@shared/schema";
 
-// Cinematic image-only hero. Auto-rotates between admin-uploaded slides
-// (5.5s cadence), crossfades for 1.2s, applies a slow Ken Burns
-// scale+pan to the slide image, and layers TRON-poster atmospherics
-// (radial spotlight, diagonal light shaft, fine grid, film grain,
-// vignette, energy beams) over the top. Per-slide overlay copy
-// (title/subtitle/badge) falls back to the global cinematic i18n
-// strings so the hero never reads empty.
-const ROTATE_MS = 5500;
-const FADE_MS = 1200;
+// Cinematic image-only hero. Auto-rotates every 6s. A single tick
+// counter drives both the image rotation (modulo slides.length) and
+// the brand-pillar copy rotation (modulo 3) — so visitors always see
+// the three core promises (premium / results / purpose) eventually,
+// even if the admin hasn't uploaded any hero images yet.
+//
+// Performance: this hero is engineered for buttery-smooth scrolling.
+// We deliberately avoid:
+//   - useScroll / parallax (caused per-frame transform repaints)
+//   - mix-blend-mode on overlays (forces full stacking-context repaint)
+//   - CSS filter on the <img> (forces software compositing)
+//   - backdrop-filter on the badge (very expensive on mobile)
+//   - box-shadow keyframe animation on mobile (pulse/breathe gated to
+//     desktop via the .tron-pulse / .tron-cta-breathe media query)
+//   - Ken Burns scale/drift on the image (was paired with parallax)
+// All of those were the root causes of hero scroll jank. The TRON
+// look is preserved by baking the cyan tint into the alpha-blended
+// gradient overlays themselves rather than relying on blend modes.
+const ROTATE_MS = 6000;
+const FADE_MS = 900;
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -30,20 +35,19 @@ function prefersReducedMotion() {
 }
 
 // Stagger envelope for the overlay copy. Each child fades up in
-// sequence: badge → headline → subtitle → button row. This is the
-// "movie poster reveal" the cinematic upgrade calls for.
+// sequence: badge → headline → subtitle → button row.
 const copyContainer: Variants = {
   hidden: {},
   visible: {
-    transition: { delayChildren: 0.18, staggerChildren: 0.16 },
+    transition: { delayChildren: 0.12, staggerChildren: 0.12 },
   },
 };
 const copyItem: Variants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 14 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -53,53 +57,57 @@ export function HeroSlider() {
     queryKey: ["/api/hero-images"],
   });
   const slides = images.filter((s) => s.isActive !== false);
-  const [index, setIndex] = useState(0);
+  const [tick, setTick] = useState(0);
   const reduced = prefersReducedMotion();
 
-  // Parallax — scrolling the page nudges the image layer downward at a
-  // slower rate than the overlay copy, giving the hero a sense of depth
-  // (background recedes; foreground holds). Disabled for reduced motion.
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-  const parallaxY = useTransform(scrollY, [0, 600], ["0%", "14%"]);
-
   useEffect(() => {
-    // Honour prefers-reduced-motion: do NOT auto-rotate slides for users
-    // who have requested reduced motion at the OS level. They still see
+    // Honour prefers-reduced-motion: do NOT auto-rotate for users who
+    // have requested reduced motion at the OS level. They still see
     // the first slide and can use the pagination dots to navigate.
-    if (reduced || slides.length <= 1) return;
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, ROTATE_MS);
+    if (reduced) return;
+    const id = window.setInterval(() => setTick((i) => i + 1), ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [slides.length, reduced]);
+  }, [reduced]);
 
-  // Reset index when image list changes (e.g. after admin deletes one).
-  useEffect(() => {
-    if (index >= slides.length) setIndex(0);
-  }, [slides.length, index]);
+  // Three world-class brand-pillar copy variants from i18n. Per-image
+  // admin copy on a HeroImage row OVERRIDES the variant for that
+  // specific image — so the admin can still write custom copy per
+  // slide if they want to.
+  const variants = [
+    {
+      badge: t("hero.slides.s1.badge"),
+      headline: t("hero.slides.s1.headline"),
+      subhead: t("hero.slides.s1.subhead"),
+    },
+    {
+      badge: t("hero.slides.s2.badge"),
+      headline: t("hero.slides.s2.headline"),
+      subhead: t("hero.slides.s2.subhead"),
+    },
+    {
+      badge: t("hero.slides.s3.badge"),
+      headline: t("hero.slides.s3.headline"),
+      subhead: t("hero.slides.s3.subhead"),
+    },
+  ];
 
-  // Always render the cinematic shell (loading / empty / ready states) so
-  // the visitor never sees the bio section flash above it on hard refresh.
-  // When a real slide exists we paint the Ken Burns image on top of the
-  // shell; otherwise the default TRON background + i18n copy stand alone
-  // as an intentional, branded fallback.
-  const safeIndex = slides.length > 0 && index < slides.length ? index : 0;
-  const current: HeroImage | undefined = slides[safeIndex];
+  const imageIndex = slides.length > 0 ? tick % slides.length : 0;
+  const copyIndex = tick % 3;
+  const variant = variants[copyIndex];
+  const current: HeroImage | undefined = slides[imageIndex];
 
-  const headline = current?.title?.trim() || t("hero.cinematic.headline");
-  const subhead = current?.subtitle?.trim() || t("hero.cinematic.subhead");
-  const badge = current?.badge?.trim() || t("hero.cinematic.badge");
+  const headline = current?.title?.trim() || variant.headline;
+  const subhead = current?.subtitle?.trim() || variant.subhead;
+  const badge = current?.badge?.trim() || variant.badge;
 
   return (
     <div
-      ref={heroRef}
-      className="relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
+      className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state={isPending ? "loading" : current ? "ready" : "empty"}
     >
-      {/* Instant dark gradient base — paints with the very first frame so
-          there is never a blank, white, or old-design flash before the
+      {/* Instant dark gradient base — paints with the very first frame
+          so there is never a blank or old-design flash before the
           /api/hero-images response arrives. */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -111,106 +119,59 @@ export function HeroSlider() {
         }}
         aria-hidden="true"
       />
-      <div className="absolute -top-32 -left-24 w-[32rem] h-[32rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-24 w-[34rem] h-[34rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
-      {/* Image layer — only mounted once a real slide is available.
-          Two render paths so prefers-reduced-motion is fully honoured:
-          - Reduced motion: a plain <img> with the cinematic CSS filter,
-            no parallax, no Ken Burns, no crossfade, no AnimatePresence.
-          - Default: parallax wrapper + AnimatePresence crossfade between
-            slides + Ken Burns scale/drift on the image itself. */}
-      {current && reduced && (
+      {/* Image layer — single render path. Plain <img> with NO CSS
+          filter and NO parallax (the previous parallax + filter combo
+          was the primary scroll-jank source). For default-motion users
+          we crossfade between slides via AnimatePresence opacity only —
+          opacity is the cheapest possible composite operation. */}
+      {current && (
         <div className="absolute inset-0" aria-hidden="true">
-          <img
-            src={current.imageDataUrl}
-            alt=""
-            loading="eager"
-            // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
-            fetchpriority="high"
-            decoding="async"
-            className="w-full h-full object-cover"
-            style={{ filter: "contrast(1.12) brightness(1.08) saturate(1.08)" }}
-            data-testid={`img-hero-slide-${current.id}`}
-          />
+          <AnimatePresence mode="sync">
+            <motion.img
+              key={current.id}
+              src={current.imageDataUrl}
+              alt=""
+              loading={imageIndex === 0 ? "eager" : "lazy"}
+              // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
+              fetchpriority={imageIndex === 0 ? "high" : "auto"}
+              decoding="async"
+              className="absolute inset-0 w-full h-full object-cover"
+              initial={reduced ? false : { opacity: 0 }}
+              animate={reduced ? undefined : { opacity: 1 }}
+              exit={reduced ? undefined : { opacity: 0 }}
+              transition={
+                reduced
+                  ? undefined
+                  : { duration: FADE_MS / 1000, ease: "easeInOut" }
+              }
+              data-testid={`img-hero-slide-${current.id}`}
+            />
+          </AnimatePresence>
         </div>
       )}
-      {current && !reduced && (
-        <motion.div
-          className="absolute inset-0 will-change-transform"
-          style={{ y: parallaxY }}
-          aria-hidden="true"
-        >
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={current.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: FADE_MS / 1000, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              {/* Ken Burns: slow scale + slight x drift, plus the
-                  cinematic CSS filter that lifts contrast/brightness/
-                  saturation just enough to make the subject pop without
-                  reading as washed out. */}
-              <motion.img
-                src={current.imageDataUrl}
-                alt=""
-                aria-hidden="true"
-                loading={safeIndex === 0 ? "eager" : "lazy"}
-                // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
-                fetchpriority={safeIndex === 0 ? "high" : "auto"}
-                decoding="async"
-                className="w-full h-full object-cover will-change-transform"
-                style={{
-                  filter:
-                    "contrast(1.12) brightness(1.08) saturate(1.08)",
-                }}
-                initial={{ scale: 1.0, x: "-1.5%" }}
-                animate={{ scale: 1.08, x: "1.5%" }}
-                transition={{
-                  duration: (ROTATE_MS + FADE_MS) / 1000,
-                  ease: "linear",
-                }}
-                data-testid={`img-hero-slide-${current.id}`}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-      )}
 
-      {/* TRON layer stack (purely decorative, all pointer-events:none).
-          Order matters — bottom of stack first, top of stack last:
-            1. Cinematic spotlight (cyan radial, blends "screen" so it
-               BRIGHTENS the centre of the image — this is what makes
-               the subject pop).
-            2. Diagonal light shaft (TRON poster atmosphere).
-            3. Fine cyan grid (digital surface, very subtle).
-            4. Film grain (kills the "flat dark plastic" feel).
-            5. Smart bottom darkening (heavier on desktop where the
-               headline sits centered, lighter on mobile so the photo
-               stays readable on small screens).
-            6. Soft left wash (anchors the headline; lighter on mobile).
-            7. Radial vignette (corner darkening for legibility).
-            8. Pair of horizontal energy beams (sci-fi accents). */}
+      {/* TRON layer stack — all decorative, all pointer-events:none, NO
+          mix-blend-mode and NO backdrop-filter. The cyan tints are
+          baked directly into the alpha gradients, so the cinematic
+          look is preserved without the per-frame repaint cost. */}
       <div className="absolute inset-0 tron-spotlight pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-shaft pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 tron-grid opacity-25 mix-blend-screen pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 tron-noise pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/8 to-transparent md:from-black md:via-black/15 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent md:from-black/55 pointer-events-none" />
+      <div className="absolute inset-0 tron-grid opacity-20 pointer-events-none" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent md:from-black/95 md:via-black/25 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent md:from-black/55 pointer-events-none" />
       <div className="absolute inset-0 tron-vignette opacity-70 pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam opacity-60 pointer-events-none" />
 
-      {/* Overlay content — staggered reveal. Animates ONCE per slide
-          change so the eye is led: badge → headline → subtitle → CTAs.
-          Reduced-motion users get the same final state with no animation. */}
+      {/* Overlay copy — staggered reveal. Animates once per copy or
+          slide change so the eye is led: badge → headline → subtitle
+          → CTAs. Reduced-motion users get the same final state with
+          no animation. */}
       <div className="absolute inset-0 flex items-end md:items-center">
-        <div className="w-full max-w-6xl mx-auto px-5 pb-16 md:pb-0 md:pt-20">
+        <div className="w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
           <motion.div
-            key={current ? `copy-${current.id}` : "copy-default"}
+            key={`copy-${copyIndex}-${current?.id ?? "default"}`}
             variants={reduced ? undefined : copyContainer}
             initial={reduced ? false : "hidden"}
             animate={reduced ? undefined : "visible"}
@@ -219,7 +180,7 @@ export function HeroSlider() {
             {badge && (
               <motion.span
                 variants={reduced ? undefined : copyItem}
-                className="tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-primary/10 backdrop-blur-md text-[10px] mb-5"
+                className="tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6"
                 data-testid="text-hero-badge"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -228,7 +189,7 @@ export function HeroSlider() {
             )}
             <motion.h1
               variants={reduced ? undefined : copyItem}
-              className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.02] text-white tracking-tight"
+              className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.05] text-white tracking-tight"
               data-testid="text-hero-headline"
             >
               {headline}
@@ -236,7 +197,7 @@ export function HeroSlider() {
             {subhead && (
               <motion.p
                 variants={reduced ? undefined : copyItem}
-                className="mt-5 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed"
+                className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed"
                 style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
                 data-testid="text-hero-subhead"
               >
@@ -246,10 +207,14 @@ export function HeroSlider() {
 
             <motion.div
               variants={reduced ? undefined : copyItem}
-              className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3"
+              className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5"
             >
-              <Link href="/book" className="w-full sm:w-auto" data-testid="link-hero-start-transformation">
-                <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press">
+              <Link
+                href="/book"
+                className="w-full sm:w-auto"
+                data-testid="link-hero-start-transformation"
+              >
+                <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold whitespace-nowrap btn-press">
                   {t("hero.cinematic.startTransformation")}
                   <ArrowRight size={18} />
                 </button>
@@ -257,9 +222,9 @@ export function HeroSlider() {
               <button
                 type="button"
                 onClick={() => {
-                  // Prefer the transformations gallery as social proof; if the
-                  // admin has not added any yet, fall back to the "why" pitch
-                  // so the button always lands somewhere meaningful.
+                  // Prefer the transformations gallery as social proof; if
+                  // the admin has not added any yet, fall back to the "why"
+                  // pitch so the button always lands somewhere meaningful.
                   const target =
                     document.getElementById("transformations") ??
                     document.getElementById("why");
@@ -285,8 +250,8 @@ export function HeroSlider() {
         </div>
       </div>
 
-      {/* Pagination dots — visually small but wrapped in a 44×44 tap target
-          so they meet WCAG 2.5.5 minimum interactive size on mobile. */}
+      {/* Pagination dots — visually small but wrapped in a 44×44 tap
+          target so they meet WCAG 2.5.5 minimum interactive size. */}
       {slides.length > 1 && (
         <div
           className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"
@@ -296,7 +261,7 @@ export function HeroSlider() {
             <button
               key={img.id}
               type="button"
-              onClick={() => setIndex(i)}
+              onClick={() => setTick(i)}
               aria-label={`Slide ${i + 1}`}
               data-testid={`button-hero-dot-${i}`}
               className="group inline-flex items-center justify-center min-w-[44px] h-[44px] px-2"
@@ -304,7 +269,7 @@ export function HeroSlider() {
               <span
                 className={cn(
                   "block h-1.5 rounded-full transition-all",
-                  i === safeIndex
+                  i === imageIndex
                     ? "w-8 bg-primary"
                     : "w-1.5 bg-white/40 group-hover:bg-white/70",
                 )}

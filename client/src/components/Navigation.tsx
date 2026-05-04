@@ -96,7 +96,7 @@ export function Navigation() {
 
   // ============= PUBLIC TOP NAV =============
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-background/70 backdrop-blur-xl border-b border-white/5">
+    <header className="fixed top-0 inset-x-0 z-40 bg-background/85 md:bg-background/70 backdrop-blur-md md:backdrop-blur-xl border-b border-white/5">
       <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"
@@ -183,7 +183,7 @@ export function Navigation() {
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl">
+        <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md">
           <div className="px-5 py-4 space-y-1">
             {/* Sign In is the very first item when logged out so visitors
                 on mobile can never miss the auth entry point. */}
