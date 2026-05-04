@@ -203,6 +203,142 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== TRON-inspired neon-tech system =====
+   Additive utilities. None of these change layout — they only paint
+   subtle cyan accents (grid, vignette, beam, glow) on top of existing
+   surfaces. Tuned low-opacity so the site reads as "premium sci-fi"
+   instead of arcade. All animations honour prefers-reduced-motion via
+   the global block at the bottom of this file. */
+
+/* Soft 1px cyan grid — meant to be overlaid on dark hero/panel surfaces. */
+.tron-grid {
+  background-image:
+    linear-gradient(to right, hsl(195 100% 60% / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(195 100% 60% / 0.07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+}
+.tron-grid-fine {
+  background-image:
+    linear-gradient(to right, hsl(195 100% 60% / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(195 100% 60% / 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Radial vignette — darken the corners so overlay text always reads. */
+.tron-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    hsl(220 55% 4% / 0.55) 78%,
+    hsl(220 55% 4% / 0.88) 100%
+  );
+}
+
+/* Thin horizontal cyan light beam — used as a divider/accent. */
+.tron-beam {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(195 100% 65% / 0) 12%,
+    hsl(195 100% 65% / 0.55) 50%,
+    hsl(195 100% 65% / 0) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 0 14px 1px hsl(195 100% 65% / 0.4);
+}
+
+/* Dark glass panel with a hairline cyan border + faint inner highlight. */
+.tron-card {
+  background:
+    linear-gradient(165deg, hsl(220 35% 8% / 0.92), hsl(222 45% 5% / 0.94));
+  border: 1px solid hsl(195 90% 55% / 0.18);
+  box-shadow:
+    inset 0 1px 0 hsl(195 100% 70% / 0.12),
+    0 1px 0 hsl(0 0% 0% / 0.4),
+    0 14px 32px -18px hsl(195 100% 50% / 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color 280ms ease, box-shadow 280ms ease,
+              transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tron-card:hover {
+  transform: translateY(-2px);
+  border-color: hsl(195 95% 60% / 0.42);
+  box-shadow:
+    inset 0 1px 0 hsl(195 100% 70% / 0.2),
+    0 1px 0 hsl(0 0% 0% / 0.4),
+    0 18px 40px -18px hsl(195 100% 55% / 0.42);
+}
+
+/* Hard cyan outline + glow — for key callouts (e.g. "AFTER" badge). */
+.tron-edge {
+  box-shadow:
+    0 0 0 1px hsl(195 100% 60% / 0.55),
+    0 0 18px -2px hsl(195 100% 60% / 0.55);
+}
+
+/* Cinematic primary CTA — gradient fill + persistent neon glow. */
+.tron-cta {
+  background: linear-gradient(135deg, hsl(195 100% 62%), hsl(210 100% 55%));
+  color: hsl(220 60% 6%);
+  border: 1px solid hsl(195 100% 80% / 0.6);
+  box-shadow:
+    0 0 0 1px hsl(195 100% 70% / 0.35),
+    0 0 28px -2px hsl(195 100% 60% / 0.55),
+    inset 0 1px 0 hsl(195 100% 92% / 0.5);
+}
+.tron-cta:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px hsl(195 100% 80% / 0.5),
+    0 0 38px -2px hsl(195 100% 60% / 0.78),
+    inset 0 1px 0 hsl(195 100% 95% / 0.6);
+}
+
+/* Glass outline button — pairs with .tron-cta as the secondary action. */
+.tron-glass-btn {
+  background: hsl(220 55% 6% / 0.55);
+  border: 1px solid hsl(195 90% 55% / 0.35);
+  color: hsl(0 0% 98%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 hsl(195 100% 70% / 0.08);
+}
+.tron-glass-btn:hover {
+  border-color: hsl(195 100% 65% / 0.65);
+  background: hsl(220 55% 8% / 0.7);
+  box-shadow:
+    inset 0 1px 0 hsl(195 100% 70% / 0.14),
+    0 0 22px -4px hsl(195 100% 60% / 0.45);
+}
+
+/* Eyebrow / section label with cyan tint + soft text glow. */
+.tron-eyebrow {
+  color: hsl(195 100% 72%);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px hsl(195 100% 60% / 0.35);
+}
+
+/* Subtle pulse for accent badges. Disabled by reduced-motion block below. */
+@keyframes tronPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px hsl(195 100% 60% / 0.45),
+      0 0 10px -2px hsl(195 100% 60% / 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px hsl(195 100% 75% / 0.65),
+      0 0 22px -2px hsl(195 100% 60% / 0.7);
+  }
+}
+.tron-pulse {
+  animation: tronPulse 3.4s ease-in-out infinite;
+}
+
 /* Reduced motion — respect users */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

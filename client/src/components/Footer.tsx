@@ -5,7 +5,9 @@ import { useTranslation } from "@/i18n";
 export function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="border-t border-white/5 py-10 mt-10">
+    <footer className="relative border-t border-white/5 py-10 mt-10">
+      {/* Cyan neon divider continues the TRON system into the footer. */}
+      <div className="absolute left-6 right-6 top-0 tron-beam opacity-70 pointer-events-none" aria-hidden="true" />
       <div className="max-w-6xl mx-auto px-5 flex flex-col items-center gap-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div className="text-center md:text-left">
           <p className="font-display text-foreground/90 text-sm tracking-wide">

@@ -16,7 +16,7 @@ export function Transformations() {
   return (
     <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+        <p className="tron-eyebrow text-xs mb-2">
           {t("section.transformations.eyebrow")}
         </p>
         <h2 className="text-3xl md:text-4xl font-display font-bold">
@@ -37,11 +37,12 @@ export function Transformations() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="rounded-3xl border border-white/10 navy-panel overflow-hidden card-lift"
+              className="tron-card rounded-3xl overflow-hidden"
               data-testid={`transformation-card-${row.id}`}
             >
-              {/* Before / After split */}
-              <div className="grid grid-cols-2 gap-px bg-black/40">
+              {/* Before / After split — thin cyan separator between halves
+                  to reinforce the TRON edge aesthetic. */}
+              <div className="grid grid-cols-2 gap-[1px] bg-primary/30">
                 <figure className="relative aspect-[4/5] bg-black">
                   <img
                     src={row.beforeImageDataUrl}
@@ -51,7 +52,7 @@ export function Transformations() {
                     className="w-full h-full object-cover"
                     data-testid={`img-transformation-before-${row.id}`}
                   />
-                  <figcaption className="absolute top-2 left-2 px-2 py-1 rounded-md bg-black/65 backdrop-blur-sm text-[10px] uppercase tracking-widest text-white/90 font-bold">
+                  <figcaption className="absolute top-2 left-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-[10px] uppercase tracking-[0.2em] text-white/90 font-bold border border-white/10">
                     {t("transformations.before")}
                   </figcaption>
                 </figure>
@@ -64,7 +65,7 @@ export function Transformations() {
                     className="w-full h-full object-cover"
                     data-testid={`img-transformation-after-${row.id}`}
                   />
-                  <figcaption className="absolute top-2 right-2 px-2 py-1 rounded-md bg-primary/85 backdrop-blur-sm text-[10px] uppercase tracking-widest text-primary-foreground font-bold">
+                  <figcaption className="tron-pulse absolute top-2 right-2 px-2 py-1 rounded-md bg-primary text-primary-foreground text-[10px] uppercase tracking-[0.2em] font-bold">
                     {t("transformations.after")}
                   </figcaption>
                 </figure>

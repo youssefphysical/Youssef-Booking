@@ -93,9 +93,20 @@ export function HeroSlider() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Multi-stop dark gradient — heavier at bottom for legibility of CTA + text. */}
+      {/* TRON layer stack (purely decorative, all pointer-events:none):
+          1. Subtle cyan grid — reads as "tech surface" without dominating.
+          2. Multi-stop dark gradient — guarantees legibility of overlay copy.
+          3. Radial vignette — pulls eye to the centre + darkens corners.
+          4. A pair of horizontal energy beams above and below the copy. */}
+      <div
+        className="absolute inset-0 tron-grid opacity-40 mix-blend-screen pointer-events-none"
+        aria-hidden="true"
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/30 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/15 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/15 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 tron-vignette pointer-events-none" />
+      <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />
+      <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam opacity-60 pointer-events-none" />
 
       {/* Overlay content */}
       <div className="absolute inset-0 flex items-end md:items-center">
@@ -109,15 +120,17 @@ export function HeroSlider() {
           >
             {badge && (
               <span
-                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/15 backdrop-blur-md text-[10px] uppercase tracking-[0.2em] text-primary mb-4"
+                className="tron-eyebrow inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/10 backdrop-blur-md text-[10px] mb-4"
                 data-testid="text-hero-badge"
               >
+                <span className="w-1.5 h-1.5 rounded-full bg-primary tron-pulse" />
                 {badge}
               </span>
             )}
             <h1
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.05] text-white drop-shadow-2xl"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.02] text-white drop-shadow-2xl tracking-tight"
               data-testid="text-hero-headline"
+              style={{ textShadow: "0 2px 18px rgba(0,0,0,0.65), 0 0 36px hsl(195 100% 60% / 0.18)" }}
             >
               {headline}
             </h1>
@@ -132,7 +145,7 @@ export function HeroSlider() {
 
             <div className="mt-7 flex flex-col sm:flex-row sm:flex-wrap gap-3">
               <Link href="/book" className="w-full sm:w-auto" data-testid="link-hero-start-transformation">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
+                <button className="tron-cta w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press">
                   {t("hero.cinematic.startTransformation")}
                   <ArrowRight size={18} />
                 </button>
@@ -149,7 +162,7 @@ export function HeroSlider() {
                   target?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
                 data-testid="button-hero-view-results"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white/10 backdrop-blur-md border border-white/25 text-white font-semibold hover:bg-white/20 whitespace-nowrap btn-press"
+                className="tron-glass-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press"
               >
                 <Eye size={18} />
                 {t("hero.cinematic.viewResults")}

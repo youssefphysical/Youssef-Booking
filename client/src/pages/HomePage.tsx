@@ -276,10 +276,10 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-white/5 bg-card/60 p-6 card-lift"
+              className="tron-card rounded-2xl p-6"
               data-testid={`why-card-${c.key}`}
             >
-              <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mb-4">
+              <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/40 flex items-center justify-center text-primary mb-4 tron-edge">
                 {c.icon}
               </div>
               <h3 className="font-display font-bold text-base">
@@ -295,11 +295,14 @@ export default function HomePage() {
 
       {/* BOOK & CONTACT CTA */}
       <section className="max-w-5xl mx-auto px-5 py-20" id="contact">
-        <div className="rounded-3xl border border-white/10 navy-panel p-6 sm:p-8 md:p-12 relative overflow-hidden">
-          <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-12 relative overflow-hidden">
+          {/* Subtle TRON layers — grid wash, blue corner glow, top neon beam. */}
+          <div className="absolute inset-0 tron-grid-fine opacity-30 pointer-events-none" aria-hidden="true" />
+          <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute left-6 right-6 top-0 tron-beam pointer-events-none" />
           <div className="relative">
             <div className="text-center max-w-xl mx-auto">
-              <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+              <p className="tron-eyebrow text-xs mb-2">
                 {t("section.cta.eyebrow")}
               </p>
               <h2 className="text-3xl md:text-4xl font-display font-bold">
@@ -310,7 +313,7 @@ export default function HomePage() {
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
               <Link href="/book" data-testid="link-cta-book" className="w-full sm:w-auto">
-                <button className="w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
+                <button className="tron-cta w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press">
                   {t("section.cta.bookSession")} <ArrowRight size={16} />
                 </button>
               </Link>
@@ -345,7 +348,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{eyebrow}</p>
+      <p className="tron-eyebrow text-xs mb-2">{eyebrow}</p>
       <h2 className="text-3xl md:text-4xl font-display font-bold">{title}</h2>
       {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
     </div>
