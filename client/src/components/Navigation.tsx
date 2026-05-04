@@ -50,7 +50,15 @@ export function Navigation() {
   // visitor is never an "error" state that could hide auth actions.
   const isAuthenticated = Boolean(user);
   const isGuest = !authLoading && !user;
-  const shouldShowSignIn = authLoading || isGuest;
+  // Belt-and-suspenders: `!isAuthenticated` is appended so the two render
+  // branches are PROVABLY mutually exclusive, even in the hypothetical
+  // future case where `user` becomes truthy while `authLoading` is also
+  // true (e.g. if a persisted-cache plugin or initialData ever gets
+  // wired into the auth query). Without this guard, that edge case
+  // would briefly render BOTH the Sign-In CTA and the authenticated
+  // CTAs side-by-side. With it, the moment we have a user, Sign-In
+  // hides — period.
+  const shouldShowSignIn = (authLoading || isGuest) && !isAuthenticated;
 
   const isAdmin = user?.role === "admin";
   const isSuperAdmin = isEffectiveSuperAdmin(user as any);
