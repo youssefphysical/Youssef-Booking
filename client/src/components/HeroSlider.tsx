@@ -230,8 +230,11 @@ export function HeroSlider() {
       {/* Overlay copy — staggered reveal. Animates once per copy or
           slide change so the eye is led: badge → headline → subtitle
           → CTAs. Reduced-motion users get the same final state with
-          no animation. */}
-      <div className="absolute inset-0 flex items-end md:items-center">
+          no animation. Explicit z-10 ensures the copy ALWAYS paints
+          above the .hero-isolate::after cyan rim light (z:5), even
+          though the rim is a positioned pseudo-element and copy
+          would otherwise lose stacking by JSX order alone. */}
+      <div className="absolute inset-0 z-10 flex items-end md:items-center">
         <div className="w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
           <motion.div
             key={`copy-${copyIndex}-${current?.id ?? "default"}`}
