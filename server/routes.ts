@@ -1226,7 +1226,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } else {
         pipeline = pipeline.resize({ width: opts.width, height: opts.width, fit: "inside", withoutEnlargement: true });
       }
-      const webp = await pipeline.webp({ quality: opts.quality ?? 78, effort: 4 }).toBuffer();
+      // Cinematic-tier default quality (92) — was 78. The cropper now
+      // emits WebP at 0.95, and the hero/transformation showcase has
+      // moved from "clean web" to "movie-poster premium" presentation
+      // (twin-image depth-of-field rig, cyan grade, subject key-light
+      // — see HeroSlider.tsx). Re-encoding at 78 was throwing away
+      // most of that perceptual fidelity. Effort 5 (was 4) gives
+      // libwebp ~15% better compression at this quality so the file
+      // size doesn't balloon proportionally to the quality bump.
+      const webp = await pipeline.webp({ quality: opts.quality ?? 92, effort: 5 }).toBuffer();
       return { ok: true, dataUrl: `data:image/webp;base64,${webp.toString("base64")}` };
     } catch (e) {
       console.error("[admin-image] sharp failed:", e);
@@ -1329,11 +1337,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
     }
     const before = await processAdminImageDataUrl(parsed.data.beforeImageDataUrl, {
-      width: 1600, fit: "inside", quality: 80,
+      width: 1600, fit: "inside", quality: 90,
     });
     if (!before.ok) return res.status(before.status).json({ message: `Before image: ${before.message}` });
     const after = await processAdminImageDataUrl(parsed.data.afterImageDataUrl, {
-      width: 1600, fit: "inside", quality: 80,
+      width: 1600, fit: "inside", quality: 90,
     });
     if (!after.ok) return res.status(after.status).json({ message: `After image: ${after.message}` });
 
@@ -1376,7 +1384,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const value = updates[key];
       if (typeof value === "string" && value.startsWith("data:")) {
         const processed = await processAdminImageDataUrl(value, {
-          width: 1600, fit: "inside", quality: 80,
+          width: 1600, fit: "inside", quality: 90,
         });
         if (!processed.ok) {
           return res.status(processed.status).json({ message: `${key}: ${processed.message}` });

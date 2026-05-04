@@ -41,13 +41,17 @@ export async function createApp(httpServer?: Server): Promise<Express> {
 
   const app = express();
 
-  // Profile pictures are sent as base64 data URLs in JSON bodies. After sharp
-  // resizes them down to ~10–25KB the request stays small, but the legacy
-  // 100KB Express default still rejects unoptimized first uploads — bump to
-  // 5MB so the server can compress them itself before persisting.
+  // Profile pictures, hero photos and transformation photos are sent as
+  // base64 data URLs in JSON bodies. The cropper emits WebP at 0.95 (and
+  // a JPEG fallback at 0.96 for legacy Safari). At 1920×1080 cover that
+  // tops out around 1.5–2MB for WebP and ~3–3.5MB for JPEG worst-case.
+  // A 10MB ceiling gives comfortable headroom for the JPEG fallback path
+  // without risking a JSON-payload-too-large rejection during the upload
+  // round-trip — the server then sharp-recompresses to ~600–900KB before
+  // persisting, so on-the-wire/storage cost stays sane.
   app.use(
     express.json({
-      limit: "5mb",
+      limit: "10mb",
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },
