@@ -29,36 +29,35 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
 
   // ============== AUTH STATE — single source of truth ==============
-  // Derived once from useAuth so the whole nav uses the same booleans.
-  // Why this matters: previously the JSX leaned on `{user ? : }` which
-  // is technically equivalent for the happy path (the provider returns
-  // `user ?? null` so loading and 401 both surface as a falsy `user`),
-  // but it left ZERO room for safety:
-  //   • If anything ever changed the provider to expose `undefined`
-  //     during loading, refresh would briefly show authenticated UI
-  //     (or worse, render nothing).
-  //   • Any future bug that flipped `user` to a transient truthy value
-  //     would silently hide the Sign-In button without warning.
-  // The explicit names below make the contract obvious and unbreakable:
-  //   • shouldShowSignIn covers BOTH loading AND guest, so the button
-  //     stays visible from the very first paint until auth resolves —
-  //     and if it resolves to "no user", it stays visible forever.
-  //   • isAuthenticated only flips true when we KNOW we have a real
-  //     user. Authenticated CTAs render only then.
-  // 401 from /api/auth/me is treated as guest (returns null in the
-  // queryFn, NOT throw) — see hooks/use-auth.tsx — so an unauthenticated
-  // visitor is never an "error" state that could hide auth actions.
+  // The auth area MUST NEVER disappear. It must always show one of two
+  // CTAs: Sign In (for loading + guest) or Profile/Logout (for an
+  // authenticated user). No empty state is allowed.
+  //
+  // Three named booleans, all derived from the same useAuth() snapshot:
+  //   • isAuthenticated — only true when we KNOW we have a real user.
+  //   • isGuest         — only true after auth resolves AND no user.
+  //   • shouldShowSignIn — defined as `!isAuthenticated`, which is the
+  //     simplest, most bulletproof invariant: any time we don't have a
+  //     confirmed user, the Sign-In CTA renders. This single line covers
+  //     ALL three "no user" sub-states (loading, guest, transient error)
+  //     and is provably mutually exclusive with the authenticated branch.
+  //
+  // 401 from /api/auth/me is treated as guest (the queryFn in
+  // hooks/use-auth.tsx returns `null`, NOT throw), so an unauthenticated
+  // visitor is never an "error" state that could hide auth actions. And
+  // because the provider exposes `user: user ?? null`, the loading state
+  // also surfaces as a falsy `user`, so `!isAuthenticated` is true from
+  // the very first paint until either auth resolves to a real user (then
+  // it flips to false and the Profile/Logout CTAs take over) or stays
+  // resolved as guest (then it stays true forever — Sign In never blinks).
+  //
+  // Forbidden patterns (intentionally absent from this component):
+  //   • `if (!user) return null`
+  //   • `if (isLoading) return null`
+  //   • Any branch that renders neither Sign-In nor authenticated CTAs.
   const isAuthenticated = Boolean(user);
   const isGuest = !authLoading && !user;
-  // Belt-and-suspenders: `!isAuthenticated` is appended so the two render
-  // branches are PROVABLY mutually exclusive, even in the hypothetical
-  // future case where `user` becomes truthy while `authLoading` is also
-  // true (e.g. if a persisted-cache plugin or initialData ever gets
-  // wired into the auth query). Without this guard, that edge case
-  // would briefly render BOTH the Sign-In CTA and the authenticated
-  // CTAs side-by-side. With it, the moment we have a user, Sign-In
-  // hides — period.
-  const shouldShowSignIn = (authLoading || isGuest) && !isAuthenticated;
+  const shouldShowSignIn = !isAuthenticated;
 
   const isAdmin = user?.role === "admin";
   const isSuperAdmin = isEffectiveSuperAdmin(user as any);
