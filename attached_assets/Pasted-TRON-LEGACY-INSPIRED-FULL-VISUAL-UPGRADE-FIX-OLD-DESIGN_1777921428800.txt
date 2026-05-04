@@ -1,0 +1,324 @@
+TRON LEGACY INSPIRED FULL VISUAL UPGRADE + FIX OLD DESIGN FLASH ON REFRESH
+
+Goal:
+Upgrade the website visual direction to a futuristic TRON Legacy-inspired premium fitness platform, and fix the issue where the old homepage briefly appears on refresh before the new design loads.
+
+IMPORTANT COPYRIGHT NOTE:
+Do NOT use TRON logos, movie names, characters, exact movie assets, Disney assets, or copyrighted imagery.
+Use an original futuristic neon-cinematic style inspired by the same mood:
+black, deep navy, cyan glow, luminous lines, glass panels, grid atmosphere, cinematic light beams.
+
+DO NOT BREAK:
+- booking
+- login/register
+- admin
+- admin security
+- hero manager
+- transformation manager
+- image cropper
+- packages/sessions
+- emails
+- i18n
+- Neon data
+- Vercel deployment
+
+--------------------------------------------------
+1. FIX OLD DESIGN FLASH ON REFRESH
+--------------------------------------------------
+
+Problem:
+On page load / hard refresh, the site briefly shows the old homepage design before switching to the new hero design.
+
+Fix:
+- Find all fallback/default/loading UI in:
+  - HomePage
+  - HeroSlider
+  - hero image loading hook/component
+  - any default homepage content shown before /api/hero-images loads
+- Remove any old hero/about layout used as loading fallback.
+- Loading state must render ONLY the new TRON-inspired skeleton.
+
+New loading/fallback skeleton:
+- deep black / dark navy background
+- cyan glow gradients
+- subtle futuristic grid layer
+- glass overlay
+- reserved hero height to prevent layout shift
+- no old copy/layout visible
+- hero image fades in smoothly after load
+
+Rules:
+- If API is loading → show TRON-style skeleton only.
+- If no hero slides exist → show new TRON-style default hero, not old design.
+- Old design must NEVER appear, even for 0.1 seconds.
+
+--------------------------------------------------
+2. TRON LEGACY INSPIRED VISUAL SYSTEM
+--------------------------------------------------
+
+Apply a consistent futuristic premium visual system across the public homepage.
+
+Style:
+- deep black background
+- dark navy gradients
+- electric cyan / blue neon accents
+- subtle glowing lines
+- futuristic grid patterns
+- glassmorphism cards
+- soft neon borders
+- cinematic dark overlays
+- light-beam / energy-line feel using CSS only
+- high contrast typography
+- premium, clean, not childish, not crowded
+
+Avoid:
+- cartoon look
+- excessive glow
+- messy neon
+- slow animations
+- copyrighted TRON assets
+
+--------------------------------------------------
+3. HERO SECTION
+--------------------------------------------------
+
+Hero must be image-based only, no video.
+
+Hero behavior:
+- full-bleed cinematic image slider
+- smooth crossfade every 5–6 seconds
+- subtle Ken Burns movement:
+  - slow zoom
+  - slow pan left/right
+- loop back to first slide after last image
+- respects prefers-reduced-motion
+
+Hero overlay:
+- stronger dark vignette
+- cyan glow layer
+- subtle grid layer
+- bottom fade
+- readable text over all images
+
+Hero loading:
+- first hero image must be eager / high priority
+- instant dark gradient fallback
+- no blank state
+- no old design flash
+- smooth fade-in when image loads
+
+Hero content:
+- per-slide badge
+- per-slide headline
+- per-slide subheadline
+- editable from admin
+
+Suggested copy style:
+Badge examples:
+- PREMIUM PERSONAL TRAINING
+- REAL TRANSFORMATION SYSTEM
+- DUBAI PERFORMANCE COACHING
+
+Headline examples:
+- Start Your Transformation
+- Train With Purpose
+- Build The Body You Deserve
+- Real Results. No Guesswork.
+
+Subheadline examples:
+- Science-based coaching built around your goals, schedule, and body.
+- Structured personal training for fat loss, muscle gain, and long-term performance.
+- Premium coaching with clear progress, smart planning, and real accountability.
+
+--------------------------------------------------
+4. CTA HIERARCHY
+--------------------------------------------------
+
+Hero buttons:
+1. Primary:
+   “Start Your Transformation”
+   - electric-blue neon/glow
+   - strongest button
+
+2. Secondary:
+   “View Results”
+   - glass outline
+   - scrolls to transformations section if transformations exist
+   - otherwise scrolls to Why Train section
+
+3. WhatsApp:
+   - smaller than primary
+   - professional green
+   - balanced with the design
+   - prefilled message:
+     “Hi Coach, I saw your transformations and I want to start.”
+
+--------------------------------------------------
+5. TRANSFORMATIONS SECTION
+--------------------------------------------------
+
+Upgrade transformations section to match the TRON-inspired style.
+
+Design:
+- dark glass cards
+- cyan neon edge
+- before/after split display
+- result badges with subtle glow
+- smooth hover effect
+- mobile-friendly
+- hidden if empty
+
+Each card:
+- before image
+- after image
+- client name or anonymous label
+- goal
+- duration
+- result
+- optional testimonial
+
+--------------------------------------------------
+6. WHY TRAIN WITH YOUSSEF SECTION
+--------------------------------------------------
+
+Upgrade cards to match the same futuristic style.
+
+Cards:
+- Certified Coach
+- Structured Training
+- Real Transformations
+- Progress Tracking / Professional System
+
+Use:
+- glass panels
+- neon icons
+- cyan borders
+- clean spacing
+
+--------------------------------------------------
+7. ADMIN CONTROL MUST REMAIN
+--------------------------------------------------
+
+Keep and verify:
+- Hero Manager
+- Transformation Manager
+- ImageCropper
+- crop / drag / zoom / rotate / preview / save
+- reorder slides
+- enable/disable slides
+- edit badge/headline/subheadline
+- enable/disable transformations
+
+Do not remove any admin functionality.
+
+--------------------------------------------------
+8. MOBILE-FIRST QUALITY
+--------------------------------------------------
+
+Mobile must look excellent:
+- no overflow
+- header stable
+- text readable
+- buttons stacked cleanly
+- no layout jump
+- hero height reserved
+- images crop correctly
+- language dropdown still clean
+
+--------------------------------------------------
+9. PERFORMANCE
+--------------------------------------------------
+
+- lazy-load non-hero images
+- eager-load first hero image
+- compress images as already implemented
+- keep animations lightweight CSS only
+- no heavy libraries unless already used
+- no videos
+
+--------------------------------------------------
+10. I18N
+--------------------------------------------------
+
+All visible text must use translation keys.
+
+Languages:
+EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+Arabic:
+- RTL correct
+- professional natural Arabic
+- keep brand names Latin where already required:
+  Youssef Ahmed, Youssef Fitness, WhatsApp, Instagram, InBody
+
+Run i18n parity validation.
+
+--------------------------------------------------
+11. SECURITY / STABILITY
+--------------------------------------------------
+
+Do not change API contracts.
+Do not break protected routes.
+Do not expose internal errors.
+Keep MIME validation.
+Keep booking rules unchanged:
+- booking 3-hour advance rule
+- cancellation/reschedule 6-hour rule
+- 06:00–22:00 booking window
+- 1-hour session duration
+
+--------------------------------------------------
+12. NEON / GITHUB / VERCEL
+--------------------------------------------------
+
+Neon:
+- Only change Neon if absolutely required.
+- Safe additive migration only.
+- Never delete, reset, or overwrite data.
+- If no database change is needed, report: “Neon unchanged.”
+
+GitHub:
+- Run TypeScript/build check.
+- Commit all changes.
+- Push to GitHub main.
+
+Vercel:
+- Wait for auto-deploy.
+- Confirm production READY.
+- Test live URL.
+
+--------------------------------------------------
+13. VALIDATION
+--------------------------------------------------
+
+Must verify:
+- Hard refresh homepage on mobile and desktop.
+- Old design never appears.
+- TRON-style fallback appears immediately.
+- Hero image fades in smoothly.
+- Hero slider works.
+- CTAs work.
+- View Results scroll works.
+- WhatsApp prefilled message works.
+- Transformations still work.
+- Admin hero controls still work.
+- Admin transformation controls still work.
+- Booking page still works.
+- Login/register still work.
+- i18n parity passes.
+- TypeScript passes.
+
+--------------------------------------------------
+FINAL REPORT MUST INCLUDE
+--------------------------------------------------
+
+- Old fallback removed / replaced summary
+- TRON-inspired visual changes summary
+- Neon: changed / unchanged
+- GitHub commit pushed
+- Vercel READY
+- Production hard-refresh test result
+- Any untouched systems confirmed safe
+
+Final result:
+The site should feel like an original futuristic premium fitness platform inspired by TRON Legacy’s neon-cinematic atmosphere, with no old-design flash on refresh, fast image loading, strong conversion CTAs, and zero regressions.

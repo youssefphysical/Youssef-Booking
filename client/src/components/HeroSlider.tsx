@@ -23,7 +23,7 @@ function prefersReducedMotion() {
 
 export function HeroSlider() {
   const { t } = useTranslation();
-  const { data: images = [] } = useQuery<HeroImage[]>({
+  const { data: images = [], isPending } = useQuery<HeroImage[]>({
     queryKey: ["/api/hero-images"],
   });
   const slides = images.filter((s) => s.isActive !== false);
@@ -43,55 +43,78 @@ export function HeroSlider() {
     if (index >= slides.length) setIndex(0);
   }, [slides.length, index]);
 
-  if (slides.length === 0) return null;
+  // Always render the cinematic shell (loading / empty / ready states) so
+  // the visitor never sees the bio section flash above it on hard refresh.
+  // When a real slide exists we paint the Ken Burns image on top of the
+  // shell; otherwise the default TRON background + i18n copy stand alone
+  // as an intentional, branded fallback.
+  const safeIndex = slides.length > 0 && index < slides.length ? index : 0;
+  const current: HeroImage | undefined = slides[safeIndex];
 
-  const safeIndex = index >= slides.length ? 0 : index;
-  const current = slides[safeIndex];
-  if (!current) return null;
-
-  const headline = current.title?.trim() || t("hero.cinematic.headline");
-  const subhead = current.subtitle?.trim() || t("hero.cinematic.subhead");
-  const badge = current.badge?.trim() || t("hero.cinematic.badge");
+  const headline = current?.title?.trim() || t("hero.cinematic.headline");
+  const subhead = current?.subtitle?.trim() || t("hero.cinematic.subhead");
+  const badge = current?.badge?.trim() || t("hero.cinematic.badge");
 
   return (
     <div
       className="relative w-full h-[72vh] min-h-[480px] max-h-[820px] overflow-hidden bg-black"
       data-testid="hero-slider"
+      data-hero-state={isPending ? "loading" : current ? "ready" : "empty"}
     >
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={current.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: FADE_MS / 1000, ease: "easeInOut" }}
-          className="absolute inset-0"
-        >
-          {/* Ken Burns: slow scale + slight x drift on the image only,
-              so the overlay text stays still. Disabled for reduced-motion. */}
-          <motion.img
-            src={current.imageDataUrl}
-            alt=""
-            aria-hidden="true"
-            loading={safeIndex === 0 ? "eager" : "lazy"}
-            // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
-            fetchpriority={safeIndex === 0 ? "high" : "auto"}
-            decoding="async"
-            className="w-full h-full object-cover will-change-transform"
-            initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
-            animate={reduced ? undefined : { scale: 1.08, x: "1.5%" }}
-            transition={
-              reduced
-                ? undefined
-                : {
-                    duration: (ROTATE_MS + FADE_MS) / 1000,
-                    ease: "linear",
-                  }
-            }
-            data-testid={`img-hero-slide-${current.id}`}
-          />
-        </motion.div>
-      </AnimatePresence>
+      {/* Instant dark gradient base — paints with the very first frame so
+          there is never a blank, white, or old-design flash before the
+          /api/hero-images response arrives. */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 30% 20%, hsl(220 50% 10%), transparent 60%), " +
+            "radial-gradient(ellipse at 75% 80%, hsl(210 60% 14% / 0.6), transparent 55%), " +
+            "linear-gradient(180deg, #02060f 0%, #000000 60%, #050a14 100%)",
+        }}
+        aria-hidden="true"
+      />
+      <div className="absolute -top-32 -left-24 w-[32rem] h-[32rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -right-24 w-[34rem] h-[34rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+      {/* Image layer — only mounted once a real slide is available, and
+          fades in smoothly over the shell. */}
+      {current && (
+        <AnimatePresence mode="sync">
+          <motion.div
+            key={current.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: FADE_MS / 1000, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            {/* Ken Burns: slow scale + slight x drift on the image only,
+                so the overlay text stays still. Disabled for reduced-motion. */}
+            <motion.img
+              src={current.imageDataUrl}
+              alt=""
+              aria-hidden="true"
+              loading={safeIndex === 0 ? "eager" : "lazy"}
+              // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
+              fetchpriority={safeIndex === 0 ? "high" : "auto"}
+              decoding="async"
+              className="w-full h-full object-cover will-change-transform"
+              initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
+              animate={reduced ? undefined : { scale: 1.08, x: "1.5%" }}
+              transition={
+                reduced
+                  ? undefined
+                  : {
+                      duration: (ROTATE_MS + FADE_MS) / 1000,
+                      ease: "linear",
+                    }
+              }
+              data-testid={`img-hero-slide-${current.id}`}
+            />
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* TRON layer stack (purely decorative, all pointer-events:none):
           1. Subtle cyan grid — reads as "tech surface" without dominating.
@@ -112,7 +135,7 @@ export function HeroSlider() {
       <div className="absolute inset-0 flex items-end md:items-center">
         <div className="w-full max-w-6xl mx-auto px-5 pb-16 md:pb-0 md:pt-20">
           <motion.div
-            key={`copy-${current.id}`}
+            key={current ? `copy-${current.id}` : "copy-default"}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
