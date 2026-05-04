@@ -24,9 +24,33 @@ import { useTranslation } from "@/i18n";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
-  const { user, logoutMutation } = useAuth();
+  const { user, isLoading: authLoading, logoutMutation } = useAuth();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+
+  // ============== AUTH STATE — single source of truth ==============
+  // Derived once from useAuth so the whole nav uses the same booleans.
+  // Why this matters: previously the JSX leaned on `{user ? : }` which
+  // is technically equivalent for the happy path (the provider returns
+  // `user ?? null` so loading and 401 both surface as a falsy `user`),
+  // but it left ZERO room for safety:
+  //   • If anything ever changed the provider to expose `undefined`
+  //     during loading, refresh would briefly show authenticated UI
+  //     (or worse, render nothing).
+  //   • Any future bug that flipped `user` to a transient truthy value
+  //     would silently hide the Sign-In button without warning.
+  // The explicit names below make the contract obvious and unbreakable:
+  //   • shouldShowSignIn covers BOTH loading AND guest, so the button
+  //     stays visible from the very first paint until auth resolves —
+  //     and if it resolves to "no user", it stays visible forever.
+  //   • isAuthenticated only flips true when we KNOW we have a real
+  //     user. Authenticated CTAs render only then.
+  // 401 from /api/auth/me is treated as guest (returns null in the
+  // queryFn, NOT throw) — see hooks/use-auth.tsx — so an unauthenticated
+  // visitor is never an "error" state that could hide auth actions.
+  const isAuthenticated = Boolean(user);
+  const isGuest = !authLoading && !user;
+  const shouldShowSignIn = authLoading || isGuest;
 
   const isAdmin = user?.role === "admin";
   const isSuperAdmin = isEffectiveSuperAdmin(user as any);
@@ -127,7 +151,8 @@ export function Navigation() {
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <LanguageSelector />
-          {user ? (
+          {/* Authenticated CTAs — only when we KNOW a user exists. */}
+          {isAuthenticated && user && (
             <>
               {user.role === "client" && (
                 <Link
@@ -161,7 +186,12 @@ export function Navigation() {
                 <span className="whitespace-nowrap">{t("nav.signOut")}</span>
               </button>
             </>
-          ) : (
+          )}
+          {/* Sign-In CTA — visible whenever the visitor is NOT confirmed
+              authenticated (loading OR guest). This is the critical guard:
+              it must stay visible from the first paint and never blink out
+              when /api/auth/me resolves to 401 (guest). */}
+          {shouldShowSignIn && (
             <Link
               href="/auth"
               data-testid="link-signin"
@@ -185,9 +215,11 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md">
           <div className="px-5 py-4 space-y-1">
-            {/* Sign In is the very first item when logged out so visitors
-                on mobile can never miss the auth entry point. */}
-            {!user && (
+            {/* Sign In is the very first item when not yet authenticated
+                so visitors on mobile can never miss the auth entry point.
+                Mirrors the header logic: visible during auth loading AND
+                while guest, hidden only when we KNOW the user is signed in. */}
+            {shouldShowSignIn && (
               <Link
                 href="/auth"
                 onClick={() => setOpen(false)}
@@ -213,8 +245,9 @@ export function Navigation() {
             )}
             {/* Sign Out lives in the mobile menu too — header has no room
                 for it on small viewports, so without this the only way to
-                log out on mobile is via the profile page. */}
-            {user && (
+                log out on mobile is via the profile page. Only when we
+                KNOW the user is authenticated (never during loading). */}
+            {isAuthenticated && (
               <button
                 type="button"
                 onClick={() => {
