@@ -181,7 +181,23 @@ for (const sub of ["inbody", "photos"]) {
   if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
 }
 
+// Strict MIME allowlists. The InBody flow legitimately accepts PDFs (lab
+// reports), but the progress-photo endpoint must only accept images.
+const PHOTO_MIME_ALLOWLIST = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+const INBODY_MIME_ALLOWLIST = new Set<string>([
+  ...Array.from(PHOTO_MIME_ALLOWLIST),
+  "application/pdf",
+]);
+
 function makeUploader(subdir: "inbody" | "photos") {
+  const allow = subdir === "photos" ? PHOTO_MIME_ALLOWLIST : INBODY_MIME_ALLOWLIST;
   return multer({
     storage: multer.diskStorage({
       destination: (_req, _file, cb) => cb(null, path.join(UPLOAD_ROOT, subdir)),
@@ -191,11 +207,41 @@ function makeUploader(subdir: "inbody" | "photos") {
       },
     }),
     limits: { fileSize: 15 * 1024 * 1024 },
+    // Defense-in-depth: even though the new admin cropper produces WebP and
+    // existing clients use accept="image/*", reject anything else server-side
+    // before it ever touches disk.
+    fileFilter: (_req, file, cb) => {
+      if (allow.has((file.mimetype || "").toLowerCase())) {
+        cb(null, true);
+      } else {
+        cb(new Error("Unsupported file type"));
+      }
+    },
   });
 }
 
 const inbodyUploader = makeUploader("inbody");
 const photoUploader = makeUploader("photos");
+
+/**
+ * Wraps a multer single-file middleware so MIME-filter or size errors are
+ * returned as a clean 400 JSON instead of crashing the request with a 500.
+ */
+function safeSingle(uploader: ReturnType<typeof makeUploader>, field: string) {
+  const mw = uploader.single(field);
+  return (req: any, res: any, next: any) => {
+    mw(req, res, (err: any) => {
+      if (!err) return next();
+      const msg =
+        err?.code === "LIMIT_FILE_SIZE"
+          ? "File is too large"
+          : err?.message === "Unsupported file type"
+            ? "Unsupported file type. Use PNG, JPEG, WebP, or HEIC."
+            : "Could not process upload";
+      return res.status(400).json({ message: msg });
+    });
+  };
+}
 
 function fileToPublicUrl(file: Express.Multer.File, subdir: "inbody" | "photos"): string {
   return `/uploads/${subdir}/${file.filename}`;
@@ -1347,7 +1393,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post(
     "/api/inbody/upload",
     requireAuth,
-    inbodyUploader.single("file"),
+    safeSingle(inbodyUploader, "file"),
     async (req, res) => {
       const me = req.user as User;
       if (!req.file) return res.status(400).json({ message: "File is required" });
@@ -1480,7 +1526,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post(
     "/api/progress/upload",
     requireAuth,
-    photoUploader.single("file"),
+    safeSingle(photoUploader, "file"),
     async (req, res) => {
       const me = req.user as User;
       if (!req.file) return res.status(400).json({ message: "File is required" });
