@@ -64,12 +64,15 @@ export function HeroSlider() {
   const parallaxY = useTransform(scrollY, [0, 600], ["0%", "14%"]);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    // Honour prefers-reduced-motion: do NOT auto-rotate slides for users
+    // who have requested reduced motion at the OS level. They still see
+    // the first slide and can use the pagination dots to navigate.
+    if (reduced || slides.length <= 1) return;
     const id = window.setInterval(() => {
       setIndex((i) => (i + 1) % slides.length);
     }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [slides.length]);
+  }, [slides.length, reduced]);
 
   // Reset index when image list changes (e.g. after admin deletes one).
   useEffect(() => {
@@ -111,13 +114,31 @@ export function HeroSlider() {
       <div className="absolute -top-32 -left-24 w-[32rem] h-[32rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-32 -right-24 w-[34rem] h-[34rem] rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
-      {/* Image layer — only mounted once a real slide is available, fades
-          in smoothly over the shell, and is wrapped in a parallax motion
-          div so it lags behind the overlay copy on scroll. */}
-      {current && (
+      {/* Image layer — only mounted once a real slide is available.
+          Two render paths so prefers-reduced-motion is fully honoured:
+          - Reduced motion: a plain <img> with the cinematic CSS filter,
+            no parallax, no Ken Burns, no crossfade, no AnimatePresence.
+          - Default: parallax wrapper + AnimatePresence crossfade between
+            slides + Ken Burns scale/drift on the image itself. */}
+      {current && reduced && (
+        <div className="absolute inset-0" aria-hidden="true">
+          <img
+            src={current.imageDataUrl}
+            alt=""
+            loading="eager"
+            // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
+            fetchpriority="high"
+            decoding="async"
+            className="w-full h-full object-cover"
+            style={{ filter: "contrast(1.12) brightness(1.08) saturate(1.08)" }}
+            data-testid={`img-hero-slide-${current.id}`}
+          />
+        </div>
+      )}
+      {current && !reduced && (
         <motion.div
           className="absolute inset-0 will-change-transform"
-          style={reduced ? undefined : { y: parallaxY }}
+          style={{ y: parallaxY }}
           aria-hidden="true"
         >
           <AnimatePresence mode="sync">
@@ -146,16 +167,12 @@ export function HeroSlider() {
                   filter:
                     "contrast(1.12) brightness(1.08) saturate(1.08)",
                 }}
-                initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
-                animate={reduced ? undefined : { scale: 1.08, x: "1.5%" }}
-                transition={
-                  reduced
-                    ? undefined
-                    : {
-                        duration: (ROTATE_MS + FADE_MS) / 1000,
-                        ease: "linear",
-                      }
-                }
+                initial={{ scale: 1.0, x: "-1.5%" }}
+                animate={{ scale: 1.08, x: "1.5%" }}
+                transition={{
+                  duration: (ROTATE_MS + FADE_MS) / 1000,
+                  ease: "linear",
+                }}
                 data-testid={`img-hero-slide-${current.id}`}
               />
             </motion.div>
