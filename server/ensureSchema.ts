@@ -39,7 +39,22 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS expiry_date date,
       ADD COLUMN IF NOT EXISTS status text;
 
+    -- Bookings: every column added after the original schema. All NULL-safe /
+    -- defaulted so adding them on prod cannot affect existing rows.
+    -- (session_focus / training_goal omission was the cause of the
+    -- "column session_focus does not exist" emergency in May 2026.)
     ALTER TABLE IF EXISTS bookings
+      ADD COLUMN IF NOT EXISTS session_focus text,
+      ADD COLUMN IF NOT EXISTS training_goal text,
+      ADD COLUMN IF NOT EXISTS workout_category text,
+      ADD COLUMN IF NOT EXISTS workout_notes text,
+      ADD COLUMN IF NOT EXISTS admin_notes text,
+      ADD COLUMN IF NOT EXISTS client_notes text,
+      ADD COLUMN IF NOT EXISTS is_emergency_cancel boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS protected_cancellation boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS rescheduled_from text,
+      ADD COLUMN IF NOT EXISTS is_manual_historical boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS cancelled_at timestamp,
       ADD COLUMN IF NOT EXISTS attendance_marked_by_user_id integer,
       ADD COLUMN IF NOT EXISTS attendance_marked_at timestamp,
       ADD COLUMN IF NOT EXISTS attendance_reason text;
