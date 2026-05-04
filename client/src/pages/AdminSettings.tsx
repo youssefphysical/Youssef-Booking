@@ -188,6 +188,15 @@ function HeroImagesSection() {
           {t("admin.settingsPage.heroFormats")}
         </p>
       </button>
+      {/* Quality guidance — admins consistently produced "too dark" hero
+          slides because they uploaded poorly-lit phone shots. Surfacing
+          this tip right next to the upload button cuts back-and-forth. */}
+      <p
+        className="-mt-3 mb-5 px-1 text-xs leading-relaxed text-primary/80"
+        data-testid="text-hero-quality-tip"
+      >
+        {t("admin.settingsPage.heroQualityTip")}
+      </p>
       <ImageCropper
         open={cropperOpen}
         onOpenChange={setCropperOpen}

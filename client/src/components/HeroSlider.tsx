@@ -100,6 +100,7 @@ export function HeroSlider() {
               fetchpriority={safeIndex === 0 ? "high" : "auto"}
               decoding="async"
               className="w-full h-full object-cover will-change-transform"
+              style={{ filter: "contrast(1.06) brightness(1.05) saturate(1.06)" }}
               initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
               animate={reduced ? undefined : { scale: 1.08, x: "1.5%" }}
               transition={
@@ -122,12 +123,18 @@ export function HeroSlider() {
           3. Radial vignette — pulls eye to the centre + darkens corners.
           4. A pair of horizontal energy beams above and below the copy. */}
       <div
-        className="absolute inset-0 tron-grid opacity-40 mix-blend-screen pointer-events-none"
+        className="absolute inset-0 tron-grid opacity-25 mix-blend-screen pointer-events-none"
         aria-hidden="true"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/30 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/15 to-transparent pointer-events-none" />
-      <div className="absolute inset-0 tron-vignette pointer-events-none" />
+      {/* Smart darkening: heavy at the bottom (so CTA copy is always
+          legible), almost transparent in the middle (so the subject of
+          the photo stays clearly visible), and zero at the top (so the
+          fixed translucent header sits on a clean image). */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/15 to-transparent pointer-events-none" />
+      {/* Soft left wash to anchor the headline; never dark enough to
+          hide the subject. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 tron-vignette opacity-70 pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam opacity-60 pointer-events-none" />
 

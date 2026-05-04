@@ -165,7 +165,7 @@ export function Navigation() {
             <Link
               href="/auth"
               data-testid="link-signin"
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
             >
               <LogIn size={14} className="shrink-0" />
               <span className="whitespace-nowrap">{t("nav.signIn")}</span>
@@ -185,6 +185,19 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl">
           <div className="px-5 py-4 space-y-1">
+            {/* Sign In is the very first item when logged out so visitors
+                on mobile can never miss the auth entry point. */}
+            {!user && (
+              <Link
+                href="/auth"
+                onClick={() => setOpen(false)}
+                data-testid="link-mobile-signin"
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 mb-2 btn-press"
+              >
+                <LogIn size={16} className="shrink-0" />
+                <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+              </Link>
+            )}
             <MobileLink href="/" label={t("nav.home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/book" label={t("nav.book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
@@ -197,6 +210,24 @@ export function Navigation() {
             )}
             {user?.role === "admin" && (
               <MobileLink href="/admin" label={t("nav.controlPanel")} testKey="control-panel" icon={<LayoutDashboard size={16} />} onClose={() => setOpen(false)} />
+            )}
+            {/* Sign Out lives in the mobile menu too — header has no room
+                for it on small viewports, so without this the only way to
+                log out on mobile is via the profile page. */}
+            {user && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  logoutMutation.mutate();
+                  navigate("/");
+                }}
+                data-testid="button-mobile-logout"
+                className="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 active:bg-destructive/15 btn-soft"
+              >
+                <LogOut size={16} className="shrink-0" />
+                <span className="whitespace-nowrap">{t("nav.signOut")}</span>
+              </button>
             )}
             <div className="pt-3 mt-3 border-t border-white/5">
               <LanguageSelector variant="full" className="w-full justify-between" />
