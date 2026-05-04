@@ -416,13 +416,45 @@
 
 /* Hero performance isolation — establishes its own stacking context,
    confines paint operations to the hero box, and promotes the layer
-   to its own GPU compositing surface. Combined with no parallax / no
-   blend modes / no img filter inside the hero, this is what makes
-   scrolling buttery smooth on mobile and desktop. */
+   to its own GPU compositing surface. Combined with no parallax and
+   no blend modes inside the hero, this is what makes scrolling
+   buttery smooth on mobile and desktop. */
 .hero-isolate {
   isolation: isolate;
   contain: layout paint style;
   transform: translateZ(0);
+}
+
+/* Hero image enhancement — STATIC CSS filter that bakes once into the
+   GPU layer at compositing time. This is what makes the subject pop
+   without looking washed-out. Values intentionally subtle: anything
+   above ~1.10 starts to look unnatural on real photos. */
+.hero-img {
+  filter: contrast(1.06) brightness(1.05) saturate(1.07);
+  will-change: transform;
+}
+
+/* Slow Ken Burns — pure GPU transform (scale + translate), no filter
+   animation, no opacity animation, no layout. Desktop-only because
+   Ken Burns on a phone screen is barely visible AND mid-range Android
+   Chromium routinely drops scroll frames when an off-screen transform
+   is animating. We further pause it the instant the user starts
+   scrolling (see data-scrolling="true" rule below) and resume 140ms
+   after the last scroll event — driven from JS in HeroSlider.tsx. */
+@keyframes heroKenBurns {
+  0% { transform: scale(1.0) translate3d(0, 0, 0); }
+  100% { transform: scale(1.06) translate3d(-1%, -1%, 0); }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .hero-kenburns {
+    animation: heroKenBurns 22s ease-in-out infinite alternate;
+  }
+  /* While the user is actively scrolling we pause the animation to
+     give the compositor 100% of its budget for scroll frames. The
+     resume is driven by the SCROLL_IDLE_MS timer in HeroSlider.tsx. */
+  [data-scrolling="true"] .hero-kenburns {
+    animation-play-state: paused;
+  }
 }
 
 /* Reduced motion — respect users */

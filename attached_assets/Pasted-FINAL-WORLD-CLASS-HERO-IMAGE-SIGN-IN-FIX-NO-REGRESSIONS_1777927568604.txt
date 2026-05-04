@@ -1,0 +1,304 @@
+FINAL WORLD-CLASS HERO + IMAGE + SIGN IN FIX — NO REGRESSIONS
+
+Goal:
+Fix the hero image experience, restore the Sign In button permanently, and apply final world-class polish for smoothness, clarity, speed, and premium TRON-inspired design.
+
+CRITICAL:
+Do NOT break booking, auth, admin, image cropper, transformations, packages, email, i18n, Neon data, or Vercel.
+Do NOT add payment.
+Do NOT use videos.
+Do NOT remove existing admin controls.
+All changes must be safe and professional.
+
+--------------------------------------------------
+1. RESTORE SIGN IN PERMANENTLY
+--------------------------------------------------
+
+Problem:
+The Sign In button disappeared again from the top header.
+
+Fix:
+- Sign In must be visible in the top header when user is logged out.
+- It must appear on both mobile and desktop.
+- It must stay visible after refresh, language switch, route changes, and hero loading.
+- It must not be hidden behind menu/language controls.
+- It must fit the TRON/premium UI:
+  glass button, subtle cyan border/glow, readable text.
+
+Menu:
+- Also add Sign In as the first item inside the mobile menu.
+- If logged in, show Profile/Dashboard and Logout instead.
+- Keep auth logic correct.
+
+Important:
+Do not only add it in the menu.
+It must be visible in the header too.
+
+Validation:
+- Hard refresh homepage while logged out → Sign In visible immediately.
+- Switch language → Sign In still visible.
+- Open/close menu → Sign In still visible.
+- Logged in → Sign In replaced correctly.
+
+--------------------------------------------------
+2. HERO IMAGE ANALYSIS + FIX
+--------------------------------------------------
+
+Current problem:
+The hero image is not giving the correct premium WOW feeling. It is either too dark, unclear, or visually weak.
+
+Analyze:
+- image brightness
+- subject visibility
+- overlay darkness
+- grid/glow opacity
+- mobile crop
+- text readability
+- CTA visibility
+
+Fix:
+- Make subject/details clearly visible.
+- Keep cinematic dark mood without hiding the image.
+- Use smart layered overlay:
+  1. base image
+  2. one subtle radial cyan light behind/around subject
+  3. one bottom dark gradient for CTA readability
+  4. very subtle grid, max 5–8% opacity
+  5. soft vignette around edges
+- Remove excessive dark layers.
+- Remove stacked heavy gradients.
+- Avoid blur/backdrop-filter over the full hero image.
+- Use CSS filters carefully:
+  contrast slightly up
+  brightness slightly up
+  saturation slightly up
+- Do not make image washed out.
+
+Mobile:
+- Crop should keep the main subject visible.
+- Do not cut important faces/details.
+- Add admin helper guidance for best image composition:
+  “Use a clear high-resolution hero image with the main subject centered and enough empty space for text.”
+
+--------------------------------------------------
+3. FIX SCROLL STUTTER / JANK
+--------------------------------------------------
+
+Problem:
+Top hero area can feel partially stuck/not smooth when scrolling.
+
+Optimize:
+- Remove heavy scroll-linked effects.
+- Disable parallax on mobile if it causes jank.
+- Pause Ken Burns while the user is actively scrolling; resume after scroll stops.
+- Use transform + opacity only.
+- Avoid full-screen backdrop-filter.
+- Avoid heavy animated gradients.
+- Keep will-change only on the hero image, not many layers.
+- Keep hero height stable.
+- Prevent layout shift.
+
+Result:
+Scrolling up/down through the hero must feel buttery smooth, with no partial freeze.
+
+--------------------------------------------------
+4. HERO LOADING / REFRESH FIX
+--------------------------------------------------
+
+Problem:
+Old design or incomplete design may appear during refresh/loading.
+
+Fix:
+- Never show old fallback.
+- Render new TRON-style skeleton immediately.
+- Keep dark navy/black background visible instantly.
+- First hero image:
+  loading="eager"
+  fetchpriority="high"
+- Add smooth fade-in when image is ready.
+- No blank state.
+- No old design flash.
+- No layout shift.
+
+Validation:
+Hard refresh homepage on mobile and desktop:
+- Sign In visible immediately.
+- New style visible immediately.
+- No old design flash.
+- Hero image fades in cleanly.
+
+--------------------------------------------------
+5. WORLD-CLASS HERO COPY + LAYOUT
+--------------------------------------------------
+
+Make hero copy feel premium and conversion-focused.
+
+Use/admin default slide copy:
+
+Slide 1:
+Badge: PREMIUM PERSONAL TRAINING
+Headline: Your Transformation Starts Here.
+Subheadline: Science-based coaching in Dubai for fat loss, muscle gain, and long-term performance.
+
+Slide 2:
+Badge: REAL RESULTS SYSTEM
+Headline: No Guesswork. Just Progress.
+Subheadline: Structured sessions, clear goals, and coaching built around your body and schedule.
+
+Slide 3:
+Badge: COACHING WITH PURPOSE
+Headline: Train Smarter. Move Better. Look Stronger.
+Subheadline: A premium training system designed to build strength, confidence, and consistency.
+
+CTA:
+Primary: Start Your Transformation
+Secondary: View Results
+WhatsApp: Talk to Youssef
+
+WhatsApp message:
+Hi Youssef, I saw your website and I want to start my transformation.
+
+Layout:
+- Better spacing.
+- Text readable on every image.
+- Badge, headline, subtitle, buttons aligned cleanly.
+- No overcrowding.
+- Mobile-first design.
+
+--------------------------------------------------
+6. TRON-INSPIRED PREMIUM POLISH
+--------------------------------------------------
+
+Keep the futuristic premium design:
+- black/deep navy base
+- electric cyan accents
+- glass cards
+- subtle neon edges
+- futuristic grid only where elegant
+- premium spacing
+- no childish glow
+- no messy neon
+
+Apply polish to:
+- Header
+- Hero
+- CTA buttons
+- About section
+- Transformations section
+- Why Train section
+- Footer
+
+--------------------------------------------------
+7. ADMIN IMAGE QUALITY CONTROLS
+--------------------------------------------------
+
+Keep existing:
+- Hero Manager
+- Transformation Manager
+- ImageCropper
+- crop / zoom / rotate / preview / save
+- reorder / enable / disable / edit text
+
+Add/verify:
+- Admin helper text near hero upload:
+  “Use a clear high-resolution hero image with the main subject centered and enough empty space for text.”
+- Image crop preview must clearly show what will appear on mobile/desktop if possible.
+- No image should be saved without crop confirmation.
+
+--------------------------------------------------
+8. I18N
+--------------------------------------------------
+
+All visible text must use translation keys.
+
+Languages:
+EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+Arabic:
+- natural professional Arabic
+- RTL correct
+- keep brand terms Latin where required:
+  Youssef Ahmed, Youssef Fitness, WhatsApp, Instagram, InBody
+
+Run i18n parity validation.
+
+--------------------------------------------------
+9. SAFETY
+--------------------------------------------------
+
+Do not change:
+- booking 3-hour advance rule
+- cancellation/reschedule 6-hour rule
+- booking window 06:00–22:00
+- session duration 1 hour
+- auth/session logic
+- admin security
+- payment logic
+- package/session balance
+
+--------------------------------------------------
+10. VALIDATION CHECKLIST
+--------------------------------------------------
+
+Must test and report:
+
+Header:
+- Sign In visible in header while logged out.
+- Sign In visible in mobile menu.
+- Logged-in state shows Profile/Dashboard/Logout correctly.
+
+Hero:
+- Image clear and strong.
+- No old design flash.
+- No blank loading.
+- No heavy darkness hiding image.
+- Text readable.
+- CTAs clean.
+- Scroll smooth up/down.
+
+System:
+- Booking works.
+- Login/register works.
+- Admin works.
+- Cropper works.
+- Transformations work.
+- WhatsApp prefilled message works.
+- View Results scroll works.
+- i18n parity passes.
+- TypeScript passes.
+
+--------------------------------------------------
+11. DEPLOYMENT
+--------------------------------------------------
+
+Neon:
+- Do not change unless absolutely required.
+- If unchanged, report: “Neon unchanged.”
+
+GitHub:
+- Run TypeScript/build check.
+- Commit all changes.
+- Push to GitHub main.
+
+Vercel:
+- Wait for production deploy.
+- Confirm READY.
+- Test live production URL.
+
+--------------------------------------------------
+FINAL REPORT MUST INCLUDE
+--------------------------------------------------
+
+- Root cause of Sign In disappearing
+- Where Sign In is now rendered
+- Hero image/overlay improvements
+- Scroll smoothness improvements
+- Loading/refresh fix result
+- Neon changed/unchanged
+- GitHub commit
+- Vercel READY
+- Production mobile hard-refresh test
+- Production mobile scroll test
+
+Final result:
+The homepage must feel smooth, clear, fast, premium, futuristic, easy to use, and world-class — with Sign In permanently visible and hero images looking powerful without lag.

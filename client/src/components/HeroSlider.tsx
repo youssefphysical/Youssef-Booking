@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -18,16 +18,23 @@ import type { HeroImage } from "@shared/schema";
 // We deliberately avoid:
 //   - useScroll / parallax (caused per-frame transform repaints)
 //   - mix-blend-mode on overlays (forces full stacking-context repaint)
-//   - CSS filter on the <img> (forces software compositing)
 //   - backdrop-filter on the badge (very expensive on mobile)
 //   - box-shadow keyframe animation on mobile (pulse/breathe gated to
 //     desktop via the .tron-pulse / .tron-cta-breathe media query)
-//   - Ken Burns scale/drift on the image (was paired with parallax)
-// All of those were the root causes of hero scroll jank. The TRON
-// look is preserved by baking the cyan tint into the alpha-blended
-// gradient overlays themselves rather than relying on blend modes.
+// We ALLOW:
+//   - A static CSS filter on the <img> for premium look (contrast +
+//     brightness + saturation slightly up). Static filters are baked
+//     into the GPU layer once at compositing time and do NOT cost
+//     per-frame work, so they are safe.
+//   - A very slow Ken Burns scale on desktop only, paused while the
+//     user is actively scrolling — this gives the hero life without
+//     ever competing with scroll for CPU/GPU time.
 const ROTATE_MS = 6000;
 const FADE_MS = 900;
+// How long after the last scroll event before we resume Ken Burns. A
+// short tail (140ms) means the resume feels instant once the user
+// stops, but pauses cleanly the moment a scroll begins.
+const SCROLL_IDLE_MS = 140;
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -58,6 +65,7 @@ export function HeroSlider() {
   });
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
   const reduced = prefersReducedMotion();
 
   useEffect(() => {
@@ -68,6 +76,31 @@ export function HeroSlider() {
     const id = window.setInterval(() => setTick((i) => i + 1), ROTATE_MS);
     return () => window.clearInterval(id);
   }, [reduced]);
+
+  // Pause Ken Burns while the user is actively scrolling. This is the
+  // single biggest cause of perceived hero "stutter" on mid-range
+  // phones — even a cheap GPU-accelerated transform competes with the
+  // browser's compositor when scroll-driven repaints are happening at
+  // the same time. Pausing for the duration of the scroll, then
+  // resuming 140ms after the last scroll event, makes the hero feel
+  // both alive AND silky to scroll past.
+  const scrollTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (reduced) return;
+    const onScroll = () => {
+      if (!isScrolling) setIsScrolling(true);
+      if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = window.setTimeout(
+        () => setIsScrolling(false),
+        SCROLL_IDLE_MS,
+      );
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
+    };
+  }, [reduced, isScrolling]);
 
   // Three world-class brand-pillar copy variants from i18n. Per-image
   // admin copy on a HeroImage row OVERRIDES the variant for that
@@ -102,9 +135,14 @@ export function HeroSlider() {
 
   return (
     <div
+      // The data-scrolling attribute toggles the Ken Burns play state
+      // via the .hero-kenburns CSS rule below. Keeping the scroll
+      // listener at the top of the hero (rather than per-image) means
+      // we only attach a single window listener for the whole slider.
       className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state={isPending ? "loading" : current ? "ready" : "empty"}
+      data-scrolling={isScrolling ? "true" : "false"}
     >
       {/* Instant dark gradient base — paints with the very first frame
           so there is never a blank or old-design flash before the
@@ -120,11 +158,13 @@ export function HeroSlider() {
         aria-hidden="true"
       />
 
-      {/* Image layer — single render path. Plain <img> with NO CSS
-          filter and NO parallax (the previous parallax + filter combo
-          was the primary scroll-jank source). For default-motion users
-          we crossfade between slides via AnimatePresence opacity only —
-          opacity is the cheapest possible composite operation. */}
+      {/* Image layer — single render path. Plain <img> with a STATIC
+          enhancement filter (contrast + brightness + saturate slightly
+          up) that is baked into the GPU layer once at compositing time
+          and never animates, so it does not cost per-frame work. The
+          slow Ken Burns scale is GPU-only (transform), gated to
+          desktop, and PAUSED while the user is actively scrolling —
+          see the data-scrolling="true" rule in index.css. */}
       {current && (
         <div className="absolute inset-0" aria-hidden="true">
           <AnimatePresence mode="sync">
@@ -136,7 +176,7 @@ export function HeroSlider() {
               // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
               fetchpriority={imageIndex === 0 ? "high" : "auto"}
               decoding="async"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="hero-img hero-kenburns absolute inset-0 w-full h-full object-cover"
               initial={reduced ? false : { opacity: 0 }}
               animate={reduced ? undefined : { opacity: 1 }}
               exit={reduced ? undefined : { opacity: 0 }}
@@ -154,13 +194,16 @@ export function HeroSlider() {
       {/* TRON layer stack — all decorative, all pointer-events:none, NO
           mix-blend-mode and NO backdrop-filter. The cyan tints are
           baked directly into the alpha gradients, so the cinematic
-          look is preserved without the per-frame repaint cost. */}
+          look is preserved without the per-frame repaint cost.
+          OVERLAY DENSITY: dialled down deliberately so the subject in
+          the photo stays clearly visible — heavy stacked black
+          gradients were making the image look flat and washed-out. */}
       <div className="absolute inset-0 tron-spotlight pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-shaft pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 tron-grid opacity-20 pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent md:from-black/95 md:via-black/25 pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent md:from-black/55 pointer-events-none" />
-      <div className="absolute inset-0 tron-vignette opacity-70 pointer-events-none" />
+      <div className="absolute inset-0 tron-grid opacity-[0.08] pointer-events-none" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/8 to-transparent md:from-black/82 md:via-black/12 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent md:from-black/45 pointer-events-none" />
+      <div className="absolute inset-0 tron-vignette opacity-55 pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam opacity-60 pointer-events-none" />
 
