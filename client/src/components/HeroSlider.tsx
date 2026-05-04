@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Calendar, ArrowRight } from "lucide-react";
+import { ArrowRight, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
@@ -74,6 +74,8 @@ export function HeroSlider() {
             alt=""
             aria-hidden="true"
             loading={safeIndex === 0 ? "eager" : "lazy"}
+            // @ts-expect-error fetchpriority is a valid HTML attribute, React 18 lowercase
+            fetchpriority={safeIndex === 0 ? "high" : "auto"}
             decoding="async"
             className="w-full h-full object-cover will-change-transform"
             initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
@@ -135,14 +137,26 @@ export function HeroSlider() {
                   <ArrowRight size={18} />
                 </button>
               </Link>
-              <Link href="/book" className="w-full sm:w-auto" data-testid="link-hero-book-session">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white/10 backdrop-blur-md border border-white/25 text-white font-semibold hover:bg-white/20 whitespace-nowrap btn-press">
-                  <Calendar size={18} />
-                  {t("hero.cinematic.bookSession")}
-                </button>
-              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  // Prefer the transformations gallery as social proof; if the
+                  // admin has not added any yet, fall back to the "why" pitch
+                  // so the button always lands somewhere meaningful.
+                  const target =
+                    document.getElementById("transformations") ??
+                    document.getElementById("why");
+                  target?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                data-testid="button-hero-view-results"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white/10 backdrop-blur-md border border-white/25 text-white font-semibold hover:bg-white/20 whitespace-nowrap btn-press"
+              >
+                <Eye size={18} />
+                {t("hero.cinematic.viewResults")}
+              </button>
               <WhatsAppButton
                 label={t("hero.cinematic.whatsapp")}
+                message={t("hero.cinematic.whatsappMsg")}
                 size="md"
                 testId="button-hero-whatsapp"
                 className="w-full sm:w-auto"

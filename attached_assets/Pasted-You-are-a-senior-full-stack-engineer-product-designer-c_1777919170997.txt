@@ -1,0 +1,219 @@
+You are a senior full-stack engineer + product designer + conversion expert.
+
+Your task is to upgrade my fitness booking platform into a cinematic, high-conversion premium experience inspired by movie-level visuals (Troy-style epic + Netflix-style UI).
+
+⚠️ CRITICAL:
+- Do NOT break any existing functionality
+- Do NOT modify booking logic, auth, database structure, or API contracts
+- All changes must be additive and safe
+- Keep Neon database untouched unless strictly needed
+- Ensure full compatibility with Vercel deployment
+
+---
+
+🎬 1. HERO SECTION — CINEMATIC EXPERIENCE
+
+Transform the homepage hero into a high-end cinematic slider:
+
+- Full-screen background images (16:9)
+- Smooth crossfade between slides (every 5–6 seconds)
+- Add subtle Ken Burns effect (slow zoom + pan)
+- Disable motion for users with prefers-reduced-motion
+
+---
+
+🖼️ IMAGE LOADING FIX (IMPORTANT)
+
+Fix current issue where hero image loads late:
+
+- Add immediate gradient background fallback:
+  dark blue → black gradient
+- Implement image preloading
+- Use priority loading for first hero image
+- Add low-quality blurred placeholder (LQIP)
+- Add smooth fade-in animation when image loads
+
+---
+
+🎨 VISUAL STYLE (EPIC + PREMIUM)
+
+Apply consistent cinematic styling:
+
+- Dark overlay (rgba(0,0,0,0.5+))
+- Slight background blur
+- Strong contrast
+- Premium color palette:
+  deep navy / black / gold accents / electric blue CTA
+
+---
+
+🧠 2. HERO CONTENT — CONVERSION FOCUSED
+
+Each slide must have its own overlay:
+
+Fields (editable from admin):
+- badge
+- headline
+- subheadline
+
+Examples:
+
+Slide 1:
+Headline: Build The Body You Deserve
+Sub: Structured coaching. Real results. No guesswork.
+
+Slide 2:
+Headline: Lose Fat. Gain Confidence.
+Sub: Science-based transformation tailored to you.
+
+Slide 3:
+Headline: Train With Purpose.
+Sub: Every session designed for real progress.
+
+---
+
+🎯 CTA STRUCTURE (VERY IMPORTANT)
+
+Replace current button hierarchy with:
+
+1. PRIMARY:
+"Start Your Transformation" (big, blue, strong)
+
+2. SECONDARY:
+"View Results" (outline button)
+
+3. WHATSAPP:
+Smaller, below buttons
+
+Add WhatsApp prefilled message:
+"Hi Coach, I saw your transformations and I want to start."
+
+---
+
+🧱 3. TRANSFORMATIONS SYSTEM (HIGH IMPACT)
+
+Create a "Real Transformations" section:
+
+Each card includes:
+- Before image
+- After image
+- Client name
+- Goal (fat loss / muscle gain)
+- Duration (e.g. 12 weeks)
+- Result (e.g. -12kg, visible abs)
+- Optional testimonial
+
+UI:
+- Horizontal scroll or grid
+- Premium hover effect
+- Show only if data exists
+
+---
+
+✂️ 4. IMAGE CONTROL SYSTEM (ADMIN)
+
+Use existing cropper and extend:
+
+Hero images:
+- Aspect ratio: 16:9
+- Output: 1920px
+
+Transformations:
+- Aspect ratio: 4:5
+- Output: 1600px
+
+Features:
+- Zoom
+- Drag
+- Rotate
+- Live preview
+
+Ensure:
+- Consistent framing
+- No layout breaking
+- Automatic compression
+
+---
+
+🎬 5. HERO SLIDER CONTROL (ADMIN PANEL)
+
+Extend admin:
+
+Each slide must support:
+- Upload image
+- Edit badge / headline / subtitle
+- Toggle visibility
+- Reorder slides
+
+---
+
+💎 6. UX IMPROVEMENTS
+
+- Add fade + slide-up animation to text
+- Add hover effects on buttons
+- Add slight glow to primary CTA
+- Improve spacing (more breathing room)
+
+---
+
+📱 7. MOBILE OPTIMIZATION
+
+- Ensure hero text readable on small screens
+- Proper padding
+- Buttons stacked cleanly
+- Keep cinematic feel
+
+---
+
+🔐 8. SECURITY + STABILITY
+
+- Keep MIME validation
+- No breaking changes
+- Maintain 400 errors (no 500 leaks)
+
+---
+
+🌍 9. i18n
+
+- Add all new texts to 10 languages
+- Maintain parity
+- Arabic RTL untouched
+
+---
+
+🚀 10. DEPLOYMENT PIPELINE
+
+After implementation:
+
+1. Commit clean code
+2. Push to GitHub
+3. Trigger Vercel deployment
+4. Verify:
+   - Homepage 200
+   - No layout shift
+   - Images load instantly
+   - Booking untouched
+
+---
+
+🎯 FINAL GOAL
+
+The homepage must feel like:
+
+- Netflix-level cinematic
+- Troy-level epic mood
+- Premium personal brand
+- High conversion landing page
+
+User should feel:
+"I want this transformation"
+
+---
+
+DO NOT:
+- break booking
+- remove features
+- change APIs
+
+ONLY:
+upgrade UI, UX, visuals, admin control, and conversion.
