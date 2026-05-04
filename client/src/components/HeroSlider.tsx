@@ -1,42 +1,61 @@
 import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
+import { Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 import type { HeroImage } from "@shared/schema";
 
-const AUTO_ADVANCE_MS = 3000;
+// Cinematic image-only hero. Auto-rotates between admin-uploaded slides
+// (5.5s cadence), crossfades for 1.2s, and applies a slow Ken Burns
+// scale+pan to whichever slide is currently visible. Overlay copy is
+// per-slide (title/subtitle/badge); when a slide has no metadata we fall
+// back to the global homepage headline so the hero never reads empty.
+const ROTATE_MS = 5500;
+const FADE_MS = 1200;
+
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export function HeroSlider() {
+  const { t } = useTranslation();
   const { data: images = [] } = useQuery<HeroImage[]>({
     queryKey: ["/api/hero-images"],
   });
+  const slides = images.filter((s) => s.isActive !== false);
   const [index, setIndex] = useState(0);
+  const reduced = prefersReducedMotion();
 
   useEffect(() => {
-    if (images.length <= 1) return;
+    if (slides.length <= 1) return;
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % images.length);
-    }, AUTO_ADVANCE_MS);
+      setIndex((i) => (i + 1) % slides.length);
+    }, ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [images.length]);
+  }, [slides.length]);
 
   // Reset index when image list changes (e.g. after admin deletes one).
   useEffect(() => {
-    if (index >= images.length) setIndex(0);
-  }, [images.length, index]);
+    if (index >= slides.length) setIndex(0);
+  }, [slides.length, index]);
 
-  if (images.length === 0) return null;
+  if (slides.length === 0) return null;
 
-  // Clamp inline so a stale `index` (after a delete that shrinks the list)
-  // never produces an out-of-bounds undefined slide before the reset effect
-  // above has had a chance to run.
-  const safeIndex = index >= images.length ? 0 : index;
-  const current = images[safeIndex];
+  const safeIndex = index >= slides.length ? 0 : index;
+  const current = slides[safeIndex];
   if (!current) return null;
+
+  const headline = current.title?.trim() || t("hero.cinematic.headline");
+  const subhead = current.subtitle?.trim() || t("hero.cinematic.subhead");
+  const badge = current.badge?.trim() || t("hero.cinematic.badge");
 
   return (
     <div
-      className="relative w-full h-[42vh] sm:h-[52vh] md:h-[64vh] max-h-[680px] overflow-hidden bg-black"
+      className="relative w-full h-[72vh] min-h-[480px] max-h-[820px] overflow-hidden bg-black"
       data-testid="hero-slider"
     >
       <AnimatePresence mode="sync">
@@ -45,28 +64,101 @@ export function HeroSlider() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.9, ease: "easeInOut" }}
+          transition={{ duration: FADE_MS / 1000, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          <img
+          {/* Ken Burns: slow scale + slight x drift on the image only,
+              so the overlay text stays still. Disabled for reduced-motion. */}
+          <motion.img
             src={current.imageDataUrl}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover"
+            loading={safeIndex === 0 ? "eager" : "lazy"}
+            decoding="async"
+            className="w-full h-full object-cover will-change-transform"
+            initial={reduced ? false : { scale: 1.0, x: "-1.5%" }}
+            animate={reduced ? undefined : { scale: 1.08, x: "1.5%" }}
+            transition={
+              reduced
+                ? undefined
+                : {
+                    duration: (ROTATE_MS + FADE_MS) / 1000,
+                    ease: "linear",
+                  }
+            }
             data-testid={`img-hero-slide-${current.id}`}
           />
         </motion.div>
       </AnimatePresence>
 
-      {/* Dark gradient overlay for legibility of any overlaid content. */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-black/40 pointer-events-none" />
+      {/* Multi-stop dark gradient — heavier at bottom for legibility of CTA + text. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/15 to-transparent pointer-events-none" />
 
-      {images.length > 1 && (
+      {/* Overlay content */}
+      <div className="absolute inset-0 flex items-end md:items-center">
+        <div className="w-full max-w-6xl mx-auto px-5 pb-16 md:pb-0 md:pt-20">
+          <motion.div
+            key={`copy-${current.id}`}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.15 }}
+            className="max-w-2xl"
+          >
+            {badge && (
+              <span
+                className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/40 bg-primary/15 backdrop-blur-md text-[10px] uppercase tracking-[0.2em] text-primary mb-4"
+                data-testid="text-hero-badge"
+              >
+                {badge}
+              </span>
+            )}
+            <h1
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.05] text-white drop-shadow-2xl"
+              data-testid="text-hero-headline"
+            >
+              {headline}
+            </h1>
+            {subhead && (
+              <p
+                className="mt-4 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-relaxed"
+                data-testid="text-hero-subhead"
+              >
+                {subhead}
+              </p>
+            )}
+
+            <div className="mt-7 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <Link href="/book" className="w-full sm:w-auto" data-testid="link-hero-start-transformation">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
+                  {t("hero.cinematic.startTransformation")}
+                  <ArrowRight size={18} />
+                </button>
+              </Link>
+              <Link href="/book" className="w-full sm:w-auto" data-testid="link-hero-book-session">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white/10 backdrop-blur-md border border-white/25 text-white font-semibold hover:bg-white/20 whitespace-nowrap btn-press">
+                  <Calendar size={18} />
+                  {t("hero.cinematic.bookSession")}
+                </button>
+              </Link>
+              <WhatsAppButton
+                label={t("hero.cinematic.whatsapp")}
+                size="md"
+                testId="button-hero-whatsapp"
+                className="w-full sm:w-auto"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Pagination dots */}
+      {slides.length > 1 && (
         <div
           className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10"
           data-testid="hero-slider-dots"
         >
-          {images.map((img, i) => (
+          {slides.map((img, i) => (
             <button
               key={img.id}
               type="button"

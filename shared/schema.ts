@@ -182,6 +182,33 @@ export const blockedSlots = pgTable("blocked_slots", {
 export const heroImages = pgTable("hero_images", {
   id: serial("id").primaryKey(),
   imageDataUrl: text("image_data_url").notNull(),
+  // Optional overlay copy. When all three are null the slide renders the
+  // homepage's global hero copy as a fallback (back-compat with pre-May'26
+  // slides that have no metadata).
+  title: text("title"),
+  subtitle: text("subtitle"),
+  badge: text("badge"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// =============================
+// TRANSFORMATIONS (before/after gallery)
+// =============================
+// Both images stored as base64 WebP data URLs (same rationale as
+// heroImages and users.profile_picture_url — works on Vercel's read-only
+// filesystem). Server pipes uploads through sharp at 1600px max long edge.
+export const transformations = pgTable("transformations", {
+  id: serial("id").primaryKey(),
+  beforeImageDataUrl: text("before_image_data_url").notNull(),
+  afterImageDataUrl: text("after_image_data_url").notNull(),
+  displayName: text("display_name"),       // empty / null = "Anonymous"
+  goal: text("goal"),                       // e.g. "Fat loss"
+  duration: text("duration"),               // free text e.g. "12 weeks"
+  result: text("result"),                   // e.g. "-9 kg / -7% body fat"
+  testimonial: text("testimonial"),
+  isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -666,12 +693,38 @@ export const insertHeroImageSchema = createInsertSchema(heroImages).omit({
   id: true,
   createdAt: true,
 });
+// Update schema accepts every editable field; all optional so callers can
+// PATCH a single property (e.g. just sortOrder, just isActive, just title).
 export const updateHeroImageSchema = z.object({
-  sortOrder: z.number().int().min(0).max(999),
+  sortOrder: z.number().int().min(0).max(999).optional(),
+  isActive: z.boolean().optional(),
+  title: z.string().max(140).nullish(),
+  subtitle: z.string().max(240).nullish(),
+  badge: z.string().max(60).nullish(),
 });
 export type HeroImage = typeof heroImages.$inferSelect;
 export type InsertHeroImage = z.infer<typeof insertHeroImageSchema>;
 export type UpdateHeroImage = z.infer<typeof updateHeroImageSchema>;
+
+// ----- Transformations -----
+export const insertTransformationSchema = createInsertSchema(transformations).omit({
+  id: true,
+  createdAt: true,
+});
+export const updateTransformationSchema = z.object({
+  beforeImageDataUrl: z.string().optional(),
+  afterImageDataUrl: z.string().optional(),
+  displayName: z.string().max(80).nullish(),
+  goal: z.string().max(120).nullish(),
+  duration: z.string().max(60).nullish(),
+  result: z.string().max(160).nullish(),
+  testimonial: z.string().max(600).nullish(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(999).optional(),
+});
+export type Transformation = typeof transformations.$inferSelect;
+export type InsertTransformation = z.infer<typeof insertTransformationSchema>;
+export type UpdateTransformation = z.infer<typeof updateTransformationSchema>;
 
 export type Package = typeof packages.$inferSelect;
 export type InsertPackage = z.infer<typeof insertPackageSchema>;

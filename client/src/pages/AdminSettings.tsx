@@ -3,14 +3,22 @@ import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare, CreditCard, Eye, EyeOff, ArrowUp, ArrowDown, UploadCloud } from "lucide-react";
+import { Loader2, Trash2, Plus, Image as ImageIcon, MessageSquare, CreditCard, Eye, EyeOff, ArrowUp, ArrowDown, UploadCloud, Pencil, X, Check, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   useHeroImages,
   useUploadHeroImage,
+  useUpdateHeroImage,
   useUpdateHeroImageOrder,
   useDeleteHeroImage,
 } from "@/hooks/use-hero-images";
+import {
+  useAdminTransformations,
+  useCreateTransformation,
+  useUpdateTransformation,
+  useDeleteTransformation,
+} from "@/hooks/use-transformations";
+import type { Transformation } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import {
   useSettings,
@@ -88,6 +96,7 @@ export default function AdminSettings() {
         <BankDetailsSection />
         <ProfileContentSection />
         <HeroImagesSection />
+        <TransformationsSection />
         <BlockedSlotsSection />
       </div>
     </div>
@@ -102,10 +111,15 @@ function HeroImagesSection() {
   const { data: images = [], isLoading } = useHeroImages();
   const uploadMutation = useUploadHeroImage();
   const reorderMutation = useUpdateHeroImageOrder();
+  const updateMetadataMutation = useUpdateHeroImage();
   const deleteMutation = useDeleteHeroImage();
   const { toast } = useToast();
   const MAX_IMAGES = 12;
   const [cropperOpen, setCropperOpen] = useState(false);
+  // Single-tile expand-to-edit pattern. Holds the id of the currently
+  // edited slide; null = no editor open. Avoids polluting the grid with
+  // inline forms and keeps the edit panel full-width below the grid.
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Hero slider is rendered as a full-width banner. 16:9 is the editorial
   // default; 21:9 gives a cinematic ultra-wide alternative for landscape
@@ -118,7 +132,7 @@ function HeroImagesSection() {
 
   async function handleCropped(dataUrl: string) {
     try {
-      await uploadMutation.mutateAsync(dataUrl);
+      await uploadMutation.mutateAsync({ imageDataUrl: dataUrl });
       setCropperOpen(false);
       toast({ title: t("admin.settingsPage.heroUploaded") });
     } catch (e: any) {
@@ -209,11 +223,35 @@ function HeroImagesSection() {
                 alt=""
                 className="w-full h-full object-cover"
               />
+              {/* Inactive overlay so admin sees what visitors won't. */}
+              {img.isActive === false && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <span className="px-2 py-1 rounded-md bg-black/70 text-[10px] uppercase tracking-widest font-bold text-white/90">
+                    <EyeOff size={10} className="inline mr-1" />
+                    {t("admin.settingsPage.heroFieldActive")}: ✗
+                  </span>
+                </div>
+              )}
               <div className="absolute inset-x-0 bottom-0 p-2 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent">
                 <span className="text-[10px] uppercase tracking-wider text-white/80 font-bold">
                   #{i + 1}
                 </span>
                 <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditingId((cur) => (cur === img.id ? null : img.id))
+                    }
+                    aria-label={t("admin.settingsPage.heroEdit")}
+                    data-testid={`button-hero-edit-${img.id}`}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center ${
+                      editingId === img.id
+                        ? "bg-primary/30 text-primary"
+                        : "bg-white/10 hover:bg-white/20"
+                    }`}
+                  >
+                    <Pencil size={12} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => move(i, -1)}
@@ -238,6 +276,7 @@ function HeroImagesSection() {
                     type="button"
                     onClick={() => {
                       if (confirm(t("admin.settingsPage.heroDeleteConfirm"))) {
+                        if (editingId === img.id) setEditingId(null);
                         deleteMutation.mutate(img.id);
                       }
                     }}
@@ -253,7 +292,558 @@ function HeroImagesSection() {
           ))}
         </div>
       )}
+
+      {/* Inline editor for whichever slide is currently being edited. */}
+      {editingId !== null && images.find((i) => i.id === editingId) && (
+        <HeroSlideEditor
+          key={editingId}
+          slide={images.find((i) => i.id === editingId)!}
+          onClose={() => setEditingId(null)}
+          onSave={async (updates) => {
+            try {
+              await updateMetadataMutation.mutateAsync({
+                id: editingId,
+                updates,
+              });
+              toast({ title: t("admin.settingsPage.heroSaved") });
+              setEditingId(null);
+            } catch (e: any) {
+              toast({
+                title: t("admin.settingsPage.heroSaveFailed"),
+                description: e?.message,
+                variant: "destructive",
+              });
+            }
+          }}
+          saving={updateMetadataMutation.isPending}
+        />
+      )}
     </section>
+  );
+}
+
+// Inline editor for a single hero slide's overlay metadata. Lives below
+// the grid so we don't disrupt the responsive tile layout.
+function HeroSlideEditor({
+  slide,
+  onClose,
+  onSave,
+  saving,
+}: {
+  slide: { id: number; title: string | null; subtitle: string | null; badge: string | null; isActive: boolean };
+  onClose: () => void;
+  onSave: (updates: { title: string | null; subtitle: string | null; badge: string | null; isActive: boolean }) => void;
+  saving: boolean;
+}) {
+  const { t } = useTranslation();
+  const [title, setTitle] = useState(slide.title ?? "");
+  const [subtitle, setSubtitle] = useState(slide.subtitle ?? "");
+  const [badge, setBadge] = useState(slide.badge ?? "");
+  const [isActive, setIsActive] = useState(slide.isActive ?? true);
+
+  return (
+    <div
+      className="mt-5 rounded-2xl border border-primary/30 bg-primary/[0.04] p-5"
+      data-testid={`hero-editor-${slide.id}`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-display font-bold text-sm">
+          #{slide.id} — {t("admin.settingsPage.heroEdit")}
+        </h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t("admin.settingsPage.heroEditClose")}
+          data-testid={`button-hero-editor-close-${slide.id}`}
+          className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+            {t("admin.settingsPage.heroFieldBadge")}
+          </label>
+          <Input
+            value={badge}
+            onChange={(e) => setBadge(e.target.value)}
+            maxLength={60}
+            className="bg-white/5 border-white/10"
+            data-testid={`input-hero-badge-${slide.id}`}
+          />
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+            {t("admin.settingsPage.heroFieldTitle")}
+          </label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={140}
+            className="bg-white/5 border-white/10"
+            data-testid={`input-hero-title-${slide.id}`}
+          />
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+            {t("admin.settingsPage.heroFieldSubtitle")}
+          </label>
+          <Textarea
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            maxLength={240}
+            rows={2}
+            className="bg-white/5 border-white/10"
+            data-testid={`input-hero-subtitle-${slide.id}`}
+          />
+        </div>
+        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={isActive}
+              onCheckedChange={setIsActive}
+              data-testid={`switch-hero-active-${slide.id}`}
+            />
+            {t("admin.settingsPage.heroFieldActive")}
+          </label>
+          <Button
+            type="button"
+            onClick={() =>
+              onSave({
+                title: title.trim() ? title.trim() : null,
+                subtitle: subtitle.trim() ? subtitle.trim() : null,
+                badge: badge.trim() ? badge.trim() : null,
+                isActive,
+              })
+            }
+            disabled={saving}
+            data-testid={`button-hero-save-${slide.id}`}
+          >
+            {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
+            {t("admin.settingsPage.heroSave")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// TRANSFORMATIONS — admin manager for premium before/after gallery
+// =====================================================================
+const TRANSFORMATION_ASPECTS: AspectPreset[] = [
+  { key: "4x5", label: "4:5", ratio: 4 / 5 },
+  { key: "3x4", label: "3:4", ratio: 3 / 4 },
+  { key: "1x1", label: "1:1", ratio: 1 / 1 },
+];
+
+function TransformationsSection() {
+  const { t } = useTranslation();
+  const { data: rows = [], isLoading } = useAdminTransformations();
+  const createMutation = useCreateTransformation();
+  // "Add" UI is a single staging card; only one at a time to keep things calm.
+  const [adding, setAdding] = useState(false);
+
+  return (
+    <section
+      className="rounded-3xl border border-white/5 bg-card/60 p-6"
+      data-testid="section-transformations"
+    >
+      <div className="flex items-start justify-between mb-1 gap-3">
+        <h2 className="font-display font-bold text-lg flex items-center gap-2">
+          <Sparkles size={18} className="text-primary" />
+          {t("admin.transformations.title")}
+        </h2>
+        {!adding && (
+          <Button
+            type="button"
+            onClick={() => setAdding(true)}
+            data-testid="button-add-transformation"
+            className="rounded-xl"
+          >
+            <Plus size={14} className="mr-1.5" />
+            {t("admin.transformations.add")}
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground mb-5">
+        {t("admin.transformations.desc")}
+      </p>
+
+      {/* New (staging) card */}
+      {adding && (
+        <TransformationCard
+          mode="create"
+          onCancel={() => setAdding(false)}
+          onSave={async (payload) => {
+            await createMutation.mutateAsync(payload);
+            setAdding(false);
+          }}
+          saving={createMutation.isPending}
+        />
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+          <Loader2 size={16} className="animate-spin mr-2" />
+          {t("admin.transformations.loading")}
+        </div>
+      ) : rows.length === 0 && !adding ? (
+        <p
+          className="text-sm text-muted-foreground py-6 text-center border border-dashed border-white/10 rounded-xl"
+          data-testid="text-no-transformations"
+        >
+          {t("admin.transformations.empty")}
+        </p>
+      ) : (
+        <div className="space-y-4 mt-4">
+          {rows.map((row) => (
+            <TransformationCard key={row.id} mode="edit" row={row} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Re-used for both create (staged) and edit (existing) flows. Internal
+// state mirrors the row's fields so users see Save become a no-op only
+// when they actually changed something. Image data URLs replace on
+// successful crop and are sent to the server which re-pipes them.
+type TransformationCardProps =
+  | {
+      mode: "create";
+      onCancel: () => void;
+      onSave: (payload: {
+        beforeImageDataUrl: string;
+        afterImageDataUrl: string;
+        displayName: string | null;
+        goal: string | null;
+        duration: string | null;
+        result: string | null;
+        testimonial: string | null;
+      }) => Promise<void>;
+      saving: boolean;
+    }
+  | { mode: "edit"; row: Transformation };
+
+function TransformationCard(props: TransformationCardProps) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const updateMutation = useUpdateTransformation();
+  const deleteMutation = useDeleteTransformation();
+
+  const initial: Transformation | null = props.mode === "edit" ? props.row : null;
+
+  const [beforeUrl, setBeforeUrl] = useState<string>(initial?.beforeImageDataUrl ?? "");
+  const [afterUrl, setAfterUrl] = useState<string>(initial?.afterImageDataUrl ?? "");
+  const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
+  const [goal, setGoal] = useState(initial?.goal ?? "");
+  const [duration, setDuration] = useState(initial?.duration ?? "");
+  const [result, setResult] = useState(initial?.result ?? "");
+  const [testimonial, setTestimonial] = useState(initial?.testimonial ?? "");
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [beforeCropOpen, setBeforeCropOpen] = useState(false);
+  const [afterCropOpen, setAfterCropOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const id = initial?.id ?? null;
+  const saving =
+    busy ||
+    (props.mode === "create" && props.saving) ||
+    (props.mode === "edit" && updateMutation.isPending);
+
+  async function handleSave() {
+    if (!beforeUrl || !afterUrl) {
+      toast({
+        title: t("admin.transformations.needBothImages"),
+        variant: "destructive",
+      });
+      return;
+    }
+    setBusy(true);
+    try {
+      const norm = (v: string) => (v.trim() ? v.trim() : null);
+      if (props.mode === "create") {
+        await props.onSave({
+          beforeImageDataUrl: beforeUrl,
+          afterImageDataUrl: afterUrl,
+          displayName: norm(displayName),
+          goal: norm(goal),
+          duration: norm(duration),
+          result: norm(result),
+          testimonial: norm(testimonial),
+        });
+        toast({ title: t("admin.transformations.savedToast") });
+      } else if (id !== null) {
+        // Send only fields that change vs row state to keep payloads small.
+        const updates: Record<string, unknown> = {
+          displayName: norm(displayName),
+          goal: norm(goal),
+          duration: norm(duration),
+          result: norm(result),
+          testimonial: norm(testimonial),
+          isActive,
+        };
+        // Only include image URLs if they differ from the saved row, since
+        // re-sending the same WebP would force the server to re-pipe it.
+        if (beforeUrl !== initial?.beforeImageDataUrl) {
+          updates.beforeImageDataUrl = beforeUrl;
+        }
+        if (afterUrl !== initial?.afterImageDataUrl) {
+          updates.afterImageDataUrl = afterUrl;
+        }
+        await updateMutation.mutateAsync({ id, updates });
+        toast({ title: t("admin.transformations.savedToast") });
+      }
+    } catch (e: any) {
+      toast({
+        title: t("admin.transformations.saveFailedToast"),
+        description: e?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-white/10 bg-black/20 p-4"
+      data-testid={
+        props.mode === "create"
+          ? "transformation-card-new"
+          : `transformation-admin-card-${id}`
+      }
+    >
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr] gap-4">
+        {/* BEFORE slot */}
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+            {t("admin.transformations.beforeImage")}
+          </p>
+          <div className="aspect-[4/5] rounded-xl border border-white/10 bg-black/40 overflow-hidden flex items-center justify-center">
+            {beforeUrl ? (
+              <img
+                src={beforeUrl}
+                alt="before"
+                className="w-full h-full object-cover"
+                data-testid={`img-admin-before-${id ?? "new"}`}
+              />
+            ) : (
+              <ImageIcon size={28} className="text-muted-foreground/40" />
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full rounded-xl"
+            onClick={() => setBeforeCropOpen(true)}
+            data-testid={`button-crop-before-${id ?? "new"}`}
+          >
+            <UploadCloud size={14} className="mr-1.5" />
+            {beforeUrl
+              ? t("admin.transformations.changeBefore")
+              : t("admin.transformations.uploadBefore")}
+          </Button>
+        </div>
+
+        {/* AFTER slot */}
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+            {t("admin.transformations.afterImage")}
+          </p>
+          <div className="aspect-[4/5] rounded-xl border border-white/10 bg-black/40 overflow-hidden flex items-center justify-center">
+            {afterUrl ? (
+              <img
+                src={afterUrl}
+                alt="after"
+                className="w-full h-full object-cover"
+                data-testid={`img-admin-after-${id ?? "new"}`}
+              />
+            ) : (
+              <ImageIcon size={28} className="text-muted-foreground/40" />
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full rounded-xl"
+            onClick={() => setAfterCropOpen(true)}
+            data-testid={`button-crop-after-${id ?? "new"}`}
+          >
+            <UploadCloud size={14} className="mr-1.5" />
+            {afterUrl
+              ? t("admin.transformations.changeAfter")
+              : t("admin.transformations.uploadAfter")}
+          </Button>
+        </div>
+
+        {/* Metadata */}
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+              {t("admin.transformations.displayName")}
+            </label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={80}
+              className="bg-white/5 border-white/10"
+              data-testid={`input-display-name-${id ?? "new"}`}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {t("admin.transformations.displayNameHint")}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+                {t("admin.transformations.goalLabel")}
+              </label>
+              <Input
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                maxLength={120}
+                placeholder={t("admin.transformations.goalPlaceholder")}
+                className="bg-white/5 border-white/10"
+                data-testid={`input-goal-${id ?? "new"}`}
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+                {t("admin.transformations.durationLabel")}
+              </label>
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                maxLength={60}
+                placeholder={t("admin.transformations.durationPlaceholder")}
+                className="bg-white/5 border-white/10"
+                data-testid={`input-duration-${id ?? "new"}`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+              {t("admin.transformations.resultLabel")}
+            </label>
+            <Input
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              maxLength={160}
+              placeholder={t("admin.transformations.resultPlaceholder")}
+              className="bg-white/5 border-white/10"
+              data-testid={`input-result-${id ?? "new"}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">
+              {t("admin.transformations.testimonialLabel")}
+            </label>
+            <Textarea
+              value={testimonial}
+              onChange={(e) => setTestimonial(e.target.value)}
+              maxLength={600}
+              rows={3}
+              placeholder={t("admin.transformations.testimonialPlaceholder")}
+              className="bg-white/5 border-white/10"
+              data-testid={`input-testimonial-${id ?? "new"}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/5">
+        {props.mode === "edit" ? (
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={isActive}
+              onCheckedChange={setIsActive}
+              data-testid={`switch-transformation-active-${id}`}
+            />
+            {t("admin.transformations.active")}
+          </label>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => "onCancel" in props && props.onCancel()}
+            data-testid="button-cancel-new-transformation"
+          >
+            {t("admin.transformations.delete")}
+          </Button>
+        )}
+
+        <div className="flex items-center gap-2">
+          {props.mode === "edit" && id !== null && (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-red-300 border-red-500/30 hover:bg-red-500/10 hover:text-red-200"
+              onClick={() => {
+                if (confirm(t("admin.transformations.deleteConfirm"))) {
+                  deleteMutation.mutate(id);
+                }
+              }}
+              disabled={deleteMutation.isPending}
+              data-testid={`button-delete-transformation-${id}`}
+            >
+              <Trash2 size={14} className="mr-1.5" />
+              {t("admin.transformations.delete")}
+            </Button>
+          )}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            data-testid={`button-save-transformation-${id ?? "new"}`}
+            className="rounded-xl"
+          >
+            {saving ? (
+              <Loader2 size={14} className="mr-2 animate-spin" />
+            ) : (
+              <Check size={14} className="mr-1.5" />
+            )}
+            {saving
+              ? t("admin.transformations.saving")
+              : t("admin.transformations.save")}
+          </Button>
+        </div>
+      </div>
+
+      {/* Croppers — same component as profile/hero, just different aspects/help text. */}
+      <ImageCropper
+        open={beforeCropOpen}
+        onOpenChange={setBeforeCropOpen}
+        saving={false}
+        onCropped={(url) => {
+          setBeforeUrl(url);
+          setBeforeCropOpen(false);
+        }}
+        aspects={TRANSFORMATION_ASPECTS}
+        outputLongEdgePx={1600}
+        title={t("cropper.transformationBeforeTitle")}
+        description={t("cropper.transformationBeforeDescription")}
+      />
+      <ImageCropper
+        open={afterCropOpen}
+        onOpenChange={setAfterCropOpen}
+        saving={false}
+        onCropped={(url) => {
+          setAfterUrl(url);
+          setAfterCropOpen(false);
+        }}
+        aspects={TRANSFORMATION_ASPECTS}
+        outputLongEdgePx={1600}
+        title={t("cropper.transformationAfterTitle")}
+        description={t("cropper.transformationAfterDescription")}
+      />
+    </div>
   );
 }
 

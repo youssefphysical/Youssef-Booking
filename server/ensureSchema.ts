@@ -86,6 +86,27 @@ async function run(): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS users_password_reset_token_idx
       ON users(password_reset_token);
+
+    -- May 2026 cinematic homepage wave: hero overlay metadata + transformations
+    ALTER TABLE IF EXISTS hero_images
+      ADD COLUMN IF NOT EXISTS title text,
+      ADD COLUMN IF NOT EXISTS subtitle text,
+      ADD COLUMN IF NOT EXISTS badge text,
+      ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
+
+    CREATE TABLE IF NOT EXISTS transformations (
+      id serial PRIMARY KEY,
+      before_image_data_url text NOT NULL,
+      after_image_data_url text NOT NULL,
+      display_name text,
+      goal text,
+      duration text,
+      result text,
+      testimonial text,
+      is_active boolean NOT NULL DEFAULT true,
+      sort_order integer NOT NULL DEFAULT 0,
+      created_at timestamp DEFAULT now()
+    );
   `;
 
   try {

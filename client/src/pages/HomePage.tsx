@@ -26,6 +26,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Footer } from "@/components/Footer";
 import { HeroSlider } from "@/components/HeroSlider";
+import { Transformations } from "@/components/Transformations";
 import { useTranslation } from "@/i18n";
 
 const TRAIN_KEYS = [
@@ -251,25 +252,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRANSFORMATIONS PLACEHOLDER */}
-      <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
+      {/* TRANSFORMATIONS — admin-managed before/after cards.
+          Renders nothing until at least one active row exists. */}
+      <Transformations />
+
+      {/* WHY TRAIN WITH YOUSSEF — premium conversion section */}
+      <section className="max-w-6xl mx-auto px-5 py-20" id="why">
         <SectionHeader
-          eyebrow={t("section.transformations.eyebrow")}
-          title={t("section.transformations.title")}
-          subtitle={t("section.transformations.subtitle")}
+          eyebrow={t("section.why.eyebrow")}
+          title={t("section.why.title")}
+          subtitle={t("section.why.subtitle")}
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-2xl border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-muted-foreground/60"
-              data-testid={`transformation-placeholder-${i}`}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { key: "certified", icon: <ShieldCheck size={22} /> },
+            { key: "structured", icon: <Target size={22} /> },
+            { key: "results", icon: <Trophy size={22} /> },
+            { key: "professional", icon: <Sparkles size={22} /> },
+          ].map((c, i) => (
+            <motion.div
+              key={c.key}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ delay: i * 0.05 }}
+              className="rounded-2xl border border-white/5 bg-card/60 p-6 card-lift"
+              data-testid={`why-card-${c.key}`}
             >
-              <Dumbbell size={32} />
-              <p className="mt-3 text-xs uppercase tracking-widest">
-                {t("section.transformations.placeholder")}
+              <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center text-primary mb-4">
+                {c.icon}
+              </div>
+              <h3 className="font-display font-bold text-base">
+                {t(`section.why.${c.key}.title`)}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                {t(`section.why.${c.key}.body`)}
               </p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>

@@ -9,6 +9,7 @@ import {
   progressPhotos,
   consentRecords,
   heroImages,
+  transformations,
   adminNotifications,
   renewalRequests,
   extensionRequests,
@@ -33,6 +34,10 @@ import {
   type InsertConsent,
   type HeroImage,
   type InsertHeroImage,
+  type UpdateHeroImage,
+  type Transformation,
+  type InsertTransformation,
+  type UpdateTransformation,
   type AdminNotification,
   type InsertAdminNotification,
   type RenewalRequest,
@@ -89,8 +94,16 @@ export interface IStorage {
   // Hero images (homepage slider)
   getHeroImages(): Promise<HeroImage[]>;
   createHeroImage(image: InsertHeroImage): Promise<HeroImage>;
+  updateHeroImage(id: number, updates: UpdateHeroImage): Promise<HeroImage | undefined>;
   updateHeroImageOrder(id: number, sortOrder: number): Promise<HeroImage>;
   deleteHeroImage(id: number): Promise<void>;
+
+  // Transformations (before/after gallery)
+  getTransformations(opts?: { activeOnly?: boolean }): Promise<Transformation[]>;
+  getTransformation(id: number): Promise<Transformation | undefined>;
+  createTransformation(t: InsertTransformation): Promise<Transformation>;
+  updateTransformation(id: number, updates: UpdateTransformation): Promise<Transformation | undefined>;
+  deleteTransformation(id: number): Promise<void>;
 
   // Packages
   getPackages(filters?: { userId?: number; activeOnly?: boolean }): Promise<Package[]>;
@@ -361,8 +374,65 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async updateHeroImage(id: number, updates: UpdateHeroImage) {
+    // Strip undefined so we never overwrite a column to NULL by accident
+    // when the caller only PATCHes a subset of fields.
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (v !== undefined) clean[k] = v;
+    }
+    if (Object.keys(clean).length === 0) {
+      const [row] = await db.select().from(heroImages).where(eq(heroImages.id, id));
+      return row;
+    }
+    const [updated] = await db
+      .update(heroImages)
+      .set(clean as any)
+      .where(eq(heroImages.id, id))
+      .returning();
+    return updated;
+  }
+
   async deleteHeroImage(id: number) {
     await db.delete(heroImages).where(eq(heroImages.id, id));
+  }
+
+  // ===== Transformations =====
+  async getTransformations(opts: { activeOnly?: boolean } = {}) {
+    const q = opts.activeOnly
+      ? db.select().from(transformations).where(eq(transformations.isActive, true))
+      : db.select().from(transformations);
+    return q.orderBy(asc(transformations.sortOrder), asc(transformations.id));
+  }
+
+  async getTransformation(id: number) {
+    const [row] = await db.select().from(transformations).where(eq(transformations.id, id));
+    return row;
+  }
+
+  async createTransformation(t: InsertTransformation) {
+    const [created] = await db.insert(transformations).values(t).returning();
+    return created;
+  }
+
+  async updateTransformation(id: number, updates: UpdateTransformation) {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (v !== undefined) clean[k] = v;
+    }
+    if (Object.keys(clean).length === 0) {
+      return this.getTransformation(id);
+    }
+    const [updated] = await db
+      .update(transformations)
+      .set(clean as any)
+      .where(eq(transformations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTransformation(id: number) {
+    await db.delete(transformations).where(eq(transformations.id, id));
   }
 
   // ===== Packages =====

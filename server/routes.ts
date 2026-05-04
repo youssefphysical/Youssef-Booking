@@ -20,6 +20,8 @@ import {
   insertProgressPhotoSchema,
   insertHeroImageSchema,
   updateHeroImageSchema,
+  insertTransformationSchema,
+  updateTransformationSchema,
   protectedCancellationQuota,
   sameDayAdjustQuota,
   tierFromFrequency,
@@ -1189,15 +1191,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(list);
   });
 
+  // Shared sharp pipeline for admin-supplied data-URL images. Returns a
+  // base64 WebP data URL or null if the input is not a parseable image of an
+  // allowed MIME type. Used by hero (1920x1080 cover) and transformations
+  // (1600px long edge contain) endpoints.
+  async function processAdminImageDataUrl(
+    dataUrl: string,
+    opts: { width: number; height?: number; fit: "cover" | "inside"; quality?: number },
+  ): Promise<{ ok: true; dataUrl: string } | { ok: false; status: number; message: string }> {
+    if (typeof dataUrl !== "string" || dataUrl.length < 40) {
+      return { ok: false, status: 400, message: "Image data is required" };
+    }
+    if (dataUrl.length > 20 * 1024 * 1024) {
+      return { ok: false, status: 400, message: "Image is too large" };
+    }
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (!match) {
+      return { ok: false, status: 400, message: "Image must be a base64 data URL" };
+    }
+    const ALLOWED_MIME = new Set([
+      "image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif",
+    ]);
+    if (!ALLOWED_MIME.has(match[1].toLowerCase())) {
+      return { ok: false, status: 400, message: "Unsupported image type. Use PNG, JPEG, WebP, or HEIC." };
+    }
+    try {
+      const buffer = Buffer.from(match[2], "base64");
+      if (buffer.byteLength > 15 * 1024 * 1024) {
+        return { ok: false, status: 400, message: "Image is too large after decoding" };
+      }
+      let pipeline = sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 }).rotate();
+      if (opts.fit === "cover" && opts.height) {
+        pipeline = pipeline.resize(opts.width, opts.height, { fit: "cover", position: "center" });
+      } else {
+        pipeline = pipeline.resize({ width: opts.width, height: opts.width, fit: "inside", withoutEnlargement: true });
+      }
+      const webp = await pipeline.webp({ quality: opts.quality ?? 78, effort: 4 }).toBuffer();
+      return { ok: true, dataUrl: `data:image/webp;base64,${webp.toString("base64")}` };
+    } catch (e) {
+      console.error("[admin-image] sharp failed:", e);
+      return { ok: false, status: 400, message: "Could not process image. Try a different photo." };
+    }
+  }
+
   // Admin upload. Same sharp pipeline as profile pictures but bigger
   // canvas (1920x1080, cover) and stored as a base64 WebP data URL so it
   // works on Vercel's read-only filesystem without needing object storage.
   app.post("/api/admin/hero-images", requireAdmin, async (req, res) => {
     const schema = z.object({
-      imageDataUrl: z
-        .string()
-        .min(40, "Image data is required")
-        .max(20 * 1024 * 1024, "Image is too large"),
+      imageDataUrl: z.string(),
+      title: z.string().max(140).nullish(),
+      subtitle: z.string().max(240).nullish(),
+      badge: z.string().max(60).nullish(),
     });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
@@ -1205,75 +1250,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         .status(400)
         .json({ message: parsed.error.errors[0]?.message || "Invalid image" });
     }
-    const match = parsed.data.imageDataUrl.match(
-      /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/,
-    );
-    if (!match) {
-      return res
-        .status(400)
-        .json({ message: "Image must be a base64 data URL" });
-    }
-    const ALLOWED_MIME = new Set([
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/webp",
-      "image/heic",
-      "image/heif",
-    ]);
-    if (!ALLOWED_MIME.has(match[1].toLowerCase())) {
-      return res
-        .status(400)
-        .json({ message: "Unsupported image type. Use PNG, JPEG, WebP, or HEIC." });
-    }
-    try {
-      const buffer = Buffer.from(match[2], "base64");
-      if (buffer.byteLength > 15 * 1024 * 1024) {
-        return res
-          .status(400)
-          .json({ message: "Image is too large after decoding" });
-      }
-      const webp = await sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 })
-        .rotate()
-        .resize(1920, 1080, { fit: "cover", position: "center" })
-        .webp({ quality: 78, effort: 4 })
-        .toBuffer();
-      const dataUrl = `data:image/webp;base64,${webp.toString("base64")}`;
-      // New images go to the end of the slider by default.
-      const existing = await storage.getHeroImages();
-      // Hard cap on slider length — also matches the UI cap. Prevents
-      // table/payload growth if anyone bypasses the admin form.
-      const MAX_HERO_IMAGES = 12;
-      if (existing.length >= MAX_HERO_IMAGES) {
-        return res.status(400).json({
-          message: `Maximum of ${MAX_HERO_IMAGES} hero images. Delete one before uploading another.`,
-        });
-      }
-      const nextOrder = existing.length
-        ? Math.max(...existing.map((h) => h.sortOrder)) + 1
-        : 0;
-      const created = await storage.createHeroImage({
-        imageDataUrl: dataUrl,
-        sortOrder: nextOrder,
+    const processed = await processAdminImageDataUrl(parsed.data.imageDataUrl, {
+      width: 1920, height: 1080, fit: "cover",
+    });
+    if (!processed.ok) return res.status(processed.status).json({ message: processed.message });
+
+    // New images go to the end of the slider by default.
+    const existing = await storage.getHeroImages();
+    // Hard cap on slider length — also matches the UI cap. Prevents
+    // table/payload growth if anyone bypasses the admin form.
+    const MAX_HERO_IMAGES = 12;
+    if (existing.length >= MAX_HERO_IMAGES) {
+      return res.status(400).json({
+        message: `Maximum of ${MAX_HERO_IMAGES} hero images. Delete one before uploading another.`,
       });
-      res.status(201).json(created);
-    } catch (e) {
-      console.error("[hero-images] processing failed:", e);
-      res
-        .status(400)
-        .json({ message: "Could not process image. Try a different photo." });
     }
+    const nextOrder = existing.length
+      ? Math.max(...existing.map((h) => h.sortOrder)) + 1
+      : 0;
+    const created = await storage.createHeroImage({
+      imageDataUrl: processed.dataUrl,
+      sortOrder: nextOrder,
+      title: parsed.data.title ?? null,
+      subtitle: parsed.data.subtitle ?? null,
+      badge: parsed.data.badge ?? null,
+      isActive: true,
+    });
+    res.status(201).json(created);
   });
 
+  // Generic PATCH — accepts any subset of (sortOrder, isActive, title,
+  // subtitle, badge). Used by both reorder buttons and the metadata editor.
   app.patch("/api/admin/hero-images/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
     const parsed = updateHeroImageSchema.safeParse(req.body);
     if (!parsed.success) {
       return res
         .status(400)
-        .json({ message: parsed.error.errors[0]?.message || "Invalid order" });
+        .json({ message: parsed.error.errors[0]?.message || "Invalid update" });
     }
-    const updated = await storage.updateHeroImageOrder(id, parsed.data.sortOrder);
+    const updated = await storage.updateHeroImage(id, parsed.data);
     if (!updated) return res.status(404).json({ message: "Hero image not found" });
     res.json(updated);
   });
@@ -1281,6 +1298,101 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.delete("/api/admin/hero-images/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     await storage.deleteHeroImage(id);
+    res.sendStatus(204);
+  });
+
+  // ============== TRANSFORMATIONS (before/after gallery) ==============
+  // Public list — only active rows, sorted by admin order.
+  app.get("/api/transformations", async (_req, res) => {
+    const list = await storage.getTransformations({ activeOnly: true });
+    res.json(list);
+  });
+
+  // Admin list — includes inactive (so admin sees everything).
+  app.get("/api/admin/transformations", requireAdmin, async (_req, res) => {
+    const list = await storage.getTransformations({ activeOnly: false });
+    res.json(list);
+  });
+
+  app.post("/api/admin/transformations", requireAdmin, async (req, res) => {
+    const schema = z.object({
+      beforeImageDataUrl: z.string(),
+      afterImageDataUrl: z.string(),
+      displayName: z.string().max(80).nullish(),
+      goal: z.string().max(120).nullish(),
+      duration: z.string().max(60).nullish(),
+      result: z.string().max(160).nullish(),
+      testimonial: z.string().max(600).nullish(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const before = await processAdminImageDataUrl(parsed.data.beforeImageDataUrl, {
+      width: 1600, fit: "inside", quality: 80,
+    });
+    if (!before.ok) return res.status(before.status).json({ message: `Before image: ${before.message}` });
+    const after = await processAdminImageDataUrl(parsed.data.afterImageDataUrl, {
+      width: 1600, fit: "inside", quality: 80,
+    });
+    if (!after.ok) return res.status(after.status).json({ message: `After image: ${after.message}` });
+
+    const existing = await storage.getTransformations({ activeOnly: false });
+    const MAX_TRANSFORMATIONS = 24;
+    if (existing.length >= MAX_TRANSFORMATIONS) {
+      return res.status(400).json({
+        message: `Maximum of ${MAX_TRANSFORMATIONS} transformations. Delete one first.`,
+      });
+    }
+    const nextOrder = existing.length
+      ? Math.max(...existing.map((t) => t.sortOrder)) + 1
+      : 0;
+    const created = await storage.createTransformation({
+      beforeImageDataUrl: before.dataUrl,
+      afterImageDataUrl: after.dataUrl,
+      displayName: parsed.data.displayName ?? null,
+      goal: parsed.data.goal ?? null,
+      duration: parsed.data.duration ?? null,
+      result: parsed.data.result ?? null,
+      testimonial: parsed.data.testimonial ?? null,
+      isActive: true,
+      sortOrder: nextOrder,
+    });
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/admin/transformations/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateTransformationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
+    }
+    // If admin is sending a NEW image data URL (not an existing webp ref),
+    // re-pipe it through sharp. We detect "new uploads" by the presence of
+    // base64 prefix that isn't already image/webp <under 200KB-ish>.
+    const updates: typeof parsed.data = { ...parsed.data };
+    for (const key of ["beforeImageDataUrl", "afterImageDataUrl"] as const) {
+      const value = updates[key];
+      if (typeof value === "string" && value.startsWith("data:")) {
+        const processed = await processAdminImageDataUrl(value, {
+          width: 1600, fit: "inside", quality: 80,
+        });
+        if (!processed.ok) {
+          return res.status(processed.status).json({ message: `${key}: ${processed.message}` });
+        }
+        updates[key] = processed.dataUrl;
+      }
+    }
+    const updated = await storage.updateTransformation(id, updates);
+    if (!updated) return res.status(404).json({ message: "Transformation not found" });
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/transformations/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    await storage.deleteTransformation(id);
     res.sendStatus(204);
   });
 
