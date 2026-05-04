@@ -42,6 +42,7 @@ import {
 import { ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { useTranslation } from "@/i18n";
+import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 
 const generalSchema = z.object({
   cancellationCutoffHours: z.coerce.number().int().min(0).max(168),
@@ -104,29 +105,26 @@ function HeroImagesSection() {
   const deleteMutation = useDeleteHeroImage();
   const { toast } = useToast();
   const MAX_IMAGES = 12;
+  const [cropperOpen, setCropperOpen] = useState(false);
 
-  async function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Please choose an image file", variant: "destructive" });
-      return;
-    }
-    if (file.size > 12 * 1024 * 1024) {
-      toast({ title: "Image is too large (max 12 MB)", variant: "destructive" });
-      return;
-    }
-    const dataUrl: string = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = () => reject(r.error);
-      r.readAsDataURL(file);
-    });
+  // Hero slider is rendered as a full-width banner. 16:9 is the editorial
+  // default; 21:9 gives a cinematic ultra-wide alternative for landscape
+  // photos. The server still resizes to 1920×1080 cover, so the crop here
+  // controls *composition* (what's in frame) rather than final pixels.
+  const heroAspects: AspectPreset[] = [
+    { key: "16x9", label: "16:9", ratio: 16 / 9 },
+    { key: "21x9", label: "21:9", ratio: 21 / 9 },
+  ];
+
+  async function handleCropped(dataUrl: string) {
     try {
       await uploadMutation.mutateAsync(dataUrl);
-      toast({ title: "Hero image uploaded" });
+      setCropperOpen(false);
+      toast({ title: t("admin.settingsPage.heroUploaded") });
     } catch (e: any) {
       toast({
-        title: "Upload failed",
-        description: e?.message || "Try a smaller or different image.",
+        title: t("admin.settingsPage.heroUploadFailed"),
+        description: e?.message || t("admin.settingsPage.heroUploadFailedHint"),
         variant: "destructive",
       });
     }
@@ -155,10 +153,12 @@ function HeroImagesSection() {
         ).replace("{max}", String(MAX_IMAGES))}
       </p>
 
-      <label
-        htmlFor="hero-image-upload"
-        className="flex flex-col items-center justify-center gap-2 w-full p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 hover:bg-white/[0.02] transition-colors cursor-pointer mb-5"
-        data-testid="label-hero-upload"
+      <button
+        type="button"
+        onClick={() => setCropperOpen(true)}
+        disabled={uploadMutation.isPending || images.length >= MAX_IMAGES}
+        className="flex flex-col items-center justify-center gap-2 w-full p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-primary/40 hover:bg-white/[0.02] transition-colors cursor-pointer mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
+        data-testid="button-hero-open-cropper"
       >
         {uploadMutation.isPending ? (
           <Loader2 size={22} className="animate-spin text-primary" />
@@ -173,23 +173,17 @@ function HeroImagesSection() {
         <p className="text-xs text-muted-foreground">
           {t("admin.settingsPage.heroFormats")}
         </p>
-        <input
-          id="hero-image-upload"
-          type="file"
-          accept="image/*"
-          className="hidden"
-          data-testid="input-hero-image"
-          disabled={uploadMutation.isPending || images.length >= MAX_IMAGES}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) {
-              handleFile(f);
-              // Reset so re-uploading the same file still triggers change.
-              e.target.value = "";
-            }
-          }}
-        />
-      </label>
+      </button>
+      <ImageCropper
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        saving={uploadMutation.isPending}
+        onCropped={handleCropped}
+        aspects={heroAspects}
+        outputLongEdgePx={1920}
+        title={t("cropper.heroTitle")}
+        description={t("cropper.heroDescription")}
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">

@@ -75,6 +75,7 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { Switch } from "@/components/ui/switch";
@@ -1691,34 +1692,66 @@ function Stat({ label, v, u }: { label: string; v: number | null; u?: string }) 
 // =============== PROGRESS PHOTOS ===============
 
 function ProgressPanel({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: photos = [] } = useProgressPhotos({ userId });
   const upload = useUploadProgressPhoto();
   const del = useDeleteProgressPhoto();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
 
   const list = (photos as ProgressPhoto[]).sort(
     (a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime(),
   );
 
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) upload.mutate({ file, userId, type: "current" });
-    if (fileRef.current) fileRef.current.value = "";
-  };
+  // Body-photo presets — portrait-leaning since transformation shots are
+  // typically full-body. 1:1 is included for grid/Instagram-style display.
+  const progressAspects: AspectPreset[] = [
+    { key: "4x5", label: "4:5", ratio: 4 / 5 },
+    { key: "3x4", label: "3:4", ratio: 3 / 4 },
+    { key: "1x1", label: "1:1", ratio: 1 },
+  ];
+
+  async function handleCropped(dataUrl: string) {
+    try {
+      const file = dataUrlToFile(dataUrl, `progress-${Date.now()}.webp`);
+      await upload.mutateAsync({ file, userId, type: "current" });
+      setCropperOpen(false);
+    } catch {
+      // useUploadProgressPhoto already surfaces a toast on error.
+    }
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Progress Photos</h3>
-        <Button size="sm" className="rounded-xl" onClick={() => fileRef.current?.click()} disabled={upload.isPending} data-testid="button-admin-upload-photo">
-          {upload.isPending ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Upload size={13} className="mr-1.5" />}
-          Add Photo
+        <h3 className="text-sm font-semibold">{t("admin.clientDetail.progressTitle")}</h3>
+        <Button
+          size="sm"
+          className="rounded-xl"
+          onClick={() => setCropperOpen(true)}
+          disabled={upload.isPending}
+          data-testid="button-admin-upload-photo"
+        >
+          {upload.isPending ? (
+            <Loader2 size={13} className="animate-spin mr-1.5" />
+          ) : (
+            <Upload size={13} className="mr-1.5" />
+          )}
+          {t("admin.clientDetail.addPhoto")}
         </Button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+        <ImageCropper
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          saving={upload.isPending}
+          onCropped={handleCropped}
+          aspects={progressAspects}
+          outputLongEdgePx={1600}
+          title={t("cropper.progressTitle")}
+          description={t("cropper.progressDescription")}
+        />
       </div>
 
       {list.length === 0 ? (
-        <EmptyBox text="No progress photos yet" />
+        <EmptyBox text={t("admin.clientDetail.noProgressPhotos")} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {list.map((p) => (
