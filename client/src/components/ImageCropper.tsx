@@ -327,13 +327,18 @@ export function ImageCropper({
         outH,
       );
       // WebP first (much smaller); JPEG fallback for legacy Safari.
+      // Quality bumped from 0.85 → 0.92 WebP, 0.90 → 0.94 JPEG so hero
+      // and transformation photos stay sharp even when they contain
+      // fine gym detail (dumbbell racks, fabric, hair). The size cost
+      // of WebP at 0.92 vs 0.85 is ~15% on average — well worth it
+      // for "premium" perceived clarity.
       let dataUrl = forceJpeg
-        ? canvas.toDataURL("image/jpeg", 0.9)
-        : canvas.toDataURL("image/webp", 0.85);
+        ? canvas.toDataURL("image/jpeg", 0.94)
+        : canvas.toDataURL("image/webp", 0.92);
       if (!dataUrl.startsWith("data:image/")) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        dataUrl = canvas.toDataURL("image/jpeg", 0.94);
       } else if (!forceJpeg && !dataUrl.startsWith("data:image/webp")) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+        dataUrl = canvas.toDataURL("image/jpeg", 0.94);
       }
       await onCropped(dataUrl);
     } catch (e: any) {

@@ -216,7 +216,12 @@ export function HeroSlider() {
       <div className="absolute inset-0 tron-spotlight pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-shaft pointer-events-none" aria-hidden="true" />
       <div className="absolute inset-0 tron-grid opacity-[0.08] pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/72 via-black/8 to-transparent md:from-black/82 md:via-black/12 pointer-events-none" />
+      {/* Bottom CTA-readability gradient: top transparent → mid soft
+          tint (~25%) → bottom dark for caption legibility. Mid is
+          deliberately dialled to ~25% (per task spec) so the centre
+          of the frame retains photo clarity while the bottom 30%
+          stays dark enough for the headline + CTAs to read. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/22 to-transparent md:from-black/86 md:via-black/25 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent md:from-black/45 pointer-events-none" />
       <div className="absolute inset-0 tron-vignette opacity-55 pointer-events-none" />
       <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam pointer-events-none" />

@@ -427,11 +427,27 @@
 
 /* Hero image enhancement — STATIC CSS filter that bakes once into the
    GPU layer at compositing time. This is what makes the subject pop
-   without looking washed-out. Values intentionally subtle: anything
-   above ~1.10 starts to look unnatural on real photos. */
+   without looking washed-out. Values are at the upper end of what
+   still looks natural on real photographs (above ~1.12 you start to
+   see clipped highlights and over-saturated skin tones). */
 .hero-img {
-  filter: contrast(1.06) brightness(1.05) saturate(1.07);
+  filter: contrast(1.10) brightness(1.08) saturate(1.10);
   will-change: transform;
+}
+
+/* Cyan TRON rim light around the hero — soft inset cyan halo on the
+   edges that reinforces the cinematic "powered-up frame" look. Pure
+   pseudo-element, pointer-events:none, no animation, no blend mode —
+   so it adds zero per-frame cost. */
+.hero-isolate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 60px hsl(195 100% 60% / 0.10),
+    inset 0 0 140px hsl(195 100% 55% / 0.06);
+  z-index: 5;
 }
 
 /* Slow Ken Burns — pure GPU transform (scale + translate), no filter
