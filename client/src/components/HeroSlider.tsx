@@ -92,9 +92,16 @@ export function HeroSlider() {
   // discrete scroll event (e.g. a tap-to-top, wheel notch, or anchor
   // jump). React's setState bail-out handles the duplicate calls for
   // free, so we just call setIsScrolling(true) every event.
+  //
+  // We DO NOT gate this listener on `reduced` either: the Ken Burns
+  // CSS rule that consumes `data-scrolling` is itself already gated
+  // by `(prefers-reduced-motion: no-preference)` in index.css, so
+  // toggling the attribute for reduced-motion users is a free no-op
+  // visually. Gating here used to skip attaching the listener in
+  // automated browsers (Playwright defaults to `prefers-reduced-motion:
+  // reduce`), which broke the contract under test.
   const scrollTimerRef = useRef<number | null>(null);
   useEffect(() => {
-    if (reduced) return;
     const onScroll = () => {
       setIsScrolling(true);
       if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
@@ -108,7 +115,7 @@ export function HeroSlider() {
       window.removeEventListener("scroll", onScroll);
       if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
     };
-  }, [reduced]);
+  }, []);
 
   // Three world-class brand-pillar copy variants from i18n. Per-image
   // admin copy on a HeroImage row OVERRIDES the variant for that
