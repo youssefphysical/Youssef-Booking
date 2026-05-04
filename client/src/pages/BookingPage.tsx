@@ -136,8 +136,16 @@ export default function BookingPage() {
 
   const lang = (typeof window !== "undefined" && (localStorage.getItem("lang") || "en")) || "en";
 
+  // Defense-in-depth: in addition to slots being disabled in the grid, never
+  // allow the bottom CTA / confirmation modal to open if the selected slot is
+  // not currently 'available' (e.g. a slot that became too-soon between picks).
+  const selectedSlotAvailable =
+    !!selectedSlot && (slotState[selectedSlot] ?? "available") === "available";
   const canContinue =
-    !!date && !!selectedSlot && (isAdmin || (!!sessionFocus && !!trainingGoal));
+    !!date &&
+    !!selectedSlot &&
+    (isAdmin || selectedSlotAvailable) &&
+    (isAdmin || (!!sessionFocus && !!trainingGoal));
 
   const handleBook = () => {
     if (!date || !selectedSlot || !user) {
@@ -526,13 +534,16 @@ export default function BookingPage() {
 
           <div className="flex gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs leading-relaxed">
             <ShieldAlert className="text-amber-400 shrink-0 mt-0.5" size={16} />
-            <p className="text-amber-100/80">
-              {t("booking.cancellationWarningBefore")}{" "}
-              <span className="font-bold">
-                {t("booking.cancellationWarningHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
-              </span>{" "}
-              {t("booking.cancellationWarningAfter")}
-            </p>
+            <div className="text-amber-100/80 space-y-1.5">
+              <p>{t("booking.advanceRule")}</p>
+              <p>
+                {t("booking.cancellationWarningBefore")}{" "}
+                <span className="font-bold">
+                  {t("booking.cancellationWarningHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
+                </span>{" "}
+                {t("booking.cancellationWarningAfter")}
+              </p>
+            </div>
           </div>
 
           <label className="flex items-start gap-3 mt-4 cursor-pointer">
