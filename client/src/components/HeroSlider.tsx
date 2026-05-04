@@ -84,11 +84,19 @@ export function HeroSlider() {
   // the same time. Pausing for the duration of the scroll, then
   // resuming 140ms after the last scroll event, makes the hero feel
   // both alive AND silky to scroll past.
+  //
+  // IMPORTANT: this effect MUST NOT depend on `isScrolling`. If it did,
+  // every state flip would tear down the listener AND clear the
+  // pending revert-timer in the cleanup — which would leave the hero
+  // permanently stuck in `data-scrolling="true"` after a single
+  // discrete scroll event (e.g. a tap-to-top, wheel notch, or anchor
+  // jump). React's setState bail-out handles the duplicate calls for
+  // free, so we just call setIsScrolling(true) every event.
   const scrollTimerRef = useRef<number | null>(null);
   useEffect(() => {
     if (reduced) return;
     const onScroll = () => {
-      if (!isScrolling) setIsScrolling(true);
+      setIsScrolling(true);
       if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
       scrollTimerRef.current = window.setTimeout(
         () => setIsScrolling(false),
@@ -100,7 +108,7 @@ export function HeroSlider() {
       window.removeEventListener("scroll", onScroll);
       if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
     };
-  }, [reduced, isScrolling]);
+  }, [reduced]);
 
   // Three world-class brand-pillar copy variants from i18n. Per-image
   // admin copy on a HeroImage row OVERRIDES the variant for that
