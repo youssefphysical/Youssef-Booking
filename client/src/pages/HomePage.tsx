@@ -64,6 +64,20 @@ const CERT_KEYS = [
 export default function HomePage() {
   const { data: settings } = useSettings();
   const { t, lang } = useTranslation();
+  // ONE SOURCE OF TRUTH for the About bio (v8.3 stable-text fix).
+  // Previously the fallback (`t("home.bio.fallback")`) was rendered at
+  // t=0 (while useSettings was loading) and then swapped to the admin-
+  // configured `settings.profileBio` at t≈150ms once the API resolved
+  // — but the two texts are different copy, so the user saw the bio
+  // text VISIBLY CHANGE after refresh. We can't unify both strings
+  // (admin must be free to edit profileBio independently), so per
+  // spec we render a neutral skeleton until settings is known, then
+  // render the real bio exactly once. After that point the text never
+  // changes for the lifetime of this page (settings has staleTime:
+  // Infinity from the global queryClient). `bio` itself is derived
+  // ONLY from resolved data — it is not consulted before
+  // `settingsResolved` is true.
+  const settingsResolved = settings !== undefined;
   const bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback");
 
   return (
@@ -185,9 +199,27 @@ export default function HomePage() {
           eyebrow={t("section.about.eyebrow")}
           title={t("section.about.title")}
         />
-        <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
-          {bio}
-        </p>
+        {/* v8.3 stable-text fix: render skeleton until settings resolves,
+            then render the real bio exactly once. This prevents the
+            visible text-swap that previously occurred when the i18n
+            fallback paint was replaced by a different admin-configured
+            profileBio after the API resolved. */}
+        {settingsResolved ? (
+          <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
+            {bio}
+          </p>
+        ) : (
+          <div
+            className="space-y-2.5"
+            aria-hidden="true"
+            data-testid="text-bio-skeleton"
+          >
+            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-full" />
+            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[96%]" />
+            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[88%]" />
+            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[72%]" />
+          </div>
+        )}
         <p className="text-base text-muted-foreground/85 leading-relaxed mt-6">
           {t("section.about.extra")}
         </p>

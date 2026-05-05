@@ -56,6 +56,23 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.3 Micro-Fix "Desktop Auth Label + About Bio Stable Text" (May 2026)
+Per the user-supplied "FINAL MICRO FIX ONLY — DESKTOP AUTH LABEL + ABOUT TEXT HYDRATION" spec. Two narrow surgical fixes; nothing else touched.
+
+**Bug 1 — Desktop auth label flips Sign In → Sign Out on refresh:**
+- Root cause: `Navigation.tsx` used `const isAuthenticated = Boolean(user)`. For valid `UserResponse` objects this is correct, but it would also be `true` for any pathological cache state (empty `{}`, malformed error payload, stale partial cached object missing identifier fields).
+- Fix: strict identifier check — `Boolean(user && (user.id || user.email))`. For every legitimate UserResponse (id always present per `users.id = serial("id").primaryKey()` in schema) this is a no-op; for any pathological data shape it correctly stays Sign In.
+- Mobile shares the same `isAuthenticated` gate (used by `button-mobile-logout` rendering at Navigation.tsx:310), so the same defensive hardening applies to mobile menu's logout button without any mobile-specific changes.
+- Mobile static Sign In pill (`data-testid="link-signin"`) at Navigation.tsx:245-258 is rendered UNCONDITIONALLY (`md:hidden` only) per long-standing mobile UX directive, so it's structurally untouched by this change.
+
+**Bug 2 — About bio text changes after refresh:**
+- Root cause: `HomePage.tsx` rendered `bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback")` immediately. At t=0 `settings` is undefined → falls through to i18n fallback ("Youssef Ahmed is a certified personal trainer..."). At t≈150ms `useSettings` resolves with admin-configured `profileBio` ("Youssef Ahmed provides premium personal training services..."). Two different strings → user sees text visibly swap after refresh.
+- Fix: render a neutral 4-line skeleton placeholder (`text-bio-skeleton`) until `settings !== undefined`, then render the real bio exactly once. After settings resolves, the text is stable for the lifetime of the page (global queryClient `staleTime: Infinity`).
+- The other About paragraph (`t("section.about.extra")`) is pure i18n and was already stable; left untouched.
+- ONE source of truth preserved: admin's `settings.profileBio` if set (English only), else i18n fallback. No new i18n keys added; existing 10-language `home.bio.fallback` parity verified intact (10 occurrences in translations.ts).
+
+**Files changed**: only `client/src/components/Navigation.tsx` (line 72 strict isAuthenticated check + comment) and `client/src/pages/HomePage.tsx` (line 83 settingsResolved guard + lines 199-229 skeleton-or-bio conditional). NO changes to: hero (v8.2 textKey logic intact), hero images, booking, admin, database schema, APIs, sessions, packages, email system, mobile Sign In pill, fonts, layout, animations.
+
 ### Hero v8.2 "No Double-Replay on Refresh" (May 2026, supersedes v8.1)
 Per the user-supplied "FIX HERO TEXT DOUBLE-REPLAY ON REFRESH ONLY" spec, the AnimatePresence child key is switched from slide *identity* (`${copyIndex}-${current?.id ?? "default"}`) to *content* (`${badge}|${headline}|${subhead}`). **Only the AnimatePresence keying logic changed** — every v8.1 + v8 stabilization is preserved (mask reveal, no shadow/glow, mode="wait", buttons hoisted, no per-char state).
 

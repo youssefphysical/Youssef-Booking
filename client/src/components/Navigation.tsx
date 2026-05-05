@@ -55,8 +55,19 @@ export function Navigation() {
   //   • `if (!user) return null`
   //   • `if (isLoading) return null`
   //   • Any branch that renders neither Sign-In nor authenticated CTAs.
-  const isAuthenticated = Boolean(user);
-  const isGuest = !authLoading && !user;
+  //
+  // STRICT v8.3 hardening (May 2026 — fix for "Sign In flips to Sign
+  // Out on desktop refresh even when not logged in"):
+  // `Boolean(user)` would have been `true` for ANY truthy value the
+  // query cache might surface — including a malformed empty `{}`,
+  // a non-user shaped error payload, or a stale cached object from a
+  // previous session that lost its id/email fields. The strict check
+  // requires both `user` to be truthy AND to carry a real identifier
+  // (id or email). For every legitimate `UserResponse` from the
+  // server this is a no-op (`id` is always present); for any
+  // pathological cache state it correctly stays Sign In.
+  const isAuthenticated = Boolean(user && (user.id || user.email));
+  const isGuest = !authLoading && !isAuthenticated;
   const shouldShowSignIn = !isAuthenticated;
 
   const isAdmin = user?.role === "admin";
