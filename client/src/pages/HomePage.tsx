@@ -99,13 +99,13 @@ export default function HomePage() {
   // public homepage from that source.)
   const bio = t("home.bio.fallback");
 
+  // v8.8 (May-2026): the parent div now carries `.homepage-shell`,
+  // which applies ONE continuous page-level background (radial accent
+  // + 4-stop dark navy linear gradient — see index.css) so that every
+  // section below sits on the same dark surface. Eliminates visible
+  // bands between hero, Youssef Ahmed, About, and other sections per
+  // the "UNIFY HOMEPAGE BACKGROUND SECTIONS" spec.
   return (
-    {/* v8.8 (May-2026): added .homepage-shell class to apply ONE
-        continuous page-level background (radial accent + 4-stop dark
-        navy linear gradient — see index.css) so that every section
-        below sits on the same dark surface. Eliminates visible bands
-        between hero, Youssef Ahmed, About, and other sections per
-        the "UNIFY HOMEPAGE BACKGROUND SECTIONS" spec. */}
     <div className="min-h-screen pt-16 homepage-shell">
       {/* ADMIN HERO IMAGE SLIDER (full-width, only renders when admin has uploaded slides) */}
       <HeroSlider />
