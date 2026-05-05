@@ -464,6 +464,56 @@
   transform: translateZ(0);
 }
 
+/* HERO → SECTION BOTTOM FADE (v8.5 micro design polish, May-2026).
+   ====================================================================
+   A short premium gradient that softens the bottom edge of the hero
+   image so it blends into the dark-blue section below — no hard line
+   between the photo and the next section. Lives INSIDE the hero
+   container only (added as a sibling overlay in HeroSlider.tsx) so
+   it cannot affect the next section's height or paint cost.
+
+   Per spec literal:
+     - height: clamp(70px, 9vh, 120px)  — short, never tall.
+     - z-index: 3                        — above images (no z), below
+                                           the copy overlay (z-10),
+                                           below the buttons & badge.
+                                           So it never dims headline,
+                                           subhead, badge, or CTAs.
+     - pointer-events: none              — purely decorative; never
+                                           steals clicks from CTAs.
+     - bottom gradient stops             — alpha ramps 0 → 0.35 → 0.95
+                                           against rgba(5,22,40) which
+                                           matches the dark-blue band
+                                           that starts the section
+                                           below the hero. Bottom 95%
+                                           alpha (not 100%) keeps the
+                                           transition optically soft
+                                           without producing a visible
+                                           hard band against the
+                                           section.
+   No blur (spec: "do NOT use heavy blur"; the optional 3px blur is
+   intentionally SKIPPED for max performance — no backdrop-filter
+   compositing cost, especially on mid-range Android).
+   No animation. Promoted onto its own GPU layer with translateZ(0)
+   so the gradient is rasterised once and stays on the compositor —
+   no per-frame paint work during scroll. */
+.hero-bottom-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(70px, 9vh, 120px);
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(3, 14, 26, 0.35) 55%,
+    rgba(5, 22, 40, 0.95) 100%
+  );
+  transform: translateZ(0);
+}
+
 /* Hero image enhancement — STATIC CSS filter that bakes once into the
    GPU layer at compositing time. The hue-rotate(-6deg) shifts skin
    and ambient warm light very slightly toward cyan, which is the

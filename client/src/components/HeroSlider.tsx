@@ -296,6 +296,17 @@ export function HeroSlider() {
         </div>
       )}
 
+      {/* BOTTOM-EDGE FADE (v8.5 micro design polish, May-2026).
+          A short premium gradient layer that softens the seam between
+          the hero photo and the dark-blue section below. Sits at z-3,
+          which is ABOVE the image layers (no z-index → 0) and BELOW
+          the copy overlay (z-10) so it CAN'T dim the badge/headline/
+          subhead/CTAs. pointer-events:none so it can't intercept
+          clicks. Height is clamp(70px, 9vh, 120px) — short, mobile-
+          first. See `.hero-bottom-fade` in index.css for the full
+          rationale. */}
+      <div className="hero-bottom-fade" aria-hidden="true" data-testid="hero-bottom-fade" />
+
       {/* OVERLAY COPY — v8 simple stable fade.
           ====================================================================
           Layout strategy:

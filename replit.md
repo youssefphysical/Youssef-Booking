@@ -56,6 +56,22 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.5 Micro Design Polish "Hero-to-Section Bottom Fade" (May 2026)
+Per the user-supplied "MICRO DESIGN POLISH ONLY — SHORT HERO-TO-SECTION FADE" spec. Single, additive design polish — nothing else touched.
+
+**What was added**: a single short bottom gradient overlay inside the hero container that softens the seam between the bottom of the hero image and the dark-blue section below. No hard line, no long dark overlay, no blur over headline / buttons / content, no layout movement.
+
+- **CSS** (`client/src/index.css`, after `.hero-isolate`): new `.hero-bottom-fade` class with the spec's exact values:
+  - `height: clamp(70px, 9vh, 120px)` — short and viewport-aware
+  - `z-index: 3` — above images (no z), below the copy overlay (`z-10`) so it cannot dim badge / headline / subhead / CTAs
+  - `pointer-events: none` — purely decorative
+  - `background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(3,14,26,0.35) 55%, rgba(5,22,40,0.95) 100%)` — alpha ramps softly into the dark-blue band that starts the section below
+  - `transform: translateZ(0)` — promoted onto its own GPU compositor layer; rasterised once, no per-frame paint cost
+- **Component** (`client/src/components/HeroSlider.tsx`): single line added inside the `.hero-isolate` container, after the image layers, before the copy overlay div: `<div className="hero-bottom-fade" aria-hidden="true" data-testid="hero-bottom-fade" />`. No other changes to HeroSlider — image loading, slide layer, copy layer, AnimatePresence, textKey, buttons, all v8.x animation timings completely untouched.
+- **Blur**: SKIPPED. Spec marked the optional `backdrop-filter: blur(3px)` as "Optional only if performance remains perfect" with a hard "do NOT use heavy blur" rule. Skipping blur entirely is the safest path — no compositing cost on mid-range Android, no risk of fuzziness over edge cases.
+
+**Files changed**: `client/src/index.css` (added `.hero-bottom-fade` block), `client/src/components/HeroSlider.tsx` (added one decorative div), `replit.md`. NO changes to: hero text, hero animation, hero image loading, slider, CTA buttons, About text, i18n logic, auth, Sign In/Sign Out, booking, admin, APIs, database.
+
 ### v8.4 Micro-Fix "Confirmed-User Gate + Instant Bio Render" (May 2026)
 Per the user-supplied "FINAL MICRO FIX — DESKTOP AUTH STILL WRONG + ABOUT TEXT INSTANT RENDER" spec. Two narrow surgical fixes; nothing else touched.
 
