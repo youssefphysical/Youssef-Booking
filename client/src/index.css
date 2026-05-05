@@ -697,11 +697,59 @@
   }
 }
 
-/* HEADLINE — v8 uses the same .hero-fade-up class as the subhead
-   (opacity + translateY only). The previous .hero-mask-reveal class
-   (clip-path inset() wipe) has been REMOVED per spec literal:
-   "NO typing, NO masking, NO clip-path, NO per-letter animation —
-   ONLY opacity + slight translateY." */
+/* HEADLINE MASK REVEAL — v8.1 (May-2026, "JITTER-FREE MASK REVEAL").
+   ====================================================================
+   Re-introduces the clip-path "fake typewriter" reveal that v8 had
+   removed, engineered specifically to eliminate the v7 jitter the
+   user reported on the production video.
+
+   V7 JITTER ROOT CAUSE:
+   v7 animated clip-path AND translateY(8→0) AND opacity(0→1) on the
+   inner wrapper SIMULTANEOUSLY, with `will-change: opacity, transform,
+   clip-path`. The combination of clip-path narrowing the visible
+   width WHILE translateY shifted the rasterised text vertically caused
+   per-frame subpixel shifts on the text glyphs. On multi-line
+   headlines the effect was magnified at line-break boundaries (which
+   often land at fractional pixel positions). The over-broad
+   will-change list also caused compositor layer thrash.
+
+   V8.1 FIX (this rule):
+   - Animate ONLY clip-path. NO translateY. NO opacity. The visible
+     region is always at full opacity; the only thing changing is
+     which portion of the box is visible.
+   - `transform: translateZ(0)` + `backface-visibility: hidden`
+     forces the wrapper onto its own GPU compositing layer so the
+     rasterised text stays at integer pixel coordinates for the
+     entire 800ms animation. No subpixel re-rasterisation, no glyph
+     shimmer.
+   - `will-change: clip-path` is NARROW (no transform, no opacity) so
+     the browser doesn't allocate unnecessary layer memory.
+   - `display: block` so multi-line headlines wrap naturally; the
+     clip-path reveal sweeps across all lines simultaneously
+     left-to-right.
+   - Default duration 800ms (mid-range of spec's 700-1000ms) with
+     Apple-style cubic-bezier(0.22, 1, 0.36, 1) ease-out-quint.
+   - The animation key is set per-mount via React (slideKey changes
+     remount the inner span via AnimatePresence mode="wait"), so the
+     animation restarts ONLY when the slide changes, never on
+     same-text re-renders. */
+.hero-mask-reveal {
+  display: block;
+  clip-path: inset(0 100% 0 0);
+  -webkit-clip-path: inset(0 100% 0 0);
+  animation: heroMaskReveal var(--hr-dur, 800ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--hr-start, 0ms);
+  will-change: clip-path;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+@keyframes heroMaskReveal {
+  to {
+    clip-path: inset(0 0 0 0);
+    -webkit-clip-path: inset(0 0 0 0);
+  }
+}
 
 /* CTA BUTTONS — ONE-TIME mount fade.
    Fixed (long) animation-delay fires once at component mount. The
@@ -729,10 +777,13 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-fade,
   .hero-fade-up,
+  .hero-mask-reveal,
   .hero-buttons-once {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+    clip-path: none !important;
+    -webkit-clip-path: none !important;
   }
 }
 

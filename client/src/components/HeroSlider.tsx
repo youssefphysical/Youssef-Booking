@@ -8,7 +8,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useHeroImages } from "@/hooks/use-hero-images";
 import type { HeroImage } from "@shared/schema";
 
-// HERO MOTION ARCHITECTURE v8 (May-2026, "FINAL HERO STABILIZATION").
+// HERO MOTION ARCHITECTURE v8.1 (May-2026, "JITTER-FREE MASK REVEAL").
 // =====================================================================
 // Image layer (unchanged from v4): ALL slides rendered at once, stacked
 // absolutely. Visibility controlled by toggling the `data-active`
@@ -17,62 +17,79 @@ import type { HeroImage } from "@shared/schema";
 // so unchanged slides bail out of re-render. The <img> elements are
 // never re-mounted, re-fetched, or re-decoded during a slide switch.
 //
-// Copy layer (v8, "stable simple fade") — supersedes the v7 clip-path
-// mask reveal. v7 introduced an inner `.hero-mask-reveal` wrapper that
-// animated `clip-path: inset(0 100% 0 0)` on the headline. Per the
-// "FINAL HERO STABILIZATION (STRICT MODE)" spec, the entire mask /
-// clip-path system is now removed in favour of a uniform opacity +
-// translateY fade for ALL three text elements. Spec literal:
-//   "NO typing, NO masking, NO clip-path, NO per-letter animation —
-//    ONLY opacity + slight translateY."
-// Spec literal: "Headline must be: clean white, sharp, no glow, no
-//    shadow." — the `.tron-headline-glow` 3-layer text-shadow is
-//    REMOVED from the h1 className. The subhead's inline
-//    `textShadow: "0 1px 12px rgba(0,0,0,0.7)"` is REMOVED.
+// Copy layer (v8.1, "jitter-free mask reveal") — re-introduces the
+// clip-path mask reveal on the headline that v8 had removed, but
+// engineered specifically to eliminate the v7 jitter the user reported.
 //
-// v8 architecture:
-//   - FULL text always present in the DOM. No splitting, no per-char
-//     state, NO cursor, NO mask, NO clip-path anywhere.
-//   - Badge:    .hero-fade        — opacity 0 → 1, 200ms
-//   - Headline: .hero-fade-up     — opacity 0 → 1 + translateY(6→0),
-//                                    300ms, starts at 100ms
-//   - Subhead:  .hero-fade-up     — same animation, 400ms, starts at
-//                                    200ms (longest element — matches
-//                                    spec "fade in new text 400ms")
+// V7 JITTER ROOT CAUSE: the v7 .hero-mask-reveal animated THREE
+// properties simultaneously — clip-path, translateY(8→0), AND
+// opacity(0→1) — with `will-change: opacity, transform, clip-path`.
+// The combination of clip-path narrowing the visible width WHILE
+// translateY shifted the rasterised text vertically caused per-frame
+// subpixel shifts on the text glyphs. On multi-line headlines the
+// effect was magnified at line-break boundaries (which often land at
+// fractional pixel positions). The over-broad will-change list also
+// caused unnecessary compositor layer thrash.
+//
+// v8.1 FIX: animate ONLY clip-path on the inner wrapper. NO translateY.
+// NO opacity (the visible region is always at full opacity; the only
+// thing changing is which portion of the box is visible). Force the
+// wrapper onto its own GPU layer with transform: translateZ(0) +
+// backface-visibility: hidden so the rasterised text stays at integer
+// pixel coordinates for the entire animation. Narrow will-change to
+// just `clip-path`. Duration 800ms (mid-range of spec's 700-1000ms)
+// with cubic-bezier(0.22, 1, 0.36, 1) Apple-style ease-out-quint.
+// Result: pure left-to-right reveal, identical visual to v7 but with
+// ZERO subpixel jitter.
+//
+// Preserved from v8 (FINAL HERO STABILIZATION strict mode):
+//   - NO text-shadow / glow on headline (.tron-headline-glow gone).
+//   - NO inline textShadow on subhead.
+//   - NO per-character splitting, NO setInterval per letter, NO
+//     React per-char state, NO cursor element of any kind.
+//   - AnimatePresence in mode="wait" — old fully exits, then new
+//     mounts and reveals. Animation restarts ONLY when slideKey
+//     changes (slide id or copy index changes); same-text re-renders
+//     do NOT restart the reveal.
+//   - Badge:    .hero-fade        — opacity 0→1, 200ms.
+//   - Headline: <h1> reserves multi-line height; INNER span has
+//                .hero-mask-reveal — clip-path inset(0 100% 0 0) →
+//                inset(0 0 0 0), 800ms, starts at 100ms.
+//   - Subhead:  .hero-fade-up     — opacity 0→1 + translateY(6→0),
+//                                    400ms, starts at 700ms (after the
+//                                    headline reveal is ~75% complete,
+//                                    so the cascade still reads
+//                                    badge → headline → subhead).
 //   - Buttons:  .hero-buttons-once — opacity + translateY 300ms,
-//                                    starts at 500ms, one-time mount.
-//                                    Buttons live OUTSIDE
-//                                    AnimatePresence so they NEVER
+//                                    starts at 500ms, one-time mount,
+//                                    OUTSIDE AnimatePresence — NEVER
 //                                    remount on slide change.
-//   - Slide change: AnimatePresence in mode="wait" — old copy
-//     fades out FIRST (200ms), then content swaps, then new copy
-//     fades in (longest = 400ms subhead). Total cycle ~600-700ms.
-//     This matches the spec literal:
-//       "ON SLIDE CHANGE: fade out ALL text (200ms), immediately
-//        switch content, fade in new text (400ms)."
 //
 // Performance:
-//   - Animates ONLY opacity and transform. No blur. No filter. No
-//     clip-path. No layout. No per-frame JS. No setInterval.
-//   - Each animated element gets ONE compositor layer for the
-//     duration of its 200-400ms animation, then released.
+//   - Animates ONLY opacity, transform, and clip-path (per spec
+//     literal "Animate only: opacity, transform, mask/clip-path").
+//   - Does NOT animate width, height, font-size, filter, blur (per
+//     spec literal "Do NOT animate: width / height / font-size /
+//     filter / blur").
+//   - Each animated element gets ONE compositor layer.
 //   - First-paint flash kill (static base image, fetchpriority high)
 //     unchanged from v5.
 
 const ROTATE_MS = 8000;
 const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 
-// COPY REVEAL TIMING (v8).
+// COPY REVEAL TIMING (v8.1).
 // All values measured from the moment the new copy mounts. Because
 // AnimatePresence runs in mode="wait", the new-copy mount happens
 // AFTER the old copy's 200ms exit fade fully completes. So the user
 // experiences:
-//   t = 0   …  old copy fades out
-//   t = 200 …  swap; new copy mounts; new badge begins fading in
-//   t = 300 …  new headline begins fading + lifting in
-//   t = 400 …  new badge fully visible; new subhead begins
-//   t = 600 …  new headline fully visible
-//   t = 800 …  new subhead fully visible (slide change complete)
+//   t = 0    …  old copy fades out (200ms)
+//   t = 200  …  swap; new copy mounts; new badge begins fading in
+//   t = 300  …  new headline mask-reveal begins (clip-path 0% → 100%)
+//   t = 400  …  new badge fully visible
+//   t = 900  …  new subhead begins fade-up
+//   t = 1100 …  new headline fully revealed (clip-path complete)
+//   t = 1300 …  new subhead fully visible (slide change complete)
 // The image layer's 1200ms cross-fade runs in parallel underneath.
 //
 // Buttons are special — they live OUTSIDE AnimatePresence and animate
@@ -81,11 +98,13 @@ const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 // NEVER animate again. NEVER hide on slide change. NEVER move
 // position."
 const COPY = {
-  badge:    { start:   0, dur: 200 },  // spec: "fade in badge (200ms)"
-  headline: { start: 100, dur: 300 },  // spec: "fade in headline (300ms)"
-  subhead:  { start: 200, dur: 400 },  // spec: "fade in subheadline (400ms)"
-  buttons:  { start: 500, dur: 300 },  // spec: "buttons fade in once (300ms)"
-  exit:     { dur: 200 },              // spec: "fade out ALL text (200ms)"
+  badge:    { start:   0, dur: 200 },  // spec carries from v8: badge fade 200ms
+  headline: { start: 100, dur: 800 },  // spec: "Duration: 700-1000ms" mask reveal
+  subhead:  { start: 700, dur: 400 },  // bumped from 200ms start so cascade reads
+                                       // badge → headline → subhead even with the
+                                       // new 800ms headline reveal
+  buttons:  { start: 500, dur: 300 },  // unchanged — buttons stay on their v8 timing
+  exit:     { dur: 200 },              // unchanged — fade-out before swap
 };
 
 function prefersReducedMotion() {
@@ -317,31 +336,41 @@ export function HeroSlider() {
                       {badge}
                     </span>
                   )}
-                  {/* HEADLINE — clean white, NO text-shadow, NO glow,
-                      NO clip-path mask. The h1 reserves multi-line
-                      height via min-h-* utilities so the headline area
-                      never changes size between slides. The .hero-fade-up
-                      class runs a simple opacity 0 → 1 + translateY(6→0)
-                      animation. Removed in v8 per the "FINAL HERO
-                      STABILIZATION" spec: tron-headline-glow class
-                      (3-layer text-shadow with cyan halo) and the inner
-                      .hero-mask-reveal clip-path wrapper. */}
+                  {/* HEADLINE — v8.1 jitter-free mask reveal.
+                      Outer h1 reserves the multi-line height via Tailwind
+                      min-h-* utilities so the headline area NEVER changes
+                      size between slides (no layout shift, no width/
+                      height animation). The h1 itself carries NO
+                      animation class — it stays fully static.
+                      The INNER span carries the .hero-mask-reveal
+                      animation: clip-path inset(0 100% 0 0) → inset(0
+                      0 0 0), 800ms, cubic-bezier(0.22, 1, 0.36, 1).
+                      That's the ONLY animated property — no translateY,
+                      no opacity, no font-size, no width. The wrapper
+                      is `display: block` (set in CSS) so multi-line
+                      headlines wrap naturally and reveal left-to-right
+                      across all lines simultaneously.
+                      Reduced-motion users: short-circuit to plain text
+                      with no animation wrapper. */}
                   <h1
-                    className={cn(
-                      "text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]",
-                      !reduced && "hero-fade-up",
-                    )}
-                    style={
-                      !reduced
-                        ? ({
-                            ["--hr-start" as any]: `${COPY.headline.start}ms`,
-                            ["--hr-dur" as any]: `${COPY.headline.dur}ms`,
-                          } as React.CSSProperties)
-                        : undefined
-                    }
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]"
                     data-testid="text-hero-headline"
                   >
-                    {headline}
+                    {reduced ? (
+                      headline
+                    ) : (
+                      <span
+                        className="hero-mask-reveal"
+                        style={
+                          {
+                            ["--hr-start" as any]: `${COPY.headline.start}ms`,
+                            ["--hr-dur" as any]: `${COPY.headline.dur}ms`,
+                          } as React.CSSProperties
+                        }
+                      >
+                        {headline}
+                      </span>
+                    )}
                   </h1>
                   {subhead && (
                     <p

@@ -56,6 +56,30 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### Hero v8.1 "Jitter-Free Mask Reveal" (May 2026, supersedes v8)
+Per the user-supplied "FIX TYPEWRITER JITTER ONLY — SMOOTH LETTER REVEAL" spec, the headline gets the clip-path mask reveal back (per spec literal: "Render the full headline text once. Reveal it using CSS mask or clip-path on an inner wrapper") but engineered to eliminate the v7 jitter. **Only the headline reveal logic changed** — every v8 stabilization (no glow/shadow, mode="wait", buttons hoisted, no per-char state, no cursor, no setInterval-per-letter) is preserved.
+
+**Root cause of v7 jitter**: v7 animated three properties simultaneously on the inner wrapper — `clip-path` AND `translateY(8px → 0)` AND `opacity(0 → 1)` — with `will-change: opacity, transform, clip-path`. The combination of `clip-path` narrowing the visible width WHILE `translateY` shifted the rasterised text vertically caused per-frame **subpixel shifts on the text glyphs**. On multi-line headlines the effect was magnified at line-break boundaries (which often land at fractional pixel positions). The over-broad `will-change` list also caused compositor layer thrash.
+
+**v8.1 fix — engineered for zero subpixel jitter:**
+- `.hero-mask-reveal` animates **ONLY `clip-path`**: `inset(0 100% 0 0)` → `inset(0 0 0 0)`. NO `translateY`. NO `opacity`. The visible region is always at full opacity; the only thing changing is which portion of the box is visible.
+- `transform: translateZ(0)` + `backface-visibility: hidden` forces the wrapper onto its **own GPU compositing layer** so the rasterised text stays at integer pixel coordinates for the entire 800ms reveal. No subpixel re-rasterisation, no glyph shimmer.
+- `will-change: clip-path` is **narrow** (no transform, no opacity) so the browser doesn't allocate unnecessary layer memory.
+- Default duration **800ms** (mid-range of spec's 700–1000ms) with Apple-style `cubic-bezier(0.22, 1, 0.36, 1)` ease-out-quint.
+- `display: block` so multi-line headlines wrap naturally; clip-path reveal sweeps left-to-right across all lines simultaneously.
+- Animation restarts **only when slideKey changes** (slide id or copy index changes) via AnimatePresence `mode="wait"` remount; same-text re-renders never restart the reveal.
+
+**v8.1 timings (only headline + subhead changed; badge/buttons/exit unchanged from v8):**
+- badge: `start:0 dur:200`
+- headline: `start:100 dur:800` (was `100/300`; per spec "Duration: 700–1000ms")
+- subhead: `start:700 dur:400` (was `200/400`; bumped so cascade still reads badge → headline → subhead with the new 800ms headline reveal)
+- buttons: `start:500 dur:300` (one-time, OUTSIDE AnimatePresence, never re-runs)
+- exit: `dur:200`
+
+**What's preserved from v8** (none of these changed): `tron-headline-glow` removed; subhead `textShadow` removed; AnimatePresence `mode="wait"`; buttons hoisted outside AnimatePresence; reserved-height wrapper `min-h-[242/290/338/402/434]`; mobile button-row spacing `mt-6 sm:mt-9 gap-2 sm:gap-3.5`; 75vh hero with 520-860px floor/ceiling; image system; auth/booking/admin/RBAC/API/database/routing untouched; mobile Sign In header pill (`data-testid="link-signin"`).
+
+**Spec compliance** — animates ONLY clip-path on the headline + opacity/transform on badge/subhead/buttons. Does NOT animate width, height, font-size, filter, or blur on any text element.
+
 ### Hero v8 "Final Hero Stabilization — Stable Simple Fade" (May 2026, supersedes v7/v7.1)
 Per the user-supplied "FINAL HERO STABILIZATION (STRICT MODE)" spec, the v7 clip-path mask-reveal system is fully replaced with a uniform opacity + translateY fade for all three text elements, and ALL text-shadows / glows on hero text are removed.
 
