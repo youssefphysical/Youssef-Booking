@@ -56,8 +56,11 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
-### Hero v6.3 "Ultimate Fix" (May 2026, commit `d8b6061`, supersedes v6.2)
-Three production-level fixes responding to the user's "ULTIMATE HERO FIX (ZERO BUGS — PRODUCTION LEVEL)" directive. All changes are surgical — zero touches to auth APIs, booking, admin, RBAC, database, image loader, image clarity, or the mobile static Sign-In pill (per the May-2026 invariant). Prod bundles after this fix: `index-GU3iLsKW.js` + `index-DIKQ92Ac.css` on `youssef-booking.vercel.app`.
+### Hero v6.3 "Ultimate Fix" (May 2026, commits `d8b6061` + `fbc51d4`, supersedes v6.2)
+Three production-level fixes responding to the user's "ULTIMATE HERO FIX (ZERO BUGS — PRODUCTION LEVEL)" directive, plus one architect-review follow-up commit. All changes are surgical — zero touches to auth APIs, booking, admin, RBAC, database, image loader, image clarity, or the mobile static Sign-In pill (per the May-2026 invariant). Final prod bundles: `index-FSF5L5yD.js` + `index-DSWjvZNC.css` on `youssef-booking.vercel.app`.
+
+#### Post-architect-review patch (commit `fbc51d4`) — `will-change` hoist
+Architect flagged that putting `will-change: transform, opacity` on every per-char `.hero-reveal` span is the documented compositor-layers anti-pattern (~30 chars × 3 reveal regions ≈ 90 permanently-promoted GPU layers per slide — sustained mobile-GPU memory pressure). Fix in `client/src/index.css`: hoisted `will-change` UP from `.hero-reveal` (per-char) to `.hero-reveal-word` (per-word wrapper). Reduces promoted layer count from ~90 → ~15-20 per slide while preserving the GPU-promotion guarantee — modern browsers still auto-promote each per-char animation for the 200ms it runs (then tear the layer down). End-result animation visually identical, compositor budget safe.
 
 #### Fix 1 — STRICT desktop auth conditional (Navigation.tsx)
 - **Root cause v6.2**: the static "PERMANENT SIGN-IN LINK" stayed in the DOM for desktop authenticated users with only `isAuthenticated && "md:hidden"` hiding it via CSS. The pill was rendered, just invisible — fragile if any future stylesheet override or specificity bug ever leaked through.
