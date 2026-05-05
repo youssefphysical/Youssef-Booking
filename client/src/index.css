@@ -868,25 +868,45 @@
      same-text re-renders. */
 .hero-mask-reveal {
   display: block;
-  clip-path: inset(0 100% 0 0);
-  -webkit-clip-path: inset(0 100% 0 0);
+  /* v9.0.2 (May-2026) — DESCENDER CLIPPING FIX.
+     Previously `clip-path: inset(0 100% 0 0)` start / `inset(0 0 0 0)`
+     end clipped EXACTLY at the element's box edges. Combined with
+     `contain: paint` on the same element, the descender of "g" /
+     "p" / "y" / "j" in headlines like "No Guesswork. Just Progress."
+     was sliced off at the baseline because those glyphs visually
+     extend below the text line-box, while clip-path/contain enforce
+     the box bounds strictly.
+     FIX:
+     - Bottom inset is now `-0.18em` (negative = expand downward by
+       ~18% of the font size, which fully clears the descender region
+       of all standard display fonts including the one used here).
+     - Right inset end is `-0.04em` (tiny bleed so italic/oblique
+       overshoot at the trailing period in "Progress." is never
+       clipped either). The reveal is still visually a clean
+       left-to-right wipe — the extra 4% never produces a visible
+       sliver because the text doesn't extend that far right.
+     - `contain: paint` is REMOVED. It was clipping painted glyphs
+       at the box edges regardless of clip-path. The 800ms reveal
+       is fast enough and small enough that the perf benefit it
+       provided is not worth the descender clipping. */
+  clip-path: inset(0 100% -0.18em 0);
+  -webkit-clip-path: inset(0 100% -0.18em 0);
   animation: heroMaskReveal var(--hr-dur, 800ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--hr-start, 0ms);
   will-change: clip-path;
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* contain: paint — extra repaint isolation on lower-end mobile GPUs.
-     The clipped region paint is fully contained within this element's
-     own bounds, so the browser doesn't need to re-paint anything
-     outside it during the 800ms reveal. Safe addition: doesn't change
-     visual behaviour, only performance. */
-  contain: paint;
+  /* Small bottom padding so the expanded clip-path region has actual
+     paintable space for descenders to render into. 0.08em matches
+     the spec's "padding-bottom: 0.08em" suggestion exactly. */
+  padding-bottom: 0.08em;
+  padding-right: 0.04em;
 }
 @keyframes heroMaskReveal {
   to {
-    clip-path: inset(0 0 0 0);
-    -webkit-clip-path: inset(0 0 0 0);
+    clip-path: inset(0 -0.04em -0.18em 0);
+    -webkit-clip-path: inset(0 -0.04em -0.18em 0);
   }
 }
 
