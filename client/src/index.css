@@ -466,13 +466,19 @@
    (Tron / Blade Runner / Skyfall). Static filters live on the GPU
    compositing layer and do NOT cost per-frame work. */
 .hero-img {
-  /* CLARITY PASS v2 (May-2026, post-overlay-strip).
-     With the decorative TRON layers removed, the image itself is now
-     fully visible — so we can dial the cinematic grade back up to a
-     punchy contrast(1.12) brightness(1.08) without the photo reading
-     as crushed. saturate(1.10) and the small -5° hue-rotate keep the
-     cool cyan grade. Static filter, baked into the GPU layer once. */
-  filter: contrast(1.12) brightness(1.08) saturate(1.10) hue-rotate(-5deg);
+  /* CONSISTENCY-PASS (May-2026, post-load clarity fix).
+     The previous filter was contrast(1.12) brightness(1.08)
+     saturate(1.10) hue-rotate(-5deg) — visibly aggressive grading
+     plus a cyan tint. Combined with the twin-image depth-of-field
+     rig (now removed), the image read as "less clear after load".
+     New filter is the user-specified spec exactly:
+       brightness(1.05) contrast(1.08) saturate(1.05)
+     No hue-rotate. No blur. The static <img src="/hero-initial.webp">
+     and the dynamic admin <img> both pick up this same baseline so
+     they look IDENTICAL on screen — hydration is visually a no-op.
+     Admin per-image brightness/contrast still multiply onto this
+     baseline via the inline `sharpStyle` in HeroSlider.tsx. */
+  filter: brightness(1.05) contrast(1.08) saturate(1.05);
   will-change: transform;
   /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
      but guarantees Chromium/WebKit rasterise the bitmap on its own
@@ -501,13 +507,21 @@
    reads as "soft" rather than "smeared", and the saturation/grade
    eased to keep more of the original photo information visible
    through the masked edges of the sharp foreground. */
-.hero-img-blur {
-  filter: contrast(1.06) brightness(1.02) saturate(1.14) hue-rotate(-7deg) blur(10px);
-  transform: scale(1.08) translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  image-rendering: auto;
+/* CONSISTENCY-PASS (May-2026): .hero-img-blur and .hero-img-mask
+   were the twin-image depth-of-field rig — beautiful but caused the
+   "blur after load" the user reported. The blurred copy painted
+   underneath the radial-masked sharp foreground, and the mask faded
+   to transparent at the corners so the blur bled through visibly.
+   Removing both means hydration produces zero visual change versus
+   the static first paint. Rules kept (empty) so any stale class
+   reference in code is a harmless no-op rather than a 404 in
+   developer tooling. Both rules can be safely deleted in a future
+   pass once we've confirmed nothing else references them. */
+.hero-img-blur { /* intentionally empty — see consistency-pass note */ }
+.hero-img-mask { /* intentionally empty — see consistency-pass note */ }
+.hero-img-blur-deprecated {
+  /* keep the old filter values here as a comment for archaeology */
+  /* filter: contrast(1.06) brightness(1.02) saturate(1.14) hue-rotate(-7deg) blur(10px); */
 }
 
 /* Radial mask on the SHARP foreground copy — clear in the centre
@@ -516,12 +530,7 @@
    CLARITY PASS: widened the fully-opaque centre 32% → 40% and
    pushed the feather start 55% → 62% so the subject area stays
    razor-sharp for noticeably longer before the bokeh takes over. */
-.hero-img-mask {
-  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 50% 50%, #000 40%, rgba(0,0,0,0.88) 62%, transparent 95%);
-  mask-image: radial-gradient(ellipse 70% 75% at 50% 50%, #000 40%, rgba(0,0,0,0.88) 62%, transparent 95%);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
+/* .hero-img-mask removed — see consistency-pass note above. */
 
 /* CLARITY PASS v2 (May-2026): the .hero-subject-glow radial and the
    .hero-isolate::after cyan rim light have been removed. Both were

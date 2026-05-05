@@ -169,26 +169,22 @@ export function HeroSlider() {
   const t_contrast = current?.contrast ?? 1.0;
   const t_overlayOpacity = current?.overlayOpacity ?? 35; // percent
 
-  // Compose admin tuning with the cinematic baseline filter. The CSS
-  // `.hero-img` rule applies contrast(1.12) brightness(1.08) saturate(1.10)
-  // hue-rotate(-5deg) — we MULTIPLY the admin's brightness/contrast onto
-  // that baseline so the photo keeps its movie-poster grade while still
-  // responding to the slider. Inline filter overrides the CSS one, so we
-  // re-state the full chain here. The translateZ(0) at the end of the
-  // transform forces a GPU layer (same hint as `.hero-img` in CSS) so the
-  // inline transform doesn't accidentally drop the layer when the admin
-  // moves a slider.
+  // CONSISTENCY-PASS (May-2026, post-load clarity fix).
+  // The image filter is now intentionally LIGHT and matches the
+  // baseline `.hero-img` CSS rule exactly:
+  //   brightness(1.05) contrast(1.08) saturate(1.05)
+  // No hue-rotate (that was tinting the photo cyan after load and
+  // making it read as "less clear"). No blur copy underneath, no
+  // radial mask on top — the sharp image is the only image. This
+  // means the static <img src="/hero-initial.webp"> on first paint
+  // and the dynamic admin <img> after API hydration get IDENTICAL
+  // visual treatment. No visible "after-load change". Admin per-image
+  // brightness/contrast multiply onto the same baseline so the
+  // sliders still work for fine-tuning. translateZ(0) keeps the
+  // GPU layer pinned during admin slider tweaks.
   const sharpStyle: React.CSSProperties = {
-    filter: `contrast(${(1.12 * t_contrast).toFixed(3)}) brightness(${(1.08 * t_brightness).toFixed(3)}) saturate(1.10) hue-rotate(-5deg)`,
+    filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
     transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
-    transformOrigin: "center",
-    willChange: "transform",
-  };
-  const blurStyle: React.CSSProperties = {
-    // Background bokeh copy gets the same translate/zoom/rotate so the
-    // mask seam never drifts off the subject — but keeps its own
-    // pre-baked blur+saturate filter (defined in .hero-img-blur).
-    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${(t_zoom * 1.08).toFixed(3)}) rotate(${t_rotate}deg) translateZ(0)`,
     transformOrigin: "center",
     willChange: "transform",
   };
@@ -273,14 +269,12 @@ export function HeroSlider() {
               key={current.id}
               className="hero-kenburns absolute inset-0"
               // FIRST PAINT (tick === 0): skip the opacity-0 → 1 fade
-              // entirely so the baked-in hero image is visible at
-              // full opacity on the very first frame. Any fade here
-              // would re-introduce the flash the build-time bake
-              // is designed to eliminate.
+              // entirely. Combined with the matching filter on the
+              // static base image, this means hydration is visually
+              // invisible — the dynamic image takes over without
+              // any darkening, fading, or blur transition.
               // SUBSEQUENT SLIDES: keep the cinematic 900 ms cross-
-              // fade between slides during the auto-rotation — that
-              // is the slider's signature transition, not a load
-              // animation, and never affects first-paint LCP.
+              // fade between slides during the auto-rotation.
               initial={reduced || tick === 0 ? false : { opacity: 0 }}
               animate={reduced ? undefined : { opacity: 1 }}
               exit={reduced ? undefined : { opacity: 0 }}
@@ -290,39 +284,25 @@ export function HeroSlider() {
                   : { duration: FADE_MS / 1000, ease: "easeInOut" }
               }
             >
-              {/* Background "out of focus" copy — blurred + cool-graded.
-                  Inherits the same admin focal/zoom/rotate so its
-                  composition tracks the sharp foreground perfectly. */}
-              <img
-                src={current.imageDataUrl}
-                alt=""
-                loading={imageIndex === 0 ? "eager" : "lazy"}
-                decoding="async"
-                aria-hidden="true"
-                className="hero-img-blur absolute inset-0 w-full h-full object-cover"
-                style={blurStyle}
-              />
-              {/* Foreground sharp copy — radial-masked so subject pops.
-                  The inline `style` carries the admin's per-image
-                  display tuning (focal, zoom, rotate, brightness,
-                  contrast). It overrides the baseline CSS filter on
-                  `.hero-img` so we restate the cinematic chain inside
-                  `sharpStyle` to keep the movie-poster grade. */}
+              {/* SINGLE sharp image — no blur copy underneath, no
+                  radial mask. The previous twin-image depth-of-field
+                  rig was visually beautiful but the blurred bokeh
+                  layer bled through at the masked edges, making the
+                  image read as "less clear" after API hydration than
+                  it did on first paint (the static base has no blur).
+                  Removing the blur+mask means dynamic load = static
+                  load visually. Filter on this image matches the CSS
+                  baseline of the static <img src="/hero-initial.webp">
+                  exactly (brightness 1.05 / contrast 1.08 / saturate
+                  1.05) so hydration is a no-op for the user's eye. */}
               <img
                 src={current.imageDataUrl}
                 alt=""
                 loading={imageIndex === 0 ? "eager" : "lazy"}
                 // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
                 fetchpriority={imageIndex === 0 ? "high" : "auto"}
-                // FIRST slide gets `decoding="sync"` per spec — when the
-                // image is already preloaded (via the inline <link> in
-                // index.html injected by the boot script), sync decode
-                // means it appears on the very first paint of this
-                // <img> element instead of a one-frame async stall.
-                // Subsequent slides stay async so the rotation never
-                // blocks the main thread.
                 decoding={imageIndex === 0 ? "sync" : "async"}
-                className="hero-img hero-img-mask absolute inset-0 w-full h-full object-cover"
+                className="hero-img absolute inset-0 w-full h-full object-cover"
                 style={sharpStyle}
                 data-testid={`img-hero-slide-${current.id}`}
               />
@@ -346,15 +326,15 @@ export function HeroSlider() {
         style={{
           background:
             // Single linear bottom-up gradient, two stops only.
-            // overlayOpacity is the 0..60 % "darkness budget":
-            //   • 0  → gradient invisible, photo full clarity.
-            //   • 35 → ~0.65 alpha at the bottom edge (classic pad).
-            //   • 60 → near-opaque navy at the bottom (for washed-out
-            //          slides where the headline needs maximum pad).
-            // The gradient feathers to fully transparent at 55 % of
-            // the hero height so the upper half — where the subject
-            // lives — is NEVER touched.
-            `linear-gradient(to top, hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 1.85).toFixed(3)}) 0%, transparent 55%)`,
+            // CONSISTENCY-PASS (May-2026): direct 1:1 alpha mapping so
+            // the admin slider numbers in the UI match the actual
+            // alpha applied. Default 35 → 0.35 alpha; user-spec value
+            // 55 → 0.55 alpha (the canonical "headline pad" the brief
+            // calls for). Black instead of navy so it doesn't tint
+            // the photo blue — pure neutral darkening. Feathers to
+            // transparent at 55 % so the upper half (where the
+            // subject lives) is NEVER touched.
+            `linear-gradient(to top, rgba(0,0,0,${(t_overlayOpacity / 100).toFixed(3)}) 0%, transparent 55%)`,
         }}
       />
 
