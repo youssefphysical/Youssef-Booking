@@ -56,6 +56,42 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### Hero v6.3 "Ultimate Fix" (May 2026, commit `d8b6061`, supersedes v6.2)
+Three production-level fixes responding to the user's "ULTIMATE HERO FIX (ZERO BUGS — PRODUCTION LEVEL)" directive. All changes are surgical — zero touches to auth APIs, booking, admin, RBAC, database, image loader, image clarity, or the mobile static Sign-In pill (per the May-2026 invariant). Prod bundles after this fix: `index-GU3iLsKW.js` + `index-DIKQ92Ac.css` on `youssef-booking.vercel.app`.
+
+#### Fix 1 — STRICT desktop auth conditional (Navigation.tsx)
+- **Root cause v6.2**: the static "PERMANENT SIGN-IN LINK" stayed in the DOM for desktop authenticated users with only `isAuthenticated && "md:hidden"` hiding it via CSS. The pill was rendered, just invisible — fragile if any future stylesheet override or specificity bug ever leaked through.
+- **Fix v6.3**: converted the desktop auth area into a STRICT mutually-exclusive ternary (`client/src/components/Navigation.tsx` lines 186-237). When `isAuthenticated && user`, the JSX renders profile pill + Sign Out button only. When NOT authenticated, the JSX renders a NEW `data-testid="link-signin-desktop"` pill (`hidden sm:inline-flex`). EXACTLY one branch ever exists in the DOM on desktop — no CSS hide, no possibility of bleed-through.
+- **Mobile invariant preserved bit-for-bit**: the static `data-testid="link-signin"` Link below is now `inline-flex md:hidden` UNCONDITIONALLY (mobile-only, ignores `isAuthenticated`). Mobile rendering is byte-identical to v6.2 in every auth state — guests AND logged-in users still see the same pill, drawer Sign Out still reachable for authenticated mobile users. Inline-style block (`zIndex: 9999, opacity: 1, pointerEvents: "auto"`) preserved.
+- **Result matrix** (verified in prod bundle `index-GU3iLsKW.js`):
+  - Desktop logged out → `link-signin-desktop` only ✓
+  - Desktop logged in  → profile pill + Sign Out only, ZERO Sign In references ✓
+  - Mobile logged out  → `link-signin` pill visible (unchanged) ✓
+  - Mobile logged in   → `link-signin` pill visible (unchanged), drawer Sign Out reachable ✓
+
+#### Fix 2 — Mobile hero deterministic layout (HeroSlider.tsx)
+- **Root cause v6.2**: hero used `h-[78vh]` and the copy block used `inset-x-6 bottom-[clamp(48px,10vh,96px)]` — the clamp made the bottom offset viewport-dependent (52px on a 520px viewport, 96px on a 960px viewport). The user's spec called for predictable production-level numbers.
+- **Fix v6.3** in `client/src/components/HeroSlider.tsx`:
+  - Hero container: `h-[78vh]` → `h-[75vh] md:h-[78vh]` — mobile shrinks to 75vh per spec, desktop unchanged at 78vh for the cinematic full-screen feel. `min-h-[520px]` floor and `max-h-[860px]` ceiling unchanged.
+  - Copy `motion.div`: `inset-x-6 bottom-[clamp(48px,10vh,96px)]` → `inset-x-5 bottom-20` — fixed 20px horizontal padding, fixed 80px from hero bottom. Predictable, inspector-friendly, no viewport-dependent math.
+- **Net mobile layout** at 390px viewport / 75vh hero (~488px tall on a 651px viewport): copy bottom anchor at 80px; buttons row above (40px clearance from hero bottom edge); subhead (min-h 52px reserved); headline (min-h 112px reserved); badge above; top of badge falls ~hero_top + 100px — well below the 64px header. The `.hero-isolate overflow-hidden` boundary is preserved and no content tries to cross it.
+
+#### Fix 3 — Inline typewriter cursor + GPU promotion (HeroSlider.tsx + index.css)
+- **Root cause**: v6.2 deliberately removed the cursor entirely (commented in HeroSlider.tsx lines 30-37) because the v5.x cursor floated free in the centre of the screen — the worst-case bug. The v6.3 spec called for the cursor to come back BUT under three strict constraints: (a) inline with text, (b) stops blinking after typing finishes, (c) never appears in centre of screen.
+- **Fix v6.3 implementation**:
+  - **DOM**: a single `<span class="hero-cursor" data-testid="text-hero-cursor">` lives INSIDE the `<h1>` immediately after the per-char `HeroReveal` spans (`HeroSlider.tsx` lines 473-489). It is `display: inline-block` and sits in normal text flow at the end of the headline — by construction it can never float in the middle of the screen.
+  - **Animation**: pure CSS, ZERO React state, ZERO setInterval. One `heroCursorBlinkThenFade` keyframe (in `client/src/index.css` lines 728-754) blinks square-wave (step-end style) for the first ~75% of the per-slide `--hero-cursor-end` duration, then fades to 0 over the final ~25% and stays at 0 forever via `animation-fill-mode: forwards`.
+  - **Per-slide reset**: AnimatePresence's `mode="wait"` (kept from v6.2) remounts the entire `motion.div` subtree on every slide change, so the cursor's CSS animation restarts from frame 0 with the rest of the reveal — no manual CSS animation reset needed.
+  - **Per-slide duration**: React computes `--hero-cursor-end = COPY.headline.start + visibleChars × COPY.headline.step + COPY.headline.dur` (e.g. `350 + 18 × 25 + 200 = 1000ms` for an 18-char headline) so the cursor fade-out lines up exactly with the moment the last per-char reveal completes — different headline lengths automatically get different timings without code changes.
+  - **GPU promotion**: `.hero-reveal` gained `will-change: transform, opacity` so the compositor pre-allocates layers up front, eliminating first-frame layer-creation jank on the second/third loop. `.hero-img` already had `transform: translateZ(0)` + `backface-visibility: hidden` from v5 — verified untouched.
+  - **Reduced-motion safety**: added `.hero-cursor { animation: none !important; opacity: 0 !important; }` inside the existing `@media (prefers-reduced-motion: reduce)` block so the cursor never appears for users with reduced-motion preference.
+- **Spec compliance**:
+  - "Inline with text" ✓ — IS a text-flow span inside the h1
+  - "Stops blinking after finish" ✓ — animation-fill-mode: forwards holds final opacity:0
+  - "Never appears in centre of screen" ✓ — inline-block + always last child of h1, position controlled by text flow only
+  - "No setInterval per character, no React re-render per letter" ✓ — pure CSS, zero per-frame JS
+  - "Use CSS animation (preferred)" ✓ — single keyframe, zero JS
+
 ### Hero v6.2 + Desktop Auth Duplicate Fix "Clean Sequential Pass" (May 2026, commit `e40ba67a`, supersedes v6.1)
 Three surgical fixes responding to user-reported regressions on the deployed v6.1: (1) desktop showed both Sign In AND Sign Out simultaneously when authenticated, (2) mobile hero text was being clipped at the bottom of the hero / appeared hidden under the next blue section, (3) typewriter stuttered on second/loop slide changes. All fixes are additive — zero touches to auth APIs, booking, admin, RBAC, database, hero image loading, image clarity, or image slider system.
 
