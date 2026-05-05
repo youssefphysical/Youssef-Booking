@@ -1,6 +1,6 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { Link } from "wouter";
-import { motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -10,75 +10,162 @@ import type { HeroImage } from "@shared/schema";
 
 // HERO MOTION ARCHITECTURE v4 (May-2026, "stacked images, CSS-only fade").
 // =====================================================================
-// PREVIOUS ARCHITECTURE (v3):
-//   AnimatePresence rendered exactly ONE <motion.div> with the active
-//   slide. On every tick, framer-motion unmounted the old slide and
-//   mounted the new one. Even though the visual was a fade, the DOM
-//   teardown/build (and the resulting <img> mount + main-thread image
-//   decode) caused perceptible jank on mid-range Android devices.
-// NEW ARCHITECTURE (v4):
-//   1. ALL hero slides are rendered into the DOM at once, stacked
-//      absolutely at inset:0. They never mount/unmount during the
-//      lifetime of the hero — only their `data-active` attribute flips.
-//   2. Visibility is controlled by a SINGLE CSS rule (.hero-slide-layer
-//      in index.css) that animates `opacity` only:
-//        transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
-//      No framer-motion is involved in image fades. The browser's
-//      compositor handles the entire crossfade on its own thread.
-//   3. Each slide layer sits on its own GPU layer
-//      (will-change: opacity + transform: translateZ(0) + backface-
-//      visibility: hidden), so opacity changes are pure compositor
-//      work — zero re-layout, zero re-paint of the image bitmap.
-//   4. Image decode happens ONCE per slide, at React's first render
-//      after `useHeroImages` resolves. From that point onward,
-//      switching slides is a free attribute toggle: the previous
-//      slide fades 1→0 while the next slide fades 0→1 in parallel,
-//      giving a true crossfade with zero overlap haze.
-//   5. The HeroSlideLayer component is `React.memo`'d — when a tick
-//      change re-renders the parent, only the two affected slide
-//      layers (the one becoming inactive and the one becoming active)
-//      re-render their wrapper attribute. The other layers are
-//      bailed out by referential equality of their props. The <img>
-//      element itself is NEVER re-rendered, so the browser never
-//      re-fetches or re-decodes.
-//   6. All slides use loading="eager". Hero images are stored as
-//      data URLs (slide.imageDataUrl) so they don't network-fetch,
-//      but eager+priority hints still help the browser prioritise
-//      the first slide's decode for the no-flash first paint.
+// Image layer: ALL slides rendered at once, stacked absolutely. Visibility
+// controlled by toggling the `data-active` attribute (CSS handles the
+// 1200ms compositor-only opacity crossfade — see .hero-slide-layer in
+// index.css). HeroSlideLayer is React.memo'd so unchanged slides bail
+// out of re-render. The <img> elements are never re-mounted, re-fetched,
+// or re-decoded during a slide switch.
+//
+// Copy layer (v5, May-2026, "professional typewriter" pass): the badge,
+// headline, and subheadline are revealed character-by-character (badge
+// + headline) and word-by-word (subhead) via pure CSS animations. The
+// timing is driven by three CSS variables (--hr-start, --hr-step,
+// --hr-dur) on each reveal element, with a per-token --i index used to
+// compute animation-delay = start + i * step. There is zero per-frame
+// React work during the reveal — the splitting happens once at mount.
+// A soft cyan typewriter cursor sits at the end of the headline, blinks
+// while the headline is revealing, then fades out 120ms after the last
+// character finishes. Buttons fade-up (translateY 8px → 0) AFTER all
+// text reveals have completed. Outgoing copy fades out over 300ms via
+// AnimatePresence mode="wait" before the new copy mounts.
 
 const ROTATE_MS = 8000;
-const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule in index.css
+const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
+
+// COPY REVEAL TIMING (v5, "professional typewriter" pass).
+// All values measured from the moment the new copy mounts (i.e. AFTER
+// the 300ms exit fade of the outgoing copy completes). Tuned so the
+// total reveal feels calm but never slow:
+//   - badge: ~25 chars × 18ms + 280ms anim ≈ 730ms total
+//   - headline: ~40 chars × 22ms + 260ms anim ≈ 1140ms total
+//     (starts 500ms in, ends ~1640ms in)
+//   - subhead: ~13 words × 55ms + 320ms anim ≈ 1035ms total
+//     (starts 1500ms in, ends ~2535ms in)
+//   - buttons: single 420ms fade+slide starting at 2500ms (overlaps
+//     the very end of the subhead so the eye lands on the CTAs as
+//     the subhead settles)
+// Total ~2920ms — well within ROTATE_MS=8000 so buttons are fully
+// visible and clickable for ~5s before the next slide change.
+const COPY = {
+  badge:    { start:    0, step: 18, dur: 280 },
+  headline: { start:  500, step: 22, dur: 260 },
+  subhead:  { start: 1500, step: 55, dur: 320 },
+  buttons:  { start: 2500,           dur: 420 },
+  exit:     { dur: 300 }, // outgoing copy fade-out duration in ms
+};
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// Stagger envelope for the overlay copy. Each child fades up in
-// sequence: badge → headline → subtitle → button row. Copy is a
-// SEPARATE layer from the images and lives on z-10 above all slide
-// layers — its re-mount on tick change does not affect image smoothness.
-const copyContainer: Variants = {
-  hidden: {},
-  visible: {
-    transition: { delayChildren: 0.12, staggerChildren: 0.12 },
-  },
-};
-const copyItem: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+// HERO COPY REVEAL — character/word typewriter via CSS animations.
+// =====================================================================
+// The text is split into per-token <span>s with a CSS variable `--i`
+// that drives the per-token animation-delay. The animation itself is
+// pure CSS (heroReveal keyframe in index.css) — no framer-motion, no
+// per-frame React work, no main-thread JS during the reveal.
+//
+// Splitting strategy:
+//   - "char" mode: text is split by whitespace into words; each non-
+//     whitespace word is split into its individual characters and
+//     wrapped in <span class="hero-reveal">. Whitespace tokens are
+//     emitted as plain text between word-spans so the browser can
+//     wrap naturally at word boundaries (display:inline-block on the
+//     char-spans would otherwise prevent line-breaks mid-word).
+//   - "word" mode: each whitespace-separated word becomes one
+//     <span class="hero-reveal">. Used for the subhead so longer
+//     prose feels reading-paced rather than typewritten.
+//
+// Accessibility:
+//   - The full text is rendered once inside a <span class="sr-only">
+//     so assistive tech reads the headline as one phrase, not
+//     character-by-character.
+//   - The visual span tree is marked aria-hidden so it is invisible
+//     to screen readers.
+//   - When prefers-reduced-motion: reduce is set, the parent short-
+//     circuits and renders plain text — no spans, no animation.
+function HeroReveal({
+  text,
+  mode,
+  startMs,
+  stepMs,
+  durMs,
+}: {
+  text: string;
+  mode: "char" | "word";
+  startMs: number;
+  stepMs: number;
+  durMs: number;
+}) {
+  // Splitting is cheap but memoised so it documents intent and avoids
+  // re-running on parent re-render (text only changes when the slide
+  // changes, which remounts this component anyway via the parent's
+  // AnimatePresence key).
+  const tokens = useMemo(() => {
+    return text
+      .split(/(\s+)/)
+      .filter(Boolean)
+      .map((tok) => ({
+        text: tok,
+        isSpace: /^\s+$/.test(tok),
+        chars: mode === "char" && !/^\s+$/.test(tok) ? Array.from(tok) : null,
+      }));
+  }, [text, mode]);
+
+  let i = 0;
+  const styleVars = {
+    ["--hr-start" as any]: `${startMs}ms`,
+    ["--hr-step" as any]: `${stepMs}ms`,
+    ["--hr-dur" as any]: `${durMs}ms`,
+  } as React.CSSProperties;
+
+  return (
+    <span style={styleVars}>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true">
+        {tokens.map((tok, ti) => {
+          if (tok.isSpace) return tok.text;
+          if (mode === "word") {
+            const idx = i++;
+            return (
+              <span
+                key={ti}
+                className="hero-reveal"
+                style={{ ["--i" as any]: idx } as React.CSSProperties}
+              >
+                {tok.text}
+              </span>
+            );
+          }
+          // char mode — wrap chars in word-wrappers so the browser
+          // still treats each word as unbreakable at the inline-block
+          // level, but lets long lines wrap at word boundaries.
+          return (
+            <span key={ti} className="hero-reveal-word">
+              {tok.chars!.map((c, ci) => {
+                const idx = i++;
+                return (
+                  <span
+                    key={ci}
+                    className="hero-reveal"
+                    style={{ ["--i" as any]: idx } as React.CSSProperties}
+                  >
+                    {c}
+                  </span>
+                );
+              })}
+            </span>
+          );
+        })}
+      </span>
+    </span>
+  );
+}
 
 // One stacked slide layer. Memoized so it ONLY re-renders when its
-// own props change (slide data or active flag). When the parent
-// re-renders due to a tick change, only the two affected slides
-// (becoming-inactive + becoming-active) flip their data-active
-// attribute on the DOM. Every other slide is bailed out by memo.
-// The <img> element is never re-mounted or re-rendered.
+// own props change. The <img> element is never re-mounted.
 const HeroSlideLayer = memo(function HeroSlideLayer({
   slide,
   isActive,
@@ -88,20 +175,14 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
   isActive: boolean;
   isFirst: boolean;
 }) {
-  // Per-image admin tuning (focal point, zoom, rotate, brightness,
-  // contrast, overlay opacity). All NULL-safe → identity defaults so
-  // pre-existing slides without tuning data render unchanged.
   const t_focalX = slide.focalX ?? 0;
   const t_focalY = slide.focalY ?? 0;
   const t_zoom = slide.zoom ?? 1.0;
   const t_rotate = slide.rotate ?? 0;
   const t_brightness = slide.brightness ?? 1.0;
   const t_contrast = slide.contrast ?? 1.0;
-  const t_overlayOpacity = slide.overlayOpacity ?? 35; // percent
+  const t_overlayOpacity = slide.overlayOpacity ?? 35;
 
-  // Match the .hero-img CSS baseline (brightness 1.05 / contrast 1.08
-  // / saturate 1.05) exactly, then multiply per-image admin tuning.
-  // translateZ(0) keeps the GPU layer pinned during admin slider tweaks.
   const sharpStyle: React.CSSProperties = {
     filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
     transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
@@ -118,10 +199,6 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
       <img
         src={slide.imageDataUrl}
         alt=""
-        // ALL slides eager. Data URLs don't network-fetch, but eager +
-        // sync decode for the first slide (which is visible on first
-        // paint) keeps the no-flash contract; subsequent slides decode
-        // async to avoid blocking the main thread on mount.
         loading="eager"
         // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
         fetchpriority={isFirst ? "high" : "low"}
@@ -130,11 +207,6 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
         style={sharpStyle}
         data-testid={`img-hero-slide-${slide.id}`}
       />
-      {/* Per-slide bottom darkening gradient — lives INSIDE the slide
-          layer so it crossfades together with its image. Two-stop
-          linear gradient, transparent above 55% so the upper subject
-          area is never touched. Direct 1:1 alpha mapping of the admin
-          slider value (0-100 percent → 0.0-1.0 alpha). */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -147,32 +219,18 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
 
 export function HeroSlider() {
   const { t } = useTranslation();
-  // Use the shared hook so we get `initialData` from
-  // `window.__INITIAL_HERO_IMAGES__` (populated by the inline boot
-  // script in index.html). When the boot script wins the race
-  // against the JS bundle, the slide layers render on the very
-  // first React paint — zero gradient flash.
   const { data: images = [] } = useHeroImages();
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
   const reduced = prefersReducedMotion();
 
   useEffect(() => {
-    // Honour prefers-reduced-motion: do NOT auto-rotate for users who
-    // have requested reduced motion at the OS level. They still see
-    // the first slide and can use the pagination dots to navigate.
     if (reduced) return;
-    // Don't bother running an interval if there's only one slide
-    // (or none) — no opacity to flip, just wasted timer work.
     if (slides.length <= 1) return;
     const id = window.setInterval(() => setTick((i) => i + 1), ROTATE_MS);
     return () => window.clearInterval(id);
   }, [reduced, slides.length]);
 
-  // Three world-class brand-pillar copy variants from i18n. Per-image
-  // admin copy on a HeroImage row OVERRIDES the variant for that
-  // specific image — so the admin can still write custom copy per
-  // slide if they want to.
   const variants = [
     {
       badge: t("hero.slides.s1.badge"),
@@ -200,27 +258,40 @@ export function HeroSlider() {
   const subhead = current?.subtitle?.trim() || variant.subhead;
   const badge = current?.badge?.trim() || variant.badge;
 
+  // Cursor visible from headline.start until the last headline character
+  // finishes its reveal animation, plus a short ~120ms tail so the
+  // cursor blinks once or twice past the last char before fading out.
+  // Counts NON-whitespace characters only (matches HeroReveal's index
+  // assignment, which skips whitespace tokens).
+  const headlineCharCount = useMemo(
+    () => Array.from(headline).filter((c) => !/\s/.test(c)).length,
+    [headline],
+  );
+  const cursorEndMs =
+    COPY.headline.start +
+    Math.max(headlineCharCount - 1, 0) * COPY.headline.step +
+    COPY.headline.dur +
+    120;
+
+  // Single setTimeout per slide change — when it fires we add the
+  // .hero-cursor--off class which kills the blink animation and
+  // triggers a clean fade-out. NO continuous JS work.
+  const [cursorPhase, setCursorPhase] = useState<"on" | "off">("on");
+  const slideKey = `${copyIndex}-${current?.id ?? "default"}`;
+  useEffect(() => {
+    if (reduced) return;
+    setCursorPhase("on");
+    const id = window.setTimeout(() => setCursorPhase("off"), cursorEndMs);
+    return () => window.clearTimeout(id);
+  }, [reduced, slideKey, cursorEndMs]);
+
   return (
     <div
       className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state="ready"
     >
-      {/* ============================================================
-          STATIC HERO BASE — May 2026 permanent flash kill (final).
-          ============================================================
-          This <img> exists in JSX from the first React render and is
-          paired with a <link rel="preload" as="image"> in the HTML
-          head. The browser begins decoding before React mounts.
-          `scripts/inject-hero.mjs` refreshes the file from the
-          current active hero in Neon on every Vercel deploy, so the
-          static file always matches what the admin uploaded. The
-          stacked dynamic <img> tags below render ON TOP via DOM
-          order + absolute positioning; once the API resolves and
-          slides[0] mounts with data-active="true" → opacity:1 from
-          its first computed style (no transition runs on initial
-          mount, only on attribute changes), it covers this static
-          base seamlessly. */}
+      {/* STATIC HERO BASE — first-paint flash kill. */}
       <img
         src="/hero-initial.webp"
         alt=""
@@ -233,18 +304,7 @@ export function HeroSlider() {
         data-testid="img-hero-static-default"
       />
 
-      {/* ============================================================
-          STACKED IMAGE LAYER — v4 architecture.
-          ============================================================
-          ALL admin slides are rendered to the DOM at once, stacked
-          absolutely at inset:0. None are ever unmounted. The active
-          slide has data-active="true" and is opaque; all others are
-          opacity:0. CSS handles the 1200ms crossfade entirely on the
-          compositor thread — see .hero-slide-layer in index.css.
-          The HeroSlideLayer component is React.memo'd so when the
-          parent re-renders, only the two affected layers re-render
-          their data-active attribute; the <img> elements are never
-          touched. */}
+      {/* STACKED IMAGE LAYER — v4 architecture. */}
       {slides.length > 0 && (
         <div className="absolute inset-0" aria-hidden="true">
           {slides.map((slide, i) => (
@@ -258,95 +318,152 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* Overlay copy — staggered reveal. Animates once per copy or
-          slide change so the eye is led: badge → headline → subtitle
-          → CTAs. Reduced-motion users get the same final state with
-          no animation. Explicit z-10 keeps the copy authoritatively
-          above ALL slide layers and their per-slide gradients. */}
+      {/* OVERLAY COPY — typewriter reveal v5.
+          AnimatePresence mode="wait" gives the outgoing copy a clean
+          300ms opacity exit before the new copy mounts. Once mounted,
+          the new badge/headline/subhead/buttons reveal themselves via
+          pure CSS animations driven by HeroReveal and the .hero-reveal
+          / .hero-cursor / .hero-button-reveal rules in index.css.
+          Reduced-motion users get plain text instantly with no spans
+          and no cursor — the entire reveal apparatus is skipped. */}
       <div className="absolute inset-0 z-10 flex items-end md:items-center">
         <div className="w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
-          <motion.div
-            key={`copy-${copyIndex}-${current?.id ?? "default"}`}
-            variants={reduced ? undefined : copyContainer}
-            initial={reduced ? false : "hidden"}
-            animate={reduced ? undefined : "visible"}
-            className="max-w-2xl"
-          >
-            {badge && (
-              <motion.span
-                variants={reduced ? undefined : copyItem}
-                className="tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6"
-                data-testid="text-hero-badge"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                {badge}
-              </motion.span>
-            )}
-            <motion.h1
-              variants={reduced ? undefined : copyItem}
-              className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight"
-              data-testid="text-hero-headline"
-            >
-              {headline}
-            </motion.h1>
-            {subhead && (
-              <motion.p
-                variants={reduced ? undefined : copyItem}
-                className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed"
-                style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
-                data-testid="text-hero-subhead"
-              >
-                {subhead}
-              </motion.p>
-            )}
-
+          <AnimatePresence mode="wait">
             <motion.div
-              variants={reduced ? undefined : copyItem}
-              className="mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5"
+              key={`copy-${slideKey}`}
+              initial={false}
+              animate={{ opacity: 1 }}
+              exit={reduced ? undefined : { opacity: 0 }}
+              transition={{
+                duration: COPY.exit.dur / 1000,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="max-w-2xl"
             >
-              <Link
-                href="/book"
-                className="w-full sm:w-auto"
-                data-testid="link-hero-start-transformation"
+              {badge && (
+                <span
+                  className="tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6"
+                  data-testid="text-hero-badge"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  {reduced ? (
+                    badge
+                  ) : (
+                    <HeroReveal
+                      text={badge}
+                      mode="char"
+                      startMs={COPY.badge.start}
+                      stepMs={COPY.badge.step}
+                      durMs={COPY.badge.dur}
+                    />
+                  )}
+                </span>
+              )}
+              <h1
+                className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight"
+                data-testid="text-hero-headline"
               >
-                <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold whitespace-nowrap btn-press">
-                  {t("hero.cinematic.startTransformation")}
-                  <ArrowRight size={18} />
+                {reduced ? (
+                  headline
+                ) : (
+                  <>
+                    <HeroReveal
+                      text={headline}
+                      mode="char"
+                      startMs={COPY.headline.start}
+                      stepMs={COPY.headline.step}
+                      durMs={COPY.headline.dur}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "hero-cursor",
+                        cursorPhase === "off" && "hero-cursor--off",
+                      )}
+                      style={
+                        {
+                          ["--hr-start" as any]: `${COPY.headline.start}ms`,
+                        } as React.CSSProperties
+                      }
+                    />
+                  </>
+                )}
+              </h1>
+              {subhead && (
+                <p
+                  className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed"
+                  style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
+                  data-testid="text-hero-subhead"
+                >
+                  {reduced ? (
+                    subhead
+                  ) : (
+                    <HeroReveal
+                      text={subhead}
+                      mode="word"
+                      startMs={COPY.subhead.start}
+                      stepMs={COPY.subhead.step}
+                      durMs={COPY.subhead.dur}
+                    />
+                  )}
+                </p>
+              )}
+
+              <div
+                className={cn(
+                  "mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5",
+                  !reduced && "hero-button-reveal",
+                )}
+                style={
+                  !reduced
+                    ? ({
+                        ["--hr-start" as any]: `${COPY.buttons.start}ms`,
+                        ["--hr-dur" as any]: `${COPY.buttons.dur}ms`,
+                      } as React.CSSProperties)
+                    : undefined
+                }
+              >
+                <Link
+                  href="/book"
+                  className="w-full sm:w-auto"
+                  data-testid="link-hero-start-transformation"
+                >
+                  <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold whitespace-nowrap btn-press">
+                    {t("hero.cinematic.startTransformation")}
+                    <ArrowRight size={18} />
+                  </button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target =
+                      document.getElementById("transformations") ??
+                      document.getElementById("why");
+                    target?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }}
+                  data-testid="button-hero-view-results"
+                  className="tron-glass-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press"
+                >
+                  <Eye size={18} />
+                  {t("hero.cinematic.viewResults")}
                 </button>
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  // Prefer the transformations gallery as social proof; if
-                  // the admin has not added any yet, fall back to the "why"
-                  // pitch so the button always lands somewhere meaningful.
-                  const target =
-                    document.getElementById("transformations") ??
-                    document.getElementById("why");
-                  target?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                data-testid="button-hero-view-results"
-                className="tron-glass-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press"
-              >
-                <Eye size={18} />
-                {t("hero.cinematic.viewResults")}
-              </button>
-              <WhatsAppButton
-                label={t("hero.cinematic.whatsapp")}
-                message={t("hero.cinematic.whatsappMsg")}
-                size="md"
-                testId="button-hero-whatsapp"
-                // Cyan-tinted shadow so the green WhatsApp button still
-                // belongs to the cinematic TRON lighting on the hero.
-                className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
-              />
+                <WhatsAppButton
+                  label={t("hero.cinematic.whatsapp")}
+                  message={t("hero.cinematic.whatsappMsg")}
+                  size="md"
+                  testId="button-hero-whatsapp"
+                  className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
+                />
+              </div>
             </motion.div>
-          </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Pagination dots — visually small but wrapped in a 44×44 tap
-          target so they meet WCAG 2.5.5 minimum interactive size. */}
+      {/* Pagination dots */}
       {slides.length > 1 && (
         <div
           className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"

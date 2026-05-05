@@ -623,6 +623,137 @@
   opacity: 1;
 }
 
+/* HERO COPY REVEAL — character/word typewriter (v5, May-2026).
+   ====================================================================
+   Pure CSS reveal animation. Each character or word is wrapped in a
+   <span class="hero-reveal"> by the HeroReveal component in
+   HeroSlider.tsx, with a CSS variable `--i` set to its 0-indexed
+   position. The animation-delay is computed as
+       --hr-start + --i * --hr-step
+   so the parent's three CSS variables (--hr-start, --hr-step,
+   --hr-dur) drive the entire timing of the reveal without ANY
+   per-frame JS work. The text bitmap is painted ONCE at mount;
+   the reveal interpolates only opacity + transform (compositor-
+   friendly, no layout, no re-paint).
+
+   display:inline-block on .hero-reveal is required for transform
+   to apply, but it is paired with .hero-reveal-word (also inline-
+   block) wrapping each word in char-mode so line-wrapping still
+   happens naturally at word boundaries. Whitespace between words
+   is emitted as plain text content by HeroReveal so the browser
+   sees normal word boundaries.
+
+   letter-spacing inherited from .tron-eyebrow (0.28em) still
+   applies between adjacent inline-block char-spans in modern
+   browsers — the badge keeps its tracked-out look during reveal. */
+.hero-reveal {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.18em);
+  animation: heroReveal var(--hr-dur, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 30ms));
+  will-change: opacity, transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.hero-reveal-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+@keyframes heroReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Soft cyan typewriter cursor — appears at the end of the headline,
+   blinks while characters are revealing, then fades out 120ms after
+   the last character finishes. Two stacked animations: a fade-in
+   ramp (heroCursorIn, runs once, forwards) followed by an infinite
+   blink (heroCursorBlink). When .hero-cursor--off is added by
+   HeroSlider.tsx via setTimeout, both prior animations are replaced
+   by heroCursorOut (with !important) which fades the cursor cleanly
+   to opacity:0 + scaleY(0.4) regardless of the blink phase at the
+   moment of toggle. */
+.hero-cursor {
+  display: inline-block;
+  width: 0.06em;
+  min-width: 2px;
+  height: 0.85em;
+  margin-left: 0.12em;
+  background: hsl(195 100% 60%);
+  vertical-align: -0.02em;
+  border-radius: 1px;
+  box-shadow: 0 0 12px hsl(195 100% 60% / 0.65);
+  opacity: 0;
+  transform-origin: center;
+  animation:
+    heroCursorIn 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    heroCursorBlink 1.05s steps(2, start) infinite;
+  animation-delay: var(--hr-start, 500ms),
+    calc(var(--hr-start, 500ms) + 220ms);
+  will-change: opacity, transform;
+}
+.hero-cursor--off {
+  animation: heroCursorOut 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+@keyframes heroCursorIn {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes heroCursorBlink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes heroCursorOut {
+  to {
+    opacity: 0;
+    transform: scaleY(0.4);
+  }
+}
+
+/* Button-row reveal — single fade + 8px translateY-up. Fires once at
+   --hr-start (typically 2500ms) so the buttons appear AFTER the
+   badge, headline, and subhead reveal animations have completed.
+   Single animation, no stagger — the three CTAs come in as a unit
+   so the user's eye lands on them as a calm cluster, not a cascade. */
+.hero-button-reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: heroButtonReveal var(--hr-dur, 420ms)
+    cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--hr-start, 2500ms);
+  will-change: opacity, transform;
+}
+@keyframes heroButtonReveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced-motion safety net — even though HeroSlider.tsx already
+   short-circuits the reveal apparatus and renders plain text when
+   prefers-reduced-motion is set, this rule is a defensive guarantee
+   in case the JS check ever desyncs from the user's OS preference
+   (e.g. preference flipped after JS bundle loaded). All reveal
+   classes resolve to "instant final state" — opacity 1, no
+   transform, no animation, cursor hidden. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal,
+  .hero-button-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .hero-cursor {
+    display: none !important;
+  }
+}
+
 /* Reduced motion — respect users */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
