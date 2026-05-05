@@ -124,9 +124,11 @@ export function ProfilePictureCropper({
   async function handleSave() {
     if (!imageSrc || !croppedAreaPixels) return;
     try {
+      // v9.0.1 - per STRICT spec: toBlob('image/jpeg', 1.0) for save.
       const dataUrl = await getCroppedImg(imageSrc, croppedAreaPixels, 0, {
         maxLongEdgePx: OUTPUT_LONG_EDGE_PX,
-        quality: 0.97,
+        forceJpeg: true,
+        quality: 1.0,
       });
       await onCropped(dataUrl);
     } catch (e: any) {

@@ -206,10 +206,14 @@ export function ImageCropper({
   async function handleSave() {
     if (!imageSrc || !croppedAreaPixels) return;
     try {
+      // v9.0.1 (May-2026) - per STRICT spec: toBlob('image/jpeg', 1.0)
+      // for the final save. WebP/0.97 was visually identical at half
+      // the size, but the spec is literal: JPEG 1.0 max quality, no
+      // compression. 4000px long-edge cap is the only payload guard.
       const dataUrl = await getCroppedImg(imageSrc, croppedAreaPixels, rotation, {
         maxLongEdgePx: outputLongEdgePx,
-        forceJpeg,
-        quality: 0.97,
+        forceJpeg: true,
+        quality: 1.0,
       });
       await onCropped(dataUrl);
     } catch (e: any) {
