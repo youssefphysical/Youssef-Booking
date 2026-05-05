@@ -56,6 +56,19 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.7 Hero Visual Polish "Text-Shadow + Radial Balance + Soft Bottom" (May 2026)
+Per the user-supplied "fix visual issues in hero text + overlays" spec — addresses three reported issues:
+
+1. **Text felt blurry** — the v8.6 `.hero-text-scrim` masked rectangle behind text was perceived as a backdrop-blur even though it had no blur. **REMOVED entirely** (the `<div className="hero-text-scrim">` and the CSS rule). Replaced with `.hero-text-shadow` applied to the headline + subhead glyphs themselves: `text-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 0 8px rgba(0,0,0,0.15)` — two stacked shadows (1px crisp drop + 8px soft halo, both very low alpha) so the text stays 100% sharp with no blur and no glow. Note: this overrides the prior v8.x "NO text-shadow" invariant — that rule is replaced because the user explicitly approved this micro-shadow.
+
+2. **Bottom blue band looked separate** — the v8.5.1 `.hero-bottom-fade` (clamp 70-120px, ending at rgba(12,24,38,1.0)) was perceived as a hard band, not part of the photo. **REPLACED** with `.hero-bottom-overlay`: 160px fixed height, 3-stop gradient from `rgba(10,20,40,0)` → `rgba(10,20,40,0.4)` at 40% → `rgba(10,20,40,0.85)` at 100%. Ending at 0.85 alpha (not 1.0) lets the photo bleed 15% at the bottom row, so the wash reads as the photo's own ambient shadow rather than a separate band. z-index 3, `pointer-events: none`, `transform: translateZ(0)` for GPU promotion.
+
+3. **Left/right brightness imbalance on desktop** — added a NEW `.hero-overlay` decorative layer: full-hero `inset: 0`, `background: radial-gradient(circle at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)`, z-index 2, `pointer-events: none`. Center is lighter (0.15) than corners (0.35), which evens out the side-to-side brightness without darkening the overall photo.
+
+Stacking inside `.hero-isolate` (front to back): copy `z-10` → `.hero-bottom-overlay` `z-3` → `.hero-overlay` `z-2` → image layers `z-auto`. Both decorative overlays are `pointer-events: none` so clicks pass through to the photo region. Image filters (`brightness 1.05 contrast 1.08 saturate 1.05 hue-rotate -6deg`) and image cross-fade animations are unchanged.
+
+**Files changed**: `client/src/components/HeroSlider.tsx` (removed scrim div, added two overlay divs, added `hero-text-shadow` class to h1 and subhead p), `client/src/index.css` (removed `.hero-text-scrim` and `.hero-bottom-fade` rules, added `.hero-text-shadow`, `.hero-overlay`, `.hero-bottom-overlay`), `replit.md`. NO changes to: hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey timings), image loading, slider, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing. Layout reservations from v8.6 (h1 leading-1.1 + bumped min-h) preserved.
+
 ### v8.6 Typography Polish "Premium Hero Text + Scrim" (May 2026)
 Per the user-supplied "MICRO DESIGN FIX only" spec. Three sub-changes — pure typography + one decorative scrim — no logic, animation, or structural changes.
 

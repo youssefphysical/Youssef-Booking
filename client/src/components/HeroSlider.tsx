@@ -296,16 +296,26 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* BOTTOM-EDGE FADE (v8.5 micro design polish, May-2026).
-          A short premium gradient layer that softens the seam between
-          the hero photo and the dark-blue section below. Sits at z-3,
-          which is ABOVE the image layers (no z-index → 0) and BELOW
-          the copy overlay (z-10) so it CAN'T dim the badge/headline/
-          subhead/CTAs. pointer-events:none so it can't intercept
-          clicks. Height is clamp(70px, 9vh, 120px) — short, mobile-
-          first. See `.hero-bottom-fade` in index.css for the full
-          rationale. */}
-      <div className="hero-bottom-fade" aria-hidden="true" data-testid="hero-bottom-fade" />
+      {/* HERO VISUAL POLISH OVERLAYS (v8.7, May-2026).
+          Replaces the v8.6 .hero-text-scrim + v8.5.1 .hero-bottom-fade
+          combo. Two decorative layers on top of the image, both below
+          the z-10 copy overlay so neither dims badge/headline/subhead/
+          CTAs. pointer-events:none on both so clicks pass through.
+
+          (a) .hero-overlay (z-2) — center-balanced radial wash that
+              evens left/right brightness across the whole hero.
+          (b) .hero-bottom-overlay (z-3) — soft 160px ambient shadow
+              at the bottom edge of the photo, blends the image into
+              the next section without a hard band.
+
+          Text contrast is now provided by .hero-text-shadow on the
+          h1 and subhead p (subtle 1px+8px shadow on the glyphs
+          themselves — no rectangle, no scrim, no blur).
+
+          See `.hero-overlay`, `.hero-bottom-overlay`,
+          `.hero-text-shadow` in index.css for full rationale. */}
+      <div className="hero-overlay" aria-hidden="true" data-testid="hero-overlay" />
+      <div className="hero-bottom-overlay" aria-hidden="true" data-testid="hero-bottom-overlay" />
 
       {/* OVERLAY COPY — v8 simple stable fade.
           ====================================================================
@@ -367,14 +377,10 @@ export function HeroSlider() {
                 higher; CTAs and subhead viewport positions are
                 anchor-stable. */}
             <div className="relative min-h-[250px] sm:min-h-[298px] md:min-h-[346px] lg:min-h-[414px] xl:min-h-[442px]">
-              {/* HERO TEXT SCRIM (v8.6 typography polish).
-                  Soft dark wash behind text only. First child so it
-                  renders BEHIND the AnimatePresence motion.div sibling
-                  via DOM order alone (no z-index). Mask feathers all
-                  edges to transparent so the user perceives improved
-                  contrast without seeing any "layer" or "box".
-                  See `.hero-text-scrim` in index.css. */}
-              <div className="hero-text-scrim" aria-hidden="true" data-testid="hero-text-scrim" />
+              {/* v8.7 (May-2026): the v8.6 .hero-text-scrim div has
+                  been removed. Text contrast is now provided by the
+                  .hero-text-shadow class on the h1 and subhead p
+                  themselves (see those elements below). */}
               <AnimatePresence initial={false} mode="wait">
                 <motion.div
                   key={`copy-${textKey}`}
@@ -422,21 +428,17 @@ export function HeroSlider() {
                       across all lines simultaneously.
                       Reduced-motion users: short-circuit to plain text
                       with no animation wrapper. */}
-                  {/* HEADLINE TYPOGRAPHY (v8.6 polish):
-                      - leading 1.02 → 1.1 (per spec "1.1-1.2",
-                        chosen at the lower bound for poster
-                        density)
-                      - tracking-tight (-0.025em) → tracking-[-0.015em]
-                        (sits closer to spec's "-0.5px to -1px"
-                        absolute range across breakpoints)
-                      - min-h bumped per-breakpoint to absorb the
-                        new leading; see wrapper comment above
-                      - Color, weight, font-display, no text-shadow,
-                        no glow — all preserved from v8.x invariant
-                      - No animation properties touched (mask-reveal
-                        on inner span unchanged) */}
+                  {/* HEADLINE TYPOGRAPHY (v8.6 + v8.7 polish):
+                      - leading 1.1, tracking-[-0.015em], bumped min-h
+                        from v8.6 — all kept.
+                      - v8.7: added .hero-text-shadow class for very
+                        subtle separation from the photo behind. Two
+                        stacked text-shadows (1px crisp drop + 8px
+                        soft halo, both very low alpha) so the text
+                        stays 100% sharp — no blur, no glow.
+                      - mask-reveal animation on inner span unchanged. */}
                   <h1
-                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.1] text-white tracking-[-0.015em] min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[268px] xl:min-h-[296px]"
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.1] text-white tracking-[-0.015em] min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[268px] xl:min-h-[296px] hero-text-shadow"
                     data-testid="text-hero-headline"
                   >
                     {reduced ? (
@@ -455,19 +457,16 @@ export function HeroSlider() {
                       </span>
                     )}
                   </h1>
-                  {/* SUBHEAD TYPOGRAPHY (v8.6 polish):
-                      - text-white/90 → text-white/85 (exact spec
-                        match: rgba(255,255,255,0.85))
-                      - leading-relaxed (1.625) → leading-[1.65]
-                        (slight bump per spec "slightly increased
-                        line-height", fits within current min-h
-                        with no wrapper bump needed)
+                  {/* SUBHEAD TYPOGRAPHY (v8.6 + v8.7 polish):
+                      - text-white/85 + leading-[1.65] from v8.6 kept.
+                      - v8.7: added .hero-text-shadow for the same
+                        subtle glyph separation as the headline.
                       - All other classes (size, max-w, hero-fade-up
-                        animation, min-h reservations) unchanged */}
+                        animation, min-h reservations) unchanged. */}
                   {subhead && (
                     <p
                       className={cn(
-                        "mt-6 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.65] min-h-[52px] sm:min-h-[60px] md:min-h-[68px]",
+                        "mt-6 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.65] min-h-[52px] sm:min-h-[60px] md:min-h-[68px] hero-text-shadow",
                         !reduced && "hero-fade-up",
                       )}
                       style={

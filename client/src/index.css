@@ -464,128 +464,79 @@
   transform: translateZ(0);
 }
 
-/* HERO TEXT SCRIM (v8.6 typography polish, May-2026).
+/* HERO VISUAL POLISH SET (v8.7, May-2026).
    ====================================================================
-   A VERY subtle dark wash sitting BEHIND the hero copy area only
-   (badge + headline + subhead). Improves text contrast over bright
-   gym/portrait photographs without making the user perceive any
-   "layer", "box", or "border".
+   Replaces the v8.6 .hero-text-scrim layer (felt like a backdrop-blur
+   to the user) and the v8.5.1 .hero-bottom-fade rule (felt like a
+   separate dark-blue band). New three-part approach per spec:
 
-   How it stays invisible:
-     1. Soft linear-gradient (rgba(0,0,0,0.25) → rgba(0,0,0,0.40)) is
-        the spec's exact recommended palette — gentle vertical
-        darkening, never opaque.
-     2. Radial-gradient mask feathers all four edges to transparent
-        so the rectangle has NO perceptible boundary. The mask peaks
-        at ~30% opacity (full dark) toward the center-left where the
-        text actually sits, then fades out smoothly to 0 by the
-        viewport edge.
-     3. Negative inset values let the wash extend slightly beyond
-        the text bounds so the contrast comfortably wraps each
-        glyph's outer shadow region.
-     4. NO blur is used (spec allows blur(6-10px) "MAX" but blur on
-        a static layer adds no value here and can cost paint on
-        Android — the mask alone already dissolves the rectangle).
-     5. NO border, NO border-radius (radius requires a visible edge
-        to round; we have no visible edge).
-     6. pointer-events: none — purely decorative.
+     1. .hero-text-shadow — micro shadow on the text glyphs themselves
+        (not behind text). Two stacked shadows: a 1px-down crisp drop
+        + an 8px soft halo. Both very low alpha so the text stays
+        100% sharp with no perceived blur or glow. Replaces the masked
+        rectangle scrim entirely.
 
-   Position: absolute inside the copy stage's `relative min-h-*`
-   wrapper. Stacked first (DOM order) so it paints BEHIND the
-   AnimatePresence motion.div sibling. No z-index needed.
-   No animation. No filter. No backdrop-filter. */
-.hero-text-scrim {
+     2. .hero-overlay — a center-balanced radial wash across the WHOLE
+        hero. Slightly darker at the corners (0.35) than at the center
+        (0.15) so the right side (window light) and left side (dark
+        gym wall) read at similar brightness. Evens the lighting
+        without darkening the photo overall.
+
+     3. .hero-bottom-overlay — replaces .hero-bottom-fade. Taller
+        (160px fixed vs the previous clamp), softer 3-stop gradient
+        ending at 0.85 alpha (not 1.0) so the photo bleeds 15% at
+        the bottom row — feels like the photo's own ambient shadow,
+        not a hard band. Uses rgba(10,20,40) tone (slightly more
+        saturated than the prior rgb(12,24,38)) per spec.
+
+   Stacking order inside the .hero-isolate container (front-to-back):
+     copy z-10  (badge / headline / subhead / CTAs — top, untouched)
+     .hero-bottom-overlay  z-3   (bottom 160px gradient)
+     .hero-overlay         z-2   (full radial center balance)
+     image layers          z-auto (photo + cross-fade unchanged)
+
+   No blur. No backdrop-filter. No animation. No filter. */
+
+/* (1) Text glyph shadow — replaces the .hero-text-scrim rectangle.
+   Two stacked shadows give a subtle separation from any background
+   without producing a glow or rectangle. Applied via class on the
+   h1 and subhead p. */
+.hero-text-shadow {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 0 8px  rgba(0, 0, 0, 0.15);
+}
+
+/* (2) Center-balanced radial wash for left/right brightness parity.
+   Sits behind .hero-bottom-overlay; the bottom 160px stacks both. */
+.hero-overlay {
   position: absolute;
-  /* Inset is negative on all four sides so the wash extends beyond
-     the text bounds — no rectangle silhouette aligned to the text
-     box. Asymmetric: more horizontal slack since headlines fill
-     the width, less vertical so the wash doesn't bleed into the
-     buttons row below. */
-  inset: -28px -36px -16px -20px;
+  inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.25) 0%,
-    rgba(0, 0, 0, 0.40) 100%
-  );
-  /* Radial mask = the only thing that hides the rectangle. The
-     ellipse peaks at 30% (fully dark center-left where text lives)
-     and fades to transparent (rectangle disappears) by the edges.
-     User perceives a soft local darkening behind text, NOT a box. */
-  -webkit-mask-image: radial-gradient(
-    ellipse 80% 75% at 38% 50%,
-    rgba(0, 0, 0, 1) 30%,
-    rgba(0, 0, 0, 0) 100%
-  );
-          mask-image: radial-gradient(
-    ellipse 80% 75% at 38% 50%,
-    rgba(0, 0, 0, 1) 30%,
-    rgba(0, 0, 0, 0) 100%
+  z-index: 2;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.35) 100%
   );
 }
 
-/* HERO → SECTION BOTTOM FADE (v8.5 micro design polish, May-2026).
-   ====================================================================
-   A short premium gradient that softens the bottom edge of the hero
-   image so it blends into the dark-blue section below — no hard line
-   between the photo and the next section. Lives INSIDE the hero
-   container only (added as a sibling overlay in HeroSlider.tsx) so
-   it cannot affect the next section's height or paint cost.
-
-   Per spec literal:
-     - height: clamp(70px, 9vh, 120px)  — short, never tall.
-     - z-index: 3                        — above images (no z), below
-                                           the copy overlay (z-10),
-                                           below the buttons & badge.
-                                           So it never dims headline,
-                                           subhead, badge, or CTAs.
-     - pointer-events: none              — purely decorative; never
-                                           steals clicks from CTAs.
-     - bottom gradient stops             — see v8.5.1 tune below.
-   No blur (spec: "do NOT use heavy blur"; the optional 3px blur is
-   intentionally SKIPPED for max performance — no backdrop-filter
-   compositing cost, especially on mid-range Android).
-   No animation. Promoted onto its own GPU layer with translateZ(0)
-   so the gradient is rasterised once and stays on the compositor —
-   no per-frame paint work during scroll.
-
-   v8.5.1 SEAM-INVISIBLE TUNE (May-2026):
-   ====================================================================
-   v8.5 ended at rgba(5,22,40,0.95) which over the hero's bg-black
-   composited to ≈ rgb(5,21,38) at the bottom pixel — but the next
-   section's top edge composites to ≈ rgb(12,24,38) (`from-primary/10
-   via-background to-background` over the dark theme `--background:
-   222 45% 4%` ≈ rgb(6,8,15) tinted with `--primary: 205 92% 62%` ≈
-   rgb(69,172,247) at 10% alpha). The 7-unit red delta plus the 5%
-   photo bleed-through made the seam faintly visible.
-
-   Fix per "STRICT MICRO FIX ONLY — make transition invisible":
-     1. Final stop color changed (5,22,40) → (12,24,38) — pixel-exact
-        match to the section's compositional top edge.
-     2. Final stop alpha bumped 0.95 → 1.0 — eliminates the photo
-        bleed-through at the very bottom row, so the bottom pixel is
-        guaranteed to be the section color.
-     3. One extra midpoint stop added (40% / 75%) for a smoother
-        S-curve — "slightly smooth the existing gradient only" per
-        spec; perceptually softer ramp from transparent to opaque
-        without changing the overall character of the fade.
-   Height (clamp 70px / 9vh / 120px), position (absolute bottom 0),
-   z-index (3), pointer-events (none), and translateZ(0) GPU
-   promotion all UNCHANGED. */
-.hero-bottom-fade {
+/* (3) Bottom-edge ambient shadow — replaces .hero-bottom-fade.
+   Taller and softer than the v8.5.1 fade so it reads as the
+   photo's own bottom ambient instead of a separate dark band. */
+.hero-bottom-overlay {
   position: absolute;
-  left: 0;
-  right: 0;
   bottom: 0;
-  height: clamp(70px, 9vh, 120px);
+  left: 0;
+  width: 100%;
+  height: 160px;
   pointer-events: none;
   z-index: 3;
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0)       0%,
-    rgba(8, 18, 30, 0.25)  40%,
-    rgba(10, 21, 34, 0.65) 75%,
-    rgba(12, 24, 38, 1)    100%
+    rgba(10, 20, 40, 0)    0%,
+    rgba(10, 20, 40, 0.4)  40%,
+    rgba(10, 20, 40, 0.85) 100%
   );
   transform: translateZ(0);
 }
