@@ -27,11 +27,36 @@ export function useHeroImages() {
   return useQuery<HeroImage[]>({
     queryKey: KEY,
     initialData: readBootstrap,
-    // initialData with `staleTime: Infinity` (the global default) means
-    // the hook NEVER refetches on mount when bootstrap data is present.
-    // That's exactly what we want for the homepage hero — the rotating
-    // slider polls nothing and admin uploads invalidate the key
-    // explicitly via the upload/update/delete mutations below.
+    // Three-tier fast-path → consistent path → safety net:
+    //   (a) BEST CASE — boot fetch finished before the hook mounted:
+    //       `initialData` returns the array, useQuery uses it on the
+    //       very first render, and (per the global `staleTime: Infinity`)
+    //       it never refetches. Zero network on this page load.
+    //   (b) COMMON CASE — boot fetch is still in flight when React
+    //       mounts: `initialData` returns undefined, so useQuery
+    //       calls this `queryFn`. We `await` the in-flight promise
+    //       exposed as `window.__HERO_BOOT__`, reusing its result
+    //       without ever firing a second network request. This is
+    //       the must-fix the architect flagged: previously the hook
+    //       would silently fall back to the default queryFn (which
+    //       fires its OWN fetch in parallel with the boot one),
+    //       wasting a round-trip and racing for cache.
+    //   (c) WORST CASE — no window (SSR-style import in tests), boot
+    //       script never ran, or boot fetch failed: fall through to
+    //       the standard fetch so the hook always works.
+    queryFn: async () => {
+      if (typeof window !== "undefined" && window.__HERO_BOOT__) {
+        try {
+          const fromBoot = await window.__HERO_BOOT__;
+          if (Array.isArray(fromBoot)) return fromBoot;
+        } catch {
+          /* boot promise rejected — fall through to direct fetch */
+        }
+      }
+      const res = await fetch("/api/hero-images", { credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      return (await res.json()) as HeroImage[];
+    },
   });
 }
 
