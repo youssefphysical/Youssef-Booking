@@ -201,33 +201,57 @@ export function HeroSlider() {
       // we only attach a single window listener for the whole slider.
       className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
-      data-hero-state={isPending ? "loading" : current ? "ready" : "empty"}
+      data-hero-state="ready"
       data-scrolling={isScrolling ? "true" : "false"}
     >
-      {/* Cinematic ambient base — paints with the very first frame
-          so the hero NEVER reads as "loading" or "empty". Even when
-          there are zero admin slides (cold-start, fresh deploy), this
-          layer reads as a deliberate brand backdrop: warm subject-
-          light radial top-left + cool cyan rim radial bottom-right
-          (the trademark TRON two-light setup) over a deep navy floor.
-          Three radials + one base linear, all GPU-cheap (no blur, no
-          backdrop-filter, no animation). When a slide is present this
-          ambient sits behind it — invisible. When no slide is present
-          it carries the whole hero, branded and confident. */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            // Warm subject-light top-left (the "key light" in cinematography)
-            "radial-gradient(ellipse 50% 45% at 28% 22%, hsl(200 90% 22% / 0.85), transparent 65%), " +
-            // Cool cyan rim bottom-right (the "rim/back light")
-            "radial-gradient(ellipse 55% 50% at 78% 82%, hsl(195 100% 32% / 0.55), transparent 60%), " +
-            // Subtle accent kicker centre-low for foreground vignette
-            "radial-gradient(ellipse 70% 35% at 50% 105%, hsl(220 80% 8% / 0.9), transparent 55%), " +
-            // Deep navy floor — the "ambient" in the three-point setup
-            "linear-gradient(180deg, #030814 0%, #050b18 55%, #02060f 100%)",
-        }}
+      {/* ============================================================
+          STATIC HERO BASE — May 2026 permanent flash kill (final).
+          ============================================================
+          This <img> is the cornerstone of the no-flash guarantee:
+            • It is a real DOM <img> with a real `src`, NOT a CSS
+              background, NOT a data URL on a global, NOT injected
+              after hydration. It exists in the JSX from the first
+              React render and the `<link rel="preload" as="image">`
+              for the same path is in the HTML head BEFORE any
+              script tag. The browser begins decoding it before
+              React has even mounted.
+            • The path `/hero-default.webp` is a Vite public-dir
+              asset — `client/public/hero-default.webp` is copied
+              verbatim to `dist/public/` at build time and served
+              by Vercel's CDN as a static file (no API, no JS).
+            • `scripts/inject-hero.mjs` (post-`vite build`) refreshes
+              `dist/public/hero-default.webp` from the current
+              active hero in Neon on EVERY Vercel deploy, so the
+              static file is always in sync with what the admin
+              uploaded — no stale committed binary problem.
+            • `loading="eager"` + `fetchpriority="high"` +
+              `decoding="sync"` together force the browser to put
+              this image at the front of the queue and decode it on
+              the main thread before paint. Combined with the
+              preload link, the image is on screen on the very
+              first frame after HTML parse.
+          The dynamic <img> tags below (admin-managed slides with
+          per-image tuning, blur depth-of-field, fade transitions)
+          render ON TOP of this static base via DOM order + the
+          `absolute inset-0` positioning — so when a dynamic slide
+          loads it covers the static one cleanly. The static base
+          is only ever visually relevant for the ~0-150 ms window
+          between first paint and the first dynamic slide arriving;
+          for that window it makes the hero look complete and
+          branded instead of gradient-only.  */}
+      <img
+        src="/hero-default.webp"
+        alt=""
+        // CRITICAL: these three attributes together are why the
+        // image is on screen on frame 1. Do not change without
+        // re-validating the no-flash contract.
+        loading="eager"
+        // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
+        fetchpriority="high"
+        decoding="sync"
         aria-hidden="true"
+        className="hero-img absolute inset-0 w-full h-full object-cover"
+        data-testid="img-hero-static-default"
       />
 
       {/* Image layer — TWIN-IMAGE depth-of-field rig.

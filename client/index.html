@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- ===== HERO STATIC PRELOAD (May 2026, FINAL flash kill) =====
+         The single source of truth for the hero's first paint. This
+         preload + the matching <img src="/hero-default.webp"> in
+         HeroSlider.tsx form a closed system that requires NO JS,
+         NO API call, NO global window state to render the photo on
+         the very first frame. The static .webp file lives in
+         client/public/ (committed to git) and is refreshed by
+         scripts/inject-hero.mjs on every Vercel deploy from the
+         current active hero in Neon — so the static file is always
+         in sync with the admin's choice without ever being stale.
+         Placed BEFORE the font preconnects so the image gets
+         priority — the image is the LCP element on the homepage. -->
+    <link rel="preload" as="image" href="/hero-default.webp" fetchpriority="high">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 

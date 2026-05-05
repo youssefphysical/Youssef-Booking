@@ -1,43 +1,56 @@
 /* eslint-disable no-console */
 /**
- * BUILD-TIME HERO BAKE (May 2026 — permanent flash fix)
- * =====================================================
+ * BUILD-TIME HERO STATIC FILE REFRESH (May 2026, FINAL flash kill)
+ * =================================================================
  *
  * Runs once on Vercel after `vite build` completes. Reads the active
- * hero image directly from Neon, then patches `dist/public/index.html`
- * so the FIRST hero's full data URL is present in the very first byte
- * the CDN sends back to the browser.
+ * hero image directly from Neon, then writes its binary contents to
+ * `dist/public/hero-default.webp` — overwriting the committed dev
+ * placeholder with the admin's current production photo so the
+ * static file served at `/hero-default.webp` is always in sync.
  *
- * Why this exists
- * ---------------
- * Even with the parallel /api/hero-images fetch from index.html, the
- * image bytes still have to travel from origin → browser before paint.
- * On a cold CDN edge, that's a 200-400 ms round-trip the user sees as
- * a gradient flash. Baking the image into the HTML eliminates the
- * round-trip entirely: by the time the HTML parser reaches `<body>`,
- * the image is already preloaded AND its data URL is already on
- * window.__INITIAL_HERO_IMAGES__ for TanStack Query's initialData.
+ * Why this design (vs. the previous HTML-bake approach)
+ * -----------------------------------------------------
+ * The earlier version of this script inlined the hero's base64 data
+ * URL into a `<script>window.__INITIAL_HERO_IMAGES__=...</script>`
+ * tag and a `<link rel="preload" as="image" href="data:image/...">`.
+ * That worked but had two costs:
+ *   1) The HTML grew from 6 KB to 220 KB for EVERY route (Vercel
+ *      rewrite serves the same index.html at /book, /policy, /admin,
+ *      /how-it-works, etc). Non-home routes paid the bloat.
+ *   2) First paint still required the JS bundle to render the React
+ *      <img> tag — the browser had the data URL preloaded but no
+ *      element to attach it to until React mounted.
+ * This new approach renders a real `<img src="/hero-default.webp">`
+ * in HeroSlider.tsx unconditionally, paired with a
+ * `<link rel="preload" as="image" href="/hero-default.webp">` in the
+ * HTML head. The browser starts decoding the image as soon as it
+ * sees the preload link — long before React mounts. The image is on
+ * screen on the very first frame after HTML parse. This script's job
+ * is just to keep the static file fresh: every deploy overwrites the
+ * webp with whatever the admin's current active hero is.
  *
  * Failure mode
  * ------------
  * If DATABASE_URL is missing, the table is empty, or the query
- * throws, this script logs and exits 0 — the build still succeeds,
- * and the runtime async-fetch fallback in index.html keeps working
- * exactly as before. Never breaks the deploy.
- *
- * No deps beyond `pg` (already a project dep). XSS-safe: the JSON
- * blob is sanitised against `</script>` injection before insertion.
+ * throws, this script logs and exits 0. The deploy still succeeds;
+ * the dev placeholder committed at `client/public/hero-default.webp`
+ * is what gets served. Worst case: the static file is one deploy
+ * behind the admin's latest upload — the dynamic slides loaded by
+ * the API after first paint cover the static base, so the user sees
+ * the latest hero as soon as the JS bundle finishes loading anyway.
+ * Never breaks the deploy.
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import pg from "pg";
 
-const HTML_PATH = resolve("dist/public/index.html");
+const OUT_PATH = resolve("dist/public/hero-default.webp");
 
-async function fetchActiveHeroes() {
+async function fetchActiveFirstHero() {
   if (!process.env.DATABASE_URL) {
-    console.log("[inject-hero] DATABASE_URL missing — skipping bake (runtime fetch fallback remains).");
+    console.log("[inject-hero] DATABASE_URL missing — keeping committed dev placeholder.");
     return null;
   }
   const client = new pg.Client({
@@ -49,115 +62,42 @@ async function fetchActiveHeroes() {
   await client.connect();
   try {
     const { rows } = await client.query(`
-      SELECT id, image_data_url, title, subtitle, badge, is_active, sort_order,
-             focal_x, focal_y, zoom, rotate, brightness, contrast,
-             overlay_opacity, created_at
+      SELECT id, image_data_url
         FROM hero_images
        WHERE is_active = true
        ORDER BY sort_order ASC, id ASC
+       LIMIT 1
     `);
-    return rows.map((r) => ({
-      id: r.id,
-      imageDataUrl: r.image_data_url,
-      title: r.title,
-      subtitle: r.subtitle,
-      badge: r.badge,
-      isActive: r.is_active,
-      sortOrder: r.sort_order,
-      focalX: r.focal_x,
-      focalY: r.focal_y,
-      zoom: r.zoom,
-      rotate: r.rotate,
-      brightness: r.brightness,
-      contrast: r.contrast,
-      overlayOpacity: r.overlay_opacity,
-      createdAt: r.created_at,
-    }));
+    return rows[0] || null;
   } finally {
     await client.end().catch(() => {});
   }
 }
 
-// Hard ceiling for the baked data URL. The HTML is served on EVERY
-// SPA route (Vercel rewrite `/((?!.*\..*).*)` → /index.html), not
-// just the homepage, so an oversized first slide hurts TTFB on
-// /book, /policy, /how-it-works, /admin, etc. Above this size,
-// skip the bake and let the runtime async fetch handle first paint
-// — the user would have a flash on this specific slide, but every
-// other route stops carrying the bloat. WebP at 1920×1080 typically
-// lands at 80-200 KB; 350 KB gives plenty of headroom for premium
-// quality without becoming abusive.
-const MAX_BAKE_BYTES = 350 * 1024;
-
-function bakeHtml(html, heroes) {
-  const first = heroes[0];
-  const url = first.imageDataUrl || "";
-  if (url.length > MAX_BAKE_BYTES) {
-    console.log(
-      `[inject-hero] First slide imageDataUrl is ${url.length}b > ${MAX_BAKE_BYTES}b cap — ` +
-        `skipping bake to keep HTML lean for non-home routes. ` +
-        `Runtime async fetch will handle first paint instead. ` +
-        `Tip: re-export the hero as WebP at quality ~75 to land under 350 KB.`,
-    );
-    return null;
-  }
-  // Only bake the FIRST slide's image into the preload. Baking ALL
-  // slides would balloon HTML to ~Nx150KB. The runtime bootstrap
-  // fetch updates window.__INITIAL_HERO_IMAGES__ with the full list
-  // for the rotating slider; useQuery's queryFn awaits that promise.
-  const onlyFirst = [first];
-  // XSS-safe JSON: replace any literal `</` inside string values so
-  // a malicious slide title can never close the <script> tag early.
-  const json = JSON.stringify(onlyFirst).replace(/<\/(script)/gi, "<\\/$1");
-
-  const preloadTag = `<link rel="preload" as="image" href="${first.imageDataUrl}" fetchpriority="high">`;
-  const bootStateTag =
-    `<script>` +
-    `window.__INITIAL_HERO_IMAGES__=${json};` +
-    `window.__HERO_BAKED__=true;` +
-    `</script>`;
-
-  // Insert immediately after the existing <link rel="icon"> so the
-  // preload is the very first non-icon thing the parser sees. The
-  // existing async-fetch bootstrap script in index.html will see
-  // window.__HERO_BAKED__ and skip its synthetic preload (the baked
-  // one already exists) but STILL run its fetch to refresh the full
-  // slide list for the rotation.
-  const anchor = '<link rel="icon" type="image/png" href="/favicon.png" />';
-  if (!html.includes(anchor)) {
-    throw new Error(`Anchor not found in HTML: ${anchor}`);
-  }
-  return html.replace(
-    anchor,
-    `${anchor}\n    ${preloadTag}\n    ${bootStateTag}`,
-  );
-}
-
 (async () => {
   try {
-    if (!existsSync(HTML_PATH)) {
-      console.error(`[inject-hero] ${HTML_PATH} not found — did vite build succeed?`);
+    if (!existsSync(dirname(OUT_PATH))) {
+      mkdirSync(dirname(OUT_PATH), { recursive: true });
+    }
+    const row = await fetchActiveFirstHero();
+    if (!row) {
+      console.log("[inject-hero] No active hero in DB — keeping committed dev placeholder.");
       return;
     }
-    const heroes = await fetchActiveHeroes();
-    if (!heroes || heroes.length === 0) {
-      console.log("[inject-hero] No active hero images — leaving runtime fallback in place.");
+    const dataUrl = row.image_data_url || "";
+    const m = dataUrl.match(/^data:(image\/[a-z+]+);base64,(.+)$/);
+    if (!m) {
+      console.log("[inject-hero] Active hero is not a data URL — keeping committed dev placeholder.");
       return;
     }
-    const original = readFileSync(HTML_PATH, "utf8");
-    const patched = bakeHtml(original, heroes);
-    if (patched === null) {
-      // Skipped due to size cap — bakeHtml already logged the reason.
-      return;
-    }
-    writeFileSync(HTML_PATH, patched);
+    const buf = Buffer.from(m[2], "base64");
+    writeFileSync(OUT_PATH, buf);
     console.log(
-      `[inject-hero] Baked first of ${heroes.length} hero(es) into HTML — ` +
-        `imageDataUrl=${(heroes[0].imageDataUrl || "").length}b, ` +
-        `HTML grew from ${original.length}b → ${patched.length}b.`,
+      `[inject-hero] Refreshed ${OUT_PATH} from active hero id=${row.id} ` +
+        `(${m[1]}, ${buf.length} bytes).`,
     );
   } catch (e) {
-    console.error("[inject-hero] FAILED — runtime fallback remains:", e?.message || e);
+    console.error("[inject-hero] FAILED — committed dev placeholder remains:", e?.message || e);
     // exit 0 — never break the deploy
   }
 })();
