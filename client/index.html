@@ -42,12 +42,35 @@
           // slider needs them all), but we no longer create a second
           // preload link.
           var alreadyBaked = !!window.__HERO_BAKED__;
+          // Capture the baked seed BEFORE the fetch so we can restore
+          // it on any failure. Critical: a transient API failure
+          // (502, network blip, 429) must NEVER wipe the baked seed
+          // and lock the hero into an empty state for the session
+          // (the global `staleTime: Infinity` would make the empty
+          // result sticky until a hard navigation).
+          var bakedSeed = Array.isArray(window.__INITIAL_HERO_IMAGES__)
+            ? window.__INITIAL_HERO_IMAGES__.slice()
+            : null;
           var boot = fetch("/api/hero-images", { credentials: "include" })
-            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (r) {
+              // Throw on non-OK so the .catch below preserves the
+              // baked seed. Returning `[]` here would silently
+              // overwrite the seed with an empty list.
+              if (!r.ok) throw new Error("hero-images " + r.status);
+              return r.json();
+            })
             .then(function (list) {
               var arr = Array.isArray(list) ? list : [];
-              // Always overwrite — the API is the source of truth and
-              // may include slides added since the last deploy.
+              // Defensive: if API returns an empty list but we have
+              // a baked seed (deploy was made WITH a slide and the
+              // table hasn't been emptied), prefer the seed. This
+              // protects against a brief admin-side race where a
+              // slide is being re-uploaded.
+              if (arr.length === 0 && bakedSeed && bakedSeed.length > 0) {
+                window.__INITIAL_HERO_IMAGES__ = bakedSeed;
+                return bakedSeed;
+              }
+              // Otherwise the API is the source of truth — overwrite.
               window.__INITIAL_HERO_IMAGES__ = arr;
               // Skip synthetic preload if the build-time bake already
               // did it. Only inject when no bake happened (e.g. local
@@ -68,8 +91,15 @@
               return arr;
             })
             .catch(function () {
-              // Keep whatever the bake gave us; only fall back to
-              // empty if there was no bake either.
+              // FAILURE PATH: never overwrite a non-empty baked seed.
+              // Only set the global to [] if nothing was baked AND
+              // nothing was set by a previous run. This ensures a
+              // transient API failure leaves the hero showing the
+              // baked photo instead of falling back to gradient.
+              if (bakedSeed && bakedSeed.length > 0) {
+                window.__INITIAL_HERO_IMAGES__ = bakedSeed;
+                return bakedSeed;
+              }
               if (!Array.isArray(window.__INITIAL_HERO_IMAGES__)) {
                 window.__INITIAL_HERO_IMAGES__ = [];
               }

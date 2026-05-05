@@ -78,8 +78,29 @@ async function fetchActiveHeroes() {
   }
 }
 
+// Hard ceiling for the baked data URL. The HTML is served on EVERY
+// SPA route (Vercel rewrite `/((?!.*\..*).*)` → /index.html), not
+// just the homepage, so an oversized first slide hurts TTFB on
+// /book, /policy, /how-it-works, /admin, etc. Above this size,
+// skip the bake and let the runtime async fetch handle first paint
+// — the user would have a flash on this specific slide, but every
+// other route stops carrying the bloat. WebP at 1920×1080 typically
+// lands at 80-200 KB; 350 KB gives plenty of headroom for premium
+// quality without becoming abusive.
+const MAX_BAKE_BYTES = 350 * 1024;
+
 function bakeHtml(html, heroes) {
   const first = heroes[0];
+  const url = first.imageDataUrl || "";
+  if (url.length > MAX_BAKE_BYTES) {
+    console.log(
+      `[inject-hero] First slide imageDataUrl is ${url.length}b > ${MAX_BAKE_BYTES}b cap — ` +
+        `skipping bake to keep HTML lean for non-home routes. ` +
+        `Runtime async fetch will handle first paint instead. ` +
+        `Tip: re-export the hero as WebP at quality ~75 to land under 350 KB.`,
+    );
+    return null;
+  }
   // Only bake the FIRST slide's image into the preload. Baking ALL
   // slides would balloon HTML to ~Nx150KB. The runtime bootstrap
   // fetch updates window.__INITIAL_HERO_IMAGES__ with the full list
@@ -125,6 +146,10 @@ function bakeHtml(html, heroes) {
     }
     const original = readFileSync(HTML_PATH, "utf8");
     const patched = bakeHtml(original, heroes);
+    if (patched === null) {
+      // Skipped due to size cap — bakeHtml already logged the reason.
+      return;
+    }
     writeFileSync(HTML_PATH, patched);
     console.log(
       `[inject-hero] Baked first of ${heroes.length} hero(es) into HTML — ` +
