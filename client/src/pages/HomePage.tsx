@@ -62,7 +62,7 @@ const CERT_KEYS = [
 ] as const;
 
 export default function HomePage() {
-  const { data: settings } = useSettings();
+  const { data: settings, error: settingsError } = useSettings();
   const { t, lang } = useTranslation();
   // ONE SOURCE OF TRUTH for the About bio (v8.3 stable-text fix).
   // Previously the fallback (`t("home.bio.fallback")`) was rendered at
@@ -76,8 +76,16 @@ export default function HomePage() {
   // changes for the lifetime of this page (settings has staleTime:
   // Infinity from the global queryClient). `bio` itself is derived
   // ONLY from resolved data — it is not consulted before
-  // `settingsResolved` is true.
-  const settingsResolved = settings !== undefined;
+  // `bioReady` is true.
+  //
+  // ERROR RESILIENCE: if /api/settings ever fails (network/server),
+  // `settings` stays undefined forever and the skeleton would never
+  // resolve. To prevent indefinite-skeleton, we treat an error as
+  // "settings known to be unavailable" → fall through to the i18n
+  // fallback bio. This matches the spec's parallel rule for the auth
+  // fix ("If API fails: treat as guest, show Sign In") — graceful
+  // degradation to the safe stable text.
+  const bioReady = settings !== undefined || settingsError != null;
   const bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback");
 
   return (
@@ -199,12 +207,14 @@ export default function HomePage() {
           eyebrow={t("section.about.eyebrow")}
           title={t("section.about.title")}
         />
-        {/* v8.3 stable-text fix: render skeleton until settings resolves,
-            then render the real bio exactly once. This prevents the
-            visible text-swap that previously occurred when the i18n
-            fallback paint was replaced by a different admin-configured
-            profileBio after the API resolved. */}
-        {settingsResolved ? (
+        {/* v8.3 stable-text fix: render skeleton until settings resolves
+            (or errors), then render the real bio exactly once. This
+            prevents the visible text-swap that previously occurred when
+            the i18n fallback paint was replaced by a different admin-
+            configured profileBio after the API resolved. On settings
+            error, falls through to the i18n fallback bio so we never
+            get stuck on an indefinite skeleton. */}
+        {bioReady ? (
           <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
             {bio}
           </p>

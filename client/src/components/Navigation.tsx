@@ -66,7 +66,12 @@ export function Navigation() {
   // (id or email). For every legitimate `UserResponse` from the
   // server this is a no-op (`id` is always present); for any
   // pathological cache state it correctly stays Sign In.
-  const isAuthenticated = Boolean(user && (user.id || user.email));
+  // Note: `user.id != null` (instead of `user.id`) handles the
+  // theoretical `id === 0` case bulletproof-ly; `!!user.email?.trim()`
+  // rejects whitespace-only email strings.
+  const isAuthenticated = Boolean(
+    user && (user.id != null || !!user.email?.trim())
+  );
   const isGuest = !authLoading && !isAuthenticated;
   const shouldShowSignIn = !isAuthenticated;
 
