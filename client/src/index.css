@@ -579,6 +579,50 @@
    Mobile and desktop behave identically. */
 .hero-kenburns { /* positioning class only — no animation by design */ }
 
+/* HERO IMAGE LAYER — stacked-images architecture v4 (May-2026).
+   ALL hero slides are rendered into the DOM at once and stacked
+   absolutely at inset:0 (see HeroSlideLayer in HeroSlider.tsx).
+   Their visibility is controlled by toggling [data-active] from
+   React, which flips this CSS rule between opacity 0 and 1 with
+   a single 1200 ms transition.
+
+   GPU contract:
+   - will-change: opacity → browser pre-allocates a compositor layer
+     for each slide so the opacity ramp is purely compositor work.
+   - transform: translateZ(0) → forces hardware-accelerated layer
+     promotion even for browsers that don't honour will-change.
+   - backface-visibility: hidden → kills sub-pixel rounding artifacts
+     on Webkit during the fade and prevents the layer from being
+     re-rasterised mid-transition.
+
+   Result: opacity changes are 100% compositor-thread work. The
+   previous slide fades 1 → 0 while the next slide fades 0 → 1 in
+   parallel, giving a true crossfade with zero overlap haze, zero
+   re-layout, zero re-paint of the image bitmap. The fade is
+   eased with cubic-bezier(0.22, 1, 0.36, 1) (ease-out-quint) so
+   the energy decelerates into the final frame — water-like, not
+   linear.
+
+   First-paint: the active slide on the very first render is
+   mounted directly with [data-active="true"], so its computed
+   opacity is 1 from frame 1. CSS transitions only run on style
+   CHANGES, not initial values, so there is no visible fade-in
+   on first paint — the slide just appears, exactly matching the
+   no-flash contract of the static base image underneath. */
+.hero-slide-layer {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+}
+.hero-slide-layer[data-active="true"] {
+  opacity: 1;
+}
+
 /* Reduced motion — respect users */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

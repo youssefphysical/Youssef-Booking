@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Link } from "wouter";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -8,42 +8,46 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useHeroImages } from "@/hooks/use-hero-images";
 import type { HeroImage } from "@shared/schema";
 
-// Cinematic image-only hero. Auto-rotates every 6s. A single tick
-// counter drives both the image rotation (modulo slides.length) and
-// the brand-pillar copy rotation (modulo 3) — so visitors always see
-// the three core promises (premium / results / purpose) eventually,
-// even if the admin hasn't uploaded any hero images yet.
-//
-// Performance: this hero is engineered for buttery-smooth scrolling.
-// We deliberately avoid:
-//   - useScroll / parallax (caused per-frame transform repaints)
-//   - mix-blend-mode on overlays (forces full stacking-context repaint)
-//   - backdrop-filter on the badge (very expensive on mobile)
-//   - box-shadow keyframe animation on mobile (pulse/breathe gated to
-//     desktop via the .tron-pulse / .tron-cta-breathe media query)
-// We ALLOW:
-//   - A static CSS filter on the <img> for premium look (contrast +
-//     brightness + saturation slightly up). Static filters are baked
-//     into the GPU layer once at compositing time and do NOT cost
-//     per-frame work, so they are safe.
-//   - A very slow Ken Burns scale on desktop only, paused while the
-//     user is actively scrolling — this gives the hero life without
-//     ever competing with scroll for CPU/GPU time.
-// MOTION TUNING v3 (May-2026, "fade-only, Ken Burns disabled" pass).
-// Ken Burns has been removed entirely — no zoom, no pan, no translate,
-// no scale animation, no parallax, no scroll-linked behaviour. The
-// only animation in the hero is the opacity crossfade between slides.
-//
-// ROTATE_MS = 8000 ms: each slide is fully visible for 8 s before the
-// next one starts crossfading in (matches the user's spec).
-//
-// FADE_MS = 1200 ms: the crossfade itself is a single opacity ramp
-// from 0 → 1 driven by framer-motion (which compiles to a GPU-handled
-// CSS-equivalent opacity transition under the hood — opacity-only,
-// no filter, no transform). Eased with cubic-bezier(0.22, 1, 0.36, 1)
-// (ease-out-quint) per the user's spec for water-like smoothness.
+// HERO MOTION ARCHITECTURE v4 (May-2026, "stacked images, CSS-only fade").
+// =====================================================================
+// PREVIOUS ARCHITECTURE (v3):
+//   AnimatePresence rendered exactly ONE <motion.div> with the active
+//   slide. On every tick, framer-motion unmounted the old slide and
+//   mounted the new one. Even though the visual was a fade, the DOM
+//   teardown/build (and the resulting <img> mount + main-thread image
+//   decode) caused perceptible jank on mid-range Android devices.
+// NEW ARCHITECTURE (v4):
+//   1. ALL hero slides are rendered into the DOM at once, stacked
+//      absolutely at inset:0. They never mount/unmount during the
+//      lifetime of the hero — only their `data-active` attribute flips.
+//   2. Visibility is controlled by a SINGLE CSS rule (.hero-slide-layer
+//      in index.css) that animates `opacity` only:
+//        transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+//      No framer-motion is involved in image fades. The browser's
+//      compositor handles the entire crossfade on its own thread.
+//   3. Each slide layer sits on its own GPU layer
+//      (will-change: opacity + transform: translateZ(0) + backface-
+//      visibility: hidden), so opacity changes are pure compositor
+//      work — zero re-layout, zero re-paint of the image bitmap.
+//   4. Image decode happens ONCE per slide, at React's first render
+//      after `useHeroImages` resolves. From that point onward,
+//      switching slides is a free attribute toggle: the previous
+//      slide fades 1→0 while the next slide fades 0→1 in parallel,
+//      giving a true crossfade with zero overlap haze.
+//   5. The HeroSlideLayer component is `React.memo`'d — when a tick
+//      change re-renders the parent, only the two affected slide
+//      layers (the one becoming inactive and the one becoming active)
+//      re-render their wrapper attribute. The other layers are
+//      bailed out by referential equality of their props. The <img>
+//      element itself is NEVER re-rendered, so the browser never
+//      re-fetches or re-decodes.
+//   6. All slides use loading="eager". Hero images are stored as
+//      data URLs (slide.imageDataUrl) so they don't network-fetch,
+//      but eager+priority hints still help the browser prioritise
+//      the first slide's decode for the no-flash first paint.
+
 const ROTATE_MS = 8000;
-const FADE_MS = 1200;
+const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule in index.css
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -51,7 +55,9 @@ function prefersReducedMotion() {
 }
 
 // Stagger envelope for the overlay copy. Each child fades up in
-// sequence: badge → headline → subtitle → button row.
+// sequence: badge → headline → subtitle → button row. Copy is a
+// SEPARATE layer from the images and lives on z-10 above all slide
+// layers — its re-mount on tick change does not affect image smoothness.
 const copyContainer: Variants = {
   hidden: {},
   visible: {
@@ -67,14 +73,86 @@ const copyItem: Variants = {
   },
 };
 
+// One stacked slide layer. Memoized so it ONLY re-renders when its
+// own props change (slide data or active flag). When the parent
+// re-renders due to a tick change, only the two affected slides
+// (becoming-inactive + becoming-active) flip their data-active
+// attribute on the DOM. Every other slide is bailed out by memo.
+// The <img> element is never re-mounted or re-rendered.
+const HeroSlideLayer = memo(function HeroSlideLayer({
+  slide,
+  isActive,
+  isFirst,
+}: {
+  slide: HeroImage;
+  isActive: boolean;
+  isFirst: boolean;
+}) {
+  // Per-image admin tuning (focal point, zoom, rotate, brightness,
+  // contrast, overlay opacity). All NULL-safe → identity defaults so
+  // pre-existing slides without tuning data render unchanged.
+  const t_focalX = slide.focalX ?? 0;
+  const t_focalY = slide.focalY ?? 0;
+  const t_zoom = slide.zoom ?? 1.0;
+  const t_rotate = slide.rotate ?? 0;
+  const t_brightness = slide.brightness ?? 1.0;
+  const t_contrast = slide.contrast ?? 1.0;
+  const t_overlayOpacity = slide.overlayOpacity ?? 35; // percent
+
+  // Match the .hero-img CSS baseline (brightness 1.05 / contrast 1.08
+  // / saturate 1.05) exactly, then multiply per-image admin tuning.
+  // translateZ(0) keeps the GPU layer pinned during admin slider tweaks.
+  const sharpStyle: React.CSSProperties = {
+    filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
+    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
+    transformOrigin: "center",
+  };
+
+  return (
+    <div
+      className="hero-slide-layer"
+      data-active={isActive ? "true" : "false"}
+      data-testid={`hero-slide-layer-${slide.id}`}
+      aria-hidden="true"
+    >
+      <img
+        src={slide.imageDataUrl}
+        alt=""
+        // ALL slides eager. Data URLs don't network-fetch, but eager +
+        // sync decode for the first slide (which is visible on first
+        // paint) keeps the no-flash contract; subsequent slides decode
+        // async to avoid blocking the main thread on mount.
+        loading="eager"
+        // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
+        fetchpriority={isFirst ? "high" : "low"}
+        decoding={isFirst ? "sync" : "async"}
+        className="hero-img absolute inset-0 w-full h-full object-cover"
+        style={sharpStyle}
+        data-testid={`img-hero-slide-${slide.id}`}
+      />
+      {/* Per-slide bottom darkening gradient — lives INSIDE the slide
+          layer so it crossfades together with its image. Two-stop
+          linear gradient, transparent above 55% so the upper subject
+          area is never touched. Direct 1:1 alpha mapping of the admin
+          slider value (0-100 percent → 0.0-1.0 alpha). */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `linear-gradient(to top, rgba(0,0,0,${(t_overlayOpacity / 100).toFixed(3)}) 0%, transparent 55%)`,
+        }}
+      />
+    </div>
+  );
+});
+
 export function HeroSlider() {
   const { t } = useTranslation();
   // Use the shared hook so we get `initialData` from
   // `window.__INITIAL_HERO_IMAGES__` (populated by the inline boot
-  // script in index.html). When the boot script wins the race against
-  // the JS bundle (the common case on prod), the first <img> tag is
-  // rendered on the very first React paint — zero gradient flash.
-  const { data: images = [], isPending } = useHeroImages();
+  // script in index.html). When the boot script wins the race
+  // against the JS bundle, the slide layers render on the very
+  // first React paint — zero gradient flash.
+  const { data: images = [] } = useHeroImages();
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
   const reduced = prefersReducedMotion();
@@ -84,16 +162,12 @@ export function HeroSlider() {
     // have requested reduced motion at the OS level. They still see
     // the first slide and can use the pagination dots to navigate.
     if (reduced) return;
+    // Don't bother running an interval if there's only one slide
+    // (or none) — no opacity to flip, just wasted timer work.
+    if (slides.length <= 1) return;
     const id = window.setInterval(() => setTick((i) => i + 1), ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [reduced]);
-
-  // (Scroll-pause handler removed in the "fade-only" pass. There is no
-  // Ken Burns animation to pause anymore — the hero only crossfades
-  // between slides via opacity, which is a one-shot GPU transition,
-  // not a continuous animation that competes with scroll. No scroll
-  // listener, no requestAnimationFrame loop, no timers — zero ongoing
-  // work while a slide is held.)
+  }, [reduced, slides.length]);
 
   // Three world-class brand-pillar copy variants from i18n. Per-image
   // admin copy on a HeroImage row OVERRIDES the variant for that
@@ -126,48 +200,8 @@ export function HeroSlider() {
   const subhead = current?.subtitle?.trim() || variant.subhead;
   const badge = current?.badge?.trim() || variant.badge;
 
-  // ====== PER-IMAGE DISPLAY TUNING ======
-  // Admin-controlled render-time adjustments. All NULL-safe — pre-existing
-  // slides with no tuning data fall back to identity (zoom 1, no rotation,
-  // no offset, baseline brightness/contrast, default overlay) so the hero
-  // never visually shifts when this feature is added. The tuning is
-  // applied as a single combined inline `transform`/`filter` on the
-  // foreground sharp <img>, which composes cleanly with the wrapper's
-  // Ken Burns transform (the wrapper handles motion, the img handles
-  // composition tuning — they live on different elements so neither
-  // fights the other for the GPU layer).
-  const t_focalX = current?.focalX ?? 0;
-  const t_focalY = current?.focalY ?? 0;
-  const t_zoom = current?.zoom ?? 1.0;
-  const t_rotate = current?.rotate ?? 0;
-  const t_brightness = current?.brightness ?? 1.0;
-  const t_contrast = current?.contrast ?? 1.0;
-  const t_overlayOpacity = current?.overlayOpacity ?? 35; // percent
-
-  // CONSISTENCY-PASS (May-2026, post-load clarity fix).
-  // The image filter is now intentionally LIGHT and matches the
-  // baseline `.hero-img` CSS rule exactly:
-  //   brightness(1.05) contrast(1.08) saturate(1.05)
-  // No hue-rotate (that was tinting the photo cyan after load and
-  // making it read as "less clear"). No blur copy underneath, no
-  // radial mask on top — the sharp image is the only image. This
-  // means the static <img src="/hero-initial.webp"> on first paint
-  // and the dynamic admin <img> after API hydration get IDENTICAL
-  // visual treatment. No visible "after-load change". Admin per-image
-  // brightness/contrast multiply onto the same baseline so the
-  // sliders still work for fine-tuning. translateZ(0) keeps the
-  // GPU layer pinned during admin slider tweaks.
-  const sharpStyle: React.CSSProperties = {
-    filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
-    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
-    transformOrigin: "center",
-    willChange: "transform",
-  };
-
   return (
     <div
-      // No data-scrolling attribute — Ken Burns is disabled, so there
-      // is no animation to pause during scroll. Pure layout container.
       className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state="ready"
@@ -175,44 +209,21 @@ export function HeroSlider() {
       {/* ============================================================
           STATIC HERO BASE — May 2026 permanent flash kill (final).
           ============================================================
-          This <img> is the cornerstone of the no-flash guarantee:
-            • It is a real DOM <img> with a real `src`, NOT a CSS
-              background, NOT a data URL on a global, NOT injected
-              after hydration. It exists in the JSX from the first
-              React render and the `<link rel="preload" as="image">`
-              for the same path is in the HTML head BEFORE any
-              script tag. The browser begins decoding it before
-              React has even mounted.
-            • The path `/hero-initial.webp` is a Vite public-dir
-              asset — `client/public/hero-initial.webp` is copied
-              verbatim to `dist/public/` at build time and served
-              by Vercel's CDN as a static file (no API, no JS).
-            • `scripts/inject-hero.mjs` (post-`vite build`) refreshes
-              `dist/public/hero-initial.webp` from the current
-              active hero in Neon on EVERY Vercel deploy, so the
-              static file is always in sync with what the admin
-              uploaded — no stale committed binary problem.
-            • `loading="eager"` + `fetchpriority="high"` +
-              `decoding="sync"` together force the browser to put
-              this image at the front of the queue and decode it on
-              the main thread before paint. Combined with the
-              preload link, the image is on screen on the very
-              first frame after HTML parse.
-          The dynamic <img> tags below (admin-managed slides with
-          per-image tuning, blur depth-of-field, fade transitions)
-          render ON TOP of this static base via DOM order + the
-          `absolute inset-0` positioning — so when a dynamic slide
-          loads it covers the static one cleanly. The static base
-          is only ever visually relevant for the ~0-150 ms window
-          between first paint and the first dynamic slide arriving;
-          for that window it makes the hero look complete and
-          branded instead of gradient-only.  */}
+          This <img> exists in JSX from the first React render and is
+          paired with a <link rel="preload" as="image"> in the HTML
+          head. The browser begins decoding before React mounts.
+          `scripts/inject-hero.mjs` refreshes the file from the
+          current active hero in Neon on every Vercel deploy, so the
+          static file always matches what the admin uploaded. The
+          stacked dynamic <img> tags below render ON TOP via DOM
+          order + absolute positioning; once the API resolves and
+          slides[0] mounts with data-active="true" → opacity:1 from
+          its first computed style (no transition runs on initial
+          mount, only on attribute changes), it covers this static
+          base seamlessly. */}
       <img
         src="/hero-initial.webp"
         alt=""
-        // CRITICAL: these three attributes together are why the
-        // image is on screen on frame 1. Do not change without
-        // re-validating the no-flash contract.
         loading="eager"
         // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
         fetchpriority="high"
@@ -222,100 +233,36 @@ export function HeroSlider() {
         data-testid="img-hero-static-default"
       />
 
-      {/* Image layer — TWIN-IMAGE depth-of-field rig.
-          The bottom copy is blurred and serves as the "out of focus"
-          background. The top copy is the sharp original, but it's
-          masked by a soft radial so only the centre (where the
-          subject is) reads as razor-sharp; the corners fade to the
-          blurred copy beneath. This is the same trick a portrait lens
-          gives you optically: subject in focus, surroundings melting
-          into bokeh. Both images share a single Ken Burns transform
-          on the wrapper so the masked seam never moves out of
-          alignment. The browser shares the decoded bitmap between
-          the two <img> tags with the same src, so memory cost is
-          negligible. */}
-      {current && (
+      {/* ============================================================
+          STACKED IMAGE LAYER — v4 architecture.
+          ============================================================
+          ALL admin slides are rendered to the DOM at once, stacked
+          absolutely at inset:0. None are ever unmounted. The active
+          slide has data-active="true" and is opaque; all others are
+          opacity:0. CSS handles the 1200ms crossfade entirely on the
+          compositor thread — see .hero-slide-layer in index.css.
+          The HeroSlideLayer component is React.memo'd so when the
+          parent re-renders, only the two affected layers re-render
+          their data-active attribute; the <img> elements are never
+          touched. */}
+      {slides.length > 0 && (
         <div className="absolute inset-0" aria-hidden="true">
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={current.id}
-              className="hero-kenburns absolute inset-0"
-              // FIRST PAINT (tick === 0): skip the opacity-0 → 1 fade
-              // entirely. Combined with the matching filter on the
-              // static base image, this means hydration is visually
-              // invisible — the dynamic image takes over without
-              // any darkening, fading, or blur transition.
-              // SUBSEQUENT SLIDES: keep the cinematic 900 ms cross-
-              // fade between slides during the auto-rotation.
-              initial={reduced || tick === 0 ? false : { opacity: 0 }}
-              animate={reduced ? undefined : { opacity: 1 }}
-              exit={reduced ? undefined : { opacity: 0 }}
-              transition={
-                reduced
-                  ? undefined
-                  : { duration: FADE_MS / 1000, ease: [0.22, 1, 0.36, 1] }
-              }
-            >
-              {/* SINGLE sharp image — no blur copy underneath, no
-                  radial mask. The previous twin-image depth-of-field
-                  rig was visually beautiful but the blurred bokeh
-                  layer bled through at the masked edges, making the
-                  image read as "less clear" after API hydration than
-                  it did on first paint (the static base has no blur).
-                  Removing the blur+mask means dynamic load = static
-                  load visually. Filter on this image matches the CSS
-                  baseline of the static <img src="/hero-initial.webp">
-                  exactly (brightness 1.05 / contrast 1.08 / saturate
-                  1.05) so hydration is a no-op for the user's eye. */}
-              <img
-                src={current.imageDataUrl}
-                alt=""
-                loading={imageIndex === 0 ? "eager" : "lazy"}
-                // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
-                fetchpriority={imageIndex === 0 ? "high" : "auto"}
-                decoding={imageIndex === 0 ? "sync" : "async"}
-                className="hero-img absolute inset-0 w-full h-full object-cover"
-                style={sharpStyle}
-                data-testid={`img-hero-slide-${current.id}`}
-              />
-            </motion.div>
-          </AnimatePresence>
+          {slides.map((slide, i) => (
+            <HeroSlideLayer
+              key={slide.id}
+              slide={slide}
+              isActive={i === imageIndex}
+              isFirst={i === 0}
+            />
+          ))}
         </div>
       )}
-
-      {/* CLARITY PASS — May 2026.
-          Stripped the entire decorative TRON stack (spotlight, shaft,
-          grid, vignette, beams, subject-glow radial, horizontal navy
-          hold). Each one was a pointer-events:none full-bleed layer
-          painting on every scroll/Ken-Burns frame and collectively they
-          were the dominant cause of the photo reading as "dull / hazy".
-          The cinematic look now lives in the static CSS filter on the
-          image itself (.hero-img) and a single soft bottom navy
-          gradient that the admin can still tune per-image via the
-          overlayOpacity slider. Single overlay = clear photo + smooth
-          paint + headline still has a contrast pad to land on. */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            // Single linear bottom-up gradient, two stops only.
-            // CONSISTENCY-PASS (May-2026): direct 1:1 alpha mapping so
-            // the admin slider numbers in the UI match the actual
-            // alpha applied. Default 35 → 0.35 alpha; user-spec value
-            // 55 → 0.55 alpha (the canonical "headline pad" the brief
-            // calls for). Black instead of navy so it doesn't tint
-            // the photo blue — pure neutral darkening. Feathers to
-            // transparent at 55 % so the upper half (where the
-            // subject lives) is NEVER touched.
-            `linear-gradient(to top, rgba(0,0,0,${(t_overlayOpacity / 100).toFixed(3)}) 0%, transparent 55%)`,
-        }}
-      />
 
       {/* Overlay copy — staggered reveal. Animates once per copy or
           slide change so the eye is led: badge → headline → subtitle
           → CTAs. Reduced-motion users get the same final state with
           no animation. Explicit z-10 keeps the copy authoritatively
-          above the (now single) bottom navy gradient regardless of
-          JSX order — defensive guarantee for future overlay tweaks. */}
+          above ALL slide layers and their per-slide gradients. */}
       <div className="absolute inset-0 z-10 flex items-end md:items-center">
         <div className="w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
           <motion.div
