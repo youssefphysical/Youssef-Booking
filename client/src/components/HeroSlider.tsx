@@ -265,21 +265,19 @@ export function HeroSlider() {
          min-h-[520px] floor and max-h-[860px] ceiling unchanged so the
          hero never collapses on tiny landscape viewports nor balloons
          on ultra-tall monitors. */
-      /* v8.7.3 (May-2026): bg-black -> bg-[#0c1826] (the next section's
-         exact composited top edge color). This eliminates the visible
-         hard horizontal seam between hero and next section that
-         persisted through v8.7/v8.7.1/v8.7.2 despite all blend-overlay
-         fixes. Root cause: the .hero-bottom-blend has translateZ(0)
-         which promotes it to its own GPU compositor layer; when 75vh
-         doesn't resolve to a whole pixel (most viewports), the GPU
-         layer rounds independently from the parent's bottom edge,
-         exposing 1-2px of the wrapper's bg through the gap. With
-         bg-black, that gap rendered as pure rgb(0,0,0) — a hard line
-         between the blend's terminal rgb(12,24,38) and the section's
-         first row rgb(12,24,38). Now both sides of the gap are the
-         same colour, so the gap is invisible regardless of viewport
-         height or which hero image is loaded. */
-      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-[#0c1826]"
+      /* v8.8 (May-2026): bg-[#0c1826] -> bg-transparent. Per the
+         "UNIFY HOMEPAGE BACKGROUND SECTIONS" spec, the hero wrapper
+         is now transparent so the new .homepage-shell page-level
+         background (radial accent + 4-stop dark navy gradient,
+         applied on the homepage parent div) shows through any
+         sub-pixel gap at the bottom edge. This eliminates the
+         visible bands between hero, Youssef Ahmed, and About
+         sections by ensuring all sections sit on the same
+         continuous shell background. The v8.7.3 sub-pixel-gap
+         insight is preserved — the gap is still invisible because
+         the shell behind the wrapper matches the shell behind the
+         next section (they're the SAME shell). */
+      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-transparent"
       data-testid="hero-slider"
       data-hero-state="ready"
     >

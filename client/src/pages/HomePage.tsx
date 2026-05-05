@@ -100,16 +100,29 @@ export default function HomePage() {
   const bio = t("home.bio.fallback");
 
   return (
-    <div className="min-h-screen pt-16">
+    {/* v8.8 (May-2026): added .homepage-shell class to apply ONE
+        continuous page-level background (radial accent + 4-stop dark
+        navy linear gradient — see index.css) so that every section
+        below sits on the same dark surface. Eliminates visible bands
+        between hero, Youssef Ahmed, About, and other sections per
+        the "UNIFY HOMEPAGE BACKGROUND SECTIONS" spec. */}
+    <div className="min-h-screen pt-16 homepage-shell">
       {/* ADMIN HERO IMAGE SLIDER (full-width, only renders when admin has uploaded slides) */}
       <HeroSlider />
 
-      {/* HERO */}
+      {/* HERO / Youssef Ahmed section.
+          v8.8 (May-2026): the three previous absolute-positioned
+          background layers (bg-gradient-to-b from-primary/10 via-
+          background to-background, bg-primary/15 blur-3xl sphere
+          top-right, bg-accent/40 blur-3xl sphere bottom-left) were
+          REMOVED so the shared .homepage-shell on the parent div
+          shows through. Those layers were the section-specific
+          background blocks that created the visible bands — the
+          shell now provides the continuous dark surface AND the
+          subtle radial accent. Section padding (py-16 md:py-28),
+          content layout (grid md:grid-cols-2 gap-12 items-center),
+          all cards, all text, all CTAs are UNCHANGED. */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background pointer-events-none" />
-        <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] bg-primary/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-40 -left-40 w-[26rem] h-[26rem] bg-accent/40 rounded-full blur-3xl pointer-events-none" />
-
         <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 grid md:grid-cols-2 gap-12 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">

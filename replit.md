@@ -56,6 +56,62 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.8 Homepage Background Unification "One Continuous Shell" (May 2026)
+Per the user-supplied "STRICT MICRO VISUAL FIX — UNIFY HOMEPAGE BACKGROUND SECTIONS" spec. Two visible band-like seams existed on the homepage: between the hero bottom and the Youssef Ahmed section, and between the Youssef Ahmed section and the About section. Both came from per-section background blocks that did not match the rest of the page.
+
+**Root cause**: the Youssef Ahmed section (the first `<section>` after `<HeroSlider />`) had three full-block background layers all positioned `absolute inset-0` / `absolute -top-40 -right-40` / `absolute -bottom-40 -left-40`:
+1. A full-section gradient `bg-gradient-to-b from-primary/10 via-background to-background` — created a visible block tinted by `--primary` (light blue) at the top, fading to bg-background at the bottom.
+2. A `bg-primary/15 blur-3xl` sphere at the top-right — created a bright blue glow in the upper-right corner of the section, visibly different from the dark hero blend above it.
+3. A `bg-accent/40 blur-3xl` sphere at the bottom-left — created a navy-accent glow at the bottom of the section, which became a visible band when the next section (About) had no matching background.
+
+Sections after the Youssef Ahmed section (About, Specialties, Certifications, Why, Contact/CTA) had no `<section>`-level backgrounds and rendered on the App.tsx wrapper's `bg-background` (`hsl(222 45% 4%)` = `rgb(6,8,15)`). So the visible page chain was: dark hero blend (`#03070d`) → Youssef section's primary-tinted gradient + accent sphere band → bg-background — three different visual surfaces meeting at hard horizontal lines.
+
+**Fix** — page-level continuous shell + section-level transparency:
+
+1. **`client/src/index.css`** — added new `.homepage-shell` class with the user's exact spec (radial accent + 4-stop linear gradient):
+   ```css
+   .homepage-shell {
+     background:
+       radial-gradient(circle at 70% 10%, rgba(31, 156, 255, 0.16), transparent 32%),
+       linear-gradient(
+         to bottom,
+         #03070d 0%, #061222 34%, #071827 62%, #03070d 100%
+       );
+   }
+   ```
+   The radial provides the subtle blue accent in the top-right that previously lived as the per-section `bg-primary/15` sphere. The linear gradient provides the continuous dark navy surface for every section.
+
+2. **`client/src/pages/HomePage.tsx`** — applied the class to the homepage parent and removed the three absolute-positioned background layers from the Youssef Ahmed section:
+   ```diff
+   - <div className="min-h-screen pt-16">
+   + <div className="min-h-screen pt-16 homepage-shell">
+
+       <HeroSlider />
+       <section className="relative overflow-hidden">
+   -     <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background pointer-events-none" />
+   -     <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] bg-primary/15 rounded-full blur-3xl pointer-events-none" />
+   -     <div className="absolute -bottom-40 -left-40 w-[26rem] h-[26rem] bg-accent/40 rounded-full blur-3xl pointer-events-none" />
+         <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 grid md:grid-cols-2 gap-12 items-center">
+   ```
+   Section className (`relative overflow-hidden`), padding (`py-16 md:py-28`), grid layout, all cards, all content, and all CTAs are UNCHANGED.
+
+3. **`client/src/components/HeroSlider.tsx`** — changed the hero outer wrapper bg to transparent so the shell shows through any sub-pixel gap:
+   ```diff
+   - className="hero-isolate ... overflow-hidden bg-[#0c1826]"
+   + className="hero-isolate ... overflow-hidden bg-transparent"
+   ```
+   The v8.7.3 root-cause insight (sub-pixel gap from GPU layer rounding) still applies — but now the gap is invisible because the shell behind the wrapper IS the same shell behind the next section. The `transform: translateZ(0)` removal from v8.7.3 is also preserved, so most browsers won't render any gap at all.
+
+4. **`client/src/index.css`** — updated `.hero-bottom-blend` terminal stops from `rgb(12,24,38)` to `#03070d` so the blend ends in the shell's darkest stop instead of the old section's primary-tinted color. The blend now reads: `rgba(0,0,0,0) 0% → rgba(3,7,13,0.6) 50% → #03070d 100%`. The shell at hero-end y (~10-15% of total page) is between `#03070d` and `#061222`, so `#03070d` leaves at most a 1-13 RGB-unit brightening below the seam — imperceptible, and feels like the page opening up downward rather than a band ending.
+
+**Sections that became transparent**: only the Youssef Ahmed section's three absolute bg layers were removed. About, Specialties, Certifications, Why, and Contact/CTA sections were already transparent — they were never the cause of the bands. The shell now correctly shows through ALL of them, giving one continuous visual surface from hero to footer.
+
+**Premium feel preserved**: the radial accent at `circle at 70% 10%, rgba(31,156,255,0.16)` reproduces the subtle top-right blue glow that the user liked from the old `bg-primary/15` sphere, but as a single page-level effect that doesn't create a band at the section boundary. The 4-stop linear gradient gives subtle vertical depth (darker → mid-navy → mid-navy-brighter → darker again) that reads as a polished cinematic shell rather than flat black.
+
+**Files changed**: `client/src/index.css` (added `.homepage-shell` rule + updated `.hero-bottom-blend` background stops), `client/src/pages/HomePage.tsx` (added `homepage-shell` class to parent div + removed 3 absolute bg layers in Youssef section), `client/src/components/HeroSlider.tsx` (one className `bg-[#0c1826]` → `bg-transparent`), `replit.md`.
+
+**NO changes to**: hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey), hero image loading, hero slider rotation, HeroSlideLayer, CTA buttons, header, About section content, Specialties/Certifications/Why/Contact sections (text or layout), routing, translations, auth (Sign In / Sign Out), booking, admin, APIs, database, layout structure, padding/spacing (zero spacing changes).
+
 ### v8.7.3 Hero Wrapper Seam Fix "Match Wrapper bg to Section Color + Remove GPU Layer Offset" (May 2026)
 Per the user-supplied "STRICT MICRO FIX — BLEND THE ACTUAL HERO SEAM WITH ANY HERO IMAGE" spec. The user reported that v8.7.0 / v8.7.1 / v8.7.2 fixes "did not affect the circled area" — meaning every blend-overlay-only change had ZERO visible effect on the seam they see. That's a strong signal the seam is not in the blend zone — it's caused by a different element.
 
