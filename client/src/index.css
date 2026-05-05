@@ -680,13 +680,13 @@
   filter: blur(var(--hero-reveal-blur, 4px));
   animation: heroReveal var(--hr-dur, 200ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 25ms));
-  /* GPU-promotion hint (v6.3): tells the compositor to allocate a
-     dedicated layer for opacity + transform interpolation up front,
-     eliminating first-frame layer-creation jank on the second/third
-     loop when the device's GPU is already under steady load. The
-     `auto` fallback after the animation ends releases the layer so
-     long-lived hero pages don't accumulate compositor memory. */
-  will-change: transform, opacity;
+  /* GPU-promotion hint INTENTIONALLY HOISTED to .hero-reveal-word
+     (per-word wrapper) instead of here on every per-char span — see
+     the long comment on .hero-reveal-word below. Browsers still
+     auto-promote each per-char animation for the 200ms it runs, so
+     visual quality is unchanged; this just avoids the documented
+     anti-pattern of permanently promoting 30+ char layers per
+     headline. */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -757,6 +757,30 @@
 .hero-reveal-word {
   display: inline-block;
   white-space: nowrap;
+  /* GPU-PROMOTION HINT (v6.3, post-architect-review).
+     ===========================================================
+     Spec asked for `will-change: transform, opacity` to remove
+     first-frame compositor jank on the reveal animation. The
+     naive implementation puts will-change on every per-char
+     .hero-reveal span — but a typical headline has 30+ chars
+     and the badge / subhead each have their own reveal trees,
+     so the page would carry ~90 dedicated compositor layers
+     permanently. That's the documented will-change anti-pattern
+     (Chrome DevTools "Performance" panel flags it as "promoted
+     layers") and can cause sustained GPU memory pressure on
+     weaker mobile devices.
+
+     The fix: hoist the will-change UP to this per-word wrapper.
+     Each headline only has ~5-7 words, so we now carry ~15-20
+     promoted layers across badge + headline + subhead total
+     instead of ~90. Each per-char animation INSIDE a word still
+     triggers automatic browser layer promotion for the 200ms
+     it's running (every modern compositor does this for active
+     transform/opacity animations), then the layer is torn down
+     — exactly the behaviour we want. The end-result animation
+     is visually identical to per-char will-change while staying
+     within the GPU memory budget. */
+  will-change: transform, opacity;
 }
 @keyframes heroReveal {
   from {
