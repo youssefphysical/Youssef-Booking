@@ -652,7 +652,15 @@
   transform: translateY(0.18em);
   animation: heroReveal var(--hr-dur, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 30ms));
-  will-change: opacity, transform;
+  /* NOTE (v5.1): will-change removed from per-char/word spans to
+     avoid compositor-layer pressure on low-end mobile (a 40-char
+     headline + 13-word subhead would otherwise pre-allocate ~50
+     dedicated layers). Modern browsers still promote opacity +
+     transform animations to the compositor automatically when they
+     start; without will-change the layer is created lazily and torn
+     down once the animation ends, which is the right trade-off for
+     short reveals. backface-visibility:hidden is kept because it
+     forces a stable rendering path without forcing a layer. */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -672,10 +680,11 @@
    the last character finishes. Two stacked animations: a fade-in
    ramp (heroCursorIn, runs once, forwards) followed by an infinite
    blink (heroCursorBlink). When .hero-cursor--off is added by
-   HeroSlider.tsx via setTimeout, both prior animations are replaced
-   by heroCursorOut (with !important) which fades the cursor cleanly
-   to opacity:0 + scaleY(0.4) regardless of the blink phase at the
-   moment of toggle. */
+   HeroSlider.tsx via setTimeout, both animations are killed via
+   `animation: none !important` and the CSS transition on the base
+   class then interpolates opacity + transform from their last
+   animated values to the final off state — robust across browsers
+   regardless of which blink phase the cursor was in at toggle. */
 .hero-cursor {
   display: inline-block;
   width: 0.06em;
@@ -693,10 +702,26 @@
     heroCursorBlink 1.05s steps(2, start) infinite;
   animation-delay: var(--hr-start, 500ms),
     calc(var(--hr-start, 500ms) + 220ms);
+  /* Transition is a fallback that fires when .hero-cursor--off
+     sets animation:none (which causes opacity + transform to snap
+     to their underlying cascade values; the transition then runs
+     from the prior animated value to the new static value).
+     Smooth fade-out regardless of which blink phase the cursor was
+     in at the moment of toggle. */
+  transition:
+    opacity 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: opacity, transform;
 }
 .hero-cursor--off {
-  animation: heroCursorOut 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+  /* Killing the animation chain forces opacity + transform back to
+     the cascade values; the transition rule on .hero-cursor then
+     interpolates from the current animated value to opacity:0 +
+     scaleY(0.4) over 480ms. Robust across browsers — no reliance
+     on a `from` keyframe sampling the live animated value. */
+  animation: none !important;
+  opacity: 0 !important;
+  transform: scaleY(0.4) !important;
 }
 @keyframes heroCursorIn {
   to {
@@ -706,12 +731,6 @@
 @keyframes heroCursorBlink {
   50% {
     opacity: 0;
-  }
-}
-@keyframes heroCursorOut {
-  to {
-    opacity: 0;
-    transform: scaleY(0.4);
   }
 }
 
@@ -749,8 +768,11 @@
     opacity: 1 !important;
     transform: none !important;
   }
-  .hero-cursor {
+  .hero-cursor,
+  .hero-cursor--off {
     display: none !important;
+    animation: none !important;
+    transition: none !important;
   }
 }
 

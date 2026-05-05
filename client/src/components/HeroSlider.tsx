@@ -33,22 +33,29 @@ import type { HeroImage } from "@shared/schema";
 const ROTATE_MS = 8000;
 const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 
-// COPY REVEAL TIMING (v5, "professional typewriter" pass).
+// COPY REVEAL TIMING (v5.1, "professional typewriter" pass).
 // All values measured from the moment the new copy mounts (i.e. AFTER
 // the 300ms exit fade of the outgoing copy completes). Tuned so the
-// total reveal feels calm but never slow:
-//   - badge: ~25 chars × 18ms + 280ms anim ≈ 730ms total
-//   - headline: ~40 chars × 22ms + 260ms anim ≈ 1140ms total
-//     (starts 500ms in, ends ~1640ms in)
-//   - subhead: ~13 words × 55ms + 320ms anim ≈ 1035ms total
-//     (starts 1500ms in, ends ~2535ms in)
-//   - buttons: single 420ms fade+slide starting at 2500ms (overlaps
-//     the very end of the subhead so the eye lands on the CTAs as
-//     the subhead settles)
+// total reveal feels calm but never slow AND every element fits inside
+// its spec-mandated time window:
+//   - badge: WORD-mode (3 tokens × 90ms + 240ms anim ≈ 420ms total).
+//     Char-mode would have produced ~730ms for "PREMIUM PERSONAL
+//     TRAINING" (25 chars × 18ms + 280ms), which exceeds the spec
+//     window of 300-500ms. Word-mode produces a "letter-spacing
+//     reveal" feel (the badge stays at full letter-spacing 0.28em
+//     throughout because .tron-eyebrow's letter-spacing applies
+//     within each inline-block word) while staying within budget.
+//   - headline: char-mode, ~40 chars × 22ms + 260ms anim ≈ 1140ms total
+//     (starts 500ms in, ends ~1640ms in). Within spec 900-1400ms.
+//   - subhead: word-mode, ~13 words × 55ms + 320ms anim ≈ 1035ms total
+//     (starts 1500ms in, ends ~2535ms in). Within spec 800-1200ms.
+//   - buttons: single 420ms fade+translateY(8px → 0) starting at
+//     2500ms (overlaps the very end of the subhead so the eye lands
+//     on the CTAs as the subhead settles). Within spec 300-500ms.
 // Total ~2920ms — well within ROTATE_MS=8000 so buttons are fully
 // visible and clickable for ~5s before the next slide change.
 const COPY = {
-  badge:    { start:    0, step: 18, dur: 280 },
+  badge:    { start:    0, step: 90, dur: 240 },
   headline: { start:  500, step: 22, dur: 260 },
   subhead:  { start: 1500, step: 55, dur: 320 },
   buttons:  { start: 2500,           dur: 420 },
@@ -351,7 +358,7 @@ export function HeroSlider() {
                   ) : (
                     <HeroReveal
                       text={badge}
-                      mode="char"
+                      mode="word"
                       startMs={COPY.badge.start}
                       stepMs={COPY.badge.step}
                       durMs={COPY.badge.dur}
@@ -359,8 +366,17 @@ export function HeroSlider() {
                   )}
                 </span>
               )}
+              {/* min-h-* reserves space for ~3 lines at every breakpoint
+                  so the buttons row never jumps when admin/i18n
+                  produces shorter or longer titles between slides
+                  (line-height ≈ 1.02 × font-size × 3 lines):
+                    text-4xl  (36px)   → 3 lines ≈ 110px → 112
+                    text-5xl  (48px)   → 3 lines ≈ 147px → 152
+                    text-6xl  (60px)   → 3 lines ≈ 184px → 192
+                    text-[5rem] (80px) → 3 lines ≈ 245px → 256
+                    text-[5.5rem](88px)→ 3 lines ≈ 269px → 288  */}
               <h1
-                className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight"
+                className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]"
                 data-testid="text-hero-headline"
               >
                 {reduced ? (
@@ -390,8 +406,13 @@ export function HeroSlider() {
                 )}
               </h1>
               {subhead && (
+                /* min-h-* reserves space for 2 lines at every breakpoint
+                   (text × leading-relaxed ≈ 1.625):
+                     text-base (16) → 2 × 26 ≈ 52
+                     text-lg   (18) → 2 × 29 ≈ 60
+                     text-xl   (20) → 2 × 33 ≈ 68 */
                 <p
-                  className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed"
+                  className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed min-h-[52px] sm:min-h-[60px] md:min-h-[68px]"
                   style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
                   data-testid="text-hero-subhead"
                 >
