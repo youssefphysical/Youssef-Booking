@@ -344,8 +344,18 @@ export function HeroSlider() {
             <motion.div
               key={`copy-${slideKey}`}
               initial={false}
-              animate={{ opacity: 1 }}
-              exit={reduced ? undefined : { opacity: 0 }}
+              animate={{ opacity: 1, pointerEvents: "auto" }}
+              /* pointerEvents:"none" on exit is CRITICAL: while two
+                 copies coexist during the 200ms overlap window, the
+                 exiting layer (opacity:0, absolute positioned at the
+                 same z as the new layer) MUST NOT intercept taps for
+                 the new CTAs. pointer-events transitions discretely
+                 (no interpolation) so the flip happens immediately
+                 when exit starts — the new layer captures all clicks
+                 from frame 1 of the slide change. */
+              exit={
+                reduced ? undefined : { opacity: 0, pointerEvents: "none" }
+              }
               transition={{
                 duration: COPY.exit.dur / 1000,
                 ease: [0.22, 1, 0.36, 1],

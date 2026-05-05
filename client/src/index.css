@@ -670,7 +670,14 @@
   display: inline-block;
   opacity: 0;
   transform: translateY(10px);
-  filter: blur(4px);
+  /* MOBILE-SAFE BLUR (v6.1): the blur amount is read from a CSS custom
+     property so it can be overridden per-viewport without changing the
+     keyframe. Desktop (≥769px) uses 4px for the cinematic focus-pull;
+     mobile (≤768px) overrides to 0, eliminating the per-char filter
+     layer entirely on weaker GPUs and protecting the 60fps mobile
+     budget. The opacity + transform reveal is unchanged on mobile —
+     only the blur is dropped. */
+  filter: blur(var(--hero-reveal-blur, 4px));
   animation: heroReveal var(--hr-dur, 200ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 25ms));
   -webkit-backface-visibility: hidden;
@@ -684,12 +691,23 @@
   from {
     opacity: 0;
     transform: translateY(10px);
-    filter: blur(4px);
+    filter: blur(var(--hero-reveal-blur, 4px));
   }
   to {
     opacity: 1;
     transform: translateY(0);
     filter: blur(0);
+  }
+}
+/* MOBILE BLUR DISABLE — see comment on .hero-reveal above. The
+   bp matches Tailwind's `md` breakpoint (768px) so phones and small
+   tablets skip the blur layer entirely. The keyframe still runs but
+   filter:blur(0) → filter:blur(0) is a compositor no-op (browsers
+   short-circuit identical values, no extra layer is allocated). */
+@media (max-width: 768px) {
+  .hero-reveal {
+    --hero-reveal-blur: 0;
+    filter: none;
   }
 }
 
