@@ -146,7 +146,6 @@ export default function HomePage() {
                   src={settings.profilePhotoUrl}
                   alt="Youssef Ahmed — Personal Training Service"
                   className="w-full h-full object-cover"
-                  loading="lazy"
                   decoding="async"
                   data-testid="img-profile"
                 />
