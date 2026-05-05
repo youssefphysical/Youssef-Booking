@@ -127,7 +127,7 @@ export function Navigation() {
 
   // ============= PUBLIC TOP NAV =============
   return (
-    <header className="fixed top-0 inset-x-0 z-40 bg-background/85 md:bg-background/70 backdrop-blur-md md:backdrop-blur-xl border-b border-white/5">
+    <header className="fixed top-0 inset-x-0 z-50 bg-background/95 md:bg-background/75 md:backdrop-blur-lg border-b border-white/5">
       <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"

@@ -167,14 +167,17 @@ export function HeroSlider() {
   const t_overlayOpacity = current?.overlayOpacity ?? 35; // percent
 
   // Compose admin tuning with the cinematic baseline filter. The CSS
-  // `.hero-img` rule already applies contrast(1.12) brightness(1.08)
-  // saturate(1.12) hue-rotate(-6deg) — we MULTIPLY the admin's
+  // `.hero-img` rule already applies contrast(1.08) brightness(1.05)
+  // saturate(1.10) hue-rotate(-5deg) — we MULTIPLY the admin's
   // brightness/contrast onto that baseline so the photo keeps its
   // movie-poster grade while still responding to the slider. Inline
   // filter overrides the CSS one, so we re-state the full chain here.
+  // The translateZ(0) at the end of the transform forces a GPU layer
+  // (same hint as `.hero-img` in CSS) so the inline transform doesn't
+  // accidentally drop the layer when the admin moves a slider.
   const sharpStyle: React.CSSProperties = {
-    filter: `contrast(${(1.12 * t_contrast).toFixed(3)}) brightness(${(1.08 * t_brightness).toFixed(3)}) saturate(1.12) hue-rotate(-6deg)`,
-    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg)`,
+    filter: `contrast(${(1.08 * t_contrast).toFixed(3)}) brightness(${(1.05 * t_brightness).toFixed(3)}) saturate(1.10) hue-rotate(-5deg)`,
+    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
     transformOrigin: "center",
     willChange: "transform",
   };
@@ -182,7 +185,7 @@ export function HeroSlider() {
     // Background bokeh copy gets the same translate/zoom/rotate so the
     // mask seam never drifts off the subject — but keeps its own
     // pre-baked blur+saturate filter (defined in .hero-img-blur).
-    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${(t_zoom * 1.08).toFixed(3)}) rotate(${t_rotate}deg)`,
+    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${(t_zoom * 1.08).toFixed(3)}) rotate(${t_rotate}deg) translateZ(0)`,
     transformOrigin: "center",
     willChange: "transform",
   };
@@ -309,10 +312,16 @@ export function HeroSlider() {
         style={{
           background:
             "linear-gradient(to top, " +
-            `hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 2.45).toFixed(3)}) 0%, ` +
-            `hsl(220 55% 6% / ${(t_overlayOpacity / 100 * 1.57).toFixed(3)}) 22%, ` +
-            `hsl(220 50% 8% / ${(t_overlayOpacity / 100 * 0.51).toFixed(3)}) 50%, ` +
-            "transparent 78%)",
+            // CLARITY PASS (May 2026): multipliers tuned so default
+            // overlayOpacity=35 maps to ~0.65 alpha at the bottom (matches
+            // the recommended cinematic pad), ~0.32 at the mid stop
+            // (light navy haze), and effectively transparent above 50%
+            // — so the upper half of the photo where the subject lives
+            // stays clear and never reads as "blurry / washed out".
+            `hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 1.85).toFixed(3)}) 0%, ` +
+            `hsl(220 55% 6% / ${(t_overlayOpacity / 100 * 0.92).toFixed(3)}) 22%, ` +
+            `hsl(220 50% 8% / ${(t_overlayOpacity / 100 * 0.20).toFixed(3)}) 50%, ` +
+            "transparent 75%)",
         }}
       />
       {/* Subtle horizontal navy hold on the left so the headline pad

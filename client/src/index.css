@@ -84,6 +84,14 @@
        its own ambient gradients; the rest of the page can sit on the
        solid bg-background colour without losing visual richness. */
     text-rendering: optimizeLegibility;
+    /* iOS Safari momentum scroll. Modern Safari already does this by
+       default, but the explicit hint costs nothing and rescues older
+       in-app browsers (Instagram / FB) that strip the default. */
+    -webkit-overflow-scrolling: touch;
+    /* Stop the rubber-band overscroll glow from triggering layout
+       on Chrome Android — keeps the hero from briefly jumping when
+       a visitor over-pulls at the very top of the page. */
+    overscroll-behavior-y: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -443,20 +451,29 @@
    (Tron / Blade Runner / Skyfall). Static filters live on the GPU
    compositing layer and do NOT cost per-frame work. */
 .hero-img {
-  filter: contrast(1.12) brightness(1.08) saturate(1.12) hue-rotate(-6deg);
+  /* SOFTENED cinematic grade (May-2026 clarity pass).
+     The previous values (contrast 1.12 / brightness 1.08 / saturate 1.12)
+     were producing a slightly crushed, contrasty look that read as
+     "slightly blurry" on bright training photos. Toned each axis down
+     so the photo's own micro-contrast carries the image while the
+     filter only adds the cool cyan grade. */
+  filter: contrast(1.08) brightness(1.05) saturate(1.10) hue-rotate(-5deg);
   will-change: transform;
+  /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
+     but guarantees Chromium/WebKit rasterise the bitmap on its own
+     compositor layer up-front — eliminates the first-frame "soft
+     then snap-sharp" judder some mid-range phones used to show on
+     slide-change. Pairs with backface-visibility:hidden below. */
+  transform: translateZ(0);
   /* Browser-default downscaling produces the best perceptual quality
      for photographic content (uses high-quality bicubic on Chromium /
      WebKit). Forcing pixelated/crisp-edges would shred the cinematic
      filter chain — leaving it `auto` is correct here. */
   image-rendering: auto;
-  /* Promote to its own GPU compositor layer up-front and prevent the
-     browser from painting the back of the rotated bitmap. Combined
-     with the per-image `transform` from HeroSlider these two hints
-     keep the slide on a stable hardware layer through Ken Burns,
-     admin tuning changes, and the cross-fade between slides — which
-     is what eliminates the brief "soft-then-snap-sharp" judder some
-     mid-range Android Chromium devices used to show on slide-change. */
+  /* Prevent the browser from painting the back of the rotated bitmap.
+     Combined with the per-image `transform` from HeroSlider this
+     keeps the slide on a stable hardware layer through Ken Burns,
+     admin tuning changes, and the cross-fade between slides. */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -464,10 +481,14 @@
 /* Background "out of focus" copy — same image, blurred + cool-graded
    + slightly scaled up so blur edge artifacts never reach the frame
    border. This sits BEHIND the masked sharp copy and provides the
-   bokeh-style depth we want around the subject. */
+   bokeh-style depth we want around the subject.
+   CLARITY PASS: blur radius dropped 14px → 10px so the background
+   reads as "soft" rather than "smeared", and the saturation/grade
+   eased to keep more of the original photo information visible
+   through the masked edges of the sharp foreground. */
 .hero-img-blur {
-  filter: contrast(1.10) brightness(1.04) saturate(1.18) hue-rotate(-8deg) blur(14px);
-  transform: scale(1.08);
+  filter: contrast(1.06) brightness(1.02) saturate(1.14) hue-rotate(-7deg) blur(10px);
+  transform: scale(1.08) translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -476,10 +497,13 @@
 
 /* Radial mask on the SHARP foreground copy — clear in the centre
    (subject in focus) and feathering to transparent toward the
-   corners (background falls into bokeh). Vendor-prefixed for Safari. */
+   corners (background falls into bokeh). Vendor-prefixed for Safari.
+   CLARITY PASS: widened the fully-opaque centre 32% → 40% and
+   pushed the feather start 55% → 62% so the subject area stays
+   razor-sharp for noticeably longer before the bokeh takes over. */
 .hero-img-mask {
-  -webkit-mask-image: radial-gradient(ellipse 65% 70% at 50% 50%, #000 32%, rgba(0,0,0,0.85) 55%, transparent 92%);
-  mask-image: radial-gradient(ellipse 65% 70% at 50% 50%, #000 32%, rgba(0,0,0,0.85) 55%, transparent 92%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 75% at 50% 50%, #000 40%, rgba(0,0,0,0.88) 62%, transparent 95%);
+  mask-image: radial-gradient(ellipse 70% 75% at 50% 50%, #000 40%, rgba(0,0,0,0.88) 62%, transparent 95%);
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
