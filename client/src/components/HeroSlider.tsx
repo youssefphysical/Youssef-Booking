@@ -253,7 +253,10 @@ export function HeroSlider() {
   // actually changes." textKey covers both: if text changes for any
   // reason, key changes, reveal replays. If text doesn't change, key
   // doesn't change, reveal doesn't replay.
-  const textKey = `${badge ?? ""}|${headline ?? ""}|${subhead ?? ""}`;
+  // JSON.stringify on a tuple is collision-proof: two text values
+  // can never be reordered to produce the same key even if they
+  // contain pipe-or-other delimiter characters.
+  const textKey = JSON.stringify([badge ?? "", headline ?? "", subhead ?? ""]);
 
   return (
     <div
