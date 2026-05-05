@@ -6,6 +6,68 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- ===== HERO PRE-BOOTSTRAP (May 2026) =====
+         Root cause this fixes: previously the homepage rendered a flat
+         dark gradient for ~300-800ms while the app went HTML → JS bundle
+         → React mount → useQuery fires → /api/hero-images network
+         response → first paint of the photo. The visible flash was the
+         gap between "React mounted" and "image data arrived".
+
+         Fix: kick off the /api/hero-images fetch the instant the HTML
+         parser sees this script (in parallel with the JS bundle download
+         and the font CSS), stash the parsed result on a global so the
+         React hook can read it via TanStack Query's `initialData`, AND
+         dynamically inject a `<link rel="preload" as="image" fetchpriority="high">`
+         for the first slide's data URL so the browser's image decoder
+         starts work before React even mounts.
+
+         The script is intentionally tiny (no dependencies, no async/await
+         to keep the bundle compatible with old in-app browsers) and is
+         a best-effort warm-up — if it fails for any reason, React's
+         normal useQuery fetch on mount picks up where it left off and
+         the page works exactly as before. NO BACKEND CHANGES required:
+         we read the existing /api/hero-images endpoint. -->
+    <script>
+      (function () {
+        try {
+          var boot = fetch("/api/hero-images", { credentials: "include" })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (list) {
+              window.__INITIAL_HERO_IMAGES__ = Array.isArray(list) ? list : [];
+              // Preload the first ACTIVE slide's image so it starts
+              // decoding before React renders. Hero images are stored
+              // as base64 data URLs (~80-150KB) — the browser will
+              // happily preload a data: URL and it just lands in the
+              // image cache for the immediate <img src=...> reuse.
+              var first = (window.__INITIAL_HERO_IMAGES__ || []).filter(function (s) {
+                return s && s.isActive !== false && s.imageDataUrl;
+              })[0];
+              if (first && first.imageDataUrl) {
+                var link = document.createElement("link");
+                link.rel = "preload";
+                link.as = "image";
+                link.href = first.imageDataUrl;
+                link.setAttribute("fetchpriority", "high");
+                document.head.appendChild(link);
+              }
+              return window.__INITIAL_HERO_IMAGES__;
+            })
+            .catch(function () {
+              window.__INITIAL_HERO_IMAGES__ = [];
+              return [];
+            });
+          // Expose the in-flight promise so React can `await` it on
+          // mount if the response hasn't landed yet (rare on prod —
+          // the fetch is racing the JS bundle download).
+          window.__HERO_BOOT__ = boot;
+        } catch (e) {
+          window.__INITIAL_HERO_IMAGES__ = [];
+        }
+      })();
+    </script>
+
+
     <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   </head>
   <body>

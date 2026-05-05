@@ -1105,7 +1105,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
   "hero.cinematic.headline": "Transform Your Body. Train With Purpose.",
   "hero.cinematic.subhead": "Science-based personal training in Dubai, built around your goals, your schedule, and your body.",
   "hero.cinematic.badge": "Premium Personal Training",
-  "hero.cinematic.startTransformation": "Start Your Transformation",
+  "hero.cinematic.startTransformation": "Start Your Transformation Today",
   "hero.cinematic.bookSession": "Book a Session",
   "hero.cinematic.whatsapp": "Talk to Youssef",
   "section.why.eyebrow": "Why Train With Youssef Ahmed",

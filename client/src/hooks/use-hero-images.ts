@@ -4,8 +4,35 @@ import type { HeroImage, UpdateHeroImage } from "@shared/schema";
 
 const KEY = ["/api/hero-images"] as const;
 
+// Read the pre-bootstrap result populated by the inline <script> in
+// index.html. If it ran successfully BEFORE React mounted, we can hand
+// it straight to TanStack Query as `initialData` and the hero <img>
+// renders on the very first paint — no gradient flash, no waterfall.
+// If the boot script hasn't finished yet (rare; only on very fast JS
+// bundle load against a slow API), `initialData` is `undefined` and
+// useQuery transparently falls back to its normal fetch on mount.
+declare global {
+  interface Window {
+    __INITIAL_HERO_IMAGES__?: HeroImage[];
+    __HERO_BOOT__?: Promise<HeroImage[]>;
+  }
+}
+function readBootstrap(): HeroImage[] | undefined {
+  if (typeof window === "undefined") return undefined;
+  const arr = window.__INITIAL_HERO_IMAGES__;
+  return Array.isArray(arr) ? arr : undefined;
+}
+
 export function useHeroImages() {
-  return useQuery<HeroImage[]>({ queryKey: KEY });
+  return useQuery<HeroImage[]>({
+    queryKey: KEY,
+    initialData: readBootstrap,
+    // initialData with `staleTime: Infinity` (the global default) means
+    // the hook NEVER refetches on mount when bootstrap data is present.
+    // That's exactly what we want for the homepage hero — the rotating
+    // slider polls nothing and admin uploads invalidate the key
+    // explicitly via the upload/update/delete mutations below.
+  });
 }
 
 export function useUploadHeroImage() {

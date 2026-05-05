@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { useHeroImages } from "@/hooks/use-hero-images";
 import type { HeroImage } from "@shared/schema";
 
 // Cinematic image-only hero. Auto-rotates every 6s. A single tick
@@ -60,9 +60,12 @@ const copyItem: Variants = {
 
 export function HeroSlider() {
   const { t } = useTranslation();
-  const { data: images = [], isPending } = useQuery<HeroImage[]>({
-    queryKey: ["/api/hero-images"],
-  });
+  // Use the shared hook so we get `initialData` from
+  // `window.__INITIAL_HERO_IMAGES__` (populated by the inline boot
+  // script in index.html). When the boot script wins the race against
+  // the JS bundle (the common case on prod), the first <img> tag is
+  // rendered on the very first React paint — zero gradient flash.
+  const { data: images = [], isPending } = useHeroImages();
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -201,16 +204,28 @@ export function HeroSlider() {
       data-hero-state={isPending ? "loading" : current ? "ready" : "empty"}
       data-scrolling={isScrolling ? "true" : "false"}
     >
-      {/* Instant dark gradient base — paints with the very first frame
-          so there is never a blank or old-design flash before the
-          /api/hero-images response arrives. */}
+      {/* Cinematic ambient base — paints with the very first frame
+          so the hero NEVER reads as "loading" or "empty". Even when
+          there are zero admin slides (cold-start, fresh deploy), this
+          layer reads as a deliberate brand backdrop: warm subject-
+          light radial top-left + cool cyan rim radial bottom-right
+          (the trademark TRON two-light setup) over a deep navy floor.
+          Three radials + one base linear, all GPU-cheap (no blur, no
+          backdrop-filter, no animation). When a slide is present this
+          ambient sits behind it — invisible. When no slide is present
+          it carries the whole hero, branded and confident. */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at 30% 20%, hsl(220 50% 10%), transparent 60%), " +
-            "radial-gradient(ellipse at 75% 80%, hsl(210 60% 14% / 0.6), transparent 55%), " +
-            "linear-gradient(180deg, #02060f 0%, #000000 60%, #050a14 100%)",
+            // Warm subject-light top-left (the "key light" in cinematography)
+            "radial-gradient(ellipse 50% 45% at 28% 22%, hsl(200 90% 22% / 0.85), transparent 65%), " +
+            // Cool cyan rim bottom-right (the "rim/back light")
+            "radial-gradient(ellipse 55% 50% at 78% 82%, hsl(195 100% 32% / 0.55), transparent 60%), " +
+            // Subtle accent kicker centre-low for foreground vignette
+            "radial-gradient(ellipse 70% 35% at 50% 105%, hsl(220 80% 8% / 0.9), transparent 55%), " +
+            // Deep navy floor — the "ambient" in the three-point setup
+            "linear-gradient(180deg, #030814 0%, #050b18 55%, #02060f 100%)",
         }}
         aria-hidden="true"
       />
@@ -266,7 +281,14 @@ export function HeroSlider() {
                 loading={imageIndex === 0 ? "eager" : "lazy"}
                 // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
                 fetchpriority={imageIndex === 0 ? "high" : "auto"}
-                decoding="async"
+                // FIRST slide gets `decoding="sync"` per spec — when the
+                // image is already preloaded (via the inline <link> in
+                // index.html injected by the boot script), sync decode
+                // means it appears on the very first paint of this
+                // <img> element instead of a one-frame async stall.
+                // Subsequent slides stay async so the rotation never
+                // blocks the main thread.
+                decoding={imageIndex === 0 ? "sync" : "async"}
                 className="hero-img hero-img-mask absolute inset-0 w-full h-full object-cover"
                 style={sharpStyle}
                 data-testid={`img-hero-slide-${current.id}`}

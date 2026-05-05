@@ -193,6 +193,55 @@ export default function HomePage() {
         </p>
       </section>
 
+      {/* HOW IT WORKS — 3-STEP TEASER STRIP (May 2026)
+          Client-first UX: a single-glance promise of "what does it
+          take to start?" — three minimal cards, no images, no heavy
+          glow. Sits between the about-bio and specialties so the
+          visitor sees the journey BEFORE the product features. The
+          deep-dive 6-step page lives at /how-it-works (linked from
+          the nav and the bottom CTA below). i18n uses the t(key,
+          fallback) signature so adding new keys does not require
+          touching the auto-generated translations.ts file. */}
+      <section className="max-w-6xl mx-auto px-5 pt-4 pb-12" id="how-it-works-teaser">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { n: "01", k: "choose", title: "Choose your goal", body: "Fat loss, muscle gain, or body recomposition — pick the outcome that matters to you." },
+            { n: "02", k: "book",   title: "Book your session", body: "Pick any slot 6 AM – 10 PM. Sessions deduct from your active plan automatically." },
+            { n: "03", k: "track",  title: "Track your progress", body: "InBody trends, progress photos, and session history — all in your private dashboard." },
+          ].map((s, i) => (
+            <motion.div
+              key={s.k}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="rounded-2xl border border-white/5 bg-card/60 p-5 card-lift"
+              data-testid={`step-card-${s.k}`}
+            >
+              <div className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-semibold mb-3">
+                {t(`steps.${s.k}.n`, s.n)} · {t(`steps.${s.k}.eyebrow`, "Step")}
+              </div>
+              <h3 className="font-display font-bold text-base mb-1.5">
+                {t(`steps.${s.k}.title`, s.title)}
+              </h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {t(`steps.${s.k}.body`, s.body)}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+        <div className="mt-5 flex justify-center">
+          <Link
+            href="/how-it-works"
+            className="text-sm text-primary/85 hover:text-primary inline-flex items-center gap-1.5 transition-colors"
+            data-testid="link-steps-see-all"
+          >
+            {t("steps.seeAll", "See the full 6-step guide")}
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </section>
+
       {/* COACHING SPECIALTIES */}
       <section className="max-w-6xl mx-auto px-5 py-12" id="specialties">
         <SectionHeader

@@ -162,11 +162,22 @@ function HeroImagesSection() {
       data-testid="section-hero-images"
     >
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.heroTitle")}</h2>
-      <p className="text-sm text-muted-foreground mb-5">
+      <p className="text-sm text-muted-foreground mb-3">
         {t(
           "admin.settingsPage.heroDesc",
           "Up to {max} images. They auto-advance every 3 seconds with a fade transition on the homepage. Recommended size: 1920×1080.",
         ).replace("{max}", String(MAX_IMAGES))}
+      </p>
+      {/* Performance helper text (May 2026) — surfaces the WebP / file-
+          size guidance the homepage relies on for instant first paint. */}
+      <p
+        className="text-xs text-primary/80 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2 mb-5"
+        data-testid="text-hero-perf-hint"
+      >
+        {t(
+          "admin.settingsPage.heroPerfHint",
+          "Tip: For instant loading, use WebP hero images around 1920×1080 and keep file size under 500 KB.",
+        )}
       </p>
 
       <button
