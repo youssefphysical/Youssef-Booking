@@ -56,6 +56,28 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.7.2 Hero Bottom Blend "Kill Visible Seam Line" (May 2026)
+Per the user-supplied "Fix ONLY the visible white/gray line between hero section and next section" spec. The v8.7.1 4-stop ramp (`0%/38%/72%/100%` with all stops in `rgba(12,24,38,X)`) was working correctly at the bottom row but the early portion of the ramp was tinted by the section color from the very start, so the user perceived the upper edge of the blend zone as a too-quick darkening that looked like a line.
+
+**Single change**: replaced `.hero-bottom-blend` background gradient with the user-spec literal 3-stop ramp:
+```css
+background: linear-gradient(
+  to bottom,
+  rgba(0, 0, 0, 0)       0%,    /* TRANSPARENT BLACK — photo shows through fully */
+  rgba(12, 24, 38, 0.6)  50%,   /* section color at 60% alpha midway */
+  rgb(12, 24, 38)        100%   /* SOLID section color — pixel-exact match */
+);
+```
+- First stop is `rgba(0,0,0,0)` (transparent BLACK, not tinted by section color) so the upper portion of the blend zone is invisible — the photo shows through fully and the darkening only starts well below the top edge of the blend.
+- Terminal `rgb(12,24,38)` matches the next section's actual composited top edge exactly: `--background HSL 222 45% 4%` (rgb 6,8,15) tinted by `--primary HSL 205 92% 62%` (rgb 69,172,247) at 10% alpha = `rgb(12,24,38)`. User spec said "The last color MUST exactly match the next section background — no approximation"; this satisfies that.
+- Added explicit `border: none` and `box-shadow: none` declarations on the rule (defensive — neither was ever set, but spec asked).
+
+**No spacing changes needed**: the user spec asked for `margin-bottom:0 / padding-bottom:0` on hero and `margin-top:0` on next section, but the existing JSX is already gap-free — `<HeroSlider />` and the next `<section>` are direct siblings inside `<div className="min-h-screen pt-16">` with no margin classes between them. The `.hero-isolate` outer container has no border, no box-shadow, no filter, no backdrop-filter. The next section has no border-top and no margin-top.
+
+**Note on the right-side brightness gradient**: the next section has a decorative `bg-primary/15 blur-3xl` sphere positioned at `-top-40 -right-40` whose visible bottom edge tints the top of the section's right side slightly brighter than rgb(12,24,38). This is a pre-existing decorative gradient and was NOT modified per the spec's "Do NOT touch layout / Do NOT modify hero content" rule (it's part of the next section, not the hero). The new transparent-black-start ramp dissolves more smoothly into this brighter zone than the v8.7.1 section-color-start ramp did.
+
+**Files changed**: `client/src/index.css` (background of one rule), `replit.md`. NO changes to: HeroSlider.tsx, hero text, hero animation, image loading, slider, CTAs, header, About, layout structure, routing, translations, auth, booking, admin, APIs, database. Other v8.7.1 properties of `.hero-bottom-blend` (position, height, z-index, pointer-events, transform) are UNCHANGED.
+
 ### v8.7.1 Hero Bottom Blend "Clean Section Seam" (May 2026)
 Per the user-supplied "STRICT MICRO DESIGN FIX — REMOVE BLUR + ADD CLEAN HERO BOTTOM BLEND" spec. The v8.7 `.hero-bottom-overlay` (160px fixed, ended at rgba(10,20,40,0.85)) was perceived by the user as still leaving a visible "frosted/hazy" zone above the section line — the 0.85 terminal alpha let 15% of the photo bleed through at the bottom row, which from the user's perspective read as a separate band rather than a seamless blend.
 

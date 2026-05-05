@@ -556,17 +556,29 @@
   left: 0;
   right: 0;
   bottom: 0;
+  /* Height stays the same as v8.7.1 (taller, viewport-responsive)
+     so the new 3-stop ramp has comfortable room to dissolve from
+     transparent into the section color over ~120-180px. */
   height: clamp(120px, 14vh, 180px);
   pointer-events: none;
   z-index: 3;
+  /* v8.7.2 (May-2026): 3-stop ramp per "fix visible white/gray
+     line" spec. Start = transparent BLACK (rgba(0,0,0,0)), middle
+     = section color at 0.6 alpha at 50%, terminal = SOLID section
+     color at 100%. Using rgb(12,24,38) — the next section's exact
+     composited top edge color (HSL 222 45% 4% bg tinted by HSL
+     205 92% 62% primary at 10% alpha = rgb(12,24,38)). */
   background: linear-gradient(
     to bottom,
-    rgba(12, 24, 38, 0)    0%,
-    rgba(12, 24, 38, 0.28) 38%,
-    rgba(12, 24, 38, 0.68) 72%,
-    rgba(12, 24, 38, 1)    100%
+    rgba(0, 0, 0, 0)        0%,
+    rgba(12, 24, 38, 0.6)   50%,
+    rgb(12, 24, 38)         100%
   );
+  /* No border, no box-shadow, no filter, no backdrop-filter.
+     translateZ(0) for GPU promotion only. */
   transform: translateZ(0);
+  border: none;
+  box-shadow: none;
 }
 
 /* Hero image enhancement — STATIC CSS filter that bakes once into the
