@@ -203,20 +203,32 @@ export function Navigation() {
               </button>
             </>
           )}
-          {/* Sign-In CTA — visible whenever the visitor is NOT confirmed
-              authenticated (loading OR guest). This is the critical guard:
-              it must stay visible from the first paint and never blink out
-              when /api/auth/me resolves to 401 (guest). */}
-          {shouldShowSignIn && (
-            <Link
-              href="/auth"
-              data-testid="link-signin"
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
-            >
-              <LogIn size={14} className="shrink-0" />
-              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
-            </Link>
-          )}
+          {/* PERMANENT STATIC SIGN-IN LINK — May 2026 directive.
+              This Link is rendered UNCONDITIONALLY. It does NOT depend on
+              `user`, `isAuthenticated`, `isLoading`, /api/auth/me, session
+              state, or any auth hydration step. It is the single source
+              of truth that the auth entry point is reachable from any
+              page state — first paint, loading, guest, after refresh,
+              after language switch, mobile, desktop. If the visitor is
+              already logged in, /auth handles the redirect to dashboard
+              gracefully. The inline style block enforces visibility
+              against any future overlay regression: z-index 9999 (above
+              header z-100, auth-area z-110, and any imaginable hero
+              decoration), opacity 1, pointer-events auto. */}
+          <Link
+            href="/auth"
+            data-testid="link-signin"
+            style={{
+              position: "relative",
+              zIndex: 9999,
+              opacity: 1,
+              pointerEvents: "auto",
+            }}
+            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+          >
+            <LogIn size={14} className="shrink-0" />
+            <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+          </Link>
           <button
             className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
@@ -231,21 +243,26 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md">
           <div className="px-5 py-4 space-y-1">
-            {/* Sign In is the very first item when not yet authenticated
-                so visitors on mobile can never miss the auth entry point.
-                Mirrors the header logic: visible during auth loading AND
-                while guest, hidden only when we KNOW the user is signed in. */}
-            {shouldShowSignIn && (
-              <Link
-                href="/auth"
-                onClick={() => setOpen(false)}
-                data-testid="link-mobile-signin"
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 mb-2 btn-press"
-              >
-                <LogIn size={16} className="shrink-0" />
-                <span className="whitespace-nowrap">{t("nav.signIn")}</span>
-              </Link>
-            )}
+            {/* PERMANENT STATIC SIGN-IN LINK (mobile menu mirror).
+                Same directive as the desktop pill: rendered UNCONDITIONALLY
+                so the auth entry point is the very first item in the
+                mobile menu in every state (loading, guest, even already
+                signed in — /auth handles the redirect). */}
+            <Link
+              href="/auth"
+              onClick={() => setOpen(false)}
+              data-testid="link-mobile-signin"
+              style={{
+                position: "relative",
+                zIndex: 9999,
+                opacity: 1,
+                pointerEvents: "auto",
+              }}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 mb-2 btn-press"
+            >
+              <LogIn size={16} className="shrink-0" />
+              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+            </Link>
             <MobileLink href="/" label={t("nav.home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/book" label={t("nav.book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
