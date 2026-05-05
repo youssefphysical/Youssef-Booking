@@ -568,34 +568,16 @@
    is animating. We further pause it the instant the user starts
    scrolling (see data-scrolling="true" rule below) and resume 140ms
    after the last scroll event — driven from JS in HeroSlider.tsx. */
-/* MOTION TUNING (May-2026, "iPhone-smooth water motion" pass).
-   Previous Ken Burns was scale 1.0 → 1.06 + translate(-1%, -1%) over
-   22 s. The translate added a sideways drift that, combined with the
-   6% zoom, registered as "movement" rather than "drift" — too active
-   for the calm, premium feel the brief asks for.
-   New keyframes are PURE ZOOM (no translate) from 1.0 → 1.025.
-   Movement is reduced ~58% (1.025 - 1.0 = 0.025 vs 1.06 - 1.0 = 0.06,
-   plus the translate is gone entirely). Hits the user's "max 1.03"
-   ceiling exactly. translate3d(0,0,0) at both keyframes keeps the GPU
-   layer pinned and triggers hardware-accelerated rasterisation.
-   Cycle is 18 s (slow end of the user's 14-18 s spec). ease-in-out
-   gives a symmetric eased ramp that pairs perfectly with `alternate`
-   so the zoom never "snaps" at either endpoint — it breathes. */
-@keyframes heroKenBurns {
-  0% { transform: scale(1.0) translate3d(0, 0, 0); }
-  100% { transform: scale(1.025) translate3d(0, 0, 0); }
-}
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  .hero-kenburns {
-    animation: heroKenBurns 18s ease-in-out infinite alternate;
-  }
-  /* While the user is actively scrolling we pause the animation to
-     give the compositor 100% of its budget for scroll frames. The
-     resume is driven by the SCROLL_IDLE_MS timer in HeroSlider.tsx. */
-  [data-scrolling="true"] .hero-kenburns {
-    animation-play-state: paused;
-  }
-}
+/* MOTION TUNING v3 (May-2026, "fade-only, Ken Burns disabled" pass).
+   Ken Burns has been removed entirely. The .hero-kenburns class is
+   kept ONLY as a positioning helper (the JSX still applies it to the
+   slide wrapper for layout), but it carries NO animation rules.
+   No @keyframes, no transform animation, no scroll-linked rule. The
+   hero now changes images via opacity crossfade only — that fade is
+   driven by framer-motion in HeroSlider.tsx with a 1200 ms duration
+   and a cubic-bezier(0.22, 1, 0.36, 1) ease, opacity-only, GPU-cheap.
+   Mobile and desktop behave identically. */
+.hero-kenburns { /* positioning class only — no animation by design */ }
 
 /* Reduced motion — respect users */
 @media (prefers-reduced-motion: reduce) {

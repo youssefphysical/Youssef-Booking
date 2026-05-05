@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
@@ -29,21 +29,21 @@ import type { HeroImage } from "@shared/schema";
 //   - A very slow Ken Burns scale on desktop only, paused while the
 //     user is actively scrolling — this gives the hero life without
 //     ever competing with scroll for CPU/GPU time.
-// MOTION TUNING (May-2026, "iPhone-smooth water motion" pass).
-// ROTATE_MS bumped 6000 → 8000 so each slide breathes for ~8 s before
-// the next one starts crossfading in. Inside the user's 7-9 s spec.
-// Combined with the 1100 ms fade and the 18 s Ken Burns cycle (in
-// .hero-kenburns CSS) the hero feels calm, premium, and never rushed.
+// MOTION TUNING v3 (May-2026, "fade-only, Ken Burns disabled" pass).
+// Ken Burns has been removed entirely — no zoom, no pan, no translate,
+// no scale animation, no parallax, no scroll-linked behaviour. The
+// only animation in the hero is the opacity crossfade between slides.
+//
+// ROTATE_MS = 8000 ms: each slide is fully visible for 8 s before the
+// next one starts crossfading in (matches the user's spec).
+//
+// FADE_MS = 1200 ms: the crossfade itself is a single opacity ramp
+// from 0 → 1 driven by framer-motion (which compiles to a GPU-handled
+// CSS-equivalent opacity transition under the hood — opacity-only,
+// no filter, no transform). Eased with cubic-bezier(0.22, 1, 0.36, 1)
+// (ease-out-quint) per the user's spec for water-like smoothness.
 const ROTATE_MS = 8000;
-// FADE_MS bumped 900 → 1100 ms — the crossfade between slides is now
-// noticeably gentler. Inside the user's 900-1200 ms spec. opacity-only
-// transition (no filter/blur), so the GPU compositor handles it on a
-// single layer with zero per-frame paint cost.
-const FADE_MS = 1100;
-// How long after the last scroll event before we resume Ken Burns. A
-// short tail (140ms) means the resume feels instant once the user
-// stops, but pauses cleanly the moment a scroll begins.
-const SCROLL_IDLE_MS = 140;
+const FADE_MS = 1200;
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
@@ -77,7 +77,6 @@ export function HeroSlider() {
   const { data: images = [], isPending } = useHeroImages();
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
   const reduced = prefersReducedMotion();
 
   useEffect(() => {
@@ -89,45 +88,12 @@ export function HeroSlider() {
     return () => window.clearInterval(id);
   }, [reduced]);
 
-  // Pause Ken Burns while the user is actively scrolling. This is the
-  // single biggest cause of perceived hero "stutter" on mid-range
-  // phones — even a cheap GPU-accelerated transform competes with the
-  // browser's compositor when scroll-driven repaints are happening at
-  // the same time. Pausing for the duration of the scroll, then
-  // resuming 140ms after the last scroll event, makes the hero feel
-  // both alive AND silky to scroll past.
-  //
-  // IMPORTANT: this effect MUST NOT depend on `isScrolling`. If it did,
-  // every state flip would tear down the listener AND clear the
-  // pending revert-timer in the cleanup — which would leave the hero
-  // permanently stuck in `data-scrolling="true"` after a single
-  // discrete scroll event (e.g. a tap-to-top, wheel notch, or anchor
-  // jump). React's setState bail-out handles the duplicate calls for
-  // free, so we just call setIsScrolling(true) every event.
-  //
-  // We DO NOT gate this listener on `reduced` either: the Ken Burns
-  // CSS rule that consumes `data-scrolling` is itself already gated
-  // by `(prefers-reduced-motion: no-preference)` in index.css, so
-  // toggling the attribute for reduced-motion users is a free no-op
-  // visually. Gating here used to skip attaching the listener in
-  // automated browsers (Playwright defaults to `prefers-reduced-motion:
-  // reduce`), which broke the contract under test.
-  const scrollTimerRef = useRef<number | null>(null);
-  useEffect(() => {
-    const onScroll = () => {
-      setIsScrolling(true);
-      if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
-      scrollTimerRef.current = window.setTimeout(
-        () => setIsScrolling(false),
-        SCROLL_IDLE_MS,
-      );
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
-    };
-  }, []);
+  // (Scroll-pause handler removed in the "fade-only" pass. There is no
+  // Ken Burns animation to pause anymore — the hero only crossfades
+  // between slides via opacity, which is a one-shot GPU transition,
+  // not a continuous animation that competes with scroll. No scroll
+  // listener, no requestAnimationFrame loop, no timers — zero ongoing
+  // work while a slide is held.)
 
   // Three world-class brand-pillar copy variants from i18n. Per-image
   // admin copy on a HeroImage row OVERRIDES the variant for that
@@ -200,14 +166,11 @@ export function HeroSlider() {
 
   return (
     <div
-      // The data-scrolling attribute toggles the Ken Burns play state
-      // via the .hero-kenburns CSS rule below. Keeping the scroll
-      // listener at the top of the hero (rather than per-image) means
-      // we only attach a single window listener for the whole slider.
+      // No data-scrolling attribute — Ken Burns is disabled, so there
+      // is no animation to pause during scroll. Pure layout container.
       className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state="ready"
-      data-scrolling={isScrolling ? "true" : "false"}
     >
       {/* ============================================================
           STATIC HERO BASE — May 2026 permanent flash kill (final).
@@ -290,7 +253,7 @@ export function HeroSlider() {
               transition={
                 reduced
                   ? undefined
-                  : { duration: FADE_MS / 1000, ease: "easeInOut" }
+                  : { duration: FADE_MS / 1000, ease: [0.22, 1, 0.36, 1] }
               }
             >
               {/* SINGLE sharp image — no blur copy underneath, no
