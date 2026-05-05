@@ -29,8 +29,17 @@ import type { HeroImage } from "@shared/schema";
 //   - A very slow Ken Burns scale on desktop only, paused while the
 //     user is actively scrolling — this gives the hero life without
 //     ever competing with scroll for CPU/GPU time.
-const ROTATE_MS = 6000;
-const FADE_MS = 900;
+// MOTION TUNING (May-2026, "iPhone-smooth water motion" pass).
+// ROTATE_MS bumped 6000 → 8000 so each slide breathes for ~8 s before
+// the next one starts crossfading in. Inside the user's 7-9 s spec.
+// Combined with the 1100 ms fade and the 18 s Ken Burns cycle (in
+// .hero-kenburns CSS) the hero feels calm, premium, and never rushed.
+const ROTATE_MS = 8000;
+// FADE_MS bumped 900 → 1100 ms — the crossfade between slides is now
+// noticeably gentler. Inside the user's 900-1200 ms spec. opacity-only
+// transition (no filter/blur), so the GPU compositor handles it on a
+// single layer with zero per-frame paint cost.
+const FADE_MS = 1100;
 // How long after the last scroll event before we resume Ken Burns. A
 // short tail (140ms) means the resume feels instant once the user
 // stops, but pauses cleanly the moment a scroll begins.
