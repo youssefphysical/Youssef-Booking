@@ -88,10 +88,11 @@
        default, but the explicit hint costs nothing and rescues older
        in-app browsers (Instagram / FB) that strip the default. */
     -webkit-overflow-scrolling: touch;
-    /* Stop the rubber-band overscroll glow from triggering layout
-       on Chrome Android — keeps the hero from briefly jumping when
-       a visitor over-pulls at the very top of the page. */
-    overscroll-behavior-y: none;
+    /* `contain` keeps overscroll inside the body (no propagation to
+       the browser chrome) so pull-to-refresh still works on mobile
+       browsers that support it, while preventing the hero from
+       layout-shifting on rubber-band overscroll. */
+    overscroll-behavior: contain;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -451,13 +452,13 @@
    (Tron / Blade Runner / Skyfall). Static filters live on the GPU
    compositing layer and do NOT cost per-frame work. */
 .hero-img {
-  /* SOFTENED cinematic grade (May-2026 clarity pass).
-     The previous values (contrast 1.12 / brightness 1.08 / saturate 1.12)
-     were producing a slightly crushed, contrasty look that read as
-     "slightly blurry" on bright training photos. Toned each axis down
-     so the photo's own micro-contrast carries the image while the
-     filter only adds the cool cyan grade. */
-  filter: contrast(1.08) brightness(1.05) saturate(1.10) hue-rotate(-5deg);
+  /* CLARITY PASS v2 (May-2026, post-overlay-strip).
+     With the decorative TRON layers removed, the image itself is now
+     fully visible — so we can dial the cinematic grade back up to a
+     punchy contrast(1.12) brightness(1.08) without the photo reading
+     as crushed. saturate(1.10) and the small -5° hue-rotate keep the
+     cool cyan grade. Static filter, baked into the GPU layer once. */
+  filter: contrast(1.12) brightness(1.08) saturate(1.10) hue-rotate(-5deg);
   will-change: transform;
   /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
      but guarantees Chromium/WebKit rasterise the bitmap on its own
@@ -508,40 +509,13 @@
   mask-repeat: no-repeat;
 }
 
-/* Subject focus key-light — brighter, tighter cyan radial sitting
-   right where the subject's face/torso is (centre-frame, slightly
-   upper). Pure additive paint, no blend mode, no per-frame cost. */
-.hero-subject-glow {
-  background:
-    radial-gradient(
-      ellipse 30% 35% at 50% 44%,
-      hsl(195 100% 70% / 0.16) 0%,
-      hsl(200 100% 60% / 0.06) 45%,
-      transparent 75%
-    ),
-    radial-gradient(
-      ellipse 18% 22% at 50% 42%,
-      hsl(195 100% 80% / 0.10) 0%,
-      transparent 70%
-    );
-  z-index: 2;
-}
-
-/* Cyan TRON rim light around the hero — soft inset cyan halo on the
-   edges that reinforces the cinematic "powered-up frame" look. Pure
-   pseudo-element, pointer-events:none, no animation, no blend mode —
-   so it adds zero per-frame cost. Bumped intensity for the upgraded
-   cinematic round (still well below where it would visibly clip). */
-.hero-isolate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  box-shadow:
-    inset 0 0 70px hsl(195 100% 65% / 0.14),
-    inset 0 0 180px hsl(195 100% 55% / 0.08);
-  z-index: 5;
-}
+/* CLARITY PASS v2 (May-2026): the .hero-subject-glow radial and the
+   .hero-isolate::after cyan rim light have been removed. Both were
+   full-bleed decorative layers that contributed to the "dull / hazy"
+   look the user reported, and removing them lets the photo's own
+   micro-contrast and the (now slightly stronger) static filter on
+   .hero-img carry the cinematic grade by themselves. Net result is
+   a noticeably clearer hero AND fewer paint layers per frame. */
 
 /* Animated cyan beam drift — slow horizontal-position oscillation on
    the gradient. The beam is a 1px-tall element so animating

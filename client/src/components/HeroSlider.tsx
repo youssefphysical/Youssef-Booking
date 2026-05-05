@@ -167,16 +167,16 @@ export function HeroSlider() {
   const t_overlayOpacity = current?.overlayOpacity ?? 35; // percent
 
   // Compose admin tuning with the cinematic baseline filter. The CSS
-  // `.hero-img` rule already applies contrast(1.08) brightness(1.05)
-  // saturate(1.10) hue-rotate(-5deg) — we MULTIPLY the admin's
-  // brightness/contrast onto that baseline so the photo keeps its
-  // movie-poster grade while still responding to the slider. Inline
-  // filter overrides the CSS one, so we re-state the full chain here.
-  // The translateZ(0) at the end of the transform forces a GPU layer
-  // (same hint as `.hero-img` in CSS) so the inline transform doesn't
-  // accidentally drop the layer when the admin moves a slider.
+  // `.hero-img` rule applies contrast(1.12) brightness(1.08) saturate(1.10)
+  // hue-rotate(-5deg) — we MULTIPLY the admin's brightness/contrast onto
+  // that baseline so the photo keeps its movie-poster grade while still
+  // responding to the slider. Inline filter overrides the CSS one, so we
+  // re-state the full chain here. The translateZ(0) at the end of the
+  // transform forces a GPU layer (same hint as `.hero-img` in CSS) so the
+  // inline transform doesn't accidentally drop the layer when the admin
+  // moves a slider.
   const sharpStyle: React.CSSProperties = {
-    filter: `contrast(${(1.08 * t_contrast).toFixed(3)}) brightness(${(1.05 * t_brightness).toFixed(3)}) saturate(1.10) hue-rotate(-5deg)`,
+    filter: `contrast(${(1.12 * t_contrast).toFixed(3)}) brightness(${(1.08 * t_brightness).toFixed(3)}) saturate(1.10) hue-rotate(-5deg)`,
     transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
     transformOrigin: "center",
     willChange: "transform",
@@ -276,64 +276,32 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* Subject focus radial — brighter cyan halo right where the
-          subject's face/torso usually sits in the frame. Stacks above
-          the photo to "lift" the subject off the background like a
-          movie poster key light. Pure additive paint, no blend mode. */}
-      {current && (
-        <div className="hero-subject-glow absolute inset-0 pointer-events-none" aria-hidden="true" />
-      )}
-
-      {/* TRON layer stack — all decorative, all pointer-events:none, NO
-          mix-blend-mode and NO backdrop-filter. The cyan tints are
-          baked directly into the alpha gradients, so the cinematic
-          look is preserved without the per-frame repaint cost.
-          OVERLAY DENSITY: dialled down deliberately so the subject in
-          the photo stays clearly visible — heavy stacked black
-          gradients were making the image look flat and washed-out. */}
-      <div className="absolute inset-0 tron-spotlight pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 tron-shaft pointer-events-none" aria-hidden="true" />
-      <div className="absolute inset-0 tron-grid opacity-[0.08] pointer-events-none" aria-hidden="true" />
-      {/* Smart vertical gradient — NOT a flat black wall. Top 50% is
-          transparent so the subject reads in full clarity, middle is
-          a deep navy soft-tint for cinematic depth without losing the
-          photo, bottom is darker so the headline and CTAs land on a
-          high-contrast pad. Cool navy stop instead of pure black so
-          the cyan grade doesn't fight a black underlayer.
-          OVERLAY DARKNESS is per-image admin tunable: the bottom stop
-          alpha and the mid-stop alpha both scale with the slider so
-          the admin can dial the gradient down for a bright slide
-          (where the photo already provides contrast) or up for a
-          washed-out slide (where the headline needs more pad). The
-          slider value is a 0–60 % "darkness budget" — at 0 the
-          gradient is invisible, at 35 (default) we get the classic
-          cinematic pad, at 60 the bottom is near-opaque. */}
+      {/* CLARITY PASS — May 2026.
+          Stripped the entire decorative TRON stack (spotlight, shaft,
+          grid, vignette, beams, subject-glow radial, horizontal navy
+          hold). Each one was a pointer-events:none full-bleed layer
+          painting on every scroll/Ken-Burns frame and collectively they
+          were the dominant cause of the photo reading as "dull / hazy".
+          The cinematic look now lives in the static CSS filter on the
+          image itself (.hero-img) and a single soft bottom navy
+          gradient that the admin can still tune per-image via the
+          overlayOpacity slider. Single overlay = clear photo + smooth
+          paint + headline still has a contrast pad to land on. */}
       <div className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to top, " +
-            // CLARITY PASS (May 2026): multipliers tuned so default
-            // overlayOpacity=35 maps to ~0.65 alpha at the bottom (matches
-            // the recommended cinematic pad), ~0.32 at the mid stop
-            // (light navy haze), and effectively transparent above 50%
-            // — so the upper half of the photo where the subject lives
-            // stays clear and never reads as "blurry / washed out".
-            `hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 1.85).toFixed(3)}) 0%, ` +
-            `hsl(220 55% 6% / ${(t_overlayOpacity / 100 * 0.92).toFixed(3)}) 22%, ` +
-            `hsl(220 50% 8% / ${(t_overlayOpacity / 100 * 0.20).toFixed(3)}) 50%, ` +
-            "transparent 75%)",
+            // Single linear bottom-up gradient, two stops only.
+            // overlayOpacity is the 0..60 % "darkness budget":
+            //   • 0  → gradient invisible, photo full clarity.
+            //   • 35 → ~0.65 alpha at the bottom edge (classic pad).
+            //   • 60 → near-opaque navy at the bottom (for washed-out
+            //          slides where the headline needs maximum pad).
+            // The gradient feathers to fully transparent at 55 % of
+            // the hero height so the upper half — where the subject
+            // lives — is NEVER touched.
+            `linear-gradient(to top, hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 1.85).toFixed(3)}) 0%, transparent 55%)`,
         }}
       />
-      {/* Subtle horizontal navy hold on the left so the headline pad
-          stays readable on bright photos without darkening the right
-          side of the frame where the subject usually is. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent md:from-black/40 pointer-events-none" />
-      <div className="absolute inset-0 tron-vignette opacity-60 pointer-events-none" />
-      {/* Animated cyan beam — drifts slowly across the hero. Two
-          beams at different vertical positions and slightly different
-          drift phases so they never feel like a single static line. */}
-      <div className="hidden md:block absolute left-0 right-0 top-[28%] tron-beam tron-beam-drift pointer-events-none" />
-      <div className="hidden md:block absolute left-0 right-0 bottom-[18%] tron-beam tron-beam-drift tron-beam-drift--alt opacity-60 pointer-events-none" />
 
       {/* Overlay copy — staggered reveal. Animates once per copy or
           slide change so the eye is led: badge → headline → subtitle

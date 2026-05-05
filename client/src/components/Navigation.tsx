@@ -127,7 +127,10 @@ export function Navigation() {
 
   // ============= PUBLIC TOP NAV =============
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-background/95 md:bg-background/75 md:backdrop-blur-lg border-b border-white/5">
+    <header
+      className="fixed top-0 inset-x-0 z-[100] bg-background/95 md:bg-background/75 md:backdrop-blur-lg border-b border-white/5"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"
@@ -156,7 +159,13 @@ export function Navigation() {
           )}
         </nav>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Auth area — explicitly elevated above the header itself with
+            relative positioning + z-[110] so even if a future overlay
+            tried to reach above the fixed header, the Sign-In CTA can
+            never be obscured. This is belt-and-braces: the header is
+            already z-[100] and the hero overlay layers all sit at the
+            default z=0 inside their own .hero-isolate stacking context. */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-[110]">
           <LanguageSelector />
           {/* Authenticated CTAs — only when we KNOW a user exists. */}
           {isAuthenticated && user && (
