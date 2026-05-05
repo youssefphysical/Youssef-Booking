@@ -87,7 +87,16 @@ const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 //               times).
 const COPY = {
   badge:    { start:    0, dur: 250 },
-  headline: { start:  200, dur: 600 },
+  // Architect-review hardening (v7.1): start the headline 50ms earlier
+  // (was 200, now 150). The exit fade is 200ms and old motion.div
+  // unmounts at that exact moment, so starting at 200ms left a one-
+  // frame risk where the new headline mask was at clip-path inset(0
+  // 100% 0 0) (i.e. invisible) at the same instant the old headline's
+  // opacity reached 0. With the headline now starting at 150ms, by
+  // t=200 the new headline is already 50ms into its 600ms reveal
+  // (clip-path is ~8% open + opacity ~8%) — guaranteed visible
+  // continuity through the handoff.
+  headline: { start:  150, dur: 600 },
   subhead:  { start:  700, dur: 350 },
   buttons:  { start: 1000, dur: 380 },
   exit:     { dur: 200 },
@@ -384,10 +393,22 @@ export function HeroSlider() {
                 On initial page mount, the .hero-buttons-once class plays
                 a single 380ms fade-up starting at 1000ms; thereafter the
                 buttons stay at opacity 1 / translateY 0 forever via
-                animation-fill-mode: forwards. */}
+                animation-fill-mode: forwards.
+
+                Mobile vertical-budget tightening (v7.1, architect-review
+                fix): on the smallest viewports (75vh of a 600px portrait
+                phone falls back to the 520px min-h floor), the previous
+                `mt-9 gap-3.5` mobile spacing produced ~530px of total
+                content (copy-stage 242 + mt-9 36 + 3×h-12 buttons 144 +
+                2×gap 28 + bottom-20 80) which clipped by ~10px against
+                the 520px hero floor. `mt-6 sm:mt-9 gap-2 sm:gap-3.5`
+                reclaims 24px on mobile (12 from margin, 12 from gaps)
+                while preserving the original tablet/desktop spacing —
+                the buttons row now fits with 14px headroom on the
+                smallest viewport. */}
             <div
               className={cn(
-                "mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5",
+                "mt-6 sm:mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3.5",
                 !reduced && "hero-buttons-once",
               )}
               data-testid="hero-buttons-row"

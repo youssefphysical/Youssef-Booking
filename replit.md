@@ -56,6 +56,11 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### Hero v7.1 architect-review hardening (May 2026)
+Two surgical follow-ups to v7 from the architect's PASS-with-MEDIUM-finding review:
+1. **Mobile vertical-budget fit** — on a 600px portrait phone the hero falls back to its 520px `min-h` floor. The original `mt-9 gap-3.5` mobile button spacing produced ~530px of total content (copy 242 + mt-9 36 + 3×h-12 144 + 2×gap 28 + bottom-20 80), clipping by ~10px against the floor. Changed to `mt-6 sm:mt-9 gap-2 sm:gap-3.5` — reclaims 24px on mobile (12 from margin, 12 from gaps) while preserving the tablet/desktop spacing exactly. Buttons row now fits with 14px headroom on the smallest viewport.
+2. **Headline handoff continuity** — moved `COPY.headline.start` from 200ms → 150ms. The exit fade is 200ms and old motion.div unmounts at that exact moment; starting the new headline at 200ms left a one-frame risk where the new clip-path was still at `inset(0 100% 0 0)` (invisible) the instant the old text hit opacity 0. With the headline starting 50ms earlier, by t=200 the new headline is already 50ms into its 600ms reveal — guaranteed visible continuity through the handoff.
+
 ### Hero v7 "Stable Mask Reveal" (May 2026, supersedes ALL v6.x)
 Total replacement of the v5/v6 per-character typewriter + blinking cursor experiment. The v6.x production video showed three repeatable bugs: (1) cursor-only frame in the centre of an empty headline during slide change (per-char spans torn down before new ones revealed), (2) CTA buttons disappear/reappear on every slide change (they were inside AnimatePresence and re-mounted on slide key change), (3) headlines wrapping to 2 lines on narrow mobile sometimes looked clipped because per-char chars were still hidden when the eye expected a complete word.
 
