@@ -90,7 +90,31 @@ async function fetchActiveFirstHero() {
       console.log("[inject-hero] Active hero is not a data URL — keeping committed dev placeholder.");
       return;
     }
+    // ROBUSTNESS GUARD #1 — MIME match.
+    // The static asset is served at /hero-default.webp with
+    // Content-Type: image/webp (Vercel infers from extension). If a
+    // non-WebP payload ever ends up in hero_images.image_data_url
+    // (legacy upload, manual DB edit), writing those bytes to the
+    // .webp filename would cause the CDN to serve a mismatched MIME
+    // — broken first-frame hero. The current server upload path
+    // re-encodes to WebP via sharp, so this is defence-in-depth.
+    if (m[1] !== "image/webp") {
+      console.log(
+        `[inject-hero] Active hero MIME is ${m[1]}, not image/webp — keeping committed dev placeholder.`,
+      );
+      return;
+    }
     const buf = Buffer.from(m[2], "base64");
+    // ROBUSTNESS GUARD #2 — sanity size floor.
+    // A real 1920×1080 hero WebP is 30-200 KB. Anything under 1 KB
+    // is empty/truncated/corrupt and should not overwrite the
+    // committed placeholder.
+    if (buf.length < 1024) {
+      console.log(
+        `[inject-hero] Active hero buffer is suspiciously small (${buf.length}b) — keeping committed dev placeholder.`,
+      );
+      return;
+    }
     writeFileSync(OUT_PATH, buf);
     console.log(
       `[inject-hero] Refreshed ${OUT_PATH} from active hero id=${row.id} ` +
