@@ -5,9 +5,9 @@
  *
  * Runs once on Vercel after `vite build` completes. Reads the active
  * hero image directly from Neon, then writes its binary contents to
- * `dist/public/hero-default.webp` — overwriting the committed dev
+ * `dist/public/hero-initial.webp` — overwriting the committed dev
  * placeholder with the admin's current production photo so the
- * static file served at `/hero-default.webp` is always in sync.
+ * static file served at `/hero-initial.webp` is always in sync.
  *
  * Why this design (vs. the previous HTML-bake approach)
  * -----------------------------------------------------
@@ -21,9 +21,9 @@
  *   2) First paint still required the JS bundle to render the React
  *      <img> tag — the browser had the data URL preloaded but no
  *      element to attach it to until React mounted.
- * This new approach renders a real `<img src="/hero-default.webp">`
+ * This new approach renders a real `<img src="/hero-initial.webp">`
  * in HeroSlider.tsx unconditionally, paired with a
- * `<link rel="preload" as="image" href="/hero-default.webp">` in the
+ * `<link rel="preload" as="image" href="/hero-initial.webp">` in the
  * HTML head. The browser starts decoding the image as soon as it
  * sees the preload link — long before React mounts. The image is on
  * screen on the very first frame after HTML parse. This script's job
@@ -34,7 +34,7 @@
  * ------------
  * If DATABASE_URL is missing, the table is empty, or the query
  * throws, this script logs and exits 0. The deploy still succeeds;
- * the dev placeholder committed at `client/public/hero-default.webp`
+ * the dev placeholder committed at `client/public/hero-initial.webp`
  * is what gets served. Worst case: the static file is one deploy
  * behind the admin's latest upload — the dynamic slides loaded by
  * the API after first paint cover the static base, so the user sees
@@ -46,7 +46,7 @@ import { writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import pg from "pg";
 
-const OUT_PATH = resolve("dist/public/hero-default.webp");
+const OUT_PATH = resolve("dist/public/hero-initial.webp");
 
 async function fetchActiveFirstHero() {
   if (!process.env.DATABASE_URL) {
@@ -91,7 +91,7 @@ async function fetchActiveFirstHero() {
       return;
     }
     // ROBUSTNESS GUARD #1 — MIME match.
-    // The static asset is served at /hero-default.webp with
+    // The static asset is served at /hero-initial.webp with
     // Content-Type: image/webp (Vercel infers from extension). If a
     // non-WebP payload ever ends up in hero_images.image_data_url
     // (legacy upload, manual DB edit), writing those bytes to the

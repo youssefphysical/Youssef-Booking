@@ -215,12 +215,12 @@ export function HeroSlider() {
               for the same path is in the HTML head BEFORE any
               script tag. The browser begins decoding it before
               React has even mounted.
-            • The path `/hero-default.webp` is a Vite public-dir
-              asset — `client/public/hero-default.webp` is copied
+            • The path `/hero-initial.webp` is a Vite public-dir
+              asset — `client/public/hero-initial.webp` is copied
               verbatim to `dist/public/` at build time and served
               by Vercel's CDN as a static file (no API, no JS).
             • `scripts/inject-hero.mjs` (post-`vite build`) refreshes
-              `dist/public/hero-default.webp` from the current
+              `dist/public/hero-initial.webp` from the current
               active hero in Neon on EVERY Vercel deploy, so the
               static file is always in sync with what the admin
               uploaded — no stale committed binary problem.
@@ -240,7 +240,7 @@ export function HeroSlider() {
           for that window it makes the hero look complete and
           branded instead of gradient-only.  */}
       <img
-        src="/hero-default.webp"
+        src="/hero-initial.webp"
         alt=""
         // CRITICAL: these three attributes together are why the
         // image is on screen on frame 1. Do not change without
