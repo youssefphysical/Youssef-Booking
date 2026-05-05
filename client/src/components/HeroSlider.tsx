@@ -8,58 +8,82 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useHeroImages } from "@/hooks/use-hero-images";
 import type { HeroImage } from "@shared/schema";
 
-// HERO MOTION ARCHITECTURE v4 (May-2026, "stacked images, CSS-only fade").
+// HERO MOTION ARCHITECTURE v6 (May-2026, "ultra-smooth pass").
 // =====================================================================
-// Image layer: ALL slides rendered at once, stacked absolutely. Visibility
-// controlled by toggling the `data-active` attribute (CSS handles the
-// 1200ms compositor-only opacity crossfade — see .hero-slide-layer in
-// index.css). HeroSlideLayer is React.memo'd so unchanged slides bail
-// out of re-render. The <img> elements are never re-mounted, re-fetched,
-// or re-decoded during a slide switch.
+// Image layer (unchanged from v4): ALL slides rendered at once, stacked
+// absolutely. Visibility controlled by toggling the `data-active`
+// attribute (CSS handles the 1200ms compositor-only opacity crossfade
+// — see .hero-slide-layer in index.css). HeroSlideLayer is React.memo'd
+// so unchanged slides bail out of re-render. The <img> elements are
+// never re-mounted, re-fetched, or re-decoded during a slide switch.
+// No Ken Burns, no scale animation — the bitmap stays put on its GPU
+// layer, only opacity changes.
 //
-// Copy layer (v5, May-2026, "professional typewriter" pass): the badge,
-// headline, and subheadline are revealed character-by-character (badge
-// + headline) and word-by-word (subhead) via pure CSS animations. The
-// timing is driven by three CSS variables (--hr-start, --hr-step,
-// --hr-dur) on each reveal element, with a per-token --i index used to
-// compute animation-delay = start + i * step. There is zero per-frame
-// React work during the reveal — the splitting happens once at mount.
-// A soft cyan typewriter cursor sits at the end of the headline, blinks
-// while the headline is revealing, then fades out 120ms after the last
-// character finishes. Buttons fade-up (translateY 8px → 0) AFTER all
-// text reveals have completed. Outgoing copy fades out over 300ms via
-// AnimatePresence mode="wait" before the new copy mounts.
+// Copy layer (v6, "ultra-smooth pass"): badge, headline, subheadline
+// reveal via pure CSS animations (opacity + translateY + filter:blur)
+// driven by three CSS variables (--hr-start, --hr-step, --hr-dur) on
+// each reveal element, with a per-token --i index used to compute
+// animation-delay = start + i * step. ZERO per-frame React work — the
+// splitting happens once at mount.
+//
+// Changes vs v5.1:
+//   - REMOVED the typewriter cursor entirely. With all chars in the DOM
+//     from t=0 (just hidden via opacity:0), the cursor would sit at the
+//     END of the full headline regardless of typing progress, which on
+//     multi-line headlines with the min-h reservation made it appear
+//     detached from the typing position ("fake cursor floating in
+//     middle of screen"). Apple/Stripe/Linear marketing copy uses no
+//     literal cursor either — the char-by-char fade-in IS the
+//     typewriter signature.
+//   - FASTER typing (25ms step, 200ms dur for headline → ~1175ms total
+//     for a 40-char headline, within 0.8-1.2s spec window).
+//   - CINEMATIC focus-pull: each token now interpolates filter:blur(4px)
+//     → blur(0) along with opacity + translateY. Adds a Apple-quality
+//     "depth of field" feel without any extra layout work. Animation is
+//     short enough (200ms) that the temporary filter layers are
+//     ephemeral and not a mobile compositor concern.
+//   - OVERLAP slide transition: AnimatePresence dropped mode="wait", so
+//     outgoing copy fades out (200ms) while new copy mounts and starts
+//     revealing simultaneously. No gap. Image cross-fade (1200ms) runs
+//     in parallel for buttery slide changes.
+//   - Premium font: --font-display switched from 'Outfit' to 'Plus
+//     Jakarta Sans' (already loaded in client/index.html), which gives
+//     the headline a tighter, more Stripe/Linear-grade silhouette.
 
 const ROTATE_MS = 8000;
 const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 
-// COPY REVEAL TIMING (v5.1, "professional typewriter" pass).
-// All values measured from the moment the new copy mounts (i.e. AFTER
-// the 300ms exit fade of the outgoing copy completes). Tuned so the
-// total reveal feels calm but never slow AND every element fits inside
-// its spec-mandated time window:
-//   - badge: WORD-mode (3 tokens × 90ms + 240ms anim ≈ 420ms total).
-//     Char-mode would have produced ~730ms for "PREMIUM PERSONAL
-//     TRAINING" (25 chars × 18ms + 280ms), which exceeds the spec
-//     window of 300-500ms. Word-mode produces a "letter-spacing
-//     reveal" feel (the badge stays at full letter-spacing 0.28em
-//     throughout because .tron-eyebrow's letter-spacing applies
-//     within each inline-block word) while staying within budget.
-//   - headline: char-mode, ~40 chars × 22ms + 260ms anim ≈ 1140ms total
-//     (starts 500ms in, ends ~1640ms in). Within spec 900-1400ms.
-//   - subhead: word-mode, ~13 words × 55ms + 320ms anim ≈ 1035ms total
-//     (starts 1500ms in, ends ~2535ms in). Within spec 800-1200ms.
-//   - buttons: single 420ms fade+translateY(8px → 0) starting at
-//     2500ms (overlaps the very end of the subhead so the eye lands
-//     on the CTAs as the subhead settles). Within spec 300-500ms.
-// Total ~2920ms — well within ROTATE_MS=8000 so buttons are fully
-// visible and clickable for ~5s before the next slide change.
+// COPY REVEAL TIMING (v6, "ultra-smooth pass").
+// All values measured from the moment the new copy mounts. Because
+// AnimatePresence no longer waits for the exit (mode="wait" dropped),
+// the new-copy mount happens at t=0 of the slide change, in parallel
+// with the outgoing copy's 200ms fade-out and the image layer's 1200ms
+// cross-fade.
+//
+//   - badge: WORD-mode, 3 tokens × 80ms + 220ms anim ≈ 460ms total
+//     for "PREMIUM PERSONAL TRAINING". Within spec 300-500ms. The
+//     .tron-eyebrow letter-spacing 0.28em is preserved because
+//     letter-spacing applies between glyphs INSIDE each inline-block
+//     word span.
+//   - headline: char-mode, ~40 chars × 25ms + 200ms anim ≈ 1175ms
+//     total. Within spec 0.8-1.2s. Starts 350ms after copy mount —
+//     just long enough for the badge to "click into focus" first.
+//   - subhead: word-mode, ~13 words × 50ms + 280ms anim ≈ 930ms
+//     total. Within spec 800-1200ms. Starts 1300ms in — overlaps
+//     the very end of the headline (intentional: the eye reads the
+//     completed headline as the subhead begins flowing in).
+//   - buttons: single 380ms fade+translateY(8px → 0) starting at
+//     2100ms (overlaps the very end of the subhead). Within spec
+//     300-500ms.
+// Total reveal ~2480ms — snappier than v5.1's 2920ms (about 15%
+// faster), well within ROTATE_MS=8000 so buttons are fully visible
+// and clickable for ~5.5s before the next slide change.
 const COPY = {
-  badge:    { start:    0, step: 90, dur: 240 },
-  headline: { start:  500, step: 22, dur: 260 },
-  subhead:  { start: 1500, step: 55, dur: 320 },
-  buttons:  { start: 2500,           dur: 420 },
-  exit:     { dur: 300 }, // outgoing copy fade-out duration in ms
+  badge:    { start:    0, step: 80, dur: 220 },
+  headline: { start:  350, step: 25, dur: 200 },
+  subhead:  { start: 1300, step: 50, dur: 280 },
+  buttons:  { start: 2100,           dur: 380 },
+  exit:     { dur: 200 }, // outgoing copy fade-out (overlaps with new reveal)
 };
 
 function prefersReducedMotion() {
@@ -265,32 +289,10 @@ export function HeroSlider() {
   const subhead = current?.subtitle?.trim() || variant.subhead;
   const badge = current?.badge?.trim() || variant.badge;
 
-  // Cursor visible from headline.start until the last headline character
-  // finishes its reveal animation, plus a short ~120ms tail so the
-  // cursor blinks once or twice past the last char before fading out.
-  // Counts NON-whitespace characters only (matches HeroReveal's index
-  // assignment, which skips whitespace tokens).
-  const headlineCharCount = useMemo(
-    () => Array.from(headline).filter((c) => !/\s/.test(c)).length,
-    [headline],
-  );
-  const cursorEndMs =
-    COPY.headline.start +
-    Math.max(headlineCharCount - 1, 0) * COPY.headline.step +
-    COPY.headline.dur +
-    120;
-
-  // Single setTimeout per slide change — when it fires we add the
-  // .hero-cursor--off class which kills the blink animation and
-  // triggers a clean fade-out. NO continuous JS work.
-  const [cursorPhase, setCursorPhase] = useState<"on" | "off">("on");
+  // Slide identity used as the AnimatePresence key. When this changes,
+  // the old copy starts its 200ms exit fade and the new copy mounts
+  // simultaneously (no mode="wait" — overlap is intentional).
   const slideKey = `${copyIndex}-${current?.id ?? "default"}`;
-  useEffect(() => {
-    if (reduced) return;
-    setCursorPhase("on");
-    const id = window.setTimeout(() => setCursorPhase("off"), cursorEndMs);
-    return () => window.clearTimeout(id);
-  }, [reduced, slideKey, cursorEndMs]);
 
   return (
     <div
@@ -325,17 +327,20 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* OVERLAY COPY — typewriter reveal v5.
-          AnimatePresence mode="wait" gives the outgoing copy a clean
-          300ms opacity exit before the new copy mounts. Once mounted,
-          the new badge/headline/subhead/buttons reveal themselves via
-          pure CSS animations driven by HeroReveal and the .hero-reveal
-          / .hero-cursor / .hero-button-reveal rules in index.css.
-          Reduced-motion users get plain text instantly with no spans
-          and no cursor — the entire reveal apparatus is skipped. */}
+      {/* OVERLAY COPY — ultra-smooth reveal v6.
+          AnimatePresence WITHOUT mode="wait": the outgoing copy fades
+          out over 200ms while the new copy mounts and starts revealing
+          simultaneously. The eye reads this as a buttery overlap — no
+          gap, no flicker. Pairs with the image layer's parallel 1200ms
+          cross-fade for a single coherent slide change. The new badge/
+          headline/subhead/buttons reveal themselves via pure CSS
+          animations driven by HeroReveal and the .hero-reveal /
+          .hero-button-reveal rules in index.css. Reduced-motion users
+          get plain text instantly — the entire reveal apparatus is
+          skipped. */}
       <div className="absolute inset-0 z-10 flex items-end md:items-center">
-        <div className="w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
-          <AnimatePresence mode="wait">
+        <div className="relative w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
+          <AnimatePresence initial={false}>
             <motion.div
               key={`copy-${slideKey}`}
               initial={false}
@@ -345,7 +350,7 @@ export function HeroSlider() {
                 duration: COPY.exit.dur / 1000,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="max-w-2xl"
+              className="max-w-2xl absolute inset-x-5 md:inset-x-0 md:relative"
             >
               {badge && (
                 <span
@@ -382,27 +387,13 @@ export function HeroSlider() {
                 {reduced ? (
                   headline
                 ) : (
-                  <>
-                    <HeroReveal
-                      text={headline}
-                      mode="char"
-                      startMs={COPY.headline.start}
-                      stepMs={COPY.headline.step}
-                      durMs={COPY.headline.dur}
-                    />
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "hero-cursor",
-                        cursorPhase === "off" && "hero-cursor--off",
-                      )}
-                      style={
-                        {
-                          ["--hr-start" as any]: `${COPY.headline.start}ms`,
-                        } as React.CSSProperties
-                      }
-                    />
-                  </>
+                  <HeroReveal
+                    text={headline}
+                    mode="char"
+                    startMs={COPY.headline.start}
+                    stepMs={COPY.headline.step}
+                    durMs={COPY.headline.dur}
+                  />
                 )}
               </h1>
               {subhead && (

@@ -6,7 +6,15 @@
 
 :root {
   --font-body: 'DM Sans', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+  /* HERO v6 (May-2026, "ultra-smooth pass"): switched from 'Outfit' to
+     'Plus Jakarta Sans' for a tighter, more Stripe/Linear-grade
+     headline silhouette. Plus Jakarta Sans is already loaded by the
+     omnibus Google Fonts <link> in client/index.html, so this is a
+     pure cascade swap — zero extra network requests. Inter is listed
+     as a fallback (also already loaded) for the rare browser that
+     doesn't honour the primary, and system-ui / -apple-system finish
+     the cascade for the offline / preview case. */
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   /* Luxury Black + Navy + Light Blue Theme */
   --background: 222 45% 4%;       /* Near-black with subtle navy */
@@ -646,21 +654,25 @@
    letter-spacing inherited from .tron-eyebrow (0.28em) still
    applies between adjacent inline-block char-spans in modern
    browsers — the badge keeps its tracked-out look during reveal. */
+/* HERO COPY REVEAL v6 (May-2026, "ultra-smooth pass") — char/word
+   reveal with cinematic focus-pull. Each token interpolates THREE
+   compositor-friendly properties together:
+     opacity:   0 → 1   (the typewriter base)
+     transform: translateY(10px) → translateY(0)   (subtle lift)
+     filter:    blur(4px) → blur(0)                (focus pull)
+   The combined effect reads as "characters snap into focus" — the
+   Apple/Stripe/Linear cinematic feel the hero v6 brief asked for.
+   Animation is kept short (200-280ms per token) so the temporary
+   filter layers are ephemeral and never a mobile compositor concern.
+   No will-change on per-char spans — modern browsers still GPU-promote
+   the animation when it starts, then tear the layer down when it ends. */
 .hero-reveal {
   display: inline-block;
   opacity: 0;
-  transform: translateY(0.18em);
-  animation: heroReveal var(--hr-dur, 260ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 30ms));
-  /* NOTE (v5.1): will-change removed from per-char/word spans to
-     avoid compositor-layer pressure on low-end mobile (a 40-char
-     headline + 13-word subhead would otherwise pre-allocate ~50
-     dedicated layers). Modern browsers still promote opacity +
-     transform animations to the compositor automatically when they
-     start; without will-change the layer is created lazily and torn
-     down once the animation ends, which is the right trade-off for
-     short reveals. backface-visibility:hidden is kept because it
-     forces a stable rendering path without forcing a layer. */
+  transform: translateY(10px);
+  filter: blur(4px);
+  animation: heroReveal var(--hr-dur, 200ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 25ms));
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -669,68 +681,15 @@
   white-space: nowrap;
 }
 @keyframes heroReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* Soft cyan typewriter cursor — appears at the end of the headline,
-   blinks while characters are revealing, then fades out 120ms after
-   the last character finishes. Two stacked animations: a fade-in
-   ramp (heroCursorIn, runs once, forwards) followed by an infinite
-   blink (heroCursorBlink). When .hero-cursor--off is added by
-   HeroSlider.tsx via setTimeout, both animations are killed via
-   `animation: none !important` and the CSS transition on the base
-   class then interpolates opacity + transform from their last
-   animated values to the final off state — robust across browsers
-   regardless of which blink phase the cursor was in at toggle. */
-.hero-cursor {
-  display: inline-block;
-  width: 0.06em;
-  min-width: 2px;
-  height: 0.85em;
-  margin-left: 0.12em;
-  background: hsl(195 100% 60%);
-  vertical-align: -0.02em;
-  border-radius: 1px;
-  box-shadow: 0 0 12px hsl(195 100% 60% / 0.65);
-  opacity: 0;
-  transform-origin: center;
-  animation:
-    heroCursorIn 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    heroCursorBlink 1.05s steps(2, start) infinite;
-  animation-delay: var(--hr-start, 500ms),
-    calc(var(--hr-start, 500ms) + 220ms);
-  /* Transition is a fallback that fires when .hero-cursor--off
-     sets animation:none (which causes opacity + transform to snap
-     to their underlying cascade values; the transition then runs
-     from the prior animated value to the new static value).
-     Smooth fade-out regardless of which blink phase the cursor was
-     in at the moment of toggle. */
-  transition:
-    opacity 480ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
-}
-.hero-cursor--off {
-  /* Killing the animation chain forces opacity + transform back to
-     the cascade values; the transition rule on .hero-cursor then
-     interpolates from the current animated value to opacity:0 +
-     scaleY(0.4) over 480ms. Robust across browsers — no reliance
-     on a `from` keyframe sampling the live animated value. */
-  animation: none !important;
-  opacity: 0 !important;
-  transform: scaleY(0.4) !important;
-}
-@keyframes heroCursorIn {
-  to {
-    opacity: 1;
-  }
-}
-@keyframes heroCursorBlink {
-  50% {
-    opacity: 0;
+    filter: blur(0);
   }
 }
 
@@ -767,12 +726,7 @@
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-  }
-  .hero-cursor,
-  .hero-cursor--off {
-    display: none !important;
-    animation: none !important;
-    transition: none !important;
+    filter: none !important;
   }
 }
 
