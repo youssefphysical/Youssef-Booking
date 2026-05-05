@@ -190,6 +190,23 @@ export const heroImages = pgTable("hero_images", {
   badge: text("badge"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  // ====== DISPLAY TUNING (per-image render-time controls) ======
+  // The cropper bakes the initial framing into the saved image, but the
+  // admin often wants to *fine-tune* how a slide renders without having
+  // to re-crop. These columns let them nudge focal point, zoom in/out a
+  // touch, tilt the frame, or warm the photo up — all applied at render
+  // time via inline style on the foreground sharp <img> in HeroSlider.
+  // Every column is NULL-safe: pre-existing slides that have no tuning
+  // metadata fall back to identity (zoom 1, focal 0/0, rotate 0,
+  // brightness 1, contrast 1, overlay default), so adding this feature
+  // never visually shifts slides that haven't been touched.
+  focalX: doublePrecision("focal_x").default(0),           // -200 → +200 px
+  focalY: doublePrecision("focal_y").default(0),           // -200 → +200 px
+  zoom: doublePrecision("zoom").default(1.0),              // 0.8 → 2.0
+  rotate: doublePrecision("rotate").default(0),            // -10 → +10 deg
+  brightness: doublePrecision("brightness").default(1.0),  // 0.9 → 1.2
+  contrast: doublePrecision("contrast").default(1.0),      // 0.95 → 1.2
+  overlayOpacity: doublePrecision("overlay_opacity").default(35), // 0 → 60 %
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -695,12 +712,24 @@ export const insertHeroImageSchema = createInsertSchema(heroImages).omit({
 });
 // Update schema accepts every editable field; all optional so callers can
 // PATCH a single property (e.g. just sortOrder, just isActive, just title).
+// Display-tuning fields (focalX/focalY/zoom/rotate/brightness/contrast/
+// overlayOpacity) are clamped to safe ranges that match the slider bounds
+// in AdminSettings → HeroSlideEditor and the render contract in
+// HeroSlider.tsx — values outside these ranges are rejected so the
+// homepage cannot be visually broken (e.g. zoom 50 or brightness 0).
 export const updateHeroImageSchema = z.object({
   sortOrder: z.number().int().min(0).max(999).optional(),
   isActive: z.boolean().optional(),
   title: z.string().max(140).nullish(),
   subtitle: z.string().max(240).nullish(),
   badge: z.string().max(60).nullish(),
+  focalX: z.number().min(-200).max(200).nullish(),
+  focalY: z.number().min(-200).max(200).nullish(),
+  zoom: z.number().min(0.8).max(2.0).nullish(),
+  rotate: z.number().min(-10).max(10).nullish(),
+  brightness: z.number().min(0.9).max(1.2).nullish(),
+  contrast: z.number().min(0.95).max(1.2).nullish(),
+  overlayOpacity: z.number().min(0).max(60).nullish(),
 });
 export type HeroImage = typeof heroImages.$inferSelect;
 export type InsertHeroImage = z.infer<typeof insertHeroImageSchema>;

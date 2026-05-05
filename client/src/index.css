@@ -445,6 +445,20 @@
 .hero-img {
   filter: contrast(1.12) brightness(1.08) saturate(1.12) hue-rotate(-6deg);
   will-change: transform;
+  /* Browser-default downscaling produces the best perceptual quality
+     for photographic content (uses high-quality bicubic on Chromium /
+     WebKit). Forcing pixelated/crisp-edges would shred the cinematic
+     filter chain — leaving it `auto` is correct here. */
+  image-rendering: auto;
+  /* Promote to its own GPU compositor layer up-front and prevent the
+     browser from painting the back of the rotated bitmap. Combined
+     with the per-image `transform` from HeroSlider these two hints
+     keep the slide on a stable hardware layer through Ken Burns,
+     admin tuning changes, and the cross-fade between slides — which
+     is what eliminates the brief "soft-then-snap-sharp" judder some
+     mid-range Android Chromium devices used to show on slide-change. */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Background "out of focus" copy — same image, blurred + cool-graded
@@ -455,6 +469,9 @@
   filter: contrast(1.10) brightness(1.04) saturate(1.18) hue-rotate(-8deg) blur(14px);
   transform: scale(1.08);
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  image-rendering: auto;
 }
 
 /* Radial mask on the SHARP foreground copy — clear in the centre

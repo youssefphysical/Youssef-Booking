@@ -20,6 +20,8 @@ import {
 } from "@/hooks/use-transformations";
 import type { Transformation } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import type { HeroImage } from "@shared/schema";
 import {
   useSettings,
   useUpdateSettings,
@@ -331,17 +333,46 @@ function HeroImagesSection() {
   );
 }
 
-// Inline editor for a single hero slide's overlay metadata. Lives below
-// the grid so we don't disrupt the responsive tile layout.
+// Identity defaults for the per-image display tuning. These match the
+// server defaults set by POST /api/admin/hero-images so a freshly
+// uploaded slide opens in the editor with the sliders sitting at
+// their neutral "no adjustment" position.
+const TUNING_DEFAULTS = {
+  focalX: 0,
+  focalY: 0,
+  zoom: 1.0,
+  rotate: 0,
+  brightness: 1.0,
+  contrast: 1.0,
+  overlayOpacity: 35,
+} as const;
+
+// Inline editor for a single hero slide's overlay metadata + display
+// tuning. Lives below the grid so we don't disrupt the responsive tile
+// layout. The display-tuning panel renders a live preview of the
+// adjusted slide so the admin can see the effect of every slider in
+// real time before saving.
 function HeroSlideEditor({
   slide,
   onClose,
   onSave,
   saving,
 }: {
-  slide: { id: number; title: string | null; subtitle: string | null; badge: string | null; isActive: boolean };
+  slide: HeroImage;
   onClose: () => void;
-  onSave: (updates: { title: string | null; subtitle: string | null; badge: string | null; isActive: boolean }) => void;
+  onSave: (updates: {
+    title: string | null;
+    subtitle: string | null;
+    badge: string | null;
+    isActive: boolean;
+    focalX: number;
+    focalY: number;
+    zoom: number;
+    rotate: number;
+    brightness: number;
+    contrast: number;
+    overlayOpacity: number;
+  }) => void;
   saving: boolean;
 }) {
   const { t } = useTranslation();
@@ -349,6 +380,37 @@ function HeroSlideEditor({
   const [subtitle, setSubtitle] = useState(slide.subtitle ?? "");
   const [badge, setBadge] = useState(slide.badge ?? "");
   const [isActive, setIsActive] = useState(slide.isActive ?? true);
+  // Display-tuning state — initialised from the slide row, falling back
+  // to the identity defaults for slides that pre-date this feature.
+  const [focalX, setFocalX] = useState<number>(slide.focalX ?? TUNING_DEFAULTS.focalX);
+  const [focalY, setFocalY] = useState<number>(slide.focalY ?? TUNING_DEFAULTS.focalY);
+  const [zoom, setZoom] = useState<number>(slide.zoom ?? TUNING_DEFAULTS.zoom);
+  const [rotate, setRotate] = useState<number>(slide.rotate ?? TUNING_DEFAULTS.rotate);
+  const [brightness, setBrightness] = useState<number>(slide.brightness ?? TUNING_DEFAULTS.brightness);
+  const [contrast, setContrast] = useState<number>(slide.contrast ?? TUNING_DEFAULTS.contrast);
+  const [overlayOpacity, setOverlayOpacity] = useState<number>(slide.overlayOpacity ?? TUNING_DEFAULTS.overlayOpacity);
+
+  // Live preview style — mirrors the exact composition the homepage
+  // HeroSlider applies, so what the admin sees here is what visitors
+  // see on the homepage. Using the same `1.12 * contrast` /
+  // `1.08 * brightness` baseline composition as the slider keeps the
+  // preview honest.
+  const previewSharpStyle: React.CSSProperties = {
+    filter: `contrast(${(1.12 * contrast).toFixed(3)}) brightness(${(1.08 * brightness).toFixed(3)}) saturate(1.12) hue-rotate(-6deg)`,
+    transform: `translate(${focalX}px, ${focalY}px) scale(${zoom}) rotate(${rotate}deg)`,
+    transformOrigin: "center",
+  };
+  const previewOverlay = `linear-gradient(to top, hsl(220 60% 4% / ${(overlayOpacity / 100 * 2.45).toFixed(3)}) 0%, hsl(220 55% 6% / ${(overlayOpacity / 100 * 1.57).toFixed(3)}) 22%, hsl(220 50% 8% / ${(overlayOpacity / 100 * 0.51).toFixed(3)}) 50%, transparent 78%)`;
+
+  function resetTuning() {
+    setFocalX(TUNING_DEFAULTS.focalX);
+    setFocalY(TUNING_DEFAULTS.focalY);
+    setZoom(TUNING_DEFAULTS.zoom);
+    setRotate(TUNING_DEFAULTS.rotate);
+    setBrightness(TUNING_DEFAULTS.brightness);
+    setContrast(TUNING_DEFAULTS.contrast);
+    setOverlayOpacity(TUNING_DEFAULTS.overlayOpacity);
+  }
 
   return (
     <div
@@ -408,7 +470,104 @@ function HeroSlideEditor({
             data-testid={`input-hero-subtitle-${slide.id}`}
           />
         </div>
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+
+        {/* ============== DISPLAY TUNING ==============
+            Per-image render-time controls. These never re-encode the
+            stored bitmap; they only change how the slide composes on
+            the homepage. The live preview above the sliders shows the
+            effect at hero aspect ratio (16:9) so the admin sees what
+            visitors will see before clicking Save. */}
+        <div className="pt-3 mt-2 border-t border-white/10">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs uppercase tracking-wider text-primary font-bold">
+              {t("admin.settingsPage.heroTuningTitle")}
+            </h4>
+            <button
+              type="button"
+              onClick={resetTuning}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              data-testid={`button-hero-tuning-reset-${slide.id}`}
+            >
+              {t("admin.settingsPage.heroTuningReset")}
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            {t("admin.settingsPage.heroTuningHint")}
+          </p>
+
+          {/* Live preview — clipped to hero aspect ratio so the admin
+              gets an accurate picture of how the cropped/zoomed/tinted
+              image will sit behind the homepage overlay copy. */}
+          <div
+            className="relative w-full aspect-video rounded-xl overflow-hidden border border-white/10 bg-black mb-4"
+            data-testid={`preview-hero-tuning-${slide.id}`}
+          >
+            <img
+              src={slide.imageDataUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={previewSharpStyle}
+            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: previewOverlay }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3">
+            <TuningSlider
+              testId={`slider-hero-focalx-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningFocalX")}
+              value={focalX} min={-200} max={200} step={1}
+              format={(v) => `${Math.round(v)} px`}
+              onChange={setFocalX}
+            />
+            <TuningSlider
+              testId={`slider-hero-focaly-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningFocalY")}
+              value={focalY} min={-200} max={200} step={1}
+              format={(v) => `${Math.round(v)} px`}
+              onChange={setFocalY}
+            />
+            <TuningSlider
+              testId={`slider-hero-zoom-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningZoom")}
+              value={zoom} min={0.8} max={2.0} step={0.01}
+              format={(v) => `${v.toFixed(2)}×`}
+              onChange={setZoom}
+            />
+            <TuningSlider
+              testId={`slider-hero-rotate-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningRotate")}
+              value={rotate} min={-10} max={10} step={0.1}
+              format={(v) => `${v.toFixed(1)}°`}
+              onChange={setRotate}
+            />
+            <TuningSlider
+              testId={`slider-hero-brightness-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningBrightness")}
+              value={brightness} min={0.9} max={1.2} step={0.01}
+              format={(v) => v.toFixed(2)}
+              onChange={setBrightness}
+            />
+            <TuningSlider
+              testId={`slider-hero-contrast-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningContrast")}
+              value={contrast} min={0.95} max={1.2} step={0.01}
+              format={(v) => v.toFixed(2)}
+              onChange={setContrast}
+            />
+            <TuningSlider
+              testId={`slider-hero-overlay-${slide.id}`}
+              label={t("admin.settingsPage.heroTuningOverlay")}
+              value={overlayOpacity} min={0} max={60} step={1}
+              format={(v) => `${Math.round(v)}%`}
+              onChange={setOverlayOpacity}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 mt-2 border-t border-white/5">
           <label className="flex items-center gap-2 text-sm">
             <Switch
               checked={isActive}
@@ -425,6 +584,13 @@ function HeroSlideEditor({
                 subtitle: subtitle.trim() ? subtitle.trim() : null,
                 badge: badge.trim() ? badge.trim() : null,
                 isActive,
+                focalX,
+                focalY,
+                zoom,
+                rotate,
+                brightness,
+                contrast,
+                overlayOpacity,
               })
             }
             disabled={saving}
@@ -435,6 +601,42 @@ function HeroSlideEditor({
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Compact slider row used by HeroSlideEditor — label + numeric readout
+// + shadcn Slider. Kept inline (rather than a generic component) so we
+// can keep the labelling tight and lean on the surrounding section's
+// vertical rhythm.
+function TuningSlider({
+  label, value, min, max, step, onChange, format, testId,
+}: {
+  label: string;
+  value: number;
+  min: number; max: number; step: number;
+  onChange: (v: number) => void;
+  format: (v: number) => string;
+  testId: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          {label}
+        </label>
+        <span className="text-[11px] tabular-nums text-foreground/80">
+          {format(value)}
+        </span>
+      </div>
+      <Slider
+        value={[value]}
+        min={min}
+        max={max}
+        step={step}
+        onValueChange={(v) => onChange(v[0] ?? value)}
+        data-testid={testId}
+      />
     </div>
   );
 }

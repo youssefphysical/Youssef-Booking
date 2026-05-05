@@ -1276,6 +1276,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const nextOrder = existing.length
       ? Math.max(...existing.map((h) => h.sortOrder)) + 1
       : 0;
+    // New slides start with identity display tuning so they render
+    // exactly as the cropper produced them. The admin can then open
+    // the per-slide "Display tuning" panel to nudge focal/zoom/etc.
     const created = await storage.createHeroImage({
       imageDataUrl: processed.dataUrl,
       sortOrder: nextOrder,
@@ -1283,6 +1286,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       subtitle: parsed.data.subtitle ?? null,
       badge: parsed.data.badge ?? null,
       isActive: true,
+      focalX: 0,
+      focalY: 0,
+      zoom: 1.0,
+      rotate: 0,
+      brightness: 1.0,
+      contrast: 1.0,
+      overlayOpacity: 35,
     });
     res.status(201).json(created);
   });

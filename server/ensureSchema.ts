@@ -94,6 +94,19 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS badge text,
       ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
 
+    -- May 2026 hero display-tuning wave: per-image render-time controls so
+    -- the admin can fine-tune focal point / zoom / tilt / brightness /
+    -- contrast / overlay darkness without re-cropping. All NULL-safe with
+    -- sensible identity-ish defaults so pre-existing slides never shift.
+    ALTER TABLE IF EXISTS hero_images
+      ADD COLUMN IF NOT EXISTS focal_x        double precision DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS focal_y        double precision DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS zoom           double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS rotate         double precision DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS brightness     double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS contrast       double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS overlay_opacity double precision DEFAULT 35;
+
     CREATE TABLE IF NOT EXISTS transformations (
       id serial PRIMARY KEY,
       before_image_data_url text NOT NULL,

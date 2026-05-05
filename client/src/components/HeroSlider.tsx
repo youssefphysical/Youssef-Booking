@@ -148,6 +148,45 @@ export function HeroSlider() {
   const subhead = current?.subtitle?.trim() || variant.subhead;
   const badge = current?.badge?.trim() || variant.badge;
 
+  // ====== PER-IMAGE DISPLAY TUNING ======
+  // Admin-controlled render-time adjustments. All NULL-safe — pre-existing
+  // slides with no tuning data fall back to identity (zoom 1, no rotation,
+  // no offset, baseline brightness/contrast, default overlay) so the hero
+  // never visually shifts when this feature is added. The tuning is
+  // applied as a single combined inline `transform`/`filter` on the
+  // foreground sharp <img>, which composes cleanly with the wrapper's
+  // Ken Burns transform (the wrapper handles motion, the img handles
+  // composition tuning — they live on different elements so neither
+  // fights the other for the GPU layer).
+  const t_focalX = current?.focalX ?? 0;
+  const t_focalY = current?.focalY ?? 0;
+  const t_zoom = current?.zoom ?? 1.0;
+  const t_rotate = current?.rotate ?? 0;
+  const t_brightness = current?.brightness ?? 1.0;
+  const t_contrast = current?.contrast ?? 1.0;
+  const t_overlayOpacity = current?.overlayOpacity ?? 35; // percent
+
+  // Compose admin tuning with the cinematic baseline filter. The CSS
+  // `.hero-img` rule already applies contrast(1.12) brightness(1.08)
+  // saturate(1.12) hue-rotate(-6deg) — we MULTIPLY the admin's
+  // brightness/contrast onto that baseline so the photo keeps its
+  // movie-poster grade while still responding to the slider. Inline
+  // filter overrides the CSS one, so we re-state the full chain here.
+  const sharpStyle: React.CSSProperties = {
+    filter: `contrast(${(1.12 * t_contrast).toFixed(3)}) brightness(${(1.08 * t_brightness).toFixed(3)}) saturate(1.12) hue-rotate(-6deg)`,
+    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg)`,
+    transformOrigin: "center",
+    willChange: "transform",
+  };
+  const blurStyle: React.CSSProperties = {
+    // Background bokeh copy gets the same translate/zoom/rotate so the
+    // mask seam never drifts off the subject — but keeps its own
+    // pre-baked blur+saturate filter (defined in .hero-img-blur).
+    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${(t_zoom * 1.08).toFixed(3)}) rotate(${t_rotate}deg)`,
+    transformOrigin: "center",
+    willChange: "transform",
+  };
+
   return (
     <div
       // The data-scrolling attribute toggles the Ken Burns play state
@@ -200,7 +239,9 @@ export function HeroSlider() {
                   : { duration: FADE_MS / 1000, ease: "easeInOut" }
               }
             >
-              {/* Background "out of focus" copy — blurred + cool-graded. */}
+              {/* Background "out of focus" copy — blurred + cool-graded.
+                  Inherits the same admin focal/zoom/rotate so its
+                  composition tracks the sharp foreground perfectly. */}
               <img
                 src={current.imageDataUrl}
                 alt=""
@@ -208,8 +249,14 @@ export function HeroSlider() {
                 decoding="async"
                 aria-hidden="true"
                 className="hero-img-blur absolute inset-0 w-full h-full object-cover"
+                style={blurStyle}
               />
-              {/* Foreground sharp copy — radial-masked so subject pops. */}
+              {/* Foreground sharp copy — radial-masked so subject pops.
+                  The inline `style` carries the admin's per-image
+                  display tuning (focal, zoom, rotate, brightness,
+                  contrast). It overrides the baseline CSS filter on
+                  `.hero-img` so we restate the cinematic chain inside
+                  `sharpStyle` to keep the movie-poster grade. */}
               <img
                 src={current.imageDataUrl}
                 alt=""
@@ -218,6 +265,7 @@ export function HeroSlider() {
                 fetchpriority={imageIndex === 0 ? "high" : "auto"}
                 decoding="async"
                 className="hero-img hero-img-mask absolute inset-0 w-full h-full object-cover"
+                style={sharpStyle}
                 data-testid={`img-hero-slide-${current.id}`}
               />
             </motion.div>
@@ -245,17 +293,25 @@ export function HeroSlider() {
       <div className="absolute inset-0 tron-grid opacity-[0.08] pointer-events-none" aria-hidden="true" />
       {/* Smart vertical gradient — NOT a flat black wall. Top 50% is
           transparent so the subject reads in full clarity, middle is
-          a deep navy soft-tint (~22%) for cinematic depth without
-          losing the photo, bottom is darker so the headline and CTAs
-          land on a high-contrast pad. Cool navy stop instead of pure
-          black so the cyan grade doesn't fight a black underlayer. */}
+          a deep navy soft-tint for cinematic depth without losing the
+          photo, bottom is darker so the headline and CTAs land on a
+          high-contrast pad. Cool navy stop instead of pure black so
+          the cyan grade doesn't fight a black underlayer.
+          OVERLAY DARKNESS is per-image admin tunable: the bottom stop
+          alpha and the mid-stop alpha both scale with the slider so
+          the admin can dial the gradient down for a bright slide
+          (where the photo already provides contrast) or up for a
+          washed-out slide (where the headline needs more pad). The
+          slider value is a 0–60 % "darkness budget" — at 0 the
+          gradient is invisible, at 35 (default) we get the classic
+          cinematic pad, at 60 the bottom is near-opaque. */}
       <div className="absolute inset-0 pointer-events-none"
         style={{
           background:
             "linear-gradient(to top, " +
-            "hsl(220 60% 4% / 0.86) 0%, " +
-            "hsl(220 55% 6% / 0.55) 22%, " +
-            "hsl(220 50% 8% / 0.18) 50%, " +
+            `hsl(220 60% 4% / ${(t_overlayOpacity / 100 * 2.45).toFixed(3)}) 0%, ` +
+            `hsl(220 55% 6% / ${(t_overlayOpacity / 100 * 1.57).toFixed(3)}) 22%, ` +
+            `hsl(220 50% 8% / ${(t_overlayOpacity / 100 * 0.51).toFixed(3)}) 50%, ` +
             "transparent 78%)",
         }}
       />
