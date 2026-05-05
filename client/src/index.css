@@ -295,26 +295,35 @@
 .tron-cta {
   background: linear-gradient(135deg, hsl(195 100% 62%), hsl(210 100% 55%));
   color: hsl(220 60% 6%);
-  border: 1px solid hsl(195 100% 80% / 0.6);
+  border: 1px solid hsl(195 100% 80% / 0.55);
+  /* POLISH PASS (May 2026): glow intensity dialled down ~30 %
+     (radius 28 → 20, alpha 0.55 → 0.40) so the button reads as
+     premium-quiet, not flashy. The "powering-up" feel is preserved
+     by the hover-glow expansion below. translateZ(0) forces a GPU
+     layer up-front so the hover scale never causes a re-rasterise. */
   box-shadow:
-    0 0 0 1px hsl(195 100% 70% / 0.35),
-    0 0 28px -2px hsl(195 100% 60% / 0.55),
-    inset 0 1px 0 hsl(195 100% 92% / 0.5);
+    0 0 0 1px hsl(195 100% 70% / 0.30),
+    0 0 20px -2px hsl(195 100% 60% / 0.40),
+    inset 0 1px 0 hsl(195 100% 92% / 0.45);
+  transform: translateZ(0);
   transition:
-    box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
     transform  220ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter     220ms ease;
+    filter     200ms ease;
 }
 .tron-cta:hover {
-  filter: brightness(1.10);
-  transform: translateY(-1px);
-  /* Expanding hover glow — outer shadow radius nearly doubles so the
-     button visibly "powers up" when you point at it. */
+  filter: brightness(1.08);
+  /* Subtle Apple/Tesla-style hover: 1px lift + scale 1.03 (per spec).
+     translateZ(0) keeps the layer GPU-composited so scale is silky. */
+  transform: translateY(-1px) scale(1.03) translateZ(0);
+  /* Hover glow expansion ~30 % softer than before (radius 56 → 40,
+     alpha 0.85 → 0.60; outer 100 → 70, alpha 0.45 → 0.30) — still
+     visibly "powers up" but doesn't bloom into the surrounding UI. */
   box-shadow:
-    0 0 0 1px hsl(195 100% 85% / 0.6),
-    0 0 56px -2px hsl(195 100% 60% / 0.85),
-    0 0 100px -8px hsl(195 100% 55% / 0.45),
-    inset 0 1px 0 hsl(195 100% 95% / 0.6);
+    0 0 0 1px hsl(195 100% 85% / 0.55),
+    0 0 40px -2px hsl(195 100% 60% / 0.60),
+    0 0 70px -8px hsl(195 100% 55% / 0.30),
+    inset 0 1px 0 hsl(195 100% 95% / 0.55);
 }
 
 /* Glass outline button — pairs with .tron-cta as the secondary action.
@@ -344,17 +353,20 @@
   text-shadow: 0 0 14px hsl(195 100% 60% / 0.35);
 }
 
-/* Subtle pulse for accent badges. Disabled by reduced-motion block below. */
+/* Subtle pulse for accent badges. Disabled by reduced-motion block below.
+   POLISH PASS (May 2026): peak glow dialled down ~30 % (alpha 0.7 → 0.50,
+   radius 22 → 16) so the breathing badge feels like an Apple notification
+   pulse, not an arcade marquee. */
 @keyframes tronPulse {
   0%, 100% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 60% / 0.45),
-      0 0 10px -2px hsl(195 100% 60% / 0.4);
+      0 0 0 1px hsl(195 100% 60% / 0.35),
+      0 0 8px -2px hsl(195 100% 60% / 0.30);
   }
   50% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 75% / 0.65),
-      0 0 22px -2px hsl(195 100% 60% / 0.7);
+      0 0 0 1px hsl(195 100% 75% / 0.50),
+      0 0 16px -2px hsl(195 100% 60% / 0.50);
   }
 }
 /* Box-shadow keyframe animations are expensive (they trigger a paint
@@ -412,19 +424,21 @@
 }
 
 /* Slow breathing pulse for the primary CTA — draws the eye to the
-   most important action without being childish/arcade. */
+   most important action without being childish/arcade.
+   POLISH PASS (May 2026): peak glow dialled down ~30 % (radius 42 → 30,
+   alpha 0.82 → 0.55) to match the new quieter .tron-cta baseline. */
 @keyframes tronCtaBreathe {
   0%, 100% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 70% / 0.35),
-      0 0 28px -2px hsl(195 100% 60% / 0.55),
-      inset 0 1px 0 hsl(195 100% 92% / 0.5);
+      0 0 0 1px hsl(195 100% 70% / 0.30),
+      0 0 20px -2px hsl(195 100% 60% / 0.40),
+      inset 0 1px 0 hsl(195 100% 92% / 0.45);
   }
   50% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 82% / 0.55),
-      0 0 42px -2px hsl(195 100% 60% / 0.82),
-      inset 0 1px 0 hsl(195 100% 95% / 0.6);
+      0 0 0 1px hsl(195 100% 82% / 0.45),
+      0 0 30px -2px hsl(195 100% 60% / 0.55),
+      inset 0 1px 0 hsl(195 100% 95% / 0.55);
   }
 }
 /* Same desktop-only gate as .tron-pulse — keeps mobile scroll silky. */

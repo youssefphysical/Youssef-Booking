@@ -146,6 +146,8 @@ export default function HomePage() {
                   src={settings.profilePhotoUrl}
                   alt="Youssef Ahmed — Personal Training Service"
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   data-testid="img-profile"
                 />
               ) : (
@@ -159,7 +161,12 @@ export default function HomePage() {
                   </p>
                 </div>
               )}
-              <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/85 to-transparent" />
+              {/* POLISH PASS (May 2026): bottom overlay reduced ~35 %
+                  (from-black/85 → from-black/55) so the profile photo
+                  reads as bright + premium instead of fighting a heavy
+                  black wall. The certification badges still have plenty
+                  of contrast against the softened pad. */}
+              <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs">
                 <span className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground font-bold">
                   REPs UAE
