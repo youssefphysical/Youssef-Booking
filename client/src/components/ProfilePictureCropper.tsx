@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Cropper from "react-easy-crop";
+import type { Area } from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n";
 import {
@@ -11,9 +13,15 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Upload, ZoomIn, RotateCcw, Check } from "lucide-react";
+import { getCroppedImg } from "@/lib/getCroppedImg";
 
-const OUTPUT_PX = 512; // square output canvas
-const STAGE_PX = 320; // on-screen circular crop window
+/** Long-edge cap for the saved avatar. The source crop is exported
+ *  at native source-pixel resolution; if the user's crop exceeds
+ *  this size, we downsample once with high-quality smoothing.
+ *  1024 is comfortably retina-sharp at any avatar display size used
+ *  on this site (max ~160 px @ 3x = 480 px) and keeps the base64
+ *  payload tiny in the database. */
+const OUTPUT_LONG_EDGE_PX = 1024;
 
 type Props = {
   open: boolean;
@@ -24,48 +32,68 @@ type Props = {
 };
 
 /**
- * Instagram-style circular cropper. The user picks a file, drags to pan, and
- * uses the slider to zoom. Save renders the visible crop into a 512×512
- * WebP data-URL (~30–60KB) which is then handed off to `onCropped`.
+ * v9.0 (May-2026) — Instagram-style circular avatar cropper, now
+ * built on `react-easy-crop`. The user picks a file, drags to pan,
+ * pinches/scrolls/uses the slider to zoom, and saves. Output is a
+ * native source-pixel circular crop (capped at 1024 px long edge)
+ * encoded as WebP 0.97 (JPEG 0.97 fallback).
  *
- * Implementation notes:
- * - All math is done in IMAGE pixels for stability under window resizes.
- * - Pan offset is tracked as the (x,y) of the image's top-left in stage
- *   coordinates; we clamp so the crop window stays fully covered.
- * - The browser handles EXIF rotation when decoding via createImageBitmap
- *   (when available), so portrait photos won't appear sideways.
+ * External API (`open`, `onOpenChange`, `onCropped`, `saving`) is
+ * UNCHANGED — `ProfilePage.tsx` keeps working without edits.
  */
-export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }: Props) {
+export function ProfilePictureCropper({
+  open,
+  onOpenChange,
+  onCropped,
+  saving,
+}: Props) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
-  const [scale, setScale] = useState(1); // 1 = "cover" baseline
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
 
-  // Reset everything when the dialog closes or a new file is loaded.
+  // Reset everything when the dialog closes.
   useEffect(() => {
     if (!open) {
-      setImageEl(null);
-      setScale(1);
-      setOffset({ x: 0, y: 0 });
+      setImageSrc(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setPreviewDataUrl(null);
       setError(null);
-      // v8.9 (May-2026): also clear the file input value so the user
-      // can re-pick the same file after cancelling.
+      // Allow re-picking the same file after cancel.
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open]);
 
-  // When a fresh image is loaded, fit it as "cover" inside the stage and centre it.
+  // Live preview thumbnail driven by the same exporter the Save
+  // button uses, so the preview pixels are guaranteed to match the
+  // final saved image.
   useEffect(() => {
-    if (!imageEl) return;
-    const baseScale = Math.max(STAGE_PX / imageEl.naturalWidth, STAGE_PX / imageEl.naturalHeight);
-    setScale(1);
-    const w = imageEl.naturalWidth * baseScale;
-    const h = imageEl.naturalHeight * baseScale;
-    setOffset({ x: (STAGE_PX - w) / 2, y: (STAGE_PX - h) / 2 });
-  }, [imageEl]);
+    if (!imageSrc || !croppedAreaPixels) {
+      setPreviewDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    getCroppedImg(imageSrc, croppedAreaPixels, 0, {
+      maxLongEdgePx: 256,
+      forceJpeg: true,
+      quality: 0.85,
+    })
+      .then((url) => {
+        if (!cancelled) setPreviewDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageSrc, croppedAreaPixels]);
 
   function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -82,130 +110,33 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
     const reader = new FileReader();
     reader.onerror = () => setError(t("cropper.errReadFile"));
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => setImageEl(img);
-      img.onerror = () => setError(t("cropper.errDecode"));
-      img.src = reader.result as string;
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+      setImageSrc(reader.result as string);
     };
     reader.readAsDataURL(file);
   }
 
-  // ============== DRAG-TO-PAN ==============
-  function startDrag(e: React.PointerEvent<HTMLDivElement>) {
-    if (!imageEl) return;
-    // v8.9 (May-2026): capture on currentTarget (the stage div that
-    // owns the listeners), not e.target. The pointer often lands on
-    // the inner <img> (pointer-events-none); capturing on the wrong
-    // element caused pointermove events to be delivered to a node
-    // with no listeners — drag would stop responding.
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragging({ startX: e.clientX, startY: e.clientY, baseX: offset.x, baseY: offset.y });
-  }
-  function onDrag(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragging || !imageEl) return;
-    const dx = e.clientX - dragging.startX;
-    const dy = e.clientY - dragging.startY;
-    setOffset(clampOffset({ x: dragging.baseX + dx, y: dragging.baseY + dy }, imageEl, scale));
-  }
-  function endDrag() {
-    setDragging(null);
-  }
+  const onCropComplete = useCallback((_area: Area, areaPixels: Area) => {
+    setCroppedAreaPixels(areaPixels);
+  }, []);
 
-  function clampOffset(o: { x: number; y: number }, img: HTMLImageElement, currentScale: number) {
-    const baseScale = Math.max(STAGE_PX / img.naturalWidth, STAGE_PX / img.naturalHeight);
-    const w = img.naturalWidth * baseScale * currentScale;
-    const h = img.naturalHeight * baseScale * currentScale;
-    const minX = STAGE_PX - w;
-    const minY = STAGE_PX - h;
-    return {
-      x: Math.min(0, Math.max(minX, o.x)),
-      y: Math.min(0, Math.max(minY, o.y)),
-    };
-  }
-
-  // Re-clamp whenever the user changes the zoom level. Safety net.
-  useEffect(() => {
-    if (!imageEl) return;
-    setOffset((o) => clampOffset(o, imageEl, scale));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scale]);
-
-  /**
-   * v8.9 (May-2026): zoom anchored to the CROP CENTER. See the same
-   * function in ImageCropper for the full math. Eliminates the
-   * "image jumps when zooming" bug by keeping the image pixel that
-   * sits at the centre of the circular crop window stationary as
-   * the slider moves.
-   */
-  function setZoomToCenter(newScale: number) {
-    if (!imageEl) {
-      setScale(newScale);
-      return;
-    }
-    const c = STAGE_PX / 2;
-    const ratio = newScale / scale;
-    const newOffset = clampOffset(
-      {
-        x: c - (c - offset.x) * ratio,
-        y: c - (c - offset.y) * ratio,
-      },
-      imageEl,
-      newScale,
-    );
-    setScale(newScale);
-    setOffset(newOffset);
-  }
-
-  // ============== EXPORT ==============
   async function handleSave() {
-    if (!imageEl) return;
+    if (!imageSrc || !croppedAreaPixels) return;
     try {
-      const baseScale = Math.max(STAGE_PX / imageEl.naturalWidth, STAGE_PX / imageEl.naturalHeight);
-      const renderScale = baseScale * scale;
-      // The on-stage crop maps back to image pixels by inverting the transform.
-      const sxImg = -offset.x / renderScale;
-      const syImg = -offset.y / renderScale;
-      const sSizeImg = STAGE_PX / renderScale;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = OUTPUT_PX;
-      canvas.height = OUTPUT_PX;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas not supported");
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(
-        imageEl,
-        sxImg,
-        syImg,
-        sSizeImg,
-        sSizeImg,
-        0,
-        0,
-        OUTPUT_PX,
-        OUTPUT_PX,
-      );
-      // Try WebP first (much smaller); fall back to JPEG when the browser
-      // doesn't accept WebP encoding for canvases (older Safari).
-      let dataUrl = canvas.toDataURL("image/webp", 0.85);
-      if (!dataUrl.startsWith("data:image/webp")) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.88);
-      }
+      const dataUrl = await getCroppedImg(imageSrc, croppedAreaPixels, 0, {
+        maxLongEdgePx: OUTPUT_LONG_EDGE_PX,
+        quality: 0.97,
+      });
       await onCropped(dataUrl);
     } catch (e: any) {
       setError(e?.message || t("cropper.errSave"));
     }
   }
 
-  // ============== STAGE GEOMETRY (for render) ==============
-  const baseScale = imageEl
-    ? Math.max(STAGE_PX / imageEl.naturalWidth, STAGE_PX / imageEl.naturalHeight)
-    : 1;
-  const imgW = imageEl ? imageEl.naturalWidth * baseScale * scale : 0;
-  const imgH = imageEl ? imageEl.naturalHeight * baseScale * scale : 0;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{t("cropper.title")}</DialogTitle>
           <DialogDescription>
@@ -213,7 +144,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
           </DialogDescription>
         </DialogHeader>
 
-        {!imageEl ? (
+        {!imageSrc ? (
           <div className="space-y-3 py-4">
             <button
               type="button"
@@ -244,55 +175,41 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
         ) : (
           <div className="space-y-4 py-2">
             <div
-              className="relative mx-auto rounded-full overflow-hidden touch-none select-none border border-white/10 bg-black/40"
-              style={{ width: STAGE_PX, height: STAGE_PX }}
-              onPointerDown={startDrag}
-              onPointerMove={onDrag}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
+              className="relative w-full h-[320px] rounded-2xl overflow-hidden border border-white/10 bg-black/60"
               data-testid="region-cropper-stage"
             >
-              <img
-                src={imageEl.src}
-                alt=""
-                draggable={false}
-                style={{
-                  position: "absolute",
-                  left: offset.x,
-                  top: offset.y,
-                  width: imgW,
-                  height: imgH,
-                  cursor: dragging ? "grabbing" : "grab",
-                  userSelect: "none",
-                  pointerEvents: "none",
-                }}
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                minZoom={1}
+                maxZoom={3}
+                restrictPosition
+                objectFit="contain"
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
               />
-              <div className="absolute inset-0 ring-1 ring-white/15 rounded-full pointer-events-none" />
             </div>
 
             <div className="flex items-center gap-3 px-1">
               <ZoomIn size={14} className="text-muted-foreground shrink-0" />
               <Slider
-                value={[scale]}
+                value={[zoom]}
                 min={1}
-                max={4}
+                max={3}
                 step={0.01}
-                onValueChange={(v) => setZoomToCenter(v[0] ?? 1)}
+                onValueChange={(v) => setZoom(v[0] ?? 1)}
                 data-testid="slider-cropper-zoom"
               />
               <button
                 type="button"
                 onClick={() => {
-                  setScale(1);
-                  if (imageEl) {
-                    const baseScale = Math.max(
-                      STAGE_PX / imageEl.naturalWidth,
-                      STAGE_PX / imageEl.naturalHeight,
-                    );
-                    const w = imageEl.naturalWidth * baseScale;
-                    const h = imageEl.naturalHeight * baseScale;
-                    setOffset({ x: (STAGE_PX - w) / 2, y: (STAGE_PX - h) / 2 });
-                  }
+                  setZoom(1);
+                  setCrop({ x: 0, y: 0 });
                 }}
                 data-testid="button-cropper-reset"
                 title={t("cropper.reset")}
@@ -302,10 +219,40 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
               </button>
             </div>
 
+            <div className="flex items-center gap-3">
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground shrink-0">
+                {t("cropper.preview")}
+              </p>
+              <div
+                className="relative rounded-full bg-black/40 border border-white/10 overflow-hidden"
+                style={{ width: 64, height: 64 }}
+                data-testid="region-cropper-preview"
+              >
+                {previewDataUrl ? (
+                  <img
+                    src={previewDataUrl}
+                    alt={t("cropper.preview")}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    data-testid="img-cropper-preview"
+                  />
+                ) : (
+                  <div className="absolute inset-0 grid place-items-center">
+                    <Loader2 className="animate-spin text-white/30" size={14} />
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                {t("cropper.previewMatches")}
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={() => {
-                setImageEl(null);
+                setImageSrc(null);
+                setZoom(1);
+                setCrop({ x: 0, y: 0 });
+                setPreviewDataUrl(null);
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
@@ -335,7 +282,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
           <Button
             type="button"
             onClick={handleSave}
-            disabled={!imageEl || !!saving}
+            disabled={!imageSrc || !croppedAreaPixels || !!saving}
             data-testid="button-cropper-save"
             className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
           >
