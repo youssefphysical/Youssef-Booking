@@ -31,38 +31,57 @@
     <script>
       (function () {
         try {
+          // If the build-time bake script (scripts/inject-hero.mjs)
+          // already injected the first slide above, both
+          // `window.__HERO_BAKED__` and `window.__INITIAL_HERO_IMAGES__`
+          // are already set AND the `<link rel="preload" as="image">`
+          // for the first image is already in the DOM — there is
+          // literally nothing to do for the first paint. We still
+          // fire the fetch to refresh the FULL slide list (admin may
+          // have added slides since the last deploy and the rotating
+          // slider needs them all), but we no longer create a second
+          // preload link.
+          var alreadyBaked = !!window.__HERO_BAKED__;
           var boot = fetch("/api/hero-images", { credentials: "include" })
             .then(function (r) { return r.ok ? r.json() : []; })
             .then(function (list) {
-              window.__INITIAL_HERO_IMAGES__ = Array.isArray(list) ? list : [];
-              // Preload the first ACTIVE slide's image so it starts
-              // decoding before React renders. Hero images are stored
-              // as base64 data URLs (~80-150KB) — the browser will
-              // happily preload a data: URL and it just lands in the
-              // image cache for the immediate <img src=...> reuse.
-              var first = (window.__INITIAL_HERO_IMAGES__ || []).filter(function (s) {
-                return s && s.isActive !== false && s.imageDataUrl;
-              })[0];
-              if (first && first.imageDataUrl) {
-                var link = document.createElement("link");
-                link.rel = "preload";
-                link.as = "image";
-                link.href = first.imageDataUrl;
-                link.setAttribute("fetchpriority", "high");
-                document.head.appendChild(link);
+              var arr = Array.isArray(list) ? list : [];
+              // Always overwrite — the API is the source of truth and
+              // may include slides added since the last deploy.
+              window.__INITIAL_HERO_IMAGES__ = arr;
+              // Skip synthetic preload if the build-time bake already
+              // did it. Only inject when no bake happened (e.g. local
+              // dev preview, or a deploy that ran without DATABASE_URL).
+              if (!alreadyBaked) {
+                var first = arr.filter(function (s) {
+                  return s && s.isActive !== false && s.imageDataUrl;
+                })[0];
+                if (first && first.imageDataUrl) {
+                  var link = document.createElement("link");
+                  link.rel = "preload";
+                  link.as = "image";
+                  link.href = first.imageDataUrl;
+                  link.setAttribute("fetchpriority", "high");
+                  document.head.appendChild(link);
+                }
               }
-              return window.__INITIAL_HERO_IMAGES__;
+              return arr;
             })
             .catch(function () {
-              window.__INITIAL_HERO_IMAGES__ = [];
-              return [];
+              // Keep whatever the bake gave us; only fall back to
+              // empty if there was no bake either.
+              if (!Array.isArray(window.__INITIAL_HERO_IMAGES__)) {
+                window.__INITIAL_HERO_IMAGES__ = [];
+              }
+              return window.__INITIAL_HERO_IMAGES__;
             });
-          // Expose the in-flight promise so React can `await` it on
-          // mount if the response hasn't landed yet (rare on prod —
-          // the fetch is racing the JS bundle download).
+          // Expose the in-flight promise so React's queryFn can
+          // `await` it without firing a second fetch.
           window.__HERO_BOOT__ = boot;
         } catch (e) {
-          window.__INITIAL_HERO_IMAGES__ = [];
+          if (!Array.isArray(window.__INITIAL_HERO_IMAGES__)) {
+            window.__INITIAL_HERO_IMAGES__ = [];
+          }
         }
       })();
     </script>

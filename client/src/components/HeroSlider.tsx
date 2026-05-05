@@ -248,7 +248,16 @@ export function HeroSlider() {
             <motion.div
               key={current.id}
               className="hero-kenburns absolute inset-0"
-              initial={reduced ? false : { opacity: 0 }}
+              // FIRST PAINT (tick === 0): skip the opacity-0 → 1 fade
+              // entirely so the baked-in hero image is visible at
+              // full opacity on the very first frame. Any fade here
+              // would re-introduce the flash the build-time bake
+              // is designed to eliminate.
+              // SUBSEQUENT SLIDES: keep the cinematic 900 ms cross-
+              // fade between slides during the auto-rotation — that
+              // is the slider's signature transition, not a load
+              // animation, and never affects first-paint LCP.
+              initial={reduced || tick === 0 ? false : { opacity: 0 }}
               animate={reduced ? undefined : { opacity: 1 }}
               exit={reduced ? undefined : { opacity: 0 }}
               transition={

@@ -27,6 +27,17 @@ export function useHeroImages() {
   return useQuery<HeroImage[]>({
     queryKey: KEY,
     initialData: readBootstrap,
+    // Force the queryFn to run on mount EVEN when initialData is
+    // present. This is critical: the build-time bake (May 2026)
+    // injects ONLY the first slide into the HTML so the homepage
+    // can paint instantly without a network round-trip — but the
+    // rotating slider needs the FULL active list. Setting
+    // `initialDataUpdatedAt: 0` marks the seed data as already
+    // stale, so useQuery still calls the queryFn (which awaits the
+    // in-flight boot fetch) to retrieve every slide. The first
+    // paint uses the baked seed; any additional slides slot in
+    // ~50-150ms later as the boot promise resolves.
+    initialDataUpdatedAt: 0,
     // Three-tier fast-path → consistent path → safety net:
     //   (a) BEST CASE — boot fetch finished before the hook mounted:
     //       `initialData` returns the array, useQuery uses it on the
