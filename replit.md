@@ -56,6 +56,14 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.5.1 Micro-Tune "Seam-Invisible Hero Fade" (May 2026)
+Per the user-supplied "STRICT MICRO FIX ONLY" spec — refine the v8.5 fade so the transition is fully invisible. The previous 95%-alpha endpoint over the hero's `bg-black` produced ≈ rgb(5,21,38) at the bottom pixel, while the next section's top edge composites to ≈ rgb(12,24,38) (`from-primary/10 via-background to-background` with dark-theme `--background: 222 45% 4%` ≈ rgb(6,8,15) tinted by `--primary: 205 92% 62%` ≈ rgb(69,172,247) at 10% alpha). The 7-unit red delta plus the 5% photo bleed-through left a faint seam. Three sub-changes inside `.hero-bottom-fade` only:
+- Final stop color `rgba(5,22,40)` → `rgba(12,24,38)` — pixel-exact match to the section's compositional top edge.
+- Final stop alpha `0.95` → `1.0` — eliminates the 5% photo bleed-through at the very last row.
+- One extra midpoint stop added (40% / 75%) for a smoother S-curve ramp — "slightly smooth the existing gradient only" per spec.
+
+UNCHANGED: height `clamp(70px, 9vh, 120px)`, `position: absolute`, `bottom: 0`, `z-index: 3`, `pointer-events: none`, `transform: translateZ(0)`. No blur added. No animation. No layout movement. Files touched: `client/src/index.css` only (and `replit.md` for docs). NO changes to: HeroSlider.tsx, hero text, hero animation, image loading, slider, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing.
+
 ### v8.5 Micro Design Polish "Hero-to-Section Bottom Fade" (May 2026)
 Per the user-supplied "MICRO DESIGN POLISH ONLY — SHORT HERO-TO-SECTION FADE" spec. Single, additive design polish — nothing else touched.
 
