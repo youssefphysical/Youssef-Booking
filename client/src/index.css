@@ -420,16 +420,13 @@
   );
 }
 
-/* Cinematic headline shadow — heavy black shadow for legibility on
-   bright image areas, plus a stronger cyan halo so the type feels
-   illuminated rather than pasted on. Three layers: one for contrast
-   against the photo, two for the cyan glow at different radii. */
-.tron-headline-glow {
-  text-shadow:
-    0 2px 28px hsl(220 60% 3% / 0.92),
-    0 0 36px hsl(195 100% 60% / 0.28),
-    0 0 78px hsl(195 100% 55% / 0.18);
-}
+/* HERO HEADLINE STYLE — v8 (May-2026, "FINAL HERO STABILIZATION").
+   The previous .tron-headline-glow rule (3-layer text-shadow with cyan
+   halo) has been REMOVED per spec literal: "Headline must be: clean
+   white, sharp, no glow, no shadow." The h1 in HeroSlider.tsx no
+   longer carries this class — it renders as plain white type with
+   only the dark image-bottom gradient (rendered by HeroSlideLayer) for
+   legibility against bright photo regions. */
 
 /* Slow breathing pulse for the primary CTA — draws the eye to the
    most important action without being childish/arcade.
@@ -682,10 +679,13 @@
   to { opacity: 1; }
 }
 
-/* SUBHEAD — opacity + 8px translateY lift. */
+/* HEADLINE + SUBHEAD — opacity + 6px translateY lift.
+   v8: also used by the headline (was clip-path mask-reveal in v7).
+   The lift is reduced from 8px → 6px so multi-line headlines settle
+   in faster and feel less "loose" on mobile. */
 .hero-fade-up {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px);
   animation: heroFadeUp var(--hr-dur, 350ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--hr-start, 0ms);
   will-change: opacity, transform;
@@ -697,36 +697,11 @@
   }
 }
 
-/* HEADLINE — clip-path wipe on an inner BLOCK wrapper. The h1 itself
-   reserves the multi-line height via Tailwind min-h-* utilities; this
-   wrapper is `display: block` so the headline still wraps naturally at
-   word boundaries on narrow viewports. The clip-path animates from
-   inset(0 100% 0 0) (everything clipped from the right edge inward,
-   i.e. nothing visible) to inset(0 0 0 0) (nothing clipped, full text
-   visible), wiping left-to-right across ALL wrapped lines
-   simultaneously — the "premium fake typewriter" effect.
-
-   Combined with opacity 0 → 1 and translateY(8px → 0), the headline
-   reads as "rolls in from the left while settling down by 8px" — a
-   clean Apple/Stripe-style cinematic reveal. */
-.hero-mask-reveal {
-  display: block;
-  opacity: 0;
-  transform: translateY(8px);
-  clip-path: inset(0 100% 0 0);
-  -webkit-clip-path: inset(0 100% 0 0);
-  animation: heroMaskReveal var(--hr-dur, 600ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: var(--hr-start, 0ms);
-  will-change: opacity, transform, clip-path;
-}
-@keyframes heroMaskReveal {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    clip-path: inset(0 0 0 0);
-    -webkit-clip-path: inset(0 0 0 0);
-  }
-}
+/* HEADLINE — v8 uses the same .hero-fade-up class as the subhead
+   (opacity + translateY only). The previous .hero-mask-reveal class
+   (clip-path inset() wipe) has been REMOVED per spec literal:
+   "NO typing, NO masking, NO clip-path, NO per-letter animation —
+   ONLY opacity + slight translateY." */
 
 /* CTA BUTTONS — ONE-TIME mount fade.
    Fixed (long) animation-delay fires once at component mount. The
@@ -735,11 +710,13 @@
    once per page mount and then the row stays at its final state
    forever via animation-fill-mode: forwards. This is the structural
    fix for the v6.x "buttons disappear and reappear on every slide"
-   bug. */
+   bug.
+   v8 timing per spec: "buttons fade in once (300ms)" — duration 300ms,
+   starting at 500ms (after badge/headline/subhead have begun). */
 .hero-buttons-once {
   opacity: 0;
   transform: translateY(8px);
-  animation: heroFadeUp 380ms cubic-bezier(0.22, 1, 0.36, 1) 1000ms forwards;
+  animation: heroFadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) 500ms forwards;
   will-change: opacity, transform;
 }
 
@@ -752,13 +729,10 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-fade,
   .hero-fade-up,
-  .hero-mask-reveal,
   .hero-buttons-once {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-    clip-path: none !important;
-    -webkit-clip-path: none !important;
   }
 }
 

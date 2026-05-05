@@ -56,6 +56,25 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### Hero v8 "Final Hero Stabilization — Stable Simple Fade" (May 2026, supersedes v7/v7.1)
+Per the user-supplied "FINAL HERO STABILIZATION (STRICT MODE)" spec, the v7 clip-path mask-reveal system is fully replaced with a uniform opacity + translateY fade for all three text elements, and ALL text-shadows / glows on hero text are removed.
+
+**What changed (8 surgical edits):**
+1. **Headline glow REMOVED.** The h1 no longer carries the `tron-headline-glow` class. The CSS rule itself is also removed (replaced with a v8 explanatory comment block). Spec literal: *"Headline must be: clean white, sharp, no glow, no shadow."*
+2. **Subhead text-shadow REMOVED.** The inline `textShadow: "0 1px 12px rgba(0,0,0,0.7)"` on the subhead `<p>` is gone — pure white type with the global image-bottom dark gradient providing legibility.
+3. **`.hero-mask-reveal` class + `@keyframes heroMaskReveal` REMOVED from CSS.** No more clip-path animation. Spec literal: *"NO typing, NO masking, NO clip-path, NO per-letter animation — ONLY opacity + slight translateY."*
+4. **Headline now uses `.hero-fade-up`** (the same simple opacity 0→1 + translateY(6px→0) animation as the subhead). The h1 still reserves multi-line height via Tailwind `min-h-*` utilities so layout never shifts between slides.
+5. **AnimatePresence switched to `mode="wait"`.** Old copy fades out fully before new copy mounts and fades in. This matches the spec literal: *"ON SLIDE CHANGE: fade out ALL text (200ms), immediately switch content, fade in new text (400ms)."*
+6. **New COPY timing constants:** badge `start:0 dur:200`, headline `start:100 dur:300`, subhead `start:200 dur:400`, buttons `start:500 dur:300` (one-time), exit `dur:200` — matches spec timings exactly.
+7. **`.hero-fade-up` translateY reduced 8px → 6px** so multi-line headlines settle in faster and feel less "loose" on mobile.
+8. **`.hero-buttons-once` retimed** to 300ms duration starting at 500ms (was 380ms@1000ms) — buttons appear ~500ms sooner on first paint, still hoisted outside AnimatePresence so they NEVER re-animate on slide change.
+
+**What's preserved from v7.1:** reserved-height wrapper (`min-h-[242/290/338/402/434]`), buttons hoisted outside AnimatePresence, mobile button-row spacing (`mt-6 sm:mt-9 gap-2 sm:gap-3.5`), 75vh hero with 520-860px floor/ceiling, image system unchanged.
+
+**Slide change visual sequence (mode="wait"):** t=0 old fade-out begins → t=200 swap, new badge begins → t=300 headline begins → t=400 subhead begins, badge done → t=600 headline done → t=800 subhead done. Buttons static throughout.
+
+**Performance:** animates ONLY opacity and transform. No clip-path. No blur. No filter. No backdrop-filter. No layout. No per-frame JS. No setInterval-per-character.
+
 ### Hero v7.1 architect-review hardening (May 2026)
 Two surgical follow-ups to v7 from the architect's PASS-with-MEDIUM-finding review:
 1. **Mobile vertical-budget fit** — on a 600px portrait phone the hero falls back to its 520px `min-h` floor. The original `mt-9 gap-3.5` mobile button spacing produced ~530px of total content (copy 242 + mt-9 36 + 3×h-12 144 + 2×gap 28 + bottom-20 80), clipping by ~10px against the floor. Changed to `mt-6 sm:mt-9 gap-2 sm:gap-3.5` — reclaims 24px on mobile (12 from margin, 12 from gaps) while preserving the tablet/desktop spacing exactly. Buttons row now fits with 14px headroom on the smallest viewport.
