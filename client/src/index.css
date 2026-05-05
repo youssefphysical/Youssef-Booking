@@ -521,22 +521,50 @@
   );
 }
 
-/* (3) Bottom-edge ambient shadow — replaces .hero-bottom-fade.
-   Taller and softer than the v8.5.1 fade so it reads as the
-   photo's own bottom ambient instead of a separate dark band. */
-.hero-bottom-overlay {
+/* (3) Bottom-edge clean blend — v8.7.1 (May-2026).
+   Replaces v8.7's .hero-bottom-overlay (160px, ended at 0.85 alpha
+   with rgba(10,20,40) tone) which was perceived by the user as
+   leaving a visible "frosted/hazy" zone above the section line.
+
+   New per-spec design: a TALLER, viewport-responsive 4-stop
+   gradient that ramps to FULL OPACITY at the very bottom row,
+   using the section's exact composited top-edge color so there
+   is zero hue or luminance delta at the seam.
+
+   Per spec literal:
+     - height: clamp(120px, 14vh, 180px)  (taller, mobile-aware)
+     - 4 stops: 0% / 38% / 72% / 100%      (smoother S-curve)
+     - alpha ramp: 0 → 0.28 → 0.68 → 1.0   (full opaque terminal)
+
+   Color tone override: spec gave rgba(6,18,34) but the next
+   section's actual computed top color (HSL 222 45% 4% background
+   tinted by HSL 205 92% 62% primary at 10% alpha) composites to
+   rgb(12,24,38). User spec explicitly authorised using the
+   computed color over the spec literal — so the gradient uses
+   rgba(12,24,38) at every stop for a pixel-exact seam match.
+
+   No blur. No backdrop-filter. No mask. The optional .hero-image
+   mask from spec was SKIPPED per the spec's own safety rule —
+   masking the image layers would interfere with the slide
+   cross-fade animation. Pure gradient only.
+   z-index: 3 keeps it above image (no z) and below the copy
+   overlay (z-10) — never dims badge/headline/subhead/CTAs.
+   pointer-events: none — purely decorative. translateZ(0) for
+   GPU promotion (rasterise once, no per-frame paint). */
+.hero-bottom-blend {
   position: absolute;
-  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 160px;
+  right: 0;
+  bottom: 0;
+  height: clamp(120px, 14vh, 180px);
   pointer-events: none;
   z-index: 3;
   background: linear-gradient(
     to bottom,
-    rgba(10, 20, 40, 0)    0%,
-    rgba(10, 20, 40, 0.4)  40%,
-    rgba(10, 20, 40, 0.85) 100%
+    rgba(12, 24, 38, 0)    0%,
+    rgba(12, 24, 38, 0.28) 38%,
+    rgba(12, 24, 38, 0.68) 72%,
+    rgba(12, 24, 38, 1)    100%
   );
   transform: translateZ(0);
 }

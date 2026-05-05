@@ -296,26 +296,34 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* HERO VISUAL POLISH OVERLAYS (v8.7, May-2026).
-          Replaces the v8.6 .hero-text-scrim + v8.5.1 .hero-bottom-fade
-          combo. Two decorative layers on top of the image, both below
-          the z-10 copy overlay so neither dims badge/headline/subhead/
+      {/* HERO VISUAL POLISH OVERLAYS (v8.7 + v8.7.1, May-2026).
+          Two decorative layers on top of the image, both below the
+          z-10 copy overlay so neither dims badge/headline/subhead/
           CTAs. pointer-events:none on both so clicks pass through.
 
           (a) .hero-overlay (z-2) — center-balanced radial wash that
               evens left/right brightness across the whole hero.
-          (b) .hero-bottom-overlay (z-3) — soft 160px ambient shadow
-              at the bottom edge of the photo, blends the image into
-              the next section without a hard band.
+              UNCHANGED in v8.7.1.
+          (b) .hero-bottom-blend (z-3) — v8.7.1: replaces v8.7's
+              .hero-bottom-overlay. Taller (clamp 120-180px vs the
+              previous 160px fixed), 4-stop gradient ramping to FULL
+              opacity at the very bottom row in the next section's
+              exact composited color (rgb(12,24,38)) — zero hue or
+              luminance delta at the seam, no perceived "frosted"
+              zone above the section line.
 
-          Text contrast is now provided by .hero-text-shadow on the
-          h1 and subhead p (subtle 1px+8px shadow on the glyphs
-          themselves — no rectangle, no scrim, no blur).
+          Text contrast is provided by .hero-text-shadow on the h1
+          and subhead p (subtle 1px+8px shadow on the glyphs
+          themselves — no rectangle, no scrim, no blur). UNCHANGED.
 
-          See `.hero-overlay`, `.hero-bottom-overlay`,
+          The optional .hero-image mask from the v8.7.1 spec was
+          SKIPPED per the spec's own safety rule — masking the image
+          layers would interfere with the slide cross-fade animation.
+
+          See `.hero-overlay`, `.hero-bottom-blend`,
           `.hero-text-shadow` in index.css for full rationale. */}
       <div className="hero-overlay" aria-hidden="true" data-testid="hero-overlay" />
-      <div className="hero-bottom-overlay" aria-hidden="true" data-testid="hero-bottom-overlay" />
+      <div className="hero-bottom-blend" aria-hidden="true" data-testid="hero-bottom-blend" />
 
       {/* OVERLAY COPY — v8 simple stable fade.
           ====================================================================

@@ -56,6 +56,23 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.7.1 Hero Bottom Blend "Clean Section Seam" (May 2026)
+Per the user-supplied "STRICT MICRO DESIGN FIX — REMOVE BLUR + ADD CLEAN HERO BOTTOM BLEND" spec. The v8.7 `.hero-bottom-overlay` (160px fixed, ended at rgba(10,20,40,0.85)) was perceived by the user as still leaving a visible "frosted/hazy" zone above the section line — the 0.85 terminal alpha let 15% of the photo bleed through at the bottom row, which from the user's perspective read as a separate band rather than a seamless blend.
+
+**Single change**: replaced `.hero-bottom-overlay` (CSS rule + JSX className + data-testid) with `.hero-bottom-blend`:
+- `height: clamp(120px, 14vh, 180px)` — taller and viewport-responsive (vs previous 160px fixed)
+- 4-stop gradient (vs previous 3-stop): `0% → 38% (0.28) → 72% (0.68) → 100% (1.0)` — smoother S-curve
+- **Final stop is FULL opacity** (not 0.85) so the bottom row has zero photo bleed-through
+- Color tone overridden from spec's `rgba(6,18,34)` to `rgba(12,24,38)` — the actual computed top edge of the next section (HSL 222 45% 4% background tinted by HSL 205 92% 62% primary at 10% alpha composites to rgb(12,24,38)). User spec explicitly authorised using the computed color over the spec literal: "If the next section uses a different computed background color, use that exact color in the final gradient stop."
+- Uses `rgba(12,24,38)` at EVERY stop (not just terminal) for a pixel-exact seamless transition
+- z-index 3, `pointer-events: none`, `transform: translateZ(0)` — unchanged from v8.7
+
+**Optional `.hero-image` mask SKIPPED** per the spec's own safety rule — adding a mask to the image layers would interfere with the multi-layer cross-fade animation that powers the slide rotation.
+
+**KEPT from v8.7**: `.hero-overlay` radial center-balance (not addressed by this spec — fixes the left/right brightness imbalance which is still needed) and `.hero-text-shadow` on h1 + subhead p (explicitly preserved per "Do NOT touch hero text"). KEPT from v8.6: typography (leading-1.1, tracking-[-0.015em], text-white/85, leading-[1.65], bumped min-h reservations).
+
+**Files changed**: `client/src/components/HeroSlider.tsx` (renamed className + testid), `client/src/index.css` (replaced rule), `replit.md`. NO changes to: backdrop-filter (none existed), filter blur (none existed), hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey timings), hero image loading, hero slider, CTA buttons, header, About section, layout structure, routing, translations, auth, booking, admin, APIs, database.
+
 ### v8.7 Hero Visual Polish "Text-Shadow + Radial Balance + Soft Bottom" (May 2026)
 Per the user-supplied "fix visual issues in hero text + overlays" spec — addresses three reported issues:
 
