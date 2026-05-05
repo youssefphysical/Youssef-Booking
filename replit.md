@@ -56,6 +56,21 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### Hero v8.2 "No Double-Replay on Refresh" (May 2026, supersedes v8.1)
+Per the user-supplied "FIX HERO TEXT DOUBLE-REPLAY ON REFRESH ONLY" spec, the AnimatePresence child key is switched from slide *identity* (`${copyIndex}-${current?.id ?? "default"}`) to *content* (`${badge}|${headline}|${subhead}`). **Only the AnimatePresence keying logic changed** — every v8.1 + v8 stabilization is preserved (mask reveal, no shadow/glow, mode="wait", buttons hoisted, no per-char state).
+
+**Exact root cause of the double-replay**:
+1. **t=0** Component mounts. `useHeroImages()` returns `data: undefined` (or the build-baked seed of just the first slide). `current` is undefined → old `slideKey = "0-default"`. motion.div mounts with this key. CSS reveals fire — text appears correctly.
+2. **t=~150ms** queryFn resolves with the FULL active list (the hook uses `initialDataUpdatedAt: 0` to force a refetch even when initialData was seeded, because the seed only contains the first slide). `current` becomes `images[0]` → old `slideKey` changes from `"0-default"` to `"0-<id>"`. AnimatePresence detects key change → fades old out 200ms → mounts new → CSS reveals run AGAIN. User sees text disappear-then-replay even though the displayed text is identical.
+
+**v8.2 fix — content-based keying:**
+- New `textKey = ${badge ?? ""}|${headline ?? ""}|${subhead ?? ""}` is computed every render from the actual displayed text (after the `current?.title?.trim() || variant.headline` fallbacks resolve).
+- AnimatePresence child key becomes `copy-${textKey}`. When initial-static-render and API-resolved-render produce identical text (the common case — the build-time bake mirrors the same first slide the API returns), textKey is identical → motion.div is **never remounted** → CSS reveal plays exactly **ONCE** on initial mount and stays settled.
+- This is the React-idiomatic equivalent of the spec's suggested `lastAnimatedTextKey.current` ref pattern. Using textKey as the React key delegates the comparison to React's reconciler — same outcome, no extra ref/state.
+- Animation restart rule (now matches spec literal): textKey change → reveal replays once. textKey unchanged → reveal does NOT replay. Covers both "slide id changes to a genuinely different slide" and "headline/badge/subheadline text actually changes" via a single content hash.
+
+**What's preserved from v8.1** (none of these changed): mask reveal architecture (clip-path only on inner span, GPU layer pinning, contain:paint), 800ms reveal duration, COPY timings (badge 0/200, headline 100/800, subhead 700/400, buttons 500/300, exit 200), AnimatePresence `mode="wait"` + `initial={false}`, buttons hoisted outside AnimatePresence, reserved-height wrapper, mobile spacing, 75vh hero, image system, all auth/booking/admin/RBAC/API/database/routing untouched, mobile Sign In header pill (`data-testid="link-signin"`).
+
 ### Hero v8.1 "Jitter-Free Mask Reveal" (May 2026, supersedes v8)
 Per the user-supplied "FIX TYPEWRITER JITTER ONLY — SMOOTH LETTER REVEAL" spec, the headline gets the clip-path mask reveal back (per spec literal: "Render the full headline text once. Reveal it using CSS mask or clip-path on an inner wrapper") but engineered to eliminate the v7 jitter. **Only the headline reveal logic changed** — every v8 stabilization (no glow/shadow, mode="wait", buttons hoisted, no per-char state, no cursor, no setInterval-per-letter) is preserved.
 

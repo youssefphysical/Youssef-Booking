@@ -48,9 +48,10 @@ import type { HeroImage } from "@shared/schema";
 //   - NO per-character splitting, NO setInterval per letter, NO
 //     React per-char state, NO cursor element of any kind.
 //   - AnimatePresence in mode="wait" — old fully exits, then new
-//     mounts and reveals. Animation restarts ONLY when slideKey
-//     changes (slide id or copy index changes); same-text re-renders
-//     do NOT restart the reveal.
+//     mounts and reveals. Animation restarts ONLY when textKey
+//     (badge|headline|subhead content hash) changes; same-text
+//     re-renders never restart the reveal — see textKey docstring
+//     near line 212 for full rationale (v8.2 anti-double-replay fix).
 //   - Badge:    .hero-fade        — opacity 0→1, 200ms.
 //   - Headline: <h1> reserves multi-line height; INNER span has
 //                .hero-mask-reveal — clip-path inset(0 100% 0 0) →
@@ -206,18 +207,53 @@ export function HeroSlider() {
   const subhead = current?.subtitle?.trim() || variant.subhead;
   const badge = current?.badge?.trim() || variant.badge;
 
-  // Slide identity used as the AnimatePresence key. When this changes,
-  // the OLD motion.div runs its 200ms exit fade FIRST (mode="wait"
-  // semantics — see <AnimatePresence> below). Only after the old one
-  // fully unmounts does the NEW motion.div mount at t=0 with its
-  // CSS-animated children starting their reveals (badge → headline
-  // mask reveal → subhead). Per spec literal: "Animation should
-  // restart only when slide id changes. Do not restart while the
-  // same text is active." If the parent re-renders for an unrelated
-  // reason (locale change, react-query refetch) but slideKey doesn't
-  // change, mode="wait" doesn't remount the motion.div and the mask
-  // reveal does NOT restart.
-  const slideKey = `${copyIndex}-${current?.id ?? "default"}`;
+  // V8.2 ANIMATION RESTART RULE — content-based keying.
+  // ====================================================================
+  // PROBLEM (v8.1 and earlier): the AnimatePresence key was slide
+  // *identity*-based (`${copyIndex}-${current?.id ?? "default"}`).
+  // On hard refresh this caused a visible double-replay:
+  //
+  //   t = 0      Component mounts. useHeroImages() returns
+  //              `data: undefined` (or the build-baked seed of just
+  //              the first slide). `current` is undefined → slideKey
+  //              = "0-default". motion.div mounts with this key. CSS
+  //              reveals fire — text appears correctly.
+  //   t = ~150ms queryFn resolves with the FULL active list (the hook
+  //              uses `initialDataUpdatedAt: 0` to force a refetch
+  //              even when initialData was seeded, because the seed
+  //              only contains the first slide). `current` = images[0]
+  //              → slideKey changes from "0-default" to "0-<id>".
+  //              AnimatePresence detects key change → fades old out
+  //              200ms → mounts new → CSS reveals run AGAIN. User
+  //              sees text disappear-then-replay even though the
+  //              displayed text is identical.
+  //
+  // FIX: key by displayed CONTENT, not slide identity. If the rendered
+  // badge + headline + subhead text is the same string before and
+  // after the API resolves (which is the common case — the build-time
+  // bake mirrors the same first slide the API returns), then textKey
+  // is identical and motion.div is NEVER remounted. The CSS reveal
+  // plays exactly ONCE on initial mount and stays settled.
+  //
+  // This is the React-idiomatic equivalent of the spec's suggested
+  // pattern:
+  //   if (textKey === lastAnimatedTextKey.current) { /* no replay */ }
+  //   else { lastAnimatedTextKey.current = textKey; /* replay */ }
+  // Using textKey as the React key delegates the comparison to React's
+  // reconciler — same outcome, no extra ref / state. When textKey
+  // changes (genuine slide change, locale switch, admin edit, or
+  // copyIndex rotation that picks a different variant), motion.div
+  // remounts and the reveal plays exactly once. When textKey stays
+  // the same (initial vs API-resolved with identical content, parent
+  // re-render for unrelated reasons), motion.div stays mounted and
+  // the reveal does NOT replay.
+  //
+  // Per spec literal: "Only restart text reveal when: slide id changes
+  // to a genuinely different slide OR headline/badge/subheadline text
+  // actually changes." textKey covers both: if text changes for any
+  // reason, key changes, reveal replays. If text doesn't change, key
+  // doesn't change, reveal doesn't replay.
+  const textKey = `${badge ?? ""}|${headline ?? ""}|${subhead ?? ""}`;
 
   return (
     <div
@@ -313,7 +349,7 @@ export function HeroSlider() {
             <div className="relative min-h-[242px] sm:min-h-[290px] md:min-h-[338px] lg:min-h-[402px] xl:min-h-[434px]">
               <AnimatePresence initial={false} mode="wait">
                 <motion.div
-                  key={`copy-${slideKey}`}
+                  key={`copy-${textKey}`}
                   initial={false}
                   exit={reduced ? undefined : { opacity: 0 }}
                   transition={{
@@ -403,7 +439,7 @@ export function HeroSlider() {
 
             {/* CTA BUTTONS — rendered ONCE, OUTSIDE AnimatePresence.
                 These do NOT remount on slide change (they don't share the
-                slideKey) so they NEVER re-run their entrance animation.
+                textKey) so they NEVER re-run their entrance animation.
                 On initial page mount, the .hero-buttons-once class plays
                 a single 300ms fade-up starting at 500ms; thereafter the
                 buttons stay at opacity 1 / translateY 0 forever via
