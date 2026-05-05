@@ -574,9 +574,15 @@
     rgba(12, 24, 38, 0.6)   50%,
     rgb(12, 24, 38)         100%
   );
-  /* No border, no box-shadow, no filter, no backdrop-filter.
-     translateZ(0) for GPU promotion only. */
-  transform: translateZ(0);
+  /* v8.7.3 (May-2026): translateZ(0) REMOVED. The GPU promotion was
+     creating a sub-pixel offset at the bottom edge — the blend's GPU
+     layer rounded its position independently from the parent .hero-
+     isolate's bottom edge, exposing 1-2px of the wrapper's bg through
+     the gap. Without translateZ, the blend renders on the parent's
+     own paint layer at exact pixel boundaries — no compositor gap.
+     The performance cost is negligible (one static linear-gradient
+     paint per scroll, never re-painted because nothing animates the
+     blend). No border, no box-shadow, no filter, no backdrop-filter. */
   border: none;
   box-shadow: none;
 }

@@ -56,6 +56,27 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.7.3 Hero Wrapper Seam Fix "Match Wrapper bg to Section Color + Remove GPU Layer Offset" (May 2026)
+Per the user-supplied "STRICT MICRO FIX — BLEND THE ACTUAL HERO SEAM WITH ANY HERO IMAGE" spec. The user reported that v8.7.0 / v8.7.1 / v8.7.2 fixes "did not affect the circled area" — meaning every blend-overlay-only change had ZERO visible effect on the seam they see. That's a strong signal the seam is not in the blend zone — it's caused by a different element.
+
+**Root cause identified**: the hero outer container `.hero-isolate` had `bg-black` (`rgb(0,0,0)`), which is the "wrapper between hero and next section" the user explicitly listed as a possible cause. The chain of events:
+
+1. `.hero-bottom-blend` had `transform: translateZ(0)` — this promotes it to its own GPU compositor layer.
+2. The hero outer is `h-[75vh]` (mobile) / `md:h-[78vh]` (desktop) — `75vh` rarely resolves to a whole pixel on real viewports (e.g., on a 720px viewport it's 540px exactly, but on a 760px viewport it's 570px exactly, on 800px it's 600px, but on 740px it's 555px and on most heights it's fractional).
+3. When the parent's bottom edge is at a fractional pixel (e.g., 540.5px), the blend's GPU layer rounds its bottom position **independently** from the parent — sometimes to 540, sometimes to 541. The result is a 0.5-2px sub-pixel gap exposed at the very bottom row of the hero.
+4. Through that gap, the wrapper's `bg-black` (`rgb(0,0,0)`) showed through — a thin **pure-black** strip rendered between the blend's terminal `rgb(12,24,38)` and the section's first row `rgb(12,24,38)`. That black strip is the visible hard horizontal line.
+
+**Why all previous v8.7.x fixes did not affect the circled area**: every prior fix only modified the blend overlay (`.hero-bottom-overlay` → `.hero-bottom-blend`, gradient stops, color matching). The wrapper's `bg-black` was never touched, so the sub-pixel gap kept exposing pure black regardless of how the blend was tuned.
+
+**Fix** — two coordinated edits, both targeting the actual root cause:
+
+1. **HeroSlider.tsx** — `.hero-isolate` className: `bg-black` → `bg-[#0c1826]`. The wrapper's bg now matches the next section's exact composited top edge color. Any sub-pixel gap at the bottom now exposes `rgb(12,24,38)`, which is identical to the section's first row → invisible regardless of viewport height or which hero image is uploaded.
+2. **index.css** — `.hero-bottom-blend`: removed `transform: translateZ(0)`. Without GPU promotion, the blend renders on the parent's own paint layer at exact pixel boundaries — no compositor gap in the first place. Performance cost is negligible (one static linear-gradient paint per scroll, no animation on the blend element). This is a defence-in-depth: even if a browser still introduces sub-pixel rounding, fix #1 already makes any gap invisible.
+
+**Universality**: works with ANY hero image because the fix is colour-agnostic — the wrapper's bg always matches the section's top, regardless of what photo is in the slider. The fix would still hold if all hero images were swapped for completely different photos (different colours, brightness, contrast).
+
+**Files changed**: `client/src/components/HeroSlider.tsx` (one className), `client/src/index.css` (removed `transform: translateZ(0)` from one rule + comment), `replit.md`. NO changes to: HeroSlideLayer (per-slide bottom-darken gradient untouched), hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey), hero image loading, hero slider rotation, CTA buttons, header, About section, layout structure (no margin/padding changes — the JSX has no gap to remove), routing, translations, auth, booking, admin, APIs, database, the next section's pre-existing decorative blur sphere, the blend's gradient stops (v8.7.2's spec-literal 3-stop ramp from `rgba(0,0,0,0)` → `rgba(12,24,38,0.6)` → `rgb(12,24,38)` is unchanged), the blend's height/position/z-index/pointer-events.
+
 ### v8.7.2 Hero Bottom Blend "Kill Visible Seam Line" (May 2026)
 Per the user-supplied "Fix ONLY the visible white/gray line between hero section and next section" spec. The v8.7.1 4-stop ramp (`0%/38%/72%/100%` with all stops in `rgba(12,24,38,X)`) was working correctly at the bottom row but the early portion of the ramp was tinted by the section color from the very start, so the user perceived the upper edge of the blend zone as a too-quick darkening that looked like a line.
 

@@ -265,7 +265,21 @@ export function HeroSlider() {
          min-h-[520px] floor and max-h-[860px] ceiling unchanged so the
          hero never collapses on tiny landscape viewports nor balloons
          on ultra-tall monitors. */
-      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
+      /* v8.7.3 (May-2026): bg-black -> bg-[#0c1826] (the next section's
+         exact composited top edge color). This eliminates the visible
+         hard horizontal seam between hero and next section that
+         persisted through v8.7/v8.7.1/v8.7.2 despite all blend-overlay
+         fixes. Root cause: the .hero-bottom-blend has translateZ(0)
+         which promotes it to its own GPU compositor layer; when 75vh
+         doesn't resolve to a whole pixel (most viewports), the GPU
+         layer rounds independently from the parent's bottom edge,
+         exposing 1-2px of the wrapper's bg through the gap. With
+         bg-black, that gap rendered as pure rgb(0,0,0) — a hard line
+         between the blend's terminal rgb(12,24,38) and the section's
+         first row rgb(12,24,38). Now both sides of the gap are the
+         same colour, so the gap is invisible regardless of viewport
+         height or which hero image is loaded. */
+      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-[#0c1826]"
       data-testid="hero-slider"
       data-hero-state="ready"
     >
