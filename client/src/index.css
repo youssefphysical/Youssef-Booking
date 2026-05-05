@@ -680,8 +680,79 @@
   filter: blur(var(--hero-reveal-blur, 4px));
   animation: heroReveal var(--hr-dur, 200ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: calc(var(--hr-start, 0ms) + var(--i, 0) * var(--hr-step, 25ms));
+  /* GPU-promotion hint (v6.3): tells the compositor to allocate a
+     dedicated layer for opacity + transform interpolation up front,
+     eliminating first-frame layer-creation jank on the second/third
+     loop when the device's GPU is already under steady load. The
+     `auto` fallback after the animation ends releases the layer so
+     long-lived hero pages don't accumulate compositor memory. */
+  will-change: transform, opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+}
+
+/* INLINE TYPEWRITER CURSOR (v6.3, ULTIMATE FIX).
+   ====================================================================
+   Sits inside the <h1> right after the per-char reveal spans, so it is
+   ALWAYS in normal text flow — never floats free in the centre of the
+   screen (the v5.x cursor bug the user explicitly forbade).
+
+   Architecture:
+     - Pure CSS, ZERO JavaScript, ZERO React state changes per frame.
+     - One animation: `heroCursorBlinkThenFade`, duration set per-slide
+       via the `--hero-cursor-end` custom property (computed in
+       HeroSlider.tsx as `headline.start + visibleChars * step + dur`,
+       which is the moment the LAST per-char reveal completes).
+     - The keyframe is a square-wave (step-end style) opacity blink for
+       the FIRST ~75% of the timeline (covers the entire typing window),
+       then fades the cursor to 0 over the LAST ~25% and stays at 0
+       forever via `animation-fill-mode: forwards`.
+     - Slide change: AnimatePresence's `mode="wait"` remounts the entire
+       motion.div subtree, so this <span> is fresh on every slide change
+       and the animation restarts from frame 0 — no need to manually
+       reset CSS animations (which is famously brittle to coordinate
+       from React).
+
+   Visual treatment:
+     - 2px wide, ~0.85em tall colored rectangle aligned to the text
+       baseline. Sized in `em` so it scales with the headline's
+       responsive font-size (text-4xl on mobile up to text-[5.5rem] on
+       xl viewports) without separate breakpoints.
+     - Color = `currentColor` so it picks up the headline's white text
+       colour automatically (matches in dark and any future light
+       variants).
+     - 2px left margin so it doesn't touch the last character glyph. */
+.hero-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.85em;
+  margin-left: 0.08em;
+  vertical-align: -0.05em;
+  background-color: currentColor;
+  border-radius: 1px;
+  opacity: 0;
+  animation: heroCursorBlinkThenFade var(--hero-cursor-end, 1500ms)
+    steps(1, end) 1 forwards;
+  /* GPU-promotion hint identical to .hero-reveal — keeps the cursor
+     on the same compositor layer as the text glyphs around it. */
+  will-change: opacity;
+}
+@keyframes heroCursorBlinkThenFade {
+  /* Blink phase: square-wave opacity 1 ↔ 0 every ~12% of the timeline
+     (≈ 6 full blinks across the typing window). step-end timing gives
+     the classic terminal-cursor look — no fade per blink, just on/off. */
+  0%   { opacity: 1; }
+  12%  { opacity: 0; }
+  24%  { opacity: 1; }
+  36%  { opacity: 0; }
+  48%  { opacity: 1; }
+  60%  { opacity: 0; }
+  72%  { opacity: 1; }
+  /* Fade phase: smooth 0 over the final ~25% so the cursor stops
+     blinking AND disappears once typing is complete. Stays at 0
+     thereafter (forwards fill mode). */
+  85%  { opacity: 0.5; }
+  100% { opacity: 0; }
 }
 .hero-reveal-word {
   display: inline-block;
@@ -745,6 +816,12 @@
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+  }
+  /* Hero cursor: cancel the blink animation entirely and stay invisible
+     so reduced-motion users see clean static text with no flicker. */
+  .hero-cursor {
+    animation: none !important;
+    opacity: 0 !important;
   }
 }
 

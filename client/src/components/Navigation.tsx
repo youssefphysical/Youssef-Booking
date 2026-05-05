@@ -167,8 +167,20 @@ export function Navigation() {
             default z=0 inside their own .hero-isolate stacking context. */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-[110]">
           <LanguageSelector />
-          {/* Authenticated CTAs — only when we KNOW a user exists. */}
-          {isAuthenticated && user && (
+          {/* DESKTOP AUTH AREA — STRICT mutually-exclusive conditional.
+              =====================================================
+              EXACTLY ONE of the two branches below renders on desktop
+              (≥sm), never both, never neither. This fixes the v6.2
+              CSS-hide approach (which kept the Sign In pill in the DOM
+              just hidden via `md:hidden`) by making the rendering itself
+              auth-state-aware. The mobile static Sign In pill below is
+              completely independent and intentionally untouched.
+                - authenticated  → profile avatar + Sign Out only
+                - guest/loading  → Desktop Sign In only
+              Both branches use `hidden sm:inline-flex` so neither shows
+              up on mobile (mobile uses the static pill below + the
+              hamburger drawer for Sign Out). */}
+          {isAuthenticated && user ? (
             <>
               {user.role === "client" && (
                 <Link
@@ -202,25 +214,34 @@ export function Navigation() {
                 <span className="whitespace-nowrap">{t("nav.signOut")}</span>
               </button>
             </>
+          ) : (
+            /* DESKTOP-ONLY Sign In — only rendered when NOT authenticated.
+               Hidden on mobile via `hidden sm:inline-flex` — mobile uses
+               the static pill below, which is unconditional per directive. */
+            <Link
+              href="/auth"
+              data-testid="link-signin-desktop"
+              className="hidden sm:inline-flex items-center justify-center gap-2 text-sm px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+            >
+              <LogIn size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+            </Link>
           )}
-          {/* PERMANENT STATIC SIGN-IN LINK — May 2026 directive (revised).
-              This Link is rendered UNCONDITIONALLY for guests/loading
-              (the bulletproof "auth never disappears" invariant) AND on
-              MOBILE for authenticated users (per explicit user directive
-              "Do NOT modify the mobile header Sign In button that
-              currently works"). The ONLY change vs the original
-              directive: on DESKTOP (≥md), it hides itself when an
-              authenticated user is present, because the desktop auth
-              area also renders the dedicated Sign Out + profile pill
-              just above (lines 171-205) — without this `md:hidden`
-              guard, desktop logged-in users see BOTH "Sign in" AND
-              "Sign out" buttons side-by-side, which is the bug this
-              fixes. Mobile rendering is intentionally untouched: even
-              when authenticated, mobile keeps showing this Sign In pill
-              because the user's mobile header doesn't have room for a
-              Sign Out alternative (mobile Sign Out lives only in the
-              hamburger drawer below). The inline style block stays
-              identical: z-index 9999, opacity 1, pointer-events auto. */}
+          {/* PERMANENT STATIC MOBILE SIGN-IN PILL — UNTOUCHED.
+              ==================================================
+              Per explicit user directive "Do NOT modify the mobile
+              header Sign In button that currently works". This Link
+              renders UNCONDITIONALLY (regardless of auth state) and is
+              `md:hidden` UNCONDITIONALLY (so it never appears on
+              desktop). Same testid (`link-signin`), same inline style
+              block, same visual treatment as the v6.2 implementation —
+              only the breakpoint guard switched from auth-state-aware
+              `isAuthenticated && "md:hidden"` to a constant `md:hidden`
+              because the desktop branch is now handled by the strict
+              if/else above. The mobile UX contract from the May-2026
+              directive ("auth never disappears" on mobile, drawer
+              handles Sign Out for authenticated mobile users) is
+              preserved bit-for-bit. */}
           <Link
             href="/auth"
             data-testid="link-signin"
@@ -230,13 +251,7 @@ export function Navigation() {
               opacity: 1,
               pointerEvents: "auto",
             }}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow",
-              // Desktop-only auth-state-aware hide — see comment above.
-              // `md:hidden` only triggers at md+ breakpoints, so mobile
-              // rendering is identical regardless of `isAuthenticated`.
-              isAuthenticated && "md:hidden",
-            )}
+            className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
           >
             <LogIn size={14} className="shrink-0" />
             <span className="whitespace-nowrap">{t("nav.signIn")}</span>

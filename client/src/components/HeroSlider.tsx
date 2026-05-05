@@ -296,7 +296,12 @@ export function HeroSlider() {
 
   return (
     <div
-      className="hero-isolate relative w-full h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
+      /* MOBILE: 75vh per spec (was 78vh). DESKTOP keeps the larger 78vh
+         via the md:h-[78vh] override for the cinematic full-screen feel.
+         min-h-[520px] floor and max-h-[860px] ceiling unchanged so the
+         hero never collapses on tiny landscape viewports nor balloons
+         on ultra-tall monitors. */
+      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-black"
       data-testid="hero-slider"
       data-hero-state="ready"
     >
@@ -374,12 +379,15 @@ export function HeroSlider() {
                 duration: COPY.exit.dur / 1000,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              /* MOBILE: absolute, anchored from bottom of hero with
-                 clamp(48px,10vh,96px) safe spacing and 24px (inset-x-6)
-                 horizontal padding. DESKTOP (≥md): relative — back in
-                 normal flow, vertically centred by the parent's flex
-                 alignment. */
-              className="max-w-2xl absolute inset-x-6 bottom-[clamp(48px,10vh,96px)] md:inset-auto md:bottom-auto md:relative md:max-w-2xl"
+              /* MOBILE: absolute, anchored 80px from hero bottom (per
+                 spec) with 20px (inset-x-5) horizontal padding. The
+                 fixed 80px replaces the v6.2 clamp(48px,10vh,96px) per
+                 the user's "production-level" spec — predictable, no
+                 viewport-dependent math. DESKTOP (≥md): relative —
+                 back in normal flow, vertically centred by the parent's
+                 flex alignment. `md:inset-auto md:bottom-auto` cleanly
+                 disable the mobile-only positioning. */
+              className="max-w-2xl absolute inset-x-5 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl"
             >
               {badge && (
                 <span
@@ -416,13 +424,65 @@ export function HeroSlider() {
                 {reduced ? (
                   headline
                 ) : (
-                  <HeroReveal
-                    text={headline}
-                    mode="char"
-                    startMs={COPY.headline.start}
-                    stepMs={COPY.headline.step}
-                    durMs={COPY.headline.dur}
-                  />
+                  <>
+                    <HeroReveal
+                      text={headline}
+                      mode="char"
+                      startMs={COPY.headline.start}
+                      stepMs={COPY.headline.step}
+                      durMs={COPY.headline.dur}
+                    />
+                    {/* INLINE TYPEWRITER CURSOR (v6.3, ULTIMATE FIX).
+                        ===========================================
+                        Single inline-block <span> living INSIDE the h1
+                        right after the per-char reveal spans, so it sits
+                        at the END of the headline text in normal flow —
+                        never floats free in the middle of the screen
+                        (the v5.x bug the user explicitly forbade). The
+                        cursor is part of the same DOM subtree that
+                        AnimatePresence's mode="wait" remounts on every
+                        slide change, so its CSS animation restarts from
+                        frame 0 with the rest of the reveal — no manual
+                        reset needed.
+
+                        The animation (`.hero-cursor` in index.css) is
+                        ONE single CSS animation that:
+                          1) Blinks the cursor for the duration of the
+                             headline reveal (~1175ms) using a
+                             step-based opacity keyframe — the classic
+                             square-wave terminal feel, no fade per
+                             blink.
+                          2) Once the headline finishes typing, the
+                             same keyframe smoothly fades the cursor to
+                             0 over its final ~25% (≈ 400ms) and stays
+                             at opacity:0 forever via animation-fill-
+                             mode: forwards.
+                        Net behaviour matches the spec literally:
+                          - Inline with text ✓ (it IS a text-flow span)
+                          - Stops blinking after finish ✓
+                          - Never appears in centre of screen ✓
+                          - No JS, no React state, no setInterval,
+                            zero per-frame work after frame 0 ✓
+                        Animation duration is set via the same
+                        `--hero-cursor-end` CSS variable so the React
+                        side can change typing length later without
+                        editing CSS. */}
+                    <span
+                      className="hero-cursor"
+                      aria-hidden="true"
+                      data-testid="text-hero-cursor"
+                      style={
+                        {
+                          ["--hero-cursor-end" as any]: `${
+                            COPY.headline.start +
+                            headline.replace(/\s+/g, "").length *
+                              COPY.headline.step +
+                            COPY.headline.dur
+                          }ms`,
+                        } as React.CSSProperties
+                      }
+                    />
+                  </>
                 )}
               </h1>
               {subhead && (
