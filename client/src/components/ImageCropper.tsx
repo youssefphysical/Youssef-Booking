@@ -167,6 +167,12 @@ export function ImageCropper({
       setRotation(0);
       setError(null);
       setAspectKey(aspects[0]?.key || "");
+      // v8.9 (May-2026): also clear the file input value so the user
+      // can re-pick the SAME file after cancelling. Browsers suppress
+      // the `change` event when the same file path is re-selected,
+      // which previously stranded admins on a "nothing happens" state
+      // after they cancelled and tried again.
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -228,7 +234,15 @@ export function ImageCropper({
   // ============== DRAG-TO-PAN ==============
   function startDrag(e: React.PointerEvent<HTMLDivElement>) {
     if (!imageEl) return;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    // v8.9 (May-2026): capture on currentTarget (the stage div that
+    // owns onPointerMove/Up/Cancel handlers), NOT on e.target. The
+    // pointer often lands on the inner <img> or the ring overlay
+    // (both `pointer-events-none`); capturing on those wrong
+    // elements caused pointermove events to be delivered to a node
+    // with no listeners, leaving `dragging` stuck and the drag
+    // unresponsive — the "no smooth touch" / "drag stops responding"
+    // bug. currentTarget guarantees capture on the listener owner.
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDragging({
       startX: e.clientX,
       startY: e.clientY,
@@ -264,15 +278,57 @@ export function ImageCropper({
     };
   }
 
-  // Re-clamp whenever the user changes the zoom level.
+  // Re-clamp whenever the user changes the zoom level. Acts as a
+  // safety net for paths that change scale without going through
+  // setZoomToCenter (e.g. aspect-ratio reset).
   useEffect(() => {
     if (!imageEl) return;
     setOffset((o) => clampOffset(o, imageEl, scale));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scale]);
 
+  /**
+   * v8.9 (May-2026): zoom anchored to the CROP CENTER instead of
+   * the image's top-left corner. Previously, sliding zoom from 1×
+   * to 2× kept (offset.x, offset.y) constant — so the visible
+   * content drifted toward the top-left of the crop window as the
+   * image grew larger from its top-left anchor. Admins reported
+   * this as "image jumping" or "wrong position after zoom".
+   *
+   * The fix maps the stage center to the same image pixel before
+   * AND after the zoom change. Math:
+   *   stage_center = (cx, cy)
+   *   image_pixel_at_center_before = (cx - offset.x) / s_old
+   *   image_pixel_at_center_after  = (cx - offset.x_new) / s_new
+   *   set the two equal → offset.x_new = cx - (cx - offset.x) * (s_new / s_old)
+   * Same for y. Then clamp so the crop window stays fully covered.
+   */
+  function setZoomToCenter(newScale: number) {
+    if (!imageEl) {
+      setScale(newScale);
+      return;
+    }
+    const cx = stage.w / 2;
+    const cy = stage.h / 2;
+    const ratio = newScale / scale;
+    const newOffset = clampOffset(
+      {
+        x: cx - (cx - offset.x) * ratio,
+        y: cy - (cy - offset.y) * ratio,
+      },
+      imageEl,
+      newScale,
+    );
+    setScale(newScale);
+    setOffset(newOffset);
+  }
+
   function resetView() {
     setScale(1);
+    // v8.9 (May-2026): reset rotation too. Reset is supposed to mean
+    // "back to the freshly-loaded state" — admins were confused that
+    // the photo stayed sideways after they hit reset.
+    setRotation(0);
     if (!imageEl) return;
     const baseScale = Math.max(
       stage.w / imageEl.naturalWidth,
@@ -469,7 +525,7 @@ export function ImageCropper({
                 min={1}
                 max={4}
                 step={0.01}
-                onValueChange={(v) => setScale(v[0] ?? 1)}
+                onValueChange={(v) => setZoomToCenter(v[0] ?? 1)}
                 data-testid="slider-cropper-zoom"
               />
               <button

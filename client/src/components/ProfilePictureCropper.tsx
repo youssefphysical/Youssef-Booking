@@ -51,6 +51,9 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
       setScale(1);
       setOffset({ x: 0, y: 0 });
       setError(null);
+      // v8.9 (May-2026): also clear the file input value so the user
+      // can re-pick the same file after cancelling.
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [open]);
 
@@ -90,7 +93,12 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
   // ============== DRAG-TO-PAN ==============
   function startDrag(e: React.PointerEvent<HTMLDivElement>) {
     if (!imageEl) return;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    // v8.9 (May-2026): capture on currentTarget (the stage div that
+    // owns the listeners), not e.target. The pointer often lands on
+    // the inner <img> (pointer-events-none); capturing on the wrong
+    // element caused pointermove events to be delivered to a node
+    // with no listeners — drag would stop responding.
+    e.currentTarget.setPointerCapture(e.pointerId);
     setDragging({ startX: e.clientX, startY: e.clientY, baseX: offset.x, baseY: offset.y });
   }
   function onDrag(e: React.PointerEvent<HTMLDivElement>) {
@@ -115,12 +123,38 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
     };
   }
 
-  // Re-clamp whenever the user changes the zoom level.
+  // Re-clamp whenever the user changes the zoom level. Safety net.
   useEffect(() => {
     if (!imageEl) return;
     setOffset((o) => clampOffset(o, imageEl, scale));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scale]);
+
+  /**
+   * v8.9 (May-2026): zoom anchored to the CROP CENTER. See the same
+   * function in ImageCropper for the full math. Eliminates the
+   * "image jumps when zooming" bug by keeping the image pixel that
+   * sits at the centre of the circular crop window stationary as
+   * the slider moves.
+   */
+  function setZoomToCenter(newScale: number) {
+    if (!imageEl) {
+      setScale(newScale);
+      return;
+    }
+    const c = STAGE_PX / 2;
+    const ratio = newScale / scale;
+    const newOffset = clampOffset(
+      {
+        x: c - (c - offset.x) * ratio,
+        y: c - (c - offset.y) * ratio,
+      },
+      imageEl,
+      newScale,
+    );
+    setScale(newScale);
+    setOffset(newOffset);
+  }
 
   // ============== EXPORT ==============
   async function handleSave() {
@@ -243,7 +277,7 @@ export function ProfilePictureCropper({ open, onOpenChange, onCropped, saving }:
                 min={1}
                 max={4}
                 step={0.01}
-                onValueChange={(v) => setScale(v[0] ?? 1)}
+                onValueChange={(v) => setZoomToCenter(v[0] ?? 1)}
                 data-testid="slider-cropper-zoom"
               />
               <button
