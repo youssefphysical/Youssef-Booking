@@ -203,18 +203,24 @@ export function Navigation() {
               </button>
             </>
           )}
-          {/* PERMANENT STATIC SIGN-IN LINK — May 2026 directive.
-              This Link is rendered UNCONDITIONALLY. It does NOT depend on
-              `user`, `isAuthenticated`, `isLoading`, /api/auth/me, session
-              state, or any auth hydration step. It is the single source
-              of truth that the auth entry point is reachable from any
-              page state — first paint, loading, guest, after refresh,
-              after language switch, mobile, desktop. If the visitor is
-              already logged in, /auth handles the redirect to dashboard
-              gracefully. The inline style block enforces visibility
-              against any future overlay regression: z-index 9999 (above
-              header z-100, auth-area z-110, and any imaginable hero
-              decoration), opacity 1, pointer-events auto. */}
+          {/* PERMANENT STATIC SIGN-IN LINK — May 2026 directive (revised).
+              This Link is rendered UNCONDITIONALLY for guests/loading
+              (the bulletproof "auth never disappears" invariant) AND on
+              MOBILE for authenticated users (per explicit user directive
+              "Do NOT modify the mobile header Sign In button that
+              currently works"). The ONLY change vs the original
+              directive: on DESKTOP (≥md), it hides itself when an
+              authenticated user is present, because the desktop auth
+              area also renders the dedicated Sign Out + profile pill
+              just above (lines 171-205) — without this `md:hidden`
+              guard, desktop logged-in users see BOTH "Sign in" AND
+              "Sign out" buttons side-by-side, which is the bug this
+              fixes. Mobile rendering is intentionally untouched: even
+              when authenticated, mobile keeps showing this Sign In pill
+              because the user's mobile header doesn't have room for a
+              Sign Out alternative (mobile Sign Out lives only in the
+              hamburger drawer below). The inline style block stays
+              identical: z-index 9999, opacity 1, pointer-events auto. */}
           <Link
             href="/auth"
             data-testid="link-signin"
@@ -224,7 +230,13 @@ export function Navigation() {
               opacity: 1,
               pointerEvents: "auto",
             }}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 sm:gap-2 text-sm px-3.5 sm:px-4 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow",
+              // Desktop-only auth-state-aware hide — see comment above.
+              // `md:hidden` only triggers at md+ breakpoints, so mobile
+              // rendering is identical regardless of `isAuthenticated`.
+              isAuthenticated && "md:hidden",
+            )}
           >
             <LogIn size={14} className="shrink-0" />
             <span className="whitespace-nowrap">{t("nav.signIn")}</span>

@@ -327,40 +327,59 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* OVERLAY COPY — ultra-smooth reveal v6.
-          AnimatePresence WITHOUT mode="wait": the outgoing copy fades
-          out over 200ms while the new copy mounts and starts revealing
-          simultaneously. The eye reads this as a buttery overlap — no
-          gap, no flicker. Pairs with the image layer's parallel 1200ms
-          cross-fade for a single coherent slide change. The new badge/
-          headline/subhead/buttons reveal themselves via pure CSS
-          animations driven by HeroReveal and the .hero-reveal /
-          .hero-button-reveal rules in index.css. Reduced-motion users
-          get plain text instantly — the entire reveal apparatus is
-          skipped. */}
-      <div className="absolute inset-0 z-10 flex items-end md:items-center">
-        <div className="relative w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20">
-          <AnimatePresence initial={false}>
+      {/* OVERLAY COPY — ultra-smooth reveal v6.2 ("clean sequential pass").
+          ====================================================================
+          AnimatePresence mode="wait" — the outgoing copy fades out FULLY
+          (200ms) BEFORE the new copy mounts. This eliminates two known
+          v6.0 issues:
+            1) Visual ghost / flicker where old + new badges (often the
+               same string across slides) coexisted at different opacity
+               stages for 200ms — read as a "stutter" on slide loops.
+            2) Per-char animations on the OLD subtree being torn down
+               (40+ animation contexts, browser GC) at the same instant
+               the NEW subtree's per-char spans were being constructed
+               (40+ new animation contexts) — combined main-thread work
+               could drop a frame on weaker GPUs.
+          With mode="wait", these phases are serialized: exit (200ms,
+          single opacity transition on the parent) → React unmount of
+          old subtree → React mount of new subtree → CSS animations on
+          new spans start fresh. No overlap, no double-text, no
+          pointer-event ambiguity (the exiting layer is gone before the
+          new one accepts clicks).
+
+          Image layer's 1200ms cross-fade still runs in parallel and is
+          unrelated to the copy lifecycle — the eye reads it as one
+          coherent slide change because the image cross-fade overlaps
+          BOTH the copy exit AND the new copy reveal.
+
+          MOBILE BOTTOM-ANCHORING — the motion.div is `absolute` on
+          mobile, anchored from the BOTTOM of the hero with safe spacing
+          (clamp(48px, 10vh, 96px)). This fixes a layout bug where the
+          v6.0 `absolute inset-x-5` (no top/bottom) caused the content
+          to overflow the hero's bottom edge and get clipped by the
+          .hero-isolate `overflow-hidden`, making the headline/CTAs
+          appear to vanish under the next blue section. On desktop
+          (≥md), motion.div reverts to `relative` and the parent's
+          `md:flex md:items-center` restores the cinematic vertical
+          centering. */}
+      <div className="absolute inset-0 z-10 md:flex md:items-center">
+        <div className="relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-20">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`copy-${slideKey}`}
               initial={false}
-              animate={{ opacity: 1, pointerEvents: "auto" }}
-              /* pointerEvents:"none" on exit is CRITICAL: while two
-                 copies coexist during the 200ms overlap window, the
-                 exiting layer (opacity:0, absolute positioned at the
-                 same z as the new layer) MUST NOT intercept taps for
-                 the new CTAs. pointer-events transitions discretely
-                 (no interpolation) so the flip happens immediately
-                 when exit starts — the new layer captures all clicks
-                 from frame 1 of the slide change. */
-              exit={
-                reduced ? undefined : { opacity: 0, pointerEvents: "none" }
-              }
+              animate={{ opacity: 1 }}
+              exit={reduced ? undefined : { opacity: 0 }}
               transition={{
                 duration: COPY.exit.dur / 1000,
                 ease: [0.22, 1, 0.36, 1],
               }}
-              className="max-w-2xl absolute inset-x-5 md:inset-x-0 md:relative"
+              /* MOBILE: absolute, anchored from bottom of hero with
+                 clamp(48px,10vh,96px) safe spacing and 24px (inset-x-6)
+                 horizontal padding. DESKTOP (≥md): relative — back in
+                 normal flow, vertically centred by the parent's flex
+                 alignment. */
+              className="max-w-2xl absolute inset-x-6 bottom-[clamp(48px,10vh,96px)] md:inset-auto md:bottom-auto md:relative md:max-w-2xl"
             >
               {badge && (
                 <span
