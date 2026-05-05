@@ -56,6 +56,32 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.4 Micro-Fix "Confirmed-User Gate + Instant Bio Render" (May 2026)
+Per the user-supplied "FINAL MICRO FIX — DESKTOP AUTH STILL WRONG + ABOUT TEXT INSTANT RENDER" spec. Two narrow surgical fixes; nothing else touched.
+
+**Bug 1 — Desktop auth label still flips Sign In → Sign Out on refresh:**
+- v8.3 already strict-checked `Boolean(user && (user.id != null || !!user.email?.trim()))`, but the spec asked for the simpler exact literal `Boolean(user?.id || user?.email)` and a clearer name (`isConfirmedUser`) to make the contract self-documenting.
+- Fix: rename `isAuthenticated` → `isConfirmedUser` and apply the spec literal verbatim:
+  ```ts
+  const isConfirmedUser = Boolean(user?.id || user?.email);
+  ```
+  Functionally equivalent to v8.3 for all real cases (id never 0 in practice; emails non-whitespace), but matches the spec naming and forbids any "loading complete / authChecked / session checked / user truthiness" gates.
+- Desktop branches at `Navigation.tsx:215` (Sign Out + Profile) and mobile menu logout at `Navigation.tsx:340` (`button-mobile-logout`) both use `isConfirmedUser`. Sign Out / Profile literally cannot render without `user.id || user.email`.
+- Mobile static Sign In pill (`data-testid="link-signin"`) at `Navigation.tsx:261` still renders UNCONDITIONALLY (`md:hidden` only) per long-standing mobile UX directive — structurally untouched.
+
+**Bug 2 — About bio appears after ~1s delay (skeleton too slow):**
+- v8.3 fixed the text-swap bug by adding a skeleton until `useSettings` resolved, but the skeleton itself was a visible loading state. Spec now requires INSTANT render with the same paint timing as the adjacent Certifications heading (which renders pure i18n directly).
+- Fix: remove the skeleton entirely; bio is now sourced ONLY from the i18n key `home.bio.fallback`:
+  ```ts
+  const bio = t("home.bio.fallback");
+  ```
+  No `useSettings` dependency for the bio. No loading state. No swap. First paint is the final paint.
+- The admin-configurable `settings.profileBio` is intentionally NOT consulted on the public homepage. Per spec "If admin override exists, use it only after load if it is same source/stable; otherwise keep i18n as immediate default" — production admin bio differs from i18n copy, so i18n is kept as the single immediate source. Admin can still read/write `profileBio` via the admin panel for other purposes.
+- `useSettings()` call is preserved because `settings.profilePhotoUrl` is still consumed elsewhere on HomePage.
+- Language switching still works automatically because `t()` re-resolves on lang change.
+
+**Files changed**: `client/src/components/Navigation.tsx` (rename + spec literal at line 90, two desktop/mobile gate references), `client/src/pages/HomePage.tsx` (bio = `t("home.bio.fallback")`, removed skeleton + bioReady + settingsError consumption), `replit.md`. NO changes to: hero (v8.2 textKey logic intact), hero images, booking, admin, database schema, APIs, sessions, packages, email system, mobile Sign In pill, fonts, layout, animations.
+
 ### v8.3 Micro-Fix "Desktop Auth Label + About Bio Stable Text" (May 2026)
 Per the user-supplied "FINAL MICRO FIX ONLY — DESKTOP AUTH LABEL + ABOUT TEXT HYDRATION" spec. Two narrow surgical fixes; nothing else touched.
 

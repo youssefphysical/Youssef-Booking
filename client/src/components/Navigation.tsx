@@ -56,24 +56,37 @@ export function Navigation() {
   //   • `if (isLoading) return null`
   //   • Any branch that renders neither Sign-In nor authenticated CTAs.
   //
-  // STRICT v8.3 hardening (May 2026 — fix for "Sign In flips to Sign
-  // Out on desktop refresh even when not logged in"):
-  // `Boolean(user)` would have been `true` for ANY truthy value the
-  // query cache might surface — including a malformed empty `{}`,
-  // a non-user shaped error payload, or a stale cached object from a
-  // previous session that lost its id/email fields. The strict check
-  // requires both `user` to be truthy AND to carry a real identifier
-  // (id or email). For every legitimate `UserResponse` from the
-  // server this is a no-op (`id` is always present); for any
-  // pathological cache state it correctly stays Sign In.
-  // Note: `user.id != null` (instead of `user.id`) handles the
-  // theoretical `id === 0` case bulletproof-ly; `!!user.email?.trim()`
-  // rejects whitespace-only email strings.
-  const isAuthenticated = Boolean(
-    user && (user.id != null || !!user.email?.trim())
-  );
-  const isGuest = !authLoading && !isAuthenticated;
-  const shouldShowSignIn = !isAuthenticated;
+  // STRICT v8.4 (May 2026) — "Confirmed User Only" gate.
+  // ============================================================
+  // Per the user-supplied micro-fix spec:
+  //   const isConfirmedUser = Boolean(user?.id || user?.email);
+  // Sign Out / Profile MUST never appear unless we have a confirmed
+  // real authenticated user. Confirmed user is defined as having a
+  // valid `user.id` OR `user.email`. Every other state (401, null,
+  // undefined, empty object `{}`, failed auth check, transient
+  // loading) is treated as guest → Sign In.
+  //
+  // The desktop branches below render mutually-exclusively on
+  // `isConfirmedUser` ALONE — never on "loading complete",
+  // "authChecked", "session checked", or `Boolean(user)` truthiness.
+  // For every legitimate `UserResponse` from the server `id` is
+  // always present (schema: `users.id = serial("id").primaryKey()`),
+  // so this is a no-op for real users; for any pathological cache
+  // state the desktop stays on Sign In.
+  //
+  // 401 path: useAuth's queryFn returns `null` on 401 (NOT throw),
+  // so an unauthenticated visitor surfaces as `user: null` →
+  // `isConfirmedUser = false` → Sign In stays. retry: false +
+  // staleTime: Infinity in queryClient mean no surprise refetches
+  // can flip the gate.
+  //
+  // Forbidden patterns (intentionally absent from this component):
+  //   • `if (!user) return null`
+  //   • `if (isLoading) return null`
+  //   • Any branch that renders neither Sign-In nor authenticated CTAs.
+  const isConfirmedUser = Boolean(user?.id || user?.email);
+  const isGuest = !authLoading && !isConfirmedUser;
+  const shouldShowSignIn = !isConfirmedUser;
 
   const isAdmin = user?.role === "admin";
   const isSuperAdmin = isEffectiveSuperAdmin(user as any);
@@ -196,7 +209,7 @@ export function Navigation() {
               Both branches use `hidden sm:inline-flex` so neither shows
               up on mobile (mobile uses the static pill below + the
               hamburger drawer for Sign Out). */}
-          {isAuthenticated && user ? (
+          {isConfirmedUser && user ? (
             <>
               {user.role === "client" && (
                 <Link
@@ -322,8 +335,9 @@ export function Navigation() {
             {/* Sign Out lives in the mobile menu too — header has no room
                 for it on small viewports, so without this the only way to
                 log out on mobile is via the profile page. Only when we
-                KNOW the user is authenticated (never during loading). */}
-            {isAuthenticated && (
+                KNOW the user is authenticated (never during loading).
+                Same `isConfirmedUser` gate as desktop. */}
+            {isConfirmedUser && (
               <button
                 type="button"
                 onClick={() => {

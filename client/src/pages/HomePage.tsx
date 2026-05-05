@@ -62,31 +62,42 @@ const CERT_KEYS = [
 ] as const;
 
 export default function HomePage() {
-  const { data: settings, error: settingsError } = useSettings();
-  const { t, lang } = useTranslation();
-  // ONE SOURCE OF TRUTH for the About bio (v8.3 stable-text fix).
-  // Previously the fallback (`t("home.bio.fallback")`) was rendered at
-  // t=0 (while useSettings was loading) and then swapped to the admin-
-  // configured `settings.profileBio` at t≈150ms once the API resolved
-  // — but the two texts are different copy, so the user saw the bio
-  // text VISIBLY CHANGE after refresh. We can't unify both strings
-  // (admin must be free to edit profileBio independently), so per
-  // spec we render a neutral skeleton until settings is known, then
-  // render the real bio exactly once. After that point the text never
-  // changes for the lifetime of this page (settings has staleTime:
-  // Infinity from the global queryClient). `bio` itself is derived
-  // ONLY from resolved data — it is not consulted before
-  // `bioReady` is true.
+  // `useSettings` is still called because `settings.profilePhotoUrl`
+  // is consumed lower in the page. The bio, however, no longer depends
+  // on it (see About section comment).
+  const { data: settings } = useSettings();
+  const { t } = useTranslation();
+  // INSTANT-RENDER ABOUT BIO (v8.4 — May 2026):
+  // Per spec "ABOUT TEXT INSTANT RENDER", the About bio MUST appear
+  // on first paint with NO loading delay (same strategy as the
+  // adjacent Certifications text, which renders pure i18n directly).
   //
-  // ERROR RESILIENCE: if /api/settings ever fails (network/server),
-  // `settings` stays undefined forever and the skeleton would never
-  // resolve. To prevent indefinite-skeleton, we treat an error as
-  // "settings known to be unavailable" → fall through to the i18n
-  // fallback bio. This matches the spec's parallel rule for the auth
-  // fix ("If API fails: treat as guest, show Sign In") — graceful
-  // degradation to the safe stable text.
-  const bioReady = settings !== undefined || settingsError != null;
-  const bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback");
+  // The previous v8.3 skeleton-then-text approach was technically
+  // stable (no text swap) but introduced a visible ~150ms-1s delay
+  // while waiting for `/api/settings`. That violates the new spec:
+  //   "Render About copy directly from i18n/static translation at
+  //    initial render. Do NOT wait for admin/API content before
+  //    showing About text."
+  //
+  // Resolution: the bio is now ALWAYS sourced from the i18n key
+  // `home.bio.fallback`, which exists in all 10 languages. This
+  // guarantees:
+  //   • First paint: real text, no skeleton, no blank area.
+  //   • No API dependency for the bio → no loading flicker.
+  //   • Stable forever — text never changes after first paint
+  //     (i18n is synchronous, in-bundle).
+  //   • Language switching still works automatically because `t()`
+  //     re-resolves on lang change.
+  //
+  // Admin's `settings.profileBio` is intentionally NOT consulted on
+  // the public homepage. Per spec "If admin override exists, use it
+  // only after load if it is same source/stable; otherwise keep
+  // i18n as immediate default." — the production admin bio differs
+  // from the i18n copy, so the i18n default is kept as the single
+  // immediate source. (Admin can still read/write `profileBio` via
+  // the admin panel for other purposes; this just decouples the
+  // public homepage from that source.)
+  const bio = t("home.bio.fallback");
 
   return (
     <div className="min-h-screen pt-16">
@@ -207,29 +218,11 @@ export default function HomePage() {
           eyebrow={t("section.about.eyebrow")}
           title={t("section.about.title")}
         />
-        {/* v8.3 stable-text fix: render skeleton until settings resolves
-            (or errors), then render the real bio exactly once. This
-            prevents the visible text-swap that previously occurred when
-            the i18n fallback paint was replaced by a different admin-
-            configured profileBio after the API resolved. On settings
-            error, falls through to the i18n fallback bio so we never
-            get stuck on an indefinite skeleton. */}
-        {bioReady ? (
-          <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
-            {bio}
-          </p>
-        ) : (
-          <div
-            className="space-y-2.5"
-            aria-hidden="true"
-            data-testid="text-bio-skeleton"
-          >
-            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-full" />
-            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[96%]" />
-            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[88%]" />
-            <div className="h-5 bg-white/[0.04] rounded-md animate-pulse w-[72%]" />
-          </div>
-        )}
+        {/* v8.4 instant-render: bio is pure i18n, no loading state,
+            same paint timing as the adjacent Certifications heading. */}
+        <p className="text-lg text-muted-foreground leading-relaxed" data-testid="text-bio">
+          {bio}
+        </p>
         <p className="text-base text-muted-foreground/85 leading-relaxed mt-6">
           {t("section.about.extra")}
         </p>
