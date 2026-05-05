@@ -743,6 +743,12 @@
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  /* contain: paint — extra repaint isolation on lower-end mobile GPUs.
+     The clipped region paint is fully contained within this element's
+     own bounds, so the browser doesn't need to re-paint anything
+     outside it during the 800ms reveal. Safe addition: doesn't change
+     visual behaviour, only performance. */
+  contain: paint;
 }
 @keyframes heroMaskReveal {
   to {

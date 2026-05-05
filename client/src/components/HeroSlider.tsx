@@ -207,10 +207,16 @@ export function HeroSlider() {
   const badge = current?.badge?.trim() || variant.badge;
 
   // Slide identity used as the AnimatePresence key. When this changes,
-  // the OLD motion.div begins its 200ms exit fade and the NEW motion.div
-  // mounts at t=0 with its CSS-animated children starting their reveals.
-  // Default sync mode (no mode="wait") — old + new overlap visually for
-  // those 200ms, which is precisely how we avoid an empty-headline frame.
+  // the OLD motion.div runs its 200ms exit fade FIRST (mode="wait"
+  // semantics — see <AnimatePresence> below). Only after the old one
+  // fully unmounts does the NEW motion.div mount at t=0 with its
+  // CSS-animated children starting their reveals (badge → headline
+  // mask reveal → subhead). Per spec literal: "Animation should
+  // restart only when slide id changes. Do not restart while the
+  // same text is active." If the parent re-renders for an unrelated
+  // reason (locale change, react-query refetch) but slideKey doesn't
+  // change, mode="wait" doesn't remount the motion.div and the mask
+  // reveal does NOT restart.
   const slideKey = `${copyIndex}-${current?.id ?? "default"}`;
 
   return (
