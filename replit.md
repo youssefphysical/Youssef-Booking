@@ -56,7 +56,23 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
-### Hero v6.3 "Ultimate Fix" (May 2026, commits `d8b6061` + `fbc51d4`, supersedes v6.2)
+### Hero v7 "Stable Mask Reveal" (May 2026, supersedes ALL v6.x)
+Total replacement of the v5/v6 per-character typewriter + blinking cursor experiment. The v6.x production video showed three repeatable bugs: (1) cursor-only frame in the centre of an empty headline during slide change (per-char spans torn down before new ones revealed), (2) CTA buttons disappear/reappear on every slide change (they were inside AnimatePresence and re-mounted on slide key change), (3) headlines wrapping to 2 lines on narrow mobile sometimes looked clipped because per-char chars were still hidden when the eye expected a complete word.
+
+**v7 architecture (3 surgical fixes):**
+1. **Removed cursor entirely.** No `<span class="hero-cursor">`, no `heroCursorBlinkThenFade` keyframe, no `--hero-cursor-end` CSS var. Spec literal: "Remove the blue vertical cursor entirely. No blinking cursor. No cursor element."
+2. **Replaced per-char typewriter with `clip-path` mask reveal.** Headline uses an INNER `<span class="hero-mask-reveal">` that animates `clip-path: inset(0 100% 0 0) → inset(0 0 0 0)` + `opacity 0→1` + `translateY(8px→0)` over 600ms. Outer `<h1>` reserves multi-line height via Tailwind `min-h-*`. Wipe travels left-to-right across all wrapped lines simultaneously — clean fake-typewriter feel that never looks clipped on 2-3-line wraps.
+3. **Buttons hoisted OUTSIDE AnimatePresence.** They now render as a sibling div, NOT inside the slide-keyed motion.div, so they NEVER re-mount on slide change. One-time mount fade (`.hero-buttons-once`) plays at t=1000ms then stays at opacity:1 forever via `forwards`.
+
+**Slide-change overlap (no blank frame):** AnimatePresence drops `mode="wait"` (default sync mode). Old motion.div fades out 200ms while new motion.div mounts at t=0 and its CSS-animated children begin revealing. Reserved-height wrapper (`min-h-[242px] sm:min-h-[290px] md:min-h-[338px] lg:min-h-[402px] xl:min-h-[434px]`) keeps the layout stable during the overlap.
+
+**Performance:** animates only opacity, transform, clip-path. NO blur, NO layout, NO per-frame JS, NO setInterval. Headline carries 1 promoted compositor layer (the inner mask wrapper) instead of v6.3's ~30 per-char spans.
+
+**Files touched:** `client/src/components/HeroSlider.tsx` (HeroReveal component + cursor span removed; buttons moved outside AnimatePresence; copy stage gets reserved-height wrapper), `client/src/index.css` (`.hero-reveal`, `.hero-reveal-word`, `.hero-cursor`, `.hero-button-reveal` and their keyframes removed; new `.hero-fade`, `.hero-fade-up`, `.hero-mask-reveal`, `.hero-buttons-once` classes added).
+
+**Invariants preserved:** mobile Sign-In header pill (`data-testid="link-signin"`), strict desktop auth conditional (`data-testid="link-signin-desktop"`), hero `h-[75vh] md:h-[78vh]`, mobile copy `inset-x-5 bottom-20`, image layer architecture (stacked `data-active` cross-fade), zero changes to auth/booking/admin/RBAC/database/APIs/image loader.
+
+### Hero v6.3 "Ultimate Fix" (May 2026, commits `d8b6061` + `fbc51d4`, superseded by v7)
 Three production-level fixes responding to the user's "ULTIMATE HERO FIX (ZERO BUGS — PRODUCTION LEVEL)" directive, plus one architect-review follow-up commit. All changes are surgical — zero touches to auth APIs, booking, admin, RBAC, database, image loader, image clarity, or the mobile static Sign-In pill (per the May-2026 invariant). Final prod bundles: `index-FSF5L5yD.js` + `index-DSWjvZNC.css` on `youssef-booking.vercel.app`.
 
 #### Post-architect-review patch (commit `fbc51d4`) — `will-change` hoist

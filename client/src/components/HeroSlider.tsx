@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, memo } from "react";
+import { useEffect, useState, memo } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Eye } from "lucide-react";
@@ -8,7 +8,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useHeroImages } from "@/hooks/use-hero-images";
 import type { HeroImage } from "@shared/schema";
 
-// HERO MOTION ARCHITECTURE v6 (May-2026, "ultra-smooth pass").
+// HERO MOTION ARCHITECTURE v7 (May-2026, "stable mask reveal").
 // =====================================================================
 // Image layer (unchanged from v4): ALL slides rendered at once, stacked
 // absolutely. Visibility controlled by toggling the `data-active`
@@ -16,183 +16,86 @@ import type { HeroImage } from "@shared/schema";
 // — see .hero-slide-layer in index.css). HeroSlideLayer is React.memo'd
 // so unchanged slides bail out of re-render. The <img> elements are
 // never re-mounted, re-fetched, or re-decoded during a slide switch.
-// No Ken Burns, no scale animation — the bitmap stays put on its GPU
-// layer, only opacity changes.
 //
-// Copy layer (v6, "ultra-smooth pass"): badge, headline, subheadline
-// reveal via pure CSS animations (opacity + translateY + filter:blur)
-// driven by three CSS variables (--hr-start, --hr-step, --hr-dur) on
-// each reveal element, with a per-token --i index used to compute
-// animation-delay = start + i * step. ZERO per-frame React work — the
-// splitting happens once at mount.
+// Copy layer (v7, "stable mask reveal") — total rewrite of the v6.x
+// per-character typewriter + cursor experiment. The user's production
+// video showed three repeatable bugs in v6.3:
+//   1) During slide change, the per-char spans of the old headline
+//      were torn down BEFORE the new ones revealed; for ~200-400ms
+//      only the typewriter cursor was visible, floating in the middle
+//      of an empty headline frame.
+//   2) The CTA buttons were INSIDE the AnimatePresence subtree, so
+//      they re-mounted (and re-ran their entrance animation) on every
+//      single slide change — visible "disappear/reappear" jank.
+//   3) On narrower mobile viewports the headline occasionally wrapped
+//      to 2 lines but the per-char reveal made the second line look
+//      clipped because chars were still hidden when the eye expected
+//      a complete word.
 //
-// Changes vs v5.1:
-//   - REMOVED the typewriter cursor entirely. With all chars in the DOM
-//     from t=0 (just hidden via opacity:0), the cursor would sit at the
-//     END of the full headline regardless of typing progress, which on
-//     multi-line headlines with the min-h reservation made it appear
-//     detached from the typing position ("fake cursor floating in
-//     middle of screen"). Apple/Stripe/Linear marketing copy uses no
-//     literal cursor either — the char-by-char fade-in IS the
-//     typewriter signature.
-//   - FASTER typing (25ms step, 200ms dur for headline → ~1175ms total
-//     for a 40-char headline, within 0.8-1.2s spec window).
-//   - CINEMATIC focus-pull: each token now interpolates filter:blur(4px)
-//     → blur(0) along with opacity + translateY. Adds a Apple-quality
-//     "depth of field" feel without any extra layout work. Animation is
-//     short enough (200ms) that the temporary filter layers are
-//     ephemeral and not a mobile compositor concern.
-//   - OVERLAP slide transition: AnimatePresence dropped mode="wait", so
-//     outgoing copy fades out (200ms) while new copy mounts and starts
-//     revealing simultaneously. No gap. Image cross-fade (1200ms) runs
-//     in parallel for buttery slide changes.
-//   - Premium font: --font-display switched from 'Outfit' to 'Plus
-//     Jakarta Sans' (already loaded in client/index.html), which gives
-//     the headline a tighter, more Stripe/Linear-grade silhouette.
+// v7 architecture (per the "FIX HERO TEXT ANIMATION BUGS" spec):
+//   - FULL text always present in the DOM. No splitting, no per-char
+//     state, no cursor element anywhere.
+//   - Headline reveals via a clip-path wipe on an INNER block wrapper
+//     (`.hero-mask-reveal` in index.css). The h1 itself reserves the
+//     multi-line height via min-h-* utility classes; the inner wrapper
+//     animates clip-path inset(0 100% 0 0) → inset(0 0 0 0) so the
+//     wipe travels left-to-right across all wrapped lines
+//     simultaneously. Text wraps naturally at word boundaries because
+//     the wrapper is `display: block`, not `inline-block`.
+//   - Badge: pure opacity fade (.hero-fade), 250ms.
+//   - Subhead: opacity + translateY(8px → 0) (.hero-fade-up), 350ms.
+//   - Buttons: rendered OUTSIDE AnimatePresence as a sibling element,
+//     so they NEVER remount on slide change. They get a one-time
+//     mount fade (.hero-buttons-once) at t=1000ms and stay stable
+//     forever after.
+//   - Slide change: AnimatePresence in default sync mode (NO
+//     mode="wait") — old motion.div fades out 200ms while new
+//     motion.div mounts at t=0 and its CSS-animated children begin
+//     revealing immediately. The old text is still visible at
+//     decreasing opacity during the entire window in which the new
+//     copy is below 100% — ZERO blank-headline frame, ZERO cursor-
+//     only frame, ZERO empty-text moment.
+//
+// Performance:
+//   - Animates only opacity, transform, and clip-path. No blur. No
+//     layout. No per-frame JS. No setInterval-per-character.
+//   - Each animated element gets ONE compositor layer for the
+//     duration of its 250-600ms animation, then released. Headline
+//     has just 1 promoted layer (the inner mask wrapper) instead of
+//     v6.3's ~30 per-char spans.
+//   - First-paint flash kill (static base image, fetchpriority high)
+//     unchanged from v5.
 
 const ROTATE_MS = 8000;
 const FADE_MS = 1200; // mirrored in .hero-slide-layer CSS rule
 
-// COPY REVEAL TIMING (v6, "ultra-smooth pass").
+// COPY REVEAL TIMING (v7).
 // All values measured from the moment the new copy mounts. Because
-// AnimatePresence no longer waits for the exit (mode="wait" dropped),
-// the new-copy mount happens at t=0 of the slide change, in parallel
-// with the outgoing copy's 200ms fade-out and the image layer's 1200ms
-// cross-fade.
+// AnimatePresence runs in default sync mode, the new-copy mount
+// happens at t=0 of the slide change, in parallel with the outgoing
+// copy's 200ms fade-out and the image layer's 1200ms cross-fade.
 //
-//   - badge: WORD-mode, 3 tokens × 80ms + 220ms anim ≈ 460ms total
-//     for "PREMIUM PERSONAL TRAINING". Within spec 300-500ms. The
-//     .tron-eyebrow letter-spacing 0.28em is preserved because
-//     letter-spacing applies between glyphs INSIDE each inline-block
-//     word span.
-//   - headline: char-mode, ~40 chars × 25ms + 200ms anim ≈ 1175ms
-//     total. Within spec 0.8-1.2s. Starts 350ms after copy mount —
-//     just long enough for the badge to "click into focus" first.
-//   - subhead: word-mode, ~13 words × 50ms + 280ms anim ≈ 930ms
-//     total. Within spec 800-1200ms. Starts 1300ms in — overlaps
-//     the very end of the headline (intentional: the eye reads the
-//     completed headline as the subhead begins flowing in).
-//   - buttons: single 380ms fade+translateY(8px → 0) starting at
-//     2100ms (overlaps the very end of the subhead). Within spec
-//     300-500ms.
-// Total reveal ~2480ms — snappier than v5.1's 2920ms (about 15%
-// faster), well within ROTATE_MS=8000 so buttons are fully visible
-// and clickable for ~5.5s before the next slide change.
+//   - badge:    fade 250ms starting at  0ms ⇒ done by 250ms.
+//   - headline: clip-path wipe + 8px lift, 600ms starting at 200ms
+//               ⇒ done by 800ms.
+//   - subhead:  fade-up 350ms starting at 700ms ⇒ done by 1050ms.
+//   - buttons:  one-time mount fade-up 380ms at 1000ms (FIRST mount
+//               only — see comment on the buttons div below).
+//   - exit:     outgoing motion.div opacity 1 → 0 over 200ms; runs
+//               in parallel with the new motion.div's child reveals
+//               (which keeps the headline area visually full at all
+//               times).
 const COPY = {
-  badge:    { start:    0, step: 80, dur: 220 },
-  headline: { start:  350, step: 25, dur: 200 },
-  subhead:  { start: 1300, step: 50, dur: 280 },
-  buttons:  { start: 2100,           dur: 380 },
-  exit:     { dur: 200 }, // outgoing copy fade-out (overlaps with new reveal)
+  badge:    { start:    0, dur: 250 },
+  headline: { start:  200, dur: 600 },
+  subhead:  { start:  700, dur: 350 },
+  buttons:  { start: 1000, dur: 380 },
+  exit:     { dur: 200 },
 };
 
 function prefersReducedMotion() {
   if (typeof window === "undefined" || !window.matchMedia) return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-// HERO COPY REVEAL — character/word typewriter via CSS animations.
-// =====================================================================
-// The text is split into per-token <span>s with a CSS variable `--i`
-// that drives the per-token animation-delay. The animation itself is
-// pure CSS (heroReveal keyframe in index.css) — no framer-motion, no
-// per-frame React work, no main-thread JS during the reveal.
-//
-// Splitting strategy:
-//   - "char" mode: text is split by whitespace into words; each non-
-//     whitespace word is split into its individual characters and
-//     wrapped in <span class="hero-reveal">. Whitespace tokens are
-//     emitted as plain text between word-spans so the browser can
-//     wrap naturally at word boundaries (display:inline-block on the
-//     char-spans would otherwise prevent line-breaks mid-word).
-//   - "word" mode: each whitespace-separated word becomes one
-//     <span class="hero-reveal">. Used for the subhead so longer
-//     prose feels reading-paced rather than typewritten.
-//
-// Accessibility:
-//   - The full text is rendered once inside a <span class="sr-only">
-//     so assistive tech reads the headline as one phrase, not
-//     character-by-character.
-//   - The visual span tree is marked aria-hidden so it is invisible
-//     to screen readers.
-//   - When prefers-reduced-motion: reduce is set, the parent short-
-//     circuits and renders plain text — no spans, no animation.
-function HeroReveal({
-  text,
-  mode,
-  startMs,
-  stepMs,
-  durMs,
-}: {
-  text: string;
-  mode: "char" | "word";
-  startMs: number;
-  stepMs: number;
-  durMs: number;
-}) {
-  // Splitting is cheap but memoised so it documents intent and avoids
-  // re-running on parent re-render (text only changes when the slide
-  // changes, which remounts this component anyway via the parent's
-  // AnimatePresence key).
-  const tokens = useMemo(() => {
-    return text
-      .split(/(\s+)/)
-      .filter(Boolean)
-      .map((tok) => ({
-        text: tok,
-        isSpace: /^\s+$/.test(tok),
-        chars: mode === "char" && !/^\s+$/.test(tok) ? Array.from(tok) : null,
-      }));
-  }, [text, mode]);
-
-  let i = 0;
-  const styleVars = {
-    ["--hr-start" as any]: `${startMs}ms`,
-    ["--hr-step" as any]: `${stepMs}ms`,
-    ["--hr-dur" as any]: `${durMs}ms`,
-  } as React.CSSProperties;
-
-  return (
-    <span style={styleVars}>
-      <span className="sr-only">{text}</span>
-      <span aria-hidden="true">
-        {tokens.map((tok, ti) => {
-          if (tok.isSpace) return tok.text;
-          if (mode === "word") {
-            const idx = i++;
-            return (
-              <span
-                key={ti}
-                className="hero-reveal"
-                style={{ ["--i" as any]: idx } as React.CSSProperties}
-              >
-                {tok.text}
-              </span>
-            );
-          }
-          // char mode — wrap chars in word-wrappers so the browser
-          // still treats each word as unbreakable at the inline-block
-          // level, but lets long lines wrap at word boundaries.
-          return (
-            <span key={ti} className="hero-reveal-word">
-              {tok.chars!.map((c, ci) => {
-                const idx = i++;
-                return (
-                  <span
-                    key={ci}
-                    className="hero-reveal"
-                    style={{ ["--i" as any]: idx } as React.CSSProperties}
-                  >
-                    {c}
-                  </span>
-                );
-              })}
-            </span>
-          );
-        })}
-      </span>
-    </span>
-  );
 }
 
 // One stacked slide layer. Memoized so it ONLY re-renders when its
@@ -290,14 +193,16 @@ export function HeroSlider() {
   const badge = current?.badge?.trim() || variant.badge;
 
   // Slide identity used as the AnimatePresence key. When this changes,
-  // the old copy starts its 200ms exit fade and the new copy mounts
-  // simultaneously (no mode="wait" — overlap is intentional).
+  // the OLD motion.div begins its 200ms exit fade and the NEW motion.div
+  // mounts at t=0 with its CSS-animated children starting their reveals.
+  // Default sync mode (no mode="wait") — old + new overlap visually for
+  // those 200ms, which is precisely how we avoid an empty-headline frame.
   const slideKey = `${copyIndex}-${current?.id ?? "default"}`;
 
   return (
     <div
-      /* MOBILE: 75vh per spec (was 78vh). DESKTOP keeps the larger 78vh
-         via the md:h-[78vh] override for the cinematic full-screen feel.
+      /* MOBILE: 75vh per spec. DESKTOP keeps the larger 78vh via the
+         md:h-[78vh] override for the cinematic full-screen feel.
          min-h-[520px] floor and max-h-[860px] ceiling unchanged so the
          hero never collapses on tiny landscape viewports nor balloons
          on ultra-tall monitors. */
@@ -332,235 +237,197 @@ export function HeroSlider() {
         </div>
       )}
 
-      {/* OVERLAY COPY — ultra-smooth reveal v6.2 ("clean sequential pass").
+      {/* OVERLAY COPY — v7 stable mask reveal.
           ====================================================================
-          AnimatePresence mode="wait" — the outgoing copy fades out FULLY
-          (200ms) BEFORE the new copy mounts. This eliminates two known
-          v6.0 issues:
-            1) Visual ghost / flicker where old + new badges (often the
-               same string across slides) coexisted at different opacity
-               stages for 200ms — read as a "stutter" on slide loops.
-            2) Per-char animations on the OLD subtree being torn down
-               (40+ animation contexts, browser GC) at the same instant
-               the NEW subtree's per-char spans were being constructed
-               (40+ new animation contexts) — combined main-thread work
-               could drop a frame on weaker GPUs.
-          With mode="wait", these phases are serialized: exit (200ms,
-          single opacity transition on the parent) → React unmount of
-          old subtree → React mount of new subtree → CSS animations on
-          new spans start fresh. No overlap, no double-text, no
-          pointer-event ambiguity (the exiting layer is gone before the
-          new one accepts clicks).
+          Layout strategy:
+          - The OUTER div positions the whole copy block: on mobile it is
+            absolute-anchored bottom-20 (80px from hero bottom) with 20px
+            (inset-x-5) horizontal padding; on desktop it goes back into
+            normal flow and is vertically centred by the parent's
+            `md:flex md:items-center` wrapper.
+          - INSIDE that outer div there are TWO siblings:
+              (a) The "copy stage" — a relative wrapper with EXPLICIT
+                  min-h reservations so its height NEVER changes between
+                  slides (no jump). The AnimatePresence motion.div is
+                  absolutely positioned inset-0 inside this wrapper, so
+                  during a slide change the OLD and NEW motion.divs stack
+                  on top of each other without re-flowing the layout.
+              (b) The "buttons row" — a SEPARATE sibling, NOT inside
+                  AnimatePresence. The buttons are rendered exactly once
+                  per page mount; they animate in once at t=1000ms and
+                  then stay fully visible and stable for the rest of the
+                  session, no matter how many slides cycle through.
+          This is the architectural fix for the v6.3 "buttons disappear
+          and reappear on every slide change" bug — they no longer share
+          the AnimatePresence key, so they no longer remount.
 
-          Image layer's 1200ms cross-fade still runs in parallel and is
-          unrelated to the copy lifecycle — the eye reads it as one
-          coherent slide change because the image cross-fade overlaps
-          BOTH the copy exit AND the new copy reveal.
-
-          MOBILE BOTTOM-ANCHORING — the motion.div is `absolute` on
-          mobile, anchored from the BOTTOM of the hero with safe spacing
-          (clamp(48px, 10vh, 96px)). This fixes a layout bug where the
-          v6.0 `absolute inset-x-5` (no top/bottom) caused the content
-          to overflow the hero's bottom edge and get clipped by the
-          .hero-isolate `overflow-hidden`, making the headline/CTAs
-          appear to vanish under the next blue section. On desktop
-          (≥md), motion.div reverts to `relative` and the parent's
-          `md:flex md:items-center` restores the cinematic vertical
-          centering. */}
+          Slide change visual sequence (overlap mode, 200ms exit dur):
+            t=0    new motion.div mounts; old motion.div begins exit fade
+                   (parent opacity 1 → 0). New badge starts CSS fade
+                   (.hero-fade) 0 → 1 over 250ms. Image cross-fade
+                   (1200ms) running in parallel.
+            t=200  old motion.div fully transparent and unmounted.
+                   New badge fully visible. New headline mask-reveal
+                   begins (clip-path inset(0 100% 0 0) → inset(0 0 0 0)
+                   + opacity 0 → 1 + translateY 8 → 0).
+            t=700  Headline ~83% revealed. New subhead begins fade-up.
+            t=800  Headline fully revealed.
+            t=1050 Subhead fully revealed. Buttons unchanged the whole
+                   time — they were rendered once on initial mount and
+                   live outside this AnimatePresence subtree. */}
       <div className="absolute inset-0 z-10 md:flex md:items-center">
         <div className="relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-20">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`copy-${slideKey}`}
-              initial={false}
-              animate={{ opacity: 1 }}
-              exit={reduced ? undefined : { opacity: 0 }}
-              transition={{
-                duration: COPY.exit.dur / 1000,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              /* MOBILE: absolute, anchored 80px from hero bottom (per
-                 spec) with 20px (inset-x-5) horizontal padding. The
-                 fixed 80px replaces the v6.2 clamp(48px,10vh,96px) per
-                 the user's "production-level" spec — predictable, no
-                 viewport-dependent math. DESKTOP (≥md): relative —
-                 back in normal flow, vertically centred by the parent's
-                 flex alignment. `md:inset-auto md:bottom-auto` cleanly
-                 disable the mobile-only positioning. */
-              className="max-w-2xl absolute inset-x-5 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl"
-            >
-              {badge && (
-                <span
-                  className="tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6"
-                  data-testid="text-hero-badge"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  {reduced ? (
-                    badge
-                  ) : (
-                    <HeroReveal
-                      text={badge}
-                      mode="word"
-                      startMs={COPY.badge.start}
-                      stepMs={COPY.badge.step}
-                      durMs={COPY.badge.dur}
-                    />
-                  )}
-                </span>
-              )}
-              {/* min-h-* reserves space for ~3 lines at every breakpoint
-                  so the buttons row never jumps when admin/i18n
-                  produces shorter or longer titles between slides
-                  (line-height ≈ 1.02 × font-size × 3 lines):
-                    text-4xl  (36px)   → 3 lines ≈ 110px → 112
-                    text-5xl  (48px)   → 3 lines ≈ 147px → 152
-                    text-6xl  (60px)   → 3 lines ≈ 184px → 192
-                    text-[5rem] (80px) → 3 lines ≈ 245px → 256
-                    text-[5.5rem](88px)→ 3 lines ≈ 269px → 288  */}
-              <h1
-                className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]"
-                data-testid="text-hero-headline"
-              >
-                {reduced ? (
-                  headline
-                ) : (
-                  <>
-                    <HeroReveal
-                      text={headline}
-                      mode="char"
-                      startMs={COPY.headline.start}
-                      stepMs={COPY.headline.step}
-                      durMs={COPY.headline.dur}
-                    />
-                    {/* INLINE TYPEWRITER CURSOR (v6.3, ULTIMATE FIX).
-                        ===========================================
-                        Single inline-block <span> living INSIDE the h1
-                        right after the per-char reveal spans, so it sits
-                        at the END of the headline text in normal flow —
-                        never floats free in the middle of the screen
-                        (the v5.x bug the user explicitly forbade). The
-                        cursor is part of the same DOM subtree that
-                        AnimatePresence's mode="wait" remounts on every
-                        slide change, so its CSS animation restarts from
-                        frame 0 with the rest of the reveal — no manual
-                        reset needed.
+          <div className="max-w-2xl absolute inset-x-5 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl">
+            {/* COPY STAGE — reserved-height wrapper for AnimatePresence.
+                The min-h-* values match the sum of badge + headline +
+                subhead reserved heights at each breakpoint, so the
+                wrapper never resizes between slides and the absolute
+                motion.div children never push surrounding layout.
 
-                        The animation (`.hero-cursor` in index.css) is
-                        ONE single CSS animation that:
-                          1) Blinks the cursor for the duration of the
-                             headline reveal (~1175ms) using a
-                             step-based opacity keyframe — the classic
-                             square-wave terminal feel, no fade per
-                             blink.
-                          2) Once the headline finishes typing, the
-                             same keyframe smoothly fades the cursor to
-                             0 over its final ~25% (≈ 400ms) and stays
-                             at opacity:0 forever via animation-fill-
-                             mode: forwards.
-                        Net behaviour matches the spec literally:
-                          - Inline with text ✓ (it IS a text-flow span)
-                          - Stops blinking after finish ✓
-                          - Never appears in centre of screen ✓
-                          - No JS, no React state, no setInterval,
-                            zero per-frame work after frame 0 ✓
-                        Animation duration is set via the same
-                        `--hero-cursor-end` CSS variable so the React
-                        side can change typing length later without
-                        editing CSS. */}
-                    <span
-                      className="hero-cursor"
-                      aria-hidden="true"
-                      data-testid="text-hero-cursor"
-                      style={
-                        {
-                          ["--hero-cursor-end" as any]: `${
-                            COPY.headline.start +
-                            headline.replace(/\s+/g, "").length *
-                              COPY.headline.step +
-                            COPY.headline.dur
-                          }ms`,
-                        } as React.CSSProperties
-                      }
-                    />
-                  </>
-                )}
-              </h1>
-              {subhead && (
-                /* min-h-* reserves space for 2 lines at every breakpoint
-                   (text × leading-relaxed ≈ 1.625):
-                     text-base (16) → 2 × 26 ≈ 52
-                     text-lg   (18) → 2 × 29 ≈ 60
-                     text-xl   (20) → 2 × 33 ≈ 68 */
-                <p
-                  className="mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed min-h-[52px] sm:min-h-[60px] md:min-h-[68px]"
-                  style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
-                  data-testid="text-hero-subhead"
-                >
-                  {reduced ? (
-                    subhead
-                  ) : (
-                    <HeroReveal
-                      text={subhead}
-                      mode="word"
-                      startMs={COPY.subhead.start}
-                      stepMs={COPY.subhead.step}
-                      durMs={COPY.subhead.dur}
-                    />
-                  )}
-                </p>
-              )}
+                Mobile (default):
+                  badge ~30 + mb-6 (24)               = 54
+                  headline min-h-[112]                = 112
+                  subhead mt-6 (24) + min-h-[52]      = 76
+                  TOTAL                               = 242
 
-              <div
-                className={cn(
-                  "mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5",
-                  !reduced && "hero-button-reveal",
-                )}
-                style={
-                  !reduced
-                    ? ({
-                        ["--hr-start" as any]: `${COPY.buttons.start}ms`,
-                        ["--hr-dur" as any]: `${COPY.buttons.dur}ms`,
-                      } as React.CSSProperties)
-                    : undefined
-                }
-              >
-                <Link
-                  href="/book"
-                  className="w-full sm:w-auto"
-                  data-testid="link-hero-start-transformation"
-                >
-                  <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold whitespace-nowrap btn-press">
-                    {t("hero.cinematic.startTransformation")}
-                    <ArrowRight size={18} />
-                  </button>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const target =
-                      document.getElementById("transformations") ??
-                      document.getElementById("why");
-                    target?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
+                sm:  54 + 152 + (24 + 60 = 84) = 290
+                md:  54 + 192 + (24 + 68 = 92) = 338
+                lg:  54 + 256 + 92            = 402
+                xl:  54 + 288 + 92            = 434 */}
+            <div className="relative min-h-[242px] sm:min-h-[290px] md:min-h-[338px] lg:min-h-[402px] xl:min-h-[434px]">
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={`copy-${slideKey}`}
+                  initial={false}
+                  exit={reduced ? undefined : { opacity: 0 }}
+                  transition={{
+                    duration: COPY.exit.dur / 1000,
+                    ease: [0.22, 1, 0.36, 1],
                   }}
-                  data-testid="button-hero-view-results"
-                  className="tron-glass-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press"
+                  className="absolute inset-0"
                 >
-                  <Eye size={18} />
-                  {t("hero.cinematic.viewResults")}
+                  {badge && (
+                    <span
+                      className={cn(
+                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6",
+                        !reduced && "hero-fade",
+                      )}
+                      style={
+                        !reduced
+                          ? ({
+                              ["--hr-start" as any]: `${COPY.badge.start}ms`,
+                              ["--hr-dur" as any]: `${COPY.badge.dur}ms`,
+                            } as React.CSSProperties)
+                          : undefined
+                      }
+                      data-testid="text-hero-badge"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      {badge}
+                    </span>
+                  )}
+                  {/* HEADLINE — outer h1 reserves the multi-line height so
+                      no layout shift between slides; inner span carries
+                      the .hero-mask-reveal animation. The wrapper is
+                      `display: block` (set in CSS) so the natural word-
+                      wrap behaviour is preserved on narrow viewports —
+                      headlines that wrap to 2 or 3 lines reveal cleanly
+                      with the clip-path travelling left-to-right across
+                      ALL lines simultaneously. */}
+                  <h1
+                    className="tron-headline-glow text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]"
+                    data-testid="text-hero-headline"
+                  >
+                    {reduced ? (
+                      headline
+                    ) : (
+                      <span
+                        className="hero-mask-reveal"
+                        style={
+                          {
+                            ["--hr-start" as any]: `${COPY.headline.start}ms`,
+                            ["--hr-dur" as any]: `${COPY.headline.dur}ms`,
+                          } as React.CSSProperties
+                        }
+                      >
+                        {headline}
+                      </span>
+                    )}
+                  </h1>
+                  {subhead && (
+                    <p
+                      className={cn(
+                        "mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed min-h-[52px] sm:min-h-[60px] md:min-h-[68px]",
+                        !reduced && "hero-fade-up",
+                      )}
+                      style={
+                        !reduced
+                          ? ({
+                              textShadow: "0 1px 12px rgba(0,0,0,0.7)",
+                              ["--hr-start" as any]: `${COPY.subhead.start}ms`,
+                              ["--hr-dur" as any]: `${COPY.subhead.dur}ms`,
+                            } as React.CSSProperties)
+                          : { textShadow: "0 1px 12px rgba(0,0,0,0.7)" }
+                      }
+                      data-testid="text-hero-subhead"
+                    >
+                      {subhead}
+                    </p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* CTA BUTTONS — rendered ONCE, OUTSIDE AnimatePresence.
+                These do NOT remount on slide change (they don't share the
+                slideKey) so they NEVER re-run their entrance animation.
+                On initial page mount, the .hero-buttons-once class plays
+                a single 380ms fade-up starting at 1000ms; thereafter the
+                buttons stay at opacity 1 / translateY 0 forever via
+                animation-fill-mode: forwards. */}
+            <div
+              className={cn(
+                "mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-3.5",
+                !reduced && "hero-buttons-once",
+              )}
+              data-testid="hero-buttons-row"
+            >
+              <Link
+                href="/book"
+                className="w-full sm:w-auto"
+                data-testid="link-hero-start-transformation"
+              >
+                <button className="tron-cta tron-cta-breathe w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold whitespace-nowrap btn-press">
+                  {t("hero.cinematic.startTransformation")}
+                  <ArrowRight size={18} />
                 </button>
-                <WhatsAppButton
-                  label={t("hero.cinematic.whatsapp")}
-                  message={t("hero.cinematic.whatsappMsg")}
-                  size="md"
-                  testId="button-hero-whatsapp"
-                  className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
-                />
-              </div>
-            </motion.div>
-          </AnimatePresence>
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  const target =
+                    document.getElementById("transformations") ??
+                    document.getElementById("why");
+                  target?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }}
+                data-testid="button-hero-view-results"
+                className="tron-glass-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press"
+              >
+                <Eye size={18} />
+                {t("hero.cinematic.viewResults")}
+              </button>
+              <WhatsAppButton
+                label={t("hero.cinematic.whatsapp")}
+                message={t("hero.cinematic.whatsappMsg")}
+                size="md"
+                testId="button-hero-whatsapp"
+                className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
