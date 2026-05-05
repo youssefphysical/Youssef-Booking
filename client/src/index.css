@@ -464,6 +464,66 @@
   transform: translateZ(0);
 }
 
+/* HERO TEXT SCRIM (v8.6 typography polish, May-2026).
+   ====================================================================
+   A VERY subtle dark wash sitting BEHIND the hero copy area only
+   (badge + headline + subhead). Improves text contrast over bright
+   gym/portrait photographs without making the user perceive any
+   "layer", "box", or "border".
+
+   How it stays invisible:
+     1. Soft linear-gradient (rgba(0,0,0,0.25) → rgba(0,0,0,0.40)) is
+        the spec's exact recommended palette — gentle vertical
+        darkening, never opaque.
+     2. Radial-gradient mask feathers all four edges to transparent
+        so the rectangle has NO perceptible boundary. The mask peaks
+        at ~30% opacity (full dark) toward the center-left where the
+        text actually sits, then fades out smoothly to 0 by the
+        viewport edge.
+     3. Negative inset values let the wash extend slightly beyond
+        the text bounds so the contrast comfortably wraps each
+        glyph's outer shadow region.
+     4. NO blur is used (spec allows blur(6-10px) "MAX" but blur on
+        a static layer adds no value here and can cost paint on
+        Android — the mask alone already dissolves the rectangle).
+     5. NO border, NO border-radius (radius requires a visible edge
+        to round; we have no visible edge).
+     6. pointer-events: none — purely decorative.
+
+   Position: absolute inside the copy stage's `relative min-h-*`
+   wrapper. Stacked first (DOM order) so it paints BEHIND the
+   AnimatePresence motion.div sibling. No z-index needed.
+   No animation. No filter. No backdrop-filter. */
+.hero-text-scrim {
+  position: absolute;
+  /* Inset is negative on all four sides so the wash extends beyond
+     the text bounds — no rectangle silhouette aligned to the text
+     box. Asymmetric: more horizontal slack since headlines fill
+     the width, less vertical so the wash doesn't bleed into the
+     buttons row below. */
+  inset: -28px -36px -16px -20px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.40) 100%
+  );
+  /* Radial mask = the only thing that hides the rectangle. The
+     ellipse peaks at 30% (fully dark center-left where text lives)
+     and fades to transparent (rectangle disappears) by the edges.
+     User perceives a soft local darkening behind text, NOT a box. */
+  -webkit-mask-image: radial-gradient(
+    ellipse 80% 75% at 38% 50%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 100%
+  );
+          mask-image: radial-gradient(
+    ellipse 80% 75% at 38% 50%,
+    rgba(0, 0, 0, 1) 30%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
 /* HERO → SECTION BOTTOM FADE (v8.5 micro design polish, May-2026).
    ====================================================================
    A short premium gradient that softens the bottom edge of the hero

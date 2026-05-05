@@ -56,6 +56,32 @@ No explicit user preferences were provided in the original `replit.md` file.
 - `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
 - Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
 
+### v8.6 Typography Polish "Premium Hero Text + Scrim" (May 2026)
+Per the user-supplied "MICRO DESIGN FIX only" spec. Three sub-changes — pure typography + one decorative scrim — no logic, animation, or structural changes.
+
+**1. Headline (`HeroSlider.tsx`, h1 classes):**
+- `leading-[1.02]` → `leading-[1.1]` — moves into the spec's 1.1-1.2 range at the lower (poster-dense) bound.
+- `tracking-tight` (-0.025em) → `tracking-[-0.015em]` — sits closer to the spec's "-0.5px to -1px" absolute range across all breakpoints (-0.48px at 32px, -0.9px at 60px, -1.32px at 88px).
+- `min-h-[112/152/192/256/288]` → `min-h-[120/160/200/268/296]` — +8/+8/+8/+12/+8 per breakpoint to absorb the new leading at 3-line headlines without per-mount CLS (still 0).
+- Color (`text-white`), weight (`font-bold`), font-family (`font-display`) unchanged. NO text-shadow, NO glow, NO gradient text, NO opacity flicker — all v8.x invariants preserved.
+
+**2. Subhead (`HeroSlider.tsx`, p classes):**
+- `text-white/90` → `text-white/85` — exact spec match: `rgba(255,255,255,0.85)`.
+- `leading-relaxed` (1.625) → `leading-[1.65]` — slight bump per spec "slightly increased line-height". Fits within existing min-h reservations; no wrapper bump needed.
+- All other classes (size, max-w, animation `.hero-fade-up`, min-h) unchanged.
+
+**3. Hero text scrim (new `.hero-text-scrim` in `index.css` + one `<div>` in HeroSlider.tsx):**
+- A soft dark wash sitting BEHIND the badge/headline/subhead area only.
+- Background: `linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.40))` — spec's exact palette.
+- The rectangle is dissolved by a radial mask (`mask-image: radial-gradient(ellipse 80% 75% at 38% 50%, black 30%, transparent 100%)`) so the user perceives a localized contrast lift, NOT a layer/box/border.
+- Inset asymmetric (`-28px -36px -16px -20px`) — wash extends past the text bounds horizontally without bleeding into the CTA row below.
+- `pointer-events: none`. No blur (spec allows up to 6-10px backdrop-filter blur but it's intentionally skipped — the mask already dissolves the rectangle and skipping blur saves Android paint cost).
+- Renders BEHIND the `AnimatePresence motion.div` via DOM order alone — no z-index needed.
+
+**Wrapper min-h reservation (`relative min-h-*`):** bumped by +8/+8/+8/+12/+8 across breakpoints (242→250, 290→298, 338→346, 402→414, 434→442) to keep CLS at 0 with the new headline leading. On mobile the copy block is bottom-anchored (`bottom-20`) so the only visible delta vs v8.5.1 is the badge sitting ~8px higher; CTAs and subhead viewport positions remain anchor-stable.
+
+**Files changed**: `client/src/components/HeroSlider.tsx` (h1 + p classes, wrapper min-h, one decorative scrim div), `client/src/index.css` (added `.hero-text-scrim` class), `replit.md`. NO changes to: hero animation, hero image loading, slider, AnimatePresence/textKey/mask-reveal/buttons-once timings, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing, the v8.5.1 hero-bottom-fade.
+
 ### v8.5.1 Micro-Tune "Seam-Invisible Hero Fade" (May 2026)
 Per the user-supplied "STRICT MICRO FIX ONLY" spec — refine the v8.5 fade so the transition is fully invisible. The previous 95%-alpha endpoint over the hero's `bg-black` produced ≈ rgb(5,21,38) at the bottom pixel, while the next section's top edge composites to ≈ rgb(12,24,38) (`from-primary/10 via-background to-background` with dark-theme `--background: 222 45% 4%` ≈ rgb(6,8,15) tinted by `--primary: 205 92% 62%` ≈ rgb(69,172,247) at 10% alpha). The 7-unit red delta plus the 5% photo bleed-through left a faint seam. Three sub-changes inside `.hero-bottom-fade` only:
 - Final stop color `rgba(5,22,40)` → `rgba(12,24,38)` — pixel-exact match to the section's compositional top edge.

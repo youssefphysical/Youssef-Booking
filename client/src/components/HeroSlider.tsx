@@ -350,17 +350,31 @@ export function HeroSlider() {
                 wrapper never resizes between slides and the absolute
                 motion.div children never push surrounding layout.
 
-                Mobile (default):
+                v8.6 RECALC (May-2026, headline leading 1.02 → 1.1):
                   badge ~30 + mb-6 (24)               = 54
-                  headline min-h-[112]                = 112
+                  headline min-h-[120]                = 120  (was 112)
                   subhead mt-6 (24) + min-h-[52]      = 76
-                  TOTAL                               = 242
+                  TOTAL                               = 250  (was 242)
 
-                sm:  54 + 152 + (24 + 60 = 84) = 290
-                md:  54 + 192 + (24 + 68 = 92) = 338
-                lg:  54 + 256 + 92            = 402
-                xl:  54 + 288 + 92            = 434 */}
-            <div className="relative min-h-[242px] sm:min-h-[290px] md:min-h-[338px] lg:min-h-[402px] xl:min-h-[434px]">
+                sm:  54 + 160 + 84  = 298  (was 290)
+                md:  54 + 200 + 92  = 346  (was 338)
+                lg:  54 + 268 + 92  = 414  (was 402)
+                xl:  54 + 296 + 92  = 442  (was 434)
+                +8px to +12px per breakpoint to absorb the new leading
+                without per-mount layout shift (CLS=0). On mobile the
+                copy block is bottom-anchored (`bottom-20`) so the
+                only visible delta vs v8.5 is the badge sitting ~8px
+                higher; CTAs and subhead viewport positions are
+                anchor-stable. */}
+            <div className="relative min-h-[250px] sm:min-h-[298px] md:min-h-[346px] lg:min-h-[414px] xl:min-h-[442px]">
+              {/* HERO TEXT SCRIM (v8.6 typography polish).
+                  Soft dark wash behind text only. First child so it
+                  renders BEHIND the AnimatePresence motion.div sibling
+                  via DOM order alone (no z-index). Mask feathers all
+                  edges to transparent so the user perceives improved
+                  contrast without seeing any "layer" or "box".
+                  See `.hero-text-scrim` in index.css. */}
+              <div className="hero-text-scrim" aria-hidden="true" data-testid="hero-text-scrim" />
               <AnimatePresence initial={false} mode="wait">
                 <motion.div
                   key={`copy-${textKey}`}
@@ -408,8 +422,21 @@ export function HeroSlider() {
                       across all lines simultaneously.
                       Reduced-motion users: short-circuit to plain text
                       with no animation wrapper. */}
+                  {/* HEADLINE TYPOGRAPHY (v8.6 polish):
+                      - leading 1.02 → 1.1 (per spec "1.1-1.2",
+                        chosen at the lower bound for poster
+                        density)
+                      - tracking-tight (-0.025em) → tracking-[-0.015em]
+                        (sits closer to spec's "-0.5px to -1px"
+                        absolute range across breakpoints)
+                      - min-h bumped per-breakpoint to absorb the
+                        new leading; see wrapper comment above
+                      - Color, weight, font-display, no text-shadow,
+                        no glow — all preserved from v8.x invariant
+                      - No animation properties touched (mask-reveal
+                        on inner span unchanged) */}
                   <h1
-                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.02] text-white tracking-tight min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]"
+                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.1] text-white tracking-[-0.015em] min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[268px] xl:min-h-[296px]"
                     data-testid="text-hero-headline"
                   >
                     {reduced ? (
@@ -428,10 +455,19 @@ export function HeroSlider() {
                       </span>
                     )}
                   </h1>
+                  {/* SUBHEAD TYPOGRAPHY (v8.6 polish):
+                      - text-white/90 → text-white/85 (exact spec
+                        match: rgba(255,255,255,0.85))
+                      - leading-relaxed (1.625) → leading-[1.65]
+                        (slight bump per spec "slightly increased
+                        line-height", fits within current min-h
+                        with no wrapper bump needed)
+                      - All other classes (size, max-w, hero-fade-up
+                        animation, min-h reservations) unchanged */}
                   {subhead && (
                     <p
                       className={cn(
-                        "mt-6 text-base sm:text-lg md:text-xl text-white/90 max-w-xl leading-relaxed min-h-[52px] sm:min-h-[60px] md:min-h-[68px]",
+                        "mt-6 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.65] min-h-[52px] sm:min-h-[60px] md:min-h-[68px]",
                         !reduced && "hero-fade-up",
                       )}
                       style={
