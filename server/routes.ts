@@ -1207,11 +1207,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid image" });
     }
+    // Route-specific strict policy per the v9.1 spec: JPG/PNG/WebP
+    // ONLY (no HEIC for the profile-photo endpoint), 5 MB hard cap.
+    // Hero and transformation upload routes keep their original
+    // (more permissive) defaults — those are unchanged.
+    const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+    const PROFILE_PHOTO_ALLOWED_MIME = new Set([
+      "image/jpeg", "image/jpg", "image/png", "image/webp",
+    ]);
     const processed = await processAdminImageDataUrl(parsed.data.imageDataUrl, {
       width: 1200,
       height: 1500,
       fit: "cover",
       quality: 90,
+      allowedMime: PROFILE_PHOTO_ALLOWED_MIME,
+      // base64 expands ~33% so a 5 MB raw file can produce ~6.7 MB of
+      // data-URL text. Cap data-URL length accordingly so the strict
+      // 5 MB raw limit is enforced without false-rejecting valid
+      // 5 MB files.
+      maxDataUrlBytes: Math.ceil(PROFILE_PHOTO_MAX_BYTES * 1.4),
+      maxDecodedBytes: PROFILE_PHOTO_MAX_BYTES,
+      typeErrorMessage: "Only JPG, PNG, or WebP images are allowed",
+      sizeErrorMessage: "Image must be 5 MB or smaller",
     });
     if (!processed.ok) {
       return res.status(processed.status).json({ message: processed.message });
@@ -1231,28 +1248,49 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // (1600px long edge contain) endpoints.
   async function processAdminImageDataUrl(
     dataUrl: string,
-    opts: { width: number; height?: number; fit: "cover" | "inside"; quality?: number },
+    opts: {
+      width: number;
+      height?: number;
+      fit: "cover" | "inside";
+      quality?: number;
+      // v9.1 (May-2026): route-specific overrides so the profile-photo
+      // endpoint can enforce a STRICTER JPG/PNG/WebP-only + 5 MB
+      // policy than hero/transformation uploads. Defaults preserve the
+      // pre-v9.1 behaviour (PNG/JPEG/WebP/HEIC, ~15 MB decoded /
+      // ~20 MB data URL) so hero + transformation flows are unchanged.
+      allowedMime?: Set<string>;
+      maxDataUrlBytes?: number;
+      maxDecodedBytes?: number;
+      typeErrorMessage?: string;
+      sizeErrorMessage?: string;
+    },
   ): Promise<{ ok: true; dataUrl: string } | { ok: false; status: number; message: string }> {
     if (typeof dataUrl !== "string" || dataUrl.length < 40) {
       return { ok: false, status: 400, message: "Image data is required" };
     }
-    if (dataUrl.length > 20 * 1024 * 1024) {
-      return { ok: false, status: 400, message: "Image is too large" };
+    const maxDataUrlBytes = opts.maxDataUrlBytes ?? 20 * 1024 * 1024;
+    if (dataUrl.length > maxDataUrlBytes) {
+      return { ok: false, status: 400, message: opts.sizeErrorMessage ?? "Image is too large" };
     }
     const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
     if (!match) {
       return { ok: false, status: 400, message: "Image must be a base64 data URL" };
     }
-    const ALLOWED_MIME = new Set([
+    const ALLOWED_MIME = opts.allowedMime ?? new Set([
       "image/png", "image/jpeg", "image/jpg", "image/webp", "image/heic", "image/heif",
     ]);
     if (!ALLOWED_MIME.has(match[1].toLowerCase())) {
-      return { ok: false, status: 400, message: "Unsupported image type. Use PNG, JPEG, WebP, or HEIC." };
+      return {
+        ok: false,
+        status: 400,
+        message: opts.typeErrorMessage ?? "Unsupported image type. Use PNG, JPEG, WebP, or HEIC.",
+      };
     }
     try {
       const buffer = Buffer.from(match[2], "base64");
-      if (buffer.byteLength > 15 * 1024 * 1024) {
-        return { ok: false, status: 400, message: "Image is too large after decoding" };
+      const maxDecodedBytes = opts.maxDecodedBytes ?? 15 * 1024 * 1024;
+      if (buffer.byteLength > maxDecodedBytes) {
+        return { ok: false, status: 400, message: opts.sizeErrorMessage ?? "Image is too large after decoding" };
       }
       let pipeline = sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 }).rotate();
       if (opts.fit === "cover" && opts.height) {
