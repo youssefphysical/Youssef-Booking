@@ -887,10 +887,10 @@ function PackagesTab({ userId }: { userId: number }) {
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1">
+                    <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate">
                       {(p as any).name || def?.label || `${p.type} Package`}
                     </p>
-                    <p className="text-3xl font-display font-bold">
+                    <p className="text-3xl font-display font-bold tabular-nums">
                       {remaining}
                       <span className="text-base text-muted-foreground font-normal">
                         {" "}
@@ -898,8 +898,16 @@ function PackagesTab({ userId }: { userId: number }) {
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{t("dashboard.sessionsRemaining")}</p>
+                    {((p as any).bonusSessions ?? 0) > 0 && (
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/12 border border-emerald-400/30 px-2 py-0.5 text-emerald-300 shadow-[0_0_14px_-6px_rgba(16,185,129,0.5)]">
+                        <Sparkles size={11} className="shrink-0" />
+                        <span className="text-[11px] font-display font-bold tabular-nums leading-none">
+                          +{(p as any).bonusSessions} {t("home.packages.bonus")}
+                        </span>
+                      </span>
+                    )}
                     {def?.tagline && (
-                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{def.tagline}</p>
+                      <p className="text-[10px] text-muted-foreground/70 mt-1">{def.tagline}</p>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5">

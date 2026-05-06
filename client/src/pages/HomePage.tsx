@@ -523,9 +523,13 @@ function PublicPackages() {
         title={t("home.packages.title")}
         subtitle={t("home.packages.subtitle")}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
         {templates.map((tpl, i) => {
           const message = t("home.packages.whatsappMsg").replace("{name}", tpl.name);
+          const hasBonus = tpl.bonusSessions > 0;
+          // Display: prefer paidSessions+bonusSessions when set; fall back to
+          // totalSessions if only that is configured (legacy templates).
+          const paid = tpl.paidSessions || (hasBonus ? Math.max(tpl.totalSessions - tpl.bonusSessions, 0) : tpl.totalSessions);
           return (
             <motion.div
               key={tpl.id}
@@ -533,52 +537,84 @@ function PublicPackages() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: Math.min(i * 0.05, 0.3) }}
-              className="tron-card rounded-2xl p-6 flex flex-col"
+              className="tron-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col h-full min-w-0"
               data-testid={`public-package-${tpl.id}`}
             >
-              <p className="tron-eyebrow text-[10px] mb-2">
-                {t(`admin.packageBuilder.type.${tpl.type}`)}
-              </p>
-              <h3 className="font-display font-bold text-xl">{tpl.name}</h3>
+              {/* Eyebrow + name */}
+              <div className="min-w-0">
+                <p className="tron-eyebrow text-[10px] mb-1.5 truncate">
+                  {t(`admin.packageBuilder.type.${tpl.type}`)}
+                </p>
+                <h3 className="font-display font-bold text-lg sm:text-xl leading-tight break-words">
+                  {tpl.name}
+                </h3>
+              </div>
 
-              <div className="mt-4 mb-4">
-                <p className="text-3xl font-display font-bold tabular-nums text-primary">
+              {/* Sessions block — premium hierarchy with bonus visually
+                  separated in green when present */}
+              <div className="mt-4 mb-4 rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3.5">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <span className="text-3xl sm:text-[34px] font-display font-bold tabular-nums leading-none">
+                    {paid}
+                  </span>
+                  <span className="text-sm text-muted-foreground truncate">
+                    {t("home.packages.sessions")}
+                  </span>
+                </div>
+
+                {hasBonus && (
+                  <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/12 border border-emerald-400/30 px-2.5 py-1 text-emerald-300 shadow-[0_0_18px_-6px_rgba(16,185,129,0.55)]">
+                      <Sparkles size={12} className="shrink-0" />
+                      <span className="text-[13px] font-display font-bold tabular-nums leading-none">
+                        +{tpl.bonusSessions}
+                      </span>
+                      <span className="text-[11px] font-semibold leading-none">
+                        {t("home.packages.bonus")}
+                      </span>
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-300/80 whitespace-nowrap">
+                      {t("home.packages.bonusBadge", "Bonus by Coach")}
+                    </span>
+                  </div>
+                )}
+
+                {hasBonus && (
+                  <p className="text-[11px] text-muted-foreground mt-2.5 pt-2.5 border-t border-white/5">
+                    {t("home.packages.totalLabel", "Total")}:{" "}
+                    <strong className="text-foreground tabular-nums">{paid + tpl.bonusSessions}</strong>{" "}
+                    {t("home.packages.sessions")}
+                  </p>
+                )}
+              </div>
+
+              {/* Price */}
+              <div className="mb-3">
+                <p className="text-[26px] sm:text-3xl font-display font-bold tabular-nums text-primary leading-none">
                   {tpl.totalPrice.toLocaleString()}{" "}
                   <span className="text-sm font-normal text-muted-foreground">
                     {t("common.aed")}
                   </span>
                 </p>
                 {tpl.pricePerSession > 0 && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {tpl.pricePerSession.toLocaleString()} {t("common.aed")} /{" "}
                     {t("home.packages.perSession")}
                   </p>
                 )}
               </div>
 
+              {/* Validity + description */}
               <ul className="space-y-2 text-sm text-muted-foreground flex-1">
-                <li className="flex items-center gap-2">
-                  <Sparkles size={13} className="text-primary shrink-0" />
-                  <span>
-                    <strong className="text-foreground">{tpl.totalSessions}</strong>{" "}
-                    {t("home.packages.sessions")}
-                    {tpl.bonusSessions > 0 && (
-                      <span className="text-amber-300/90">
-                        {" "}
-                        ({tpl.paidSessions} + {tpl.bonusSessions} {t("home.packages.bonus")})
-                      </span>
-                    )}
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
+                <li className="flex items-center gap-2 min-w-0">
                   <Calendar size={13} className="text-primary shrink-0" />
-                  <span>
+                  <span className="truncate">
                     {t("home.packages.validFor")}: {tpl.expirationValue}{" "}
                     {t(`admin.packageBuilder.unit.${tpl.expirationUnit}`)}
                   </span>
                 </li>
                 {tpl.description && (
-                  <li className="text-xs leading-relaxed pt-1">{tpl.description}</li>
+                  <li className="text-xs leading-relaxed pt-1 break-words">{tpl.description}</li>
                 )}
               </ul>
 

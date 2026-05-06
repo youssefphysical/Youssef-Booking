@@ -290,7 +290,8 @@ function TemplateCard({
           label={t("admin.packageBuilder.bonus")}
           value={tpl.bonusSessions}
           icon={<Sparkles size={11} />}
-          accent={tpl.bonusSessions > 0 ? "text-amber-300" : undefined}
+          accent={tpl.bonusSessions > 0 ? "text-emerald-300" : undefined}
+          highlight={tpl.bonusSessions > 0}
         />
         <Stat
           label={t("admin.packageBuilder.totalSessions")}
@@ -338,14 +339,22 @@ function Stat({
   value,
   accent,
   icon,
+  highlight,
 }: {
   label: string;
   value: number;
   accent?: string;
   icon?: React.ReactNode;
+  highlight?: boolean;
 }) {
   return (
-    <div className="rounded-lg bg-white/5 border border-white/5 px-2 py-1.5 text-center">
+    <div
+      className={`rounded-lg border px-2 py-1.5 text-center ${
+        highlight
+          ? "bg-emerald-500/8 border-emerald-400/25 shadow-[0_0_14px_-6px_rgba(16,185,129,0.45)]"
+          : "bg-white/5 border-white/5"
+      }`}
+    >
       <p className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
         {icon}
         {label}
