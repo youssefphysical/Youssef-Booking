@@ -1,7 +1,54 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Quote, Target, Calendar, TrendingUp } from "lucide-react";
+import { Quote, Target, Calendar, TrendingUp, ImageOff } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { useTransformations } from "@/hooks/use-transformations";
+
+/**
+ * SafeImage (QA-pass May-2026)
+ *
+ * Defensive renderer for transformation before/after photos. If the
+ * stored data URL is empty, malformed, or fails to decode at runtime
+ * (admin-removed file, partially-uploaded base64, etc.) the visitor
+ * sees a clean placeholder tile instead of the browser's broken-image
+ * icon. Same defensive pattern as ProfilePhoto on HomePage.
+ */
+function SafeImage({
+  src,
+  alt,
+  testId,
+}: {
+  src?: string | null;
+  alt: string;
+  testId: string;
+}) {
+  const trimmed = (src || "").trim();
+  // Real data URLs are always > 40 chars; anything shorter is empty
+  // or a stale placeholder.
+  const looksValid = trimmed.length >= 40;
+  const [errored, setErrored] = useState(false);
+  if (!looksValid || errored) {
+    return (
+      <div
+        className="w-full h-full flex items-center justify-center text-muted-foreground/40"
+        data-testid={`${testId}-placeholder`}
+      >
+        <ImageOff size={32} />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={trimmed}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setErrored(true)}
+      className="w-full h-full object-cover"
+      data-testid={testId}
+    />
+  );
+}
 
 // Public premium "Real Results" section. Renders nothing when admin has
 // not added any active transformations — homepage stays clean instead of
@@ -44,26 +91,20 @@ export function Transformations() {
                   to reinforce the TRON edge aesthetic. */}
               <div className="grid grid-cols-2 gap-[1px] bg-primary/30">
                 <figure className="relative aspect-[4/5] bg-black">
-                  <img
+                  <SafeImage
                     src={row.beforeImageDataUrl}
                     alt={`${name} — before`}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                    data-testid={`img-transformation-before-${row.id}`}
+                    testId={`img-transformation-before-${row.id}`}
                   />
                   <figcaption className="absolute top-2 left-2 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-[10px] uppercase tracking-[0.2em] text-white/90 font-bold border border-white/10">
                     {t("transformations.before")}
                   </figcaption>
                 </figure>
                 <figure className="relative aspect-[4/5] bg-black">
-                  <img
+                  <SafeImage
                     src={row.afterImageDataUrl}
                     alt={`${name} — after`}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                    data-testid={`img-transformation-after-${row.id}`}
+                    testId={`img-transformation-after-${row.id}`}
                   />
                   <figcaption className="tron-pulse absolute top-2 right-2 px-2 py-1 rounded-md bg-primary text-primary-foreground text-[10px] uppercase tracking-[0.2em] font-bold">
                     {t("transformations.after")}
