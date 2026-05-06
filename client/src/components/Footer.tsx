@@ -11,7 +11,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-5 flex flex-col items-center gap-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div className="text-center md:text-left">
           <p className="font-display text-foreground/90 text-sm tracking-wide">
-            <span className="text-gradient-blue font-semibold">Youssef Ahmed</span>
+            <span className="text-gradient-blue font-semibold whitespace-nowrap">{t("brand.trainerName", "Youssef Ahmed")}</span>
             <span className="text-muted-foreground/60 mx-2">·</span>
             {t("footer.tagline")}
           </p>

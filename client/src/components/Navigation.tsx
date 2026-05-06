@@ -113,7 +113,7 @@ export function Navigation() {
           )}
         >
           <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
-            <h1 className="text-xl font-bold font-display text-gradient-blue">Youssef Ahmed</h1>
+            <h1 className="text-xl font-bold font-display text-gradient-blue whitespace-nowrap">{t("brand.trainerName", "Youssef Ahmed")}</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
               {t("nav.adminTagline")}
             </p>
@@ -170,7 +170,7 @@ export function Navigation() {
         >
           <span className="text-gradient-blue whitespace-nowrap">
             <span className="hidden sm:inline">{t("nav.brand")}</span>
-            <span className="sm:hidden">Youssef Ahmed</span>
+            <span className="sm:hidden">{t("brand.trainerName", "Youssef Ahmed")}</span>
           </span>
         </Link>
 
