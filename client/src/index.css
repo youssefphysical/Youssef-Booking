@@ -1039,10 +1039,15 @@
   border: 1px solid hsl(0 0% 100% / 0.05);
   background-color: hsl(var(--card) / 0.6);
   padding: 1.25rem;                       /* 20px on mobile */
-  /* never let a card's content force horizontal scroll. Inner overflow
-     containers (tables, code blocks) should set overflow-x:auto on the
-     specific child instead of letting the card grow. */
-  overflow: hidden;
+  /* IMPORTANT — do NOT set overflow:hidden here. Radix popovers,
+     selects, dialogs all portal to <body> so they're safe, but
+     non-portaled affordances (focus rings, tooltips, dropdown
+     menus mounted inline by mistake, sticky-positioned children)
+     would otherwise be clipped. The .admin-shell parent already
+     sets overflow-x:hidden so horizontal-scroll regressions are
+     still impossible. Inner overflow containers (wide tables,
+     code blocks) should set their own overflow-x:auto. */
+  min-width: 0;                           /* lets card content respect flex/grid sizing */
 }
 @media (min-width: 640px) {
   .admin-card {
