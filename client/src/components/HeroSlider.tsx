@@ -277,7 +277,7 @@ export function HeroSlider() {
          insight is preserved — the gap is still invisible because
          the shell behind the wrapper matches the shell behind the
          next section (they're the SAME shell). */
-      className="hero-isolate relative w-full h-[75vh] md:h-[78vh] min-h-[520px] max-h-[860px] overflow-hidden bg-transparent"
+      className="hero-isolate relative w-full h-[75vh] md:h-[82svh] min-h-[520px] md:min-h-[700px] lg:min-h-[740px] xl:min-h-[780px] max-h-[860px] md:max-h-[900px] overflow-hidden bg-transparent"
       data-testid="hero-slider"
       data-hero-state="ready"
     >
@@ -372,7 +372,7 @@ export function HeroSlider() {
                    mount and live OUTSIDE this AnimatePresence
                    subtree. */}
       <div className="absolute inset-0 z-10 md:flex md:items-center">
-        <div className="relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-20">
+        <div className="relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-16 md:pb-36 lg:pb-40">
           <div className="max-w-2xl absolute inset-x-4 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl text-start sm:inset-x-5">
             {/* COPY STAGE — reserved-height wrapper for AnimatePresence.
                 The min-h-* values match the sum of badge + headline +
@@ -570,7 +570,7 @@ export function HeroSlider() {
       {/* Pagination dots */}
       {slides.length > 1 && (
         <div
-          className="absolute bottom-4 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"
+          className="absolute bottom-4 sm:bottom-3 md:bottom-7 lg:bottom-9 left-1/2 -translate-x-1/2 flex items-center gap-1 z-20"
           data-testid="hero-slider-dots"
         >
           {slides.map((img, i) => (

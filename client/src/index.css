@@ -949,6 +949,21 @@
   hyphens: auto;
 }
 
+/* DESKTOP-ONLY responsive tightening (May-2026 hero overlap fix).
+   On real laptops (1366x768 / 1440x900) the previous clamp upper of
+   5.5rem produced 88px headlines that, in long-language translations
+   (DE/RU/HI/AR/TR/ZH), wrapped to 4+ lines and pushed the CTA row
+   past the reserved min-h zone — colliding with the slider dots and
+   the bottom-blend gradient. The new desktop curve caps at 4.75rem
+   (76px) so even 4-line translations stay within the lg/xl reserved
+   min-h boxes (268-296px). Mobile/tablet curve is UNCHANGED. */
+@media (min-width: 768px) {
+  .hero-headline-fluid {
+    font-size: clamp(2.625rem, 5vw, 4.75rem);
+    line-height: 1.1;
+  }
+}
+
 /* Secondary "Youssef Ahmed" hero headline on HomePage — same fluid
    curve but slightly smaller min/max because it sits inside a 2-col
    grid card with the photo, not full-bleed. */
