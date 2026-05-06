@@ -486,7 +486,7 @@ export function HeroSlider() {
                   {subhead && (
                     <p
                       className={cn(
-                        "mt-5 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.55] min-h-[52px] sm:min-h-[60px] md:min-h-[68px] hero-text-shadow hero-subhead-wrap",
+                        "mt-5 ltr:mt-[22px] text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.55] min-h-[52px] sm:min-h-[60px] md:min-h-[68px] hero-text-shadow hero-subhead-wrap",
                         !reduced && "hero-fade-up",
                       )}
                       style={
