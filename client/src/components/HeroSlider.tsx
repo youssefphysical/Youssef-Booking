@@ -415,7 +415,7 @@ export function HeroSlider() {
                   {badge && (
                     <span
                       className={cn(
-                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6",
+                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6 ltr:mb-4",
                         !reduced && "hero-fade",
                       )}
                       style={
