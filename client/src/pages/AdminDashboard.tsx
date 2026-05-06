@@ -53,7 +53,7 @@ export function AdminTabs() {
   const [location] = useLocation();
   const { t } = useTranslation();
   return (
-    <div className="rounded-2xl border border-white/5 bg-card/60 p-1.5 mb-8 overflow-x-auto">
+    <div className="rounded-2xl border border-white/5 bg-card/60 p-1.5 mb-6 sm:mb-8 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
       <div className="flex gap-1 min-w-max">
         {ADMIN_TABS.map((tab) => {
           const active = tab.matches(location);
@@ -65,9 +65,9 @@ export function AdminTabs() {
               data-testid={`admintab-${tab.fallback.toLowerCase()}`}
               title={tab.hintKey ? t(tab.hintKey, tab.hintFallback) : undefined}
               className={cn(
-                "inline-flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap",
+                "inline-flex items-center gap-1.5 h-10 sm:h-9 min-w-[88px] justify-center px-3.5 rounded-xl text-[13px] sm:text-xs font-semibold transition-colors whitespace-nowrap",
                 active
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-white/5",
               )}
             >
@@ -101,29 +101,31 @@ export default function AdminDashboard() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-      <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
+      <div className="mb-5 sm:mb-6">
+        <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary mb-1.5 sm:mb-2">
           {t("admin.tabs.overview")}
         </p>
-        <h1 className="text-3xl font-display font-bold" data-testid="text-admin-title">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold leading-tight" data-testid="text-admin-title">
           {t("admin.dashboardTitle")}
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-[13px] sm:text-sm mt-1">
           {t("admin.dashboard.subtitle")}
         </p>
       </div>
 
       <AdminTabs />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
         <StatCard icon={<Users size={20} />} label={t("admin.dashboard.statTotalClients")} value={stats?.totalClients ?? 0} testId="stat-clients" />
         <StatCard icon={<CalendarCheck size={20} />} label={t("admin.dashboard.statUpcoming")} value={stats?.upcomingBookings ?? 0} testId="stat-upcoming" />
         <StatCard icon={<Clock size={20} />} label={t("admin.dashboard.statToday")} value={stats?.bookingsToday ?? 0} testId="stat-today" />
         <StatCard icon={<TrendingUp size={20} />} label={t("admin.dashboard.statCompletedMo")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" />
       </div>
 
-      {/* Premium business management — at-a-glance lifecycle counts. */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      {/* Premium business management — at-a-glance lifecycle counts.
+          On mobile (2-col), the 5th card spans both columns so the
+          row never leaves an awkward orphan tile. */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard
           icon={<AlertTriangle size={20} />}
           label={t("admin.dashboard.statExpiring", "Expiring soon")}
@@ -158,16 +160,17 @@ export default function AdminDashboard() {
           value={stats?.lowSessionClients ?? 0}
           testId="stat-low-sessions"
           tone="warning"
+          spanFullOnMobile
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-3xl border border-white/5 bg-card/60 p-6">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="font-display font-bold text-lg">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-white/5 bg-card/60 p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-5 gap-3">
+            <h3 className="font-display font-bold text-base sm:text-lg truncate">
               {t("admin.dashboard.upcomingSessions")}
             </h3>
-            <Link href="/admin/bookings" className="text-xs text-primary inline-flex items-center gap-1" data-testid="link-all-bookings">
+            <Link href="/admin/bookings" className="text-xs text-primary inline-flex items-center gap-1 shrink-0 whitespace-nowrap" data-testid="link-all-bookings">
               {t("admin.dashboard.viewAll")} <ArrowRight size={12} />
             </Link>
           </div>
@@ -176,14 +179,14 @@ export default function AdminDashboard() {
               {t("admin.dashboard.noUpcoming")}
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               {upcoming.map((b) => (
                 <div
                   key={b.id}
-                  className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl hover:bg-white/5 transition-colors"
                   data-testid={`upcoming-row-${b.id}`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
                     <span className="text-[9px] uppercase font-bold leading-none">
                       {format(new Date(b.date), "MMM")}
                     </span>
@@ -193,12 +196,12 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{b.user?.fullName || t("admin.bookings.client")}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatTime12(b.timeSlot)} • {b.user?.phone || ""}
+                    <p className="text-xs text-muted-foreground truncate">
+                      {formatTime12(b.timeSlot)}{b.user?.phone ? ` • ${b.user.phone}` : ""}
                     </p>
                   </div>
                   <span
-                    className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
+                    className={`shrink-0 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border whitespace-nowrap ${statusColor(b.status)}`}
                   >
                     {translateStatus(b.status, t)}
                   </span>
@@ -208,8 +211,8 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
-          <h3 className="font-display font-bold text-lg mb-5">
+        <div className="rounded-2xl sm:rounded-3xl border border-white/5 bg-card/60 p-4 sm:p-6">
+          <h3 className="font-display font-bold text-base sm:text-lg mb-4 sm:mb-5">
             {t("admin.dashboard.quickActions")}
           </h3>
           <div className="space-y-2">
@@ -235,12 +238,14 @@ function StatCard({
   value,
   testId,
   tone = "default",
+  spanFullOnMobile = false,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number | string;
   testId: string;
   tone?: "default" | "warning" | "danger" | "info";
+  spanFullOnMobile?: boolean;
 }) {
   const toneStyle =
     tone === "warning"
@@ -254,16 +259,19 @@ function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/5 bg-card/60 p-5"
+      className={cn(
+        "rounded-2xl border border-white/5 bg-card/60 p-4 sm:p-5 min-h-[108px] flex flex-col",
+        spanFullOnMobile && "col-span-2 lg:col-span-1",
+      )}
       data-testid={testId}
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2.5 sm:mb-3">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${toneStyle}`}>
           {icon}
         </div>
       </div>
-      <p className="text-2xl font-display font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+      <p className="text-2xl font-display font-bold leading-none">{value}</p>
+      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1.5 leading-snug">{label}</p>
     </motion.div>
   );
 }
@@ -273,10 +281,10 @@ function QuickAction({ href, label, external, testKey }: { href: string; label: 
     <Link
       href={href}
       data-testid={`quick-${testKey}`}
-      className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
+      className="flex items-center justify-between gap-3 w-full min-h-[44px] px-4 py-2.5 rounded-xl border border-white/5 bg-white/[0.04] hover:bg-white/10 hover:border-white/10 active:bg-white/[0.08] text-sm font-medium transition-colors"
     >
-      <span>{label}</span>
-      {external ? <ExternalLink size={14} /> : <ArrowRight size={14} />}
+      <span className="truncate">{label}</span>
+      {external ? <ExternalLink size={14} className="shrink-0 opacity-70" /> : <ArrowRight size={14} className="shrink-0 opacity-70" />}
     </Link>
   );
 }
