@@ -1090,7 +1090,8 @@
 .admin-shell {
   min-height: 100vh;
   padding-top: 5rem;        /* clears mobile top bar */
-  padding-bottom: 3rem;     /* breathing room above footer / device chrome */
+  /* breathing room above footer + iOS home indicator / device chrome */
+  padding-bottom: max(3rem, env(safe-area-inset-bottom) + 1.5rem);
   /* hard guard: never let a child force the page wider than the viewport.
      This kills the iOS Safari sideways-scroll that long form rows or
      unconstrained tables can introduce. */
@@ -1107,12 +1108,31 @@
 .admin-container {
   max-width: 72rem;         /* 1152px — premium dashboard width */
   margin-inline: auto;
-  padding-inline: 1rem;     /* 16px gutter mobile */
+  padding-inline: 0.875rem; /* 14px gutter on ultra-small phones (320–360px) */
+}
+@media (min-width: 380px) {
+  .admin-container {
+    padding-inline: 1rem;   /* 16px gutter from 380px+ */
+  }
 }
 @media (min-width: 640px) {
   .admin-container {
     padding-inline: 1.25rem; /* 20px gutter */
   }
+}
+
+/* Hide scrollbar visually on horizontal-scroll tab/strip rows
+   while keeping the scroll behavior. Used by AdminTabs +
+   today summary strip. */
+.admin-tabs-scroll {
+  scrollbar-width: none;             /* Firefox */
+  -ms-overflow-style: none;          /* IE/old Edge */
+  scroll-behavior: smooth;
+}
+.admin-tabs-scroll::-webkit-scrollbar {
+  display: none;                     /* WebKit / Chromium / Safari */
+  width: 0;
+  height: 0;
 }
 
 /* Canonical card style. Use on EVERY section panel for visual parity. */

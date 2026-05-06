@@ -126,7 +126,7 @@ export default function AdminDashboard() {
           className="rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] px-3.5 sm:px-4 py-3 mb-5 sm:mb-6 shadow-sm shadow-black/20"
           data-testid="today-summary-strip"
         >
-          <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
+          <div className="flex items-center gap-2.5 sm:gap-4 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
             <SummaryPill icon={<Clock size={14} />} value={todayCount} label={t("admin.dashboard.statToday", "Today")} tone="schedule" />
             <SummaryDivider />
             <SummaryPill icon={<CalendarCheck size={14} />} value={upcomingCount} label={t("admin.dashboard.statUpcoming", "Upcoming")} tone="info" />
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
                 {t("admin.dashboard.upcomingSessions")}
               </h3>
               <Link href="/admin/bookings" className="text-xs text-primary inline-flex items-center gap-1 shrink-0 whitespace-nowrap" data-testid="link-all-bookings">
-                {t("admin.dashboard.viewAll")} <ArrowRight size={12} />
+                {t("admin.dashboard.viewAll")} <ArrowRight size={12} className="rtl:rotate-180" />
               </Link>
             </div>
             {upcoming.length === 0 ? (
@@ -221,11 +221,11 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border whitespace-nowrap ${statusColor(b.status)}`}
+                      className={`shrink-0 text-[9px] uppercase tracking-wider font-bold px-1.5 sm:px-2 py-0.5 rounded-md border whitespace-nowrap max-w-[88px] truncate ${statusColor(b.status)}`}
                     >
                       {translateStatus(b.status, t)}
                     </span>
-                    <ChevronRight size={16} className="shrink-0 text-muted-foreground/60 hidden sm:block" />
+                    <ChevronRight size={16} className="shrink-0 text-muted-foreground/60 hidden sm:block rtl:rotate-180" />
                   </Link>
                 ))}
               </div>
@@ -294,8 +294,8 @@ function StatCard({
           {icon}
         </div>
       </div>
-      <p className="text-[28px] sm:text-3xl font-display font-bold leading-none tracking-tight">{value}</p>
-      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1.5 leading-snug">{label}</p>
+      <p className="text-[26px] sm:text-3xl font-display font-bold leading-none tracking-tight tabular-nums">{value}</p>
+      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1.5 leading-snug break-words [overflow-wrap:anywhere] line-clamp-2">{label}</p>
     </motion.div>
   );
 }
@@ -324,9 +324,9 @@ function SummaryPill({
       <span className={cn("inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/5", toneStyle)}>
         {icon}
       </span>
-      <div className="leading-tight">
-        <span className={cn("font-display font-bold text-base", tone === "danger" && "text-red-300")}>{value}</span>
-        <span className="text-[11px] text-muted-foreground ml-1.5 uppercase tracking-wide font-semibold">{label}</span>
+      <div className="leading-tight min-w-0">
+        <span className={cn("font-display font-bold text-base tabular-nums", tone === "danger" && "text-red-300")}>{value}</span>
+        <span className="text-[11px] text-muted-foreground ms-1.5 uppercase tracking-wide font-semibold whitespace-nowrap">{label}</span>
       </div>
     </div>
   );
@@ -361,7 +361,7 @@ function QuickAction({
         </span>
       ) : null}
       <span className="flex-1 truncate">{label}</span>
-      {external ? <ExternalLink size={14} className="shrink-0 opacity-60" /> : <ChevronRight size={16} className="shrink-0 opacity-60" />}
+      {external ? <ExternalLink size={14} className="shrink-0 opacity-60" /> : <ChevronRight size={16} className="shrink-0 opacity-60 rtl:rotate-180" />}
     </Link>
   );
 }
