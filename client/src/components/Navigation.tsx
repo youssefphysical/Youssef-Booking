@@ -258,35 +258,48 @@ export function Navigation() {
               <span className="whitespace-nowrap">{t("nav.signIn")}</span>
             </Link>
           )}
-          {/* PERMANENT STATIC MOBILE SIGN-IN PILL — UNTOUCHED.
+          {/* MOBILE AUTH PILL — auth-state-aware (May 2026 directive).
               ==================================================
-              Per explicit user directive "Do NOT modify the mobile
-              header Sign In button that currently works". This Link
-              renders UNCONDITIONALLY (regardless of auth state) and is
-              `md:hidden` UNCONDITIONALLY (so it never appears on
-              desktop). Same testid (`link-signin`), same inline style
-              block, same visual treatment as the v6.2 implementation —
-              only the breakpoint guard switched from auth-state-aware
-              `isAuthenticated && "md:hidden"` to a constant `md:hidden`
-              because the desktop branch is now handled by the strict
-              if/else above. The mobile UX contract from the May-2026
-              directive ("auth never disappears" on mobile, drawer
-              handles Sign Out for authenticated mobile users) is
-              preserved bit-for-bit. */}
-          <Link
-            href="/auth"
-            data-testid="link-signin"
-            style={{
-              position: "relative",
-              zIndex: 9999,
-              opacity: 1,
-              pointerEvents: "auto",
-            }}
-            className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
-          >
-            <LogIn size={14} className="shrink-0" />
-            <span className="whitespace-nowrap">{t("nav.signIn")}</span>
-          </Link>
+              The old "always show Sign In" directive was reversed: when
+              the user IS signed in, the mobile pill must visibly become
+              Sign Out so they can log out from the header without
+              opening the drawer. Mutually exclusive with the
+              authenticated branch via `isConfirmedUser`. */}
+          {isConfirmedUser ? (
+            <button
+              type="button"
+              onClick={() => {
+                logoutMutation.mutate();
+                navigate("/");
+              }}
+              data-testid="button-mobile-signout-pill"
+              style={{
+                position: "relative",
+                zIndex: 9999,
+                opacity: 1,
+                pointerEvents: "auto",
+              }}
+              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl border border-white/15 bg-white/5 text-foreground font-semibold hover:bg-white/10 hover:border-white/25 whitespace-nowrap shrink-0 btn-press"
+            >
+              <LogOut size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{t("nav.signOut")}</span>
+            </button>
+          ) : (
+            <Link
+              href="/auth"
+              data-testid="link-signin"
+              style={{
+                position: "relative",
+                zIndex: 9999,
+                opacity: 1,
+                pointerEvents: "auto",
+              }}
+              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+            >
+              <LogIn size={14} className="shrink-0" />
+              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+            </Link>
+          )}
           <button
             className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
@@ -301,26 +314,26 @@ export function Navigation() {
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md">
           <div className="px-5 py-4 space-y-1">
-            {/* PERMANENT STATIC SIGN-IN LINK (mobile menu mirror).
-                Same directive as the desktop pill: rendered UNCONDITIONALLY
-                so the auth entry point is the very first item in the
-                mobile menu in every state (loading, guest, even already
-                signed in — /auth handles the redirect). */}
-            <Link
-              href="/auth"
-              onClick={() => setOpen(false)}
-              data-testid="link-mobile-signin"
-              style={{
-                position: "relative",
-                zIndex: 9999,
-                opacity: 1,
-                pointerEvents: "auto",
-              }}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 mb-2 btn-press"
-            >
-              <LogIn size={16} className="shrink-0" />
-              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
-            </Link>
+            {/* Mobile-menu Sign-In link — only when NOT signed in.
+                When the user IS signed in, the mobile-menu Sign-Out
+                button further down handles the inverse action. */}
+            {!isConfirmedUser && (
+              <Link
+                href="/auth"
+                onClick={() => setOpen(false)}
+                data-testid="link-mobile-signin"
+                style={{
+                  position: "relative",
+                  zIndex: 9999,
+                  opacity: 1,
+                  pointerEvents: "auto",
+                }}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 mb-2 btn-press"
+              >
+                <LogIn size={16} className="shrink-0" />
+                <span className="whitespace-nowrap">{t("nav.signIn")}</span>
+              </Link>
+            )}
             <MobileLink href="/" label={t("nav.home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/book" label={t("nav.book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />

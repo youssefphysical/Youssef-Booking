@@ -103,7 +103,10 @@ export default function AuthPage({
 
   useEffect(() => {
     if (user) {
-      setLocation(user.role === "admin" ? "/admin" : "/dashboard");
+      // Admins go to the admin panel. Clients land on the homepage per
+      // user directive (May 2026): they should see the public site after
+      // sign-in, not be dropped straight into their dashboard.
+      setLocation(user.role === "admin" ? "/admin" : "/");
     }
   }, [user, setLocation]);
 
@@ -179,7 +182,7 @@ export default function AuthPage({
             >
               {mode === "client-login" && <ClientLoginForm />}
               {mode === "client-register" && (
-                <RegisterForm onComplete={() => setLocation("/dashboard")} />
+                <RegisterForm onComplete={() => setLocation("/")} />
               )}
               {mode === "admin-login" && <AdminLoginForm />}
             </motion.div>

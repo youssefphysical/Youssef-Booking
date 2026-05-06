@@ -79,7 +79,7 @@ _Populate as you build_
 - **Database Schema Mismatches:** If `server/db/schema.ts` changes, run `npm run db:codegen` and `npm run db:push` to update the Drizzle schema and apply migrations. For Vercel, manual `db:push` is often required for production.
 - **Image Uploads on Vercel:** InBody and progress photo uploads (which use Multer) currently write to a local `/uploads` directory. This will not persist on Vercel's ephemeral filesystem and requires integration with object storage (e.g., S3, R2) for production. Profile pictures are exempt as they are base64 encoded into the database.
 - **Hero Image Preload:** The `scripts/inject-hero.mjs` script is critical for optimal homepage LCP on Vercel. Ensure `DATABASE_URL` is configured for Vercel builds to refresh the static `/hero-default.webp`.
-- **Auth Flow:** The mobile "Sign In" pill in the header is intentionally always visible, even for logged-in users, as per a specific UX directive. Do not modify this behavior.
+- **Auth Flow (May 2026 update):** The mobile auth pill in the header is now auth-state-aware — shows **Sign In** when guest, **Sign Out** when signed in. After successful client login/register the user is redirected to `/` (homepage), not `/dashboard`; admins still go to `/admin`.
 
 ## Pointers
 
