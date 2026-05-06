@@ -668,6 +668,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
+    // Hard-require a resolved package for non-admin package/duo bookings.
+    // Without this, evaluateBookingEligibility(user, null) would only check
+    // lifecycle and let the client through with paymentStatus auto-set to
+    // "paid" further down — bypassing the paid/approved/active package gate.
+    if (
+      me.role !== "admin" &&
+      (sessionType === "package" || sessionType === "duo") &&
+      !packageId
+    ) {
+      return res.status(400).json({
+        message:
+          "You don't have an active package linked to this booking. Please request a new package or contact Youssef.",
+        code: "no_active_package",
+      });
+    }
+
     // Block bookings on expired or completed packages (clients only).
     // Admin-overridden bookings can still go through for manual catch-up.
     if (me.role !== "admin" && packageId) {
