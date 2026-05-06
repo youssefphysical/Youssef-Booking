@@ -910,6 +910,73 @@
   }
 }
 
+/* RTL MASK REVEAL — Arabic.
+   For RTL languages the typewriter-style wipe must run right→left so
+   the cursor visually appears on the LEFT and the headline reveals
+   from the right edge first (matching native Arabic reading order).
+   We swap the inset's left/right values: start fully clipped from
+   the LEFT (`inset(0 0 -0.18em 100%)`) and end fully visible. The
+   100% on the LEFT inset means "hide everything from the left edge
+   up to the right edge", which then animates back to 0 (visible). */
+[dir="rtl"] .hero-mask-reveal {
+  clip-path: inset(0 0 -0.18em 100%);
+  -webkit-clip-path: inset(0 0 -0.18em 100%);
+  animation-name: heroMaskRevealRtl;
+  padding-right: 0;
+  padding-left: 0.04em;
+}
+@keyframes heroMaskRevealRtl {
+  to {
+    clip-path: inset(0 0 -0.18em -0.04em);
+    -webkit-clip-path: inset(0 0 -0.18em -0.04em);
+  }
+}
+
+/* HERO HEADLINE — fluid responsive typography.
+   Uses clamp() to scale from a tight mobile minimum to a generous
+   desktop max, so headlines never overflow tiny viewports (360px)
+   nor look anemic on 1920px desktops. The Tailwind breakpoint
+   stack is replaced with a single continuous curve, eliminating
+   step-jumps when the user resizes. */
+.hero-headline-fluid {
+  font-size: clamp(2.25rem, 7.5vw, 5.5rem);
+  /* Long compound words in DE/RU/TR can otherwise overflow the
+     reserved hero copy box on narrow phones — `anywhere` only
+     activates when no normal break opportunity exists, so English
+     and short headlines wrap normally. */
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+/* Secondary "Youssef Ahmed" hero headline on HomePage — same fluid
+   curve but slightly smaller min/max because it sits inside a 2-col
+   grid card with the photo, not full-bleed. */
+.hero-headline-fluid-secondary {
+  font-size: clamp(2rem, 5.5vw, 3.75rem);
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+/* Subhead long-language safety — same anywhere/hyphens guard so a
+   single long German/Russian word can't poke past the max-w-xl. */
+.hero-subhead-wrap {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* RTL spacing reset for the hero CTA row.
+   Tailwind's gap-x utilities work fine with RTL flex (flex-row
+   reverses naturally with dir="rtl"), so no JS / no flex-row-reverse
+   needed. We only force `text-align: start` on direct children that
+   carry inline content so button labels stay correctly aligned with
+   their leading icon under both directions. */
+[dir="rtl"] [data-testid="hero-buttons-row"] button,
+[dir="rtl"] [data-testid="hero-buttons-row"] a {
+  text-align: center; /* CTA labels always center inside their pill */
+}
+
 /* CTA BUTTONS — ONE-TIME mount fade.
    Fixed (long) animation-delay fires once at component mount. The
    buttons row lives OUTSIDE AnimatePresence (see HeroSlider.tsx) so

@@ -190,7 +190,7 @@ export default function HomePage() {
           all cards, all text, all CTAs are UNCHANGED. */}
       <section className="relative overflow-hidden">
         <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 grid md:grid-cols-2 gap-12 items-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-start">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">
               <MapPin size={12} className="text-primary" />
               <span>{t("hero.location")}</span>
@@ -198,7 +198,7 @@ export default function HomePage() {
               <span>{t("hero.tagline")}</span>
             </div>
             <h1
-              className="text-4xl md:text-6xl font-display font-bold leading-[1.05]"
+              className="hero-headline-fluid-secondary font-display font-bold leading-[1.12]"
               data-testid="text-hero-name"
             >
               {t("hero.title")}

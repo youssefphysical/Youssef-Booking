@@ -373,7 +373,7 @@ export function HeroSlider() {
                    subtree. */}
       <div className="absolute inset-0 z-10 md:flex md:items-center">
         <div className="relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-20">
-          <div className="max-w-2xl absolute inset-x-5 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl">
+          <div className="max-w-2xl absolute inset-x-4 bottom-20 md:inset-auto md:bottom-auto md:relative md:max-w-2xl text-start sm:inset-x-5">
             {/* COPY STAGE — reserved-height wrapper for AnimatePresence.
                 The min-h-* values match the sum of badge + headline +
                 subhead reserved heights at each breakpoint, so the
@@ -415,7 +415,7 @@ export function HeroSlider() {
                   {badge && (
                     <span
                       className={cn(
-                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6",
+                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-4",
                         !reduced && "hero-fade",
                       )}
                       style={
@@ -458,7 +458,7 @@ export function HeroSlider() {
                         stays 100% sharp — no blur, no glow.
                       - mask-reveal animation on inner span unchanged. */}
                   <h1
-                    className="text-4xl sm:text-5xl md:text-6xl lg:text-[5rem] xl:text-[5.5rem] font-display font-bold leading-[1.1] text-white tracking-[-0.015em] min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[268px] xl:min-h-[296px] hero-text-shadow"
+                    className="hero-headline-fluid font-display font-bold leading-[1.12] text-white tracking-[-0.015em] min-h-[120px] sm:min-h-[160px] md:min-h-[200px] lg:min-h-[268px] xl:min-h-[296px] hero-text-shadow"
                     data-testid="text-hero-headline"
                   >
                     {reduced ? (
@@ -486,7 +486,7 @@ export function HeroSlider() {
                   {subhead && (
                     <p
                       className={cn(
-                        "mt-6 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.65] min-h-[52px] sm:min-h-[60px] md:min-h-[68px] hero-text-shadow",
+                        "mt-5 text-base sm:text-lg md:text-xl text-white/85 max-w-xl leading-[1.55] min-h-[52px] sm:min-h-[60px] md:min-h-[68px] hero-text-shadow hero-subhead-wrap",
                         !reduced && "hero-fade-up",
                       )}
                       style={
@@ -523,7 +523,7 @@ export function HeroSlider() {
                 spacing exactly. */}
             <div
               className={cn(
-                "mt-6 sm:mt-9 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3.5",
+                "mt-7 sm:mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-2.5 sm:gap-3.5",
                 !reduced && "hero-buttons-once",
               )}
               data-testid="hero-buttons-row"
@@ -570,7 +570,7 @@ export function HeroSlider() {
       {/* Pagination dots */}
       {slides.length > 1 && (
         <div
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"
+          className="absolute bottom-4 sm:bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1 z-10"
           data-testid="hero-slider-dots"
         >
           {slides.map((img, i) => (
