@@ -308,13 +308,14 @@ export function setupAuth(app: Express) {
         weeklyFrequency,
         vipTier: initialTier,
         vipUpdatedAt: new Date(),
-        // Super admins skip the lifecycle gate; new clients land in 'pending'
-        // (full profile but awaiting trainer approval) when they submit a
-        // primary goal + weekly frequency, otherwise stay 'incomplete'.
+        // Clients with a complete profile become 'active' immediately and can
+        // book without trainer approval. Admin retains full edit control via
+        // the admin panel. Profiles missing primary goal / weekly frequency
+        // stay 'incomplete' and finish onboarding before booking.
         clientStatus: isSuperAdminSignup
           ? "active"
           : primaryGoal && weeklyFrequency
-          ? "pending"
+          ? "active"
           : "incomplete",
       } as any);
 
@@ -333,9 +334,9 @@ export function setupAuth(app: Express) {
       }
 
       // Snapshot the client-selected package template into a packages row.
-      // adminApproved=false + paymentStatus=unpaid means the package is
-      // visible in the admin Pending Requests panel and the client cannot
-      // book against it until the trainer manually approves payment.
+      // The package is immediately active and bookable. Payment is tracked
+      // (paymentStatus='unpaid') for the trainer to confirm via the admin
+      // panel, but it does NOT block booking.
       let snapshotPkgId: number | null = null;
       if (!isSuperAdminSignup && packageTemplateId) {
         try {
@@ -365,7 +366,7 @@ export function setupAuth(app: Express) {
               expiryDate: expiryDate ? (expiryDate.toISOString().slice(0, 10) as any) : null,
               paymentStatus: "unpaid",
               paymentApproved: false,
-              adminApproved: false,
+              adminApproved: true,
               frozen: false,
             } as any);
             snapshotPkgId = created.id;
@@ -377,7 +378,7 @@ export function setupAuth(app: Express) {
                 bookingId: null as any,
                 sessionsDelta: tpl.totalSessions,
                 performedByUserId: user.id,
-                reason: `Client signup — selected "${tpl.name}" (awaiting trainer approval)`,
+                reason: `Client signup — selected "${tpl.name}"`,
               } as any);
             } catch (e) {
               console.warn("[auth] session history log failed:", e);
@@ -388,16 +389,16 @@ export function setupAuth(app: Express) {
         }
       }
 
-      // Surface the new pending signup in the admin notification inbox so the
-      // trainer is prompted to approve / reject from /admin/pending.
+      // Notify the trainer that a new client signed up so they can confirm
+      // payment / review the chosen package. Booking is NOT gated on this.
       if (!isSuperAdminSignup) {
         try {
           await storage.createAdminNotification({
             kind: "system",
             title: `New client signup — ${user.fullName}`,
             body: snapshotPkgId
-              ? `Selected a package on signup. Awaiting your approval to enable booking.`
-              : `Awaiting your approval to enable booking.`,
+              ? `Selected a package on signup — confirm payment when received.`
+              : `New client registered without selecting a package.`,
             userId: user.id,
             bookingId: null as any,
           } as any);

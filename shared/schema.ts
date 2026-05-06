@@ -958,9 +958,6 @@ export function evaluateBookingEligibility(
   if (status === "incomplete") {
     return { ok: false, code: "profile_incomplete", message: "Please finish your profile (training goal & weekly frequency) before booking." };
   }
-  if (status === "pending") {
-    return { ok: false, code: "client_pending", message: "Your account is pending approval by Youssef. You'll be able to book once approved." };
-  }
   if (status === "expired") {
     return { ok: false, code: "client_expired", message: "Your subscription has expired. Please request a renewal to continue booking." };
   }
@@ -975,16 +972,8 @@ export function evaluateBookingEligibility(
     if (pkg.isActive === false) {
       return { ok: false, code: "package_inactive", message: "Your package is inactive. Please request a renewal." };
     }
-    if (pkg.adminApproved === false) {
-      return { ok: false, code: "package_unapproved", message: "Your package is awaiting Youssef's approval before sessions can be booked." };
-    }
-    if (
-      pkg.paymentStatus !== "paid" &&
-      pkg.paymentStatus !== "partially_paid" &&
-      pkg.paymentApproved !== true
-    ) {
-      return { ok: false, code: "package_unpaid", message: "Your package payment is still pending. Once Youssef confirms payment you can book." };
-    }
+    // Note: payment status & admin-approval are tracked for admin visibility
+    // but DO NOT block booking — clients can book immediately after signup.
   }
   return { ok: true };
 }
