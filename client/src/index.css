@@ -984,3 +984,102 @@
       #03070d 100%
     );
 }
+
+/* =====================================================================
+   ADMIN PANEL — premium SaaS layout system (May 2026 QA pass)
+   ---------------------------------------------------------------------
+   Single source of truth for the admin shell so every page (Overview,
+   Bookings, Clients, Client Detail, Sessions, Settings, Staff) renders
+   in the SAME container with the SAME max-width, the SAME gutters, the
+   SAME card style, and the SAME vertical rhythm.
+
+   Container math:
+   - mobile  : 16px gutter, full width, top padding clears the fixed
+               mobile top bar (5rem)
+   - >=sm    : 20px gutter
+   - >=md    : sidebar is 16rem fixed-position on the left; content
+               area gets margin-left:16rem so cards center inside the
+               REMAINING viewport area (not the whole viewport, which
+               would push them off-center under the sidebar). The inner
+               .admin-container then clamps to 72rem and is mx-auto.
+   - card    : .admin-card is the canonical section style — every
+               settings/dashboard/list panel uses it for visual parity.
+   ===================================================================== */
+.admin-shell {
+  min-height: 100vh;
+  padding-top: 5rem;        /* clears mobile top bar */
+  padding-bottom: 3rem;     /* breathing room above footer / device chrome */
+  /* hard guard: never let a child force the page wider than the viewport.
+     This kills the iOS Safari sideways-scroll that long form rows or
+     unconstrained tables can introduce. */
+  overflow-x: hidden;
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .admin-shell {
+    padding-top: 2rem;
+    margin-left: 16rem;     /* offset for fixed admin sidebar */
+    width: auto;            /* let it fill the rest of the viewport */
+  }
+}
+.admin-container {
+  max-width: 72rem;         /* 1152px — premium dashboard width */
+  margin-inline: auto;
+  padding-inline: 1rem;     /* 16px gutter mobile */
+}
+@media (min-width: 640px) {
+  .admin-container {
+    padding-inline: 1.25rem; /* 20px gutter */
+  }
+}
+
+/* Canonical card style. Use on EVERY section panel for visual parity. */
+.admin-card {
+  border-radius: 1.5rem;                 /* matches rounded-3xl */
+  border: 1px solid hsl(0 0% 100% / 0.05);
+  background-color: hsl(var(--card) / 0.6);
+  padding: 1.25rem;                       /* 20px on mobile */
+  /* never let a card's content force horizontal scroll. Inner overflow
+     containers (tables, code blocks) should set overflow-x:auto on the
+     specific child instead of letting the card grow. */
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .admin-card {
+    padding: 1.5rem;                      /* 24px from sm+ */
+  }
+}
+
+/* Standard vertical stack between top-level cards on a page (24px). */
+.admin-stack > * + * {
+  margin-top: 1.5rem;
+}
+@media (min-width: 768px) {
+  .admin-stack > * + * {
+    margin-top: 2rem;                     /* 32px on tablet+ */
+  }
+}
+
+/* Section header row inside .admin-card — title on the left, action(s)
+   on the right. Wraps cleanly on narrow screens (action drops below
+   title instead of getting clipped). The action button can use
+   .admin-card-action to inherit consistent height + padding. */
+.admin-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+.admin-card-header > .admin-card-title {
+  flex: 1 1 auto;
+  min-width: 0;             /* lets long titles wrap, not push the row wider */
+}
+.admin-card-action {
+  flex-shrink: 0;
+  /* normalised height/padding — overrides any odd rounding/sizing on
+     buttons that get dropped into a card header. */
+  height: 2.5rem;
+  padding-inline: 1rem;
+}

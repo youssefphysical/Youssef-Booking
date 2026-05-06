@@ -53,7 +53,8 @@ export default function AdminPackages() {
     .reduce((sum, p) => sum + (p.totalSessions - p.usedSessions), 0);
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-6xl">
+    <div className="admin-shell">
+      <div className="admin-container">
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
           {t("admin.packagesPage.kicker")}
@@ -180,6 +181,7 @@ export default function AdminPackages() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

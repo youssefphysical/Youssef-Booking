@@ -216,7 +216,8 @@ export default function AdminStaffPage() {
     a.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-5xl">
+    <div className="admin-shell">
+      <div className="admin-container">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-bold" data-testid="text-staff-title">
@@ -546,6 +547,7 @@ export default function AdminStaffPage() {
           </Form>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

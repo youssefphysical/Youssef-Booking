@@ -103,7 +103,8 @@ export default function AdminBookings() {
   }, [bookings, filter, dateFilter, paymentFilter, workoutFilter]);
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
+    <div className="admin-shell">
+      <div className="admin-container">
       <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
         <div>
           <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.bookings.kicker")}</p>
@@ -330,6 +331,7 @@ export default function AdminBookings() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -99,7 +99,8 @@ export default function AdminDashboard() {
     .slice(0, 6);
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
+    <div className="admin-shell">
+      <div className="admin-container">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
           {t("admin.tabs.overview")}
@@ -222,6 +223,7 @@ export default function AdminDashboard() {
             {t("admin.dashboard.qaHint")}
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

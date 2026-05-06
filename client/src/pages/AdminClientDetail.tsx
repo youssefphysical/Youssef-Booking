@@ -128,19 +128,22 @@ export default function AdminClientDetail() {
 
   if (!client) {
     return (
-      <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
-        <Link href="/admin/clients" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mb-4">
-          <ArrowLeft size={14} /> {t("admin.clientDetail.back")}
-        </Link>
-        <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-          {t("admin.clientDetail.loading")}
+      <div className="admin-shell">
+        <div className="admin-container">
+          <Link href="/admin/clients" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 mb-4">
+            <ArrowLeft size={14} /> {t("admin.clientDetail.back")}
+          </Link>
+          <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
+            {t("admin.clientDetail.loading")}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-5xl">
+    <div className="admin-shell">
+      <div className="admin-container">
       <Link
         href="/admin/clients"
         data-testid="link-back-clients"
@@ -208,6 +211,7 @@ export default function AdminClientDetail() {
         <TabsContent value="inbody"><InbodyPanel userId={client.id} /></TabsContent>
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

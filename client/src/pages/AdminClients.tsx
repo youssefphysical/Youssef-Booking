@@ -121,7 +121,8 @@ export default function AdminClients() {
   const totalRemaining = rows.reduce((s, r) => s + r.remaining, 0);
 
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen">
+    <div className="admin-shell">
+      <div className="admin-container">
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -246,6 +247,7 @@ export default function AdminClients() {
           </p>
         </>
       )}
+      </div>
     </div>
   );
 }

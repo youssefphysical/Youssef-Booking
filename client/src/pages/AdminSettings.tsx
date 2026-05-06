@@ -86,22 +86,24 @@ const BLOCK_TYPE_COLORS: Record<string, string> = {
 export default function AdminSettings() {
   const { t } = useTranslation();
   return (
-    <div className="md:pl-64 p-6 pt-20 md:pt-8 min-h-screen max-w-4xl">
-      <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker")}</p>
-        <h1 className="text-3xl font-display font-bold" data-testid="text-settings-title">
-          {t("admin.settingsPage.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">{t("admin.settingsPage.subtitle")}</p>
-      </div>
+    <div className="admin-shell">
+      <div className="admin-container">
+        <div className="mb-8">
+          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker")}</p>
+          <h1 className="text-3xl font-display font-bold" data-testid="text-settings-title">
+            {t("admin.settingsPage.title")}
+          </h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">{t("admin.settingsPage.subtitle")}</p>
+        </div>
 
-      <div className="space-y-6">
-        <GeneralSettingsSection />
-        <BankDetailsSection />
-        <ProfileContentSection />
-        <HeroImagesSection />
-        <TransformationsSection />
-        <BlockedSlotsSection />
+        <div className="admin-stack">
+          <GeneralSettingsSection />
+          <BankDetailsSection />
+          <ProfileContentSection />
+          <HeroImagesSection />
+          <TransformationsSection />
+          <BlockedSlotsSection />
+        </div>
       </div>
     </div>
   );
@@ -160,7 +162,7 @@ function HeroImagesSection() {
 
   return (
     <section
-      className="rounded-3xl border border-white/5 bg-card/60 p-6"
+      className="admin-card"
       data-testid="section-hero-images"
     >
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.heroTitle")}</h2>
@@ -672,27 +674,27 @@ function TransformationsSection() {
 
   return (
     <section
-      className="rounded-3xl border border-white/5 bg-card/60 p-6"
+      className="admin-card"
       data-testid="section-transformations"
     >
-      <div className="flex items-start justify-between mb-1 gap-3">
-        <h2 className="font-display font-bold text-lg flex items-center gap-2">
-          <Sparkles size={18} className="text-primary" />
-          {t("admin.transformations.title")}
+      <div className="admin-card-header">
+        <h2 className="admin-card-title font-display font-bold text-lg flex items-center gap-2">
+          <Sparkles size={18} className="text-primary shrink-0" />
+          <span className="truncate">{t("admin.transformations.title")}</span>
         </h2>
         {!adding && (
           <Button
             type="button"
             onClick={() => setAdding(true)}
             data-testid="button-add-transformation"
-            className="rounded-xl"
+            className="admin-card-action rounded-xl"
           >
             <Plus size={14} className="mr-1.5" />
             {t("admin.transformations.add")}
           </Button>
         )}
       </div>
-      <p className="text-sm text-muted-foreground mb-5">
+      <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
         {t("admin.transformations.desc")}
       </p>
 
@@ -1099,7 +1101,7 @@ function GeneralSettingsSection() {
   }, [settings]);
 
   return (
-    <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
+    <section className="admin-card">
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.bookingRules")}</h2>
       <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.bookingRulesDesc")}</p>
 
@@ -1204,7 +1206,7 @@ function BankDetailsSection() {
   const isPublic = form.watch("showBankDetailsPublicly");
 
   return (
-    <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
+    <section className="admin-card">
       <div className="flex items-start gap-3 mb-5">
         <div className="p-2 rounded-xl bg-primary/15 text-primary">
           <CreditCard size={18} />
@@ -1433,7 +1435,7 @@ function ProfileContentSection() {
   }, [settings?.profileBio]);
 
   return (
-    <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
+    <section className="admin-card">
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.homepageTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.homepageDesc")}</p>
 
@@ -1592,7 +1594,7 @@ function BlockedSlotsSection() {
   const scope = form.watch("scope");
 
   return (
-    <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
+    <section className="admin-card">
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.blockedTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
         {t("admin.settingsPage.blockedDesc")}
