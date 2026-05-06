@@ -113,8 +113,11 @@ export default function AdminPackages() {
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
             const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
-            const bonus = def?.bonusSessions ?? 0;
-            const base = (def?.sessions ?? p.totalSessions) - bonus;
+            // Prefer snapshot fields captured at assignment time.
+            const bonus = (p as any).bonusSessions ?? def?.bonusSessions ?? 0;
+            const base =
+              (p as any).paidSessions ?? ((def?.sessions ?? p.totalSessions) - bonus);
+            const displayLabel = (p as any).name || def?.label || p.type;
 
             return (
               <motion.div
@@ -143,7 +146,7 @@ export default function AdminPackages() {
                     )}
                   </div>
                   <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary whitespace-nowrap">
-                    {def?.label || p.type}
+                    {displayLabel}
                   </span>
                 </div>
 

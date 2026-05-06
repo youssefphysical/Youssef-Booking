@@ -886,7 +886,7 @@ function PackagesTab({ userId }: { userId: number }) {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1">
-                      {def?.label || `${p.type} Package`}
+                      {(p as any).name || def?.label || `${p.type} Package`}
                     </p>
                     <p className="text-3xl font-display font-bold">
                       {remaining}
@@ -1188,7 +1188,7 @@ function ExtensionRequestDialog({
       const def = pkg ? PACKAGE_DEFINITIONS[pkg.type] : undefined;
       const msg = buildWhatsappMessage("requestExtension", {
         clientName: user?.fullName,
-        packageLabel: def?.label || pkg?.type,
+        packageLabel: (pkg as any)?.name || def?.label || pkg?.type,
         requestedDays: days,
         reason,
       });
