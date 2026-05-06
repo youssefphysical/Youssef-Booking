@@ -31,7 +31,11 @@ export function WhatsAppButton({
   const buttonLabel = label ?? t("whatsapp.label");
 
   const sizeStyles =
-    size === "lg" ? "h-14 px-6 text-base" : size === "sm" ? "h-9 px-4 text-sm" : "h-12 px-5 text-sm";
+    size === "lg"
+      ? "min-h-14 py-2.5 px-5 sm:px-6 text-[15px] sm:text-base"
+      : size === "sm"
+        ? "min-h-9 py-1.5 px-3.5 text-xs sm:text-sm"
+        : "min-h-12 py-2.5 px-4 sm:px-5 text-[13px] sm:text-sm";
 
   const variantStyles =
     variant === "solid"
@@ -57,7 +61,7 @@ export function WhatsAppButton({
       )}
     >
       <SiWhatsapp className="shrink-0" size={size === "lg" ? 20 : size === "sm" ? 14 : 18} />
-      <span>{buttonLabel}</span>
+      <span className="text-center leading-tight break-words [text-wrap:balance]">{buttonLabel}</span>
     </a>
   );
 }
