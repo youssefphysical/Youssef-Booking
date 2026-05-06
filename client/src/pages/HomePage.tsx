@@ -324,13 +324,13 @@ export default function HomePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ delay: i * 0.06, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="rounded-2xl border border-white/5 bg-card/60 p-5 card-lift"
+              className="rounded-2xl border border-white/5 bg-card/60 p-5 card-lift text-start"
               data-testid={`step-card-${s.k}`}
             >
-              <div className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-semibold mb-3">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-semibold mb-5">
                 {t(`steps.${s.k}.n`, s.n)} · {t(`steps.${s.k}.eyebrow`, "Step")}
               </div>
-              <h3 className="font-display font-bold text-base mb-1.5">
+              <h3 className="font-display font-bold text-base mb-2">
                 {t(`steps.${s.k}.title`, s.title)}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -606,10 +606,10 @@ function SectionHeader({
   subtitle?: string;
 }) {
   return (
-    <div className="mb-8">
-      <p className="tron-eyebrow text-xs mb-2">{eyebrow}</p>
+    <div className="mb-8 text-start">
+      <p className="tron-eyebrow text-xs mb-5">{eyebrow}</p>
       <h2 className="text-3xl md:text-4xl font-display font-bold">{title}</h2>
-      {subtitle && <p className="text-muted-foreground mt-2">{subtitle}</p>}
+      {subtitle && <p className="text-muted-foreground mt-3">{subtitle}</p>}
     </div>
   );
 }
