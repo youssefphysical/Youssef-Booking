@@ -80,14 +80,47 @@ export const users = pgTable("users", {
 });
 
 // =============================
+// PACKAGE TEMPLATES (admin catalog)
+// =============================
+// Admin-defined catalogue of packages. The admin can create / edit /
+// activate / re-order entries here and they'll show up on the public
+// packages section as well as in the "Assign package" picker on each
+// client's profile. Per-client assignments still live in `packages`
+// below — the template is only the *recipe*, never the credits.
+export const packageTemplates = pgTable("package_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  // 'single' | 'standard' | 'duo' | 'custom'
+  type: text("type").notNull().default("standard"),
+  paidSessions: integer("paid_sessions").notNull().default(0),
+  bonusSessions: integer("bonus_sessions").notNull().default(0),
+  totalSessions: integer("total_sessions").notNull().default(0),
+  // Money is stored as integer AED (whole dirhams). Avoids float drift.
+  pricePerSession: integer("price_per_session").notNull().default(0),
+  totalPrice: integer("total_price").notNull().default(0),
+  // Validity window per template (admin sets the default lifespan).
+  expirationValue: integer("expiration_value").notNull().default(30),
+  // 'days' | 'weeks' | 'months'
+  expirationUnit: text("expiration_unit").notNull().default("days"),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// =============================
 // PACKAGES (session credits)
 // =============================
-// type values: 'single' | '10' | '20' | '25' | 'duo30' | 'trial'
+// type values (legacy): 'single' | '10' | '20' | '25' | 'duo30' | 'trial'
+// type values (new, from templates): 'single' | 'standard' | 'duo' | 'custom'
+// The string is intentionally NOT enum-constrained at the DB level so
+// future templates can introduce new categories without a migration.
 export const packages = pgTable("packages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   partnerUserId: integer("partner_user_id").references(() => users.id), // for duo
-  type: text("type").notNull(), // '10' | '20' | '25' | 'duo30'
+  type: text("type").notNull(),
   totalSessions: integer("total_sessions").notNull(),
   usedSessions: integer("used_sessions").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
@@ -100,6 +133,15 @@ export const packages = pgTable("packages", {
   // Auto-recomputed by storage layer; admin can override.
   // 'active' | 'expiring_soon' | 'expired' | 'completed'
   status: text("status"),
+  // Snapshot fields captured at assignment time. We deliberately denormalise
+  // template fields so editing or deleting a template NEVER mutates a
+  // client's existing package — the historical record is preserved.
+  templateId: integer("template_id"),
+  name: text("name"),
+  paidSessions: integer("paid_sessions"),
+  bonusSessions: integer("bonus_sessions"),
+  pricePerSession: integer("price_per_session"),
+  totalPrice: integer("total_price"),
 });
 
 // =============================
@@ -631,7 +673,9 @@ export const PACKAGE_TYPES = [
 export const insertPackageSchema = createInsertSchema(packages)
   .omit({ id: true, purchasedAt: true })
   .extend({
-    type: z.enum(PACKAGE_TYPES),
+    // Free string so legacy ("10","20","25","duo30") and template-driven
+    // ("single","standard","duo","custom") values both pass.
+    type: z.string().min(1),
     totalSessions: z.number().int().min(1),
     usedSessions: z.number().int().min(0).optional(),
     notes: z.string().optional(),
@@ -640,9 +684,51 @@ export const insertPackageSchema = createInsertSchema(packages)
     startDate: z.string().nullable().optional(),
     expiryDate: z.string().nullable().optional(),
     status: z.enum(["active", "expiring_soon", "expired", "completed"]).nullable().optional(),
+    templateId: z.number().int().nullable().optional(),
+    name: z.string().nullable().optional(),
+    paidSessions: z.number().int().min(0).nullable().optional(),
+    bonusSessions: z.number().int().min(0).nullable().optional(),
+    pricePerSession: z.number().int().min(0).nullable().optional(),
+    totalPrice: z.number().int().min(0).nullable().optional(),
   });
 
 export const updatePackageSchema = insertPackageSchema.partial().omit({ userId: true });
+
+// =============================
+// PACKAGE TEMPLATE SCHEMAS
+// =============================
+export const PACKAGE_TEMPLATE_TYPES = ["single", "standard", "duo", "custom"] as const;
+export const PACKAGE_TEMPLATE_UNITS = ["days", "weeks", "months"] as const;
+
+export const insertPackageTemplateSchema = createInsertSchema(packageTemplates)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    name: z.string().min(1, "Name is required").max(120),
+    type: z.enum(PACKAGE_TEMPLATE_TYPES),
+    paidSessions: z.number().int().min(0).max(999),
+    bonusSessions: z.number().int().min(0).max(999),
+    totalSessions: z.number().int().min(1).max(999),
+    pricePerSession: z.number().int().min(0).max(1_000_000),
+    totalPrice: z.number().int().min(0).max(1_000_000),
+    expirationValue: z.number().int().min(1).max(365),
+    expirationUnit: z.enum(PACKAGE_TEMPLATE_UNITS),
+    description: z.string().max(500).nullish(),
+    isActive: z.boolean().optional(),
+    displayOrder: z.number().int().min(0).max(999).optional(),
+  });
+
+export const updatePackageTemplateSchema = insertPackageTemplateSchema.partial();
+
+export type PackageTemplate = typeof packageTemplates.$inferSelect;
+export type InsertPackageTemplate = z.infer<typeof insertPackageTemplateSchema>;
+export type UpdatePackageTemplate = z.infer<typeof updatePackageTemplateSchema>;
+
+/** Convert a template's expiration value+unit into a concrete days count. */
+export function expirationToDays(value: number, unit: string): number {
+  if (unit === "weeks") return value * 7;
+  if (unit === "months") return value * 30;
+  return value; // days (default)
+}
 
 // Admin-only: extend a package's expiry by N days (or set explicit new expiry)
 export const extendPackageSchema = z.object({

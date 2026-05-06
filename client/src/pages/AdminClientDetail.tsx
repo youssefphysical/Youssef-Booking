@@ -30,6 +30,8 @@ import {
   useCreatePackage,
   useDeletePackage,
 } from "@/hooks/use-packages";
+import { usePackageTemplates } from "@/hooks/use-package-templates";
+import { expirationToDays } from "@shared/schema";
 import {
   useInbodyRecords,
   useUploadInbody,
@@ -1299,11 +1301,36 @@ function BookingsList({ userId }: { userId: number }) {
 
 // =============== PACKAGES ===============
 
-const newPackageSchema = z.object({
-  type: z.enum(["10", "20", "25", "duo30"]),
+// New form: every field is editable. The template selector at the top
+// auto-fills everything (name, sessions, prices, dates) but the admin
+// can override each value before saving — and each value is captured
+// as a snapshot on the package so future edits to the template never
+// mutate this client's record.
+const assignPackageSchema = z.object({
+  templateId: z.number().nullable(),
+  name: z.string().min(1, "Name required"),
+  type: z.string().min(1),
+  paidSessions: z.number().int().min(0),
+  bonusSessions: z.number().int().min(0),
+  totalSessions: z.number().int().min(1),
+  pricePerSession: z.number().int().min(0),
+  totalPrice: z.number().int().min(0),
+  startDate: z.string(),
+  expiryDate: z.string(),
   partnerUserId: z.string().optional(),
   notes: z.string().optional(),
 });
+type AssignPackageValues = z.infer<typeof assignPackageSchema>;
+
+function isoToday(): string {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+function addDaysISO(start: string, days: number): string {
+  const d = new Date(start);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 function PackagesPanel({ client }: { client: UserResponse }) {
   const { data: packages = [] } = usePackages({ userId: client.id });
@@ -1311,30 +1338,96 @@ function PackagesPanel({ client }: { client: UserResponse }) {
   const create = useCreatePackage();
   const del = useDeletePackage();
   const { data: clients = [] } = useClients();
+  const { data: templates = [] } = usePackageTemplates({ activeOnly: true });
 
   const [open, setOpen] = useState(false);
 
-  const form = useForm<z.infer<typeof newPackageSchema>>({
-    resolver: zodResolver(newPackageSchema),
-    defaultValues: { type: "10", partnerUserId: "", notes: "" },
+  const form = useForm<AssignPackageValues>({
+    resolver: zodResolver(assignPackageSchema),
+    defaultValues: {
+      templateId: null,
+      name: "",
+      type: "custom",
+      paidSessions: 10,
+      bonusSessions: 0,
+      totalSessions: 10,
+      pricePerSession: 0,
+      totalPrice: 0,
+      startDate: isoToday(),
+      expiryDate: addDaysISO(isoToday(), 30),
+      partnerUserId: "",
+      notes: "",
+    },
   });
-  const type = form.watch("type");
 
-  function onSubmit(values: z.infer<typeof newPackageSchema>) {
-    const def = PACKAGE_DEFINITIONS[values.type];
+  const watchedType = form.watch("type");
+  const watchedTemplateId = form.watch("templateId");
+
+  function applyTemplate(tplId: string) {
+    if (tplId === "_custom") {
+      form.reset({
+        templateId: null,
+        name: "",
+        type: "custom",
+        paidSessions: 10,
+        bonusSessions: 0,
+        totalSessions: 10,
+        pricePerSession: 0,
+        totalPrice: 0,
+        startDate: isoToday(),
+        expiryDate: addDaysISO(isoToday(), 30),
+        partnerUserId: "",
+        notes: "",
+      });
+      return;
+    }
+    const tpl = templates.find((t) => String(t.id) === tplId);
+    if (!tpl) return;
+    const start = isoToday();
+    const expiry = addDaysISO(start, expirationToDays(tpl.expirationValue, tpl.expirationUnit));
+    form.reset({
+      templateId: tpl.id,
+      name: tpl.name,
+      type: tpl.type,
+      paidSessions: tpl.paidSessions,
+      bonusSessions: tpl.bonusSessions,
+      totalSessions: tpl.totalSessions,
+      pricePerSession: tpl.pricePerSession,
+      totalPrice: tpl.totalPrice,
+      startDate: start,
+      expiryDate: expiry,
+      partnerUserId: "",
+      notes: "",
+    });
+  }
+
+  function onSubmit(values: AssignPackageValues) {
+    const isDuo = values.type === "duo" || values.type === "duo30";
+    if (isDuo && !values.partnerUserId) {
+      form.setError("partnerUserId", { message: "Partner is required for duo packages" });
+      return;
+    }
     create.mutate(
       {
         userId: client.id,
         type: values.type,
-        totalSessions: def.sessions,
-        partnerUserId: def.isDuo && values.partnerUserId ? Number(values.partnerUserId) : null,
-        notes: values.notes,
-        isActive: true,
+        totalSessions: values.totalSessions,
         usedSessions: 0,
+        isActive: true,
+        startDate: values.startDate,
+        expiryDate: values.expiryDate,
+        partnerUserId: isDuo && values.partnerUserId ? Number(values.partnerUserId) : null,
+        notes: values.notes,
+        templateId: values.templateId,
+        name: values.name,
+        paidSessions: values.paidSessions,
+        bonusSessions: values.bonusSessions,
+        pricePerSession: values.pricePerSession,
+        totalPrice: values.totalPrice,
       } as any,
       {
         onSuccess: () => {
-          form.reset({ type: "10", partnerUserId: "", notes: "" });
+          applyTemplate("_custom");
           setOpen(false);
         },
       },
@@ -1342,6 +1435,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
   }
 
   const otherClients = clients.filter((c) => c.id !== client.id && c.role === "client");
+  const isDuoSelected = watchedType === "duo" || watchedType === "duo30";
 
   return (
     <div className="space-y-4">
@@ -1353,43 +1447,106 @@ function PackagesPanel({ client }: { client: UserResponse }) {
               <Plus size={14} className="mr-1" /> Add Package
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
+          <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Assign New Package</DialogTitle>
+              <DialogTitle>Assign Package</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                {/* Template chooser — auto-fills every field but each value is editable. */}
+                <FormItem>
+                  <FormLabel>Choose package</FormLabel>
+                  <Select
+                    value={watchedTemplateId ? String(watchedTemplateId) : "_custom"}
+                    onValueChange={applyTemplate}
+                  >
+                    <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-package-template">
+                      <SelectValue placeholder="Pick a saved package…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.length > 0 && (
+                        <>
+                          {templates.map((tpl) => (
+                            <SelectItem key={tpl.id} value={String(tpl.id)}>
+                              {tpl.name} · {tpl.totalSessions}× · {tpl.totalPrice.toLocaleString()} AED
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      <SelectItem value="_custom">Custom (no template)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Manage saved packages in <strong>Package Builder</strong>. All fields below
+                    remain editable before saving.
+                  </p>
+                </FormItem>
+
                 <FormField
                   control={form.control}
-                  name="type"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Package Type</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-package-type">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(PACKAGE_DEFINITIONS).map(([key, def]) => (
-                            <SelectItem key={key} value={key}>{def.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Package name</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="e.g. Standard 10 sessions"
+                          className="bg-white/5 border-white/10"
+                          data-testid="input-package-name"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {PACKAGE_DEFINITIONS[type]?.isDuo && (
+                <div className="grid grid-cols-3 gap-2">
+                  <PkgNumberField form={form} name="paidSessions" label="Paid" testId="input-paid" />
+                  <PkgNumberField form={form} name="bonusSessions" label="Bonus" testId="input-bonus" />
+                  <PkgNumberField form={form} name="totalSessions" label="Total" testId="input-total" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <PkgNumberField form={form} name="pricePerSession" label="Price / session (AED)" testId="input-price-session" />
+                  <PkgNumberField form={form} name="totalPrice" label="Total price (AED)" testId="input-price-total" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="bg-white/5 border-white/10" data-testid="input-start-date" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="expiryDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Expiry date</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="bg-white/5 border-white/10" data-testid="input-expiry-date" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {isDuoSelected && (
                   <FormField
                     control={form.control}
                     name="partnerUserId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Duo Partner (optional)</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <FormLabel>Duo Partner</FormLabel>
+                        <Select value={field.value || ""} onValueChange={field.onChange}>
                           <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-partner">
-                            <SelectValue placeholder="Select partner..." />
+                            <SelectValue placeholder="Select partner client…" />
                           </SelectTrigger>
                           <SelectContent>
                             {otherClients.map((c) => (
@@ -1417,9 +1574,9 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                 />
 
                 <DialogFooter>
-                  <Button type="submit" disabled={create.isPending} data-testid="button-submit-package">
+                  <Button type="submit" disabled={create.isPending} className="rounded-xl" data-testid="button-submit-package">
                     {create.isPending && <Loader2 size={14} className="animate-spin mr-1.5" />}
-                    Add Package
+                    Assign Package
                   </Button>
                 </DialogFooter>
               </form>
@@ -1435,8 +1592,12 @@ function PackagesPanel({ client }: { client: UserResponse }) {
           {list.map((p) => {
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
-            const bonus = def?.bonusSessions ?? 0;
-            const base = (def?.sessions ?? p.totalSessions) - bonus;
+            // Prefer the snapshot fields captured at assignment time; fall back
+            // to the legacy PACKAGE_DEFINITIONS table for pre-template rows.
+            const bonus = (p as any).bonusSessions ?? def?.bonusSessions ?? 0;
+            const base =
+              (p as any).paidSessions ?? ((def?.sessions ?? p.totalSessions) - bonus);
+            const displayName = (p as any).name || def?.label || p.type;
             const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
             return (
               <motion.div
@@ -1448,7 +1609,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
               >
                 <div className="flex justify-between items-start gap-3 mb-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">{def?.label || p.type}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">{displayName}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       {p.purchasedAt && format(new Date(p.purchasedAt), "MMM d, yyyy")}
                       {!p.isActive && " • Closed"}
@@ -1777,6 +1938,42 @@ function ProgressPanel({ userId }: { userId: number }) {
         </div>
       )}
     </div>
+  );
+}
+
+function PkgNumberField({
+  form,
+  name,
+  label,
+  testId,
+}: {
+  form: any;
+  name: string;
+  label: string;
+  testId: string;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name={name as any}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-xs">{label}</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min={0}
+              {...field}
+              value={field.value ?? 0}
+              onChange={(e) => field.onChange(Number(e.target.value))}
+              className="bg-white/5 border-white/10 tabular-nums"
+              data-testid={testId}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 

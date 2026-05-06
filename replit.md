@@ -1,594 +1,91 @@
-# Personal Training Service — Youssef Ahmed Booking Platform
+# Youssef Ahmed Personal Training Service
 
-### Overview
-This project is a premium dark-luxury website for Youssef Ahmed Personal Training Service, a certified personal trainer in Dubai, UAE. It features a public profile, a private client booking system, and a comprehensive admin dashboard. The platform supports various training packages, InBody body-composition tracking with hybrid AI, progress photo uploads, and holiday/off-day management. The system aims to streamline operations for Youssef Ahmed, enhance client experience, and provide robust administrative control over bookings, client data, and content. The platform also includes extensive legal and consent mechanisms, ensuring compliance and data privacy.
+Premium dark-luxury platform for Youssef Ahmed, offering client booking, InBody tracking, progress photos, and comprehensive admin management.
 
-### User Preferences
-No explicit user preferences were provided in the original `replit.md` file.
+## Run & Operate
 
-### System Architecture
+- **Run:** `npm run dev`
+- **Build:** `npm run build`
+- **Typecheck:** `npm run typecheck`
+- **Codegen (Drizzle):** `npm run db:codegen`
+- **DB Push (Drizzle):** `npm run db:push`
 
-**UI/UX Decisions:**
-- **Design:** Premium dark-luxury theme.
-- **Branding:** Public-facing brand is "Personal Training Service" with "Youssef Ahmed" as the hero name and "Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist" as the subtitle.
-- **Legal & Consent:** Dedicated pages for Privacy Policy, Terms & Conditions, Cancellation Policy, Medical Disclaimer, and Cookie Policy. Site-wide cookie consent banner with essential/analytics/marketing options. Registration uses ONE combined "I agree to Terms, Cancellation Policy, Privacy & Medical Disclaimer" checkbox — the underlying audit trail still writes all five consent records server-side. Per-upload InBody/progress consent records are stored and visible in the admin dashboard.
-- **Premium Business Workflow (May 2026):** Packages now have explicit `startDate`, `expiryDate`, and computed `status` (active | expiring_soon | expired | completed). Bookings are blocked when the active package is expired or completed. Clients can submit Renewal Requests (pick a package type) and Extension Requests (extra days + reason) from the dashboard; both flows pop a prefilled WhatsApp message to Youssef Ahmed via `client/src/lib/whatsapp.ts`'s `buildWhatsappMessage()` helper. Admin endpoints exist at `/api/renewal-requests`, `/api/extension-requests`, and `POST /api/admin/{type}/:id/decision` for approve/reject; admin can also `POST /api/admin/packages/:id/extend`. Attendance is tracked via `PATCH /api/bookings/:id/attendance` with `attended | no_show | late_cancel`, automatically incrementing `users.noShowCount` for repeat offenders. Trainer-only `users.adminNotes` is editable via `PATCH /api/admin/clients/:id/admin-notes` and is **never** returned to non-admin clients (`sanitizeUser` strips it). Dashboard stats now also expose `expiringPackages`, `expiredPackages`, `pendingRenewals`, `pendingExtensions`, `lowSessionClients`. The platform does **not** include any Stripe/Tap/online checkout — every renewal/extension is confirmed manually by Youssef Ahmed after WhatsApp/payment.
-- **Auth Flow:** Split into client login/create account and a hidden admin login (`/admin-access`). Auth inputs include explicit `name`, `id`, and `autoComplete` attributes for security.
-- **Admin UI:** New `/admin/staff` page for staff management with role badges and permission grids. Admin client detail pages now include "Add manual session" and "Bulk add" buttons.
+**Required Environment Variables:**
+- `DATABASE_URL`: PostgreSQL connection string.
+- `JWT_SECRET`: Secret for JWTs.
+- `RESEND_API_KEY`: API key for email notifications (e.g., password reset).
+- `PUBLIC_APP_URL`: Public URL of the application for password reset links.
+- `OPENAI_API_KEY`: For OpenAI Vision API.
 
-**Technical Implementations:**
-- **Frontend:** React + Vite, Wouter for routing, TanStack Query v5 for data fetching, react-hook-form + Zod for form management, Tailwind CSS for styling, shadcn/ui for UI components, Framer Motion for animations, and lucide-react / react-icons for icons.
-- **Backend:** Express.js for the API, Passport.js (local strategy with email-or-username) for authentication, express-session with a PostgreSQL store, and scrypt for password hashing. Multer is used for file uploads.
-- **Database:** PostgreSQL managed with Drizzle ORM, using drizzle-zod for schema validation.
-- **AI/Image Processing:** OpenAI Vision (gpt-5) for InBody metric extraction from images. `sharp` is used for image optimization (converting uploads to webp + thumbnail). AI extraction and image optimization are wrapped in `try/catch` to ensure uploads persist even if these processes fail.
-- **Staff Management:** Role-based access control with Super Admin, Manager, and Viewer roles. Permissions are granular (23 keys across groups). Security guards (`requireSuperAdmin`, `requirePermission`) are implemented for API routes.
-- **Membership Tiers:** Six tiers (Foundation, Starter, Momentum, Elite, Pro Elite, Diamond Elite) based on weekly training frequency, with associated benefits like protected cancellations, same-day adjustments, and priority booking. Tiers can be manually overridden.
-- **Booking Rules:** Slots are hourly from 06:00 to 22:00. Slots can be taken by existing bookings or explicitly blocked (`blocked_slots` table) for whole days or specific times.
-- **Package Lifecycle:** Bookings auto-link to active packages. Package usage (`usedSessions`) is atomically updated upon session completion or late cancellation.
+## Stack
 
-**Feature Specifications:**
-- **Public Website:** Hero section, about, certifications timeline, transformations gallery placeholder, WhatsApp contact button, editable cancellation policy page.
+- **Frontend:** React + Vite, Wouter, TanStack Query v5, react-hook-form + Zod, Tailwind CSS, shadcn/ui, Framer Motion, lucide-react / react-icons.
+- **Backend:** Express.js, Passport.js (local strategy), express-session (PostgreSQL store), scrypt, Multer.
+- **Database:** PostgreSQL (Drizzle ORM, drizzle-zod).
+- **AI/Image Processing:** OpenAI Vision (gpt-5), `sharp`.
+- **Build Tool:** Vite
+
+## Where things live
+
+- `client/`: Frontend React application.
+  - `client/src/index.css`: Global styles, including homepage shell and hero animations.
+  - `client/src/components/Navigation.tsx`: Main navigation and authentication UI.
+  - `client/src/pages/HomePage.tsx`: Public homepage content and hero slider.
+  - `client/src/pages/ResetPassword.tsx`: Password reset UI.
+  - `client/src/lib/whatsapp.ts`: WhatsApp message builder.
+- `server/`: Backend Express application.
+  - `server/app.ts`: Express app creation (for Replit and Vercel).
+  - `server/index.ts`: Replit-specific server entry point.
+  - `server/db/schema.ts`: Drizzle ORM database schema definition.
+  - `server/db/ensureSchema.ts`: Database schema migration/self-heal script.
+- `api/index.ts`: Vercel serverless function entry point.
+- `scripts/inject-hero.mjs`: Build-time script for hero image preloading.
+- `public/hero-initial.webp`: Static default hero image for first paint.
+- `vercel.json`: Vercel deployment configuration.
+
+## Architecture decisions
+
+- **No online payments:** All package renewals and extensions are manually confirmed by Youssef Ahmed via WhatsApp after client requests.
+- **Base64 profile pictures:** Profile pictures are stored directly as base64 data URLs in the database, avoiding filesystem dependencies for Vercel deployments.
+- **Consent audit trail:** Detailed consent records (T&Cs, medical, InBody/progress photo upload) are stored server-side for compliance, even if UI shows a combined checkbox.
+- **Dedicated admin panel:** A separate, permissioned admin portal (`/admin-access`) provides comprehensive control over clients, bookings, packages, and system settings.
+- **Package catalogue with snapshots:** Admins manage a `package_templates` catalogue via `/admin/package-builder`. When a template is assigned to a client, every field (name, paid/bonus sessions, pricing, expiry) is **snapshotted** onto the `packages` row, so editing/deleting a template never mutates historical client data. Active templates are also rendered publicly on the homepage.
+- **AI for InBody:** OpenAI Vision API extracts metrics from InBody scans, ensuring data entry efficiency. Failures are gracefully handled to ensure uploads persist.
+
+## Product
+
+- **Public Website:** Hero section with rotating images, about section, certifications, transformations, and contact options.
 - **Client Area:**
-    - **2-step registration (simplified):** Step 1 = account info (name/email/phone/password/area/weekly frequency). Step 2 = primary goal + optional notes + five required consent checkboxes. **No InBody or photo uploads at registration** — they were intentionally moved to the dashboard/profile so signup is friction-free.
-    - **Dashboard:** Tabs for Bookings (upcoming/past, in-window cancel), Sessions (package progress), InBody (scans, history, new uploads), Progress (photo grid, new uploads). Header shows the user's avatar (`UserAvatar`) and a `VerifiedBadge` when applicable.
-    - **Booking Page:** Calendar, hourly slot grid, notes, policy acceptance. Displays package balance.
-    - **Profile Page (rewritten):** Instagram-style avatar with crop+pan editor, training-level pill buttons (beginner/intermediate/advanced), training-goal pill buttons (hypertrophy/strength/endurance), info form (name/phone/area), change-password card, and a link card pointing to the InBody section of the dashboard.
-    - **Verified blue-check badge:** Shown next to a client's name across Navigation, ClientDashboard, AdminClients list and AdminClientDetail. A client is verified iff `profilePictureUrl` is set AND (≥1 InBody record OR ≥1 completed booking).
+    - Streamlined 2-step registration.
+    - Dashboard with upcoming/past bookings, package progress, InBody records, and progress photos.
+    - Booking calendar with real-time slot availability.
+    - Profile management with avatar upload/cropping, training preferences, and password change.
+    - Client-initiated renewal and extension requests via WhatsApp.
 - **Admin Portal:**
-    - **Dashboard:** KPIs (clients, bookings, packages), quick actions.
-    - **Bookings Management:** Filter, status changes, reschedule, delete, manual booking.
-    - **Clients List:** Search, contact, detailed client pages.
-    - **Client Detail Page:** Tabs for Overview, Bookings, Packages, InBody, Progress. Add/remove packages, upload InBody/progress photos, edit extracted metrics.
-    - **Packages:** Global view of active/closed packages.
-    - **Settings:** Cancellation cutoff, WhatsApp number, profile photo/bio, blocked time slots with `blockType` (off-day, emergency, fully-booked).
-- **Session Types & Payment:** Supports `package`, `single`, `trial`, and `duo` sessions. Payment statuses include `paid`, `unpaid`, `pending`, `direct_payment_requested`, `free`.
-- **Emergency Cancel:** One free late cancellation per month per client, overriding cutoff window, recorded as `emergency_cancelled`.
-
-### External Dependencies
-- **OpenAI:** Used for InBody Vision extraction (gpt-5).
-- **PostgreSQL:** Primary database for all application data.
-- **WhatsApp:** Integrated for client communication and direct payment confirmations.
-
-### Profile Picture Pipeline (works on Replit and Vercel)
-- Endpoint: `POST /api/users/:id/profile-picture { imageDataUrl }`. Owner-or-admin only.
-- Server decodes the base64 data URL, enforces a 6 MB decoded ceiling, then runs `sharp` with `limitInputPixels: 24_000_000` (anti pixel-bomb), auto-rotates from EXIF, resizes to a 256x256 cover-cropped square, and re-encodes as WebP (quality 75).
-- The resulting `data:image/webp;base64,...` string is stored directly in `users.profile_picture_url`. **No filesystem dependency** — this is what lets profile pictures keep working on Vercel's read-only filesystem (unlike `/uploads` which requires object storage).
-- `DELETE /api/users/:id/profile-picture` clears the column, which also drops the `isVerified` flag.
-- Client-side cropping happens in `ProfilePictureCropper` (canvas + drag-to-pan + zoom slider, no extra deps) before the data URL is sent. The same picture is rendered everywhere via the shared `UserAvatar` component.
-
-### v8.8 Homepage Background Unification "One Continuous Shell" (May 2026)
-Per the user-supplied "STRICT MICRO VISUAL FIX — UNIFY HOMEPAGE BACKGROUND SECTIONS" spec. Two visible band-like seams existed on the homepage: between the hero bottom and the Youssef Ahmed section, and between the Youssef Ahmed section and the About section. Both came from per-section background blocks that did not match the rest of the page.
-
-**Root cause**: the Youssef Ahmed section (the first `<section>` after `<HeroSlider />`) had three full-block background layers all positioned `absolute inset-0` / `absolute -top-40 -right-40` / `absolute -bottom-40 -left-40`:
-1. A full-section gradient `bg-gradient-to-b from-primary/10 via-background to-background` — created a visible block tinted by `--primary` (light blue) at the top, fading to bg-background at the bottom.
-2. A `bg-primary/15 blur-3xl` sphere at the top-right — created a bright blue glow in the upper-right corner of the section, visibly different from the dark hero blend above it.
-3. A `bg-accent/40 blur-3xl` sphere at the bottom-left — created a navy-accent glow at the bottom of the section, which became a visible band when the next section (About) had no matching background.
-
-Sections after the Youssef Ahmed section (About, Specialties, Certifications, Why, Contact/CTA) had no `<section>`-level backgrounds and rendered on the App.tsx wrapper's `bg-background` (`hsl(222 45% 4%)` = `rgb(6,8,15)`). So the visible page chain was: dark hero blend (`#03070d`) → Youssef section's primary-tinted gradient + accent sphere band → bg-background — three different visual surfaces meeting at hard horizontal lines.
-
-**Fix** — page-level continuous shell + section-level transparency:
-
-1. **`client/src/index.css`** — added new `.homepage-shell` class with the user's exact spec (radial accent + 4-stop linear gradient):
-   ```css
-   .homepage-shell {
-     background:
-       radial-gradient(circle at 70% 10%, rgba(31, 156, 255, 0.16), transparent 32%),
-       linear-gradient(
-         to bottom,
-         #03070d 0%, #061222 34%, #071827 62%, #03070d 100%
-       );
-   }
-   ```
-   The radial provides the subtle blue accent in the top-right that previously lived as the per-section `bg-primary/15` sphere. The linear gradient provides the continuous dark navy surface for every section.
-
-2. **`client/src/pages/HomePage.tsx`** — applied the class to the homepage parent and removed the three absolute-positioned background layers from the Youssef Ahmed section:
-   ```diff
-   - <div className="min-h-screen pt-16">
-   + <div className="min-h-screen pt-16 homepage-shell">
-
-       <HeroSlider />
-       <section className="relative overflow-hidden">
-   -     <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background pointer-events-none" />
-   -     <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] bg-primary/15 rounded-full blur-3xl pointer-events-none" />
-   -     <div className="absolute -bottom-40 -left-40 w-[26rem] h-[26rem] bg-accent/40 rounded-full blur-3xl pointer-events-none" />
-         <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 grid md:grid-cols-2 gap-12 items-center">
-   ```
-   Section className (`relative overflow-hidden`), padding (`py-16 md:py-28`), grid layout, all cards, all content, and all CTAs are UNCHANGED.
-
-3. **`client/src/components/HeroSlider.tsx`** — changed the hero outer wrapper bg to transparent so the shell shows through any sub-pixel gap:
-   ```diff
-   - className="hero-isolate ... overflow-hidden bg-[#0c1826]"
-   + className="hero-isolate ... overflow-hidden bg-transparent"
-   ```
-   The v8.7.3 root-cause insight (sub-pixel gap from GPU layer rounding) still applies — but now the gap is invisible because the shell behind the wrapper IS the same shell behind the next section. The `transform: translateZ(0)` removal from v8.7.3 is also preserved, so most browsers won't render any gap at all.
-
-4. **`client/src/index.css`** — updated `.hero-bottom-blend` terminal stops from `rgb(12,24,38)` to `#03070d` so the blend ends in the shell's darkest stop instead of the old section's primary-tinted color. The blend now reads: `rgba(0,0,0,0) 0% → rgba(3,7,13,0.6) 50% → #03070d 100%`. The shell at hero-end y (~10-15% of total page) is between `#03070d` and `#061222`, so `#03070d` leaves at most a 1-13 RGB-unit brightening below the seam — imperceptible, and feels like the page opening up downward rather than a band ending.
-
-**Sections that became transparent**: only the Youssef Ahmed section's three absolute bg layers were removed. About, Specialties, Certifications, Why, and Contact/CTA sections were already transparent — they were never the cause of the bands. The shell now correctly shows through ALL of them, giving one continuous visual surface from hero to footer.
-
-**Premium feel preserved**: the radial accent at `circle at 70% 10%, rgba(31,156,255,0.16)` reproduces the subtle top-right blue glow that the user liked from the old `bg-primary/15` sphere, but as a single page-level effect that doesn't create a band at the section boundary. The 4-stop linear gradient gives subtle vertical depth (darker → mid-navy → mid-navy-brighter → darker again) that reads as a polished cinematic shell rather than flat black.
-
-**Files changed**: `client/src/index.css` (added `.homepage-shell` rule + updated `.hero-bottom-blend` background stops), `client/src/pages/HomePage.tsx` (added `homepage-shell` class to parent div + removed 3 absolute bg layers in Youssef section), `client/src/components/HeroSlider.tsx` (one className `bg-[#0c1826]` → `bg-transparent`), `replit.md`.
-
-**NO changes to**: hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey), hero image loading, hero slider rotation, HeroSlideLayer, CTA buttons, header, About section content, Specialties/Certifications/Why/Contact sections (text or layout), routing, translations, auth (Sign In / Sign Out), booking, admin, APIs, database, layout structure, padding/spacing (zero spacing changes).
-
-### v8.7.3 Hero Wrapper Seam Fix "Match Wrapper bg to Section Color + Remove GPU Layer Offset" (May 2026)
-Per the user-supplied "STRICT MICRO FIX — BLEND THE ACTUAL HERO SEAM WITH ANY HERO IMAGE" spec. The user reported that v8.7.0 / v8.7.1 / v8.7.2 fixes "did not affect the circled area" — meaning every blend-overlay-only change had ZERO visible effect on the seam they see. That's a strong signal the seam is not in the blend zone — it's caused by a different element.
-
-**Root cause identified**: the hero outer container `.hero-isolate` had `bg-black` (`rgb(0,0,0)`), which is the "wrapper between hero and next section" the user explicitly listed as a possible cause. The chain of events:
-
-1. `.hero-bottom-blend` had `transform: translateZ(0)` — this promotes it to its own GPU compositor layer.
-2. The hero outer is `h-[75vh]` (mobile) / `md:h-[78vh]` (desktop) — `75vh` rarely resolves to a whole pixel on real viewports (e.g., on a 720px viewport it's 540px exactly, but on a 760px viewport it's 570px exactly, on 800px it's 600px, but on 740px it's 555px and on most heights it's fractional).
-3. When the parent's bottom edge is at a fractional pixel (e.g., 540.5px), the blend's GPU layer rounds its bottom position **independently** from the parent — sometimes to 540, sometimes to 541. The result is a 0.5-2px sub-pixel gap exposed at the very bottom row of the hero.
-4. Through that gap, the wrapper's `bg-black` (`rgb(0,0,0)`) showed through — a thin **pure-black** strip rendered between the blend's terminal `rgb(12,24,38)` and the section's first row `rgb(12,24,38)`. That black strip is the visible hard horizontal line.
-
-**Why all previous v8.7.x fixes did not affect the circled area**: every prior fix only modified the blend overlay (`.hero-bottom-overlay` → `.hero-bottom-blend`, gradient stops, color matching). The wrapper's `bg-black` was never touched, so the sub-pixel gap kept exposing pure black regardless of how the blend was tuned.
-
-**Fix** — two coordinated edits, both targeting the actual root cause:
-
-1. **HeroSlider.tsx** — `.hero-isolate` className: `bg-black` → `bg-[#0c1826]`. The wrapper's bg now matches the next section's exact composited top edge color. Any sub-pixel gap at the bottom now exposes `rgb(12,24,38)`, which is identical to the section's first row → invisible regardless of viewport height or which hero image is uploaded.
-2. **index.css** — `.hero-bottom-blend`: removed `transform: translateZ(0)`. Without GPU promotion, the blend renders on the parent's own paint layer at exact pixel boundaries — no compositor gap in the first place. Performance cost is negligible (one static linear-gradient paint per scroll, no animation on the blend element). This is a defence-in-depth: even if a browser still introduces sub-pixel rounding, fix #1 already makes any gap invisible.
-
-**Universality**: works with ANY hero image because the fix is colour-agnostic — the wrapper's bg always matches the section's top, regardless of what photo is in the slider. The fix would still hold if all hero images were swapped for completely different photos (different colours, brightness, contrast).
-
-**Files changed**: `client/src/components/HeroSlider.tsx` (one className), `client/src/index.css` (removed `transform: translateZ(0)` from one rule + comment), `replit.md`. NO changes to: HeroSlideLayer (per-slide bottom-darken gradient untouched), hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey), hero image loading, hero slider rotation, CTA buttons, header, About section, layout structure (no margin/padding changes — the JSX has no gap to remove), routing, translations, auth, booking, admin, APIs, database, the next section's pre-existing decorative blur sphere, the blend's gradient stops (v8.7.2's spec-literal 3-stop ramp from `rgba(0,0,0,0)` → `rgba(12,24,38,0.6)` → `rgb(12,24,38)` is unchanged), the blend's height/position/z-index/pointer-events.
-
-### v8.7.2 Hero Bottom Blend "Kill Visible Seam Line" (May 2026)
-Per the user-supplied "Fix ONLY the visible white/gray line between hero section and next section" spec. The v8.7.1 4-stop ramp (`0%/38%/72%/100%` with all stops in `rgba(12,24,38,X)`) was working correctly at the bottom row but the early portion of the ramp was tinted by the section color from the very start, so the user perceived the upper edge of the blend zone as a too-quick darkening that looked like a line.
-
-**Single change**: replaced `.hero-bottom-blend` background gradient with the user-spec literal 3-stop ramp:
-```css
-background: linear-gradient(
-  to bottom,
-  rgba(0, 0, 0, 0)       0%,    /* TRANSPARENT BLACK — photo shows through fully */
-  rgba(12, 24, 38, 0.6)  50%,   /* section color at 60% alpha midway */
-  rgb(12, 24, 38)        100%   /* SOLID section color — pixel-exact match */
-);
-```
-- First stop is `rgba(0,0,0,0)` (transparent BLACK, not tinted by section color) so the upper portion of the blend zone is invisible — the photo shows through fully and the darkening only starts well below the top edge of the blend.
-- Terminal `rgb(12,24,38)` matches the next section's actual composited top edge exactly: `--background HSL 222 45% 4%` (rgb 6,8,15) tinted by `--primary HSL 205 92% 62%` (rgb 69,172,247) at 10% alpha = `rgb(12,24,38)`. User spec said "The last color MUST exactly match the next section background — no approximation"; this satisfies that.
-- Added explicit `border: none` and `box-shadow: none` declarations on the rule (defensive — neither was ever set, but spec asked).
-
-**No spacing changes needed**: the user spec asked for `margin-bottom:0 / padding-bottom:0` on hero and `margin-top:0` on next section, but the existing JSX is already gap-free — `<HeroSlider />` and the next `<section>` are direct siblings inside `<div className="min-h-screen pt-16">` with no margin classes between them. The `.hero-isolate` outer container has no border, no box-shadow, no filter, no backdrop-filter. The next section has no border-top and no margin-top.
-
-**Note on the right-side brightness gradient**: the next section has a decorative `bg-primary/15 blur-3xl` sphere positioned at `-top-40 -right-40` whose visible bottom edge tints the top of the section's right side slightly brighter than rgb(12,24,38). This is a pre-existing decorative gradient and was NOT modified per the spec's "Do NOT touch layout / Do NOT modify hero content" rule (it's part of the next section, not the hero). The new transparent-black-start ramp dissolves more smoothly into this brighter zone than the v8.7.1 section-color-start ramp did.
-
-**Files changed**: `client/src/index.css` (background of one rule), `replit.md`. NO changes to: HeroSlider.tsx, hero text, hero animation, image loading, slider, CTAs, header, About, layout structure, routing, translations, auth, booking, admin, APIs, database. Other v8.7.1 properties of `.hero-bottom-blend` (position, height, z-index, pointer-events, transform) are UNCHANGED.
-
-### v8.7.1 Hero Bottom Blend "Clean Section Seam" (May 2026)
-Per the user-supplied "STRICT MICRO DESIGN FIX — REMOVE BLUR + ADD CLEAN HERO BOTTOM BLEND" spec. The v8.7 `.hero-bottom-overlay` (160px fixed, ended at rgba(10,20,40,0.85)) was perceived by the user as still leaving a visible "frosted/hazy" zone above the section line — the 0.85 terminal alpha let 15% of the photo bleed through at the bottom row, which from the user's perspective read as a separate band rather than a seamless blend.
-
-**Single change**: replaced `.hero-bottom-overlay` (CSS rule + JSX className + data-testid) with `.hero-bottom-blend`:
-- `height: clamp(120px, 14vh, 180px)` — taller and viewport-responsive (vs previous 160px fixed)
-- 4-stop gradient (vs previous 3-stop): `0% → 38% (0.28) → 72% (0.68) → 100% (1.0)` — smoother S-curve
-- **Final stop is FULL opacity** (not 0.85) so the bottom row has zero photo bleed-through
-- Color tone overridden from spec's `rgba(6,18,34)` to `rgba(12,24,38)` — the actual computed top edge of the next section (HSL 222 45% 4% background tinted by HSL 205 92% 62% primary at 10% alpha composites to rgb(12,24,38)). User spec explicitly authorised using the computed color over the spec literal: "If the next section uses a different computed background color, use that exact color in the final gradient stop."
-- Uses `rgba(12,24,38)` at EVERY stop (not just terminal) for a pixel-exact seamless transition
-- z-index 3, `pointer-events: none`, `transform: translateZ(0)` — unchanged from v8.7
-
-**Optional `.hero-image` mask SKIPPED** per the spec's own safety rule — adding a mask to the image layers would interfere with the multi-layer cross-fade animation that powers the slide rotation.
-
-**KEPT from v8.7**: `.hero-overlay` radial center-balance (not addressed by this spec — fixes the left/right brightness imbalance which is still needed) and `.hero-text-shadow` on h1 + subhead p (explicitly preserved per "Do NOT touch hero text"). KEPT from v8.6: typography (leading-1.1, tracking-[-0.015em], text-white/85, leading-[1.65], bumped min-h reservations).
-
-**Files changed**: `client/src/components/HeroSlider.tsx` (renamed className + testid), `client/src/index.css` (replaced rule), `replit.md`. NO changes to: backdrop-filter (none existed), filter blur (none existed), hero text, hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey timings), hero image loading, hero slider, CTA buttons, header, About section, layout structure, routing, translations, auth, booking, admin, APIs, database.
-
-### v8.7 Hero Visual Polish "Text-Shadow + Radial Balance + Soft Bottom" (May 2026)
-Per the user-supplied "fix visual issues in hero text + overlays" spec — addresses three reported issues:
-
-1. **Text felt blurry** — the v8.6 `.hero-text-scrim` masked rectangle behind text was perceived as a backdrop-blur even though it had no blur. **REMOVED entirely** (the `<div className="hero-text-scrim">` and the CSS rule). Replaced with `.hero-text-shadow` applied to the headline + subhead glyphs themselves: `text-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 0 8px rgba(0,0,0,0.15)` — two stacked shadows (1px crisp drop + 8px soft halo, both very low alpha) so the text stays 100% sharp with no blur and no glow. Note: this overrides the prior v8.x "NO text-shadow" invariant — that rule is replaced because the user explicitly approved this micro-shadow.
-
-2. **Bottom blue band looked separate** — the v8.5.1 `.hero-bottom-fade` (clamp 70-120px, ending at rgba(12,24,38,1.0)) was perceived as a hard band, not part of the photo. **REPLACED** with `.hero-bottom-overlay`: 160px fixed height, 3-stop gradient from `rgba(10,20,40,0)` → `rgba(10,20,40,0.4)` at 40% → `rgba(10,20,40,0.85)` at 100%. Ending at 0.85 alpha (not 1.0) lets the photo bleed 15% at the bottom row, so the wash reads as the photo's own ambient shadow rather than a separate band. z-index 3, `pointer-events: none`, `transform: translateZ(0)` for GPU promotion.
-
-3. **Left/right brightness imbalance on desktop** — added a NEW `.hero-overlay` decorative layer: full-hero `inset: 0`, `background: radial-gradient(circle at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)`, z-index 2, `pointer-events: none`. Center is lighter (0.15) than corners (0.35), which evens out the side-to-side brightness without darkening the overall photo.
-
-Stacking inside `.hero-isolate` (front to back): copy `z-10` → `.hero-bottom-overlay` `z-3` → `.hero-overlay` `z-2` → image layers `z-auto`. Both decorative overlays are `pointer-events: none` so clicks pass through to the photo region. Image filters (`brightness 1.05 contrast 1.08 saturate 1.05 hue-rotate -6deg`) and image cross-fade animations are unchanged.
-
-**Files changed**: `client/src/components/HeroSlider.tsx` (removed scrim div, added two overlay divs, added `hero-text-shadow` class to h1 and subhead p), `client/src/index.css` (removed `.hero-text-scrim` and `.hero-bottom-fade` rules, added `.hero-text-shadow`, `.hero-overlay`, `.hero-bottom-overlay`), `replit.md`. NO changes to: hero animation (mask-reveal/fade-up/buttons-once/AnimatePresence/textKey timings), image loading, slider, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing. Layout reservations from v8.6 (h1 leading-1.1 + bumped min-h) preserved.
-
-### v8.6 Typography Polish "Premium Hero Text + Scrim" (May 2026)
-Per the user-supplied "MICRO DESIGN FIX only" spec. Three sub-changes — pure typography + one decorative scrim — no logic, animation, or structural changes.
-
-**1. Headline (`HeroSlider.tsx`, h1 classes):**
-- `leading-[1.02]` → `leading-[1.1]` — moves into the spec's 1.1-1.2 range at the lower (poster-dense) bound.
-- `tracking-tight` (-0.025em) → `tracking-[-0.015em]` — sits closer to the spec's "-0.5px to -1px" absolute range across all breakpoints (-0.48px at 32px, -0.9px at 60px, -1.32px at 88px).
-- `min-h-[112/152/192/256/288]` → `min-h-[120/160/200/268/296]` — +8/+8/+8/+12/+8 per breakpoint to absorb the new leading at 3-line headlines without per-mount CLS (still 0).
-- Color (`text-white`), weight (`font-bold`), font-family (`font-display`) unchanged. NO text-shadow, NO glow, NO gradient text, NO opacity flicker — all v8.x invariants preserved.
-
-**2. Subhead (`HeroSlider.tsx`, p classes):**
-- `text-white/90` → `text-white/85` — exact spec match: `rgba(255,255,255,0.85)`.
-- `leading-relaxed` (1.625) → `leading-[1.65]` — slight bump per spec "slightly increased line-height". Fits within existing min-h reservations; no wrapper bump needed.
-- All other classes (size, max-w, animation `.hero-fade-up`, min-h) unchanged.
-
-**3. Hero text scrim (new `.hero-text-scrim` in `index.css` + one `<div>` in HeroSlider.tsx):**
-- A soft dark wash sitting BEHIND the badge/headline/subhead area only.
-- Background: `linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.40))` — spec's exact palette.
-- The rectangle is dissolved by a radial mask (`mask-image: radial-gradient(ellipse 80% 75% at 38% 50%, black 30%, transparent 100%)`) so the user perceives a localized contrast lift, NOT a layer/box/border.
-- Inset asymmetric (`-28px -36px -16px -20px`) — wash extends past the text bounds horizontally without bleeding into the CTA row below.
-- `pointer-events: none`. No blur (spec allows up to 6-10px backdrop-filter blur but it's intentionally skipped — the mask already dissolves the rectangle and skipping blur saves Android paint cost).
-- Renders BEHIND the `AnimatePresence motion.div` via DOM order alone — no z-index needed.
-
-**Wrapper min-h reservation (`relative min-h-*`):** bumped by +8/+8/+8/+12/+8 across breakpoints (242→250, 290→298, 338→346, 402→414, 434→442) to keep CLS at 0 with the new headline leading. On mobile the copy block is bottom-anchored (`bottom-20`) so the only visible delta vs v8.5.1 is the badge sitting ~8px higher; CTAs and subhead viewport positions remain anchor-stable.
-
-**Files changed**: `client/src/components/HeroSlider.tsx` (h1 + p classes, wrapper min-h, one decorative scrim div), `client/src/index.css` (added `.hero-text-scrim` class), `replit.md`. NO changes to: hero animation, hero image loading, slider, AnimatePresence/textKey/mask-reveal/buttons-once timings, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing, the v8.5.1 hero-bottom-fade.
-
-### v8.5.1 Micro-Tune "Seam-Invisible Hero Fade" (May 2026)
-Per the user-supplied "STRICT MICRO FIX ONLY" spec — refine the v8.5 fade so the transition is fully invisible. The previous 95%-alpha endpoint over the hero's `bg-black` produced ≈ rgb(5,21,38) at the bottom pixel, while the next section's top edge composites to ≈ rgb(12,24,38) (`from-primary/10 via-background to-background` with dark-theme `--background: 222 45% 4%` ≈ rgb(6,8,15) tinted by `--primary: 205 92% 62%` ≈ rgb(69,172,247) at 10% alpha). The 7-unit red delta plus the 5% photo bleed-through left a faint seam. Three sub-changes inside `.hero-bottom-fade` only:
-- Final stop color `rgba(5,22,40)` → `rgba(12,24,38)` — pixel-exact match to the section's compositional top edge.
-- Final stop alpha `0.95` → `1.0` — eliminates the 5% photo bleed-through at the very last row.
-- One extra midpoint stop added (40% / 75%) for a smoother S-curve ramp — "slightly smooth the existing gradient only" per spec.
-
-UNCHANGED: height `clamp(70px, 9vh, 120px)`, `position: absolute`, `bottom: 0`, `z-index: 3`, `pointer-events: none`, `transform: translateZ(0)`. No blur added. No animation. No layout movement. Files touched: `client/src/index.css` only (and `replit.md` for docs). NO changes to: HeroSlider.tsx, hero text, hero animation, image loading, slider, CTAs, About text, auth, Sign In/Sign Out, booking, admin, APIs, database, mobile/desktop header, translations, routing.
-
-### v8.5 Micro Design Polish "Hero-to-Section Bottom Fade" (May 2026)
-Per the user-supplied "MICRO DESIGN POLISH ONLY — SHORT HERO-TO-SECTION FADE" spec. Single, additive design polish — nothing else touched.
-
-**What was added**: a single short bottom gradient overlay inside the hero container that softens the seam between the bottom of the hero image and the dark-blue section below. No hard line, no long dark overlay, no blur over headline / buttons / content, no layout movement.
-
-- **CSS** (`client/src/index.css`, after `.hero-isolate`): new `.hero-bottom-fade` class with the spec's exact values:
-  - `height: clamp(70px, 9vh, 120px)` — short and viewport-aware
-  - `z-index: 3` — above images (no z), below the copy overlay (`z-10`) so it cannot dim badge / headline / subhead / CTAs
-  - `pointer-events: none` — purely decorative
-  - `background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(3,14,26,0.35) 55%, rgba(5,22,40,0.95) 100%)` — alpha ramps softly into the dark-blue band that starts the section below
-  - `transform: translateZ(0)` — promoted onto its own GPU compositor layer; rasterised once, no per-frame paint cost
-- **Component** (`client/src/components/HeroSlider.tsx`): single line added inside the `.hero-isolate` container, after the image layers, before the copy overlay div: `<div className="hero-bottom-fade" aria-hidden="true" data-testid="hero-bottom-fade" />`. No other changes to HeroSlider — image loading, slide layer, copy layer, AnimatePresence, textKey, buttons, all v8.x animation timings completely untouched.
-- **Blur**: SKIPPED. Spec marked the optional `backdrop-filter: blur(3px)` as "Optional only if performance remains perfect" with a hard "do NOT use heavy blur" rule. Skipping blur entirely is the safest path — no compositing cost on mid-range Android, no risk of fuzziness over edge cases.
-
-**Files changed**: `client/src/index.css` (added `.hero-bottom-fade` block), `client/src/components/HeroSlider.tsx` (added one decorative div), `replit.md`. NO changes to: hero text, hero animation, hero image loading, slider, CTA buttons, About text, i18n logic, auth, Sign In/Sign Out, booking, admin, APIs, database.
-
-### v8.4 Micro-Fix "Confirmed-User Gate + Instant Bio Render" (May 2026)
-Per the user-supplied "FINAL MICRO FIX — DESKTOP AUTH STILL WRONG + ABOUT TEXT INSTANT RENDER" spec. Two narrow surgical fixes; nothing else touched.
-
-**Bug 1 — Desktop auth label still flips Sign In → Sign Out on refresh:**
-- v8.3 already strict-checked `Boolean(user && (user.id != null || !!user.email?.trim()))`, but the spec asked for the simpler exact literal `Boolean(user?.id || user?.email)` and a clearer name (`isConfirmedUser`) to make the contract self-documenting.
-- Fix: rename `isAuthenticated` → `isConfirmedUser` and apply the spec literal verbatim:
-  ```ts
-  const isConfirmedUser = Boolean(user?.id || user?.email);
-  ```
-  Functionally equivalent to v8.3 for all real cases (id never 0 in practice; emails non-whitespace), but matches the spec naming and forbids any "loading complete / authChecked / session checked / user truthiness" gates.
-- Desktop branches at `Navigation.tsx:215` (Sign Out + Profile) and mobile menu logout at `Navigation.tsx:340` (`button-mobile-logout`) both use `isConfirmedUser`. Sign Out / Profile literally cannot render without `user.id || user.email`.
-- Mobile static Sign In pill (`data-testid="link-signin"`) at `Navigation.tsx:261` still renders UNCONDITIONALLY (`md:hidden` only) per long-standing mobile UX directive — structurally untouched.
-
-**Bug 2 — About bio appears after ~1s delay (skeleton too slow):**
-- v8.3 fixed the text-swap bug by adding a skeleton until `useSettings` resolved, but the skeleton itself was a visible loading state. Spec now requires INSTANT render with the same paint timing as the adjacent Certifications heading (which renders pure i18n directly).
-- Fix: remove the skeleton entirely; bio is now sourced ONLY from the i18n key `home.bio.fallback`:
-  ```ts
-  const bio = t("home.bio.fallback");
-  ```
-  No `useSettings` dependency for the bio. No loading state. No swap. First paint is the final paint.
-- The admin-configurable `settings.profileBio` is intentionally NOT consulted on the public homepage. Per spec "If admin override exists, use it only after load if it is same source/stable; otherwise keep i18n as immediate default" — production admin bio differs from i18n copy, so i18n is kept as the single immediate source. Admin can still read/write `profileBio` via the admin panel for other purposes.
-- `useSettings()` call is preserved because `settings.profilePhotoUrl` is still consumed elsewhere on HomePage.
-- Language switching still works automatically because `t()` re-resolves on lang change.
-
-**Files changed**: `client/src/components/Navigation.tsx` (rename + spec literal at line 90, two desktop/mobile gate references), `client/src/pages/HomePage.tsx` (bio = `t("home.bio.fallback")`, removed skeleton + bioReady + settingsError consumption), `replit.md`. NO changes to: hero (v8.2 textKey logic intact), hero images, booking, admin, database schema, APIs, sessions, packages, email system, mobile Sign In pill, fonts, layout, animations.
-
-### v8.3 Micro-Fix "Desktop Auth Label + About Bio Stable Text" (May 2026)
-Per the user-supplied "FINAL MICRO FIX ONLY — DESKTOP AUTH LABEL + ABOUT TEXT HYDRATION" spec. Two narrow surgical fixes; nothing else touched.
-
-**Bug 1 — Desktop auth label flips Sign In → Sign Out on refresh:**
-- Root cause: `Navigation.tsx` used `const isAuthenticated = Boolean(user)`. For valid `UserResponse` objects this is correct, but it would also be `true` for any pathological cache state (empty `{}`, malformed error payload, stale partial cached object missing identifier fields).
-- Fix: strict identifier check — `Boolean(user && (user.id || user.email))`. For every legitimate UserResponse (id always present per `users.id = serial("id").primaryKey()` in schema) this is a no-op; for any pathological data shape it correctly stays Sign In.
-- Mobile shares the same `isAuthenticated` gate (used by `button-mobile-logout` rendering at Navigation.tsx:310), so the same defensive hardening applies to mobile menu's logout button without any mobile-specific changes.
-- Mobile static Sign In pill (`data-testid="link-signin"`) at Navigation.tsx:245-258 is rendered UNCONDITIONALLY (`md:hidden` only) per long-standing mobile UX directive, so it's structurally untouched by this change.
-
-**Bug 2 — About bio text changes after refresh:**
-- Root cause: `HomePage.tsx` rendered `bio = (lang === "en" && settings?.profileBio?.trim()) || t("home.bio.fallback")` immediately. At t=0 `settings` is undefined → falls through to i18n fallback ("Youssef Ahmed is a certified personal trainer..."). At t≈150ms `useSettings` resolves with admin-configured `profileBio` ("Youssef Ahmed provides premium personal training services..."). Two different strings → user sees text visibly swap after refresh.
-- Fix: render a neutral 4-line skeleton placeholder (`text-bio-skeleton`) until `settings !== undefined`, then render the real bio exactly once. After settings resolves, the text is stable for the lifetime of the page (global queryClient `staleTime: Infinity`).
-- The other About paragraph (`t("section.about.extra")`) is pure i18n and was already stable; left untouched.
-- ONE source of truth preserved: admin's `settings.profileBio` if set (English only), else i18n fallback. No new i18n keys added; existing 10-language `home.bio.fallback` parity verified intact (10 occurrences in translations.ts).
-
-**Files changed**: only `client/src/components/Navigation.tsx` (line 72 strict isAuthenticated check + comment) and `client/src/pages/HomePage.tsx` (line 83 settingsResolved guard + lines 199-229 skeleton-or-bio conditional). NO changes to: hero (v8.2 textKey logic intact), hero images, booking, admin, database schema, APIs, sessions, packages, email system, mobile Sign In pill, fonts, layout, animations.
-
-### Hero v8.2 "No Double-Replay on Refresh" (May 2026, supersedes v8.1)
-Per the user-supplied "FIX HERO TEXT DOUBLE-REPLAY ON REFRESH ONLY" spec, the AnimatePresence child key is switched from slide *identity* (`${copyIndex}-${current?.id ?? "default"}`) to *content* (`${badge}|${headline}|${subhead}`). **Only the AnimatePresence keying logic changed** — every v8.1 + v8 stabilization is preserved (mask reveal, no shadow/glow, mode="wait", buttons hoisted, no per-char state).
-
-**Exact root cause of the double-replay**:
-1. **t=0** Component mounts. `useHeroImages()` returns `data: undefined` (or the build-baked seed of just the first slide). `current` is undefined → old `slideKey = "0-default"`. motion.div mounts with this key. CSS reveals fire — text appears correctly.
-2. **t=~150ms** queryFn resolves with the FULL active list (the hook uses `initialDataUpdatedAt: 0` to force a refetch even when initialData was seeded, because the seed only contains the first slide). `current` becomes `images[0]` → old `slideKey` changes from `"0-default"` to `"0-<id>"`. AnimatePresence detects key change → fades old out 200ms → mounts new → CSS reveals run AGAIN. User sees text disappear-then-replay even though the displayed text is identical.
-
-**v8.2 fix — content-based keying:**
-- New `textKey = ${badge ?? ""}|${headline ?? ""}|${subhead ?? ""}` is computed every render from the actual displayed text (after the `current?.title?.trim() || variant.headline` fallbacks resolve).
-- AnimatePresence child key becomes `copy-${textKey}`. When initial-static-render and API-resolved-render produce identical text (the common case — the build-time bake mirrors the same first slide the API returns), textKey is identical → motion.div is **never remounted** → CSS reveal plays exactly **ONCE** on initial mount and stays settled.
-- This is the React-idiomatic equivalent of the spec's suggested `lastAnimatedTextKey.current` ref pattern. Using textKey as the React key delegates the comparison to React's reconciler — same outcome, no extra ref/state.
-- Animation restart rule (now matches spec literal): textKey change → reveal replays once. textKey unchanged → reveal does NOT replay. Covers both "slide id changes to a genuinely different slide" and "headline/badge/subheadline text actually changes" via a single content hash.
-
-**What's preserved from v8.1** (none of these changed): mask reveal architecture (clip-path only on inner span, GPU layer pinning, contain:paint), 800ms reveal duration, COPY timings (badge 0/200, headline 100/800, subhead 700/400, buttons 500/300, exit 200), AnimatePresence `mode="wait"` + `initial={false}`, buttons hoisted outside AnimatePresence, reserved-height wrapper, mobile spacing, 75vh hero, image system, all auth/booking/admin/RBAC/API/database/routing untouched, mobile Sign In header pill (`data-testid="link-signin"`).
-
-### Hero v8.1 "Jitter-Free Mask Reveal" (May 2026, supersedes v8)
-Per the user-supplied "FIX TYPEWRITER JITTER ONLY — SMOOTH LETTER REVEAL" spec, the headline gets the clip-path mask reveal back (per spec literal: "Render the full headline text once. Reveal it using CSS mask or clip-path on an inner wrapper") but engineered to eliminate the v7 jitter. **Only the headline reveal logic changed** — every v8 stabilization (no glow/shadow, mode="wait", buttons hoisted, no per-char state, no cursor, no setInterval-per-letter) is preserved.
-
-**Root cause of v7 jitter**: v7 animated three properties simultaneously on the inner wrapper — `clip-path` AND `translateY(8px → 0)` AND `opacity(0 → 1)` — with `will-change: opacity, transform, clip-path`. The combination of `clip-path` narrowing the visible width WHILE `translateY` shifted the rasterised text vertically caused per-frame **subpixel shifts on the text glyphs**. On multi-line headlines the effect was magnified at line-break boundaries (which often land at fractional pixel positions). The over-broad `will-change` list also caused compositor layer thrash.
-
-**v8.1 fix — engineered for zero subpixel jitter:**
-- `.hero-mask-reveal` animates **ONLY `clip-path`**: `inset(0 100% 0 0)` → `inset(0 0 0 0)`. NO `translateY`. NO `opacity`. The visible region is always at full opacity; the only thing changing is which portion of the box is visible.
-- `transform: translateZ(0)` + `backface-visibility: hidden` forces the wrapper onto its **own GPU compositing layer** so the rasterised text stays at integer pixel coordinates for the entire 800ms reveal. No subpixel re-rasterisation, no glyph shimmer.
-- `will-change: clip-path` is **narrow** (no transform, no opacity) so the browser doesn't allocate unnecessary layer memory.
-- Default duration **800ms** (mid-range of spec's 700–1000ms) with Apple-style `cubic-bezier(0.22, 1, 0.36, 1)` ease-out-quint.
-- `display: block` so multi-line headlines wrap naturally; clip-path reveal sweeps left-to-right across all lines simultaneously.
-- Animation restarts **only when slideKey changes** (slide id or copy index changes) via AnimatePresence `mode="wait"` remount; same-text re-renders never restart the reveal.
-
-**v8.1 timings (only headline + subhead changed; badge/buttons/exit unchanged from v8):**
-- badge: `start:0 dur:200`
-- headline: `start:100 dur:800` (was `100/300`; per spec "Duration: 700–1000ms")
-- subhead: `start:700 dur:400` (was `200/400`; bumped so cascade still reads badge → headline → subhead with the new 800ms headline reveal)
-- buttons: `start:500 dur:300` (one-time, OUTSIDE AnimatePresence, never re-runs)
-- exit: `dur:200`
-
-**What's preserved from v8** (none of these changed): `tron-headline-glow` removed; subhead `textShadow` removed; AnimatePresence `mode="wait"`; buttons hoisted outside AnimatePresence; reserved-height wrapper `min-h-[242/290/338/402/434]`; mobile button-row spacing `mt-6 sm:mt-9 gap-2 sm:gap-3.5`; 75vh hero with 520-860px floor/ceiling; image system; auth/booking/admin/RBAC/API/database/routing untouched; mobile Sign In header pill (`data-testid="link-signin"`).
-
-**Spec compliance** — animates ONLY clip-path on the headline + opacity/transform on badge/subhead/buttons. Does NOT animate width, height, font-size, filter, or blur on any text element.
-
-### Hero v8 "Final Hero Stabilization — Stable Simple Fade" (May 2026, supersedes v7/v7.1)
-Per the user-supplied "FINAL HERO STABILIZATION (STRICT MODE)" spec, the v7 clip-path mask-reveal system is fully replaced with a uniform opacity + translateY fade for all three text elements, and ALL text-shadows / glows on hero text are removed.
-
-**What changed (8 surgical edits):**
-1. **Headline glow REMOVED.** The h1 no longer carries the `tron-headline-glow` class. The CSS rule itself is also removed (replaced with a v8 explanatory comment block). Spec literal: *"Headline must be: clean white, sharp, no glow, no shadow."*
-2. **Subhead text-shadow REMOVED.** The inline `textShadow: "0 1px 12px rgba(0,0,0,0.7)"` on the subhead `<p>` is gone — pure white type with the global image-bottom dark gradient providing legibility.
-3. **`.hero-mask-reveal` class + `@keyframes heroMaskReveal` REMOVED from CSS.** No more clip-path animation. Spec literal: *"NO typing, NO masking, NO clip-path, NO per-letter animation — ONLY opacity + slight translateY."*
-4. **Headline now uses `.hero-fade-up`** (the same simple opacity 0→1 + translateY(6px→0) animation as the subhead). The h1 still reserves multi-line height via Tailwind `min-h-*` utilities so layout never shifts between slides.
-5. **AnimatePresence switched to `mode="wait"`.** Old copy fades out fully before new copy mounts and fades in. This matches the spec literal: *"ON SLIDE CHANGE: fade out ALL text (200ms), immediately switch content, fade in new text (400ms)."*
-6. **New COPY timing constants:** badge `start:0 dur:200`, headline `start:100 dur:300`, subhead `start:200 dur:400`, buttons `start:500 dur:300` (one-time), exit `dur:200` — matches spec timings exactly.
-7. **`.hero-fade-up` translateY reduced 8px → 6px** so multi-line headlines settle in faster and feel less "loose" on mobile.
-8. **`.hero-buttons-once` retimed** to 300ms duration starting at 500ms (was 380ms@1000ms) — buttons appear ~500ms sooner on first paint, still hoisted outside AnimatePresence so they NEVER re-animate on slide change.
-
-**What's preserved from v7.1:** reserved-height wrapper (`min-h-[242/290/338/402/434]`), buttons hoisted outside AnimatePresence, mobile button-row spacing (`mt-6 sm:mt-9 gap-2 sm:gap-3.5`), 75vh hero with 520-860px floor/ceiling, image system unchanged.
-
-**Slide change visual sequence (mode="wait"):** t=0 old fade-out begins → t=200 swap, new badge begins → t=300 headline begins → t=400 subhead begins, badge done → t=600 headline done → t=800 subhead done. Buttons static throughout.
-
-**Performance:** animates ONLY opacity and transform. No clip-path. No blur. No filter. No backdrop-filter. No layout. No per-frame JS. No setInterval-per-character.
-
-### Hero v7.1 architect-review hardening (May 2026)
-Two surgical follow-ups to v7 from the architect's PASS-with-MEDIUM-finding review:
-1. **Mobile vertical-budget fit** — on a 600px portrait phone the hero falls back to its 520px `min-h` floor. The original `mt-9 gap-3.5` mobile button spacing produced ~530px of total content (copy 242 + mt-9 36 + 3×h-12 144 + 2×gap 28 + bottom-20 80), clipping by ~10px against the floor. Changed to `mt-6 sm:mt-9 gap-2 sm:gap-3.5` — reclaims 24px on mobile (12 from margin, 12 from gaps) while preserving the tablet/desktop spacing exactly. Buttons row now fits with 14px headroom on the smallest viewport.
-2. **Headline handoff continuity** — moved `COPY.headline.start` from 200ms → 150ms. The exit fade is 200ms and old motion.div unmounts at that exact moment; starting the new headline at 200ms left a one-frame risk where the new clip-path was still at `inset(0 100% 0 0)` (invisible) the instant the old text hit opacity 0. With the headline starting 50ms earlier, by t=200 the new headline is already 50ms into its 600ms reveal — guaranteed visible continuity through the handoff.
-
-### Hero v7 "Stable Mask Reveal" (May 2026, supersedes ALL v6.x)
-Total replacement of the v5/v6 per-character typewriter + blinking cursor experiment. The v6.x production video showed three repeatable bugs: (1) cursor-only frame in the centre of an empty headline during slide change (per-char spans torn down before new ones revealed), (2) CTA buttons disappear/reappear on every slide change (they were inside AnimatePresence and re-mounted on slide key change), (3) headlines wrapping to 2 lines on narrow mobile sometimes looked clipped because per-char chars were still hidden when the eye expected a complete word.
-
-**v7 architecture (3 surgical fixes):**
-1. **Removed cursor entirely.** No `<span class="hero-cursor">`, no `heroCursorBlinkThenFade` keyframe, no `--hero-cursor-end` CSS var. Spec literal: "Remove the blue vertical cursor entirely. No blinking cursor. No cursor element."
-2. **Replaced per-char typewriter with `clip-path` mask reveal.** Headline uses an INNER `<span class="hero-mask-reveal">` that animates `clip-path: inset(0 100% 0 0) → inset(0 0 0 0)` + `opacity 0→1` + `translateY(8px→0)` over 600ms. Outer `<h1>` reserves multi-line height via Tailwind `min-h-*`. Wipe travels left-to-right across all wrapped lines simultaneously — clean fake-typewriter feel that never looks clipped on 2-3-line wraps.
-3. **Buttons hoisted OUTSIDE AnimatePresence.** They now render as a sibling div, NOT inside the slide-keyed motion.div, so they NEVER re-mount on slide change. One-time mount fade (`.hero-buttons-once`) plays at t=1000ms then stays at opacity:1 forever via `forwards`.
-
-**Slide-change overlap (no blank frame):** AnimatePresence drops `mode="wait"` (default sync mode). Old motion.div fades out 200ms while new motion.div mounts at t=0 and its CSS-animated children begin revealing. Reserved-height wrapper (`min-h-[242px] sm:min-h-[290px] md:min-h-[338px] lg:min-h-[402px] xl:min-h-[434px]`) keeps the layout stable during the overlap.
-
-**Performance:** animates only opacity, transform, clip-path. NO blur, NO layout, NO per-frame JS, NO setInterval. Headline carries 1 promoted compositor layer (the inner mask wrapper) instead of v6.3's ~30 per-char spans.
-
-**Files touched:** `client/src/components/HeroSlider.tsx` (HeroReveal component + cursor span removed; buttons moved outside AnimatePresence; copy stage gets reserved-height wrapper), `client/src/index.css` (`.hero-reveal`, `.hero-reveal-word`, `.hero-cursor`, `.hero-button-reveal` and their keyframes removed; new `.hero-fade`, `.hero-fade-up`, `.hero-mask-reveal`, `.hero-buttons-once` classes added).
-
-**Invariants preserved:** mobile Sign-In header pill (`data-testid="link-signin"`), strict desktop auth conditional (`data-testid="link-signin-desktop"`), hero `h-[75vh] md:h-[78vh]`, mobile copy `inset-x-5 bottom-20`, image layer architecture (stacked `data-active` cross-fade), zero changes to auth/booking/admin/RBAC/database/APIs/image loader.
-
-### Hero v6.3 "Ultimate Fix" (May 2026, commits `d8b6061` + `fbc51d4`, superseded by v7)
-Three production-level fixes responding to the user's "ULTIMATE HERO FIX (ZERO BUGS — PRODUCTION LEVEL)" directive, plus one architect-review follow-up commit. All changes are surgical — zero touches to auth APIs, booking, admin, RBAC, database, image loader, image clarity, or the mobile static Sign-In pill (per the May-2026 invariant). Final prod bundles: `index-FSF5L5yD.js` + `index-DSWjvZNC.css` on `youssef-booking.vercel.app`.
-
-#### Post-architect-review patch (commit `fbc51d4`) — `will-change` hoist
-Architect flagged that putting `will-change: transform, opacity` on every per-char `.hero-reveal` span is the documented compositor-layers anti-pattern (~30 chars × 3 reveal regions ≈ 90 permanently-promoted GPU layers per slide — sustained mobile-GPU memory pressure). Fix in `client/src/index.css`: hoisted `will-change` UP from `.hero-reveal` (per-char) to `.hero-reveal-word` (per-word wrapper). Reduces promoted layer count from ~90 → ~15-20 per slide while preserving the GPU-promotion guarantee — modern browsers still auto-promote each per-char animation for the 200ms it runs (then tear the layer down). End-result animation visually identical, compositor budget safe.
-
-#### Fix 1 — STRICT desktop auth conditional (Navigation.tsx)
-- **Root cause v6.2**: the static "PERMANENT SIGN-IN LINK" stayed in the DOM for desktop authenticated users with only `isAuthenticated && "md:hidden"` hiding it via CSS. The pill was rendered, just invisible — fragile if any future stylesheet override or specificity bug ever leaked through.
-- **Fix v6.3**: converted the desktop auth area into a STRICT mutually-exclusive ternary (`client/src/components/Navigation.tsx` lines 186-237). When `isAuthenticated && user`, the JSX renders profile pill + Sign Out button only. When NOT authenticated, the JSX renders a NEW `data-testid="link-signin-desktop"` pill (`hidden sm:inline-flex`). EXACTLY one branch ever exists in the DOM on desktop — no CSS hide, no possibility of bleed-through.
-- **Mobile invariant preserved bit-for-bit**: the static `data-testid="link-signin"` Link below is now `inline-flex md:hidden` UNCONDITIONALLY (mobile-only, ignores `isAuthenticated`). Mobile rendering is byte-identical to v6.2 in every auth state — guests AND logged-in users still see the same pill, drawer Sign Out still reachable for authenticated mobile users. Inline-style block (`zIndex: 9999, opacity: 1, pointerEvents: "auto"`) preserved.
-- **Result matrix** (verified in prod bundle `index-GU3iLsKW.js`):
-  - Desktop logged out → `link-signin-desktop` only ✓
-  - Desktop logged in  → profile pill + Sign Out only, ZERO Sign In references ✓
-  - Mobile logged out  → `link-signin` pill visible (unchanged) ✓
-  - Mobile logged in   → `link-signin` pill visible (unchanged), drawer Sign Out reachable ✓
-
-#### Fix 2 — Mobile hero deterministic layout (HeroSlider.tsx)
-- **Root cause v6.2**: hero used `h-[78vh]` and the copy block used `inset-x-6 bottom-[clamp(48px,10vh,96px)]` — the clamp made the bottom offset viewport-dependent (52px on a 520px viewport, 96px on a 960px viewport). The user's spec called for predictable production-level numbers.
-- **Fix v6.3** in `client/src/components/HeroSlider.tsx`:
-  - Hero container: `h-[78vh]` → `h-[75vh] md:h-[78vh]` — mobile shrinks to 75vh per spec, desktop unchanged at 78vh for the cinematic full-screen feel. `min-h-[520px]` floor and `max-h-[860px]` ceiling unchanged.
-  - Copy `motion.div`: `inset-x-6 bottom-[clamp(48px,10vh,96px)]` → `inset-x-5 bottom-20` — fixed 20px horizontal padding, fixed 80px from hero bottom. Predictable, inspector-friendly, no viewport-dependent math.
-- **Net mobile layout** at 390px viewport / 75vh hero (~488px tall on a 651px viewport): copy bottom anchor at 80px; buttons row above (40px clearance from hero bottom edge); subhead (min-h 52px reserved); headline (min-h 112px reserved); badge above; top of badge falls ~hero_top + 100px — well below the 64px header. The `.hero-isolate overflow-hidden` boundary is preserved and no content tries to cross it.
-
-#### Fix 3 — Inline typewriter cursor + GPU promotion (HeroSlider.tsx + index.css)
-- **Root cause**: v6.2 deliberately removed the cursor entirely (commented in HeroSlider.tsx lines 30-37) because the v5.x cursor floated free in the centre of the screen — the worst-case bug. The v6.3 spec called for the cursor to come back BUT under three strict constraints: (a) inline with text, (b) stops blinking after typing finishes, (c) never appears in centre of screen.
-- **Fix v6.3 implementation**:
-  - **DOM**: a single `<span class="hero-cursor" data-testid="text-hero-cursor">` lives INSIDE the `<h1>` immediately after the per-char `HeroReveal` spans (`HeroSlider.tsx` lines 473-489). It is `display: inline-block` and sits in normal text flow at the end of the headline — by construction it can never float in the middle of the screen.
-  - **Animation**: pure CSS, ZERO React state, ZERO setInterval. One `heroCursorBlinkThenFade` keyframe (in `client/src/index.css` lines 728-754) blinks square-wave (step-end style) for the first ~75% of the per-slide `--hero-cursor-end` duration, then fades to 0 over the final ~25% and stays at 0 forever via `animation-fill-mode: forwards`.
-  - **Per-slide reset**: AnimatePresence's `mode="wait"` (kept from v6.2) remounts the entire `motion.div` subtree on every slide change, so the cursor's CSS animation restarts from frame 0 with the rest of the reveal — no manual CSS animation reset needed.
-  - **Per-slide duration**: React computes `--hero-cursor-end = COPY.headline.start + visibleChars × COPY.headline.step + COPY.headline.dur` (e.g. `350 + 18 × 25 + 200 = 1000ms` for an 18-char headline) so the cursor fade-out lines up exactly with the moment the last per-char reveal completes — different headline lengths automatically get different timings without code changes.
-  - **GPU promotion**: `.hero-reveal` gained `will-change: transform, opacity` so the compositor pre-allocates layers up front, eliminating first-frame layer-creation jank on the second/third loop. `.hero-img` already had `transform: translateZ(0)` + `backface-visibility: hidden` from v5 — verified untouched.
-  - **Reduced-motion safety**: added `.hero-cursor { animation: none !important; opacity: 0 !important; }` inside the existing `@media (prefers-reduced-motion: reduce)` block so the cursor never appears for users with reduced-motion preference.
-- **Spec compliance**:
-  - "Inline with text" ✓ — IS a text-flow span inside the h1
-  - "Stops blinking after finish" ✓ — animation-fill-mode: forwards holds final opacity:0
-  - "Never appears in centre of screen" ✓ — inline-block + always last child of h1, position controlled by text flow only
-  - "No setInterval per character, no React re-render per letter" ✓ — pure CSS, zero per-frame JS
-  - "Use CSS animation (preferred)" ✓ — single keyframe, zero JS
-
-### Hero v6.2 + Desktop Auth Duplicate Fix "Clean Sequential Pass" (May 2026, commit `e40ba67a`, supersedes v6.1)
-Three surgical fixes responding to user-reported regressions on the deployed v6.1: (1) desktop showed both Sign In AND Sign Out simultaneously when authenticated, (2) mobile hero text was being clipped at the bottom of the hero / appeared hidden under the next blue section, (3) typewriter stuttered on second/loop slide changes. All fixes are additive — zero touches to auth APIs, booking, admin, RBAC, database, hero image loading, image clarity, or image slider system.
-
-#### Fix 1 — Desktop auth duplicate (Navigation.tsx)
-- **Root cause**: the "PERMANENT STATIC SIGN-IN LINK" (May-2026 "auth never disappears" directive, lines 209-246 of `client/src/components/Navigation.tsx`) renders UNCONDITIONALLY. When `isAuthenticated`, the dedicated Sign Out button + profile pill (lines 171-207) ALSO renders, producing two visible auth controls side-by-side on desktop.
-- **Fix**: added `isAuthenticated && "md:hidden"` via `cn()` to the static Sign In Link's className. The `md:hidden` only triggers at md+ breakpoints, so mobile rendering is identical regardless of `isAuthenticated`. Mobile rendering is intentionally preserved per explicit user directive "Do NOT modify the mobile header Sign In button that currently works" — even when authenticated, mobile keeps showing the Sign In pill because the user's mobile header doesn't have room for a Sign Out alternative (mobile Sign Out lives only in the hamburger drawer below).
-- **Result matrix**:
-  - Desktop logged out → Sign In visible, Sign Out hidden ✓
-  - Desktop logged in  → Sign In hidden, Sign Out + profile pill visible ✓
-  - Mobile logged out  → Sign In pill visible (unchanged) ✓
-  - Mobile logged in   → Sign In pill visible (unchanged), drawer Sign Out reachable ✓
-
-#### Fix 2 — Mobile hero text positioning (HeroSlider.tsx)
-- **Root cause**: in v6.0/v6.1, the AnimatePresence overlap design used `motion.div` with `className="max-w-2xl absolute inset-x-5 md:inset-x-0 md:relative"`. On mobile, `absolute inset-x-5` set only horizontal positioning — `top` and `bottom` defaulted to `auto`, which falls back to the element's static-flow position. Since the parent had no flow children (motion.div was the only child, and it was absolute), parent height = padding only (`pb-20` = 80px). The grandparent's `flex items-end` placed the 80px parent at the BOTTOM of the hero. The motion.div, having `top: auto`, computed its position at the TOP of the parent (i.e., hero_bottom − 80px), then extended DOWN by ~400-500px (its content height), overflowing the hero's bottom edge. `.hero-isolate { overflow: hidden }` then clipped everything past hero_bottom — making the headline + subhead + buttons appear to vanish under the next blue about section.
-- **Fix** in `client/src/components/HeroSlider.tsx` lines 368-385:
-  - Outer wrapper: `flex items-end md:items-center` → `md:flex md:items-center` (mobile no longer needs flex; the absolute child anchors itself).
-  - Inner wrapper: `relative w-full max-w-6xl mx-auto px-5 pb-20 md:pb-0 md:pt-20` → `relative w-full h-full md:h-auto max-w-6xl mx-auto md:px-5 md:pt-20`. Mobile spans the full hero (`h-full`) so the absolute child has the hero as its containing block. Desktop reverts to content-sized (`md:h-auto`) inside the flex.
-  - `motion.div`: `max-w-2xl absolute inset-x-5 md:inset-x-0 md:relative` → `max-w-2xl absolute inset-x-6 bottom-[clamp(48px,10vh,96px)] md:inset-auto md:bottom-auto md:relative md:max-w-2xl`. Mobile is bottom-anchored 48-96px from the hero bottom with 24px (inset-x-6) horizontal padding. Desktop reverts to `relative` (in flex centering), with `md:inset-auto md:bottom-auto` cleanly clearing the mobile-only positioning.
-- **Net mobile layout** at 390px viewport / 78vh hero (~520px tall): bottom anchor ~52px (clamp picks ~10vh=52); buttons row sits above; subhead (min-h 52px reserved); headline (min-h 112px reserved); badge above. Top of badge falls at ~hero_top + 96px — well below the 64px header, well within the visible hero area, no clip. The `.hero-isolate overflow-hidden` boundary is preserved but no content tries to cross it now.
-
-#### Fix 3 — Typewriter loop stutter (HeroSlider.tsx)
-- **Root cause**: v6.0/v6.1 dropped `AnimatePresence mode="wait"` to make old and new copy overlap during a 200ms cross-fade. Three mechanisms compounded into the user-perceived stutter:
-  1. The badge text is IDENTICAL across all slides ("PREMIUM PERSONAL TRAINING"). During the 200ms overlap, two badge spans rendered at different opacity stages — visually a ghost/flicker because the eye sees the same letters at two rendering states.
-  2. The new badge began revealing at `start: 0` (mount time) while the old badge was still visible and fading out — word-mode reveal with `filter: blur(4px → 0)` on each new word created a "double exposure" effect during the overlap.
-  3. Per-char animations on the OLD subtree (40+ animation contexts) were torn down at the same instant the NEW subtree's per-char spans were constructed (40+ new animation contexts) — combined main-thread work could drop a frame on weaker mobile GPUs, especially during the second/third loop when the device's GPU was already under steady load.
-- **Fix**: restored `<AnimatePresence mode="wait" initial={false}>`. The user explicitly requested in spec: "Prevent overlapping old and new headline animations" + "Old text fades out smoothly in 200-300ms... New text starts typing after the fade-out". `mode="wait"` makes AnimatePresence unmount old before mounting new — exactly the requested sequence.
-- **New timeline**:
-  - `t=0`: slide change triggered, AnimatePresence starts exit on old motion.div.
-  - `t=0..200`: old motion.div fades opacity 1→0 (single transition on the parent — no per-char work, all per-char animations on the old subtree had completed long before since headline finishes at ~1525ms but slide lives 8000ms before next change).
-  - `t=200`: React unmounts old subtree (all 40+ per-char spans torn down in one batch, no concurrent reveal animations).
-  - `t=200`: React mounts new subtree (40+ fresh per-char spans, all CSS animations begin counting their delays from this instant — same starting frame, perfectly synchronised).
-  - `t=200..2680`: new copy reveals (badge ~460ms, headline ~1175ms, subhead ~930ms, buttons ~380ms — all timing constants unchanged).
-  - Total slide-change cycle: ~2680ms. Within `ROTATE_MS=8000` so buttons stay clickable for ~5.3s before the next change.
-- **Pointer-events fix from v6.1 retired**: no longer needed (no overlap means no concurrent layers fighting for clicks) — `pointerEvents: "auto"` removed from `animate`, `pointerEvents: "none"` removed from `exit`. CSS-side `pointer-events` defaults to `auto`, contains correctly within the only-one-layer model.
-- **Cursor**: kept REMOVED (v6 baseline). User spec lists cursor requirements but they're contingent on cursor existing; implementing a position-tracking cursor would require either per-char React state ("No React state update per character if causing lag") or a CSS width-clip ("only works for single-line text" — headlines wrap to 2-3 lines on mobile). No cursor is the safest path that satisfies the primary requirement "Cursor must never appear in the middle of the screen". The char-by-char fade-in IS the typewriter signature on its own (Apple/Stripe/Linear use no cursor either).
-- **Reduced-motion safety net**: short-circuits as before, plain text rendered instantly, `exit` becomes `undefined` so framer-motion skips the fade entirely.
-
-**Untouched**: image layer (v4 stacked-images / 1200ms cross-fade), font cascade (Plus Jakarta Sans), v6 timing constants, mobile filter:blur disable (v6.1 — `--hero-reveal-blur: 0` + `filter: none` at `max-width: 768px`), reduced-motion safety net, hero-initial.webp first-paint kill, ROTATE_MS=8000, all `min-h-*` layout-stability clamps, `.hero-isolate overflow-hidden`, slide id stable React keys (`slideKey = ${copyIndex}-${current?.id ?? "default"}`), auth APIs, booking, admin, RBAC, database, link-mobile-signin, button-logout, button-mobile-logout, WhatsAppButton.
-
-**Prod-verified** on `youssef-booking.vercel.app` (build `index-BwZQkM7y.js` + `index-BXQ-ynak.css` from commit `e40ba67a`): static Sign In Link present in bundle (`link-signin`), `isAuthenticated && "md:hidden"` Tailwind class compiled in, AnimatePresence `mode:"wait"` present (count: 2 — hero copy + one other), motion.div `bottom:clamp(48px,10vh,96px)` present in CSS, `link-mobile-signin` + `button-logout` + `button-mobile-logout` testids preserved, hero-cursor / heroCursorIn / heroCursorBlink — ALL ZERO occurrences in CSS + JS, hero-initial.webp 200.
-
-### Hero Copy Reveal — v6 / v6.1 "Ultra-Smooth Pass" (May 2026, commits `be6fad7b` + `f546c3c8`, supersedes v5.1 `c300275a`)
-The hero copy reveal was overhauled in response to a user complaint: "fake cursor floating in middle of screen", sluggish typing, perceived image stutter, and a request for an Apple/Stripe/Linear-grade font. The image layer (v4 stacked-images / 1200ms CSS-only opacity fade — see "Hero Image Crossfade v4" below) is intentionally untouched; only the copy-layer mechanism + font + slide-change choreography changed.
-- **Cursor REMOVED entirely** (commit `be6fad7b`):
-  - **Root cause** of the "floating cursor" perception: in v5.1 the cursor lived inside the `<h1>` AFTER the `HeroReveal` output. Because all chars are mounted in the DOM at `t=0` (just hidden via `opacity:0` with staggered `animation-delay`), the cursor sat at the END of the FULL headline regardless of typing progress. On multi-line headlines combined with the `min-h-[112-288px]` reservation, this made the cursor appear detached from the actively-revealing chars.
-  - **Why not a "true" position-tracking cursor**: it would require either per-char React state (explicitly prohibited by the user spec "Do NOT re-render React state on every character — this causes lag") OR a CSS-only `width` animation typewriter (only works for single-line text — our headlines wrap to 2-3 lines on mobile). Apple, Stripe, and Linear marketing copy use NO literal cursor either — the char-by-char fade-in IS the typewriter signature on its own.
-  - **Removed**: `<span class="hero-cursor">` JSX inside the `<h1>`, `cursorPhase` `useState`, the cursor `useEffect` + `setTimeout`, `headlineCharCount` `useMemo`, `cursorEndMs` computation. CSS rules `.hero-cursor`, `.hero-cursor--off`, `@keyframes heroCursorIn`, `@keyframes heroCursorBlink` — all gone.
-- **Faster, snappier `COPY` timing constants** in `client/src/components/HeroSlider.tsx`:
-  - `badge` mode="word": `start:0, step:80ms, dur:220ms` → ~460ms total for 3 words. (was 90/240 = 420ms in v5.1.)
-  - `headline` mode="char": `start:350ms, step:25ms, dur:200ms` → ~1175ms for ~40 chars. Within the user-mandated 0.8-1.2s window. (Per-char `dur` dropped 260→200ms so individual characters complete faster — perceptual snappiness even though cumulative total is similar to v5.1.)
-  - `subhead` mode="word": `start:1300ms, step:50ms, dur:280ms` → ~930ms for ~13 words. (was 1500/55/320 = 1035ms in v5.1.)
-  - `buttons` (`.hero-button-reveal`): `start:2100ms, dur:380ms`. (was 2500/420 in v5.1.)
-  - `exit` (outgoing copy fade): `dur:200ms`. (was 300ms in v5.1.)
-  - **Total reveal ~2480ms** — 15% faster than v5.1's ~2920ms, well within `ROTATE_MS=8000`.
-- **Cinematic "focus-pull" blur**: `@keyframes heroReveal` now interpolates THREE compositor-friendly properties together — `opacity 0→1`, `transform: translateY(10px → 0)`, AND `filter: blur(var(--hero-reveal-blur, 4px) → blur(0))`. Reads as "characters snap into focus" — the Apple/Stripe/Linear cinematic feel the v6 brief asked for. The brief specified `blur(6px → 0)`; we use `4px` — minimum that reads as "depth of field" without piling on mobile compositor work. Animation duration is short (200ms per token) so the temporary filter layers are ephemeral.
-- **Mobile filter:blur DISABLE** (v6.1, commit `f546c3c8`, fixed architect HIGH finding): blur amount reads from CSS variable `--hero-reveal-blur` (default `4px`). A media query at `max-width: 768px` overrides it to `0` AND adds `filter:none` on the base class, so phones/small tablets get the opacity + translateY reveal with NO filter layer at all (zero compositor cost from blur). Desktop ≥769px keeps the cinematic blur. The keyframe still runs `filter:blur(var(--hero-reveal-blur)) → blur(0)` on mobile but `blur(0)→blur(0)` is a compositor no-op (browsers short-circuit identical values, no extra layer is allocated).
-- **Slide-change OVERLAP** (no gap between exit and reveal):
-  - `AnimatePresence` dropped `mode="wait"`. The new `<AnimatePresence initial={false}>` lets old + new copy coexist briefly during the slide change: `t=0` old fades out (200ms `cubic-bezier(0.22, 1, 0.36, 1)`) AND new mounts + starts revealing simultaneously; `t=200` old fully gone, new is ~17% revealed; `t=2480` buttons fully revealed. Image layer's parallel 1200ms cross-fade runs alongside. The eye reads this as ONE coherent slide change — image dissolves, text dissolves and re-types simultaneously.
-  - **Why this fixes the perceived "image stutter"**: the image layer itself is bit-identical to v4 (no Ken Burns, no scale, just `.hero-slide-layer[data-active]` opacity transition). The 300ms gap in v5.1 (`mode="wait"`) was empty headline space — the eye couldn't read text so it focused on the image cross-fade and noticed it as "stopping then continuing". With v6's overlap, the eye stays on the typewriter and the image fade becomes peripheral.
-  - **Pointer-events safety** (v6.1, commit `f546c3c8`, fixed architect CRITICAL finding): during the 200ms overlap window, the OUTGOING `motion.div` is at `opacity:0` but absolute-positioned at the same z-stack as the new copy. Without `pointer-events:none` on the exiting layer, it could intercept taps for the new CTAs on mobile. Fix: framer-motion `exit` prop sets `{opacity:0, pointerEvents:"none"}` and `animate` pairs with `{opacity:1, pointerEvents:"auto"}`. Because `pointer-events` transitions DISCRETELY per CSS spec (no interpolation), the flip happens instantly at exit-start — the new layer captures all clicks from frame 1.
-  - **Layout-stability with two coexisting copies**: the `motion.div` carries `className="max-w-2xl absolute inset-x-5 md:inset-x-0 md:relative"` so on mobile both copies stack absolutely (overlap visually) and on desktop they fall back to relative (where the parent's `display:flex` centres them). The outer container got `relative` to anchor the absolute positioning. Combined with the v5.1 `min-h-[*]` clamps on `<h1>` + `<p>` (untouched), the buttons row stays rock-still throughout the overlap.
-- **Premium font swap**: `--font-display` in `client/src/index.css` switched from `'Outfit'` → `'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif`. Plus Jakarta Sans is ALREADY loaded in `client/index.html` (omnibus Google Fonts `<link>` on line 135 alongside Inter, IBM Plex, etc), so this is a pure cascade swap — zero extra network requests, zero new preconnects, zero render-blocking resources. Inter is the second fallback (also already loaded). Plus Jakarta gives the headline a tighter, more confident silhouette than Outfit — closer to Stripe/Linear/Apple-grade display type.
-- **Performance contract met (Apple/Stripe/Linear-grade smoothness on mobile 60fps)**:
-  1. Animation method: **pure CSS** — opacity + transform + filter:blur are all GPU-compositor primitives. Zero JS work during the reveal (HeroReveal splits text once at mount, animation-delay drives the rest).
-  2. No `will-change` on per-char/word spans (kept removed from v5.1) — modern browsers GPU-promote opacity/transform/filter animations automatically when they start, lazy-allocate the layer, tear it down once the animation ends. On mobile, `filter` is dropped entirely via the media query so layer cost is identical to v5.
-  3. AnimatePresence retained ONLY for the outgoing-copy fade — single `motion.div` per slide change (not per-char). Negligible JS cost, this was never the lag source.
-  4. Reduced-motion safety net updated to also force `filter:none` alongside the existing opacity/transform/animation overrides.
-  5. Pointer-events on overlap: clicks always go to the new copy from frame 1 of the slide change.
-- **Untouched**: image layer (v4 `HeroSlideLayer` memo + `slides.map` + `data-active` toggle + `.hero-slide-layer` opacity 1200ms cubic-bezier crossfade + static `/hero-initial.webp` first-paint kill + `.hero-img` filter `brightness(1.05) contrast(1.08) saturate(1.05)`); `inject-hero.mjs` build-time refresh; auth/booking/admin/RBAC/database/`/api` contracts; `link-signin` + `link-mobile-signin` testid contract; WhatsAppButton; `ROTATE_MS=8000`; v5.1 `min-h-*` layout-stability clamps on `<h1>` + `<p>`; reduced-motion JSX short-circuit.
-- **Prod-verified** on `youssef-booking.vercel.app` (build `index-*.js` + `index-*.css` from commit `f546c3c8`): `--font-display` = `'Plus Jakarta Sans', 'Inter', system-ui, ...`; `Outfit` removed from display family; `.hero-reveal` has `filter: blur(var(--hero-reveal-blur, 4px))`; `@media (max-width:768px)` overrides `--hero-reveal-blur:0` + `filter:none`; `@keyframes heroReveal` interpolates all three properties (opacity + transform + filter); `pointerEvents:"auto"`/`pointerEvents:"none"` present in JS bundle for animate/exit; `.hero-cursor`, `@keyframes heroCursorIn`, `@keyframes heroCursorBlink` — ALL ZERO occurrences in CSS + JS; `.hero-slide-layer` opacity 1.2s rule bit-identical to v4; `/hero-initial.webp` 200; `link-signin` testid present.
-
-### Hero Copy Typewriter Reveal — v5.1 (May 2026, commit `c300275a`, supersedes the v5 baseline `485b2bcd`)
-The hero badge / headline / subhead / buttons now reveal via a pure-CSS character-and-word typewriter system instead of the prior framer-motion stagger fade. The image-layer (v4 stacked-images / CSS-only fade — see "Hero Image Crossfade v4" below) is intentionally untouched; only the copy-layer mechanism changed.
-- **HeroReveal helper** (in `client/src/components/HeroSlider.tsx`): splits text by whitespace into tokens; in `mode="char"` each non-whitespace word is split into chars wrapped in `<span class="hero-reveal">` inside a per-word `<span class="hero-reveal-word">` (so line-wrapping still happens at word boundaries even though chars are inline-block); in `mode="word"` each whitespace-separated word becomes one `<span class="hero-reveal">`. Whitespace tokens are emitted as plain text content between word-wrappers so the browser sees natural word boundaries. Each reveal-span carries a CSS variable `--i` set to its 0-indexed position; the CSS rule then computes `animation-delay = --hr-start + --i × --hr-step`. ZERO per-frame React work — the splitting happens once at mount and the rest is compositor-driven.
-- **Accessibility**: each `HeroReveal` renders a `<span class="sr-only">{text}</span>` for assistive tech (so screen readers read the headline as one phrase, not character-by-character) plus an `aria-hidden="true"` visual span tree. When `prefers-reduced-motion: reduce` is set, the JSX short-circuits and renders plain text — no spans, no AnimatePresence exit, no cursor.
-- **Timing constants** (`COPY` in `HeroSlider.tsx`, all measured from new-copy mount, i.e. AFTER the 300ms exit fade of the outgoing copy completes):
-  - `badge` mode="word": start=0ms, step=90ms, dur=240ms → **420ms** total for 3 words ("PREMIUM PERSONAL TRAINING"). Within spec window 300-500ms. Word-mode preserves the `.tron-eyebrow` letter-spacing 0.28em throughout (letter-spacing applies between glyphs INSIDE each inline-block word).
-  - `headline` mode="char": start=500ms, step=22ms, dur=260ms → **~1140ms** total for ~40 chars. Within spec 900-1400ms. Followed by a soft cyan typewriter cursor at the end.
-  - `subhead` mode="word": start=1500ms, step=55ms, dur=320ms → **~1035ms** total for ~13 words. Within spec 800-1200ms.
-  - `buttons` (`.hero-button-reveal` class): start=2500ms, dur=420ms — single fade + translateY(8px → 0). The three CTAs come in as ONE calm cluster, not a cascade. Within spec 300-500ms.
-  - Total reveal ~2920ms — well within `ROTATE_MS=8000` so buttons are fully visible and clickable for ~5s before the next slide change.
-- **Cross-slide transition**: `AnimatePresence mode="wait"` wraps the copy block; outgoing copy fades to opacity:0 over 300ms (`COPY.exit.dur`), THEN new copy mounts and starts its reveal. Image fade (1200ms via `.hero-slide-layer` opacity transition) starts simultaneously with the 300ms text exit, so new text starts revealing as the new image becomes visible. No flicker, no overlap haze, no layout shift.
-- **Cursor lifecycle** — soft cyan typewriter cursor at the end of the headline:
-  - CSS `.hero-cursor` has TWO stacked animations: `heroCursorIn` (220ms ease-out forwards, fades opacity 0→1 starting at `--hr-start`) and `heroCursorBlink` (1.05s steps(2, start) infinite, starting at `--hr-start + 220ms`).
-  - JS uses a single `useState` + `useEffect` with one `setTimeout` per slide change. When the headline's last char finishes (`cursorEndMs = COPY.headline.start + (n-1)*step + dur + 120ms tail`, computed dynamically from `headlineCharCount` so it adapts to translations of any length), the `.hero-cursor--off` class is added.
-  - `.hero-cursor--off` sets `animation: none !important; opacity: 0 !important; transform: scaleY(0.4) !important`. The base `.hero-cursor` class has a `transition: opacity 480ms cubic-bezier, transform 480ms cubic-bezier` fallback that fires when the animation chain is killed and the property snaps to its cascade value — robust across all browsers, no reliance on engine-specific keyframe sampling. The `heroCursorOut` keyframe was removed in v5.1 because it could snap on engines that resolve "no `from`" against the underlying cascade value (opacity:0 base) instead of the live animated value.
-- **Layout stability** — added in v5.1 (commit `c300275a`) to prevent the buttons row from jumping when admin/i18n produces shorter or longer titles between slides:
-  - Headline `<h1>` carries `min-h-[112px] sm:min-h-[152px] md:min-h-[192px] lg:min-h-[256px] xl:min-h-[288px]` — 3 lines reserved at every breakpoint (font-size × leading-[1.02] × 3).
-  - Subhead `<p>` carries `min-h-[52px] sm:min-h-[60px] md:min-h-[68px]` — 2 lines reserved at every breakpoint (font-size × leading-relaxed × 2).
-  - The buttons row sits below this reserved space and stays rock-still across slide transitions. Even short headlines just sit at the top of the reserved box — the reservation only grows by ~1 line beyond average content.
-- **Performance contract met**:
-  1. opacity + transform only — NO layout/width/height/margin/font-size/clip-path/filter/backdrop-filter animation.
-  2. Pure CSS animations — zero per-frame JS during the reveal (HeroReveal splits text once at mount; the rest is compositor work).
-  3. Mobile compositor budget — v5.1 REMOVED `will-change` from `.hero-reveal` to avoid pre-allocating ~50 GPU layers per slide on low-end mobile (40-char headline + 13-word subhead). Modern browsers still promote opacity + transform animations to compositor automatically; layer is created lazily and torn down once the animation ends. `will-change` is RETAINED on `.hero-cursor` and `.hero-button-reveal` (single-element layers with predictable lifetime). Net active layer budget: ~2 forced + lazily-promoted reveal layers (>95% reduction from v5).
-  4. `backface-visibility: hidden` is kept on `.hero-reveal` because it forces a stable rendering path without forcing a layer.
-- **Reduced-motion safety net** in `client/src/index.css`: `@media (prefers-reduced-motion: reduce)` block forces `.hero-reveal` and `.hero-button-reveal` to instant final state (opacity:1, transform:none, animation:none); `.hero-cursor` and `.hero-cursor--off` get display:none + animation:none + transition:none. Defensive even if the JS branch ever desyncs from the OS preference.
-- **Untouched**: image layer (`HeroSlideLayer` memo + `slides.map` + `data-active` toggle + `.hero-slide-layer` 7-property GPU rule + 1200ms cubic-bezier opacity crossfade + static `/hero-initial.webp` first-paint kill + `.hero-img` filter `brightness(1.05) contrast(1.08) saturate(1.05)`); `inject-hero.mjs` build-time refresh; all auth/booking/admin/database/`/api` contracts; `link-signin` + `link-mobile-signin` testid contract; `WhatsAppButton`. Existing keyframes (`pageFade`, `tronPulse`, `tronCtaBreathe`, `tronBeamDrift`) — intact, no name collisions with the 5 new keyframes (`heroReveal`, `heroCursorIn`, `heroCursorBlink`, `heroButtonReveal`, plus the now-removed `heroCursorOut`).
-- **Files involved**: `client/src/components/HeroSlider.tsx` (HeroReveal helper + COPY constants + cursor lifecycle + min-h clamps + AnimatePresence mode="wait"), `client/src/index.css` (`.hero-reveal`, `.hero-reveal-word`, `.hero-cursor`, `.hero-cursor--off`, `.hero-button-reveal` + 4 keyframes + reduced-motion block).
-- **Prod-verified** on `youssef-booking.vercel.app` (build `index-WGUwbzFH.js` + `index-0wdHdPMG.css`): `.hero-reveal` rule has NO `will-change` (mobile compositor budget restored), `.hero-cursor` has `transition: opacity .48s, transform .48s` fallback, `.hero-cursor--off` is `animation:none + opacity:0 + transform:scaleY(.4)` !important, headline + subhead `min-h-[*]` classes present at all breakpoints, badge `mode:"word"` with `step:90,dur:240` (= 420ms total, within spec), `@keyframes heroCursorOut` removed, `.hero-slide-layer` rule + `.hero-img` filter + `/hero-initial.webp` 200 + `ROTATE_MS=8e3` all bit-identical to v4. Vercel READY in ~24 s.
-
-### Hero Slider — Static Asset First Paint + Post-Load Clarity Consistency (May 2026)
-- **First paint** is a real `<img src="/hero-initial.webp" loading="eager" fetchpriority="high" decoding="sync">` rendered from React frame 1 — never an API call, never a `useEffect`, never a global window state. Preloaded in `<head>` via `<link rel="preload" as="image" href="/hero-initial.webp" fetchpriority="high">` so the browser starts the network fetch the instant the HTML byte hits the parser.
-- **Build-time refresh:** `scripts/inject-hero.mjs` runs on every Vercel build, reads the active hero from `hero_images.image_data_url` (id=2 currently), validates `image/webp` MIME + ≥1 KB size, and writes the binary to `dist/public/hero-initial.webp`. The static asset and the active dynamic hero are therefore the SAME image by construction — no visible swap when API hydrates.
-- **Post-load clarity consistency:** The previous twin-image depth-of-field rig (`.hero-img-blur` + `.hero-img-mask` radial mask fading to `transparent 95%`) caused the hero to read as "blurred at the edges" after API hydration. **Removed in commit `721544ac`**: single sharp `<img>` per dynamic slide, no blur copy, no radial mask. Filter on both static and dynamic images is identical: `brightness(1.05) contrast(1.08) saturate(1.05)` (no hue-rotate, no cyan tint). Bottom gradient is a single neutral `linear-gradient(to top, rgba(0,0,0, overlayOpacity/100), transparent 55%)` — no navy tint, direct 1:1 alpha mapping with admin slider. Ken Burns animates `transform` only — never `filter`, `blur`, or `opacity` of the image after it's visible.
-- **Admin tuning preserved:** The per-image admin sliders (`focalX`, `focalY`, `zoom`, `rotate`, `brightness`, `contrast`, `overlayOpacity`) still work — they multiply onto the baseline filter via `sharpStyle` in `HeroSlider.tsx`.
-- **Files involved:** `client/public/hero-initial.webp` (committed binary), `client/index.html` (preload tag), `client/src/components/HeroSlider.tsx` (single-image render + matched filter), `client/src/index.css` (`.hero-img` filter + emptied `.hero-img-blur`/`.hero-img-mask`), `scripts/inject-hero.mjs` (build-time refresh), `vercel.json` (no special config — Vite copies `client/public/*` automatically).
-
-### Vercel Deployment Scaffolding (additive — Replit still primary)
-- `server/app.ts` exposes `createApp()` which builds the Express app **without** calling `listen`. `server/index.ts` (Replit) wraps it and starts the listener; `api/index.ts` (Vercel) wraps it as a serverless handler.
-- `vercel.json` rewrites `/api/*` → `/api/index.ts` and everything else → `/index.html`; build command is `vite build`, output `dist/public`.
-- `GET /api/health` returns `{ ok: true, env: "replit" | "vercel" }` — easy environment probe.
-- **Database (Vercel):** A separate Neon Postgres project (eu-central-1, pooled endpoint `ep-curly-dream-ali5mvn2-pooler`) is wired in via `DATABASE_URL` on Vercel (production + preview, marked Sensitive). Schema is pushed with `DATABASE_URL=<neon> npm run db:push -- --force`. Replit continues to use its built-in `helium` Postgres for development; the two databases are independent. Tables verified on Neon: `users`, `bookings`, `inbody_records`, `consent_records`, `packages`, `blocked_slots`, `progress_photos`, `settings`.
-- **Production live URL:** `https://youssef-booking.vercel.app` — `/api/health`, registration (`POST /api/auth/register`), login (`POST /api/auth/login`) and `/api/auth/me` all verified end-to-end against Neon.
-- **Caveat:** InBody and progress-photo uploads still write to local `/uploads`. Those will require object storage (Replit Object Storage, S3, R2, etc.) before Vercel can serve them. Profile pictures are unaffected (base64 in DB).
-
-### Verified-Badge Performance
-- `/api/users` (admin client list) uses `sanitizeAndEnrichMany` which calls `storage.getVerificationFlagsForUsers(ids)`. That helper issues exactly two grouped `SELECT ... GROUP BY user_id` queries (one against `inbody_records`, one against completed `bookings`) instead of 2*N per-user fetches. Empirically the full list (11 clients) returns in ~10ms.
-### FINAL Hero Flash Kill — Static Asset + Preload (May 2026, commit `2f6a1bd6`, supersedes the bake)
-The user reported the gradient flash was STILL visible after the build-time HTML bake (`84260a44` + `5a0a5ec6`) shipped. Root cause: the bake preloaded the image data URL early but the `<img>` element was still not rendered until React mounted — leaving a flash window between HTML parse and React's first paint. This commit replaces the entire bake mechanism with a real, static `<img src="/hero-default.webp">` that's part of the JSX from the very first React render and is preloaded by a real `<link rel="preload" as="image">` in the HTML head BEFORE any script tag.
-- **Static asset — `client/public/hero-default.webp`** (80 KB, 1920×1080 WebP/VP8): the current production hero photo, pulled from `/api/hero-images` on the live site and committed to the repo as the dev/initial-deploy default. Vite copies `client/public/*` to `dist/public/*` verbatim at build time, so the file is served by Vercel's CDN at `/hero-default.webp` as a real static file (HTTP 200, `content-type: image/webp`). Same delivery path as `favicon.png` — no API, no JS, no hydration.
-- **Preload tag — `client/index.html`**: `<link rel="preload" as="image" href="/hero-default.webp" fetchpriority="high">` placed BEFORE the font preconnects so the browser starts decoding the hero image as the very first resource after the favicon. This is the LCP element on the homepage.
-- **Rendered in JSX — `client/src/components/HeroSlider.tsx`**: replaced the 4-layer ambient gradient (which was the BASE layer when no slides were loaded — and the visible "flash" the user kept seeing) with a real `<img src="/hero-default.webp" loading="eager" fetchpriority="high" decoding="sync" alt="" className="hero-img absolute inset-0 w-full h-full object-cover" data-testid="img-hero-static-default" />` element. This `<img>` is in the DOM from the FIRST React render — not conditional on `current`, not conditional on `initialData`, not conditional on the boot promise. The dynamic admin slides render LATER in DOM order with `absolute inset-0`, so when a dynamic slide loads it cleanly covers the static base. `data-hero-state` is now hard-coded to `"ready"` — the loading and empty states no longer exist.
-- **Build-time refresh — `scripts/inject-hero.mjs` (rewritten)**: dropped the previous 220 KB HTML inflation entirely. The script's only job now: read the active hero from Neon during Vercel build, decode the data URL to binary, write `dist/public/hero-default.webp`. So when admin uploads a new hero in production, the static file is automatically refreshed on the next deploy — no stale committed binary problem. Failure-safe: missing `DATABASE_URL`, empty table, non-data-URL value, or any error all log a warning and exit 0; the committed dev placeholder remains and the deploy succeeds. Verified live: build log says `[inject-hero] Refreshed /vercel/path0/dist/public/hero-default.webp from active hero id=2 (image/webp, 80040 bytes).`
-- **Bootstrap script kept** — for the rotating slider only. The inline boot fetch in `client/index.html` still fires `/api/hero-images` so `useHeroImages()` has the FULL active list (not just the first slide) for 6s rotation. But the FIRST PAINT no longer depends on it in any way — the boot script is now purely an enhancement layer that extends the static image with the dynamic admin slides.
-- **Prod-verified** on `youssef-booking.vercel.app` (build `index-B-gRezMr.js`): HTML shrunk back from 220 KB → 8.5 KB (data URL bake removed), `/hero-default.webp` serves 200 / 80040 bytes / `image/webp` from the CDN, bundle contains the `/hero-default.webp` string + `img-hero-static-default` testid, auth contract intact (`link-signin` + `link-mobile-signin` both present). Vercel READY in ~40 s.
-
-### Earlier attempts (superseded by the static-asset approach above)
-**Defensive hardening (architect HIGH fix, commit `5a0a5ec6`):** Boot fetch in `client/index.html` previously did `r.ok ? r.json() : []` and ALWAYS overwrote `window.__INITIAL_HERO_IMAGES__` with the result. Architect flagged this as HIGH severity: a transient API failure (502, network blip, 429) would wipe the baked seed with `[]` and — combined with the global `staleTime: Infinity` — lock the hero into an empty state for the entire session. Fix: capture `bakedSeed` BEFORE the fetch, throw on non-OK so the `.catch` runs, and never overwrite a non-empty baked seed with empty data. `scripts/inject-hero.mjs` also enforced a `MAX_BAKE_BYTES = 350 KB` cap. (Both moot now — the bake is gone.)
-
-### Original build-time bake (commit `84260a44`)
-- **Why a second pass was needed**: after `963488fc`+`ad33a470` shipped (parallel boot fetch + initialData + decoding=sync), the user reported the gradient flash was STILL visible on hard refresh. Root-cause analysis identified TWO remaining sources the parallel-fetch approach could not eliminate: (1) the boot fetch, no matter how early it fires, still requires an API round-trip for the image bytes — 200-400 ms on a cold CDN edge — during which only the gradient is visible; (2) `<motion.div initial={{ opacity: 0 }}>` was running its 900 ms cinematic cross-fade on the FIRST slide too, so even after the image landed in the DOM it took ~1 s to reach full opacity.
-- **Fix A — `scripts/inject-hero.mjs` build-time hero bake**: new post-build Node script wired into `vercel.json`'s `buildCommand` after `vite build` (`&& node scripts/inject-hero.mjs`). Connects directly to Neon via the existing `pg` dependency, reads active hero images, then patches `dist/public/index.html` to insert two tags immediately after the favicon link: (i) `<link rel="preload" as="image" href="DATA_URL" fetchpriority="high">` for the first slide and (ii) `<script>window.__INITIAL_HERO_IMAGES__=[first];window.__HERO_BAKED__=true</script>`. The first hero photo is now part of the very first byte the CDN sends to the browser — zero round-trip required for first paint. Verified live on `youssef-booking.vercel.app`: HTML went from 6 KB → 220 KB (the embedded 106 KB WebP data URL appears twice — once in the preload, once in the initial-state script). Vercel build log confirms: `[inject-hero] Baked first of 1 hero(es) into HTML — imageDataUrl=106743b, HTML grew from 6017b → 219878b.`
-- **Fix B — bake script is failure-safe**: missing `DATABASE_URL`, empty hero_images table, query failure, anchor not found, OR HTML write failure all log a warning and exit 0. The deploy never breaks; the runtime async-fetch fallback in `client/index.html` keeps working exactly as before. Worst-case outcome is the previous (already-shipped) parallel-fetch behaviour, never a broken page. XSS-safe: `</script` literals inside slide titles are escaped before insertion.
-- **Fix C — bootstrap script became a refresher**: `client/index.html` inline boot script now checks `window.__HERO_BAKED__`. When true (prod), it skips its synthetic preload (the build-time one is already in the DOM) but STILL runs its fetch — to pick up any slides the admin uploaded since the last deploy. The full list overwrites `window.__INITIAL_HERO_IMAGES__` so the rotating slider has every active slide. When false (dev preview / deploy without `DATABASE_URL`), behaves exactly like before.
-- **Fix D — `initialDataUpdatedAt: 0` in `useHeroImages`**: with `initialData` present, TanStack Query v5 by default considers the data fresh and skips `queryFn`. That meant the slider would render only the baked first slide forever and never see slides 2..N from the API. Marking the seed as already stale forces `queryFn` to run on mount, which awaits the in-flight boot promise (no second fetch — same logic from `ad33a470`).
-- **Fix E — first-paint fade removed in `HeroSlider.tsx`**: changed `<motion.div initial={reduced ? false : { opacity: 0 }}>` → `initial={reduced || tick === 0 ? false : { opacity: 0 }}`. On the very first render (`tick === 0`), no opacity animation runs — the baked image is at full opacity on frame 1. Subsequent slide rotations (`tick > 0`) keep the cinematic 900 ms cross-fade — that IS the slider's signature transition, not a load animation, and only runs after the rotation interval has fired at least once.
-- **Untouched** (per directive): auth/Sign In, booking flow, RBAC, all `/api/*` contracts, Neon schema, ImageCropper, HeroSlideEditor sliders, Transformation Manager, server-side hero-image storage. The bake script is read-only (`SELECT` only). Sign-In permanent-static contract from `015eed5a` (testids `link-signin` + `link-mobile-signin` + zIndex 9999 + `/auth` href) intact.
-- **Prod-verified** on `youssef-booking.vercel.app` (build `index-DBL4PWmQ.js`): `__HERO_BAKED__` + `rel="preload" as="image"` + `data:image/` markers all present in HTML, build log confirmed bake fired, hero photo appears with full opacity on hard refresh. Vercel READY in ~40 s.
-
-### Instant Hero First-Paint + Client-First Polish (May 2026 — `963488fc`)
-- **Root cause of the gradient flash that this commit eliminates**: previously the homepage rendered a flat dark gradient for ~300-800ms on prod while the chain went HTML parse → JS bundle download → React mount → useQuery fires → /api/hero-images network round-trip → JSON parse → hero `<img>` renders. The visible flash was the gap between "React mounted" and "image data arrived". Vercel serves a static `index.html` (rewrites at `/((?!.*\..*).*)`), so SSR injection wasn't an option — fix had to be 100% client-side.
-- **Pre-bootstrap fetch** in `client/index.html`: inline `<script>` in `<head>` fires `fetch("/api/hero-images")` the instant the HTML parser sees it, **in parallel** with the JS bundle download and font CSS. No deps, no async/await (safe in old in-app browsers like Instagram/FB). On success it stashes the parsed list on `window.__INITIAL_HERO_IMAGES__` AND dynamically injects `<link rel="preload" as="image" fetchpriority="high">` for the first active slide's data URL — the browser's image decoder starts work BEFORE React mounts. Hero images are base64 WebP data URLs (~80-150 KB), and preloading a `data:` URL is fully spec-supported. The Promise is also exposed as `window.__HERO_BOOT__` for future await-on-mount needs. On any failure it silently leaves the global empty and `useQuery`'s normal mount-time fetch picks up where it left off.
-- **TanStack Query `initialData` wiring** in `client/src/hooks/use-hero-images.ts`: `useHeroImages()` now reads `window.__INITIAL_HERO_IMAGES__` via `initialData`. Combined with the global `staleTime: Infinity`, the hook never refetches on mount when bootstrap data is present. Admin upload/update/delete mutations still invalidate the key explicitly. `declare global` typing keeps TS strict.
-- **`HeroSlider.tsx`**: switched from inline `useQuery` to the shared hook (one-line swap — every other behaviour preserved). First-slide `<img>` is now `decoding="sync"` (was `"async"`) — with the preload landed before React mounts, sync decode means the photo appears on the very first paint. Subsequent slides stay `decoding="async"` so the 6s rotation never blocks the main thread.
-- **Cinematic ambient base layer** replaced the old flat dark gradient: 4-layer two-light setup (warm key TL `hsl(200 90% 22% / 0.85)` + cool cyan rim BR `hsl(195 100% 32% / 0.55)` + low-front vignette + deep navy ambient `linear-gradient(180deg, #030814, #050b18, #02060f)`). All static gradients, GPU-cheap (no blur/animation/backdrop-filter). Sits invisibly behind a slide when one exists; carries the hero alone on cold-start (zero-slide) state — branded and confident, never bare.
-- **Client-first UX extras**:
-  - `hero.cinematic.startTransformation` EN value updated to `"Start Your Transformation Today"` (other 9 languages left untouched to avoid machine-translation drift across the 1092×10 auto-generated flat-key dictionary). `"View Results"` + `"Talk to Youssef"` + WhatsApp prefill `"Hi Youssef, I saw your website and I want to start my transformation."` were ALREADY exact spec wording — verified before editing.
-  - 3-step teaser strip on HomePage (`#how-it-works-teaser`, between About and Specialties): "Choose your goal" → "Book your session" → "Track your progress" with bottom link to the existing `/how-it-works` 6-step page. Uses `t(key, fallback)` so adding new keys does NOT touch the auto-generated `translations.ts`. Non-EN visitors see the EN strings until proper translations land.
-  - Hero Manager helper text (`AdminSettings.tsx`): cyan-bordered tip card "For instant loading, use WebP hero images around 1920×1080 and keep file size under 500 KB." Surfaces the perf guidance the new pre-bootstrap chain depends on.
-- **Untouched** (per directive): all auth/booking/RBAC/API contracts; Neon DB; ImageCropper; HeroSlideEditor sliders; Transformation Manager; non-hero `<img>` lazy-loading; Sign-In permanent-static contract from `015eed5a` (testids `link-signin` + `link-mobile-signin` + zIndex 9999 + `/auth` href all still present in the built bundle).
-- **Prod-verified** on `youssef-booking.vercel.app` (build `index-DR2mjUpF.js`): bootstrap-script literals present in HTML, "Start Your Transformation Today" + all 3 step strings + perf hint in built bundle, `data-hero-state` rendered, real hero photo (1 active slide, 106 KB) appears immediately on hard refresh.
-
-### TRON-Quiet Polish Pass (May 2026)
-- **Glow intensity dialled down ~30 % globally** so the homepage reads as premium-quiet instead of arcade-flashy:
-  - `.tron-cta` resting glow: `0 0 28px / 0.55` → `0 0 20px / 0.40`. Hover glow: `0 0 56px / 0.85` → `0 0 40px / 0.60` (mid layer), `0 0 100px / 0.45` → `0 0 70px / 0.30` (outer bloom).
-  - `@keyframes tronPulse` peak: `0 0 22px / 0.7` → `0 0 16px / 0.50` (Apple-notification feel, not marquee).
-  - `@keyframes tronCtaBreathe` peak: `0 0 42px / 0.82` → `0 0 30px / 0.55` to match the new quieter `.tron-cta` baseline. Mobile still gated off so scroll stays silky.
-- **Apple/Tesla hover micro-interaction**: `.tron-cta:hover` now does `translateY(-1px) scale(1.03) translateZ(0)`. translateZ(0) added to the resting state too so the GPU layer is established up-front and the scale is silky. Transitions tightened (box-shadow 360 → 320 ms, filter 220 → 200 ms).
-- **Hero copy reveal snappier**: HeroSlider stagger duration `0.55s → 0.4s` per spec. Reads as alive without dragging.
-- **Profile photo on HomePage**: `<img>` now has `decoding="async"` so the decode runs off the main thread. NOTE: deliberately did NOT add `loading="lazy"` — this image sits in the second-screen "About Youssef" grid that can be partially visible on tall desktops, so lazy could regress LCP. Bottom overlay reduced ~35 % (`from-black/85` → `from-black/55`) so the photo reads brighter while the certification badges still have enough contrast.
-- **Auth UI is intentionally untouched** — the permanent static Sign-In link from commit `015eed5a` (rendered unconditionally with `zIndex: 9999, opacity: 1, pointerEvents: auto`) remains the single source of truth for auth entry.
-
-### Hero Decorative-Strip + Header Z-Lock (May 2026, latest)
-- **Root cause for "Sign In looks hidden / image looks dull"**: the hero used to stack EIGHT pointer-events:none decorative layers on top of the photo (`.tron-spotlight`, `.tron-shaft`, `.tron-grid`, `.tron-vignette`, two animated `.tron-beam` dividers, `.hero-subject-glow` radial, `.hero-isolate::after` rim light) plus a left-side horizontal navy hold gradient. Each painted on every scroll + Ken-Burns frame, and collectively (a) made the photo read as hazy/washed-out and (b) raised the visual density near the top-right corner enough that the Sign-In CTA blended into the gradient pad on mobile.
-- **Fix**: deleted all 8 decorative layers + the horizontal hold. The hero now stacks: bokeh background image + sharp foreground image + ONE single linear bottom-up overlay `linear-gradient(to top, hsl(220 60% 4% / α) 0%, transparent 55%)` where α scales with the admin `overlayOpacity` slider (0..60 % darkness budget). Upper 45 % of every photo is completely untouched.
-- **Cinematic grade dialled UP** (now possible because there are no dimming layers stacked on top): `.hero-img` filter is `contrast(1.12) brightness(1.08) saturate(1.10) hue-rotate(-5deg)`; HeroSlider `sharpStyle` re-aligned to multiply admin brightness/contrast onto the same 1.12/1.08 baseline.
-- **Header always-on-top**: z-index 50 → `z-[100]`, new `relative z-[110]` wrapper around the auth area (LanguageSelector + Sign-In) as belt-and-braces, `padding-top: env(safe-area-inset-top)` so the iOS notch/Dynamic Island never overlaps the brand.
-- **Body scroll**: `overscroll-behavior-y: none` → `overscroll-behavior: contain` per spec — preserves pull-to-refresh, still prevents propagation to browser chrome.
-- **Net perf win**: 8 fewer compositor layers per hero slide. First hero img already had `loading="eager"` + `fetchpriority="high"`, others lazy.
-
-### Hero Clarity + Perf Pass (May 2026)
-- Cinematic baseline filter on `.hero-img` softened from `contrast(1.12) brightness(1.08) saturate(1.12) hue-rotate(-6deg)` to `contrast(1.08) brightness(1.05) saturate(1.10) hue-rotate(-5deg)` so the photo's own micro-contrast carries the image instead of being crushed by the grade. The HeroSlider inline filter chain (`sharpStyle`) restates the same baseline so admin tuning still multiplies onto it.
-- `.hero-img-blur` blur dropped 14px → 10px and grade eased so masked edges read as "soft" not "smeared". `.hero-img-mask` radial widened from 32%/55%/92% to 40%/62%/95% so the subject area stays razor-sharp for noticeably longer before the bokeh takes over.
-- Bottom navy gradient multipliers re-tuned from (2.45 / 1.57 / 0.51) to (1.85 / 0.92 / 0.20) so the default `overlayOpacity=35` now maps to ~0.65 alpha at the bottom edge and effectively transparent above 50%, keeping the upper half of the photo (where the subject lives) clear.
-- Explicit `transform: translateZ(0)` on `.hero-img` and appended `translateZ(0)` to both inline transforms in HeroSlider so admin slider updates can never accidentally drop the GPU layer.
-- Header (`Navigation.tsx`): z-index 40 → 50 (auth area always wins stacking), mobile backdrop-blur removed entirely (real paint cost on mid-range Android), kept lighter desktop-only blur. Mobile bg opacity raised 85% → 95% so the header stays readable without blur.
-- `body` now sets `-webkit-overflow-scrolling: touch` (rescues older in-app browsers that strip Safari's default) and `overscroll-behavior-y: none` (kills the rubber-band layout shift at the top of the page on Chrome Android — desirable on a public marketing site).
-- Auth UI in `Navigation.tsx` is intentionally unchanged from Part 1: `isAuthenticated = Boolean(user)` and `shouldShowSignIn = !isAuthenticated`, no early return null, no dependency on loading/status. `ProtectedRoute` in `App.tsx` is intentionally preserved — it's page-level authorization for `/admin` and `/dashboard`, NOT auth UI; removing its early return would expose admin pages to anonymous visitors.
-
-### Per-Image Hero Display Tuning (May 2026)
-- `hero_images` has 7 nullable display-tuning columns (`focal_x`/`focal_y` -200..200 px, `zoom` 0.8..2.0, `rotate` -10..10 deg, `brightness` 0.9..1.2, `contrast` 0.95..1.2, `overlay_opacity` 0..60). Added additively in `server/ensureSchema.ts` with identity defaults so existing rows backfill safely. Zod ranges in `updateHeroImageSchema` (shared/schema.ts) match the slider min/max in AdminSettings → HeroSlideEditor exactly so the homepage cannot be visually broken.
-- `HeroSlider.tsx` applies tuning at render time as a single composed inline `transform` (translate/scale/rotate) + `filter` (multiplied against the cinematic baseline `contrast(1.12) brightness(1.08) saturate(1.12) hue-rotate(-6deg)`) on **both** the sharp foreground and the blurred bokeh copy, so the depth-of-field seam tracks the subject. The bottom navy gradient stops scale by `overlay_opacity / 35` so 35 = original look, 0 = clear, 60 = much darker.
-- Admin UI: HeroSlideEditor has a live preview tile + 7 sliders + "Reset to defaults" link. 10 new `admin.settingsPage.heroTuning*` keys translated across all 10 supported languages.
-- `.hero-img` and `.hero-img-blur` get `image-rendering: auto` + `backface-visibility: hidden` + `will-change: transform` so the slide stays on a stable GPU compositor layer through Ken Burns + per-image tuning + cross-fade.
-
-### Schema Self-Heal on Boot (May 2026 emergency recovery)
-- `server/ensureSchema.ts` runs ONCE per cold start (cached promise) before any route is registered. Pure additive `IF NOT EXISTS` DDL — safe to re-run forever, idempotent on every boot. Never destructive.
-- Why: prod Neon and dev's `helium` Postgres are independent. The May-2026 premium-business migration (`no_show_count`, `admin_notes`, `start_date`/`expiry_date`/`status`, attendance audit fields, `renewal_requests`, `extension_requests`, `password_reset_token`/`password_reset_expires`) was pushed to dev only; prod cold-started with `bootstrapError: column "no_show_count" does not exist`. ensureSchema fixes that automatically on first request after deploy.
-- `/api/_debug` exposes `bootstrapError` so this class of failure is one curl away.
-
-### Forgot-Password Reset Flow
-- `POST /api/auth/forgot-password` — generates a 32-byte random token, stores its sha256 hash + 30-min expiry on the user, emails a reset link via Resend (`sendPasswordResetNotification`). Always returns the same friendly message regardless of whether the email exists (no enumeration). Reset URL origin comes from `PUBLIC_APP_URL` env (or hardcoded `youssef-booking.vercel.app` in production) — host headers are NOT trusted, blocking host-header poisoning phishing.
-- `POST /api/auth/reset-password { token, password }` — atomic `UPDATE ... WHERE token=hash AND expires>now() RETURNING id` via `storage.consumePasswordResetToken`, so concurrent requests cannot double-consume a token. Min password length 6.
-- `client/src/pages/ResetPassword.tsx` (route `/reset-password?token=...`) — reads the token once on mount, immediately scrubs it from the URL via `history.replaceState`, then submits new password + confirm.
-- Sanitizers (`sanitizeUser`, `sanitizeUserAdminView`) strip `passwordResetToken`/`passwordResetExpires` so they can never leak through `/api/auth/me` or admin user lists.
-- Rate limiter prefers Express's resolved `req.ip` (with `trust proxy: 1` set in production) over the raw `X-Forwarded-For` header to make spoofing harder.
+    - Dashboard with key performance indicators (KPIs) and quick actions.
+    - Management of bookings (reschedule, cancel, manual booking).
+    - Comprehensive client list with detailed client pages for data management, package assignment, and progress tracking.
+    - Staff management with role-based access control.
+    - System settings for cutoff times, WhatsApp number, and blocked slots.
+- **Premium Business Workflow:** Explicit package lifecycles (start/expiry dates, status), attendance tracking, and admin notes for clients.
+- **Password Reset:** Secure forgot/reset password flow with email notification and token invalidation.
+
+## User preferences
+
+_Populate as you build_
+
+## Gotchas
+
+- **Database Schema Mismatches:** If `server/db/schema.ts` changes, run `npm run db:codegen` and `npm run db:push` to update the Drizzle schema and apply migrations. For Vercel, manual `db:push` is often required for production.
+- **Image Uploads on Vercel:** InBody and progress photo uploads (which use Multer) currently write to a local `/uploads` directory. This will not persist on Vercel's ephemeral filesystem and requires integration with object storage (e.g., S3, R2) for production. Profile pictures are exempt as they are base64 encoded into the database.
+- **Hero Image Preload:** The `scripts/inject-hero.mjs` script is critical for optimal homepage LCP on Vercel. Ensure `DATABASE_URL` is configured for Vercel builds to refresh the static `/hero-default.webp`.
+- **Auth Flow:** The mobile "Sign In" pill in the header is intentionally always visible, even for logged-in users, as per a specific UX directive. Do not modify this behavior.
+
+## Pointers
+
+- **Drizzle ORM Docs:** [https://orm.drizzle.team/docs/overview](https://orm.drizzle.team/docs/overview)
+- **TanStack Query Docs:** [https://tanstack.com/query/latest/docs/react/overview](https://tanstack.com/query/latest/docs/react/overview)
+- **Tailwind CSS Docs:** [https://tailwindcss.com/docs](https://tailwindcss.com/docs)
+- **Framer Motion Docs:** [https://www.framer.com/motion/](https://www.framer.com/motion/)
+- **PostgreSQL Docs:** [https://www.postgresql.org/docs/](https://www.postgresql.org/docs/)
+- **OpenAI API Docs:** [https://platform.openai.com/docs/overview](https://platform.openai.com/docs/overview)

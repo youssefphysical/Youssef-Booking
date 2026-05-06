@@ -8,6 +8,8 @@ import {
   insertBlockedSlotSchema,
   insertPackageSchema,
   updatePackageSchema,
+  insertPackageTemplateSchema,
+  updatePackageTemplateSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -151,6 +153,21 @@ export const api = {
     delete: { method: "DELETE" as const, path: "/api/packages/:id" },
   },
 
+  packageTemplates: {
+    list: { method: "GET" as const, path: "/api/package-templates" }, // ?activeOnly=true
+    create: {
+      method: "POST" as const,
+      path: "/api/package-templates",
+      input: insertPackageTemplateSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/package-templates/:id",
+      input: updatePackageTemplateSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/package-templates/:id" },
+  },
+
   inbody: {
     list: { method: "GET" as const, path: "/api/inbody" }, // ?userId=
     get: { method: "GET" as const, path: "/api/inbody/:id" },
@@ -220,6 +237,8 @@ export type CreateBlockedSlotInput = z.infer<typeof api.blockedSlots.create.inpu
 export type UpdateProfileInput = z.infer<typeof api.users.update.input>;
 export type CreatePackageInput = z.infer<typeof api.packages.create.input>;
 export type UpdatePackageInput = z.infer<typeof api.packages.update.input>;
+export type CreatePackageTemplateInput = z.infer<typeof api.packageTemplates.create.input>;
+export type UpdatePackageTemplateInput = z.infer<typeof api.packageTemplates.update.input>;
 export type CreateInbodyInput = z.infer<typeof api.inbody.create.input>;
 export type UpdateInbodyInput = z.infer<typeof api.inbody.update.input>;
 export type CreateProgressInput = z.infer<typeof api.progress.create.input>;

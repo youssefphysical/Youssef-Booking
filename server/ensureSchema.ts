@@ -120,6 +120,35 @@ async function run(): Promise<void> {
       sort_order integer NOT NULL DEFAULT 0,
       created_at timestamp DEFAULT now()
     );
+
+    -- May 2026 Package Builder wave: admin-defined package catalogue +
+    -- snapshot columns on per-client packages so editing a template can
+    -- never mutate an existing client's assignment.
+    CREATE TABLE IF NOT EXISTS package_templates (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      type text NOT NULL DEFAULT 'standard',
+      paid_sessions integer NOT NULL DEFAULT 0,
+      bonus_sessions integer NOT NULL DEFAULT 0,
+      total_sessions integer NOT NULL DEFAULT 0,
+      price_per_session integer NOT NULL DEFAULT 0,
+      total_price integer NOT NULL DEFAULT 0,
+      expiration_value integer NOT NULL DEFAULT 30,
+      expiration_unit text NOT NULL DEFAULT 'days',
+      description text,
+      is_active boolean NOT NULL DEFAULT true,
+      display_order integer NOT NULL DEFAULT 0,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+
+    ALTER TABLE IF EXISTS packages
+      ADD COLUMN IF NOT EXISTS template_id        integer,
+      ADD COLUMN IF NOT EXISTS name               text,
+      ADD COLUMN IF NOT EXISTS paid_sessions      integer,
+      ADD COLUMN IF NOT EXISTS bonus_sessions     integer,
+      ADD COLUMN IF NOT EXISTS price_per_session  integer,
+      ADD COLUMN IF NOT EXISTS total_price        integer;
   `;
 
   try {

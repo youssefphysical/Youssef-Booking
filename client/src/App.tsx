@@ -28,6 +28,7 @@ import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
+import AdminPackageBuilder from "@/pages/AdminPackageBuilder";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
 import DirectPaymentPage from "@/pages/DirectPaymentPage";
@@ -117,6 +118,9 @@ function Router() {
         </Route>
         <Route path="/admin/packages">
           <ProtectedRoute component={AdminPackages} adminOnly />
+        </Route>
+        <Route path="/admin/package-builder">
+          <ProtectedRoute component={AdminPackageBuilder} adminOnly />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />

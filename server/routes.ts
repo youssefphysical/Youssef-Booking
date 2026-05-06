@@ -15,6 +15,8 @@ import {
   updateProfileSchema,
   insertPackageSchema,
   updatePackageSchema,
+  insertPackageTemplateSchema,
+  updatePackageTemplateSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -1543,8 +1545,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid package" });
     }
-    // Validate partner if duo
-    if (parsed.data.type === "duo30") {
+    // Validate partner if duo (legacy "duo30" or new template type "duo")
+    if (parsed.data.type === "duo30" || parsed.data.type === "duo") {
       if (!parsed.data.partnerUserId) {
         return res.status(400).json({ message: "Duo packages require a partner client" });
       }
@@ -1569,6 +1571,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/packages/:id", requireAdmin, async (req, res) => {
     await storage.deletePackage(Number(req.params.id));
+    res.sendStatus(204);
+  });
+
+  // ============== PACKAGE TEMPLATES (admin catalogue) ==============
+  // GET is intentionally PUBLIC for ?activeOnly=true so the homepage
+  // packages section can render without an auth round-trip. Admins
+  // querying the full list (including inactive) must be authenticated.
+  app.get("/api/package-templates", async (req, res) => {
+    const activeOnly = req.query.activeOnly === "true";
+    const me = req.user as User | undefined;
+    const isAdmin = me?.role === "admin";
+    if (!activeOnly && !isAdmin) {
+      // Public traffic only ever sees the active list.
+      return res.json(await storage.getPackageTemplates({ activeOnly: true }));
+    }
+    res.json(await storage.getPackageTemplates({ activeOnly }));
+  });
+
+  app.post("/api/package-templates", requireAdmin, async (req, res) => {
+    const parsed = insertPackageTemplateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid template" });
+    }
+    const created = await storage.createPackageTemplate(parsed.data);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/package-templates/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = updatePackageTemplateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid update" });
+    }
+    const existing = await storage.getPackageTemplate(id);
+    if (!existing) return res.status(404).json({ message: "Template not found" });
+    const updated = await storage.updatePackageTemplate(id, parsed.data);
+    res.json(updated);
+  });
+
+  app.delete("/api/package-templates/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const existing = await storage.getPackageTemplate(id);
+    if (!existing) return res.status(404).json({ message: "Template not found" });
+    // Note: per-client `packages` rows store a snapshot copy of every
+    // field they need (name/sessions/price), so deleting a template
+    // here NEVER affects the historical record on any client.
+    await storage.deletePackageTemplate(id);
     res.sendStatus(204);
   });
 

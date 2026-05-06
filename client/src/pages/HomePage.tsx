@@ -24,6 +24,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
+import { usePackageTemplates } from "@/hooks/use-package-templates";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Footer } from "@/components/Footer";
 import { HeroSlider } from "@/components/HeroSlider";
@@ -415,6 +416,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* PACKAGES — admin-managed catalogue. Renders nothing when empty. */}
+      <PublicPackages />
+
       {/* TRANSFORMATIONS — admin-managed before/after cards.
           Renders nothing until at least one active row exists. */}
       <Transformations />
@@ -497,6 +501,98 @@ export default function HomePage() {
 
       <Footer />
     </div>
+  );
+}
+
+// =====================================================================
+// PUBLIC PACKAGES SECTION
+// Driven by the admin Package Builder. Hides itself completely when no
+// active templates exist so the homepage stays clean for new sites.
+// Pricing is intentionally displayed (this is the public storefront).
+// =====================================================================
+function PublicPackages() {
+  const { t } = useTranslation();
+  const { data: templates = [] } = usePackageTemplates({ activeOnly: true });
+
+  if (!templates || templates.length === 0) return null;
+
+  return (
+    <section className="max-w-6xl mx-auto px-5 py-20" id="packages">
+      <SectionHeader
+        eyebrow={t("home.packages.eyebrow")}
+        title={t("home.packages.title")}
+        subtitle={t("home.packages.subtitle")}
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {templates.map((tpl, i) => {
+          const message = t("home.packages.whatsappMsg").replace("{name}", tpl.name);
+          return (
+            <motion.div
+              key={tpl.id}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ delay: Math.min(i * 0.05, 0.3) }}
+              className="tron-card rounded-2xl p-6 flex flex-col"
+              data-testid={`public-package-${tpl.id}`}
+            >
+              <p className="tron-eyebrow text-[10px] mb-2">
+                {t(`admin.packageBuilder.type.${tpl.type}`)}
+              </p>
+              <h3 className="font-display font-bold text-xl">{tpl.name}</h3>
+
+              <div className="mt-4 mb-4">
+                <p className="text-3xl font-display font-bold tabular-nums text-primary">
+                  {tpl.totalPrice.toLocaleString()}{" "}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {t("common.aed")}
+                  </span>
+                </p>
+                {tpl.pricePerSession > 0 && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {tpl.pricePerSession.toLocaleString()} {t("common.aed")} /{" "}
+                    {t("home.packages.perSession")}
+                  </p>
+                )}
+              </div>
+
+              <ul className="space-y-2 text-sm text-muted-foreground flex-1">
+                <li className="flex items-center gap-2">
+                  <Sparkles size={13} className="text-primary shrink-0" />
+                  <span>
+                    <strong className="text-foreground">{tpl.totalSessions}</strong>{" "}
+                    {t("home.packages.sessions")}
+                    {tpl.bonusSessions > 0 && (
+                      <span className="text-amber-300/90">
+                        {" "}
+                        ({tpl.paidSessions} + {tpl.bonusSessions} {t("home.packages.bonus")})
+                      </span>
+                    )}
+                  </span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Calendar size={13} className="text-primary shrink-0" />
+                  <span>
+                    {t("home.packages.validFor")}: {tpl.expirationValue}{" "}
+                    {t(`admin.packageBuilder.unit.${tpl.expirationUnit}`)}
+                  </span>
+                </li>
+                {tpl.description && (
+                  <li className="text-xs leading-relaxed pt-1">{tpl.description}</li>
+                )}
+              </ul>
+
+              <WhatsAppButton
+                label={t("home.packages.requestCta")}
+                message={message}
+                testId={`button-request-package-${tpl.id}`}
+                className="mt-5 w-full"
+              />
+            </motion.div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

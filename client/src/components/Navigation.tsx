@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   Package as PackageIcon,
+  PackagePlus,
   Settings as SettingsIcon,
   ShieldCheck,
   LogOut,
@@ -122,7 +123,8 @@ export function Navigation() {
             <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
             <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location.startsWith("/admin/packages")} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location === "/admin/packages"} onClick={() => setOpen(false)} />
+            <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
             {isSuperAdmin && (
               <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
             )}

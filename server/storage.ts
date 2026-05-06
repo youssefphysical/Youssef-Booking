@@ -5,6 +5,7 @@ import {
   settings,
   blockedSlots,
   packages,
+  packageTemplates,
   inbodyRecords,
   progressPhotos,
   consentRecords,
@@ -25,6 +26,9 @@ import {
   type Package,
   type InsertPackage,
   type UpdatePackage,
+  type PackageTemplate,
+  type InsertPackageTemplate,
+  type UpdatePackageTemplate,
   type InbodyRecord,
   type InsertInbody,
   type UpdateInbody,
@@ -114,6 +118,13 @@ export interface IStorage {
   deletePackage(id: number): Promise<void>;
   incrementPackageUsage(id: number, by?: number): Promise<Package>;
   decrementPackageUsage(id: number, by?: number): Promise<Package>;
+
+  // Package templates (admin-defined catalogue)
+  getPackageTemplates(opts?: { activeOnly?: boolean }): Promise<PackageTemplate[]>;
+  getPackageTemplate(id: number): Promise<PackageTemplate | undefined>;
+  createPackageTemplate(t: InsertPackageTemplate): Promise<PackageTemplate>;
+  updatePackageTemplate(id: number, updates: UpdatePackageTemplate): Promise<PackageTemplate>;
+  deletePackageTemplate(id: number): Promise<void>;
 
   // InBody
   getInbodyRecords(filters?: { userId?: number }): Promise<InbodyRecord[]>;
@@ -496,6 +507,37 @@ export class DatabaseStorage implements IStorage {
     if (!pkg) throw new Error("Package not found");
     const newUsed = Math.max(0, pkg.usedSessions - by);
     return this.updatePackage(id, { usedSessions: newUsed });
+  }
+
+  // ===== Package Templates =====
+  async getPackageTemplates(opts?: { activeOnly?: boolean }) {
+    const q = opts?.activeOnly
+      ? db.select().from(packageTemplates).where(eq(packageTemplates.isActive, true))
+      : db.select().from(packageTemplates);
+    return q.orderBy(asc(packageTemplates.displayOrder), asc(packageTemplates.id));
+  }
+
+  async getPackageTemplate(id: number) {
+    const [t] = await db.select().from(packageTemplates).where(eq(packageTemplates.id, id));
+    return t;
+  }
+
+  async createPackageTemplate(t: InsertPackageTemplate) {
+    const [created] = await db.insert(packageTemplates).values(t).returning();
+    return created;
+  }
+
+  async updatePackageTemplate(id: number, updates: UpdatePackageTemplate) {
+    const [updated] = await db
+      .update(packageTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(packageTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePackageTemplate(id: number) {
+    await db.delete(packageTemplates).where(eq(packageTemplates.id, id));
   }
 
   // ===== InBody =====
