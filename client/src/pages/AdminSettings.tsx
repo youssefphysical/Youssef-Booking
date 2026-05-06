@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +23,7 @@ import {
 import type { Transformation } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import type { HeroImage } from "@shared/schema";
+import type { HeroImage, Settings } from "@shared/schema";
 import {
   useSettings,
   useUpdateSettings,
@@ -1305,95 +1307,268 @@ function BankDetailsSection() {
   );
 }
 
+/**
+ * Profile photo + bio admin section (v9.1, May-2026).
+ *
+ * Replaces the previous "paste a public image URL" workflow with a real
+ * file upload. Admin selects an image (JPG/PNG/WebP, ≤5MB), gets an
+ * instant local preview, and the file is automatically compressed
+ * server-side (sharp → 1200x1500 cover WebP @ q90) and stored inline
+ * on settings.profilePhotoUrl as a base64 data URL — same architecture
+ * as the existing client profile-picture and hero-image flows, so it
+ * works on Vercel's read-only filesystem without external object
+ * storage.
+ *
+ * The bio field is its own form with its own save button so saving
+ * one never touches the other (e.g. saving the bio doesn't re-submit
+ * the photo).
+ */
 function ProfileContentSection() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateSettings();
 
-  const form = useForm<{ profilePhotoUrl: string; profileBio: string }>({
-    defaultValues: { profilePhotoUrl: "", profileBio: "" },
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_PHOTO_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Local preview shown immediately after the user picks a file, before
+  // the server returns the optimized version. Falls back to the
+  // currently-saved photo when no upload is in flight.
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [imgErrored, setImgErrored] = useState(false);
+
+  const savedPhoto = settings?.profilePhotoUrl?.trim() || "";
+  const displayPhoto = pendingPreview || (savedPhoto && !imgErrored ? savedPhoto : "");
+
+  // Reset broken-image state when the saved photo changes (new upload
+  // succeeded, or admin removed it elsewhere).
+  useEffect(() => {
+    setImgErrored(false);
+  }, [savedPhoto]);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (dataUrl: string) => {
+      const res = await apiRequest("POST", "/api/admin/profile-photo", {
+        imageDataUrl: dataUrl,
+      });
+      return (await res.json()) as Settings;
+    },
+    onSuccess: () => {
+      // Refresh both the settings cache (admin) and any consumers
+      // (HomePage) so the new photo appears everywhere instantly.
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      setPendingPreview(null);
+      toast({
+        title: t("admin.settingsPage.photoUploadSuccess"),
+      });
+    },
+    onError: (err: any) => {
+      // On failure: discard the preview so the previously-saved photo
+      // remains visible. The homepage is never broken because the saved
+      // URL on the settings row was never overwritten.
+      setPendingPreview(null);
+      toast({
+        title: t("admin.settingsPage.photoUploadError"),
+        description: err?.message || "Upload failed. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileSelected = (file: File | undefined) => {
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_MIME.includes(file.type.toLowerCase())) {
+      toast({
+        title: t("admin.settingsPage.photoTypeError"),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast({
+        title: t("admin.settingsPage.photoSizeError"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Read as data URL for both instant preview and the upload payload.
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        toast({
+          title: t("admin.settingsPage.photoUploadError"),
+          variant: "destructive",
+        });
+        return;
+      }
+      setPendingPreview(result);
+      uploadMutation.mutate(result);
+    };
+    reader.onerror = () => {
+      toast({
+        title: t("admin.settingsPage.photoUploadError"),
+        variant: "destructive",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Bio form — independent of the photo upload so each save is atomic.
+  const bioForm = useForm<{ profileBio: string }>({
+    defaultValues: { profileBio: "" },
   });
 
   useEffect(() => {
     if (settings) {
-      form.reset({
-        profilePhotoUrl: settings.profilePhotoUrl ?? "",
+      bioForm.reset({
         profileBio: settings.profileBio ?? "",
       });
     }
-  }, [settings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.profileBio]);
 
   return (
     <section className="rounded-3xl border border-white/5 bg-card/60 p-6">
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.homepageTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.homepageDesc")}</p>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit((d) =>
-            updateMutation.mutate({
-              profilePhotoUrl: d.profilePhotoUrl || null,
-              profileBio: d.profileBio || null,
-            }),
-          )}
-          className="space-y-4"
-        >
-          <FormField
-            control={form.control}
-            name="profilePhotoUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  <ImageIcon size={14} /> {t("admin.settingsPage.photoUrl")}
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="https://..."
-                    className="bg-white/5 border-white/10"
-                    data-testid="input-photo-url"
-                  />
-                </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  {t("admin.settingsPage.photoUrlNote")}
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <div className="space-y-6">
+        {/* PROFILE PHOTO UPLOADER. Premium dark-luxury panel matching
+            the rest of the admin theme: blue/black gradient ring, 4:5
+            preview matching the homepage hero card aspect ratio so the
+            admin sees exactly what the visitor will see. */}
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <ImageIcon size={14} /> {t("admin.settingsPage.photoUrl")}
+          </label>
 
-          <FormField
-            control={form.control}
-            name="profileBio"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  <MessageSquare size={14} /> {t("admin.settingsPage.profileBio")}
-                </FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...field}
-                    rows={5}
-                    className="bg-white/5 border-white/10"
-                    data-testid="input-bio"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="flex flex-col sm:flex-row gap-5">
+            {/* Preview tile — fixed 4:5 aspect, identical object-fit
+                contract as the public homepage so the admin sees the
+                final framing live. */}
+            <div className="relative w-32 sm:w-36 aspect-[4/5] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-primary/10 to-black/40">
+              {displayPhoto ? (
+                <img
+                  src={displayPhoto}
+                  alt="Profile preview"
+                  className="w-full h-full"
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                  onError={() => {
+                    // Saved photo is broken — flip to placeholder. Never
+                    // show the broken-image icon to the admin.
+                    if (!pendingPreview) setImgErrored(true);
+                  }}
+                  data-testid="img-profile-preview"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60 p-2 text-center">
+                  <ImageIcon size={28} className="mb-2 opacity-50" />
+                  <span className="text-[10px] uppercase tracking-widest">
+                    {t("admin.settingsPage.photoEmpty")}
+                  </span>
+                </div>
+              )}
+              {uploadMutation.isPending && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+                  <Loader2 className="animate-spin text-primary" size={22} />
+                  <span className="mt-2 text-[10px] uppercase tracking-widest text-white/80">
+                    {t("admin.settingsPage.photoUploading")}
+                  </span>
+                </div>
+              )}
+            </div>
 
-          <Button
-            type="submit"
-            disabled={updateMutation.isPending}
-            className="rounded-xl"
-            data-testid="button-save-profile-content"
+            <div className="flex-1 flex flex-col gap-3 justify-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  handleFileSelected(e.target.files?.[0]);
+                  // Allow re-selecting the same file (browser caches
+                  // the input value otherwise and the change event
+                  // won't fire on identical re-pick).
+                  e.target.value = "";
+                }}
+                data-testid="input-photo-file"
+              />
+              <Button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadMutation.isPending}
+                className="rounded-xl w-full sm:w-auto"
+                data-testid="button-upload-photo"
+              >
+                {uploadMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 animate-spin" size={14} />
+                    {t("admin.settingsPage.photoUploading")}
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="mr-2" size={14} />
+                    {savedPhoto
+                      ? t("admin.settingsPage.photoReplace")
+                      : t("admin.settingsPage.photoUpload")}
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("admin.settingsPage.photoUrlNote")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* BIO — separate form, separate save button. */}
+        <Form {...bioForm}>
+          <form
+            onSubmit={bioForm.handleSubmit((d) =>
+              updateMutation.mutate({
+                profileBio: d.profileBio || null,
+              }),
+            )}
+            className="space-y-4"
           >
-            {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
-            {t("admin.settingsPage.saveProfile")}
-          </Button>
-        </form>
-      </Form>
+            <FormField
+              control={bioForm.control}
+              name="profileBio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <MessageSquare size={14} /> {t("admin.settingsPage.profileBio")}
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      rows={5}
+                      className="bg-white/5 border-white/10"
+                      data-testid="input-bio"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="rounded-xl"
+              data-testid="button-save-profile-content"
+            >
+              {updateMutation.isPending && <Loader2 className="mr-2 animate-spin" size={14} />}
+              {t("admin.settingsPage.saveProfile")}
+            </Button>
+          </form>
+        </Form>
+      </div>
     </section>
   );
 }

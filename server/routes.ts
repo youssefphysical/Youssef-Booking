@@ -1185,6 +1185,40 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ============== HERO IMAGES (homepage slider) ==============
+
+  // Forward-declared sharp pipeline used by both hero-image and
+  // profile-photo upload routes. Defined further below so the function
+  // hoisting works inside this `registerRoutes` closure.
+
+  // Admin profile photo upload (v9.1, May-2026).
+  // Replaces the previous "paste a public URL" workflow with a real upload:
+  // accepts a base64 data URL produced client-side from a file picker,
+  // re-encodes through the same sharp pipeline used for hero images
+  // (1200x1500 cover @ q92 WebP - matches the homepage aspect-[4/5]
+  // profile card), persists the resulting data URL inline on the
+  // settings row. Stored in the DB (not on disk) so it works on
+  // Vercel's read-only filesystem without object storage - same
+  // architecture as the client profile picture flow.
+  app.post("/api/admin/profile-photo", requireAdmin, async (req, res) => {
+    const schema = z.object({
+      imageDataUrl: z.string().min(40, "Image data is required"),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid image" });
+    }
+    const processed = await processAdminImageDataUrl(parsed.data.imageDataUrl, {
+      width: 1200,
+      height: 1500,
+      fit: "cover",
+      quality: 90,
+    });
+    if (!processed.ok) {
+      return res.status(processed.status).json({ message: processed.message });
+    }
+    const updated = await storage.updateSettings({ profilePhotoUrl: processed.dataUrl });
+    res.json(updated);
+  });
   // Public read — used by HomePage. Returns slides ordered by sortOrder.
   app.get("/api/hero-images", async (_req, res) => {
     const list = await storage.getHeroImages();

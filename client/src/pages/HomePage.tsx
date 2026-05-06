@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -60,6 +61,70 @@ const CERT_KEYS = [
   { key: "competitive", icon: <Trophy size={20} /> },
   { key: "gymExperience", icon: <Briefcase size={20} /> },
 ] as const;
+
+/**
+ * ProfilePhoto (v9.1, May-2026)
+ *
+ * Defensive image renderer for the homepage hero profile card. Three
+ * separate failure modes resolve to the same clean placeholder, so a
+ * visitor never sees the browser's broken-image icon:
+ *
+ *   1. No URL saved (settings.profilePhotoUrl is null/undefined).
+ *   2. URL is empty/whitespace-only or a stale `https://` placeholder
+ *      (length-checked after trim — a bare scheme is < 9 chars).
+ *   3. URL is set but the image fails to load at runtime
+ *      (404, CORS, expired CDN URL, decoded data-URL is corrupt).
+ *
+ * Image styling matches the spec: object-fit: cover + object-position:
+ * center top so the trainer's head/shoulders stay in the visible frame
+ * on the 4:5 portrait card regardless of source aspect ratio.
+ */
+function ProfilePhoto({
+  src,
+  comingSoon,
+  hint,
+}: {
+  src?: string | null;
+  comingSoon: string;
+  hint: string;
+}) {
+  const trimmed = (src || "").trim();
+  // A bare scheme like "https://" is 8 chars — anything that short is
+  // never a real image URL, treat as empty.
+  const looksValid = trimmed.length >= 10;
+  const [errored, setErrored] = useState(false);
+
+  // If the saved URL changes (admin uploaded a new one), reset the
+  // error state so the new image is given a fresh load attempt.
+  useEffect(() => {
+    setErrored(false);
+  }, [trimmed]);
+
+  if (!looksValid || errored) {
+    return (
+      <div
+        className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60"
+        data-testid="profile-photo-placeholder"
+      >
+        <UserIcon size={64} />
+        <p className="mt-4 text-xs uppercase tracking-widest">{comingSoon}</p>
+        <p className="mt-1 text-[10px] text-muted-foreground/50">{hint}</p>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={trimmed}
+      alt="Youssef Ahmed — Personal Training Service"
+      className="w-full h-full"
+      style={{ objectFit: "cover", objectPosition: "center top" }}
+      decoding="async"
+      onError={() => setErrored(true)}
+      data-testid="img-profile"
+    />
+  );
+}
 
 export default function HomePage() {
   // `useSettings` is still called because `settings.profilePhotoUrl`
@@ -187,25 +252,20 @@ export default function HomePage() {
             className="relative"
           >
             <div className="relative aspect-[4/5] max-w-sm mx-auto rounded-3xl overflow-hidden border border-white/10 navy-panel shadow-2xl">
-              {settings?.profilePhotoUrl ? (
-                <img
-                  src={settings.profilePhotoUrl}
-                  alt="Youssef Ahmed — Personal Training Service"
-                  className="w-full h-full object-cover"
-                  decoding="async"
-                  data-testid="img-profile"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60">
-                  <UserIcon size={64} />
-                  <p className="mt-4 text-xs uppercase tracking-widest">
-                    {t("hero.imageComingSoon")}
-                  </p>
-                  <p className="mt-1 text-[10px] text-muted-foreground/50">
-                    {t("hero.imageHint")}
-                  </p>
-                </div>
-              )}
+              {/* v9.1 (May-2026): broken-image hardening + framing.
+                  - URL is trim-validated so empty strings, whitespace,
+                    or stale "https://" placeholders never reach
+                    <img src>.
+                  - onError flips to the placeholder so visitors never
+                    see the browser's broken-image icon if a saved
+                    URL ever 404s.
+                  - object-position: center top keeps the subject's
+                    head/shoulders in frame on the 4:5 portrait card. */}
+              <ProfilePhoto
+                src={settings?.profilePhotoUrl}
+                comingSoon={t("hero.imageComingSoon")}
+                hint={t("hero.imageHint")}
+              />
               {/* POLISH PASS (May 2026): bottom overlay reduced ~35 %
                   (from-black/85 → from-black/55) so the profile photo
                   reads as bright + premium instead of fighting a heavy
