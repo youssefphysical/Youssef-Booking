@@ -53,7 +53,7 @@ export function Footer() {
               data-testid="link-footer-whatsapp"
             >
               <SiWhatsapp size={14} className="shrink-0" />
-              <span>{t("whatsapp.short")}</span>
+              <span className="leading-tight whitespace-nowrap">{t("whatsapp.short", "Coach Youssef")}</span>
             </a>
             <a
               href="https://instagram.com/youssef.fitness"
