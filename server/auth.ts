@@ -268,6 +268,7 @@ export function setupAuth(app: Express) {
         primaryGoal,
         notes,
         weeklyFrequency,
+        packageTemplateId,
       } = parsed.data;
 
       const existingByEmail = await storage.getUserByEmail(email);
@@ -329,6 +330,80 @@ export function setupAuth(app: Express) {
         });
       } catch (e) {
         console.warn("[auth] Failed to write consent record:", e);
+      }
+
+      // Snapshot the client-selected package template into a packages row.
+      // adminApproved=false + paymentStatus=unpaid means the package is
+      // visible in the admin Pending Requests panel and the client cannot
+      // book against it until the trainer manually approves payment.
+      let snapshotPkgId: number | null = null;
+      if (!isSuperAdminSignup && packageTemplateId) {
+        try {
+          const tpl = await storage.getPackageTemplate(packageTemplateId);
+          if (tpl && tpl.isActive !== false) {
+            const days =
+              tpl.expirationUnit === "months"
+                ? (tpl.expirationValue ?? 0) * 30
+                : tpl.expirationUnit === "weeks"
+                ? (tpl.expirationValue ?? 0) * 7
+                : tpl.expirationValue ?? 0;
+            const startDate = new Date();
+            const expiryDate = days > 0 ? new Date(startDate.getTime() + days * 86_400_000) : null;
+            const created = await storage.createPackage({
+              userId: user.id,
+              type: tpl.type as any,
+              totalSessions: tpl.totalSessions,
+              usedSessions: 0,
+              isActive: true,
+              templateId: tpl.id,
+              name: tpl.name,
+              paidSessions: tpl.paidSessions,
+              bonusSessions: tpl.bonusSessions,
+              pricePerSession: tpl.pricePerSession,
+              totalPrice: tpl.totalPrice,
+              startDate: startDate.toISOString().slice(0, 10) as any,
+              expiryDate: expiryDate ? (expiryDate.toISOString().slice(0, 10) as any) : null,
+              paymentStatus: "unpaid",
+              paymentApproved: false,
+              adminApproved: false,
+              frozen: false,
+            } as any);
+            snapshotPkgId = created.id;
+            try {
+              await storage.createPackageSessionHistory({
+                packageId: created.id,
+                userId: user.id,
+                action: "package_created",
+                bookingId: null as any,
+                sessionsDelta: tpl.totalSessions,
+                performedByUserId: user.id,
+                reason: `Client signup — selected "${tpl.name}" (awaiting trainer approval)`,
+              } as any);
+            } catch (e) {
+              console.warn("[auth] session history log failed:", e);
+            }
+          }
+        } catch (e) {
+          console.warn("[auth] package snapshot failed:", e);
+        }
+      }
+
+      // Surface the new pending signup in the admin notification inbox so the
+      // trainer is prompted to approve / reject from /admin/pending.
+      if (!isSuperAdminSignup) {
+        try {
+          await storage.createAdminNotification({
+            kind: "system",
+            title: `New client signup — ${user.fullName}`,
+            body: snapshotPkgId
+              ? `Selected a package on signup. Awaiting your approval to enable booking.`
+              : `Awaiting your approval to enable booking.`,
+            userId: user.id,
+            bookingId: null as any,
+          } as any);
+        } catch (e) {
+          console.warn("[auth] admin notification failed:", e);
+        }
       }
 
       // Best-effort welcome email / SMS — never blocks registration.

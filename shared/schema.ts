@@ -407,7 +407,7 @@ export const insertClientSchema = createInsertSchema(users)
     emergencyContactPhone: z.string().optional(),
     fitnessGoal: z.string().optional(),
     primaryGoal: z
-      .enum(["fat_loss", "muscle_gain", "recomposition"])
+      .enum(["fat_loss", "muscle_gain", "recomposition", "general_fitness"])
       .optional(),
     weeklyFrequency: z
       .number()
@@ -415,6 +415,10 @@ export const insertClientSchema = createInsertSchema(users)
       .min(1, "Choose your preferred weekly training frequency")
       .max(6),
     notes: z.string().optional(),
+    // Optional package template the client picked during signup. Snapshotted
+    // server-side into a `packages` row with adminApproved=false; the trainer
+    // confirms payment + grants access from the Pending Requests panel.
+    packageTemplateId: z.number().int().positive().optional(),
   });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
@@ -1363,7 +1367,15 @@ export const PRIMARY_GOAL_OPTIONS: { value: string; label: string }[] = [
   { value: "fat_loss", label: "Fat Loss" },
   { value: "muscle_gain", label: "Muscle Gain" },
   { value: "recomposition", label: "Body Recomposition – Build Muscle & Lose Fat" },
+  { value: "general_fitness", label: "General Fitness & Wellbeing" },
 ];
+
+export const PRIMARY_GOAL_VALUES = [
+  "fat_loss",
+  "muscle_gain",
+  "recomposition",
+  "general_fitness",
+] as const;
 
 // =============================
 // TRAINING LEVEL & GOAL TYPE

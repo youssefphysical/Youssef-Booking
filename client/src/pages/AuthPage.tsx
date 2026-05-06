@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import {
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PRIMARY_GOAL_OPTIONS } from "@shared/schema";
+import { PRIMARY_GOAL_OPTIONS, type PackageTemplate } from "@shared/schema";
 import { AreaAutocomplete } from "@/components/AreaAutocomplete";
 import { PhoneInput } from "@/components/PhoneInput";
 import {
@@ -77,10 +78,12 @@ const makeRegisterSchema = (t: T) =>
       .int()
       .min(1, t("auth.errors.chooseFrequency"))
       .max(6),
-    primaryGoal: z.enum(["fat_loss", "muscle_gain", "recomposition"], {
-      errorMap: () => ({ message: t("auth.errors.choosePrimaryGoal") }),
-    }),
+    primaryGoal: z.enum(
+      ["fat_loss", "muscle_gain", "recomposition", "general_fitness"],
+      { errorMap: () => ({ message: t("auth.errors.choosePrimaryGoal") }) },
+    ),
     notes: z.string().optional(),
+    packageTemplateId: z.number().int().positive().optional(),
   });
 
 type ClientLoginValues = z.infer<ReturnType<typeof makeClientLoginSchema>>;
@@ -778,6 +781,28 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
             />
             <FormField
               control={form.control}
+              name="packageTemplateId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("auth.choosePackage", "Choose a package (optional)")}</FormLabel>
+                  <FormControl>
+                    <PackagePicker
+                      value={field.value as number | undefined}
+                      onChange={(v) => field.onChange(v)}
+                    />
+                  </FormControl>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {t(
+                      "auth.choosePackageHelp",
+                      "Pick now or skip — Youssef will confirm payment over WhatsApp before your package goes live.",
+                    )}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
@@ -866,6 +891,100 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
         )}
       </form>
     </Form>
+  );
+}
+
+function PackagePicker({
+  value,
+  onChange,
+}: {
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  const { t } = useTranslation();
+  const { data: templates = [], isLoading } = useQuery<PackageTemplate[]>({
+    queryKey: ["/api/package-templates", { activeOnly: true }],
+    queryFn: async () => {
+      const r = await fetch("/api/package-templates?activeOnly=true", {
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error("Failed to load packages");
+      return r.json();
+    },
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="text-xs text-muted-foreground py-2" data-testid="text-packages-loading">
+        {t("common.loading", "Loading…")}
+      </div>
+    );
+  }
+  if (templates.length === 0) {
+    return (
+      <div
+        className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-muted-foreground"
+        data-testid="text-no-packages"
+      >
+        {t("auth.noPackagesYet", "No packages available right now — you can pick one later from your dashboard.")}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-2" data-testid="grid-package-picker">
+      <button
+        type="button"
+        onClick={() => onChange(undefined)}
+        data-testid="button-package-none"
+        className={`text-left rounded-xl border p-3 transition-colors ${
+          value === undefined
+            ? "border-primary bg-primary/10"
+            : "border-white/10 bg-white/[0.03] hover:border-white/20"
+        }`}
+      >
+        <p className="text-sm font-semibold">{t("auth.skipPackage", "Skip for now")}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {t("auth.skipPackageHint", "I'll talk with Youssef and choose later.")}
+        </p>
+      </button>
+      {templates.map((tpl) => {
+        const active = value === tpl.id;
+        return (
+          <button
+            key={tpl.id}
+            type="button"
+            onClick={() => onChange(tpl.id)}
+            data-testid={`button-package-${tpl.id}`}
+            className={`text-left rounded-xl border p-3 transition-colors ${
+              active
+                ? "border-primary bg-primary/10"
+                : "border-white/10 bg-white/[0.03] hover:border-white/20"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">{tpl.name}</p>
+              <p className="text-xs font-bold text-primary whitespace-nowrap">
+                {tpl.totalPrice ? `AED ${tpl.totalPrice.toLocaleString()}` : "—"}
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {tpl.totalSessions} {t("auth.sessions", "sessions")}
+              {tpl.bonusSessions ? ` (+${tpl.bonusSessions} bonus)` : ""}
+              {tpl.expirationValue
+                ? ` • ${tpl.expirationValue} ${tpl.expirationUnit ?? "days"}`
+                : ""}
+            </p>
+            {tpl.description && (
+              <p className="text-[11px] text-muted-foreground/80 mt-1 leading-snug line-clamp-2">
+                {tpl.description}
+              </p>
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

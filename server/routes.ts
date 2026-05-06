@@ -2399,12 +2399,132 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(updated);
   });
 
+  // ============== ADMIN: PENDING CLIENT APPROVALS ==============
+  // (Declared BEFORE /api/admin/clients/:id so Express matches the literal
+  // "pending" path before the :id param.)
+  app.get("/api/admin/clients/pending", requireAdmin, async (_req, res) => {
+    try {
+      const all = await storage.getAllClients();
+      const pending = all.filter((u: User) => u.clientStatus === "pending");
+      const enriched = await Promise.all(
+        pending.map(async (u) => {
+          const pkgs = await storage.getPackages({ userId: u.id });
+          const newest = pkgs
+            .slice()
+            .sort((a, b) => {
+              const at = a.purchasedAt ? new Date(a.purchasedAt).getTime() : 0;
+              const bt = b.purchasedAt ? new Date(b.purchasedAt).getTime() : 0;
+              return bt - at;
+            })[0];
+          return { client: sanitizeUserAdminView(u), pendingPackage: newest ?? null };
+        }),
+      );
+      res.json(enriched);
+    } catch (e) {
+      console.warn("[admin/pending] list failed:", e);
+      res.status(500).json({ message: "Failed to load pending clients" });
+    }
+  });
+
   // ============== ADMIN: PRIVATE CLIENT NOTES ==============
   app.get("/api/admin/clients/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const u = await storage.getUser(id);
     if (!u) return res.status(404).json({ message: "Client not found" });
     res.json(sanitizeUserAdminView(u));
+  });
+
+  // Approve a pending client: flips clientStatus -> 'active' and (if a package
+  // was snapshotted on signup) marks that package adminApproved + paymentStatus
+  // = 'paid'. Also writes to the package_session_history audit log.
+  app.post("/api/admin/clients/:id/approve", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const client = await storage.getUser(id);
+    if (!client || client.role !== "client") {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    const note: string | null = (req.body?.note ?? null) || null;
+    const updated = await storage.updateUser(id, { clientStatus: "active" } as any);
+
+    // Approve newest package if one is awaiting approval
+    try {
+      const pkgs = await storage.getPackages({ userId: id });
+      const newest = pkgs
+        .slice()
+        .sort((a, b) => {
+          const at = a.purchasedAt ? new Date(a.purchasedAt).getTime() : 0;
+          const bt = b.purchasedAt ? new Date(b.purchasedAt).getTime() : 0;
+          return bt - at;
+        })[0];
+      if (newest && newest.adminApproved !== true) {
+        const approvedPkg = await storage.updatePackage(newest.id, {
+          adminApproved: true,
+          adminApprovedAt: new Date(),
+          adminApprovedByUserId: me.id,
+          paymentStatus: "paid",
+          paymentApproved: true,
+          paymentApprovedAt: new Date(),
+          paymentApprovedByUserId: me.id,
+          paymentNote: note,
+        } as any);
+        try {
+          await storage.createPackageSessionHistory({
+            packageId: approvedPkg.id,
+            userId: id,
+            action: "package_approved",
+            bookingId: null as any,
+            sessionsDelta: 0,
+            performedByUserId: me.id,
+            reason: note ?? "Client approved by admin",
+          } as any);
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("[admin/approve] package approval failed:", e);
+    }
+
+    res.json(sanitizeUserAdminView(updated));
+  });
+
+  // Reject a pending client. Default sets clientStatus='cancelled'. Also
+  // marks the snapshotted package (if any) as inactive so it stops showing
+  // in the client's dashboard.
+  app.post("/api/admin/clients/:id/reject", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const client = await storage.getUser(id);
+    if (!client || client.role !== "client") {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    const reason: string | null = (req.body?.reason ?? null) || null;
+    const updated = await storage.updateUser(id, { clientStatus: "cancelled" } as any);
+
+    try {
+      const pkgs = await storage.getPackages({ userId: id });
+      for (const p of pkgs) {
+        if (p.adminApproved !== true && p.isActive !== false) {
+          try {
+            await storage.updatePackage(p.id, { isActive: false } as any);
+            await storage.createPackageSessionHistory({
+              packageId: p.id,
+              userId: id,
+              action: "package_rejected",
+              bookingId: null as any,
+              sessionsDelta: 0,
+              performedByUserId: me.id,
+              reason: reason ?? "Client rejected by admin",
+            } as any);
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn("[admin/reject] package deactivation failed:", e);
+    }
+
+    res.json(sanitizeUserAdminView(updated));
   });
 
   app.patch("/api/admin/clients/:id/admin-notes", requireAdmin, async (req, res) => {

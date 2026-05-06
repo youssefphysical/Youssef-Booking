@@ -26,6 +26,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
+import AdminPendingClients from "@/pages/AdminPendingClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
 import AdminPackageBuilder from "@/pages/AdminPackageBuilder";
@@ -112,6 +113,9 @@ function Router() {
         </Route>
         <Route path="/admin/clients">
           <ProtectedRoute component={AdminClients} adminOnly />
+        </Route>
+        <Route path="/admin/pending">
+          <ProtectedRoute component={AdminPendingClients} adminOnly />
         </Route>
         <Route path="/admin/clients/:id">
           <ProtectedRoute component={AdminClientDetail} adminOnly />
