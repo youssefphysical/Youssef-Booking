@@ -149,6 +149,72 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS bonus_sessions     integer,
       ADD COLUMN IF NOT EXISTS price_per_session  integer,
       ADD COLUMN IF NOT EXISTS total_price        integer;
+
+    -- May 2026 Client Profile Admin Control wave: client lifecycle status,
+    -- package payment / freeze / approval, categorized notes, audit log.
+    ALTER TABLE IF EXISTS users
+      ADD COLUMN IF NOT EXISTS client_status text NOT NULL DEFAULT 'incomplete',
+      ADD COLUMN IF NOT EXISTS preferred_training_days text[],
+      ADD COLUMN IF NOT EXISTS injuries text,
+      ADD COLUMN IF NOT EXISTS medical_notes text,
+      ADD COLUMN IF NOT EXISTS parq_completed boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS waiver_accepted boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS medical_clearance_note text,
+      ADD COLUMN IF NOT EXISTS coach_notes text,
+      ADD COLUMN IF NOT EXISTS goal_notes text,
+      ADD COLUMN IF NOT EXISTS communication_notes text;
+
+    ALTER TABLE IF EXISTS packages
+      ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'unpaid',
+      ADD COLUMN IF NOT EXISTS payment_approved boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS payment_approved_at timestamp,
+      ADD COLUMN IF NOT EXISTS payment_approved_by_user_id integer,
+      ADD COLUMN IF NOT EXISTS payment_note text,
+      ADD COLUMN IF NOT EXISTS frozen boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS frozen_at timestamp,
+      ADD COLUMN IF NOT EXISTS frozen_reason text,
+      ADD COLUMN IF NOT EXISTS admin_approved boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS admin_approved_at timestamp,
+      ADD COLUMN IF NOT EXISTS admin_approved_by_user_id integer;
+
+    CREATE TABLE IF NOT EXISTS package_session_history (
+      id serial PRIMARY KEY,
+      package_id integer NOT NULL,
+      user_id integer NOT NULL,
+      action text NOT NULL,
+      booking_id integer,
+      sessions_delta integer NOT NULL DEFAULT 0,
+      performed_by_user_id integer,
+      reason text,
+      created_at timestamp DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS package_session_history_package_idx
+      ON package_session_history(package_id);
+    CREATE INDEX IF NOT EXISTS package_session_history_user_idx
+      ON package_session_history(user_id);
+
+    -- Backfill: any client who already has an active package and finished
+    -- registration should be considered active. Brand-new rows default to
+    -- 'incomplete' via the column default.
+    UPDATE users
+       SET client_status = 'active'
+     WHERE role = 'client'
+       AND client_status = 'incomplete'
+       AND primary_goal IS NOT NULL
+       AND weekly_frequency IS NOT NULL;
+
+    -- Backfill: existing assigned packages predate payment / approval
+    -- tracking. Treat them as paid + approved so trainers don't lose clients
+    -- mid-cycle when this migration ships. New packages will default to
+    -- unpaid + unapproved (admin must opt-in).
+    UPDATE packages
+       SET payment_status = 'paid',
+           payment_approved = true,
+           admin_approved = true
+     WHERE payment_status = 'unpaid'
+       AND payment_approved = false
+       AND admin_approved = false;
   `;
 
   try {

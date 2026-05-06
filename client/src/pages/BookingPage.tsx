@@ -31,6 +31,7 @@ import {
   type Package,
   SESSION_FOCUS_GROUPS,
   BOOKING_TRAINING_GOALS,
+  evaluateBookingEligibility,
 } from "@shared/schema";
 import {
   Select,
@@ -141,11 +142,15 @@ export default function BookingPage() {
   // not currently 'available' (e.g. a slot that became too-soon between picks).
   const selectedSlotAvailable =
     !!selectedSlot && (slotState[selectedSlot] ?? "available") === "available";
+  // canContinue is computed AFTER the eligibility const below; declare a
+  // forward ref via a function so TS sees it. (eligibility is hoisted via let.)
+  const eligibilityOk = isAdmin || evaluateBookingEligibility(user as any, activePackage ?? null).ok;
   const canContinue =
     !!date &&
     !!selectedSlot &&
     (isAdmin || selectedSlotAvailable) &&
-    (isAdmin || (!!sessionFocus && !!trainingGoal));
+    (isAdmin || (!!sessionFocus && !!trainingGoal)) &&
+    eligibilityOk;
 
   const handleBook = () => {
     if (!date || !selectedSlot || !user) {
@@ -256,6 +261,11 @@ export default function BookingPage() {
     );
   }
 
+  // Eligibility gate (clients only — admins always proceed). Mirrors the
+  // server-side check so the UI shows a clear reason BEFORE the user fills
+  // out the form.
+  const eligibility = isAdmin ? { ok: true as const } : evaluateBookingEligibility(user as any, activePackage ?? null);
+
   return (
     <div className="max-w-3xl mx-auto px-5 pt-24 pb-32">
       <div className="flex items-center gap-4 mb-8">
@@ -269,6 +279,24 @@ export default function BookingPage() {
           <p className="text-muted-foreground text-sm">{t("booking.pageSubtitle")}</p>
         </div>
       </div>
+
+      {!eligibility.ok && (
+        <div
+          className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3"
+          data-testid="banner-booking-blocked"
+        >
+          <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-100">Booking unavailable</p>
+            <p className="text-xs text-amber-200/90 mt-1">{eligibility.message}</p>
+            {(eligibility.code === "profile_incomplete") && (
+              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs underline text-amber-100">
+                Complete profile →
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         <div className="bg-card border border-white/5 rounded-3xl p-3 shadow-xl flex justify-center">

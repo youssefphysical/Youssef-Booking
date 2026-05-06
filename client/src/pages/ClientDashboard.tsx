@@ -78,7 +78,8 @@ import { exportInbodyReportPdf } from "@/lib/pdf-export";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER, buildWhatsappMessage } from "@/lib/whatsapp";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
-import { tierHasPriority, VIP_TIER_TAGLINES } from "@shared/schema";
+import { tierHasPriority, VIP_TIER_TAGLINES, evaluateBookingEligibility } from "@shared/schema";
+import { ShieldAlert } from "lucide-react";
 import {
   ALL_TIME_SLOTS,
   formatStatus,
@@ -160,6 +161,7 @@ export default function ClientDashboard() {
       </div>
 
       <MembershipBlock user={user} />
+      <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
         <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-white/5 mb-6 h-11">
@@ -1683,3 +1685,41 @@ function SkeletonCards() {
 }
 
 export { WhatsAppButton };
+
+// =============== BOOKING ELIGIBILITY BANNER ===============
+
+function BookingEligibilityBanner({ userId, user }: { userId: number; user: any }) {
+  const { data: packages = [] } = usePackages({ userId });
+  const list = packages as any[];
+  const activePackage = list.find((p) => p.isActive && p.usedSessions < p.totalSessions);
+  const verdict = evaluateBookingEligibility(user, activePackage ?? null);
+  if (verdict.ok) return null;
+  return (
+    <div
+      className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3"
+      data-testid="banner-dashboard-eligibility"
+    >
+      <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-amber-100">Booking unavailable</p>
+        <p className="text-xs text-amber-200/90 mt-1">{verdict.message}</p>
+        <div className="mt-2 flex flex-wrap gap-3 text-xs">
+          {verdict.code === "profile_incomplete" && (
+            <Link href="/profile" className="underline text-amber-100" data-testid="link-dashboard-profile">
+              Complete profile →
+            </Link>
+          )}
+          <a
+            href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-amber-100"
+            data-testid="link-dashboard-whatsapp-help"
+          >
+            Contact Youssef →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}

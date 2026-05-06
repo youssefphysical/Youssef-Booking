@@ -14,6 +14,7 @@ import {
   adminNotifications,
   renewalRequests,
   extensionRequests,
+  packageSessionHistory,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -48,6 +49,8 @@ import {
   type InsertRenewalRequest,
   type ExtensionRequest,
   type InsertExtensionRequest,
+  type PackageSessionHistory,
+  type InsertPackageSessionHistory,
 } from "@shared/schema";
 import { eq, and, gte, gt, desc, asc, isNull, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -163,6 +166,14 @@ export interface IStorage {
 
   // Attendance helper
   incrementUserNoShow(userId: number): Promise<void>;
+
+  // Package session-history audit log
+  getPackageSessionHistory(filters?: {
+    userId?: number;
+    packageId?: number;
+    limit?: number;
+  }): Promise<PackageSessionHistory[]>;
+  createPackageSessionHistory(entry: InsertPackageSessionHistory): Promise<PackageSessionHistory>;
 
   sessionStore: session.Store;
 }
@@ -507,6 +518,28 @@ export class DatabaseStorage implements IStorage {
     if (!pkg) throw new Error("Package not found");
     const newUsed = Math.max(0, pkg.usedSessions - by);
     return this.updatePackage(id, { usedSessions: newUsed });
+  }
+
+  // ===== Package session history (audit log) =====
+  async getPackageSessionHistory(filters?: {
+    userId?: number;
+    packageId?: number;
+    limit?: number;
+  }) {
+    const conds: any[] = [];
+    if (filters?.userId) conds.push(eq(packageSessionHistory.userId, filters.userId));
+    if (filters?.packageId) conds.push(eq(packageSessionHistory.packageId, filters.packageId));
+    const limit = Math.min(Math.max(filters?.limit ?? 200, 1), 500);
+    const q =
+      conds.length > 0
+        ? db.select().from(packageSessionHistory).where(and(...conds))
+        : db.select().from(packageSessionHistory);
+    return q.orderBy(desc(packageSessionHistory.createdAt)).limit(limit);
+  }
+
+  async createPackageSessionHistory(entry: InsertPackageSessionHistory) {
+    const [row] = await db.insert(packageSessionHistory).values(entry).returning();
+    return row;
   }
 
   // ===== Package Templates =====

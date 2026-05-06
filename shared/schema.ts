@@ -71,6 +71,20 @@ export const users = pgTable("users", {
   // Trainer-only private notes (injuries, preferences, warnings).
   // NEVER returned to the client — server strips this field on UserResponse.
   adminNotes: text("admin_notes"),
+  // Client lifecycle status — see CLIENT_STATUSES.
+  // Drives booking gating: only 'active' clients can self-book.
+  clientStatus: text("client_status").notNull().default("incomplete"),
+  // Self-declared health/preference fields used by the admin Health tab.
+  preferredTrainingDays: text("preferred_training_days").array(),
+  injuries: text("injuries"),
+  medicalNotes: text("medical_notes"),
+  parqCompleted: boolean("parq_completed").notNull().default(false),
+  waiverAccepted: boolean("waiver_accepted").notNull().default(false),
+  medicalClearanceNote: text("medical_clearance_note"),
+  // Categorised admin notes (separate from `adminNotes` general bucket).
+  coachNotes: text("coach_notes"),
+  goalNotes: text("goal_notes"),
+  communicationNotes: text("communication_notes"),
   // Password reset: short-lived single-use token (sha256 hex of the secret
   // emailed to the user) + expiry. Both null when no reset is in flight.
   // Server NEVER returns these fields to the client.
@@ -142,6 +156,41 @@ export const packages = pgTable("packages", {
   bonusSessions: integer("bonus_sessions"),
   pricePerSession: integer("price_per_session"),
   totalPrice: integer("total_price"),
+  // Payment tracking — see PACKAGE_PAYMENT_STATUSES. NO payment gateway.
+  // Admin manually records the status after WhatsApp/manual settlement.
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  paymentApproved: boolean("payment_approved").notNull().default(false),
+  paymentApprovedAt: timestamp("payment_approved_at"),
+  paymentApprovedByUserId: integer("payment_approved_by_user_id"),
+  paymentNote: text("payment_note"),
+  // Freeze: pauses booking on this package without changing balance.
+  frozen: boolean("frozen").notNull().default(false),
+  frozenAt: timestamp("frozen_at"),
+  frozenReason: text("frozen_reason"),
+  // Admin must explicitly mark a package "approved" before clients can book it.
+  adminApproved: boolean("admin_approved").notNull().default(false),
+  adminApprovedAt: timestamp("admin_approved_at"),
+  adminApprovedByUserId: integer("admin_approved_by_user_id"),
+});
+
+// =============================
+// PACKAGE SESSION HISTORY (audit trail)
+// =============================
+// Append-only audit log for every action that affects a package's session
+// balance, freeze state, payment, or approval. Used by the admin Sessions
+// tab to produce a transparent history.
+export const packageSessionHistory = pgTable("package_session_history", {
+  id: serial("id").primaryKey(),
+  packageId: integer("package_id").notNull(),
+  userId: integer("user_id").notNull(),
+  // see SESSION_HISTORY_ACTIONS
+  action: text("action").notNull(),
+  bookingId: integer("booking_id"),
+  // signed; positive = added, negative = removed, 0 = non-balance event
+  sessionsDelta: integer("sessions_delta").notNull().default(0),
+  performedByUserId: integer("performed_by_user_id"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // =============================
@@ -572,6 +621,101 @@ export const PACKAGE_STATUSES = [
 ] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
+// =============================
+// CLIENT LIFECYCLE STATUS
+// =============================
+// Drives whether a client can self-book and how the admin sees them.
+// 'incomplete' = registration not finished (no profile / no consents)
+// 'pending'    = waiting on admin onboarding / payment / approval
+// 'active'     = fully cleared, can self-book
+// 'frozen'     = temporarily paused (vacation, injury, hold)
+// 'expired'    = no active package and last package expired
+// 'completed'  = finished their journey amicably
+// 'cancelled'  = membership ended (refund / quit)
+export const CLIENT_STATUSES = [
+  "incomplete",
+  "pending",
+  "active",
+  "frozen",
+  "expired",
+  "completed",
+  "cancelled",
+] as const;
+export type ClientStatus = (typeof CLIENT_STATUSES)[number];
+
+export const CLIENT_STATUS_LABELS: Record<ClientStatus, string> = {
+  incomplete: "Profile Incomplete",
+  pending: "Pending Approval",
+  active: "Active",
+  frozen: "Frozen",
+  expired: "Expired",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+// Visual tone hints used by the admin UI badge.
+export const CLIENT_STATUS_TONES: Record<ClientStatus, "neutral" | "warning" | "success" | "danger"> = {
+  incomplete: "warning",
+  pending: "warning",
+  active: "success",
+  frozen: "neutral",
+  expired: "danger",
+  completed: "neutral",
+  cancelled: "danger",
+};
+
+// =============================
+// PACKAGE PAYMENT STATUS (admin-recorded; NO online gateway)
+// =============================
+export const PACKAGE_PAYMENT_STATUSES = [
+  "unpaid",
+  "pending",
+  "partially_paid",
+  "paid",
+] as const;
+export type PackagePaymentStatus = (typeof PACKAGE_PAYMENT_STATUSES)[number];
+
+export const PACKAGE_PAYMENT_STATUS_LABELS: Record<PackagePaymentStatus, string> = {
+  unpaid: "Unpaid",
+  pending: "Pending",
+  partially_paid: "Partially Paid",
+  paid: "Paid",
+};
+
+// =============================
+// SESSION HISTORY ACTIONS (audit log)
+// =============================
+export const SESSION_HISTORY_ACTIONS = [
+  "package_created",
+  "package_assigned",
+  "package_extended",
+  "package_frozen",
+  "package_unfrozen",
+  "package_approved",
+  "payment_updated",
+  "session_consumed",
+  "session_refunded",
+  "session_added_manual",
+  "session_removed_manual",
+  "package_deleted",
+] as const;
+export type SessionHistoryAction = (typeof SESSION_HISTORY_ACTIONS)[number];
+
+export const SESSION_HISTORY_ACTION_LABELS: Record<SessionHistoryAction, string> = {
+  package_created: "Package created",
+  package_assigned: "Package assigned",
+  package_extended: "Package extended",
+  package_frozen: "Package frozen",
+  package_unfrozen: "Package unfrozen",
+  package_approved: "Package approved",
+  payment_updated: "Payment updated",
+  session_consumed: "Session consumed",
+  session_refunded: "Session refunded",
+  session_added_manual: "Manual session added",
+  session_removed_manual: "Manual session removed",
+  package_deleted: "Package deleted",
+};
+
 // English labels for trainer notifications.
 export const PACKAGE_STATUS_LABELS_EN: Record<string, string> = {
   active: "Active",
@@ -728,6 +872,117 @@ export function expirationToDays(value: number, unit: string): number {
   if (unit === "weeks") return value * 7;
   if (unit === "months") return value * 30;
   return value; // days (default)
+}
+
+// =============================
+// PACKAGE SESSION HISTORY SCHEMAS
+// =============================
+export const insertPackageSessionHistorySchema = createInsertSchema(packageSessionHistory)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    action: z.enum(SESSION_HISTORY_ACTIONS),
+    bookingId: z.number().int().nullable().optional(),
+    sessionsDelta: z.number().int().optional(),
+    performedByUserId: z.number().int().nullable().optional(),
+    reason: z.string().nullable().optional(),
+  });
+export type PackageSessionHistory = typeof packageSessionHistory.$inferSelect;
+export type InsertPackageSessionHistory = z.infer<typeof insertPackageSessionHistorySchema>;
+
+// =============================
+// PACKAGE FREEZE / PAYMENT / APPROVE / SESSION-ADJUST SCHEMAS
+// =============================
+export const freezePackageSchema = z.object({
+  frozen: z.boolean(),
+  reason: z.string().max(500).nullable().optional(),
+});
+export type FreezePackageInput = z.infer<typeof freezePackageSchema>;
+
+export const updatePackagePaymentSchema = z.object({
+  paymentStatus: z.enum(PACKAGE_PAYMENT_STATUSES),
+  paymentApproved: z.boolean().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+export type UpdatePackagePaymentInput = z.infer<typeof updatePackagePaymentSchema>;
+
+export const adjustPackageSessionsSchema = z.object({
+  // signed delta; positive = grant credits, negative = remove credits
+  delta: z.number().int().refine((n) => n !== 0, { message: "Delta cannot be zero" }),
+  reason: z.string().min(1, "Please describe the adjustment reason").max(500),
+});
+export type AdjustPackageSessionsInput = z.infer<typeof adjustPackageSessionsSchema>;
+
+export const approvePackageSchema = z.object({
+  approved: z.boolean(),
+  note: z.string().max(500).nullable().optional(),
+});
+export type ApprovePackageInput = z.infer<typeof approvePackageSchema>;
+
+// =============================
+// BOOKING ELIGIBILITY HELPER
+// =============================
+// Pure function used by the POST /api/bookings gate AND by the client UI to
+// preview why booking might be blocked. Admins bypass this entirely.
+export type BookingEligibilityResult =
+  | { ok: true }
+  | { ok: false; code: string; message: string };
+
+export function evaluateBookingEligibility(
+  user: Pick<User, "clientStatus" | "parqCompleted" | "waiverAccepted" | "primaryGoal" | "weeklyFrequency">,
+  pkg?: Pick<
+    Package,
+    | "totalSessions"
+    | "usedSessions"
+    | "expiryDate"
+    | "frozen"
+    | "isActive"
+    | "paymentStatus"
+    | "paymentApproved"
+    | "adminApproved"
+  > | null,
+): BookingEligibilityResult {
+  const status = (user.clientStatus ?? "incomplete") as ClientStatus;
+  if (status === "frozen") {
+    return { ok: false, code: "client_frozen", message: "Your account is currently frozen. Please contact Youssef to resume booking." };
+  }
+  if (status === "cancelled") {
+    return { ok: false, code: "client_cancelled", message: "Your membership has been cancelled. Please contact Youssef to renew." };
+  }
+  if (status === "completed") {
+    return { ok: false, code: "client_completed", message: "Your membership has been marked completed. Contact Youssef to book again." };
+  }
+  if (status === "incomplete") {
+    return { ok: false, code: "profile_incomplete", message: "Please finish your profile (training goal & weekly frequency) before booking." };
+  }
+  if (status === "pending") {
+    return { ok: false, code: "client_pending", message: "Your account is pending approval by Youssef. You'll be able to book once approved." };
+  }
+  if (status === "expired") {
+    return { ok: false, code: "client_expired", message: "Your subscription has expired. Please request a renewal to continue booking." };
+  }
+  // Profile-completion sanity check
+  if (!user.primaryGoal || !user.weeklyFrequency) {
+    return { ok: false, code: "profile_incomplete", message: "Please complete your training goal and weekly frequency before booking." };
+  }
+  if (pkg) {
+    if (pkg.frozen) {
+      return { ok: false, code: "package_frozen", message: "Your active package is currently frozen. Please contact Youssef to unfreeze it." };
+    }
+    if (pkg.isActive === false) {
+      return { ok: false, code: "package_inactive", message: "Your package is inactive. Please request a renewal." };
+    }
+    if (pkg.adminApproved === false) {
+      return { ok: false, code: "package_unapproved", message: "Your package is awaiting Youssef's approval before sessions can be booked." };
+    }
+    if (
+      pkg.paymentStatus !== "paid" &&
+      pkg.paymentStatus !== "partially_paid" &&
+      pkg.paymentApproved !== true
+    ) {
+      return { ok: false, code: "package_unpaid", message: "Your package payment is still pending. Once Youssef confirms payment you can book." };
+    }
+  }
+  return { ok: true };
 }
 
 // Admin-only: extend a package's expiry by N days (or set explicit new expiry)

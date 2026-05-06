@@ -95,11 +95,21 @@ import {
   normaliseTier,
   protectedCancellationQuota,
   sameDayAdjustQuota,
+  CLIENT_STATUSES,
+  CLIENT_STATUS_LABELS,
+  CLIENT_STATUS_TONES,
+  PACKAGE_PAYMENT_STATUSES,
+  PACKAGE_PAYMENT_STATUS_LABELS,
+  SESSION_HISTORY_ACTION_LABELS,
+  type ClientStatus,
+  type PackagePaymentStatus,
+  type PackageSessionHistory,
   type UserResponse,
   type Package,
   type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
+import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck } from "lucide-react";
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -169,11 +179,15 @@ export default function AdminClientDetail() {
               </h1>
               {client.isVerified && <VerifiedBadge size="md" testId="badge-client-detail-verified" />}
               <VerifiedToggle clientId={client.id} verifiedOverride={client.verifiedOverride} isVerified={!!client.isVerified} />
+              <ClientStatusBadge status={(client.clientStatus ?? "incomplete") as ClientStatus} />
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
               {client.email && <span className="inline-flex items-center gap-1.5"><Mail size={11} /> {client.email}</span>}
               {client.phone && <span className="inline-flex items-center gap-1.5"><Phone size={11} /> {client.phone}</span>}
               {client.area && <span className="inline-flex items-center gap-1.5"><MapPin size={11} /> {client.area}</span>}
+            </div>
+            <div className="mt-3">
+              <ClientStatusControl client={client} />
             </div>
           </div>
         </div>
@@ -191,27 +205,49 @@ export default function AdminClientDetail() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-white/5 mb-6 h-11 flex flex-wrap">
+        <TabsList className="bg-white/5 mb-6 h-auto flex flex-wrap p-1 gap-1">
           <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview")}</TabsTrigger>
-          <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabBookings")}
-          </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackages")}
+            <PackageIcon size={13} className="mr-1.5" /> Package
+          </TabsTrigger>
+          <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
+            <Calendar size={13} className="mr-1.5" /> Sessions
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <Activity size={13} className="mr-1.5" /> {t("admin.clientDetail.tabInbody")}
+            <HeartPulse size={13} className="mr-1.5" /> Health & Goals
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress")}
+            <ImageIcon size={13} className="mr-1.5" /> Progress
+          </TabsTrigger>
+          <TabsTrigger value="notes" data-testid="tab-detail-notes">
+            <FileText size={13} className="mr-1.5" /> Notes
+          </TabsTrigger>
+          <TabsTrigger value="documents" data-testid="tab-detail-documents">
+            <FileCheck2 size={13} className="mr-1.5" /> Documents
+          </TabsTrigger>
+          <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
+            <Bell size={13} className="mr-1.5" /> Alerts
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab client={client} /></TabsContent>
+        <TabsContent value="packages">
+          <PackagesPanel client={client} />
+          <div className="mt-6">
+            <SessionHistoryCard userId={client.id} />
+          </div>
+        </TabsContent>
         <TabsContent value="bookings"><BookingsTab client={client} /></TabsContent>
-        <TabsContent value="packages"><PackagesPanel client={client} /></TabsContent>
-        <TabsContent value="inbody"><InbodyPanel userId={client.id} /></TabsContent>
+        <TabsContent value="inbody">
+          <HealthGoalsPanel client={client} />
+          <div className="mt-6">
+            <InbodyPanel userId={client.id} />
+          </div>
+        </TabsContent>
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
+        <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
+        <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
+        <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
       </Tabs>
       </div>
     </div>
@@ -1649,10 +1685,196 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                     className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
                   />
                 </div>
+                <PackageAdminControls pkg={p} />
               </motion.div>
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+// =============== ADMIN PACKAGE CONTROLS (payment / freeze / approve / sessions adjust) ===============
+
+function PackageAdminControls({ pkg }: { pkg: Package }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["/api/packages"] });
+    qc.invalidateQueries({ queryKey: ["/api/admin/clients", pkg.userId, "session-history"] });
+  };
+
+  const freezeMut = useMutation({
+    mutationFn: async (vars: { frozen: boolean; reason?: string | null }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/freeze`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: pkg.frozen ? "Package unfrozen" : "Package frozen" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const paymentMut = useMutation({
+    mutationFn: async (vars: { paymentStatus: PackagePaymentStatus; note?: string | null }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/payment`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Payment status updated" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const approveMut = useMutation({
+    mutationFn: async (vars: { approved: boolean; note?: string | null }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/approve`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Approval updated" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const adjustMut = useMutation({
+    mutationFn: async (vars: { delta: number; reason: string }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/sessions-adjust`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Sessions adjusted" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjDelta, setAdjDelta] = useState<number>(1);
+  const [adjReason, setAdjReason] = useState("");
+
+  const paymentStatus = ((pkg as any).paymentStatus ?? "unpaid") as PackagePaymentStatus;
+  const adminApproved = !!(pkg as any).adminApproved;
+  const isFrozen = !!(pkg as any).frozen;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+      <div className="flex flex-wrap gap-2 items-center">
+        <span
+          className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${
+            paymentStatus === "paid"
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+              : paymentStatus === "partially_paid"
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+              : paymentStatus === "pending"
+              ? "border-sky-500/40 bg-sky-500/10 text-sky-200"
+              : "border-red-500/40 bg-red-500/10 text-red-200"
+          }`}
+          data-testid={`badge-payment-${pkg.id}`}
+        >
+          <Wallet size={11} className="inline mr-1 -mt-0.5" />
+          {PACKAGE_PAYMENT_STATUS_LABELS[paymentStatus]}
+        </span>
+        <span
+          className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${
+            adminApproved
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+              : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+          }`}
+          data-testid={`badge-approved-${pkg.id}`}
+        >
+          <BadgeCheck size={11} className="inline mr-1 -mt-0.5" />
+          {adminApproved ? "Approved" : "Awaiting approval"}
+        </span>
+        {isFrozen && (
+          <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
+            <Snowflake size={11} className="inline mr-1 -mt-0.5" /> Frozen
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select
+          value={paymentStatus}
+          onValueChange={(v) => paymentMut.mutate({ paymentStatus: v as PackagePaymentStatus })}
+        >
+          <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 w-auto" data-testid={`select-payment-${pkg.id}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PACKAGE_PAYMENT_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>{PACKAGE_PAYMENT_STATUS_LABELS[s]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-xs rounded-lg"
+          onClick={() => freezeMut.mutate({ frozen: !isFrozen, reason: null })}
+          disabled={freezeMut.isPending}
+          data-testid={`button-freeze-${pkg.id}`}
+        >
+          {isFrozen ? <Play size={12} className="mr-1" /> : <Pause size={12} className="mr-1" />}
+          {isFrozen ? "Unfreeze" : "Freeze"}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-xs rounded-lg"
+          onClick={() => approveMut.mutate({ approved: !adminApproved })}
+          disabled={approveMut.isPending}
+          data-testid={`button-approve-${pkg.id}`}
+        >
+          <BadgeCheck size={12} className="mr-1" />
+          {adminApproved ? "Revoke approval" : "Approve"}
+        </Button>
+
+        <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg" data-testid={`button-adjust-${pkg.id}`}>
+              <PlusIcon size={12} className="mr-1" />/<Minus size={12} className="ml-0.5 mr-1" /> Adjust
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-sm">
+            <DialogHeader><DialogTitle>Adjust sessions</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Delta (positive adds, negative removes)</label>
+                <Input
+                  type="number"
+                  value={adjDelta}
+                  onChange={(e) => setAdjDelta(Number(e.target.value) || 0)}
+                  className="bg-white/5 border-white/10"
+                  data-testid="input-adjust-delta"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Reason</label>
+                <Input
+                  value={adjReason}
+                  onChange={(e) => setAdjReason(e.target.value)}
+                  placeholder="e.g. Bonus session, complaint refund…"
+                  className="bg-white/5 border-white/10"
+                  data-testid="input-adjust-reason"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  if (!adjReason.trim() || !adjDelta) return;
+                  adjustMut.mutate(
+                    { delta: adjDelta, reason: adjReason.trim() },
+                    { onSuccess: () => { setAdjustOpen(false); setAdjDelta(1); setAdjReason(""); } },
+                  );
+                }}
+                disabled={adjustMut.isPending || !adjReason.trim() || !adjDelta}
+                data-testid="button-submit-adjust"
+              >
+                {adjustMut.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Apply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {(pkg as any).paymentNote && (
+        <p className="text-[11px] text-muted-foreground italic">Payment note: {(pkg as any).paymentNote}</p>
+      )}
+      {(pkg as any).frozenReason && (
+        <p className="text-[11px] text-cyan-300/90 italic">Frozen reason: {(pkg as any).frozenReason}</p>
       )}
     </div>
   );
@@ -2069,6 +2291,453 @@ function VerifiedToggle({
         >
           <ResetIcon size={12} />
         </button>
+      )}
+    </div>
+  );
+}
+
+// =============== CLIENT STATUS (badge + admin control) ===============
+
+function ClientStatusBadge({ status }: { status: ClientStatus }) {
+  const tone = CLIENT_STATUS_TONES[status] ?? "neutral";
+  const cls =
+    tone === "success"
+      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+      : tone === "warning"
+      ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+      : tone === "danger"
+      ? "border-red-500/40 bg-red-500/10 text-red-200"
+      : "border-white/10 bg-white/5 text-white/70";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${cls}`}
+      data-testid={`badge-client-status-${status}`}
+    >
+      {CLIENT_STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+function ClientStatusControl({ client }: { client: UserResponse }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const m = useMutation({
+    mutationFn: async (status: ClientStatus) => {
+      const r = await apiRequest("PATCH", `/api/users/${client.id}`, { clientStatus: status });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Client status updated" });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const current = (client.clientStatus ?? "incomplete") as ClientStatus;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Lifecycle</span>
+      <Select value={current} onValueChange={(v) => m.mutate(v as ClientStatus)}>
+        <SelectTrigger className="h-8 w-44 text-xs bg-white/5 border-white/10" data-testid="select-client-status">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {CLIENT_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>{CLIENT_STATUS_LABELS[s]}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+// =============== HEALTH & GOALS PANEL ===============
+
+function HealthGoalsPanel({ client }: { client: UserResponse }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    primaryGoal: client.primaryGoal ?? "",
+    fitnessGoal: client.fitnessGoal ?? "",
+    weeklyFrequency: client.weeklyFrequency ?? 3,
+    preferredTrainingDays: ((client as any).preferredTrainingDays ?? []) as string[],
+    injuries: (client as any).injuries ?? "",
+    medicalNotes: (client as any).medicalNotes ?? "",
+    medicalClearanceNote: (client as any).medicalClearanceNote ?? "",
+    parqCompleted: !!(client as any).parqCompleted,
+    waiverAccepted: !!(client as any).waiverAccepted,
+  });
+
+  const m = useMutation({
+    mutationFn: async (body: Record<string, unknown>) => {
+      const r = await apiRequest("PATCH", `/api/users/${client.id}`, body);
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Health & goals updated" });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const toggleDay = (d: string) => {
+    setForm((f) => ({
+      ...f,
+      preferredTrainingDays: f.preferredTrainingDays.includes(d)
+        ? f.preferredTrainingDays.filter((x) => x !== d)
+        : [...f.preferredTrainingDays, d],
+    }));
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+        <HeartPulse size={13} /> Health & Goals
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] text-muted-foreground block mb-1">Primary Goal</label>
+          <Select value={form.primaryGoal} onValueChange={(v) => setForm({ ...form, primaryGoal: v })}>
+            <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10" data-testid="select-primary-goal">
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              {PRIMARY_GOAL_OPTIONS.map((g) => (
+                <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-[11px] text-muted-foreground block mb-1">Weekly Frequency</label>
+          <Select value={String(form.weeklyFrequency ?? "")} onValueChange={(v) => setForm({ ...form, weeklyFrequency: Number(v) })}>
+            <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10" data-testid="select-health-frequency">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {WEEKLY_FREQUENCY_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[11px] text-muted-foreground block mb-2">Preferred Training Days</label>
+        <div className="flex flex-wrap gap-2">
+          {DAYS.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => toggleDay(d)}
+              data-testid={`chip-day-${d}`}
+              className={`px-3 h-8 rounded-full text-[11px] font-semibold border ${
+                form.preferredTrainingDays.includes(d)
+                  ? "bg-primary/20 border-primary/40 text-primary"
+                  : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+              }`}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[11px] text-muted-foreground block mb-1">Free-form fitness goal</label>
+        <Textarea
+          value={form.fitnessGoal}
+          onChange={(e) => setForm({ ...form, fitnessGoal: e.target.value })}
+          rows={2}
+          className="bg-white/5 border-white/10 text-sm"
+          data-testid="textarea-fitness-goal"
+        />
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-[11px] text-muted-foreground block mb-1">Injuries / limitations</label>
+          <Textarea
+            value={form.injuries}
+            onChange={(e) => setForm({ ...form, injuries: e.target.value })}
+            rows={3}
+            className="bg-white/5 border-white/10 text-sm"
+            data-testid="textarea-injuries"
+          />
+        </div>
+        <div>
+          <label className="text-[11px] text-muted-foreground block mb-1">Medical notes</label>
+          <Textarea
+            value={form.medicalNotes}
+            onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })}
+            rows={3}
+            className="bg-white/5 border-white/10 text-sm"
+            data-testid="textarea-medical-notes"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[11px] text-muted-foreground block mb-1">Medical clearance note</label>
+        <Textarea
+          value={form.medicalClearanceNote}
+          onChange={(e) => setForm({ ...form, medicalClearanceNote: e.target.value })}
+          rows={2}
+          className="bg-white/5 border-white/10 text-sm"
+          data-testid="textarea-medical-clearance"
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <label className="inline-flex items-center gap-2 text-xs">
+          <Switch
+            checked={form.parqCompleted}
+            onCheckedChange={(v) => setForm({ ...form, parqCompleted: v })}
+            data-testid="switch-parq"
+          />
+          PAR-Q completed
+        </label>
+        <label className="inline-flex items-center gap-2 text-xs">
+          <Switch
+            checked={form.waiverAccepted}
+            onCheckedChange={(v) => setForm({ ...form, waiverAccepted: v })}
+            data-testid="switch-waiver"
+          />
+          Liability waiver signed
+        </label>
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          onClick={() => m.mutate(form)}
+          disabled={m.isPending}
+          data-testid="button-save-health"
+        >
+          {m.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// =============== NOTES PANEL (categorized) ===============
+
+function NotesPanel({ client }: { client: UserResponse }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    coachNotes: (client as any).coachNotes ?? "",
+    goalNotes: (client as any).goalNotes ?? "",
+    communicationNotes: (client as any).communicationNotes ?? "",
+    adminNotes: (client as any).adminNotes ?? "",
+  });
+  const m = useMutation({
+    mutationFn: async (body: Record<string, unknown>) => {
+      const r = await apiRequest("PATCH", `/api/users/${client.id}`, body);
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({ title: "Notes saved" });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const fields: Array<{ key: keyof typeof form; label: string; hint: string; testId: string }> = [
+    { key: "coachNotes", label: "Coach notes", hint: "Programming, technique, performance.", testId: "textarea-coach-notes" },
+    { key: "goalNotes", label: "Goal notes", hint: "Long-term targets, milestones, body composition goals.", testId: "textarea-goal-notes" },
+    { key: "communicationNotes", label: "Communication notes", hint: "Cadence, preferences, family / privacy considerations.", testId: "textarea-communication-notes" },
+    { key: "adminNotes", label: "General admin notes", hint: "Anything else not covered above.", testId: "textarea-admin-notes" },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+        <FileText size={13} /> Internal notes (never shared with the client)
+      </p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        {fields.map((f) => (
+          <div key={f.key as string}>
+            <label className="text-[11px] text-muted-foreground block mb-1">{f.label}</label>
+            <Textarea
+              value={form[f.key] as string}
+              onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+              rows={4}
+              className="bg-white/5 border-white/10 text-sm"
+              data-testid={f.testId}
+            />
+            <p className="text-[10px] text-muted-foreground/70 mt-1">{f.hint}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => m.mutate(form)} disabled={m.isPending} data-testid="button-save-notes">
+          {m.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Save notes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// =============== DOCUMENTS PANEL (consents + checklists) ===============
+
+function DocumentsPanel({ client }: { client: UserResponse }) {
+  const parq = !!(client as any).parqCompleted;
+  const waiver = !!(client as any).waiverAccepted;
+  const medical = (client as any).medicalClearanceNote;
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-3">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+          <FileCheck2 size={13} /> Onboarding checklist
+        </p>
+        <DocRow label="PAR-Q questionnaire" done={parq} />
+        <DocRow label="Liability waiver" done={waiver} />
+        <DocRow
+          label="Medical clearance"
+          done={!!(medical && String(medical).trim().length > 0)}
+          detail={medical || "Not on file"}
+        />
+        <p className="text-[11px] text-muted-foreground/70">
+          Tick PAR-Q / waiver from the <strong>Health & Goals</strong> tab.
+        </p>
+      </div>
+      <ConsentsCard userId={client.id} />
+    </div>
+  );
+}
+
+function DocRow({ label, done, detail }: { label: string; done: boolean; detail?: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2 border-b border-white/5 last:border-0">
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        {detail && <p className="text-[11px] text-muted-foreground mt-0.5">{detail}</p>}
+      </div>
+      <span
+        className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${
+          done
+            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+            : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+        }`}
+      >
+        {done ? "On file" : "Missing"}
+      </span>
+    </div>
+  );
+}
+
+// =============== ALERTS PANEL (computed) ===============
+
+function AlertsPanel({ client }: { client: UserResponse }) {
+  const { data: packages = [] } = usePackages({ userId: client.id });
+  const list = packages as Package[];
+  const status = (client.clientStatus ?? "incomplete") as ClientStatus;
+  const alerts: Array<{ tone: "danger" | "warning" | "info"; text: string }> = [];
+
+  if (status === "incomplete") alerts.push({ tone: "warning", text: "Profile is incomplete — booking is blocked." });
+  if (status === "pending") alerts.push({ tone: "info", text: "Awaiting your approval to allow booking." });
+  if (status === "frozen") alerts.push({ tone: "warning", text: "Client is frozen — booking is blocked." });
+  if (status === "expired") alerts.push({ tone: "danger", text: "No active package — client cannot book." });
+  if (!(client as any).parqCompleted) alerts.push({ tone: "warning", text: "PAR-Q not completed." });
+  if (!(client as any).waiverAccepted) alerts.push({ tone: "warning", text: "Liability waiver not signed." });
+
+  for (const p of list) {
+    if ((p as any).frozen) alerts.push({ tone: "info", text: `Package "${(p as any).name ?? p.type}" is frozen.` });
+    if (!(p as any).adminApproved) alerts.push({ tone: "warning", text: `Package "${(p as any).name ?? p.type}" is awaiting approval.` });
+    const ps = ((p as any).paymentStatus ?? "unpaid") as PackagePaymentStatus;
+    if (ps === "unpaid" || ps === "pending") alerts.push({ tone: "warning", text: `Package "${(p as any).name ?? p.type}" payment is ${ps}.` });
+    if (p.expiryDate) {
+      const days = Math.round((new Date(p.expiryDate as any).getTime() - Date.now()) / 86400000);
+      if (days <= 7 && days >= 0 && p.isActive) alerts.push({ tone: "warning", text: `Package "${(p as any).name ?? p.type}" expires in ${days} day(s).` });
+      if (days < 0 && p.isActive) alerts.push({ tone: "danger", text: `Package "${(p as any).name ?? p.type}" expired ${Math.abs(days)} day(s) ago.` });
+    }
+    const remaining = p.totalSessions - p.usedSessions;
+    if (remaining <= 2 && remaining > 0 && p.isActive) alerts.push({ tone: "warning", text: `Only ${remaining} session(s) left on "${(p as any).name ?? p.type}".` });
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-3">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
+        <Bell size={13} /> Alerts ({alerts.length})
+      </p>
+      {alerts.length === 0 ? (
+        <p className="text-sm text-muted-foreground">All clear — no active alerts for this client.</p>
+      ) : (
+        <ul className="space-y-2">
+          {alerts.map((a, i) => (
+            <li
+              key={i}
+              data-testid={`alert-${i}`}
+              className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${
+                a.tone === "danger"
+                  ? "border-red-500/40 bg-red-500/10 text-red-200"
+                  : a.tone === "warning"
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                  : "border-sky-500/40 bg-sky-500/10 text-sky-200"
+              }`}
+            >
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              <span>{a.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// =============== SESSION HISTORY (audit log) ===============
+
+function SessionHistoryCard({ userId }: { userId: number }) {
+  const { data = [], isLoading } = useQuery<PackageSessionHistory[]>({
+    queryKey: ["/api/admin/clients", userId, "session-history"],
+    queryFn: async () => {
+      const r = await fetch(`/api/admin/clients/${userId}/session-history`, { credentials: "include" });
+      if (!r.ok) throw new Error("Failed to load history");
+      return r.json();
+    },
+  });
+  return (
+    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5 mb-3">
+        <Activity size={13} /> Session & package history
+      </p>
+      {isLoading ? (
+        <div className="text-xs text-muted-foreground">Loading…</div>
+      ) : data.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No history yet.</p>
+      ) : (
+        <ul className="space-y-2 max-h-96 overflow-y-auto">
+          {data.map((row) => (
+            <li
+              key={row.id}
+              data-testid={`history-${row.id}`}
+              className="flex items-start gap-3 text-xs border-b border-white/5 pb-2 last:border-0"
+            >
+              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                {row.createdAt ? format(new Date(row.createdAt), "MMM d, HH:mm") : ""}
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {SESSION_HISTORY_ACTION_LABELS[row.action as keyof typeof SESSION_HISTORY_ACTION_LABELS] ?? row.action}
+                  {row.sessionsDelta !== 0 && (
+                    <span className={`ml-2 ${row.sessionsDelta > 0 ? "text-emerald-300" : "text-red-300"}`}>
+                      {row.sessionsDelta > 0 ? "+" : ""}{row.sessionsDelta}
+                    </span>
+                  )}
+                </p>
+                {row.reason && <p className="text-muted-foreground mt-0.5">{row.reason}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

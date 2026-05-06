@@ -307,6 +307,14 @@ export function setupAuth(app: Express) {
         weeklyFrequency,
         vipTier: initialTier,
         vipUpdatedAt: new Date(),
+        // Super admins skip the lifecycle gate; new clients land in 'pending'
+        // (full profile but awaiting trainer approval) when they submit a
+        // primary goal + weekly frequency, otherwise stay 'incomplete'.
+        clientStatus: isSuperAdminSignup
+          ? "active"
+          : primaryGoal && weeklyFrequency
+          ? "pending"
+          : "incomplete",
       } as any);
 
       // Persist registration consent for legal/audit trail

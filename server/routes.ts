@@ -47,12 +47,19 @@ import {
   attendanceUpdateSchema,
   adminClientNotesSchema,
   extendPackageSchema,
+  freezePackageSchema,
+  updatePackagePaymentSchema,
+  adjustPackageSessionsSchema,
+  approvePackageSchema,
+  evaluateBookingEligibility,
+  CLIENT_STATUSES,
   PACKAGE_DEFINITIONS,
   PACKAGE_TYPES,
   type User,
   type Package,
   type Booking,
   type AdminPermissionKey,
+  type ClientStatus,
 } from "@shared/schema";
 import {
   sendEmail,
@@ -681,6 +688,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             packageStatus: "completed",
           });
         }
+      }
+    }
+
+    // Client-lifecycle + package-eligibility gate (clients only).
+    // Trial sessions skip the package half (no package needed); the client
+    // half (clientStatus / profile completion) still applies.
+    if (me.role !== "admin") {
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) return res.status(404).json({ message: "Client not found" });
+      const linkedPkg =
+        sessionType === "trial" || sessionType === "single"
+          ? null
+          : packageId
+          ? await storage.getPackage(packageId).catch(() => undefined)
+          : null;
+      const verdict = evaluateBookingEligibility(targetUser, linkedPkg ?? null);
+      if (!verdict.ok) {
+        return res.status(400).json({ message: verdict.message, code: verdict.code });
       }
     }
 
@@ -1556,6 +1581,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
     const created = await storage.createPackage(parsed.data);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: created.id,
+        userId: created.userId,
+        action: "package_created",
+        sessionsDelta: created.totalSessions ?? 0,
+        performedByUserId: (req.user as User).id,
+        reason: created.name ?? null,
+      } as any);
+    } catch {/* ignore */}
     res.status(201).json(created);
   });
 
@@ -1570,8 +1605,157 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/packages/:id", requireAdmin, async (req, res) => {
-    await storage.deletePackage(Number(req.params.id));
+    const id = Number(req.params.id);
+    const pkg = await storage.getPackage(id).catch(() => undefined);
+    await storage.deletePackage(id);
+    if (pkg) {
+      try {
+        await storage.createPackageSessionHistory({
+          packageId: pkg.id,
+          userId: pkg.userId,
+          action: "package_deleted",
+          sessionsDelta: -(pkg.totalSessions - pkg.usedSessions),
+          performedByUserId: (req.user as User | undefined)?.id ?? null,
+          reason: "Package deleted by admin",
+        } as any);
+      } catch {/* best-effort audit */}
+    }
     res.sendStatus(204);
+  });
+
+  // ============== ADMIN PACKAGE CONTROLS ==============
+  // Freeze / unfreeze a package — pauses booking without altering balance.
+  app.post("/api/admin/packages/:id/freeze", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = freezePackageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const updated = await storage.updatePackage(id, {
+      frozen: parsed.data.frozen,
+      frozenAt: parsed.data.frozen ? new Date() : null,
+      frozenReason: parsed.data.frozen ? parsed.data.reason ?? null : null,
+    } as any);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: parsed.data.frozen ? "package_frozen" : "package_unfrozen",
+        sessionsDelta: 0,
+        performedByUserId: me.id,
+        reason: parsed.data.reason ?? null,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Update payment status (manual — NO online gateway).
+  app.post("/api/admin/packages/:id/payment", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = updatePackagePaymentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const approved =
+      parsed.data.paymentApproved ?? parsed.data.paymentStatus === "paid";
+    const updated = await storage.updatePackage(id, {
+      paymentStatus: parsed.data.paymentStatus,
+      paymentApproved: approved,
+      paymentApprovedAt: approved ? new Date() : null,
+      paymentApprovedByUserId: approved ? me.id : null,
+      paymentNote: parsed.data.note ?? null,
+    } as any);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "payment_updated",
+        sessionsDelta: 0,
+        performedByUserId: me.id,
+        reason: `${parsed.data.paymentStatus}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Manual session adjustment (positive = grant, negative = remove).
+  app.post("/api/admin/packages/:id/sessions-adjust", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = adjustPackageSessionsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const { delta, reason } = parsed.data;
+    // Granting credits = increase totalSessions. Removing credits = decrease
+    // remaining balance by raising usedSessions (without going negative).
+    let updated;
+    if (delta > 0) {
+      updated = await storage.updatePackage(id, {
+        totalSessions: pkg.totalSessions + delta,
+      } as any);
+    } else {
+      const newUsed = Math.min(pkg.totalSessions, pkg.usedSessions + Math.abs(delta));
+      updated = await storage.updatePackage(id, { usedSessions: newUsed } as any);
+    }
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: delta > 0 ? "session_added_manual" : "session_removed_manual",
+        sessionsDelta: delta,
+        performedByUserId: me.id,
+        reason,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Approve / unapprove a package (gate for client booking).
+  app.post("/api/admin/packages/:id/approve", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = approvePackageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const updated = await storage.updatePackage(id, {
+      adminApproved: parsed.data.approved,
+      adminApprovedAt: parsed.data.approved ? new Date() : null,
+      adminApprovedByUserId: parsed.data.approved ? me.id : null,
+    } as any);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "package_approved",
+        sessionsDelta: 0,
+        performedByUserId: me.id,
+        reason: parsed.data.approved
+          ? parsed.data.note ?? "Package approved"
+          : parsed.data.note ?? "Approval revoked",
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Read the audit trail for a single client (used by the Sessions tab).
+  app.get("/api/admin/clients/:id/session-history", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 200, 1), 500);
+    const history = await storage.getPackageSessionHistory({ userId, limit });
+    res.json(history);
   });
 
   // ============== PACKAGE TEMPLATES (admin catalogue) ==============
@@ -2240,6 +2424,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       expiryDate: newExpiryStr as any,
       isActive: true,
     });
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "package_extended",
+        sessionsDelta: 0,
+        performedByUserId: (req.user as User).id,
+        reason: parsed.data.newExpiryDate
+          ? `Expiry set to ${newExpiryStr}`
+          : `Extended by ${parsed.data.addDays ?? 7} days → ${newExpiryStr}`,
+      } as any);
+    } catch {/* ignore */}
     res.json(updated);
   });
 
