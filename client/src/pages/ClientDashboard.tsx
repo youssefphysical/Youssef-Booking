@@ -1034,7 +1034,7 @@ function RenewalRequestDialog({
   onOpenChange: (v: boolean) => void;
   userId: number;
 }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { user } = useAuth();
   const { data: settings } = useSettings();
   const { toast } = useToast();
@@ -1061,6 +1061,7 @@ function RenewalRequestDialog({
       const msg = buildWhatsappMessage("requestRenewal", {
         clientName: user?.fullName,
         requestedPackageLabel: def?.label || selectedType,
+        lang,
       });
       const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
       // See ExtensionRequestDialog: open synchronously so iOS Safari permits
@@ -1165,7 +1166,7 @@ function ExtensionRequestDialog({
   pkg: Package | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { user } = useAuth();
   const { data: settings } = useSettings();
   const { toast } = useToast();
@@ -1201,6 +1202,7 @@ function ExtensionRequestDialog({
         packageLabel: (pkg as any)?.name || def?.label || pkg?.type,
         requestedDays: days,
         reason,
+        lang,
       });
       const url = whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg);
       // Open WhatsApp synchronously inside the success handler so iOS Safari
