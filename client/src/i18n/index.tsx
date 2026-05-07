@@ -19,6 +19,14 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 function detectInitialLang(): LanguageCode {
   if (typeof window === "undefined") return DEFAULT_LANGUAGE;
+  // 1. ?lang=xx URL override (also persists into localStorage for the session).
+  try {
+    const param = new URLSearchParams(window.location.search).get("lang");
+    if (param && LANGUAGES.some((l) => l.code === param)) {
+      try { window.localStorage.setItem(STORAGE_KEY, param); } catch { /* noop */ }
+      return param as LanguageCode;
+    }
+  } catch { /* ignore URL parse errors */ }
   const stored = window.localStorage.getItem(STORAGE_KEY) as LanguageCode | null;
   if (stored && LANGUAGES.some((l) => l.code === stored)) return stored;
   const browser = window.navigator?.language?.slice(0, 2).toLowerCase();
