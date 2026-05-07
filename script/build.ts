@@ -1,6 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";
+import { spawnSync } from "child_process";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -37,6 +38,13 @@ async function buildAll() {
 
   console.log("building client...");
   await viteBuild();
+
+  // Refresh hero static file from Neon and generate the OG social-share
+  // image from that same hero. Both scripts are idempotent and exit 0
+  // on any error, so they never break the deploy.
+  console.log("refreshing hero + generating OG hero...");
+  spawnSync("node", ["scripts/inject-hero.mjs"], { stdio: "inherit" });
+  spawnSync("node", ["scripts/generate-og-hero.mjs"], { stdio: "inherit" });
 
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));

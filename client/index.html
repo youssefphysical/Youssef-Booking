@@ -20,8 +20,16 @@
     <meta property="og:title" content="Youssef Ahmed Personal Training" />
     <meta property="og:description" content="Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance." />
     <meta property="og:url" content="https://youssef-booking.vercel.app/" />
-    <meta property="og:image" content="https://youssef-booking.vercel.app/og-homepage.jpg?v=2" />
-    <meta property="og:image:secure_url" content="https://youssef-booking.vercel.app/og-homepage.jpg?v=2" />
+    <!--
+      og:image points at /og-hero-current.jpg — generated at build time by
+      scripts/generate-og-hero.mjs from the *current* active homepage hero
+      (Neon `hero_images` row where is_active = true). The ?v=current token
+      is replaced with the OG file's content-hash during `npm run build`,
+      so whenever the admin swaps the hero the social URL changes too and
+      WhatsApp / FB / LinkedIn re-scrape automatically. No manual step.
+    -->
+    <meta property="og:image" content="https://youssef-booking.vercel.app/og-hero-current.jpg?v=current" />
+    <meta property="og:image:secure_url" content="https://youssef-booking.vercel.app/og-hero-current.jpg?v=current" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -32,7 +40,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Youssef Ahmed Personal Training" />
     <meta name="twitter:description" content="Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance." />
-    <meta name="twitter:image" content="https://youssef-booking.vercel.app/og-homepage.jpg?v=2" />
+    <meta name="twitter:image" content="https://youssef-booking.vercel.app/og-hero-current.jpg?v=current" />
     <meta name="twitter:image:alt" content="Youssef Ahmed — Elite Personal Training in Dubai" />
 
     <!-- ===== HERO STATIC PRELOAD (May 2026, FINAL flash kill) =====
