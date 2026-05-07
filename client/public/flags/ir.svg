@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" shape-rendering="crispEdges">
+  <rect width="900" height="200" fill="#239F40"/>
+  <rect y="200" width="900" height="200" fill="#FFFFFF"/>
+  <rect y="400" width="900" height="200" fill="#DA0000"/>
+  <g fill="#DA0000" font-family="serif" font-size="24" text-anchor="middle">
+    <text x="60" y="195">الله اكبر</text><text x="180" y="195">الله اكبر</text><text x="300" y="195">الله اكبر</text><text x="420" y="195">الله اكبر</text><text x="540" y="195">الله اكبر</text><text x="660" y="195">الله اكبر</text><text x="780" y="195">الله اكبر</text><text x="870" y="195">الله اكبر</text>
+  </g>
+  <g fill="#239F40" font-family="serif" font-size="24" text-anchor="middle">
+    <text x="60" y="425">الله اكبر</text><text x="180" y="425">الله اكبر</text><text x="300" y="425">الله اكبر</text><text x="420" y="425">الله اكبر</text><text x="540" y="425">الله اكبر</text><text x="660" y="425">الله اكبر</text><text x="780" y="425">الله اكبر</text><text x="870" y="425">الله اكبر</text>
+  </g>
+  <g transform="translate(450 300)" fill="#DA0000">
+    <path d="M-40 -20 a40 40 0 0 1 80 0 a40 40 0 0 1 -80 0 z" fill="none" stroke="#DA0000" stroke-width="8"/>
+    <circle r="14"/>
+    <path d="M-50 0 L-50 30 M-25 0 L-25 30 M0 -50 L0 -20 M25 0 L25 30 M50 0 L50 30" stroke="#DA0000" stroke-width="6" fill="none"/>
+  </g>
+</svg>
