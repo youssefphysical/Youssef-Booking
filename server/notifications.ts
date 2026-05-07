@@ -1,120 +1,119 @@
 /**
- * Notifications service: sends welcome emails / SMS after registration.
- * Safe no-ops when no email or SMS provider is configured. Never throws.
+ * Notifications service: sends transactional emails (welcome, password reset)
+ * via the premium template system. Safe no-ops when no provider is
+ * configured. NEVER throws — caller wraps in try/catch but we belt-and-brace.
  */
 
-const WHATSAPP = "+971505394754";
+import { sendEmail, trainerEmail } from "./email";
+import {
+  buildWelcomeEmail,
+  buildPasswordResetEmail,
+  buildAdminNewClientEmail,
+} from "./email-templates";
 
-function welcomeEmailBody(clientName: string) {
-  return `Hi ${clientName},
-
-Welcome to Youssef Fitness — I'm happy to have you here.
-
-Your profile has been created successfully, and your InBody scan has been received. I'll review your details and use them to better understand your current condition, goals, and starting point.
-
-Through Youssef Fitness, the goal is to provide you with structured, safe, and result-driven coaching based on your body, your schedule, and your progress.
-
-You can now use your account to:
-- Book your training sessions
-- View your upcoming sessions
-- Track your session balance
-- Upload progress photos
-- Follow your InBody history
-
-Please remember that cancellations or rescheduling must be made at least 6 hours before your session time. Late cancellations will be counted as used.
-
-If you have any questions, you can contact me directly on WhatsApp:
-${WHATSAPP}
-
-Welcome again,
-Youssef Ahmed
-Youssef Fitness
-Certified Personal Trainer | Physical Education Teacher | Movement & Kinesiology Specialist`;
-}
-
-function welcomeShortMessage(clientName: string) {
-  return `Hi ${clientName}, welcome to Youssef Fitness. Your profile has been created and your InBody scan has been received. You can now book sessions, track your progress, and manage your training through your account. For any questions, WhatsApp: ${WHATSAPP}`;
+function publicWebsiteUrl(): string {
+  return (
+    process.env.PUBLIC_APP_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://youssef-booking.vercel.app"
+      : `http://localhost:${process.env.PORT || 5000}`)
+  ).replace(/\/+$/, "");
 }
 
 export async function sendWelcomeNotifications({
   clientName,
   email,
   phone,
+  lang,
 }: {
   clientName: string;
   email?: string | null;
   phone?: string | null;
+  lang?: string | null;
 }) {
-  // Email — only sends if a provider is configured.
+  if (!email) {
+    console.info(`[notifications] welcome skipped — no email. client=${clientName}`);
+    return;
+  }
   try {
-    if (email && process.env.SMTP_HOST && process.env.SMTP_USER) {
-      // Provider not wired up here. Log intent only.
-      console.info(
-        `[notifications] (email) would send welcome to ${email} for ${clientName}`,
-      );
-    } else {
-      console.info(
-        `[notifications] (email) skipped — provider not configured. recipient=${email ?? "n/a"}`,
-      );
-    }
+    const built = buildWelcomeEmail({
+      clientName,
+      lang: lang || "en",
+      websiteUrl: publicWebsiteUrl(),
+    });
+    await sendEmail({
+      to: email,
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: trainerEmail(),
+    });
   } catch (e) {
     console.warn("[notifications] welcome email failed:", e);
   }
 
-  // SMS / WhatsApp — only sends if a provider is configured.
-  try {
-    if (phone && (process.env.TWILIO_ACCOUNT_SID || process.env.WHATSAPP_API_TOKEN)) {
-      console.info(
-        `[notifications] (sms) would send welcome to ${phone} for ${clientName}`,
-      );
-    } else {
-      console.info(
-        `[notifications] (sms) skipped — provider not configured. recipient=${phone ?? "n/a"}`,
-      );
-    }
-  } catch (e) {
-    console.warn("[notifications] welcome sms failed:", e);
+  // SMS / WhatsApp — only sends if a provider is configured. Stubbed.
+  if (phone && (process.env.TWILIO_ACCOUNT_SID || process.env.WHATSAPP_API_TOKEN)) {
+    console.info(`[notifications] (sms) provider configured but stubbed for ${phone}`);
   }
+}
 
-  // Surface message bodies in dev logs so they are easy to review.
-  if (process.env.NODE_ENV !== "production") {
-    console.info("--- Welcome Email Body ---\n" + welcomeEmailBody(clientName));
-    console.info("--- Welcome Short Message ---\n" + welcomeShortMessage(clientName));
+/**
+ * Send the trainer an immediate notification that a new client just signed
+ * up. Always English. Never blocks registration.
+ */
+export async function sendAdminNewClientEmail(opts: {
+  clientName: string;
+  email?: string | null;
+  phone?: string | null;
+  primaryGoal?: string | null;
+  weeklyFrequency?: number | null;
+  area?: string | null;
+  packageName?: string | null;
+  packagePrice?: number | null;
+}) {
+  try {
+    const built = buildAdminNewClientEmail({
+      ...opts,
+      websiteUrl: publicWebsiteUrl(),
+    });
+    await sendEmail({
+      to: trainerEmail(),
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: opts.email || undefined,
+    });
+  } catch (e) {
+    console.warn("[notifications] admin new-client email failed:", e);
   }
 }
 
 export async function sendPasswordResetNotification({
   email,
   resetUrl,
+  lang,
 }: {
   email: string;
   resetUrl?: string;
+  lang?: string | null;
 }) {
-  // No-op stub if no reset URL — caller should always pass one for real resets.
   if (!resetUrl) {
-    console.info(
-      `[notifications] (email) password reset skipped — no reset URL. recipient=${email}`,
-    );
+    console.info(`[notifications] password reset skipped — no reset URL. recipient=${email}`);
     return;
   }
-  const { sendEmail } = await import("./email");
-  const subject = "Reset your Youssef Ahmed password";
-  const text =
-    `Hi,\n\nWe received a request to reset the password for your Youssef Ahmed account.\n\n` +
-    `Reset your password using the link below (valid for 30 minutes):\n${resetUrl}\n\n` +
-    `If you didn't request this, you can safely ignore this email — your password will not change.\n\n` +
-    `— Youssef Ahmed Personal Training`;
-  const html =
-    `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#111;max-width:560px">` +
-    `<h2 style="margin:0 0 12px;color:#0a7d4f">Reset your password</h2>` +
-    `<p style="margin:0 0 14px">We received a request to reset the password for your Youssef Ahmed account.</p>` +
-    `<p style="margin:0 0 18px"><a href="${resetUrl}" style="display:inline-block;padding:12px 22px;background:#0a7d4f;color:#fff;border-radius:10px;text-decoration:none;font-weight:600">Reset password</a></p>` +
-    `<p style="margin:0 0 6px;font-size:13px;color:#555">Or paste this link into your browser (valid for 30 minutes):</p>` +
-    `<p style="margin:0 0 22px;font-size:12px;color:#666;word-break:break-all">${resetUrl}</p>` +
-    `<p style="margin:0;font-size:12px;color:#888;border-top:1px solid #eee;padding-top:12px">If you didn't request this, you can safely ignore this email — your password will not change.</p>` +
-    `</div>`;
   try {
-    await sendEmail({ to: email, subject, text, html });
+    const built = buildPasswordResetEmail({
+      resetUrl,
+      lang: lang || "en",
+      websiteUrl: publicWebsiteUrl(),
+    });
+    await sendEmail({
+      to: email,
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+    });
   } catch (e) {
     console.warn("[notifications] password reset email failed:", e);
   }

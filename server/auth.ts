@@ -18,6 +18,7 @@ import { registrationConsentSchema } from "@shared/routes";
 import {
   sendWelcomeNotifications,
   sendPasswordResetNotification,
+  sendAdminNewClientEmail,
 } from "./notifications";
 import { z } from "zod";
 
@@ -408,11 +409,42 @@ export function setupAuth(app: Express) {
       }
 
       // Best-effort welcome email / SMS — never blocks registration.
+      const reqLang =
+        (req.body?.lang as string | undefined) ||
+        (req.get("accept-language") || "").split(",")[0]?.split("-")[0] ||
+        "en";
       sendWelcomeNotifications({
         clientName: user.fullName,
         email: user.email,
         phone: user.phone,
+        lang: reqLang,
       }).catch((e) => console.warn("[auth] welcome notifications failed:", e));
+
+      // Best-effort admin "new client signup" email to the trainer mailbox.
+      if (!isSuperAdminSignup) {
+        let pkgInfo: { name: string | null; price: number | null } = { name: null, price: null };
+        if (snapshotPkgId) {
+          try {
+            const pkg = await storage.getPackage(snapshotPkgId);
+            if (pkg) {
+              pkgInfo = {
+                name: (pkg as any).name ?? `${pkg.type} (${pkg.totalSessions} sessions)`,
+                price: (pkg as any).totalPrice ?? null,
+              };
+            }
+          } catch { /* ignore */ }
+        }
+        sendAdminNewClientEmail({
+          clientName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          primaryGoal: user.primaryGoal,
+          weeklyFrequency: user.weeklyFrequency ?? null,
+          area: user.area,
+          packageName: pkgInfo.name,
+          packagePrice: pkgInfo.price,
+        }).catch((e) => console.warn("[auth] admin new-client email failed:", e));
+      }
 
       req.login(user, async (err) => {
         if (err) return next(err);
@@ -470,7 +502,11 @@ export function setupAuth(app: Express) {
             : `http://localhost:${process.env.PORT || 5000}`)
         ).replace(/\/+$/, "");
         const resetUrl = `${origin}/reset-password?token=${rawToken}`;
-        await sendPasswordResetNotification({ email: user.email, resetUrl });
+        const resetLang =
+          (req.body?.lang as string | undefined) ||
+          (req.get("accept-language") || "").split(",")[0]?.split("-")[0] ||
+          "en";
+        await sendPasswordResetNotification({ email: user.email, resetUrl, lang: resetLang });
       }
     } catch (e) {
       console.warn("[auth] forgot-password failed:", e);

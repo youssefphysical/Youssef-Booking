@@ -171,6 +171,10 @@ export const packages = pgTable("packages", {
   adminApproved: boolean("admin_approved").notNull().default(false),
   adminApprovedAt: timestamp("admin_approved_at"),
   adminApprovedByUserId: integer("admin_approved_by_user_id"),
+  // Email notification dedupe — set the first time we email the client about
+  // this package being expiring / finished so we never spam them.
+  expiringNotifiedAt: timestamp("expiring_notified_at"),
+  finishedNotifiedAt: timestamp("finished_notified_at"),
 });
 
 // =============================
@@ -230,6 +234,10 @@ export const bookings = pgTable("bookings", {
   // Attendance audit (admin marks attended | no_show | late_cancel)
   attendanceMarkedByUserId: integer("attendance_marked_by_user_id"),
   attendanceMarkedAt: timestamp("attendance_marked_at"),
+  // Reminder dedupe — set by the cron handler the first time the 24h / 1h
+  // reminder email is dispatched for this booking.
+  reminder24hSentAt: timestamp("reminder_24h_sent_at"),
+  reminder1hSentAt: timestamp("reminder_1h_sent_at"),
   attendanceReason: text("attendance_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),

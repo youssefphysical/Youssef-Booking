@@ -215,6 +215,19 @@ async function run(): Promise<void> {
      WHERE payment_status = 'unpaid'
        AND payment_approved = false
        AND admin_approved = false;
+
+    -- May 2026 premium email-system wave: dedupe columns so the cron and the
+    -- post-booking notifier never re-send the same email twice.
+    ALTER TABLE IF EXISTS packages
+      ADD COLUMN IF NOT EXISTS expiring_notified_at timestamp,
+      ADD COLUMN IF NOT EXISTS finished_notified_at timestamp;
+
+    ALTER TABLE IF EXISTS bookings
+      ADD COLUMN IF NOT EXISTS reminder_24h_sent_at timestamp,
+      ADD COLUMN IF NOT EXISTS reminder_1h_sent_at  timestamp;
+
+    CREATE INDEX IF NOT EXISTS bookings_date_status_idx
+      ON bookings(date, status);
   `;
 
   try {

@@ -64,11 +64,19 @@ import {
 import {
   sendEmail,
   trainerEmail,
-  buildTrainerBookingEmail,
-  buildClientBookingEmail,
   emailConfigStatus,
 } from "./email";
-import { CLIENT_BOOKING_EMAIL_I18N } from "./email-i18n";
+import {
+  buildClientBookingConfirmationEmail,
+  buildAdminBookingEmail,
+  buildAdminBookingChangeEmail,
+  buildAdminInbodyEmail,
+  buildAdminPackageExpiringEmail,
+  buildPackageExpiringEmail,
+  buildPackageFinishedEmail,
+  buildSessionReminderEmail,
+  type BookingDetails,
+} from "./email-templates";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { optimizeImageFile } from "./image-utils";
@@ -345,9 +353,26 @@ async function dispatchBookingNotifications(args: {
     console.warn("[notif] createAdminNotification failed:", e);
   }
 
-  // ---- 2. Trainer email (English, always to TRAINER_EMAIL) ----
+  const bookingDetails: BookingDetails = {
+    clientName,
+    date: booking.date,
+    time12,
+    sessionFocusLabel,
+    trainingGoalLabel,
+    sessionTypeLabel,
+    packageName,
+    remainingSessions,
+    packageExpiryDate,
+  };
+
+  // ---- 2. Trainer email (premium English template, always to TRAINER_EMAIL) ----
   try {
-    const trainerMsg = buildTrainerBookingEmail(data);
+    const trainerMsg = buildAdminBookingEmail({
+      d: bookingDetails,
+      clientEmail: user?.email ?? null,
+      clientPhone: user?.phone ?? null,
+      clientNotes: booking.clientNotes ?? null,
+    });
     await sendEmail({
       to: trainerEmail(),
       subject: trainerMsg.subject,
@@ -359,11 +384,13 @@ async function dispatchBookingNotifications(args: {
     console.warn("[notif] trainer email failed:", e);
   }
 
-  // ---- 3. Client email (localized) ----
+  // ---- 3. Client email (premium localized template) ----
   if (user?.email) {
     try {
-      const i18n = CLIENT_BOOKING_EMAIL_I18N[lang] || CLIENT_BOOKING_EMAIL_I18N.en;
-      const clientMsg = buildClientBookingEmail(data, i18n);
+      const clientMsg = buildClientBookingConfirmationEmail({
+        data: bookingDetails,
+        lang,
+      });
       await sendEmail({
         to: user.email,
         subject: clientMsg.subject,
@@ -374,6 +401,114 @@ async function dispatchBookingNotifications(args: {
     } catch (e) {
       console.warn("[notif] client email failed:", e);
     }
+  }
+
+  // ---- 4. Package "expiring soon" / "finished" emails (best-effort) ----
+  // Sent at most once per package per threshold via package.expiring_notified_at
+  // / .finished_notified_at timestamps so the client doesn't get spammed every
+  // time they book.
+  if (pkg && user?.email) {
+    try {
+      const remainingAfter = remainingSessions ?? null;
+      const daysToExpiry = pkg.expiryDate
+        ? Math.ceil(
+            (new Date(String(pkg.expiryDate)).getTime() - Date.now()) / 86_400_000,
+          )
+        : null;
+      const isFinished = remainingAfter === 0;
+      const isLow =
+        !isFinished &&
+        ((remainingAfter !== null && remainingAfter <= 3) ||
+          (daysToExpiry !== null && daysToExpiry > 0 && daysToExpiry <= 7));
+
+      const pkgAny = pkg as any;
+      if (isFinished && !pkgAny.finishedNotifiedAt) {
+        const built = buildPackageFinishedEmail({
+          clientName,
+          lang,
+          packageName,
+        });
+        await sendEmail({
+          to: user.email,
+          subject: built.subject,
+          text: built.text,
+          html: built.html,
+          replyTo: trainerEmail(),
+        });
+        try { await storage.updatePackage(pkg.id, { finishedNotifiedAt: new Date() } as any); } catch {}
+        try {
+          const adminMsg = buildAdminPackageExpiringEmail({
+            clientName,
+            packageName,
+            remainingSessions: remainingAfter,
+            daysUntilExpiry: daysToExpiry,
+          });
+          await sendEmail({ to: trainerEmail(), subject: adminMsg.subject, text: adminMsg.text, html: adminMsg.html });
+        } catch {}
+      } else if (isLow && !pkgAny.expiringNotifiedAt) {
+        const built = buildPackageExpiringEmail({
+          clientName,
+          lang,
+          remainingSessions: remainingAfter,
+          daysUntilExpiry: daysToExpiry,
+          packageName,
+        });
+        await sendEmail({
+          to: user.email,
+          subject: built.subject,
+          text: built.text,
+          html: built.html,
+          replyTo: trainerEmail(),
+        });
+        try { await storage.updatePackage(pkg.id, { expiringNotifiedAt: new Date() } as any); } catch {}
+        try {
+          const adminMsg = buildAdminPackageExpiringEmail({
+            clientName,
+            packageName,
+            remainingSessions: remainingAfter,
+            daysUntilExpiry: daysToExpiry,
+          });
+          await sendEmail({ to: trainerEmail(), subject: adminMsg.subject, text: adminMsg.text, html: adminMsg.html });
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("[notif] package status email failed:", e);
+    }
+  }
+}
+
+/**
+ * Notify the trainer when a booking is cancelled or rescheduled. Best-effort
+ * — never throws and never blocks the response.
+ */
+async function dispatchBookingChangeNotification(opts: {
+  kind: "cancellation" | "reschedule";
+  booking: Booking;
+  fromDate?: string | null;
+  fromTime12?: string | null;
+  reason?: string | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.booking.userId).catch(() => undefined);
+    const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.booking.userId}`).trim();
+    const built = buildAdminBookingChangeEmail({
+      kind: opts.kind,
+      clientName,
+      date: opts.booking.date,
+      time12: formatTime12Server(opts.booking.timeSlot),
+      fromDate: opts.fromDate ?? null,
+      fromTime12: opts.fromTime12 ?? null,
+      reason: opts.reason ?? null,
+    });
+    await sendEmail({
+      to: trainerEmail(),
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: user?.email ?? undefined,
+    });
+  } catch (e) {
+    console.warn(`[notif] booking ${opts.kind} email failed:`, e);
   }
 }
 
@@ -975,6 +1110,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         /* ignore */
       }
     }
+
+    // Best-effort admin email — never blocks the response.
+    void dispatchBookingChangeNotification({
+      kind: "cancellation",
+      booking,
+      reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
+    });
+
     res.json(updated);
   });
 
@@ -1180,7 +1323,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const { override, ...updateFields } = parsed.data;
     const previousStatus = booking.status;
     const newStatus = updateFields.status ?? previousStatus;
+    const fromDate = booking.date;
+    const fromTime12 = formatTime12Server(booking.timeSlot);
     const updated = await storage.updateBooking(id, updateFields as any);
+
+    // If date or time changed, email the trainer (best-effort).
+    if (
+      (updateFields.date && updateFields.date !== booking.date) ||
+      (updateFields.timeSlot && updateFields.timeSlot !== booking.timeSlot)
+    ) {
+      void dispatchBookingChangeNotification({
+        kind: "reschedule",
+        booking: { ...booking, ...updateFields } as Booking,
+        fromDate,
+        fromTime12,
+      });
+    }
 
     // Package deduction logic on status transition
     const consumingStates = ["completed", "late_cancelled"];
@@ -1934,6 +2092,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid record" });
     }
     const created = await storage.createInbodyRecord(parsed.data);
+    // Best-effort trainer notification — never blocks the response.
+    void (async () => {
+      try {
+        const owner = await storage.getUser(created.userId).catch(() => undefined);
+        if (!owner) return;
+        const built = buildAdminInbodyEmail({
+          clientName: owner.fullName || owner.username || `Client #${created.userId}`,
+          recordedDate: created.recordedAt ? new Date(created.recordedAt).toISOString().slice(0, 10) : null,
+        });
+        await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
+      } catch (e) {
+        console.warn("[notif] inbody admin email failed:", e);
+      }
+    })();
     res.status(201).json(created);
   });
 
@@ -1965,6 +2137,90 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.delete("/api/inbody/:id", requireAdmin, async (req, res) => {
     await storage.deleteInbodyRecord(Number(req.params.id));
     res.sendStatus(204);
+  });
+
+  // ============== EMAIL CRON (24h + 1h booking reminders) ==============
+  // Vercel cron hits this every 15 minutes (see vercel.json crons). Scans
+  // upcoming bookings whose start time is ~24h or ~1h away and sends one
+  // reminder email each, deduped via reminder_24h_sent_at / reminder_1h_sent_at.
+  //
+  // Auth: in production we require Authorization: Bearer <CRON_SECRET>; in dev
+  // we accept unauthenticated calls so it's easy to trigger manually.
+  app.all("/api/cron/reminders", async (req, res) => {
+    const secret = process.env.CRON_SECRET;
+    if (process.env.NODE_ENV === "production" && secret) {
+      const auth = req.get("authorization") || "";
+      if (auth !== `Bearer ${secret}`) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+    }
+
+    const sent: Array<{ id: number; kind: "24h" | "1h"; error?: string }> = [];
+    const failed: Array<{ id: number; kind: "24h" | "1h"; error: string }> = [];
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      const tomorrowIso = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      const all = await storage.getBookings({});
+      const now = Date.now();
+
+      for (const b of all) {
+        if (b.date !== todayIso && b.date !== tomorrowIso) continue;
+        if (!["upcoming", "confirmed"].includes(b.status)) continue;
+        const sessionAt = buildSessionDate(b.date, b.timeSlot).getTime();
+        const minsUntil = Math.round((sessionAt - now) / 60_000);
+
+        // 24h window: 22h–26h ahead
+        const want24 = minsUntil >= 22 * 60 && minsUntil <= 26 * 60;
+        // 1h window: 30min–90min ahead
+        const want1 = minsUntil >= 30 && minsUntil <= 90;
+        const bAny = b as any;
+
+        const dispatch = async (kind: "24h" | "1h") => {
+          try {
+            const owner = await storage.getUser(b.userId).catch(() => undefined);
+            if (!owner?.email) return;
+            const ownerLang = (owner as any).preferredLanguage || "en";
+            const built = buildSessionReminderEmail({
+              kind,
+              lang: ownerLang,
+              data: {
+                clientName: owner.fullName || owner.username || "Client",
+                date: b.date,
+                time12: formatTime12Server(b.timeSlot),
+                sessionFocusLabel: b.sessionFocus || null,
+                trainingGoalLabel: b.trainingGoal || null,
+              },
+            });
+            const result = await sendEmail({
+              to: owner.email,
+              subject: built.subject,
+              text: built.text,
+              html: built.html,
+              replyTo: trainerEmail(),
+            });
+            const stamp = kind === "24h"
+              ? { reminder24hSentAt: new Date() }
+              : { reminder1hSentAt: new Date() };
+            await storage.updateBooking(b.id, stamp as any);
+            (result.sent ? sent : failed).push(
+              result.sent
+                ? { id: b.id, kind }
+                : { id: b.id, kind, error: result.error || "send returned false" },
+            );
+          } catch (e: any) {
+            failed.push({ id: b.id, kind, error: e?.message || "unknown" });
+          }
+        };
+
+        if (want24 && !bAny.reminder24hSentAt) await dispatch("24h");
+        if (want1 && !bAny.reminder1hSentAt) await dispatch("1h");
+      }
+
+      res.json({ ok: true, scanned: all.length, sent, failed });
+    } catch (e: any) {
+      console.error("[cron/reminders] failed", e);
+      res.status(500).json({ ok: false, error: e?.message || "unknown", sent, failed });
+    }
   });
 
   // ============== PROGRESS PHOTOS ==============
