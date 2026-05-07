@@ -1401,3 +1401,288 @@
     animation: none;
   }
 }
+
+/* ====================================================================
+   PHASE 1 — GLOBAL DESIGN-SYSTEM POLISH (May-2026)
+   ====================================================================
+   Purely additive layer. Zero changes to existing utilities, zero
+   changes to UI-primitive APIs, zero per-page edits. Every rule below
+   either:
+     (a) extends an existing global selector with a softer/premium
+         visual treatment (cards, popovers, dropdowns, scrollbars,
+         skeletons), OR
+     (b) introduces a new opt-in utility class (lift-hover, stack-*,
+         section-y, hairline, tabular-nums-stat, fade-in-up) that
+         pages can adopt later without forcing a refactor today.
+   Goal: bring every existing surface up to Stripe / Linear / Apple
+   quality bar while preserving the deep-navy luxury identity already
+   set by the design tokens. No visual clutter, no broken layouts. */
+
+/* ----- Shared timing tokens -------------------------------------- */
+:root {
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --t-fast: 160ms;
+  --t-base: 240ms;
+  --t-slow: 360ms;
+  --shadow-card-rest:
+    0 1px 0 hsl(0 0% 100% / 0.025) inset,
+    0 1px 2px hsl(0 0% 0% / 0.4),
+    0 8px 24px -16px hsl(0 0% 0% / 0.55);
+  --shadow-card-hover:
+    0 1px 0 hsl(195 100% 70% / 0.08) inset,
+    0 2px 4px hsl(0 0% 0% / 0.5),
+    0 16px 36px -18px hsl(205 92% 62% / 0.28),
+    0 8px 18px -10px hsl(0 0% 0% / 0.55);
+  --shadow-popover:
+    0 1px 0 hsl(0 0% 100% / 0.04) inset,
+    0 4px 8px hsl(0 0% 0% / 0.4),
+    0 24px 48px -16px hsl(0 0% 0% / 0.7);
+}
+
+/* ----- Card primitive global polish ------------------------------
+   .shadcn-card is already attached by the Card component (ui/card.tsx
+   line 12). Upgrading it here lifts every Card across the app —
+   admin tables, dashboard panels, client cards, booking cards,
+   transformations, package tiles — without touching a single page. */
+.shadcn-card {
+  border-color: hsl(var(--card-border) / 0.7);
+  box-shadow: var(--shadow-card-rest);
+  transition:
+    border-color var(--t-base) ease,
+    box-shadow  var(--t-base) var(--ease-premium),
+    transform   var(--t-base) var(--ease-premium);
+  background-image: linear-gradient(
+    180deg,
+    hsl(0 0% 100% / 0.012) 0%,
+    transparent 18%
+  );
+}
+/* Cards INSIDE an interactive role (link / button) get a premium
+   lift+glow. Pure presentation — no JS, no layout shift since the
+   transform stays within the same compositing layer. */
+a > .shadcn-card:hover,
+button > .shadcn-card:hover,
+.shadcn-card.lift-hover:hover {
+  transform: translateY(-2px);
+  border-color: hsl(205 92% 62% / 0.28);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ----- Popover / Dropdown / Select content polish -----------------
+   Targets every Radix popper surface via the data attributes shadcn
+   already sets, so we don't have to touch each component file. */
+[data-radix-popper-content-wrapper] > * {
+  border-color: hsl(var(--border) / 0.65) !important;
+  box-shadow: var(--shadow-popover) !important;
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: hsl(var(--popover) / 0.92) !important;
+}
+
+/* ----- Skeleton premium shimmer ----------------------------------
+   The shadcn Skeleton uses .animate-pulse which is OK but flat.
+   We layer a moving cyan-tinted highlight on top. Targeted by
+   .animate-pulse so it applies to every existing Skeleton instance
+   in the codebase with no component changes. */
+@keyframes premiumShimmer {
+  0%   { background-position: -120% 0; }
+  100% { background-position:  220% 0; }
+}
+.animate-pulse {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(205 92% 62% / 0.06) 35%,
+    hsl(205 92% 62% / 0.10) 50%,
+    hsl(205 92% 62% / 0.06) 65%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: premiumShimmer 1.6s var(--ease-out-quart) infinite;
+}
+
+/* ----- Premium scrollbar (already defined; just refine accent) ----
+   Adds a faint cyan glow to the thumb on hover so scrolling a long
+   admin table feels intentional, not utilitarian. */
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(205 92% 62% / 0.55);
+  box-shadow: 0 0 8px -1px hsl(205 92% 62% / 0.35);
+}
+* { scrollbar-color: hsl(var(--muted)) transparent; }
+*:hover { scrollbar-color: hsl(205 92% 62% / 0.55) transparent; }
+
+/* ----- Premium hairline divider utility --------------------------
+   For section breaks. Single 1px line with center brightness, fades
+   to transparent at both ends. Use: <hr class="hairline" /> */
+.hairline {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border) / 0.8) 18%,
+    hsl(var(--border)) 50%,
+    hsl(var(--border) / 0.8) 82%,
+    transparent 100%
+  );
+}
+
+/* ----- Section spacing rhythm ------------------------------------
+   Opt-in semantic spacing. Mobile-first: tighter on phones, more
+   generous on desktop. Pages can adopt by replacing ad-hoc py-12,
+   py-16, py-20 mixes with .section-y. Backwards compatible. */
+.section-y {
+  padding-top: clamp(2.5rem, 5vw, 5rem);
+  padding-bottom: clamp(2.5rem, 5vw, 5rem);
+}
+.section-y-lg {
+  padding-top: clamp(3.5rem, 7vw, 7rem);
+  padding-bottom: clamp(3.5rem, 7vw, 7rem);
+}
+.stack-sm > * + * { margin-top: 0.5rem; }
+.stack-md > * + * { margin-top: 1rem; }
+.stack-lg > * + * { margin-top: 1.5rem; }
+.stack-xl > * + * { margin-top: 2.5rem; }
+
+/* ----- Lift-on-hover utility (opt-in, for non-card elements) ----- */
+.lift-hover {
+  transition:
+    transform var(--t-base) var(--ease-premium),
+    box-shadow var(--t-base) var(--ease-premium),
+    border-color var(--t-base) ease;
+}
+.lift-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ----- Fade-in-up entrance (opt-in for new sections / list items)  */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up {
+  animation: fadeInUp 420ms var(--ease-premium) both;
+}
+.fade-in-up-delay-1 { animation-delay: 60ms; }
+.fade-in-up-delay-2 { animation-delay: 120ms; }
+.fade-in-up-delay-3 { animation-delay: 180ms; }
+.fade-in-up-delay-4 { animation-delay: 240ms; }
+
+/* ----- Tabular numerics utility (stats / counters / KPIs) -------
+   font-feature-settings makes digits the same width so animated
+   counters and KPI numbers don't wiggle. */
+.tabular-nums-stat {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "lnum";
+  letter-spacing: -0.01em;
+}
+
+/* ----- Premium soft-glow ring for primary surfaces (opt-in) ----- */
+.ring-glow-primary {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.35),
+    0 0 20px -4px hsl(var(--primary) / 0.45);
+}
+
+/* ----- Trend indicator pill (opt-in for KPI deltas) -------------
+   Used like:
+     <span class="trend-pill trend-up">↗ +18%</span>
+     <span class="trend-pill trend-down">↘ -4%</span>
+*/
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.trend-up {
+  color: rgb(74 222 128);
+  background: rgb(34 197 94 / 0.12);
+  border-color: rgb(34 197 94 / 0.25);
+}
+.trend-down {
+  color: rgb(248 113 113);
+  background: rgb(239 68 68 / 0.12);
+  border-color: rgb(239 68 68 / 0.25);
+}
+.trend-neutral {
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.5);
+  border-color: hsl(var(--border));
+}
+
+/* ----- Typography micro-rhythm refinement -----------------------
+   Small letter-spacing/line-height tweaks on top of the existing
+   base h1-h6 rules. The .text-balance utility uses the modern
+   text-wrap:balance property — graceful no-op on browsers that
+   don't support it. Hugely improves headline aesthetics. */
+.text-balance { text-wrap: balance; }
+.text-pretty  { text-wrap: pretty; }
+h1.text-balance, h2.text-balance, h3.text-balance { text-wrap: balance; }
+
+/* Lead paragraph utility for hero subheads / section intros. */
+.lead {
+  font-size: clamp(1rem, 0.92rem + 0.4vw, 1.15rem);
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: -0.005em;
+}
+
+/* ----- Premium-quiet inner border (1px hairline highlight) -------
+   Adds a barely-visible white inner highlight to dark surfaces so
+   they feel "lit from above" — a Stripe / Apple signature effect.
+   Opt-in via .hairline-top so cards that want it get it. */
+.hairline-top {
+  position: relative;
+}
+.hairline-top::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(0 0% 100% / 0.07) 35%,
+    hsl(0 0% 100% / 0.10) 50%,
+    hsl(0 0% 100% / 0.07) 65%,
+    transparent
+  );
+  pointer-events: none;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+/* ----- Reduced-motion guard for everything new above -------------
+   All entrance animations and shimmers must respect the OS pref. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .fade-in-up { animation: none; }
+  .shadcn-card,
+  .lift-hover,
+  a > .shadcn-card:hover,
+  button > .shadcn-card:hover,
+  .shadcn-card.lift-hover:hover { transform: none !important; }
+}
+
+/* ----- Mobile premium touch refinements --------------------------
+   On phones, tap-highlight should be subtle cyan, not the OS default
+   grey/blue flash. Buttons and links inherit. Pure visual polish. */
+@media (max-width: 767px) {
+  body {
+    -webkit-tap-highlight-color: hsl(205 92% 62% / 0.18);
+  }
+}
