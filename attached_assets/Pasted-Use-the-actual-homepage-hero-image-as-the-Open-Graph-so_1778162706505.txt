@@ -1,0 +1,106 @@
+Use the actual homepage hero image as the Open Graph / social sharing preview image.
+
+IMPORTANT:
+The OG preview should visually match the real website branding and homepage.
+
+I want the preview image to use:
+- the same hero section image/design currently shown on the homepage
+- same premium luxury aesthetic
+- same blue/black cinematic theme
+- same transformation branding
+
+Do NOT create a totally different design anymore.
+
+==================================================
+GOAL
+==================================================
+
+When sharing:
+https://youssef-booking.vercel.app/
+
+on:
+- WhatsApp
+- Instagram DM
+- Facebook
+- LinkedIn
+- Telegram
+- X/Twitter
+
+the preview should show the SAME premium homepage hero image.
+
+==================================================
+IMAGE SOURCE
+==================================================
+
+Use the existing homepage hero section visual:
+- “Your Transformation Starts Here”
+- current premium fitness image
+- same luxury design already live on homepage
+
+==================================================
+TECHNICAL
+==================================================
+
+1. Export/crop the homepage hero properly for OG ratio:
+1200x630
+
+2. Optimize image quality professionally.
+
+3. Save as:
+public/og-homepage.jpg
+
+4. Update metadata:
+
+og:image =
+https://youssef-booking.vercel.app/og-homepage.jpg?v=2
+
+twitter:image =
+https://youssef-booking.vercel.app/og-homepage.jpg?v=2
+
+5. Keep:
+og:url =
+https://youssef-booking.vercel.app/
+
+==================================================
+VERY IMPORTANT
+==================================================
+
+- Ensure the image is publicly accessible
+- Ensure WhatsApp can fetch it
+- Ensure production HTML contains correct OG tags
+- Ensure cache-busting works
+
+==================================================
+DO NOT MODIFY
+==================================================
+
+- booking system
+- admin
+- auth
+- APIs
+- database
+- UI layout
+
+Only:
+- social preview image
+- metadata
+- sharing preview
+
+==================================================
+VERIFY
+==================================================
+
+After deployment:
+- open image URL directly
+- verify production source
+- verify WhatsApp preview updates
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+- image path
+- final og:image URL
+- Vercel deployment status
+- verification result

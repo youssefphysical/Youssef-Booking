@@ -1,0 +1,235 @@
+Create a completely redesigned luxury Open Graph / social preview system for the website.
+
+Current preview is too basic and text-heavy.
+
+I want a WORLD-CLASS premium social card that looks like:
+- Nike campaign
+- Gymshark branding
+- Apple keynote hero
+- Luxury fitness company
+
+The preview must feel cinematic, modern, minimal, powerful, and expensive.
+
+==================================================
+GOAL
+==================================================
+
+When the website link is shared on:
+- WhatsApp
+- Instagram DM
+- Facebook
+- LinkedIn
+- Telegram
+- X/Twitter
+
+it should instantly look like a REAL premium fitness brand.
+
+==================================================
+STYLE
+==================================================
+
+Theme:
+- Dark luxury
+- Cinematic
+- Minimal
+- Premium fitness aesthetic
+- Deep black / dark navy background
+- Electric blue accent glow
+- Soft gradients
+- Realistic lighting
+- Premium shadows
+- Ultra-clean composition
+
+Mood:
+- Elite
+- High-end
+- Professional
+- Powerful
+- Science-based coaching brand
+
+==================================================
+NEW OG IMAGE
+==================================================
+
+Create a brand-new Open Graph image.
+
+SIZE:
+1200 x 630 px
+
+EXPORT:
+Ultra high quality optimized image
+
+SAVE:
+public/og-premium.jpg
+
+==================================================
+LAYOUT
+==================================================
+
+Split composition.
+
+LEFT SIDE:
+- Large luxury typography:
+  YOUSSEF AHMED
+
+- Smaller subtitle:
+  ELITE PERSONAL TRAINING
+
+- Small location:
+  DUBAI
+
+- One SHORT premium tagline only:
+  “Transform With Precision”
+
+- Add subtle blue light streaks/glow
+- Elegant spacing
+- Modern premium typography
+- Strong visual hierarchy
+
+RIGHT SIDE:
+- Use a professional cinematic trainer image
+OR preferably a professional photo of Youssef
+
+Image style:
+- blue rim lighting
+- cinematic shadows
+- premium gym atmosphere
+- high contrast
+- luxury depth
+- realistic
+- no AI-cheap look
+
+==================================================
+VERY IMPORTANT DESIGN RULES
+==================================================
+
+DO:
+- minimal text
+- huge branding
+- premium spacing
+- elegant typography
+- cinematic composition
+- luxury fitness vibe
+- modern visual hierarchy
+
+DO NOT:
+- use long paragraphs
+- overcrowd layout
+- use generic template look
+- use too many elements
+- make it look like a cheap Canva design
+
+==================================================
+TYPOGRAPHY
+==================================================
+
+Use:
+- premium modern fonts
+- elegant bold title
+- strong kerning
+- luxury spacing
+- crisp rendering
+
+The name “YOUSSEF AHMED” must dominate the composition visually.
+
+==================================================
+META TAGS
+==================================================
+
+Update:
+- og:title
+- og:description
+- og:image
+- og:url
+- og:type
+- twitter:card
+- twitter:title
+- twitter:description
+- twitter:image
+
+==================================================
+SOCIAL TITLE
+==================================================
+
+Youssef Ahmed Personal Training
+
+==================================================
+SOCIAL DESCRIPTION
+==================================================
+
+Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.
+
+==================================================
+IMAGE URL
+==================================================
+
+Use:
+https://youssef-booking.vercel.app/og-premium.jpg
+
+==================================================
+FAVICON
+==================================================
+
+Add or improve:
+- favicon
+- apple-touch-icon
+- browser icon
+
+Use luxury blue/black branding style.
+
+==================================================
+CACHE / SHARING
+==================================================
+
+Ensure:
+- cache-busting works
+- preview refreshes correctly
+- social platforms detect new image
+
+==================================================
+VERIFY
+==================================================
+
+Test and verify preview on:
+- WhatsApp
+- Facebook Sharing Debugger
+- LinkedIn Post Inspector
+- Telegram
+- X/Twitter
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT touch:
+- booking system
+- auth
+- admin logic
+- database
+- APIs
+
+Only improve:
+- social preview system
+- OG image
+- branding metadata
+- favicon assets
+
+==================================================
+DEPLOYMENT
+==================================================
+
+- Push to GitHub
+- Deploy Vercel
+- Verify production metadata
+- Verify live social preview
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+- image path
+- OG tags added
+- favicon status
+- deployment status
+- live preview verification

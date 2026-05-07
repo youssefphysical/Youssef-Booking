@@ -1,0 +1,155 @@
+STRICT I18N COMPLETION FIX — LOCALIZE TRAINER NAME + CERTIFICATION CARDS
+
+Current issue:
+Persian and Urdu now work, but some content still appears in English:
+- “Youssef”
+- “Youssef Ahmed”
+- “International Academy for Training and Development (IATD)”
+- certification/card text/provider labels
+
+This must follow the selected language.
+
+CRITICAL:
+Do NOT redesign UI.
+Do NOT touch layout, auth, booking, database, admin logic, APIs, or styling except if text overflow needs tiny responsive safety.
+
+TASK:
+Audit all trainer identity + certification/profile cards and remove hardcoded English.
+
+1. Localize trainer name display:
+English:
+Youssef Ahmed
+
+Arabic:
+يوسف أحمد
+
+Persian / Farsi:
+یوسف احمد
+
+Urdu:
+یوسف احمد
+
+Russian:
+Юссеф Ахмед
+
+Chinese:
+优素福·艾哈迈德
+
+Hindi:
+यूसुफ अहमद
+
+Turkish:
+Yusuf Ahmed
+
+French/German/Spanish/Italian/Portuguese:
+Youssef Ahmed
+
+2. Localize short trainer name:
+English:
+Youssef
+
+Arabic:
+يوسف
+
+Persian:
+یوسف
+
+Urdu:
+یوسف
+
+Russian:
+Юссеф
+
+Chinese:
+优素福
+
+Hindi:
+यूसुफ
+
+Turkish:
+Yusuf
+
+Latin languages:
+Youssef
+
+3. Localize certification/provider cards:
+Any text like:
+“International Academy for Training and Development (IATD)”
+“Personal Trainer Certificate”
+“International”
+“Professional foundations in coaching and practical exercise knowledge”
+
+must come from i18n translation keys.
+
+For Persian/Farsi:
+- translate naturally into Persian
+- keep official acronym “IATD” if needed
+- example:
+“آکادمی بین‌المللی آموزش و توسعه (IATD)”
+
+For Urdu:
+- translate naturally into Urdu
+- keep official acronym “IATD” if needed
+- example:
+“بین الاقوامی اکیڈمی برائے تربیت و ترقی (IATD)”
+
+4. Global audit:
+Search codebase for hardcoded:
+- Youssef
+- Youssef Ahmed
+- International Academy
+- IATD
+- Personal Trainer Certificate
+- Certificate
+- International
+
+Wrap visible UI text in translation keys.
+
+IMPORTANT:
+Do NOT translate:
+- email addresses
+- Instagram handle
+- URLs
+- database IDs
+- backend enum values
+
+5. RTL:
+Persian + Urdu must:
+- align correctly
+- no mixed-direction issue
+- no text overflow
+- no clipped certificate cards
+
+6. Validation:
+Test:
+- English
+- Arabic
+- Persian fa
+- Urdu ur
+
+Pages/components:
+- homepage
+- profile section
+- certification cards
+- admin profile/settings
+- client-facing profile
+- contact/WhatsApp CTA
+- email templates if these names appear there
+
+7. Deployment:
+- Run translation validator
+- Run TypeScript check
+- Neon unchanged
+- Push to GitHub main
+- Wait Vercel READY
+- Verify production
+
+Final report must include:
+- exact hardcoded strings removed
+- translation keys added
+- Persian name output
+- Urdu name output
+- certification/provider card translations
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY

@@ -1,0 +1,88 @@
+DYNAMIC HOMEPAGE HERO SOCIAL PREVIEW — PRODUCTION FIX
+
+Goal:
+The social preview image for:
+https://youssef-booking.vercel.app/
+
+must use the current homepage hero visual in a professional 1200x630 OG format.
+
+IMPORTANT:
+If I change the homepage hero image later, the social preview must update automatically or through a simple build-time generation step. I do NOT want to manually redesign the OG image every time.
+
+Requirements:
+
+1. Create dynamic OG preview based on the homepage hero
+- Use the same active hero image/content
+- Export/crop professionally to 1200x630
+- Clear readable title
+- No cookie banner
+- No browser UI
+- No admin/private UI
+- No random screenshot
+- Must look like a clean premium website preview
+
+2. Preferred implementation
+Use a generated OG image route or build script:
+- /api/og or /og-image
+OR
+- build-time script that generates public/og-homepage-current.jpg from current hero config/assets
+
+3. Metadata must point to the dynamic/current image:
+og:url = https://youssef-booking.vercel.app/
+og:image = https://youssef-booking.vercel.app/og-image?version=current
+or
+og:image = https://youssef-booking.vercel.app/og-homepage-current.jpg?v=latest
+
+twitter:image should use the same image.
+
+4. Cache handling
+- Use cache-busting/versioning so WhatsApp/Facebook can refresh
+- When hero image changes, OG image URL/version should change too
+- Avoid old cached preview staying forever
+
+5. Design rules
+The OG preview should look like the homepage hero but cleaner:
+- 1200x630
+- premium dark fitness style
+- visible hero image
+- readable “Your Transformation Starts Here.”
+- Youssef Ahmed Personal Training branding
+- no cookie popup
+- no navigation clutter if it hurts composition
+- professional crop
+- high clarity
+
+6. Verify direct URL
+The OG image URL must open directly and return 200.
+
+7. Verify production HTML
+Production source must contain correct:
+- og:title
+- og:description
+- og:image
+- og:url
+- twitter:card
+- twitter:image
+
+8. Do NOT change:
+- website UI
+- booking
+- auth
+- admin
+- packages
+- APIs
+- database logic
+
+9. Deployment
+- Push updates to GitHub main
+- Deploy to Vercel production
+- Neon unchanged unless absolutely required
+
+Final report must include:
+- exact OG implementation used
+- final og:image URL
+- confirmation image returns 200
+- cache-busting method
+- GitHub commit ID
+- Vercel READY
+- Neon unchanged
