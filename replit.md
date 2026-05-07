@@ -74,6 +74,23 @@ Premium dark-luxury platform for Youssef Ahmed, offering client booking, InBody 
 
 _Populate as you build_
 
+## Email reminders cron (external trigger)
+
+The endpoint `/api/cron/reminders` dispatches the 24h + 1h booking reminder
+emails. It is **not** scheduled by `vercel.json` because Vercel Hobby plans
+limit crons to once per day, and this job needs to run every ~15 minutes.
+
+To run it in production, point any external scheduler at the URL with the
+`Authorization: Bearer ${CRON_SECRET}` header. Recommended options:
+
+- **GitHub Actions** (`.github/workflows/reminders.yml` with `cron: '*/15 * * * *'`).
+- **cron-job.org** or **EasyCron** (free, web UI to set the schedule + header).
+- **Vercel Pro plan** — re-enable the `crons` array in `vercel.json`.
+
+The endpoint is idempotent — it uses an atomic SQL claim
+(`UPDATE bookings SET reminder_*_sent_at = now() WHERE … IS NULL RETURNING id`),
+so it is safe to invoke as often as you like.
+
 ## Gotchas
 
 - **Database Schema Mismatches:** If `server/db/schema.ts` changes, run `npm run db:codegen` and `npm run db:push` to update the Drizzle schema and apply migrations. For Vercel, manual `db:push` is often required for production.
