@@ -1,0 +1,253 @@
+You are working on a LIVE production-grade premium fitness coaching SaaS platform.
+
+CRITICAL RULES:
+
+- DO NOT break any existing functionality.
+- DO NOT remove current working systems.
+- DO NOT redesign blindly.
+- Preserve all backend logic, database structure, authentication, bookings, packages, admin roles, translations, and current APIs.
+- Work incrementally and safely.
+- Mobile-first responsiveness is mandatory.
+- Keep performance optimized.
+- Preserve current dark luxury identity (deep black / premium blue / subtle glow).
+- Keep everything production-ready and elegant.
+
+MISSION:
+Execute a COMPLETE GLOBAL PREMIUM POLISH PASS across the dashboard/admin/client experience and elevate the platform to a world-class SaaS product quality level similar to Stripe / Notion / Linear / modern premium fitness platforms.
+
+========================================
+PHASE 1 — GLOBAL UI/UX POLISH
+
+Improve visual hierarchy globally:
+
+- Better spacing rhythm
+- Better typography hierarchy
+- Better card padding
+- Cleaner margins
+- Consistent border radius system
+- Consistent shadows
+- Consistent glow system
+- Consistent button sizing
+- Better touch targets on mobile
+
+Create a premium design system:
+
+- Unified spacing scale
+- Unified card system
+- Unified input system
+- Unified dropdown styling
+- Unified badge styling
+- Unified hover animation behavior
+- Unified transition timing
+
+Use smooth subtle animations:
+
+- hover glow
+- lift effects
+- fade-in
+- scale transitions
+- skeleton loading states
+- smooth number counting animations
+
+DO NOT overanimate.
+
+========================================
+PHASE 2 — DASHBOARD PREMIUMIZATION
+
+Upgrade the Admin Dashboard visually and functionally.
+
+Current issue:
+Dashboard feels too static and flat.
+
+Improve:
+
+- Statistic cards
+- Section grouping
+- Information hierarchy
+- Empty states
+- Analytics feel
+
+Add:
+
+- animated counters
+- trend indicators
+- mini growth indicators
+- percentage change labels
+- elegant status badges
+
+Examples:
+↗ +18% this month
+↘ 2 packages expiring soon
+
+Improve cards:
+
+- premium hover glow
+- better shadows
+- better icon alignment
+- more breathing room
+- subtle gradient accents
+
+Improve “Upcoming Sessions” section:
+
+- better empty state
+- cleaner session rows
+- premium timeline styling
+
+========================================
+PHASE 3 — BOOKINGS PAGE REDESIGN
+
+Current issue:
+Booking cards feel stacked and visually heavy.
+
+Redesign booking cards into a cleaner premium SaaS layout.
+
+Requirements:
+
+- better spacing
+- cleaner hierarchy
+- compact professional layout
+- Apple Wallet / Stripe-inspired styling
+
+Improve:
+
+- session badges
+- payment badges
+- cancellation badges
+- session type indicators
+
+Create visual separation between:
+
+- session date
+- client info
+- status
+- actions
+
+Improve action buttons:
+
+- equal sizing
+- better spacing
+- modern hover states
+- icon alignment
+
+Mobile optimization is critical.
+
+========================================
+PHASE 4 — CLIENTS PAGE UPGRADE
+
+Improve client cards:
+
+- cleaner layout
+- stronger hierarchy
+- better avatar handling
+- better package visibility
+- better session visibility
+
+Add:
+
+- premium verified badge styling
+- smoother WhatsApp button styling
+- better search/filter alignment
+
+Improve empty states.
+
+========================================
+PHASE 5 — EMPTY STATES
+
+Replace ALL generic empty states with premium branded empty states.
+
+Examples:
+
+- No packages
+- No sessions
+- No bookings
+- No analytics
+- No transformations
+
+Each empty state should include:
+
+- elegant icon/illustration
+- helpful message
+- actionable CTA
+- premium styling
+
+========================================
+PHASE 6 — GLOBAL MOBILE PASS
+
+Perform a FULL mobile QA polish pass.
+
+Fix:
+
+- overflow issues
+- tight spacing
+- oversized dropdowns
+- uneven margins
+- inconsistent paddings
+- text wrapping issues
+- card crowding
+- touch target sizing
+
+Ensure:
+
+- perfect responsiveness
+- smooth scrolling
+- balanced layouts
+- no clipped text
+- no overlapping UI
+
+========================================
+PHASE 7 — PERFORMANCE + CLEANUP
+
+Optimize frontend performance:
+
+- reduce layout shift
+- optimize image rendering
+- optimize animations
+- improve lazy loading
+- reduce unnecessary re-renders
+
+Add:
+
+- automatic image optimization pipeline
+- auto WebP conversion
+- responsive image sizes
+- compression without visible quality loss
+
+========================================
+IMPORTANT TECHNICAL RULES
+
+- Do NOT touch backend business logic unless required for UI support.
+- Do NOT break authentication.
+- Do NOT break admin roles.
+- Do NOT break bookings/packages.
+- Do NOT break translations/i18n.
+- Preserve production stability.
+- Keep deployment safe.
+
+========================================
+FINAL DELIVERY REQUIREMENTS
+
+After implementation:
+
+1. Build successfully
+2. Push to GitHub
+3. Deploy to Vercel
+4. Verify production deployment
+5. Perform mobile QA
+6. Verify all routes
+7. Verify no console errors
+8. Verify no hydration issues
+9. Verify responsive layouts
+10. Provide a FULL implementation report
+
+The final result should feel:
+
+- luxury
+- cinematic
+- modern
+- premium
+- intelligent
+- trustworthy
+- world-class
+- high-end SaaS quality
+
+WITHOUT becoming visually noisy or overdesigned.
