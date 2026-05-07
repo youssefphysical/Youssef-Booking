@@ -1,0 +1,133 @@
+Fix the multilingual responsive UI/UX issues carefully without breaking anything.
+
+Main goal:
+Make the website fully consistent across all languages, mobile and desktop, especially the hero section, spacing, RTL Arabic behavior, and typewriter animation.
+
+VERY IMPORTANT:
+- Do not break existing booking logic.
+- Do not break login/sign-in.
+- Do not break admin panel.
+- Do not break packages, clients, language switcher, hero slider, or WhatsApp buttons.
+- Keep all existing data safe.
+- Make small careful fixes, test after each change.
+
+1. Multilingual Hero Layout Fix
+- Fix the hero section spacing for all languages.
+- Add consistent spacing between:
+  - badge/label
+  - headline
+  - subtitle/description
+  - CTA buttons
+  - slider dots
+- The text must never stick to the blue badge.
+- Add safe vertical spacing: badge margin-bottom 14px–18px.
+- Add safe spacing between headline and subtitle: 16px–20px.
+- Add safe spacing between subtitle and buttons: 22px–28px.
+- Prevent overlap between text and buttons.
+- Prevent any cut-off text.
+
+2. Responsive Typography
+- Make headline font size responsive using clamp().
+- Example: font-size: clamp(38px, 8vw, 72px) on mobile/hero where appropriate.
+- Use proper line-height: 1.12–1.25 for headlines.
+- Subtitle line-height: 1.45–1.65.
+- Long languages like Spanish, German, Russian, Turkish, Arabic must wrap cleanly.
+- Use max-width for hero text so it does not stretch badly.
+- Use word-break: normal; overflow-wrap: anywhere only when needed.
+- No text should overflow outside the screen.
+
+3. RTL Arabic Support
+- When Arabic is selected:
+  - Set dir="rtl" correctly on the page/root container.
+  - Align hero text to the right.
+  - Flip relevant flex directions only where needed.
+  - Keep buttons clean and readable.
+  - Keep icons positioned naturally.
+- Arabic layout must feel native RTL, not just translated text.
+
+4. Typewriter Animation Direction
+- Keep the typewriter/dynamic typing animation for all languages.
+- For LTR languages:
+  - Text should type from left to right.
+  - Cursor appears on the right side.
+- For Arabic RTL:
+  - Text should type from right to left.
+  - Cursor appears on the left side.
+- The animation must detect language direction dynamically.
+- Do not remove the animation unless needed to prevent a bug.
+- If reduced motion is enabled, show full text without animation.
+
+5. Language Switching Stability
+- When changing languages:
+  - No layout jump that breaks the hero section.
+  - No overlap.
+  - No broken spacing.
+  - No clipped text.
+  - No horizontal scrolling.
+- Ensure the hero section adapts smoothly to each translated text length.
+
+6. Mobile Layout Protection
+- Highest priority: mobile layout.
+- Test widths: 360px, 390px, 412px, 430px.
+- No horizontal scroll.
+- Header, language selector, sign-in button, menu button must fit properly.
+- Hero text and buttons must stay inside safe padding.
+- CTA buttons must not overflow.
+- Use 16px–20px horizontal padding on mobile.
+
+7. Desktop Layout Protection
+- Test desktop widths: 1280px, 1440px, 1920px.
+- Keep hero content visually balanced.
+- Use max-width containers.
+- Keep alignment premium and clean.
+- Do not make the hero look empty or stretched.
+
+8. Button Consistency
+- CTA buttons must keep consistent height, radius, padding, and alignment.
+- Long translated button labels must fit or wrap gracefully.
+- WhatsApp button must stay clean and not dominate layout.
+- Icon spacing must work in both LTR and RTL.
+
+9. Slider Dots / Indicators
+- Keep slider dots under hero content with enough spacing.
+- Dots must not overlap the buttons or content.
+- Keep them centered or aligned according to layout direction.
+
+10. General UI Consistency
+- Apply consistent spacing system across homepage sections.
+- Ensure badges, cards, buttons, titles, and subtitles use consistent margins.
+- Keep premium dark blue/black luxury design.
+- Do not change brand colors unless required for contrast.
+
+11. Error Prevention
+- Run TypeScript/build checks if available.
+- Fix any lint/build errors.
+- Make sure production build succeeds.
+- Verify no console errors related to language switching or typewriter animation.
+- Verify no hydration errors.
+
+12. QA Checklist Before Deploy
+Test all of these:
+- English hero
+- Arabic hero RTL
+- Spanish hero
+- German/French if available
+- Mobile Chrome
+- Desktop Chrome
+- Login button
+- Language selector
+- Hero slider
+- CTA buttons
+- WhatsApp button
+- Admin page still opens
+- Booking flow still works
+
+13. Deployment
+After all fixes are complete and tested:
+- Commit changes to GitHub with a clear message.
+- Push latest code to GitHub.
+- Deploy/update production on Vercel.
+- Confirm the live Vercel site works on mobile and desktop.
+
+Final instruction:
+Make careful UI fixes only. Do not rewrite the entire app. Do not remove existing features. Do not introduce new dependencies unless absolutely necessary. Keep the design premium, responsive, multilingual, and stable.

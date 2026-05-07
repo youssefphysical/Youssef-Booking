@@ -1,0 +1,103 @@
+STRICT MICRO FIX — BLEND THE ACTUAL HERO SEAM WITH ANY HERO IMAGE
+
+CRITICAL:
+Do NOT touch anything except the visible seam/line between the hero image and the section below.
+
+Do NOT touch:
+- auth / Sign In / Sign Out
+- booking
+- admin
+- APIs
+- database logic
+- hero text
+- hero animation
+- hero image loading
+- hero slider
+- CTA buttons
+- header
+- About section
+- routing
+- translations
+- layout structure
+
+GOAL:
+Fix the visible line/seam between the hero image and the next section so it blends naturally with ANY hero image, not only the current one.
+
+IMPORTANT:
+The previous fixes did not affect the circled area, so first identify the exact DOM/CSS element causing the seam. Do not guess.
+
+TASK:
+1. Inspect the live hero-to-next-section boundary.
+2. Find the exact element/class responsible for the visible seam.
+3. Fix only that element.
+
+Possible causes to check:
+- wrapper between hero and next section
+- hero bottom overlay not reaching the seam
+- z-index issue hiding the blend
+- next section top background mismatch
+- margin/padding gap
+- border-top
+- box-shadow
+- pseudo-elements ::before / ::after
+
+REQUIRED VISUAL RESULT:
+- No hard horizontal line.
+- The hero image softly blends into the section below.
+- Works regardless of which hero image is uploaded.
+- Image remains sharp.
+- No blur over text/buttons.
+- No layout shift.
+- No animation added.
+
+PREFERRED FIX:
+Use a universal bottom blend attached to the actual seam source:
+
+- transparent at top
+- gradually blends into the exact computed background of the next section
+- final color must exactly match the next section background
+
+Example only if appropriate:
+background: linear-gradient(
+  to bottom,
+  rgba(0,0,0,0) 0%,
+  rgba(6,18,34,0.35) 45%,
+  rgba(6,18,34,0.85) 78%,
+  #061222 100%
+);
+
+But use the REAL next-section color, not this example if different.
+
+If the seam is caused by a gap:
+- remove the gap only.
+If caused by z-index:
+- fix stacking only.
+If caused by wrapper background:
+- blend that wrapper only.
+
+VALIDATION:
+- The exact circled seam area must visibly change.
+- Mobile production screenshot must show no hard line.
+- Desktop production must also show no hard line.
+- Hero text/buttons/header unchanged.
+- No other visual changes.
+
+DEPLOYMENT:
+- Neon/database must remain unchanged.
+- If unchanged, report exactly: “Neon unchanged.”
+- Run TypeScript check.
+- Commit only this seam fix.
+- Push to GitHub main.
+- Wait for Vercel production READY.
+- Test the live Vercel URL on mobile and desktop.
+
+FINAL REPORT MUST INCLUDE:
+- Exact element/class that caused the seam
+- Exact CSS changed
+- Why previous fix did not affect the circled area
+- Confirmation it works with any hero image
+- Confirmation no auth/booking/admin/hero text/CTA changes
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY confirmation
+- Production mobile + desktop test result

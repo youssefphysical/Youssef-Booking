@@ -1,0 +1,171 @@
+You are upgrading a world-class SaaS fitness platform UI.
+
+Your goal:
+Make the website visually INSANE, ultra-premium, smooth, and cinematic (TRON Legacy style),
+while fixing UX, performance, and rendering issues.
+
+========================================
+1. HERO IMAGE FIX (CRITICAL)
+========================================
+
+- Reduce overlay darkness:
+  from:
+    via-black/55
+  to:
+    via-black/25
+
+- Add smart gradient:
+  top: transparent
+  center: light blur
+  bottom: darker for CTA
+
+- Apply image enhancement:
+  filter:
+    contrast(1.1)
+    brightness(1.08)
+    saturate(1.1)
+
+- Ensure subject visibility (faces/body must be clear)
+
+- Add subtle glow edges (TRON style):
+  soft cyan rim light
+
+========================================
+2. REMOVE FLICKER / OLD UI FLASH
+========================================
+
+Fix hydration flicker:
+
+- Ensure hero uses:
+  loading="eager"
+  fetchpriority="high"
+
+- Prevent mismatch:
+  move dynamic UI logic to useEffect
+
+- Add:
+  opacity: 0 → fade-in after mount
+
+- Ensure no SSR mismatch in:
+  HeroSlider
+  Navigation
+
+========================================
+3. SCROLL SMOOTH FIX
+========================================
+
+- Remove:
+  background-attachment: fixed
+
+- Add:
+  html {
+    scroll-behavior: smooth;
+  }
+
+- Optimize animations:
+  use transform + opacity ONLY
+
+- Add:
+  will-change: transform
+
+- Reduce heavy blur effects on scroll
+
+========================================
+4. SIGN IN FIX (IMPORTANT)
+========================================
+
+Ensure Sign In is ALWAYS visible:
+
+Desktop:
+- Top right button
+- Neon glow style
+
+Mobile:
+- FIRST item in menu
+- Clear CTA style (highlighted)
+
+Add fallback:
+- If auth state unknown → still show Sign In
+
+========================================
+5. IMAGE QUALITY FIX (VERY IMPORTANT)
+========================================
+
+- Ensure images are:
+  NOT over-compressed
+
+- Update compression:
+  hero: 1920px high quality (85%)
+  transformations: 1600px (90%)
+
+- Avoid blur:
+  no aggressive compression
+
+- Add:
+  sharpening effect (subtle)
+
+========================================
+6. TRON STYLE UI UPGRADE
+========================================
+
+Apply cinematic TRON design:
+
+- Colors:
+  #00eaff (primary)
+  #0a0f1f (background)
+
+- Add:
+  neon borders
+  glow buttons
+  glass UI (backdrop-blur)
+
+- Buttons:
+  soft glow + hover pulse
+
+- Text:
+  white + slight glow
+
+========================================
+7. SCROLL PERFORMANCE BOOST
+========================================
+
+- Use:
+  passive scroll listeners
+
+- Debounce animations
+
+- Avoid layout shifts:
+  define fixed hero height
+
+========================================
+8. FINAL CHECK (MANDATORY)
+========================================
+
+Verify:
+
+✔ No flicker on refresh
+✔ Hero loads instantly
+✔ Scroll is 100% smooth
+✔ Sign In visible always
+✔ Images are sharp and clear
+✔ Mobile performance perfect
+
+========================================
+DEPLOYMENT
+========================================
+
+- Commit changes
+- Push to GitHub
+- Deploy on Vercel
+- Confirm READY
+
+========================================
+OUTPUT REPORT MUST INCLUDE:
+========================================
+
+- Root cause of flicker
+- Scroll fix explanation
+- Image clarity improvements
+- Sign In visibility fix
+- Performance improvements
+- Final production verification

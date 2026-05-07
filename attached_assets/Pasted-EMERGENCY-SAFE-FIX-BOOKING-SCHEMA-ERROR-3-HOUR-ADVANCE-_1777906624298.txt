@@ -1,0 +1,78 @@
+EMERGENCY SAFE FIX — BOOKING SCHEMA ERROR + 3-HOUR ADVANCE BOOKING RULE
+
+Current production error:
+Booking failed:
+column "session_focus" does not exist
+
+Goal:
+Fix booking immediately and enforce the client booking rule:
+Clients must book at least 3 hours before the selected session time.
+
+CRITICAL:
+Do NOT break login/register.
+Do NOT break admin security.
+Do NOT break package/session balance.
+Do NOT reset Neon.
+Do NOT delete data.
+Do NOT change unrelated UI.
+Do NOT change payment logic.
+
+1. Fix missing production schema safely:
+- Add missing bookings column if not exists:
+  session_focus TEXT NULL
+- Also verify training_goal exists; if missing, add safely:
+  training_goal TEXT NULL
+- Use safe additive migration only.
+- Use IF NOT EXISTS.
+- Do not reset or overwrite existing bookings.
+
+2. Backend booking validation:
+- Non-admin clients cannot book a session unless selected time is at least 3 hours from current time.
+- Example:
+  current time 4:00 PM
+  client cannot book 5:00 PM or 6:00 PM
+  first allowed time should be 7:00 PM or later.
+- Admin booking override may remain allowed if already implemented.
+- Return clean error:
+  "Bookings must be made at least 3 hours in advance."
+
+3. Frontend booking UI:
+- Automatically disable/unavailable any time slots less than 3 hours from now.
+- Disabled slots should not be clickable.
+- Add clear helper text:
+  "Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time."
+- Keep available booking hours from 6:00 AM to 10:00 PM.
+- Keep session duration as 1 hour.
+
+4. Confirmation modal:
+- Show the 3-hour advance rule, not 6-hour advance booking rule.
+- Cancellation/reschedule policy can remain 6 hours if that is still the policy.
+- Make the wording clear:
+  Booking advance rule = 3 hours before session.
+  Cancellation/reschedule rule = 6 hours before session.
+
+5. i18n:
+- All new visible text must use translation keys.
+- Languages: EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR.
+- No hardcoded visible English.
+
+6. Verification:
+- Test booking now + 1 hour → blocked.
+- Test booking now + 2 hours → blocked.
+- Test booking now + 3 hours or more → allowed.
+- Test booking at 6 AM–10 PM only.
+- Confirm session_focus error is gone.
+- Confirm booking saves session focus and training goal.
+- Confirm email/notifications still work.
+- Confirm admin/security still work.
+
+7. Deployment:
+- Run TypeScript check.
+- Commit changes.
+- Push to GitHub main.
+- Wait for Vercel auto-deploy.
+- Confirm production READY.
+- Verify on live production URL.
+
+Final result:
+Booking works again, Neon schema is safe, clients can only book at least 3 hours in advance, GitHub updated, Vercel production READY.

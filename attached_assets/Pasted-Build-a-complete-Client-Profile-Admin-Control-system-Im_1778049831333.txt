@@ -1,0 +1,184 @@
+Build a complete Client Profile Admin Control system.
+
+Important:
+Do NOT add payment methods now.
+Only add payment status/request approval logic.
+
+Goal:
+No client should have a fully active usable profile until admin clearly assigns:
+- Package
+- Sessions
+- Expiration date
+- Payment status: Paid / Pending / Unpaid
+
+Client Profile Required Status:
+Add a clear client profile completion system:
+- Incomplete profile
+- Pending admin approval
+- Active
+- Frozen
+- Expired
+- Completed
+- Cancelled
+
+Required Before Activation:
+Admin must complete:
+- Client basic details
+- Assigned package
+- Total sessions
+- Remaining sessions
+- Start date
+- Expiration date
+- Payment status
+- Admin approval
+
+Payment Status Only:
+Add:
+- Paid
+- Pending
+- Unpaid
+- Partially Paid
+
+Admin should be able to mark:
+- Payment approved: Yes / No
+- Payment note
+- Payment approval date
+- Approved by admin
+
+No payment gateway.
+No card payment.
+No payment method selection.
+No online checkout.
+
+Package & Sessions:
+Inside client profile, admin can control:
+- Package name
+- Package type
+- Paid sessions
+- Bonus sessions
+- Total sessions
+- Used sessions
+- Remaining sessions
+- Expiration date
+- Package status
+- Freeze/unfreeze package
+- Extend expiration date
+- Add/deduct manual sessions
+
+Admin Notes:
+Add private admin-only notes:
+- Coach notes
+- Medical/injury notes
+- Goal notes
+- Communication notes
+- Manual adjustment reason
+
+Client Health & Goal:
+Add editable fields:
+- Goal: Fat loss / Muscle gain / Recomposition / Performance / General fitness
+- Training level
+- Preferred training days
+- Injuries or limitations
+- Medical notes
+- Emergency contact optional
+
+Session History:
+Track every session change:
+- Booked
+- Attended
+- Cancelled
+- No-show
+- Rescheduled
+- Manual deduction
+- Manual added session
+- Date/time
+- Admin note/reason
+
+Emergency Cancellation Allowance:
+Track:
+- Emergency cancellations used this month
+- Emergency cancellations remaining
+- Reset monthly
+
+Progress Tracking:
+Add:
+- InBody records
+- Weight
+- Body fat %
+- Muscle mass
+- Progress notes
+- Private progress photos upload
+
+Documents / Consent:
+Add:
+- Terms accepted
+- PAR-Q completed
+- Waiver accepted
+- Medical clearance note if needed
+
+Renewal Alerts:
+Show alerts when:
+- Remaining sessions are low
+- Package is close to expiration
+- Package expired
+- Payment is pending/unpaid
+- Profile incomplete
+
+Booking Restrictions:
+Client cannot book if:
+- Profile is incomplete
+- Admin has not approved the client
+- No package assigned
+- Payment status is not Paid or admin-approved
+- Remaining sessions are 0
+- Package expired
+- Client status is Frozen / Cancelled
+
+Client View:
+Client can view only:
+- Package name
+- Total sessions
+- Used sessions
+- Remaining sessions
+- Expiration date
+- Status
+- Goal
+- Public notes/reminders if admin adds them
+
+Client cannot edit:
+- Package
+- Sessions
+- Payment status
+- Expiration
+- Admin notes
+- Medical notes unless specifically allowed later
+
+Admin UI:
+- Add all of this inside each client profile.
+- Make it premium dark blue/black style.
+- Fully responsive mobile and desktop.
+- No overflow.
+- No cut-off text.
+- Clear tabs inside client profile:
+  1. Overview
+  2. Package
+  3. Sessions
+  4. Health & Goals
+  5. Progress
+  6. Notes
+  7. Documents
+  8. Alerts
+
+Data Safety:
+- Do not delete existing clients or bookings.
+- Existing clients should show “Profile incomplete” until admin completes package/payment approval.
+- Add database fields/migrations safely.
+- Keep package/session history.
+- Keep previous data if save fails.
+
+Deployment:
+- Commit to GitHub.
+- Push latest version.
+- Deploy to Vercel.
+- Test on mobile and desktop.
+- Test with existing client and new client.

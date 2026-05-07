@@ -1,0 +1,117 @@
+FINAL MICRO FIX — DESKTOP AUTH STILL WRONG + ABOUT TEXT INSTANT RENDER
+
+Do NOT touch hero, images, animations, booking, admin, database, APIs structure, mobile header if it works, or any unrelated UI.
+
+Fix only:
+
+1) Desktop header still changes from Sign In to Sign Out incorrectly after refresh.
+2) About section text is stable now, but appears after ~1 second. It must render instantly like the “Youssef Ahmed Certifications” text.
+
+--------------------------------------------------
+1. DESKTOP AUTH FIX — STRICT CONFIRMED USER ONLY
+--------------------------------------------------
+
+Problem:
+Desktop still shows Sign In first, then changes to Sign Out after refresh even when user is not logged in.
+
+Root cause likely:
+- desktop header treats “auth checked/loading completed” as authenticated
+- user object is truthy but empty/invalid
+- static Sign Out desktop button exists
+- desktop uses different auth logic than mobile
+
+Required behavior:
+- Sign Out must NEVER appear unless there is a confirmed real authenticated user.
+- Confirmed user requires valid user.id OR user.email.
+- 401 / null / undefined / empty object / failed auth check = guest = Sign In.
+
+Implement:
+const isConfirmedUser = Boolean(user?.id || user?.email);
+
+Desktop:
+if (isConfirmedUser) show Sign Out/Profile
+else show Sign In
+
+Remove any desktop condition that shows Sign Out based on:
+- loading complete
+- authChecked
+- user object truthiness only
+- session checked
+- non-null empty object
+
+Validation:
+- Desktop logged out hard refresh 10 times:
+  Sign In stays Sign In after 1s, 3s, 5s.
+- Desktop logged in:
+  Sign Out/Profile appears correctly.
+- Mobile:
+  only check; do not change if working.
+
+--------------------------------------------------
+2. ABOUT TEXT INSTANT RENDER
+--------------------------------------------------
+
+Problem:
+About text no longer changes, but it appears after about 1 second.
+It must render immediately on first paint like the Certifications text.
+
+Required behavior:
+- About text visible immediately.
+- No loading delay.
+- No blank About area.
+- No skeleton for actual text.
+- No waiting for API/useEffect if text is static/i18n.
+
+Fix:
+- Render About copy directly from i18n/static translation at initial render.
+- Do NOT wait for admin/API content before showing About text.
+- If admin override exists, use it only after load if it is same source/stable; otherwise keep i18n as immediate default.
+- Avoid client-only mounted checks for About text.
+- Remove any condition like:
+  mounted ? aboutText : ""
+  loading ? null : aboutText
+  apiLoaded ? aboutText : null
+
+The About text should use the same immediate rendering strategy as “Youssef Ahmed Certifications”.
+
+Validation:
+- Desktop hard refresh:
+  About text appears immediately.
+  No 1-second delay.
+  Text remains stable after 5 seconds.
+- Mobile hard refresh:
+  same check.
+- Language switching still works.
+
+--------------------------------------------------
+3. SAFETY
+--------------------------------------------------
+
+Do NOT touch:
+- hero
+- image slider
+- typewriter
+- booking
+- admin controls
+- Neon
+- email
+- packages
+- payment
+
+--------------------------------------------------
+4. DEPLOYMENT
+--------------------------------------------------
+
+- TypeScript check
+- i18n check if needed
+- Commit
+- Push GitHub main
+- Wait Vercel READY
+- Test production
+
+Final report must include:
+- exact desktop auth condition fixed
+- why Sign Out was appearing
+- exact About delay cause
+- confirmation About now renders immediately
+- production hard-refresh results

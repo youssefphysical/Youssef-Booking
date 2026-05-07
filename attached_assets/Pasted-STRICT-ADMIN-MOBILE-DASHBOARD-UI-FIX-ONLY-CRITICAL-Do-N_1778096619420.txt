@@ -1,0 +1,118 @@
+STRICT ADMIN MOBILE DASHBOARD UI FIX ONLY
+
+CRITICAL:
+Do NOT touch public homepage, auth logic, booking logic, clients data, packages data, APIs, database/Neon, permissions, or desktop layout unless needed for responsive safety.
+
+ONLY improve the Admin Dashboard mobile layout/styling.
+
+PROBLEM:
+Admin Dashboard on mobile is not visually balanced:
+- stats cards feel uneven
+- grid spacing is inconsistent
+- some cards look too tall/empty
+- tabs overflow horizontally and feel cramped
+- upcoming sessions spacing needs polish
+- quick actions look basic and not premium
+- overall mobile dashboard does not feel professional enough
+
+GOAL:
+Make mobile Admin Dashboard clean, premium, compact, and easy to use.
+
+MOBILE REQUIREMENTS:
+1. Dashboard container:
+- max-width: 100%
+- padding: 16px
+- consistent vertical spacing
+- no horizontal overflow
+
+2. Header:
+- keep title/subtitle
+- improve spacing
+- make it compact on mobile
+
+3. Tabs:
+- horizontal scroll if needed
+- smooth scrolling
+- each tab should have min-width and not squeeze text
+- active tab clearly visible
+- no clipped icons/text
+
+4. Stats cards:
+- use clean 2-column grid on mobile
+- equal card heights
+- consistent padding
+- icons aligned
+- numbers readable
+- labels not too small
+- no duplicate-looking awkward spacing
+- last odd card should either:
+  - span full width elegantly
+  OR
+  - align left cleanly without looking broken
+
+Suggested:
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 12px;
+.card { min-height: 104px; padding: 16px; }
+
+5. Upcoming sessions:
+- better card spacing
+- session rows should align date badge, name, time/phone, status
+- prevent text overflow
+- support long names cleanly
+
+6. Quick actions:
+- make buttons full-width
+- consistent height
+- better spacing
+- premium dark glass style
+- clear tap targets min 44px
+
+7. Mobile polish:
+- border radius consistent
+- subtle borders
+- no excessive empty space
+- no layout jumps
+- touch-friendly
+
+DO NOT CHANGE:
+- data values
+- calculations
+- API results
+- booking/session logic
+- admin routes
+- permissions
+- database
+- public website
+
+VALIDATION:
+Test mobile widths:
+- 360px
+- 390px
+- 412px
+- 430px
+
+Pass criteria:
+- no horizontal overflow
+- cards balanced
+- tabs usable
+- upcoming sessions readable
+- quick actions clean
+- desktop unchanged or still correct
+
+DEPLOYMENT:
+- Neon unchanged.
+- Run TypeScript check.
+- Commit only Admin mobile UI fix.
+- Push to GitHub main.
+- Wait for Vercel production READY.
+- Test production admin dashboard on mobile.
+
+Final report must include:
+- exact files/classes changed
+- confirmation no data/API/database changes
+- mobile widths tested
+- desktop status
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY confirmation

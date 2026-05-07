@@ -1,0 +1,103 @@
+FINAL FIX — SIGN IN DISAPPEARS AFTER REFRESH
+
+Root problem:
+UI hides auth actions when user = null after API response.
+
+This is WRONG behavior.
+
+========================================
+FIX LOGIC (MANDATORY)
+========================================
+
+DO NOT ever hide auth UI when user is null.
+
+Correct logic:
+
+const { user, status } = useAuth()
+
+const isLoading = status === "loading"
+const isAuthenticated = !!user
+
+----------------------------------------
+
+Render rules:
+
+if (isLoading) {
+  render Sign In (or skeleton placeholder)
+}
+
+if (!isAuthenticated) {
+  ALWAYS render Sign In
+}
+
+if (isAuthenticated) {
+  render Profile / Dashboard / Logout
+}
+
+----------------------------------------
+
+REMOVE any logic like:
+
+if (!user) return null
+if (status === "loading") return null
+
+These cause flicker/disappearance.
+
+========================================
+UI STABILITY RULE
+========================================
+
+The auth area must NEVER disappear.
+
+It must always show one of:
+- Sign In
+- Profile
+
+No empty state allowed.
+
+========================================
+API HANDLING
+========================================
+
+If /api/user returns 401:
+→ treat as guest
+→ show Sign In
+
+NOT error state
+NOT hidden state
+
+========================================
+MOBILE + DESKTOP
+========================================
+
+Ensure same logic applies to:
+- Header
+- Mobile menu
+
+========================================
+FINAL VALIDATION
+========================================
+
+- Refresh → Sign In appears and stays
+- Wait 5 seconds → still visible
+- Mobile → stable
+- Desktop → stable
+- No flicker
+- No disappearing
+
+========================================
+DEPLOY
+========================================
+
+Commit → GitHub  
+Deploy → Vercel  
+Confirm READY
+
+========================================
+FINAL REPORT MUST INCLUDE:
+========================================
+
+- Exact line removed (return null)
+- New auth rendering logic
+- Confirmation that Sign In never disappears
+- Production hard refresh test

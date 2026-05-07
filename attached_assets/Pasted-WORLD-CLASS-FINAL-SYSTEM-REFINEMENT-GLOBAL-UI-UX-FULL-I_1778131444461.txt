@@ -1,0 +1,432 @@
+WORLD-CLASS FINAL SYSTEM REFINEMENT — GLOBAL UI/UX + FULL I18N + SMART ADMIN + PACKAGE SYSTEM + EMAIL EXPERIENCE
+
+CRITICAL:
+Do NOT break existing functionality.
+Do NOT redesign the whole app from scratch.
+Do NOT remove working logic.
+Do NOT break auth, database, bookings, packages, sessions, admin permissions, APIs, or routes.
+
+This task is a PROFESSIONAL REFINEMENT + GLOBALIZATION + UX UPGRADE of the EXISTING system.
+
+==================================================
+
+1. GLOBAL MULTI-LANGUAGE SYSTEM (ENTIRE WEBSITE)
+   ==================================================
+
+The selected language must apply to EVERY page and EVERY visible UI element.
+
+NOT ONLY HOMEPAGE.
+
+Translate ALL pages:
+
+- Homepage
+- Booking pages
+- Login / Register
+- Forgot password
+- Reset password
+- Client profile/dashboard
+- Admin dashboard
+- Clients page
+- Bookings page
+- Sessions & packages
+- New package modal
+- Settings pages
+- Policies
+- Empty states
+- Error states
+- Toasts
+- Search placeholders
+- Dropdowns
+- Tooltips
+- Form labels
+- Validation messages
+- Buttons
+- Status badges
+- Email templates
+
+SUPPORTED LANGUAGES:
+
+- English
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Urdu
+- Turkish
+- Portuguese
+
+REQUIREMENTS:
+
+- Remove ALL hardcoded English text.
+- Use proper translation keys everywhere.
+- Fallback to English if missing.
+- Arabic + Urdu MUST be fully RTL.
+- All other languages stay LTR.
+- RTL must affect:
+  - spacing
+  - alignment
+  - icons
+  - cards
+  - paddings
+  - dropdowns
+  - modals
+  - mobile layout
+
+IMPORTANT:
+Long languages like German/French/Russian must NEVER break layouts.
+
+==================================================
+2. PROFESSIONAL “COACH YOUSSEF” LOCALIZATION
+
+Replace unprofessional wording like:
+
+- “Message Youssef”
+- “راسل يوسف”
+
+Use premium professional wording per language.
+
+Examples:
+Arabic:
+
+- تواصل مع الكوتش يوسف
+- راسل الكوتش يوسف عبر واتساب
+
+English:
+
+- Contact Coach Youssef
+- Message Coach Youssef on WhatsApp
+
+French:
+
+- Contacter Coach Youssef
+- Écrire à Coach Youssef sur WhatsApp
+
+German:
+
+- Coach Youssef kontaktieren
+
+etc.
+
+IMPORTANT:
+Keep WhatsApp brand spelling unchanged globally.
+
+Apply this professionally across:
+
+- CTA buttons
+- Contact sections
+- WhatsApp buttons
+- Emails
+- Mobile views
+
+==================================================
+3. WORLD-CLASS MOBILE DASHBOARD REFINEMENT
+
+The dashboard still feels like compressed desktop UI.
+
+Transform it into:
+“Luxury mobile operating system” style.
+
+GOALS:
+
+- Cleaner hierarchy
+- Less visual noise
+- Better spacing rhythm
+- Premium SaaS feel
+- Mobile-first architecture
+
+DASHBOARD REQUIREMENTS:
+
+A. Summary strip
+
+- Compact horizontal scroll pills
+- Today / Upcoming / Urgent
+- Smooth momentum scrolling
+- Glass premium style
+
+B. Metrics section
+
+- Only important metrics visible first
+- 2-column mobile grid
+- Better proportional spacing
+- Dynamic spans
+- No oversized empty cards
+
+C. Attention section
+Group:
+
+- Expiring packages
+- Low-session clients
+- Pending renewals
+  inside one premium “Attention needed” area.
+
+D. Upcoming sessions
+
+- Compact premium rows
+- Better text truncation
+- Mobile-safe spacing
+- Smaller status badges
+- Cleaner hierarchy
+
+E. Quick actions
+Convert long list into:
+2-column premium action grid.
+
+Examples:
+
+- Clients
+- Packages
+- Bookings
+- Settings
+- Public site
+- Profile
+
+F. Mobile optimization
+
+- No overflow
+- No clipped text
+- No cramped spacing
+- Keyboard-safe spacing
+- Proper thumb reach
+- Better vertical rhythm
+
+==================================================
+4. SMART CLIENT SEARCH ABOVE PACKAGE CREATION
+
+Inside “New package” modal:
+
+Add a smart searchable client picker ABOVE the form.
+
+FEATURES:
+
+- Search by:
+  - full name
+  - partial name
+  - phone
+  - partial phone
+  - email
+  - partial email
+
+Examples:
+
+- “yous”
+- “505”
+- “gmail”
+- “manar”
+
+Real-time live search.
+
+Search results dropdown must show:
+
+- profile image or initials
+- name
+- phone
+- email
+- verified badge
+- current package
+
+Selecting client:
+
+- attaches package automatically
+- shows selected client card
+- collapses results
+
+Must be:
+
+- premium
+- smooth
+- mobile optimized
+- RTL-safe
+- custom searchable UI
+- NOT native ugly select menus
+
+==================================================
+5. PROFESSIONAL PACKAGE SYSTEM
+
+PACKAGE TYPES MUST SUPPORT:
+
+- Single session
+- 10 sessions
+- 20 sessions
+- 25 sessions
+- Duo 30 sessions
+- Custom package
+
+Admin must fully control:
+
+- expiration
+- validity unit
+- package visibility
+- session count
+- bonus sessions
+- pricing
+
+BONUS SESSIONS:
+If bonus exists:
+
+- visually separate from paid sessions
+- green premium highlight
+- clear label:
+  “Bonus from Coach Youssef”
+- visible publicly
+
+Example:
+20 Paid Sessions
++5 Bonus Sessions
+
+Total:
+25 Sessions
+
+Make this look premium and motivational.
+
+==================================================
+6. PREMIUM EMAIL EXPERIENCE
+
+Create/refine professional branded email system.
+
+EMAILS MUST SUPPORT:
+
+- all languages
+- mobile responsiveness
+- dark/luxury styling
+- premium typography
+- proper spacing
+
+EMAIL TYPES:
+
+- Welcome email
+- Registration confirmation
+- Booking confirmation
+- Booking reminder
+- Package expiry reminder
+- Low sessions reminder
+- Password reset
+- Admin notifications
+
+EMAIL REQUIREMENTS:
+
+- mobile optimized
+- Gmail optimized
+- Outlook safe
+- RTL safe
+- professional CTA buttons
+- Coach Youssef branding
+- Dubai timezone
+- 12-hour time format
+
+ADMIN EMAILS:
+Admin must receive:
+
+- new signup
+- new booking
+- package purchase
+- cancellations
+- reschedules
+
+==================================================
+7. GLOBAL UI CONSISTENCY
+
+Apply premium luxury consistency across:
+
+- cards
+- modals
+- tabs
+- dropdowns
+- forms
+- search bars
+- badges
+- spacing
+- typography
+- hover states
+- glass effects
+
+Style target:
+
+- Apple-level polish
+- premium SaaS
+- cinematic luxury
+- modern fitness brand
+
+==================================================
+8. PERFORMANCE + SAFETY
+
+IMPORTANT:
+Do NOT:
+
+- break Neon
+- change APIs unnecessarily
+- break auth
+- break admin permissions
+- break bookings
+- break responsive behavior
+
+Keep:
+
+- existing database schema if possible
+- existing routes
+- existing production logic
+
+Optimize:
+
+- rendering
+- mobile scrolling
+- search debounce
+- dropdown performance
+
+==================================================
+9. FINAL VALIDATION
+
+Test ALL:
+
+- mobile
+- tablet
+- desktop
+
+Test:
+
+- English
+- Arabic RTL
+- French
+- German
+- Russian
+- Chinese
+- Hindi
+- Urdu RTL
+
+Verify:
+
+- no broken layouts
+- no mixed languages
+- no overflow
+- no clipped text
+- no untranslated text
+- no RTL bugs
+- no modal overflow
+- no dashboard spacing issues
+
+==================================================
+10. DEPLOYMENT RULES
+
+- Run TypeScript check
+- Fix all type issues
+- Commit only necessary changes
+- Push to GitHub main
+- Wait for Vercel production READY
+- Verify production manually
+
+FINAL REPORT MUST INCLUDE:
+
+- files updated
+- features completed
+- languages verified
+- mobile validation
+- RTL validation
+- email validation
+- dashboard validation
+- package system validation
+- Neon changed or unchanged
+- GitHub commit ID
+- Vercel READY confirmation

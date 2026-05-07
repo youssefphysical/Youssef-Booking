@@ -1,0 +1,127 @@
+You are a senior frontend engineer working on a live production system.
+
+CRITICAL RULES:
+- Do NOT modify any existing logic, animations, layout, or structure.
+- Do NOT touch hero slider, transitions, timing, or performance.
+- Do NOT affect mobile or desktop behavior.
+- Only modify typography styling for hero text.
+
+-------------------------------------
+
+GOAL:
+Improve the visual quality and readability of:
+
+1) Main title:
+"Your Transformation Starts Here."
+
+2) Subtitle:
+"Science-based coaching in Dubai for fat loss, muscle gain, and long-term performance."
+
+Make them look ultra premium, clean, and perfectly readable over the image
+WITHOUT reducing image clarity.
+
+-------------------------------------
+
+REQUIREMENTS:
+
+TEXT QUALITY:
+- Remove any glow, blue shadow, blur, or flicker completely
+- Text must be 100% crisp, sharp, and stable (no visual noise)
+- No opacity flicker or re-render effect
+
+MAIN TITLE STYLE:
+- font-weight: 700–800 (bold but elegant)
+- color: pure white (#FFFFFF)
+- letter-spacing: -0.5px to -1px (tight modern look)
+- line-height: 1.1–1.2
+- NO text-shadow
+- NO gradient text
+- NO glow
+
+SUBTITLE STYLE:
+- color: rgba(255,255,255,0.85)
+- font-weight: 400–500
+- clean readability
+- slightly increased line-height
+
+-------------------------------------
+
+BACKGROUND SUPPORT (VERY IMPORTANT):
+
+Add a VERY subtle overlay behind text ONLY:
+
+- Use a soft dark gradient behind text:
+  linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.25),
+    rgba(0,0,0,0.4)
+  )
+
+- OR use backdrop-filter blur:
+  blur(6px–10px) MAX
+
+- The overlay MUST:
+  - be invisible visually
+  - NOT look like a layer or box
+  - NOT reduce image quality
+  - NOT create edges or borders
+
+Goal: improve contrast WITHOUT user noticing any layer
+
+-------------------------------------
+
+RESPONSIVENESS:
+
+MOBILE:
+- Reduce font-size slightly
+- Keep perfect spacing from top badge
+- Ensure text never overlaps or hides
+
+DESKTOP:
+- Keep current layout
+- Just improve clarity
+
+-------------------------------------
+
+PERFORMANCE:
+
+- No re-renders
+- No JS-based animation
+- No layout shift
+- No hydration mismatch
+- No flicker on refresh
+
+-------------------------------------
+
+DEPLOYMENT (MANDATORY):
+
+1) Commit changes to GitHub (main branch)
+2) Wait for Vercel deployment
+3) Confirm production is READY
+4) Test live URL (mobile + desktop)
+
+-------------------------------------
+
+DATABASE:
+
+- DO NOT modify Neon database
+- If unchanged, report: "Neon unchanged"
+
+-------------------------------------
+
+FINAL REPORT MUST INCLUDE:
+
+- What exactly was changed (CSS only)
+- Confirmation:
+  - No layout change
+  - No animation change
+  - No performance impact
+- GitHub commit ID
+- Vercel deployment status (READY)
+- Neon status
+- Live production test results
+
+-------------------------------------
+
+This is a MICRO DESIGN FIX only.
+Touch nothing else.

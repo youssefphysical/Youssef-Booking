@@ -1,0 +1,80 @@
+FIX HERO AFTER-LOAD BLUR/DARKENING — KEEP INITIAL IMAGE CLARITY
+
+Problem:
+On hard refresh, the hero image first appears clear and correct.
+After waiting a moment, a blur/dark overlay/fade state is applied and the image becomes less clear.
+
+This means the first paint is correct, but the post-load slider/animation/API state is changing the visual treatment.
+
+IMPORTANT:
+Do NOT touch auth, Sign In, booking, admin, database, or APIs.
+Only fix hero visual consistency after load.
+
+Tasks:
+
+1. Compare initial static hero state vs after slider/API hydration state.
+Find which class/style changes after load:
+- blur
+- opacity
+- backdrop-filter
+- filter
+- dark overlay
+- gradient opacity
+- crossfade layer
+- duplicate image layer
+- animated slide layer
+
+2. The post-load state must match the initial clear state.
+
+3. Remove any blur on hero image:
+- no filter: blur()
+- no backdrop-filter over the hero image
+- no crossfade overlay that stays visible
+- no opacity stacking that darkens the image
+
+4. Keep image enhancement consistent:
+Use the same filter before and after hydration:
+brightness(1.05) contrast(1.08) saturate(1.05)
+
+5. Crossfade fix:
+If slider uses two images/layers, ensure inactive layer is opacity: 0 and does not darken the active image.
+Active layer must be opacity: 1.
+Do not stack two semi-transparent images on top of each other.
+
+6. Overlay fix:
+Use only one bottom gradient overlay:
+linear-gradient(to top, rgba(0,0,0,0.55), transparent 55%)
+
+Do not add extra full-screen black/blue overlays after load.
+
+7. Static first image:
+Keep /hero-initial.webp visible as the first slide.
+When API slides load, do not replace it with a lower-quality/blurred version of the same image.
+If the API returns the same image, dedupe it.
+
+8. Animation:
+Ken Burns must use transform only.
+Do not animate filter, blur, opacity of the image after it is visible.
+
+9. Validation:
+- Hard refresh.
+- Immediately screenshot.
+- Wait 5 seconds.
+- Screenshot again.
+Both must have the same image clarity.
+No blur.
+No darkening.
+No double-layer haze.
+Buttons/text remain readable.
+
+10. Deploy:
+- TypeScript check.
+- Commit.
+- Push GitHub.
+- Wait Vercel READY.
+- Test production mobile.
+
+Final report must include:
+- Exact class/style that caused blur/darkening after load
+- What was removed
+- Confirmation initial and after-5s hero clarity match

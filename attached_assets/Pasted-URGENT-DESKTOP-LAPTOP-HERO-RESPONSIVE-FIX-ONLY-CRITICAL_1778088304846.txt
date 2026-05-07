@@ -1,0 +1,179 @@
+URGENT DESKTOP/LAPTOP HERO RESPONSIVE FIX ONLY
+
+CRITICAL:
+Do NOT touch auth, Sign In/Sign Out, booking, admin, APIs, database/Neon, hero image upload/cropper, hero slider logic, translations, routing, or mobile layout if it is already good.
+
+ONLY fix desktop/laptop hero responsive layout and overlap.
+
+PROBLEM:
+On real laptop/desktop screens, the hero is broken:
+- The blue section below overlaps the hero content.
+- CTA buttons and slider dots collide with the blue section.
+- Hero text/buttons are too low or too large for laptop height.
+- Some translated headlines are too large and collide with buttons.
+- Desktop from phone looks okay, but real laptop viewport is broken.
+
+ROOT CAUSE TO CHECK:
+- hero height too small on desktop/laptop
+- fixed vh height not accounting for header/browser height
+- content absolute bottom too low
+- CTA block not included in hero height calculation
+- bottom blend/blue section starts before hero content ends
+- long translated headlines not clamped/responsive
+- slider dots positioned too close to CTA/section boundary
+
+--------------------------------------------------
+1. FIX DESKTOP HERO HEIGHT SAFELY
+--------------------------------------------------
+
+For desktop/laptop only (min-width 768px):
+
+Hero section must reserve enough vertical space for:
+- badge
+- headline
+- subheadline
+- CTA buttons
+- slider dots
+- bottom blend
+
+Use a safe min-height:
+- min-height: clamp(640px, calc(100svh - headerHeight), 820px)
+OR if easier:
+- min-height: clamp(640px, 82svh, 820px)
+
+Do NOT make mobile worse.
+
+Use svh/dvh instead of plain vh if available.
+
+--------------------------------------------------
+2. FIX HERO CONTENT POSITION ON DESKTOP
+--------------------------------------------------
+
+Desktop hero content must not sit too low.
+
+Set hero content on desktop:
+- top/center based layout or safe bottom spacing
+- max-width controlled
+- enough bottom padding before buttons/dots
+
+Suggested:
+.hero-content {
+  max-width: 720px;
+}
+
+@media (min-width: 768px) {
+  .hero-content {
+    top: 48%;
+    transform: translateY(-50%);
+    bottom: auto;
+  }
+}
+
+If current design requires bottom positioning, then:
+bottom must be large enough:
+bottom: clamp(150px, 18vh, 220px);
+
+--------------------------------------------------
+3. PREVENT CTA / DOTS / BLUE SECTION COLLISION
+--------------------------------------------------
+
+- CTA buttons must stay inside hero.
+- Slider dots must stay below buttons but above the hero bottom safely.
+- Blue/profile section must start AFTER the hero, not overlap it.
+
+Rules:
+- No negative margin between hero and next section.
+- No absolute next section overlay on hero.
+- Hero bottom blend can overlay hero image only, but must not cover CTAs/dots.
+- Add safe spacing:
+  padding-bottom: clamp(120px, 16vh, 180px);
+
+--------------------------------------------------
+4. HANDLE LONG TRANSLATED HEADLINES
+--------------------------------------------------
+
+Some languages have very long hero headlines.
+
+Desktop headline:
+- font-size must be responsive with clamp.
+- line-height must allow descenders.
+- max-width must prevent overflow.
+- long words must wrap safely.
+
+Use:
+font-size: clamp(42px, 5vw, 76px);
+line-height: 1.05–1.12;
+overflow: visible;
+word-break: normal;
+overflow-wrap: anywhere only if required for long words.
+
+For languages like Hindi/Chinese/Russian/German/French/Arabic:
+- headline must not overlap buttons.
+- if needed, reduce font-size slightly for non-Latin/long headlines.
+
+--------------------------------------------------
+5. DO NOT CHANGE THE DESIGN STYLE
+--------------------------------------------------
+
+Keep:
+- current hero image
+- current typography style
+- current button style
+- current fade/blend style
+- current mobile design
+
+Only fix spacing/responsiveness so nothing overlaps.
+
+--------------------------------------------------
+6. VALIDATION REQUIRED
+--------------------------------------------------
+
+Test real desktop/laptop sizes:
+- 1366x768
+- 1440x900
+- 1536x864
+- 1920x1080
+
+Test languages:
+- English
+- Arabic
+- Hindi
+- Chinese
+- Turkish
+- Russian
+- German
+- French
+- Spanish
+
+Pass criteria:
+- No overlap between hero and blue/profile section.
+- CTA buttons fully visible.
+- Slider dots not colliding with buttons or blue section.
+- Headline not clipped.
+- Subheadline not hidden.
+- Blue section starts cleanly after hero.
+- Mobile remains unchanged/good.
+
+--------------------------------------------------
+7. DEPLOYMENT
+--------------------------------------------------
+
+- Neon/database unchanged.
+- If unchanged, report exactly: “Neon unchanged.”
+- Run TypeScript check.
+- Commit only this desktop responsive hero fix.
+- Push to GitHub main.
+- Wait for Vercel production READY.
+- Test live production URL on real desktop/laptop and mobile.
+
+FINAL REPORT MUST INCLUDE:
+- Exact cause of desktop overlap
+- Exact files/classes changed
+- Desktop breakpoints tested
+- Languages tested
+- Confirmation mobile unchanged
+- Confirmation no auth/booking/admin/database changes
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY confirmation
+- Production desktop + mobile test result

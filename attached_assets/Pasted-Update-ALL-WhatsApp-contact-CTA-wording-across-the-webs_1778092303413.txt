@@ -1,0 +1,127 @@
+Update ALL WhatsApp/contact CTA wording across the website to use a unified PREMIUM multilingual localization system.
+
+IMPORTANT:
+The current wording feels inconsistent and partially informal in some languages.
+
+Replace all old wording with elegant, premium, professional CTA text that matches a luxury personal training brand.
+
+GLOBAL STYLE:
+
+- clean
+- premium
+- modern
+- respectful
+- native sounding
+- not robotic
+- not overly casual
+
+DO NOT use:
+
+- "راسل يوسف"
+- "كلم يوسف"
+- "ابعت"
+- mixed Arabic/English text
+- untranslated names inside Arabic sentences
+
+Use these professional localized CTA examples instead:
+
+ARABIC:
+Main WhatsApp CTA:
+"تواصل عبر واتساب"
+
+Secondary text:
+"الكوتش يوسف يرد عادة خلال ساعات قليلة"
+
+Session CTA:
+"احجز جلستك الآن"
+
+ENGLISH:
+"Contact via WhatsApp"
+"Coach Youssef usually replies within a few hours"
+"Book Your Session"
+
+FRENCH:
+"Contacter via WhatsApp"
+"Le Coach Youssef répond généralement en quelques heures"
+
+GERMAN:
+"Kontakt über WhatsApp"
+"Coach Youssef antwortet normalerweise innerhalb weniger Stunden"
+
+SPANISH:
+"Contactar por WhatsApp"
+"El Coach Youssef suele responder en pocas horas"
+
+TURKISH:
+"WhatsApp üzerinden iletişime geç"
+"Koç Yusuf genellikle birkaç saat içinde yanıt verir"
+
+RUSSIAN:
+"Связаться через WhatsApp"
+"Тренер Юссеф обычно отвечает в течение нескольких часов"
+
+CHINESE:
+"通过 WhatsApp 联系"
+"优素福教练通常会在几小时内回复"
+
+HINDI:
+"WhatsApp पर संपर्क करें"
+"कोच यूसुफ आमतौर पर कुछ घंटों के भीतर जवाब देते हैं"
+
+URDU:
+"واٹس ایپ پر رابطہ کریں"
+"کوچ یوسف عموماً چند گھنٹوں میں جواب دیتے ہیں"
+
+CRITICAL REQUIREMENTS:
+
+- ALL CTA/contact/footer wording must use translation files only
+- No mixed-language text anywhere
+- Footer CTA must match hero CTA style
+- Keep WhatsApp brand spelling correct
+- Keep premium/luxury design untouched
+
+RESPONSIVE REQUIREMENTS:
+
+- prevent overflow
+- prevent clipping
+- prevent broken lines
+- support desktop/laptop/tablet/mobile
+- support Arabic RTL perfectly
+- support Urdu RTL perfectly
+- preserve icon spacing/alignment
+
+DO NOT MODIFY:
+
+- layout
+- hero sections
+- animations
+- booking system
+- auth
+- admin
+- APIs
+- gradients
+- spacing
+- database
+
+ONLY update:
+
+- multilingual CTA wording
+- footer wording
+- WhatsApp/contact wording
+- responsive text behavior
+
+After completion:
+
+- Push updates to GitHub
+- Deploy production to Vercel
+- Keep Neon unchanged unless absolutely necessary
+
+Final verification must confirm:
+
+- all translations working
+- no mixed languages
+- no UI break
+- responsive tested
+- GitHub updated
+- Vercel production deployed successfully
+- Neon unchanged

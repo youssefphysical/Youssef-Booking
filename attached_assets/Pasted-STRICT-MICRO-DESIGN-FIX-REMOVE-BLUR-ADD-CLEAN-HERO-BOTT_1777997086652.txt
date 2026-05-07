@@ -1,0 +1,140 @@
+STRICT MICRO DESIGN FIX — REMOVE BLUR + ADD CLEAN HERO BOTTOM BLEND
+
+CRITICAL:
+Do NOT touch anything except the hero bottom transition visual.
+
+DO NOT touch:
+- auth / Sign In / Sign Out
+- booking
+- admin
+- APIs
+- database / Neon
+- hero text
+- hero animation
+- hero image loading
+- hero slider
+- CTA buttons
+- header
+- About section
+- layout structure
+- routing
+- translations
+
+Goal:
+Remove the old blur/frosted effect completely and replace it with a clean professional blend between the hero image and the blue section below.
+
+Problem:
+The current blur/fade area looks visually heavy and still creates a visible separation between the hero image and the next section.
+
+--------------------------------------------------
+1. REMOVE OLD BLUR COMPLETELY
+--------------------------------------------------
+
+Remove from the hero bottom area only:
+- backdrop-filter
+- filter: blur()
+- any glass/frosted layer
+- any heavy blue haze
+- any visible boxed overlay
+
+No blur should remain in the hero bottom transition.
+
+--------------------------------------------------
+2. ADD NEW CLEAN BLEND — NO BLUR
+--------------------------------------------------
+
+Use a pure gradient + image fade approach.
+
+A) Add/replace hero bottom blend overlay:
+
+.hero-bottom-blend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(120px, 14vh, 180px);
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0%,
+    rgba(6,18,34,0.28) 38%,
+    rgba(6,18,34,0.68) 72%,
+    rgba(6,18,34,1) 100%
+  );
+}
+
+Important:
+- The final color must match the first color of the next blue section exactly.
+- If the next section uses a different computed background color, use that exact color in the final gradient stop.
+
+B) Optional image mask fade if supported safely:
+
+Apply ONLY to the hero image layer, not to text/buttons:
+
+.hero-image {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 76%,
+    rgba(0,0,0,0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 76%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+If mask causes any issue with image clarity, buttons, text, or browser behavior, skip the mask and use only the gradient overlay.
+
+--------------------------------------------------
+3. SAFETY RULES
+--------------------------------------------------
+
+- Do not place the blend overlay above text or buttons.
+- Text and CTAs must remain 100% unchanged and readable.
+- Image must remain sharp.
+- No blur.
+- No animation.
+- No layout shift.
+- No hero height change.
+- No next-section movement.
+- No refresh flicker.
+
+--------------------------------------------------
+4. VALIDATION
+--------------------------------------------------
+
+Test production mobile + desktop:
+
+- No visible hard line between hero image and next blue section.
+- No blur/frosted/hazy area remains.
+- Hero image remains sharp.
+- Hero text unchanged.
+- CTA buttons unchanged.
+- Header/auth unchanged.
+- No lag.
+- No layout shift.
+
+--------------------------------------------------
+5. DEPLOYMENT
+--------------------------------------------------
+
+- Neon/database unchanged.
+- Run TypeScript check.
+- Commit only this visual micro-fix.
+- Push to GitHub main.
+- Wait for Vercel production READY.
+- Test live production URL on mobile and desktop.
+
+Final report must include:
+- Exact old blur/backdrop CSS removed
+- Exact new gradient/mask CSS added
+- Whether mask was used or skipped
+- Confirmation no other areas changed
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY confirmation
+- Production mobile + desktop test result

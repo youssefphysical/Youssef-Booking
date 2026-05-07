@@ -1,0 +1,167 @@
+FINAL HERO STABILIZATION — STOP ALL BUGS (STRICT MODE)
+
+CRITICAL:
+STOP all experimental animation logic.
+We are moving to a STABLE, SIMPLE, PREMIUM implementation.
+
+Do NOT touch:
+- auth (Sign In / Sign Out)
+- mobile header
+- booking
+- admin
+- APIs
+- database
+- image loading system
+
+ONLY fix:
+- hero text animation
+- blue shadow on text
+- jitter / stutter
+- mobile layout stability
+
+------------------------------------
+1) REMOVE ALL PROBLEMATIC EFFECTS
+------------------------------------
+
+Remove completely:
+
+- text-shadow from headline
+- filter: blur on text
+- backdrop-filter affecting text
+- any blue glow or gradient overlay affecting text clarity
+
+Headline must be:
+- clean white
+- sharp
+- no glow
+- no shadow
+
+------------------------------------
+2) REMOVE COMPLEX TYPEWRITER SYSTEM
+------------------------------------
+
+Delete completely:
+- character-by-character typing logic
+- setInterval loops
+- per-letter React state updates
+- cursor logic
+
+We DO NOT want real typing anymore.
+
+------------------------------------
+3) REPLACE WITH SIMPLE FADE SYSTEM (ULTRA STABLE)
+------------------------------------
+
+New system:
+
+Each slide has:
+- badge
+- headline
+- subheadline
+
+Animation:
+
+ON FIRST LOAD:
+- fade in badge (200ms)
+- fade in headline (300ms)
+- fade in subheadline (400ms)
+- buttons fade in once (300ms)
+
+ON SLIDE CHANGE:
+- fade out ALL text (200ms)
+- immediately switch content
+- fade in new text (400ms)
+
+NO:
+- typing
+- masking
+- clip-path
+- per-letter animation
+
+ONLY:
+opacity + slight translateY
+
+------------------------------------
+4) REMOVE TEXT JITTER (VERY IMPORTANT)
+------------------------------------
+
+Fix layout:
+
+- headline container MUST have fixed min-height
+- no resizing during animation
+- no dynamic width changes
+- no inline text reflow
+
+Example:
+min-height enough for 2 lines on mobile
+
+------------------------------------
+5) CTA BUTTONS MUST BE STATIC
+------------------------------------
+
+- Buttons appear once on first load
+- NEVER animate again
+- NEVER hide on slide change
+- NEVER move position
+
+------------------------------------
+6) MOBILE HERO FIX
+------------------------------------
+
+- hero height: ~75vh
+- content positioned inside hero
+- no overlap with next section
+- add safe bottom spacing
+
+------------------------------------
+7) IMAGE MUST NOT CHANGE BEHAVIOR
+------------------------------------
+
+- keep image logic exactly as is
+- do NOT re-render image on text change
+- only text changes
+
+------------------------------------
+8) PERFORMANCE RULES
+------------------------------------
+
+- only animate:
+  opacity
+  transform
+
+- no blur
+- no filter
+- no heavy JS
+- no re-render loops
+
+------------------------------------
+9) FINAL VALIDATION (STRICT)
+------------------------------------
+
+Test on mobile:
+
+- open site → no flicker
+- headline is clean white (no blue shadow)
+- no jitter
+- no cursor
+- no typing
+- slide change is smooth fade only
+- buttons stable
+- layout stable
+
+Desktop:
+- no UI break
+
+------------------------------------
+10) FINAL REPORT MUST INCLUDE
+------------------------------------
+
+- confirmation ALL typing logic removed
+- confirmation shadow/glow removed
+- explanation of fade system
+- mobile stability confirmation
+- 3-cycle test result
+
+------------------------------------
+DEPLOY:
+commit → push → wait Vercel READY → test production

@@ -1,0 +1,124 @@
+ULTIMATE FINAL PASS — ZERO-REGRESSION LOCK (DO NOT REBUILD)
+
+Context:
+The system is already LIVE, fully translated, and validated.
+All keys exist. All pages use t(). No hardcoded English remains.
+
+This task is NOT a rebuild.
+This is a FINAL LOCK + MICRO POLISH pass only.
+
+---
+
+OBJECTIVE:
+
+Ensure absolute production perfection with:
+
+- Zero regressions
+- Zero overwrites
+- Zero language inconsistencies
+
+---
+
+STRICT RULES (CRITICAL):
+
+- DO NOT add new keys
+- DO NOT rename any keys
+- DO NOT touch i18n structure
+- DO NOT modify backend / database / Neon
+- DO NOT modify booking logic
+- DO NOT modify admin logic
+- DO NOT run bulk rewrite scripts
+- DO NOT regenerate translations
+
+Only ALLOWED:
+✔ Read
+✔ Verify
+✔ Fix tiny visual issues ONLY if clearly broken
+
+---
+
+STEP 1 — VISUAL LANGUAGE VERIFICATION
+
+Manually check these pages in ALL 10 languages:
+
+- Homepage
+- About section
+- Booking flow
+- How It Works
+- Profile page
+- Auth pages
+
+Check for:
+
+- Any remaining English sentence ❌
+- Mixed language in same paragraph ❌
+- Broken RTL in Arabic ❌
+- Awkward spacing / punctuation ❌
+- Duplicate paragraphs ❌
+
+Fix ONLY if visible issue exists.
+
+---
+
+STEP 2 — BRAND CONSISTENCY
+
+Ensure these stay EXACTLY as-is (do NOT translate):
+
+- Youssef Ahmed
+- Youssef Fitness
+- WhatsApp
+- Instagram
+- InBody
+- Dubai
+
+---
+
+STEP 3 — LANGUAGE QUALITY MICRO-FIX (NO REWRITE)
+
+If (and only if) you see obvious bad phrasing:
+
+- Fix that SINGLE string manually
+- Do NOT touch surrounding keys
+- Do NOT rewrite whole sections
+
+---
+
+STEP 4 — FINAL VALIDATION
+
+Run:
+
+- TypeScript check (tsc --noEmit)
+- Language switch test (all 10 languages)
+- Booking test (UI only)
+- Navigation test
+
+---
+
+STEP 5 — SAFE DEPLOY
+
+- Commit ONLY if changes were made
+- Push to GitHub main
+- Let Vercel auto-deploy
+- Verify LIVE (not preview)
+
+---
+
+FINAL STATE EXPECTED:
+
+✔ No English leaks
+✔ No duplicated text
+✔ Perfect language switching
+✔ Clean UI across all languages
+✔ No regression in any feature
+✔ Same stable architecture
+
+---
+
+IMPORTANT:
+
+If everything already looks correct:
+➡️ DO NOTHING
+➡️ DO NOT COMMIT
+➡️ SYSTEM IS FINAL
+
+This is a verification pass, not a build step.

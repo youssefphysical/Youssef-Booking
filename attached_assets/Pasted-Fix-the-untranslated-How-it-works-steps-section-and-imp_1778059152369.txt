@@ -1,0 +1,89 @@
+Fix the untranslated “How it works / steps” section and improve Arabic RTL spacing without breaking anything.
+
+Issue:
+In Arabic mode, the step cards are still showing English:
+- Choose your goal
+- Book your session
+- Track your progress
+- See the full 6-step guide
+This section must translate dynamically like the rest of the website.
+
+1. Add missing i18n translation keys
+Add translation keys for the full steps/how-it-works section:
+- STEP 01 / STEP 02 / STEP 03
+- Choose your goal
+- Book your session
+- Track your progress
+- Fat loss, muscle gain, or body recomposition — pick the outcome that matters to you
+- Pick any slot 6 AM – 10 PM. Sessions deduct from your active plan automatically.
+- InBody trends, progress photos, and session history — all in your private dashboard.
+- See the full 6-step guide
+
+2. Translate for all supported languages
+Make sure this section changes correctly when switching language:
+- English
+- Arabic
+- Spanish
+- French
+- German
+- Italian
+- Russian
+- Chinese
+- Hindi
+- Urdu
+- Turkish
+- Portuguese
+
+3. Arabic RTL behavior
+When Arabic is selected:
+- The step cards must be right-aligned.
+- Text direction must be RTL.
+- The step label can stay visually clean, but spacing must adapt to RTL.
+- Do not leave English text in Arabic mode.
+
+4. Fix spacing near the blue label/badge
+Issue:
+The Arabic text is not overlapping now, but it is still too close to the blue badge/label and looks unprofessional.
+
+Fix:
+- Increase vertical spacing between any blue badge/label and the main text below it.
+- Add safe margin-bottom around badges: 18px–24px.
+- Add consistent gap between badge, title, subtitle, and cards.
+- Make sure no text feels visually attached to badges in any language.
+
+5. Responsive design
+- Test mobile widths 360px, 390px, 412px, 430px.
+- No text overlap.
+- No horizontal scroll.
+- No cut-off text.
+- Cards must keep premium spacing and alignment.
+- Arabic and Urdu should display naturally RTL.
+- Other languages should display LTR.
+
+6. Safety
+- Do not change booking logic.
+- Do not change login logic.
+- Do not break admin panel.
+- Do not break hero slider.
+- Do not break language switcher.
+- Do not remove existing animations.
+- Only fix missing translations, RTL alignment, and spacing.
+
+7. QA before deploy
+Test:
+- English steps section
+- Arabic steps section
+- Spanish steps section
+- Mobile and desktop
+- Language switching
+- Header still fits
+- Hero section still works
+- Booking flow still works
+- Admin panel still opens
+
+8. Deployment
+After fixing:
+- Commit changes to GitHub.
+- Push latest code.
+- Deploy/update production on Vercel.
+- Verify live Vercel site after deployment.

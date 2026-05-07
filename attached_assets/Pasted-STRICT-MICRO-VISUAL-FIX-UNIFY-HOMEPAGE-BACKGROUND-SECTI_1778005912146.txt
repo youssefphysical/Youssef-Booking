@@ -1,0 +1,89 @@
+STRICT MICRO VISUAL FIX — UNIFY HOMEPAGE BACKGROUND SECTIONS
+
+CRITICAL:
+Do NOT touch auth, Sign In/Sign Out, booking, admin, APIs, database, hero text, hero animation, hero image loading, hero slider, CTA buttons, header, routing, translations, or any functionality.
+
+ONLY fix the visual background separation between homepage sections.
+
+PROBLEM:
+The homepage looks like separate blocks/sections. There are visible background differences between:
+1. Hero bottom and Youssef Ahmed section
+2. Youssef Ahmed section and About section
+
+The circled areas show hard visual separation. I want the page to feel like ONE continuous premium design.
+
+GOAL:
+Make the hero, Youssef Ahmed section, and About section share one continuous background system with no visible horizontal bands, lines, or sudden color differences.
+
+REQUIRED DESIGN:
+- Use one shared page-level background for the homepage.
+- Sections should sit on top of the same continuous dark navy/black gradient.
+- Remove section-specific background blocks that create visible bands.
+- No hard horizontal edges.
+- No separate blue strip.
+- No obvious difference between sections.
+- Keep the design premium, dark, clean, and cinematic.
+
+IMPLEMENTATION:
+1. Find the wrappers/sections causing the visible differences.
+2. Move the main background to the parent homepage container, for example:
+
+.homepage-shell {
+  background:
+    radial-gradient(circle at 70% 10%, rgba(31, 156, 255, 0.16), transparent 32%),
+    linear-gradient(
+      to bottom,
+      #03070d 0%,
+      #061222 34%,
+      #071827 62%,
+      #03070d 100%
+    );
+}
+
+3. Make child sections transparent where possible:
+- hero lower area
+- profile/Youssef Ahmed section
+- about section wrapper
+
+Use:
+background: transparent;
+
+4. Keep cards and content styling unchanged.
+5. If a section needs depth, use very subtle radial glow only, not full block background.
+
+IMPORTANT:
+- Do NOT remove text.
+- Do NOT move layout.
+- Do NOT change spacing except if needed by 1–2px to remove a gap.
+- Do NOT add blur.
+- Do NOT add animation.
+- Do NOT affect hero image clarity.
+- Do NOT affect buttons.
+
+VALIDATION:
+- The circled areas must no longer look like separate blocks.
+- Hero → Youssef Ahmed → About must feel like one continuous background.
+- Mobile and desktop must both look seamless.
+- No hard horizontal lines.
+- No sudden color jump.
+- No layout shift.
+- No feature changes.
+
+DEPLOYMENT:
+- Neon/database unchanged.
+- If unchanged, report exactly: “Neon unchanged.”
+- Run TypeScript check.
+- Commit only this visual background unification fix.
+- Push to GitHub main.
+- Wait for Vercel production READY.
+- Test live production URL on mobile and desktop.
+
+FINAL REPORT MUST INCLUDE:
+- Exact sections/wrappers changed
+- What background was removed
+- What shared background was added
+- Confirmation no auth/booking/admin/hero text/CTA changes
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY confirmation
+- Production mobile + desktop test result

@@ -1,0 +1,212 @@
+Build a complete premium email notification system for the platform.
+
+IMPORTANT:
+Do NOT break:
+
+- auth
+- routing
+- database
+- booking logic
+- dashboard
+- existing APIs
+
+This is an email/notification enhancement only.
+
+━━━━━━━━━━━━━━━
+EMAIL SYSTEM GOAL
+━━━━━━━━━━━━━━━
+
+The platform should feel like a luxury premium SaaS personal training service.
+
+All emails must:
+
+- look premium
+- match the website branding
+- support all languages
+- support RTL properly
+- be mobile optimized
+- feel modern and professional
+
+Use the same visual identity as the website:
+
+- dark luxury theme
+- blue glow accents
+- premium typography
+- clean glass-style sections
+
+━━━━━━━━━━━━━━━
+REQUIRED EMAIL TYPES
+━━━━━━━━━━━━━━━
+
+1. Welcome Email
+
+- Sent after registration
+- Personalized using user name + selected goal
+- CTA:
+  - Book first session
+  - Upload InBody
+  - Contact Coach Youssef
+
+2. Booking Confirmation
+   Send to:
+
+- client
+- admin
+
+Include:
+
+- client name
+- session date
+- session time (12-hour format)
+- session type
+- focus/training split
+- remaining sessions
+- package name
+- location
+- CTA buttons
+
+3. Session Reminder
+   Send:
+
+- 24h before session
+- 1h before session
+
+4. Package Expiring Soon
+   Trigger when:
+
+- low sessions remaining
+- or expiry approaching
+
+5. Package Finished
+
+- motivational renewal email
+- premium CTA to renew
+
+6. Password Reset
+
+- premium secure modern design
+
+7. Admin Notifications
+   Send admin emails for:
+
+- new registration
+- booking created
+- cancellation
+- reschedule
+- InBody upload
+- package expiring
+
+━━━━━━━━━━━━━━━
+MULTI-LANGUAGE SUPPORT
+━━━━━━━━━━━━━━━
+
+All emails must support:
+
+- English
+- Arabic RTL
+- French
+- German
+- Spanish
+- Russian
+- Turkish
+- Chinese
+- Hindi
+- Urdu
+- Portuguese
+  and existing site languages.
+
+Requirements:
+
+- NOT machine-style translation
+- natural premium wording
+- preserve professional tone
+- proper RTL alignment for Arabic
+
+━━━━━━━━━━━━━━━
+EMAIL DESIGN REQUIREMENTS
+━━━━━━━━━━━━━━━
+
+Use:
+
+- responsive email-safe layouts
+- rounded cards
+- premium spacing
+- clean typography
+- glow buttons
+- mobile-first hierarchy
+
+Must render correctly in:
+
+- Gmail
+- Outlook
+- Apple Mail
+- Android mail apps
+
+━━━━━━━━━━━━━━━
+TECHNICAL REQUIREMENTS
+━━━━━━━━━━━━━━━
+
+Create centralized reusable email architecture:
+
+- reusable templates
+- translation support
+- shared branding system
+- dynamic variables
+
+Example variables:
+
+- clientName
+- sessionTime
+- packageName
+- remainingSessions
+- trainerName
+- expiryDate
+
+━━━━━━━━━━━━━━━
+REMINDER SYSTEM
+━━━━━━━━━━━━━━━
+
+Support scheduled email reminders:
+
+- booking reminders
+- package expiry reminders
+- renewal reminders
+
+━━━━━━━━━━━━━━━
+ADMIN EXPERIENCE
+━━━━━━━━━━━━━━━
+
+Admin should:
+
+- receive professional notifications
+- instantly know:
+  - who booked
+  - package
+  - phone
+  - goal
+  - remaining sessions
+
+━━━━━━━━━━━━━━━
+IMPORTANT
+━━━━━━━━━━━━━━━
+
+DO NOT use ugly default email templates.
+
+The emails must feel:
+
+- premium
+- elegant
+- trustworthy
+- luxury fitness coaching
+
+Keep performance optimized.
+Do not introduce layout shift or backend instability.
+
+Test:
+
+- mobile
+- desktop
+- RTL
+- long translations
+- Gmail rendering
+- dark mode compatibility

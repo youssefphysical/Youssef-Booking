@@ -1,0 +1,488 @@
+WORLD-CLASS ADMIN DASHBOARD REDESIGN — UI/UX ONLY
+
+You are a senior product designer + senior frontend engineer.
+
+GOAL:
+Redesign the Admin Dashboard UI to feel like a premium native mobile app + professional SaaS dashboard.
+
+CRITICAL:
+Do NOT touch:
+- auth logic
+- admin permissions
+- booking logic
+- client/package/session calculations
+- APIs
+- database / Neon schema
+- public homepage
+- routing
+- backend logic
+
+ONLY improve:
+- Admin Dashboard visual design
+- responsive layout
+- spacing
+- hierarchy
+- mobile usability
+- dashboard components styling
+
+==============================
+DESIGN STANDARD
+==============================
+
+The dashboard must feel:
+- premium
+- clean
+- fast
+- modern
+- luxury dark UI
+- native mobile app quality
+- professional SaaS quality
+- easy to scan in 3 seconds
+
+Use dark premium style:
+- deep navy / black background
+- subtle blue glow accents
+- glass cards
+- clean borders
+- soft shadows
+- strong typography hierarchy
+
+Avoid:
+- huge empty spaces
+- raw buttons
+- cramped rows
+- inconsistent card heights
+- weak hierarchy
+- horizontal overflow
+- clipped text
+- desktop layout squeezed onto mobile
+
+==============================
+PAGE STRUCTURE
+==============================
+
+Mobile order:
+
+1. Header
+2. Today summary strip
+3. Key metrics cards
+4. Upcoming sessions
+5. Quick actions
+6. Alerts / package warnings
+7. Notes / helper text
+
+Desktop order:
+- Keep desktop professional and spacious
+- Use grid layout
+- Do not break desktop while improving mobile
+
+==============================
+MOBILE LAYOUT
+==============================
+
+For screens 360px–430px:
+
+Container:
+- padding-inline: 14px–16px
+- section gap: 18px–22px
+- no horizontal overflow
+- max-width: 100%
+- content should feel compact but not crowded
+
+Cards:
+- border-radius: 18px–22px
+- padding: 14px–16px
+- background: rgba(8, 15, 28, 0.82)
+- border: 1px solid rgba(255,255,255,0.08)
+- subtle shadow only
+- no giant empty areas
+
+==============================
+HEADER
+==============================
+
+Admin header should be compact on mobile:
+
+- “Admin Dashboard” clear and strong
+- subtitle smaller and muted
+- menu button aligned properly
+- no floating/misaligned burger
+- no overlap with cards
+
+Typography:
+- title: 26px–30px mobile
+- subtitle: 13px–14px
+- line-height clean
+
+==============================
+TABS / NAV
+==============================
+
+Tabs must be mobile-friendly:
+
+- horizontal scroll
+- no squeezed text
+- active tab clearly highlighted
+- icons aligned with text
+- tap target minimum 44px
+- hide scrollbar visually if possible
+- no clipping on the right
+
+Style:
+- pill-style tabs
+- active tab blue gradient
+- inactive tabs glass dark
+- smooth scroll-snap optional
+
+==============================
+METRIC CARDS
+==============================
+
+Stats cards must look balanced.
+
+Mobile:
+- 2-column grid
+- gap: 12px
+- equal height
+- min-height: 108px
+- consistent icon top-left
+- number large
+- label clear
+- status hint optional
+
+Suggested hierarchy:
+- icon 34–40px
+- number 28–34px
+- label 12–13px
+- optional trend badge small
+
+Odd card:
+- span full width elegantly
+OR
+- create a clean “Alerts” full-width card
+
+Important:
+No awkward half-empty card at the bottom.
+
+Cards to polish:
+- Total Clients
+- Upcoming
+- Today
+- Completed month
+- Expiring soon
+- Expired packages
+- Pending renewals
+- Pending extensions
+- Low-session clients
+
+Use color semantics:
+- blue = neutral/info
+- green = positive/completed
+- amber = warning/expiring
+- red = expired/urgent
+- cyan = upcoming/schedule
+
+Do NOT change values or calculations.
+
+==============================
+TODAY SUMMARY STRIP
+==============================
+
+Add/upgrade a compact summary strip at top:
+
+Example:
+“Today: 1 session • 2 upcoming • 0 urgent alerts”
+
+Style:
+- one-line premium glass card
+- small icons
+- readable at a glance
+- no data logic change; use existing values only
+
+==============================
+UPCOMING SESSIONS
+==============================
+
+Current section feels messy. Redesign it.
+
+Each session row should have:
+
+Left:
+- date badge fixed size
+- month small
+- day large
+
+Center:
+- client name bold
+- time + phone muted
+- truncate long names gracefully
+
+Right:
+- status badge
+- optional chevron
+
+Mobile row:
+display:flex;
+align-items:center;
+gap:12px;
+min-height:72px;
+
+Rules:
+- no clipping
+- no row overflow
+- long names truncate with ellipsis
+- status badge must not disappear off-screen
+- phone should stay readable but muted
+- rows separated by subtle divider or card spacing
+
+Add “View all” only if it fits properly.
+If it overflows on mobile, move it below the title or hide it.
+
+==============================
+QUICK ACTIONS
+==============================
+
+Quick actions should look premium, not raw buttons.
+
+Convert to action cards:
+
+Each action:
+- full width
+- height 52–58px
+- rounded 14–16px
+- icon left
+- label
+- optional chevron right
+- subtle border
+- hover/tap state
+
+Actions:
+- View & edit clients
+- Manage bookings
+- Sessions & packages
+- Off days, blocked hours, profile
+- View public site
+
+Touch target:
+minimum 44px.
+
+Spacing:
+gap 10px–12px.
+
+==============================
+ALERTS / WARNINGS
+==============================
+
+Expiring/expired/low-session data should appear as clear alerts.
+
+If count = 0:
+- keep it subtle
+- do not create visual noise
+
+If count > 0:
+- show amber/red accent
+- clear label
+- tap target to relevant section
+
+==============================
+TYPOGRAPHY SYSTEM
+==============================
+
+Use consistent typography:
+
+Section title:
+- 20px–24px mobile
+- font-weight 700
+
+Card number:
+- 30px–36px
+- font-weight 700–800
+
+Card label:
+- 12px–14px
+- color muted
+- line-height 1.3
+
+Body text:
+- 13px–15px
+- line-height 1.45
+
+Avoid oversized text that breaks cards.
+
+==============================
+SPACING SYSTEM
+==============================
+
+Use consistent spacing tokens:
+
+- xs: 6px
+- sm: 10px
+- md: 14px
+- lg: 18px
+- xl: 24px
+
+No random margins.
+
+Reduce excessive empty vertical space.
+
+==============================
+RESPONSIVE BREAKPOINTS
+==============================
+
+Test and tune:
+
+Mobile:
+- 360x800
+- 375x812
+- 390x844
+- 412x915
+- 430x932
+
+Tablet:
+- 768x1024
+
+Laptop:
+- 1366x768
+- 1440x900
+
+Desktop:
+- 1920x1080
+
+Rules:
+- mobile: app-like stacked layout
+- tablet: 2-column / spacious
+- desktop: professional dashboard grid
+
+==============================
+SCROLL BEHAVIOR
+==============================
+
+- smooth vertical flow
+- no sticky elements covering content
+- no horizontal page scroll
+- tabs can scroll horizontally only inside their own container
+- safe bottom spacing for mobile browser nav
+
+==============================
+ACCESSIBILITY
+==============================
+
+- readable contrast
+- tap targets minimum 44px
+- focus states visible
+- icons not used as only meaning
+- no tiny unreadable labels
+
+==============================
+PERFORMANCE
+==============================
+
+- CSS-first
+- no heavy animations
+- no new large libraries unless already installed
+- no unnecessary re-renders
+- no API changes
+- no skeleton flicker
+
+==============================
+IMPLEMENTATION NOTES
+==============================
+
+Find Admin Dashboard components:
+- AdminDashboard
+- AdminOverview
+- AdminStats
+- UpcomingSessions
+- QuickActions
+- AdminTabs
+
+Refactor styling safely:
+- use CSS/Tailwind classes
+- keep data props same
+- keep component logic same
+- only change markup structure if required for better responsive layout
+
+If using Tailwind:
+- use mobile-first classes
+- sm/md/lg carefully
+- use grid-cols-2 mobile for stats
+- lg:grid-cols-4 desktop
+- gap-3 mobile, gap-4 desktop
+- rounded-2xl
+- bg-slate-950/70
+- border-white/10
+- shadow-black/20
+
+==============================
+DO NOT MODIFY
+==============================
+
+Do NOT change:
+- public homepage
+- hero
+- sign in/out
+- booking
+- clients
+- packages
+- session deduction logic
+- payments
+- emails
+- API contracts
+- database schema
+- Neon data
+- auth/session security
+
+==============================
+VALIDATION CHECKLIST
+==============================
+
+Before deployment verify:
+
+Mobile:
+- no horizontal scroll
+- tabs usable
+- stats balanced
+- no awkward empty card
+- upcoming sessions readable
+- quick actions premium
+- bottom helper text not clipped
+- all tap targets comfortable
+
+Desktop:
+- layout still professional
+- no oversized mobile cards
+- no broken grid
+
+Function:
+- all buttons still navigate correctly
+- all counts still correct
+- upcoming sessions still correct
+- no console errors
+- no TypeScript errors
+
+==============================
+DEPLOYMENT
+==============================
+
+- Run TypeScript check
+- Run build if available
+- Do not change Neon database
+- If unchanged, report exactly: “Neon unchanged”
+- Commit only Admin Dashboard UI/UX changes
+- Push to GitHub main
+- Wait for Vercel production READY
+- Test live production URL on mobile and desktop
+
+==============================
+FINAL REPORT MUST INCLUDE
+==============================
+
+- exact dashboard files changed
+- what changed visually
+- confirmation no data/API/database/auth changes
+- mobile widths tested
+- desktop widths tested
+- GitHub commit ID
+- Vercel READY confirmation
+- Neon unchanged
+- production test result

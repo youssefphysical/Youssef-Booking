@@ -1,0 +1,212 @@
+ULTRA PRIORITY FIX — AUTH + IMAGE CONTROL + PERFORMANCE
+
+DO NOT TOUCH:
+- booking logic
+- database schema
+- payment
+- admin RBAC
+- APIs contracts
+
+ONLY FIX:
+1) Sign In disappearing (mobile + desktop)
+2) Hero/transformations image clarity & admin control
+3) Frontend performance (lag + scroll + heavy UI)
+
+--------------------------------------------------
+PART 1 — SIGN IN STABILITY (CRITICAL)
+--------------------------------------------------
+
+Root cause:
+Auth UI depends on loading / conditional hiding.
+
+FIX:
+
+1. Remove ANY:
+- return null in auth/header
+- if (loading) return null
+- {!loading && !user && <SignIn />}
+- hidden containers
+
+2. Use SINGLE SOURCE OF TRUTH:
+
+const isAuthenticated = Boolean(user)
+
+return (
+  <div className="auth-area">
+    {isAuthenticated ? (
+      <UserMenu user={user} />
+    ) : (
+      <SignInButton />
+    )}
+  </div>
+)
+
+3. Treat ALL these as guest:
+- user === null
+- status loading
+- API 401
+
+→ ALWAYS show Sign In
+
+4. Mobile FIX:
+- Sign In MUST be visible in header (not only menu)
+- Also duplicate inside mobile menu (first item)
+
+5. Ensure visibility:
+- header z-index > hero
+- no opacity: 0
+- no pointer-events: none
+- no overflow clipping
+
+6. After ANY fetch:
+setLoading(false)
+
+7. Validation:
+- refresh 10x → Sign In never disappears
+- wait 5s → still visible
+- mobile & desktop OK
+
+--------------------------------------------------
+PART 2 — IMAGE CONTROL (ADMIN = FULL POWER)
+--------------------------------------------------
+
+Goal:
+Admin can FULLY control how image looks (not just upload)
+
+1. Upgrade ImageCropper:
+
+Add controls:
+- zoom (0.8 → 2.0)
+- position (drag X/Y)
+- rotate (-10 → +10 deg)
+- brightness (0.9 → 1.2)
+- contrast (0.95 → 1.2)
+- sharpness (CSS filter)
+- overlay darkness (0 → 60%)
+
+2. Save metadata per image:
+
+{
+  zoom,
+  x,
+  y,
+  rotate,
+  brightness,
+  contrast,
+  overlayOpacity
+}
+
+3. Apply in frontend:
+
+style={{
+  transform: `scale(${zoom}) translate(${x}px, ${y}px) rotate(${rotate}deg)`,
+  filter: `brightness(${brightness}) contrast(${contrast})`,
+}}
+
+4. Hero clarity FIX:
+
+- REMOVE heavy dark overlay (too aggressive)
+- USE gradient:
+
+background:
+linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%)
+
+- Keep subject visible (face/body)
+
+5. Add sharp rendering:
+
+img {
+  image-rendering: auto;
+  backface-visibility: hidden;
+}
+
+6. Use better formats:
+
+- Prefer WebP
+- fallback JPEG
+
+--------------------------------------------------
+PART 3 — PERFORMANCE (SITE HEAVY FIX)
+--------------------------------------------------
+
+1. Hero image loading:
+
+FIRST SLIDE ONLY:
+- loading="eager"
+- fetchpriority="high"
+
+OTHERS:
+- loading="lazy"
+
+2. Add skeleton instead of blank:
+
+<div class="hero-skeleton shimmer" />
+
+3. Remove expensive effects:
+
+- ❌ backdrop-blur (heavy)
+- ❌ big box-shadow
+- ❌ multiple overlays stacked
+
+Replace with:
+- simple gradient
+- light glow
+
+4. Scroll smoothness:
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+}
+
+5. Prevent layout shift:
+
+.hero {
+  min-height: 70vh;
+  max-height: 82vh;
+}
+
+6. GPU acceleration:
+
+.hero-image {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+7. Reduce JS re-renders:
+
+- memoize hero slider
+- avoid state updates on scroll
+
+--------------------------------------------------
+PART 4 — FINAL UI POLISH
+--------------------------------------------------
+
+- Make CTA glow clean (not heavy)
+- Increase text contrast
+- reduce blur everywhere
+- keep Tron style but LIGHT
+
+--------------------------------------------------
+DEPLOY STEPS
+--------------------------------------------------
+
+- commit changes
+- push to GitHub main
+- wait Vercel READY
+- test production URL (not dev)
+
+--------------------------------------------------
+FINAL REPORT MUST INCLUDE
+--------------------------------------------------
+
+- root cause of Sign In disappearing
+- exact fix location (file/component)
+- image control system added
+- performance improvements applied
+- mobile refresh test result
+- GitHub commit ID
+- Vercel READY confirmation

@@ -1,0 +1,163 @@
+FINAL HERO ULTRA-SMOOTH OPTIMIZATION (TEXT + IMAGE + FONT)
+
+CRITICAL:
+Do NOT touch auth, sign-in logic, booking, admin, APIs, database, or routing.
+Only improve HERO animation, text behavior, font, and smoothness.
+
+------------------------------------
+
+1) REMOVE FAKE CURSOR ISSUE
+
+- Remove the static blinking cursor "|" from center of screen.
+- Cursor must ONLY appear at end of text while typing.
+- After typing finishes → cursor fades out smoothly (no blinking stuck in middle).
+- Never render cursor separately from text container.
+
+------------------------------------
+
+2) MAKE TYPEWRITER FAST + PREMIUM
+
+Replace current slow typing with:
+
+- Speed: 25–35ms per character (faster, premium feel)
+- No lag between characters
+- Use easing (not linear feeling)
+
+Behavior:
+- Headline types smoothly in ~0.8–1.2s max
+- No pauses mid-word
+- No jump cuts
+
+IMPORTANT:
+Do NOT re-render React state on every character (this causes lag)
+→ Instead:
+- Pre-split text OR
+- Use CSS steps() OR
+- Use requestAnimationFrame optimized loop
+
+------------------------------------
+
+3) ULTRA SMOOTH TEXT ANIMATION
+
+Add cinematic feel:
+
+- opacity: 0 → 1
+- transform: translateY(10px → 0)
+- slight blur: blur(6px → 0)
+
+Timing:
+- Badge: 300ms
+- Headline: typing (main)
+- Subheadline: fade + slight delay 200ms after headline
+- Buttons: fade + slide after text completes
+
+NO:
+- layout shifts
+- jumping text
+- reflow
+
+------------------------------------
+
+4) FIX IMAGE STUTTER / FREEZE
+
+Current issue: image feels like it "stops then continues"
+
+Fix:
+
+- Ensure images are already preloaded
+- Use:
+  - will-change: transform, opacity
+  - transform: translateZ(0)
+  - backface-visibility: hidden
+
+- Animation:
+  opacity only (NO scale jumps)
+
+- Duration:
+  800–1200ms ease-out
+
+- Ensure:
+  requestAnimationFrame OR CSS transition only
+  NOT setInterval heavy loops
+
+------------------------------------
+
+5) SLIDE TRANSITION = BUTTER SMOOTH
+
+When slide changes:
+
+OLD:
+- fade out (300ms)
+
+NEW:
+- start fade in immediately (overlap)
+
+No gap between them.
+
+------------------------------------
+
+6) PREMIUM FONT (VERY IMPORTANT)
+
+Replace current font with:
+
+Primary:
+- "Inter Tight" OR "Plus Jakarta Sans"
+
+Backup:
+- system-ui, -apple-system
+
+Headline style:
+- font-weight: 600–700
+- letter-spacing: -0.5px
+- line-height: 1.1
+
+Subheadline:
+- font-weight: 400–500
+- opacity slightly reduced
+
+Make it feel:
+Apple / Stripe / Linear level quality
+
+------------------------------------
+
+7) PERFORMANCE RULES
+
+- No heavy libraries
+- No framer-motion if causing lag
+- No re-render loops
+- Keep everything GPU accelerated
+
+------------------------------------
+
+8) MOBILE PRIORITY
+
+- Must run smooth on mobile (60fps)
+- No stutter
+- No delayed typing
+- No blocking JS
+
+------------------------------------
+
+9) FINAL VALIDATION
+
+Test on production:
+
+- Open site → hero loads instantly (no flash)
+- Text typing feels fast + smooth
+- Cursor behaves correctly
+- No freezing image
+- Slide transition buttery smooth
+- No lag on scroll
+
+------------------------------------
+
+DEPLOY:
+Commit → push → wait Vercel READY → test mobile
+
+------------------------------------
+
+FINAL REPORT MUST INCLUDE:
+- Typing speed used
+- Font applied
+- Animation method (CSS / RAF)
+- FPS stability result

@@ -1,0 +1,147 @@
+FIX PHONE COUNTRY SELECTOR FLAGS + PHONE AUTOFILL NORMALIZATION
+
+Problem:
+1. In the phone country selector, country flags are not displayed. It only shows text codes like AE / SA / EG.
+2. When Chrome autofills a saved phone number, it may insert the full international number including country code into the phone input, while the country code is already selected separately. This creates duplicated country code risk.
+
+Goal:
+Make the phone input professional and reliable.
+
+Scope:
+UI + phone input handling only.
+
+Do NOT modify:
+- booking logic
+- auth logic
+- admin security
+- package/session logic
+- i18n structure
+- database schema unless absolutely required
+- Neon unless required
+
+PART 1 — COUNTRY FLAGS IN PHONE SELECTOR
+
+Add stable SVG flag rendering to the phone country selector.
+
+Use the same approach as the language selector:
+- Use SVG flag assets, not emoji flags
+- Display flag in:
+  - selected country button
+  - dropdown list
+  - search results
+
+Countries currently shown must have flags, including:
+- AE United Arab Emirates
+- SA Saudi Arabia
+- EG Egypt
+- QA Qatar
+- KW Kuwait
+- BH Bahrain
+- OM Oman
+- JO Jordan
+
+Also apply to any other countries already supported by the selector.
+
+Use format:
+[flag] Country Name     +Code
+
+Keep layout clean on desktop and mobile.
+
+PART 2 — PHONE NUMBER NORMALIZATION
+
+The phone input must store/display only the local number when a country code is already selected.
+
+Examples:
+
+Selected country: AE +971
+User/autofill enters:
++971505394754
++971 50 539 4754
+00971505394754
+971505394754
+
+The input should normalize to:
+50 539 4754
+
+Selected country: Egypt +20
+User/autofill enters:
++201554374472
+00201554374472
+201554374472
+
+The input should normalize to:
+15 5437 4472
+
+Rules:
+- Strip selected country calling code from the phone input if present
+- Strip leading 00 international prefix
+- Strip leading + international prefix
+- Keep only local number in the visible phone field
+- Final full phone number should be constructed as:
+  selectedCountryCode + normalizedLocalNumber
+
+Do NOT allow duplicated country code.
+
+PART 3 — AUTOFILL HANDLING
+
+Handle:
+- onChange
+- onBlur
+- Chrome autofill
+- pasted phone numbers
+
+If autofilled number contains a country code:
+- Detect matching country code if possible
+- Auto-select that country
+- Put only local number into the input
+
+Example:
+Autofill: +971505394754
+→ country = AE +971
+→ input = 50 539 4754
+
+Example:
+Autofill: +201554374472
+→ country = EG +20
+→ input = 15 5437 4472
+
+PART 4 — VALIDATION
+
+Validate final phone number as:
+countryCode + localNumber
+
+Show clean user-friendly errors only:
+- “Please enter a valid phone number.”
+
+No technical errors.
+
+PART 5 — I18N
+
+All new visible text must use existing translation keys.
+Languages:
+EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+PART 6 — TESTING
+
+Test:
+- Manual phone typing
+- Paste full number with +971
+- Paste full number with 00971
+- Chrome autofill saved UAE number
+- Chrome autofill saved Egypt number
+- Country selector flags on desktop
+- Country selector flags on mobile
+- Registration still works
+- Phone saved without duplicated country code
+
+PART 7 — DEPLOYMENT
+
+- Run TypeScript check
+- Commit changes
+- Push to GitHub main
+- Wait for Vercel auto-deploy
+- Confirm production READY
+- Verify live production URL
+
+Final result:
+Phone country selector shows proper flags, and phone numbers never duplicate country codes.

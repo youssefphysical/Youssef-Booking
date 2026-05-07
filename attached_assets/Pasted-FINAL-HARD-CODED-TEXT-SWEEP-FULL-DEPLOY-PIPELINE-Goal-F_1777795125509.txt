@@ -1,0 +1,125 @@
+FINAL HARD-CODED TEXT SWEEP + FULL DEPLOY PIPELINE
+
+Goal:
+Fix any remaining hardcoded user-facing text across the entire app so all 10 languages work perfectly, then deploy safely.
+
+---
+
+PART 1 — SCAN FIRST (NO CHANGES YET)
+
+1. Scan all .tsx files for visible hardcoded text not wrapped in t().
+2. Produce a short report:
+   - file name
+   - exact text
+   - mark: (REAL USER TEXT) or (FALSE POSITIVE)
+
+DO NOT MODIFY ANYTHING BEFORE THIS REPORT.
+
+---
+
+PART 2 — FIX ONLY REAL USER TEXT
+
+Fix ONLY texts that are:
+- visible to users
+- UI content (buttons, paragraphs, labels, messages)
+
+DO NOT TOUCH:
+- code variables
+- classNames
+- routes
+- IDs
+- backend logic
+- admin logic
+- database queries
+- Neon setup
+- auth/security
+
+---
+
+PART 3 — TRANSLATION
+
+For every real text:
+
+1. Create or reuse translation keys
+2. Add translations for ALL 10 languages:
+   - EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+3. Quality rules:
+   - Native-level wording
+   - Premium tone
+   - Natural, not Google Translate
+   - Fitness/business context
+
+---
+
+IMPORTANT BRAND RULE (DO NOT TRANSLATE THESE):
+- Youssef Ahmed
+- Youssef Fitness
+- WhatsApp
+- Instagram
+- InBody
+- Dubai
+
+---
+
+CRITICAL FIX:
+Fix the About/Hero paragraph:
+
+"Youssef Ahmed provides premium personal training services in Dubai..."
+
+Make it fully translated across ALL languages (currently broken).
+
+---
+
+PART 4 — VALIDATION
+
+- Run i18n parity check (all languages same keys)
+- Ensure ZERO missing keys
+- Ensure ZERO fallback English in UI
+- Test switching between all 10 languages
+- Check RTL for Arabic
+
+---
+
+PART 5 — BUILD & DEPLOY
+
+1. TypeScript check:
+   npx tsc --noEmit (must be clean)
+
+2. Commit changes:
+   clear message like:
+   "fix: remove remaining hardcoded UI text + full i18n coverage"
+
+3. Push to GitHub main
+
+4. Deployment:
+   - Vercel auto-deploy via GitHub webhook
+   - Ensure deployment status = READY
+
+5. Neon:
+   - DO NOT modify database
+   - DO NOT touch schema
+   - Only confirm no errors in API after deploy
+
+---
+
+PART 6 — FINAL VERIFICATION
+
+- Open production (Vercel URL)
+- NOT local / NOT preview only
+- Verify:
+  ✔ all pages translate correctly
+  ✔ no English leaks
+  ✔ booking works
+  ✔ admin works
+  ✔ policies correct
+  ✔ WhatsApp button correct in all languages
+
+---
+
+FINAL RESULT REQUIRED:
+
+ZERO hardcoded user-facing English text
+10/10 languages fully working
+Production live and stable
+NO regressions

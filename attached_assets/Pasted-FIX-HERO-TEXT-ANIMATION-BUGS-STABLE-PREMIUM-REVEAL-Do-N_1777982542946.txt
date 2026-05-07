@@ -1,0 +1,107 @@
+FIX HERO TEXT ANIMATION BUGS — STABLE PREMIUM REVEAL
+
+Do NOT touch auth, Sign In, booking, admin, database, APIs, hero image loading, hero image clarity, or image slider.
+Only fix hero text animation and mobile text layout.
+
+Observed bugs from production video:
+1. During text change, the headline disappears and only the blue cursor remains in the middle.
+2. CTA buttons disappear/reappear with the text animation, causing visual jank.
+3. Headline sometimes appears clipped/unfinished like “Your Transformat...”.
+4. Slide text reset is abrupt instead of smooth.
+5. Mobile hero content spacing feels unstable.
+
+Required fix:
+
+1. REMOVE TYPEWRITER CURSOR COMPLETELY
+- Remove the blue vertical cursor entirely.
+- No blinking cursor.
+- No cursor element.
+Reason: it is causing a broken visual state when the text resets.
+
+2. REPLACE TYPEWRITER WITH MASK REVEAL
+Do not type real characters one by one.
+Use a premium fake typewriter / reveal effect:
+
+- Full text is always present in DOM.
+- Reveal it with CSS mask, clip-path, or opacity/transform.
+- No per-character React state.
+- No setInterval per character.
+- No cursor.
+
+Preferred:
+Headline:
+opacity 0 → 1
+clip-path inset(0 100% 0 0) → inset(0 0 0 0)
+transform translateY(8px) → translateY(0)
+
+Duration:
+500–700ms
+
+Badge:
+fade in 250ms
+
+Subheadline:
+fade + translateY 300–400ms
+
+Buttons:
+KEEP BUTTONS ALWAYS VISIBLE after first load.
+Do not hide buttons on every slide text change.
+
+3. KEEP OLD TEXT UNTIL NEW TEXT IS READY
+On slide change:
+- Old text fades out for 200ms.
+- New text fades/reveals in for 500–700ms.
+- Never show an empty headline area.
+- Never show cursor-only state.
+- No blank text frame.
+
+4. FIX MOBILE HEADLINE CLIPPING
+- Reserve stable headline height:
+  min-height enough for 2 lines on mobile.
+- Do not use overflow hidden on the whole headline container if it clips wrapped text.
+- If using clip-path/mask, apply it to an inner inline wrapper, not the full multi-line container.
+- Allow proper wrapping.
+- Full headline must remain visible.
+
+5. STABILIZE CTA BUTTONS
+- Buttons should not re-animate on every character/slide.
+- Buttons can have a one-time initial fade on page load only.
+- After that, keep them visible and stable.
+- No jumping.
+
+6. MOBILE HERO LAYOUT
+- Keep hero content inside the image area.
+- Add safe bottom padding.
+- Ensure blue section below does not overlap hero text.
+- Hero content should not jump during slide/text change.
+
+7. PERFORMANCE
+- Animate only opacity, transform, clip-path/mask.
+- No blur animation.
+- No layout animation.
+- No heavy JS loops.
+- No new libraries.
+
+8. VALIDATION
+Test production mobile for 3 full cycles:
+- No cursor appears.
+- No empty headline moment.
+- No clipped headline.
+- Buttons remain stable.
+- Text change feels smooth.
+- Images remain smooth.
+- No auth changes.
+
+Deploy:
+- TypeScript check.
+- Commit.
+- Push GitHub main.
+- Wait Vercel READY.
+- Test production mobile.
+
+Final report must include:
+- Cursor removed confirmation.
+- Typewriter replaced with mask/reveal confirmation.
+- Mobile headline clipping fix.
+- CTA stability fix.
+- 3-cycle mobile production test result.

@@ -1,0 +1,271 @@
+NEXT COMPLETE BUSINESS UPGRADE — NO PAYMENT SYSTEM NOW
+
+Goal:
+Upgrade the platform with package expiry, renewal requests, WhatsApp request flows, reminders, admin control, no-show tracking, and dashboard analytics.
+
+IMPORTANT:
+Do NOT add Stripe, Tap, checkout, card payment, or online payment system now.
+Payment confirmation remains manual by the trainer.
+
+Do NOT break:
+- booking
+- session deduction
+- email notifications
+- admin security
+- i18n
+- Neon
+- GitHub/Vercel deployment
+
+------------------------------------
+1. PACKAGE EXPIRY SYSTEM
+------------------------------------
+
+Add admin-controlled:
+- packageStartDate
+- packageExpiryDate
+
+Package status:
+- Active
+- Expiring Soon
+- Expired
+- Completed
+
+Rules:
+- Expired package blocks new bookings
+- Completed package blocks new bookings
+- Expiry does NOT delete sessions
+- Admin can extend expiry manually
+
+------------------------------------
+2. RENEWAL REQUEST SYSTEM
+------------------------------------
+
+Client cannot renew automatically.
+
+Client can only:
+Request Renewal
+
+Renewal request status:
+- Pending
+- Approved
+- Rejected
+
+Admin can approve only after manually confirming payment.
+
+If approved:
+- assign selected package
+- reset package session balance
+- set start/expiry date manually
+
+If rejected:
+- keep package inactive
+
+Add package option:
+- 30 Sessions Duo
+- For two clients training together at the same time
+
+------------------------------------
+3. WHATSAPP FLOWS
+------------------------------------
+
+Add WhatsApp buttons with prefilled messages:
+
+A) Request Renewal
+B) Request Expiry Extension
+C) Contact Coach
+
+Messages must include:
+- client name
+- phone
+- package name
+- sessions used
+- sessions remaining
+- expiry date
+- requested package if renewal
+
+Use trainer WhatsApp number from env:
+TRAINER_WHATSAPP_NUMBER
+
+If missing, show admin setup warning.
+
+------------------------------------
+4. EMAIL REMINDERS
+------------------------------------
+
+Keep current booking email system.
+
+Add reminder structure:
+- 12 hours before session
+- 2 hours before session
+
+If Vercel Cron is required:
+- implement reminder service safely
+- document exact Vercel Cron setup
+- do not break production
+
+Trainer reminder goes to:
+youssef.physical@gmail.com
+
+Include:
+- client name
+- phone
+- date/time
+- session focus
+- training goal
+- package
+- session number
+- remaining sessions
+- expiry date
+
+------------------------------------
+5. NO-SHOW / LATE TRACKING
+------------------------------------
+
+Add admin controls:
+- Mark attended
+- Mark no-show
+- Mark late cancel
+
+Rules:
+- no-show counts as used session
+- late cancellation counts as used session unless admin marks as free
+- store reason/note
+
+Show no-show count in admin client profile.
+
+------------------------------------
+6. ADMIN CLIENT NOTES
+------------------------------------
+
+Add internal admin notes per client:
+- injuries
+- preferences
+- goals
+- warnings
+- private trainer notes
+
+Admin-only.
+Never visible to client.
+
+------------------------------------
+7. DASHBOARD ANALYTICS
+------------------------------------
+
+Add simple admin stats:
+- Active clients
+- Sessions today
+- Upcoming sessions
+- Expiring packages
+- Expired packages
+- Pending renewal requests
+- Pending extension requests
+- Low session clients
+
+------------------------------------
+8. CLIENT UI
+------------------------------------
+
+Client dashboard should show:
+- package status
+- sessions used / remaining
+- expiry date
+- expires in X days
+- renewal request button when needed
+- extension request button when expired/near expiry
+
+Show clear rules:
+- Renewals require manual approval after payment confirmation
+- Extensions are not guaranteed and require coach approval
+- Session duration is 1 hour
+- Extra time requires prior agreement and may require extra fees
+
+------------------------------------
+9. POLICY UPDATE
+------------------------------------
+
+Update PT policy wording:
+- No refunds
+- Packages expire by date
+- Unused sessions after expiry are forfeited unless extension approved
+- Renewals require manual approval after payment confirmation
+- Extensions are subject to approval
+- Late cancellation/no-show may count as used session
+- Client is responsible for medical disclosure
+- Trainer is not liable for undisclosed conditions or misuse of advice
+
+Keep tone professional and UAE/international client-friendly.
+
+Simplify registration:
+Use one checkbox:
+"I agree to the Terms, Policies, Privacy Policy, and Medical Disclaimer"
+
+Do not require multiple checkboxes.
+
+------------------------------------
+10. I18N
+------------------------------------
+
+All new text must use translation keys.
+
+Languages:
+EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+No hardcoded English.
+Arabic RTL must remain correct.
+
+------------------------------------
+11. NEON DATABASE
+------------------------------------
+
+Safe additive migration only if required.
+
+Possible tables/fields:
+- renewal_requests
+- extension_requests
+- admin_notes
+- packageStartDate
+- packageExpiryDate
+- packageStatus
+- noShowCount
+- attendanceStatus
+- admin_notifications
+
+Rules:
+- Do NOT delete data
+- Do NOT reset database
+- Do NOT overwrite existing bookings/packages
+- Explain schema changes before applying
+- Apply safe migration only
+
+------------------------------------
+12. TESTING
+------------------------------------
+
+Verify:
+- expired package blocks booking
+- completed package blocks booking
+- renewal request works
+- admin approval works
+- extension request WhatsApp works
+- admin can extend expiry
+- no-show tracking works
+- admin notes are private
+- dashboard stats work
+- email reminders structure works
+- all languages work
+- admin security works
+
+------------------------------------
+13. DEPLOYMENT
+------------------------------------
+
+After implementation:
+1. Run TypeScript/build check
+2. Commit changes
+3. Push to GitHub main
+4. Wait for Vercel auto-deploy
+5. Confirm production is READY
+6. Verify live production URL
+
+Final result:
+Business management system upgraded, no payment system added, Neon safe, GitHub updated, Vercel production stable.

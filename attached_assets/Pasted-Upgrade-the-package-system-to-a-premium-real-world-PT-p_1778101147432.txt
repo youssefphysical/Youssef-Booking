@@ -1,0 +1,217 @@
+Upgrade the package system to a premium real-world PT package management system.
+
+IMPORTANT:
+Do NOT change:
+
+- auth
+- routing
+- APIs
+- existing booking logic
+- dashboard structure
+- Neon database safety
+- Vercel deployment setup
+
+This is a package-management enhancement only.
+
+━━━━━━━━━━━━━━━
+PACKAGE SYSTEM REQUIREMENTS
+━━━━━━━━━━━━━━━
+
+The package system should support these official package types by default:
+
+1. Single Session
+2. 10 Sessions
+3. 20 Sessions
+4. 25 Sessions
+5. Duo 30 Sessions
+6. Custom Package
+
+Remove the confusing current “Standard” logic.
+
+Instead:
+
+- Each package should behave as a real PT package.
+- Admin can fully customize:
+  - paid sessions
+  - bonus sessions
+  - expiry
+  - price
+  - visibility
+  - labels
+  - order
+
+━━━━━━━━━━━━━━━
+BONUS SESSIONS SYSTEM
+━━━━━━━━━━━━━━━
+
+Bonus sessions must be visually separated from paid sessions.
+
+Example display:
+
+20 Sessions
+
++ 3 Bonus Sessions
+
+or:
+
+25 Sessions
+
++ 5 Free Sessions
+
+Requirements:
+
+- Bonus sessions must appear in GREEN.
+- Add a small premium badge:
+  “Bonus by Coach”
+  or
+  “Included Free”
+
+Make the bonus visually attractive and premium.
+
+DO NOT merge bonus sessions into the main session count visually.
+
+Bad:
+25 Sessions
+
+Good:
+20 Sessions
++5 Bonus Sessions
+
+━━━━━━━━━━━━━━━
+PACKAGE CARD DISPLAY
+━━━━━━━━━━━━━━━
+
+Public package cards on homepage must display:
+
+- Package name
+- Paid sessions
+- Bonus sessions (if exists)
+- Total sessions
+- Price
+- Expiry duration
+- Optional short description
+- CTA button
+
+Example:
+
+20 Sessions
++3 Bonus Sessions
+
+Total: 23 Sessions
+AED 5750
+Valid for 60 days
+
+Use premium layout hierarchy.
+
+━━━━━━━━━━━━━━━
+EXPIRY CONTROL
+━━━━━━━━━━━━━━━
+
+Admin must fully control package validity.
+
+Allow:
+
+- days
+- weeks
+- months
+
+Examples:
+
+- 30 days
+- 60 days
+- 3 months
+
+Expiry should:
+
+- display publicly
+- display in client dashboard
+- display in admin dashboard
+- trigger “expiring soon” logic
+
+━━━━━━━━━━━━━━━
+PACKAGE MANAGEMENT
+━━━━━━━━━━━━━━━
+
+Admin can:
+
+- add sessions
+- add bonus sessions
+- extend expiry
+- change expiry
+- edit pricing
+- hide/show package publicly
+- reorder package cards
+
+━━━━━━━━━━━━━━━
+VISUAL REQUIREMENTS
+━━━━━━━━━━━━━━━
+
+Use the same premium dark SaaS style already used across the site.
+
+Requirements:
+
+- perfect mobile responsiveness
+- no overflow
+- no clipped badges
+- equal card heights
+- premium spacing
+- proper typography hierarchy
+- clean glass styling
+
+Bonus session section should:
+
+- stand out visually
+- not feel cheap
+- use subtle green glow
+- remain elegant
+
+━━━━━━━━━━━━━━━
+MOBILE UX
+━━━━━━━━━━━━━━━
+
+Optimize specifically for:
+
+- 360px
+- 375px
+- 390px
+- 412px
+
+Ensure:
+
+- package cards stack beautifully
+- no broken text
+- no compressed pricing
+- no badge overlap
+
+━━━━━━━━━━━━━━━
+IMPORTANT LOGIC
+━━━━━━━━━━━━━━━
+
+Internally:
+
+- system still tracks total sessions correctly
+- bonus sessions are included in usable sessions
+- but visually separated in UI
+
+Example:
+Paid = 20
+Bonus = 3
+Usable total = 23
+
+━━━━━━━━━━━━━━━
+VALIDATION
+━━━━━━━━━━━━━━━
+
+After implementation:
+
+- test mobile
+- test desktop
+- test RTL
+- test long translations
+- test hidden packages
+- test expiry logic
+- test bonus session rendering
+- ensure no layout shift exists
+
+Do NOT redesign unrelated pages.
+Only improve the package system professionally.

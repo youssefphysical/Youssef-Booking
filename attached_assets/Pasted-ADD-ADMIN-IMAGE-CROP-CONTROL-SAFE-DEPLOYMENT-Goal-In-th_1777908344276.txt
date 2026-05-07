@@ -1,0 +1,120 @@
+ADD ADMIN IMAGE CROP CONTROL + SAFE DEPLOYMENT
+
+Goal:
+In the Admin Panel, I need full control over image cropping before saving any uploaded image so it always fits the correct layout and looks professional.
+
+CRITICAL:
+Do NOT break anything in the system.
+This is a UI/UX enhancement only.
+
+Do NOT touch:
+- booking logic
+- auth/login/register
+- admin security
+- packages/sessions
+- email system
+- database structure unless absolutely required
+- Neon DB (no destructive changes)
+
+-------------------------------------
+FEATURE: ADMIN IMAGE CROP CONTROL
+-------------------------------------
+
+1. Crop Modal After Upload:
+When admin uploads any image:
+→ Open a crop editor before saving.
+
+2. Crop Controls:
+- Drag image
+- Zoom in/out
+- Optional rotate (if simple)
+- Reset button
+- Live preview
+- Save cropped version
+- Cancel/change image
+
+3. Aspect Ratio Presets:
+
+Hero / homepage:
+- 16:9
+- 21:9
+
+Profile image:
+- 1:1
+- Circle preview
+
+Transformation images:
+- 4:5
+- 3:4
+- 1:1
+
+General:
+- Free crop option if safe
+
+4. Output:
+- Export optimized image (compressed but high quality)
+- Prevent huge file sizes
+- Keep sharp quality
+- Fully responsive on mobile & desktop
+
+5. Admin Experience:
+- Smooth, fast, premium UI
+- Clear preview before saving
+- Helper text:
+  "Adjust the image to fit the website layout before saving."
+
+6. Security:
+- Admin-only feature
+- Validate file types (jpg/png/webp)
+- Limit file size
+- No internal errors exposed
+
+7. i18n:
+All visible text must use translation keys.
+
+Languages:
+EN, AR, FR, ES, DE, IT, RU, ZH, HI, TR
+
+-------------------------------------
+VALIDATION
+-------------------------------------
+
+- Upload hero image → crop → save → correct display
+- Upload profile image → square/circle → save → correct display
+- Upload transformation → crop → save
+- Works on mobile admin
+- No bugs in existing features
+
+-------------------------------------
+DEPLOYMENT (VERY IMPORTANT)
+-------------------------------------
+
+1. Neon:
+- ONLY modify if needed
+- Use safe additive changes only
+- NEVER delete or reset data
+- If no change needed → say: "Neon unchanged"
+
+2. GitHub:
+- Run TypeScript/build check
+- Commit all changes
+- Push to main branch
+
+3. Vercel:
+- Wait for deployment
+- Confirm production is READY
+- Test feature on live site
+
+-------------------------------------
+FINAL REPORT MUST INCLUDE:
+-------------------------------------
+
+- Neon: changed / unchanged
+- GitHub: commit pushed
+- Vercel: READY
+- Production test result
+
+-------------------------------------
+
+END RESULT:
+Admin can crop images professionally before saving, with zero regressions in the system.

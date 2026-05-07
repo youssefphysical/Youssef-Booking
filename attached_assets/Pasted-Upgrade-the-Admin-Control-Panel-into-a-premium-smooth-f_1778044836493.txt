@@ -1,0 +1,108 @@
+Upgrade the Admin Control Panel into a premium, smooth, fully responsive dashboard.
+
+Main goal:
+Make the control panel clean, consistent, professional, and easy to manage on both mobile and desktop.
+
+1. Layout & Responsiveness
+- Redesign the admin control panel with a consistent dashboard layout.
+- Desktop: use a clean sidebar + main content layout.
+- Mobile: use a compact top header + slide/drawer menu.
+- All cards, buttons, inputs, toggles, textareas, upload sections, and tables must align perfectly.
+- Fix spacing, padding, margins, border-radius, shadows, and section gaps.
+- No overlapping elements.
+- No cut-off text.
+- No broken layout on small screens.
+- Make every admin section responsive.
+
+2. Visual Consistency
+- Keep the dark luxury blue/black theme.
+- Use the same card style everywhere.
+- Use consistent button sizes and colors.
+- Use consistent input height, border color, focus state, and label styling.
+- Use clear section titles and subtitles.
+- Use smooth hover/focus effects.
+- Use premium UI spacing, not crowded.
+
+3. Homepage Content Section
+- Replace Profile Photo URL with image upload system.
+- Admin should upload profile photo directly from mobile/desktop.
+- Show image preview.
+- Upload to Cloudinary or secure cloud storage.
+- Save the returned image URL automatically.
+- Do not show broken image icons.
+- Add clean placeholder if no image exists.
+- Add loading, success, and error states.
+
+4. Hero Slider Control
+- Add upload system for hero slider images.
+- Allow up to 12 images.
+- Show image previews in a clean grid.
+- Allow reorder, delete, enable/disable image.
+- Auto-save safely.
+- Keep slider responsive and smooth on homepage.
+- Images must use object-fit: cover and object-position: center/top.
+- No stretching or bad cropping.
+
+5. Forms & Editing Experience
+- Add clear Save buttons per section.
+- Add “Saved successfully” feedback.
+- Add unsaved changes warning.
+- Keep old data if save/upload fails.
+- Add loading states for every save action.
+- Make textareas bigger and easier to edit on mobile.
+- Add character counters where useful.
+- Prevent accidental deletion with confirmation modal.
+
+6. Admin Sections Organization
+Organize control panel into clear tabs/sections:
+- Homepage Content
+- Hero Slider
+- Profile & Bio
+- Packages & Pricing
+- Bank Details
+- Policies
+- Clients
+- Bookings
+- Transformations
+- Settings
+
+7. Mobile Polish
+- Make all controls easy to tap.
+- Minimum button height 44px.
+- Inputs must not be too small.
+- Cards should fit within screen width.
+- No horizontal scrolling.
+- Sticky save button if needed.
+- Mobile menu should be smooth and not cover content awkwardly.
+
+8. Desktop Polish
+- Use max-width containers for readability.
+- Use grid layout for cards.
+- Keep sections aligned.
+- Add sticky sidebar navigation.
+- Make dashboard feel like a premium SaaS admin panel.
+
+9. Error Handling
+- If an image URL is invalid, show placeholder instead of broken icon.
+- If upload fails, show friendly error message.
+- If database save fails, keep previous data.
+- Add validation for required fields.
+
+10. Performance
+- Compress uploaded images.
+- Lazy-load previews and homepage images.
+- Avoid heavy files.
+- Keep the site fast on mobile.
+
+Deployment:
+After completing the changes:
+- Commit all updates to GitHub.
+- Push the latest version.
+- Deploy/update the production version on Vercel.
+- Verify the live Vercel site works correctly on mobile and desktop.
+- Check homepage, admin panel, image upload, hero slider, and save actions after deployment.
+
+Important:
+Do not break existing booking, login, language, clients, packages, or payment logic.
+Keep all existing data safe.
+Make changes carefully and test before deployment.

@@ -1,0 +1,165 @@
+FINAL MICRO FIX ONLY — DESKTOP AUTH LABEL + ABOUT TEXT HYDRATION
+
+CRITICAL:
+Do NOT change hero design.
+Do NOT change hero animation.
+Do NOT change images.
+Do NOT change booking.
+Do NOT change admin.
+Do NOT change database.
+Do NOT change APIs unless absolutely required.
+Do NOT change mobile header unless the same bug exists there.
+
+Only fix these two bugs:
+
+1) Desktop header shows Sign In first, then changes to Sign Out after refresh/loading.
+2) Bottom/About section text changes after refresh/loading.
+
+--------------------------------------------------
+1. DESKTOP AUTH LABEL BUG
+--------------------------------------------------
+
+Problem:
+On desktop hard refresh, the header initially shows Sign In correctly, then after auth hydration it changes to Sign Out even when the user is not truly logged in.
+
+Investigate:
+- Desktop header auth state only.
+- /api/user or auth/me response handling.
+- Cookie/session detection.
+- Any logic treating loading/unknown/error as authenticated.
+- Any static Sign Out button rendered on desktop.
+- Any condition like:
+  loading → Sign Out
+  authChecked → Sign Out
+  user object exists but invalid/empty → Sign Out
+
+Correct behavior:
+- Logged out / guest / 401 / no valid user → show Sign In only.
+- Logged in valid user → show Sign Out/Profile only.
+- Never show Sign Out unless there is a confirmed authenticated user with valid id/email.
+- Never switch from Sign In to Sign Out after refresh unless user is actually authenticated.
+
+Implementation:
+Create a strict desktop auth check:
+
+const isAuthenticated =
+  Boolean(user && (user.id || user.email));
+
+If API returns 401:
+- set user = null
+- set authenticated = false
+- show Sign In
+
+If API fails:
+- treat as guest
+- show Sign In
+
+Do NOT treat loading as authenticated.
+
+Validation:
+- Desktop logged out hard refresh 10 times:
+  Sign In stays Sign In after 1s, 3s, 5s.
+- Desktop logged in:
+  Sign Out/Profile appears correctly.
+- Mobile:
+  Check if same bug exists. If yes, apply the same strict authenticated check.
+  If no, leave mobile unchanged.
+
+--------------------------------------------------
+2. ABOUT / BOTTOM TEXT CHANGES AFTER REFRESH
+--------------------------------------------------
+
+Problem:
+At the bottom/About section, text appears one way on first paint, then changes after refresh/loading/hydration.
+
+This likely means:
+- fallback text differs from loaded text
+- hardcoded text differs from i18n text
+- API-loaded content replaces default content
+- hydration mismatch
+- duplicate About components
+- different desktop/mobile copy source
+
+Investigate:
+- About section component
+- homepage bottom content
+- any fallback/default copy
+- i18n keys used there
+- admin/API content loaded after mount
+- desktop/mobile versions
+
+Correct behavior:
+- Text must be stable.
+- First paint text and after-load text must be identical.
+- No copy should change after hydration unless admin content is intentionally different.
+- If admin/API content exists, use the same content as the initial fallback OR do not render fallback text until correct content is known.
+- Remove duplicate/old fallback copy.
+
+Fix:
+- Ensure About text uses ONE source of truth only.
+- Prefer existing i18n/admin content consistently.
+- Do not show temporary fallback text that later gets replaced by different wording.
+- If loading is needed, show a neutral skeleton/placeholder, not different text.
+
+Validation:
+- Desktop hard refresh 10 times:
+  About/bottom text does not change after 1s, 3s, 5s.
+- Mobile hard refresh:
+  Check same issue and fix if present.
+- Language switching still works.
+- No hardcoded English introduced.
+
+--------------------------------------------------
+3. SAFETY
+--------------------------------------------------
+
+Do NOT touch:
+- Hero animation/text
+- Hero images
+- Sign In mobile button if it is working correctly
+- Booking rules
+- Admin controls
+- Neon schema
+- Email system
+- Packages/sessions
+
+--------------------------------------------------
+4. TESTING
+--------------------------------------------------
+
+Run:
+- TypeScript check
+- i18n parity check if any text keys changed
+
+Production validation:
+- Desktop logged out refresh: Sign In remains Sign In.
+- Desktop logged in refresh: Sign Out/Profile correct.
+- Mobile checked for same auth issue.
+- About text remains identical before and after hydration.
+- Mobile checked for About text issue.
+- No hero changes.
+
+--------------------------------------------------
+5. DEPLOYMENT
+--------------------------------------------------
+
+Neon:
+- Do not change Neon.
+- Report “Neon unchanged.”
+
+GitHub:
+- Commit only this micro-fix.
+- Push to main.
+
+Vercel:
+- Wait for production READY.
+- Test live production URL.
+
+Final report must include:
+- Desktop auth bug root cause.
+- Exact component fixed.
+- Whether mobile was affected or unchanged.
+- About text root cause.
+- Exact About component/source fixed.
+- Confirmation no hero changes were made.
+- Production hard-refresh test result.

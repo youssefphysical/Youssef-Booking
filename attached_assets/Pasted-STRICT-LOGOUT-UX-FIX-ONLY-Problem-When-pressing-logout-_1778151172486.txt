@@ -1,0 +1,201 @@
+STRICT LOGOUT UX FIX ONLY
+
+Problem:
+When pressing logout, a large toast/message appears saying “Logged out” and stays too long. Logout also feels slow.
+
+Goal:
+Replace the current logout feedback with a clean premium confirmation flow:
+- Show a compact confirmation modal before logout
+- Buttons must be translated in ALL supported languages
+- If user confirms, logout immediately
+- Remove the long “Logged out” toast completely
+
+CRITICAL:
+Do NOT touch:
+- homepage design
+- booking flow
+- package system
+- admin permissions
+- database / Neon
+- APIs unrelated to auth
+- dashboard layout
+- translations unrelated to logout
+
+====================================
+1. PREMIUM LOGOUT CONFIRMATION
+====================================
+
+When user taps:
+- Logout
+- Sign out
+- Exit session
+
+Show a compact premium modal.
+
+English:
+Title:
+“Log out?”
+
+Message:
+“Are you sure you want to log out?”
+
+Buttons:
+- Cancel
+- Yes, log out
+
+Arabic:
+Title:
+“تسجيل الخروج؟”
+
+Message:
+“هل أنت متأكد أنك تريد تسجيل الخروج؟”
+
+Buttons:
+- إلغاء
+- نعم، تسجيل الخروج
+
+Use the same professional tone for ALL supported languages:
+- English
+- Arabic
+- French
+- Spanish
+- German
+- Italian
+- Portuguese
+- Turkish
+- Russian
+- Urdu
+- Hindi
+- Chinese
+
+IMPORTANT:
+- Natural professional translations only
+- NOT robotic translation
+- Arabic + Urdu must be proper RTL
+- Modal spacing and alignment must remain perfect in RTL
+
+====================================
+2. REMOVE LONG TOAST
+====================================
+
+Remove:
+- “Logged out”
+- any long success toast
+- any oversized notification
+
+If feedback is needed:
+Use:
+- no toast
+OR
+- ultra-short subtle feedback under 700ms
+
+NO large popup.
+
+====================================
+3. FIX SLOW LOGOUT
+====================================
+
+Audit the logout flow and optimize it.
+
+Requirements:
+- clear token/session immediately
+- avoid unnecessary API calls
+- avoid unnecessary refetches
+- avoid full heavy reload before redirect
+- redirect instantly after logout
+- prevent duplicate logout requests
+
+Logout should feel:
+- instant
+- smooth
+- native-app quality
+
+====================================
+4. BUTTON LOADING STATE
+====================================
+
+After pressing:
+“Yes, log out”
+
+Do:
+- disable buttons
+- show small loading state
+- prevent double click
+
+Examples:
+- “Logging out…”
+- localized in every language
+
+====================================
+5. FULL I18N SUPPORT
+====================================
+
+Add logout modal translation keys to:
+- all translation files
+- all supported languages
+
+Include:
+- title
+- description
+- cancel button
+- confirm button
+- loading text
+
+Fallback:
+English only if translation missing.
+
+====================================
+6. RTL VALIDATION
+====================================
+
+Validate:
+- Arabic
+- Urdu
+
+Ensure:
+- buttons align correctly
+- icon spacing correct
+- modal text aligned correctly
+- no overflow
+- no clipped text
+
+====================================
+7. QA CHECK
+====================================
+
+Test:
+- mobile
+- desktop
+- admin
+- client
+- English
+- Arabic
+- Urdu
+
+Pass criteria:
+- modal appears instantly
+- Cancel closes modal
+- Yes logs out immediately
+- no large toast appears
+- logout feels fast
+- no broken auth state
+- homepage/sign-in appears correctly afterward
+
+====================================
+8. DEPLOYMENT
+====================================
+
+- TypeScript clean
+- No Neon changes
+- Push to GitHub main
+- Deploy to Vercel
+- Verify production works
+
+Final report must include:
+- files changed
+- what caused slow logout
+- confirmation modal status
+- all language support status
+- RTL validation status
+- GitHub commit ID
+- Vercel READY

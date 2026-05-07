@@ -1,0 +1,114 @@
+STRICT IMAGE CROPPER + FULL QUALITY UPLOAD FIX
+
+CRITICAL:
+Do NOT touch auth, booking, homepage design, hero text, animations, buttons, layout, or database logic.
+
+ONLY fix image cropping + upload quality.
+
+========================
+PROBLEM:
+========================
+Current image handling is NOT professional:
+
+1. Cannot properly crop from right/left (no full control)
+2. No smooth zoom + drag experience
+3. Crop result ≠ what user sees
+4. Image loses quality after upload (compressed or blurred)
+5. No real preview before saving
+
+========================
+GOAL:
+========================
+Make image handling behave like Instagram / iPhone:
+
+- Drag image freely (X + Y)
+- Zoom in/out smoothly
+- Crop exactly what user wants
+- Preview final result
+- Upload WITHOUT losing quality
+
+========================
+IMPLEMENTATION:
+========================
+
+1. Replace current crop system with professional library:
+Use:
+react-easy-crop
+
+2. Crop features MUST include:
+- Drag (pan) in all directions
+- Zoom (pinch mobile + scroll desktop)
+- Adjustable zoom range (1 → 3)
+- Smooth movement (no lag / no jump)
+- Stable crop box (does not move randomly)
+
+3. Add LIVE PREVIEW:
+User must see EXACT final result before saving.
+
+4. FIX CROP OUTPUT:
+Use canvas to generate final cropped image:
+
+- Keep original resolution
+- Do NOT downscale
+- Do NOT compress
+- Export using:
+  toBlob("image/jpeg", 1.0)
+
+5. Upload Quality:
+- Keep 100% quality (no compression)
+- Preserve sharpness
+- No blur
+- No resizing unless extremely large (>4000px optional cap)
+
+6. Aspect ratio:
+- Hero images: 16:9
+- Profile: 1:1
+- Others: keep current logic
+
+7. UX:
+- Buttons:
+  - Cancel → discard
+  - Save → apply crop
+- Smooth animation
+- Mobile touch optimized
+- Desktop mouse optimized
+
+========================
+DO NOT:
+========================
+- Do NOT change homepage UI
+- Do NOT change hero animation
+- Do NOT change text
+- Do NOT change backend logic
+- Do NOT change Neon schema unless absolutely required
+
+========================
+VALIDATION:
+========================
+- Upload image
+- Zoom + drag from right side (important)
+- Crop exact area
+- Preview must match final image 100%
+- No quality loss after upload
+- Test mobile + desktop
+
+========================
+DEPLOYMENT:
+========================
+- If Neon unchanged → say "Neon unchanged"
+- TypeScript check
+- Commit ONLY cropper fix
+- Push GitHub main
+- Deploy Vercel
+- Confirm READY
+
+========================
+FINAL REPORT:
+========================
+- What cropper was replaced
+- How quality is preserved
+- Proof preview = final image
+- Neon status
+- GitHub commit ID
+- Vercel READY
+- Mobile + desktop test result

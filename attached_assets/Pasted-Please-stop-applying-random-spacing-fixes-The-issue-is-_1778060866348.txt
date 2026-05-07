@@ -1,0 +1,86 @@
+Please stop applying random spacing fixes. The issue is still the same, so I need you to diagnose the real CSS/layout cause and fix it properly.
+
+Problem description:
+In the hero section, for French and some long LTR languages, the subtitle appears visually stuck to the main headline. It does not have enough breathing space, even after previous margin/gap fixes.
+
+Important:
+- The Arabic RTL version is already good. Do NOT change Arabic.
+- The badge spacing is acceptable now.
+- The main issue is the spacing between the headline and the subtitle in LTR languages, especially French and Portuguese.
+- The subtitle starts too close to the last line of the headline, making the hero look crowded and unprofessional.
+
+What I need you to do:
+1. Inspect the actual DOM structure of the hero section.
+2. Identify what controls the spacing between:
+   - badge
+   - headline
+   - subtitle
+   - CTA buttons
+3. Check if spacing is being cancelled or overridden by:
+   - parent flex gap
+   - child margins
+   - negative margins
+   - absolute positioning
+   - translateY
+   - animation wrapper styles
+   - typewriter wrapper styles
+   - line-height
+   - mobile-specific media queries
+   - slide/carousel container styles
+4. Do not just add another margin blindly.
+5. Fix the root cause using the existing structure or refactor only the hero text stack if needed.
+
+Expected visual result:
+- Badge → headline: small clean gap.
+- Headline → subtitle: clearly visible premium breathing space.
+- Subtitle → buttons: clean and balanced.
+- French and Portuguese must look clean on mobile 390px.
+- No text should feel attached to another text block.
+
+Suggested approach:
+Create one controlled hero text stack layout, for LTR only if needed:
+- Badge wrapper
+- Headline wrapper
+- Subtitle wrapper
+- CTA wrapper
+
+Use one spacing source only:
+- Either parent flex gap
+- OR individual margins
+But not both.
+
+For LTR mobile, aim for:
+- badge to headline: 14px–16px
+- headline to subtitle: 20px–24px
+- subtitle to buttons: 22px–28px
+
+Arabic protection:
+- Do not modify RTL Arabic spacing, layout, or animation.
+- If you need conditional styling, apply it only under LTR:
+  [dir="ltr"] .hero-title + .hero-subtitle { ... }
+
+Safety:
+- Do not touch booking logic.
+- Do not touch login.
+- Do not touch admin panel.
+- Do not touch packages/clients.
+- Do not touch database/data.
+- Do not remove hero slider.
+- Do not remove typewriter animation.
+
+QA required:
+- Test French mobile 390px.
+- Test Portuguese mobile 390px.
+- Test Spanish mobile 390px.
+- Confirm Arabic remains unchanged.
+- Confirm English still looks good.
+- Confirm no horizontal scroll.
+- Confirm no cut-off text.
+
+After fixing:
+- Commit to GitHub.
+- Push latest code.
+- Deploy to Vercel.
+- Verify the live production site on mobile.
+
+Please explain briefly what the root cause was and what exact CSS/component you changed.
