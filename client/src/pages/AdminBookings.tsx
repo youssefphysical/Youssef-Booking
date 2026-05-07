@@ -139,7 +139,7 @@ export default function AdminBookings() {
         />
         <Select value={paymentFilter} onValueChange={setPaymentFilter}>
           <SelectTrigger className="w-44 bg-white/5 border-white/10 h-9" data-testid="select-payment-filter">
-            <SelectValue placeholder="Payment" />
+            <SelectValue placeholder={t("admin.bookings.filterPayment", "Payment")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("admin.bookings.allPayments")}</SelectItem>
@@ -150,7 +150,7 @@ export default function AdminBookings() {
         </Select>
         <Select value={workoutFilter} onValueChange={setWorkoutFilter}>
           <SelectTrigger className="w-44 bg-white/5 border-white/10 h-9" data-testid="select-workout-filter">
-            <SelectValue placeholder="Workout" />
+            <SelectValue placeholder={t("admin.bookings.filterWorkout", "Workout")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("admin.bookings.allWorkouts")}</SelectItem>

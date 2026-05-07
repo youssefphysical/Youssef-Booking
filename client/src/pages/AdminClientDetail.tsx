@@ -208,25 +208,25 @@ export default function AdminClientDetail() {
         <TabsList className="bg-white/5 mb-6 h-auto flex flex-wrap p-1 gap-1">
           <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> Package
+            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackage", "Package")}
           </TabsTrigger>
           <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> Sessions
+            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabSessions", "Sessions")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <HeartPulse size={13} className="mr-1.5" /> Health & Goals
+            <HeartPulse size={13} className="mr-1.5" /> {t("admin.clientDetail.tabHealth", "Health & Goals")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> Progress
+            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress", "Progress")}
           </TabsTrigger>
           <TabsTrigger value="notes" data-testid="tab-detail-notes">
-            <FileText size={13} className="mr-1.5" /> Notes
+            <FileText size={13} className="mr-1.5" /> {t("admin.clientDetail.tabNotes", "Notes")}
           </TabsTrigger>
           <TabsTrigger value="documents" data-testid="tab-detail-documents">
-            <FileCheck2 size={13} className="mr-1.5" /> Documents
+            <FileCheck2 size={13} className="mr-1.5" /> {t("admin.clientDetail.tabDocuments", "Documents")}
           </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
-            <Bell size={13} className="mr-1.5" /> Alerts
+            <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
           </TabsTrigger>
         </TabsList>
 

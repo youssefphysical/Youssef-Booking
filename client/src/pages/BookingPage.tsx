@@ -135,7 +135,9 @@ export default function BookingPage() {
     return map;
   }, [date, dateStr, blocked, existing, isAdmin]);
 
-  const lang = (typeof window !== "undefined" && (localStorage.getItem("lang") || "en")) || "en";
+  // Use the same storage key as the global I18nProvider so the email language
+  // matches the UI language. (Old key "lang" was a stale leftover.)
+  const lang = (typeof window !== "undefined" && (localStorage.getItem("youssef.lang") || localStorage.getItem("lang") || "en")) || "en";
 
   // Defense-in-depth: in addition to slots being disabled in the grid, never
   // allow the bottom CTA / confirmation modal to open if the selected slot is

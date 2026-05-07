@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const src = readFileSync("client/src/i18n/translations.ts", "utf8");
 const lines = src.split("\n");
 
-const langStart = /^\s+(en|ar|fr|es|de|it|ru|zh|hi|tr):\s*\{/;
+const langStart = /^\s+(en|ar|ur|fr|es|pt|de|it|ru|tr|zh|hi):\s*\{/;
 const blocks = [];
 for (let i = 0; i < lines.length; i++) {
   const m = langStart.exec(lines[i]);
