@@ -1697,6 +1697,7 @@ export { WhatsAppButton };
 // =============== BOOKING ELIGIBILITY BANNER ===============
 
 function BookingEligibilityBanner({ userId, user }: { userId: number; user: any }) {
+  const { t } = useTranslation();
   const { data: packages = [] } = usePackages({ userId });
   const list = packages as any[];
   const activePackage = list.find((p) => p.isActive && p.usedSessions < p.totalSessions);
@@ -1724,7 +1725,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
             className="underline text-amber-100"
             data-testid="link-dashboard-whatsapp-help"
           >
-            Contact Youssef →
+            {t("dashboard.contactYoussef", "Contact Youssef →")}
           </a>
         </div>
       </div>
