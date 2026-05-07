@@ -673,6 +673,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       delete updates.vipTierManualOverride;
       delete updates.weeklyFrequency;
       delete updates.role;
+      // SECURITY: trainer/admin-managed lifecycle, consent, and notes fields
+      // must never be self-mutated by clients. Without stripping these, a
+      // client could PATCH their own clientStatus to "active" and bypass the
+      // booking eligibility gate, or tick PAR-Q / waiver / approval flags.
+      delete (updates as any).clientStatus;
+      delete (updates as any).parqCompleted;
+      delete (updates as any).waiverAccepted;
+      delete (updates as any).medicalClearanceNote;
+      delete (updates as any).coachNotes;
+      delete (updates as any).goalNotes;
+      delete (updates as any).communicationNotes;
+      delete (updates as any).adminNotes;
+      delete (updates as any).injuries;
+      delete (updates as any).medicalNotes;
+      delete (updates as any).hasUsedFreeTrial;
     } else {
       // Admin override semantics:
       // - if admin sends `vipTier` directly, mark it as a manual override
@@ -824,6 +839,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Admin-overridden bookings can still go through for manual catch-up.
     if (me.role !== "admin" && packageId) {
       const linkedPkg = await storage.getPackage(packageId).catch(() => undefined);
+      // SECURITY (IDOR): a client must only be able to book against their own
+      // package. Without this, supplying another client's packageId would
+      // consume their session credits at attendance reconciliation.
+      if (linkedPkg && linkedPkg.userId !== targetUserId) {
+        return res.status(403).json({ message: "You cannot book against this package." });
+      }
       if (linkedPkg) {
         const status = computePackageStatus(linkedPkg);
         if (status === "expired") {

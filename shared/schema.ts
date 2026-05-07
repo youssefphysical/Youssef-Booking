@@ -710,6 +710,7 @@ export const SESSION_HISTORY_ACTIONS = [
   "session_added_manual",
   "session_removed_manual",
   "package_deleted",
+  "package_rejected",
 ] as const;
 export type SessionHistoryAction = (typeof SESSION_HISTORY_ACTIONS)[number];
 
@@ -726,6 +727,7 @@ export const SESSION_HISTORY_ACTION_LABELS: Record<SessionHistoryAction, string>
   session_added_manual: "Manual session added",
   session_removed_manual: "Manual session removed",
   package_deleted: "Package deleted",
+  package_rejected: "Package rejected",
 };
 
 // English labels for trainer notifications.
