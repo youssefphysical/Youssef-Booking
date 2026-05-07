@@ -1458,11 +1458,13 @@
     transparent 18%
   );
 }
-/* Cards INSIDE an interactive role (link / button) get a premium
-   lift+glow. Pure presentation — no JS, no layout shift since the
-   transform stays within the same compositing layer. */
-a > .shadcn-card:hover,
-button > .shadcn-card:hover,
+/* OPT-IN card hover lift+glow. Per architect review: the previous
+   `a > .shadcn-card:hover, button > .shadcn-card:hover` rule was too
+   broad — it applied to every Card wrapped in a link/button across
+   the app, risking clipped shadows inside overflow-hidden parents
+   and accidental hover behavior on cards that were never designed
+   to feel interactive. Now strictly opt-in via the `.lift-hover`
+   class; pages decide which cards earn the lift. */
 .shadcn-card.lift-hover:hover {
   transform: translateY(-2px);
   border-color: hsl(205 92% 62% / 0.28);
@@ -1470,26 +1472,34 @@ button > .shadcn-card:hover,
 }
 
 /* ----- Popover / Dropdown / Select content polish -----------------
-   Targets every Radix popper surface via the data attributes shadcn
-   already sets, so we don't have to touch each component file. */
-[data-radix-popper-content-wrapper] > * {
-  border-color: hsl(var(--border) / 0.65) !important;
-  box-shadow: var(--shadow-popover) !important;
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: hsl(var(--popover) / 0.92) !important;
+   Per architect review: the previous rule used `[wrapper] > *` with
+   `!important` on every property, which clobbered per-component
+   customization and forced an expensive 14px backdrop-filter on
+   every Radix popper. Narrowed to: (a) drop !important so component-
+   level overrides still win, (b) drop backdrop-filter (was the GPU-
+   expensive part), (c) match more specifically via Radix's own
+   `[role="menu"]`, `[role="listbox"]`, `[role="dialog"]` semantics
+   that shadcn surfaces emit on the inner panel. */
+[data-radix-popper-content-wrapper] [role="menu"],
+[data-radix-popper-content-wrapper] [role="listbox"],
+[data-radix-popper-content-wrapper] [role="dialog"],
+[data-radix-popper-content-wrapper] [role="tooltip"] {
+  border-color: hsl(var(--border) / 0.7);
+  box-shadow: var(--shadow-popover);
 }
 
 /* ----- Skeleton premium shimmer ----------------------------------
-   The shadcn Skeleton uses .animate-pulse which is OK but flat.
-   We layer a moving cyan-tinted highlight on top. Targeted by
-   .animate-pulse so it applies to every existing Skeleton instance
-   in the codebase with no component changes. */
+   Per architect review: the previous selector was global `.animate-pulse`
+   which is a Tailwind utility used in many places beyond loading
+   skeletons (status dots, attention pulses, badge pings). Now scoped
+   to the dedicated `.skeleton-shimmer` class added to the Skeleton
+   component primitive — only loading skeletons get the cyan moving
+   highlight; nothing else changes. */
 @keyframes premiumShimmer {
   0%   { background-position: -120% 0; }
   100% { background-position:  220% 0; }
 }
-.animate-pulse {
+.skeleton-shimmer {
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(
@@ -1669,12 +1679,10 @@ h1.text-balance, h2.text-balance, h3.text-balance { text-wrap: balance; }
 /* ----- Reduced-motion guard for everything new above -------------
    All entrance animations and shimmers must respect the OS pref. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse,
+  .skeleton-shimmer,
   .fade-in-up { animation: none; }
   .shadcn-card,
   .lift-hover,
-  a > .shadcn-card:hover,
-  button > .shadcn-card:hover,
   .shadcn-card.lift-hover:hover { transform: none !important; }
 }
 
