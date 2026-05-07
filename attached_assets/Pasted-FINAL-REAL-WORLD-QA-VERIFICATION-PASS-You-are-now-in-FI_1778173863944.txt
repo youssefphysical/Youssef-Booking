@@ -1,0 +1,241 @@
+FINAL REAL-WORLD QA + VERIFICATION PASS
+
+You are now in FINAL QA / production verification mode.
+
+The app is already production-ready and deployed.
+DO NOT redesign.
+DO NOT refactor large systems.
+DO NOT add unnecessary features.
+
+Goal:
+Perform a REAL-WORLD verification pass and fix ONLY real remaining issues.
+
+CRITICAL:
+
+- Keep production stable.
+- No breaking changes.
+- No unnecessary database changes.
+- No redesigns.
+- No experimental optimizations.
+- No fake “completed” reports.
+- Verify everything carefully.
+
+==================================================
+
+1. EMAIL SYSTEM VERIFICATION
+   ==================================================
+
+Verify ALL real email flows.
+
+Check:
+
+- registration email
+- booking confirmation email
+- admin notification email
+- reminder emails
+- package expiry emails
+- low-session warning emails
+- password reset email
+
+Requirements:
+
+- mobile-friendly
+- Gmail-compatible
+- Outlook-safe HTML
+- proper RTL for Arabic/Persian/Urdu
+- no clipped text
+- CTA buttons aligned correctly
+- dark-mode safe if possible
+
+Verify:
+
+- subject lines
+- sender name
+- spacing
+- translations
+- timestamps
+- package/session info
+
+Fix any issue found.
+
+==================================================
+2. FULL LANGUAGE QA
+
+Manually audit:
+
+- English
+- Arabic
+- Persian/Farsi
+- Urdu
+- German
+- French
+- Russian
+
+Check:
+
+- untranslated strings
+- raw translation keys
+- clipped text
+- button overflow
+- modal overflow
+- broken RTL alignment
+- spacing inconsistencies
+- mixed-language UI
+- dropdown direction
+- toast direction
+- admin pages
+- dashboard
+- package modal
+- booking pages
+- homepage
+- logout modal
+
+Fix ALL visible issues.
+
+==================================================
+3. REAL BOOKING FLOW QA
+
+Test the COMPLETE user flow:
+
+Client:
+
+- register
+- login
+- logout
+- book session
+- cancel session
+- reschedule session
+- package assignment
+- low sessions warning
+- expired package state
+
+Admin:
+
+- search client
+- assign package
+- modify package
+- bonus sessions
+- upcoming bookings
+- reminders
+
+Verify:
+
+- session counts correct
+- bonus sessions correct
+- expiry logic correct
+- no duplicate booking
+- no broken state
+
+==================================================
+4. WHATSAPP LINK QA
+
+Verify WhatsApp buttons in ALL supported languages.
+
+Requirements:
+
+- correct phone number
+- properly URL encoded
+- opens correctly on mobile
+- opens correctly on desktop
+- translated message matches selected language
+- no broken symbols
+- no RTL corruption
+
+==================================================
+5. PWA REAL VERIFICATION
+
+Verify installable app behavior.
+
+Check:
+
+- Add to Home Screen works
+- app icon correct
+- splash/title correct
+- no broken favicon
+- app opens fullscreen correctly
+- login/session survives refresh
+- no cache issue after deploy
+
+If service worker is unsafe:
+DO NOT force aggressive caching.
+
+==================================================
+6. GOOGLE ANALYTICS + SEARCH CONSOLE
+
+Verify:
+
+- analytics initializes safely
+- no console errors if env vars missing
+- page views tracked
+- booking button tracked
+- WhatsApp button tracked
+
+Verify Search Console readiness:
+
+- sitemap.xml works
+- robots.txt works
+- verification meta tag works
+
+==================================================
+7. FINAL UI POLISH PASS
+
+Fix remaining small UI issues ONLY.
+
+Examples:
+
+- clipped text
+- uneven spacing
+- modal padding
+- dropdown overlap
+- toast positioning
+- mobile keyboard overlap
+- RTL chevrons/icons
+- button heights
+- card consistency
+
+NO redesigns.
+
+==================================================
+8. HARD-CODED STRING AUDIT
+
+Search entire codebase for:
+
+- untranslated visible strings
+- leftover English labels
+- raw i18n keys
+- mixed language UI
+
+Fix ALL visible user-facing strings.
+
+==================================================
+9. PRODUCTION VALIDATION
+
+Before finalizing:
+
+- TypeScript clean
+- Build clean
+- No console errors
+- Vercel READY
+- GitHub synced
+- Neon unchanged unless absolutely necessary
+
+==================================================
+10. FINAL REPORT
+
+Provide:
+
+- exact issues found
+- exact fixes applied
+- files changed
+- remaining known limitations (if any)
+- languages verified
+- email flows verified
+- booking flows verified
+- WhatsApp verification status
+- PWA verification status
+- analytics verification status
+- TypeScript result
+- build result
+- GitHub commit ID
+- Vercel READY confirmation
+- Neon unchanged confirmation

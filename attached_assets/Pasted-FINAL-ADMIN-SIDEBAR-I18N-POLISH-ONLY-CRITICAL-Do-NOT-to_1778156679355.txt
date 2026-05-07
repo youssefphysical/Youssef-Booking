@@ -1,0 +1,152 @@
+FINAL ADMIN SIDEBAR + I18N POLISH ONLY
+
+CRITICAL:
+Do NOT touch backend, APIs, auth logic, database/Neon, booking logic, package calculations, or public homepage design.
+
+ONLY fix Admin sidebar/menu UI polish and missing translations.
+
+ISSUES SEEN:
+1. Sidebar shows raw translation keys:
+- NAV.ADMINTAGLINE
+- nav.publicSite
+
+These must never appear to users.
+
+2. Trainer name is clipped:
+- shows “ussef Ahmed” instead of “Youssef Ahmed”
+
+3. Sidebar hierarchy feels flat and needs premium organization.
+
+TASKS:
+
+1. Fix missing i18n keys
+Find and fix all sidebar/admin navigation missing keys:
+- NAV.ADMINTAGLINE
+- nav.publicSite
+- any other visible raw keys
+
+Add proper translations for ALL supported languages:
+en, ar, fr, es, de, it, pt, tr, ru, zh, hi, ur, fa.
+
+Suggested meanings:
+Admin tagline:
+EN: Manage clients, bookings, packages, and coaching operations
+AR: إدارة العملاء والحجوزات والباقات وعمليات التدريب
+FA: مدیریت مشتریان، رزروها، پکیج‌ها و عملیات مربیگری
+UR: کلائنٹس، بکنگز، پیکجز اور کوچنگ آپریشنز کا انتظام کریں
+
+Public Site:
+EN: Public Site
+AR: الموقع العام
+FA: سایت عمومی
+UR: عوامی سائٹ
+
+2. Fix trainer name clipping
+Sidebar brand/name must display correctly:
+- no clipped first letter
+- no overflow outside drawer
+- use proper padding/safe area
+- use ellipsis only if necessary
+- mobile drawer width must not cut the name
+
+3. Improve sidebar hierarchy without redesigning the app
+Group menu items visually:
+
+MAIN
+- Dashboard
+- Bookings
+- Clients
+
+BUSINESS
+- Packages
+- Package Builder
+
+SYSTEM
+- Staff
+- Settings
+- Public Site
+
+Use subtle section labels, muted text, premium spacing.
+
+4. Rename “Package Builder” if possible through i18n only
+Use more professional label:
+EN: Package Designer
+AR: مصمم الباقات
+FA: طراح پکیج‌ها
+UR: پیکیج ڈیزائنر
+
+Do NOT change route or internal component names.
+Only change visible label.
+
+5. Language selector polish
+Ensure the language selector shows native names:
+- English
+- العربية
+- Français
+- Español
+- Deutsch
+- Italiano
+- Português
+- Türkçe
+- Русский
+- 中文
+- हिन्दी
+- اردو
+- فارسی
+
+Flags must remain correct.
+RTL languages must align correctly.
+
+6. RTL sidebar validation
+For Arabic, Urdu, Persian:
+- sidebar alignment correct
+- icons spacing correct
+- close button correct
+- language selector correct
+- arrows/chevrons mirrored if needed
+- no clipped text
+
+7. Safety
+Do NOT modify:
+- auth
+- admin permissions
+- routes
+- database
+- APIs
+- booking/package logic
+- homepage
+
+8. Validation
+Test:
+- mobile drawer
+- desktop sidebar
+- English
+- Arabic
+- Urdu
+- Persian
+- German/French long labels
+
+Pass criteria:
+- no raw translation keys visible
+- name not clipped
+- sidebar looks organized
+- no overflow
+- RTL correct
+
+Deployment:
+- Run TypeScript check
+- Run translation validator
+- Neon unchanged
+- Push to GitHub main
+- Wait Vercel READY
+- Verify production
+
+Final report must include:
+- exact missing keys fixed
+- files changed
+- sidebar languages verified
+- RTL verification
+- name clipping fixed
+- Neon unchanged
+- GitHub commit ID
+- Vercel READY

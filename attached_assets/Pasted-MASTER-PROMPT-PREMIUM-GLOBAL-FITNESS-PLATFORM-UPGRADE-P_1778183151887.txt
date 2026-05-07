@@ -1,0 +1,422 @@
+MASTER PROMPT — PREMIUM GLOBAL FITNESS PLATFORM UPGRADE
+PROJECT: Youssef Ahmed Personal Training
+STACK: Replit + Vercel + GitHub + Neon PostgreSQL
+IMPORTANT:
+- Do NOT break existing functionality.
+- Do NOT remove current admin/client/package systems.
+- Maintain full responsiveness on mobile, tablet, and desktop.
+- Maintain existing dark luxury blue design language.
+- Keep all current APIs and database structures stable unless explicitly improving them safely.
+- Push all updates to GitHub and deploy production to Vercel automatically.
+- Verify production after deployment.
+
+====================================================
+GLOBAL DESIGN GOAL
+====================================================
+
+Transform the platform from a “good trainer website”
+into a WORLD-CLASS PREMIUM FITNESS BRAND PLATFORM.
+
+The website should feel:
+- Luxury
+- Elite
+- Intelligent
+- Scientific
+- Minimal
+- Cinematic
+- Extremely smooth
+- Modern SaaS-level quality
+
+Reference vibe:
+- Apple
+- Nike
+- WHOOP
+- Tesla
+- Equinox
+- Technogym
+- Premium Dubai luxury brands
+
+====================================================
+DESIGN SYSTEM UPGRADE
+====================================================
+
+Create a fully unified premium design system.
+
+Requirements:
+- Consistent spacing everywhere
+- Consistent border radius
+- Consistent shadows
+- Consistent glow effects
+- Smooth animations
+- Professional typography hierarchy
+- Better visual hierarchy
+- Better content breathing space
+
+Use:
+- Premium dark backgrounds
+- Soft blue neon accents
+- Glassmorphism ONLY where appropriate
+- Smooth gradients
+- Elegant card depth
+- Premium hover animations
+
+====================================================
+TYPOGRAPHY
+====================================================
+
+Upgrade typography globally.
+
+Preferred fonts:
+- Satoshi
+OR
+- General Sans
+OR
+- Clash Display for headings
+
+Rules:
+- Strong heading hierarchy
+- Cleaner paragraph readability
+- Better spacing between lines
+- Premium luxury typography feeling
+- Avoid generic/basic typography
+
+====================================================
+HOMEPAGE OVERHAUL
+====================================================
+
+The homepage must feel significantly more premium.
+
+====================================================
+1. HERO SECTION (TOP PRIORITY)
+====================================================
+
+Completely redesign the hero section.
+
+Goals:
+- Instantly impressive
+- High-end
+- Cinematic
+- Professional
+- Clear conversion focus
+
+Requirements:
+- Use dynamic responsive hero image
+- Add dark luxury overlay
+- Improve readability
+- Add subtle animated glow/light movement
+- Better CTA placement
+- Better spacing
+- Better mobile scaling
+- Remove clutter
+
+Hero should include:
+- Premium badge
+- Strong headline
+- Supporting subheadline
+- CTA buttons
+- Trust indicators
+
+Suggested headlines:
+- “Science-Based Personal Training In Dubai”
+- “Train With Structure. Perform With Purpose.”
+- “Your Transformation Starts Here.”
+
+CTA examples:
+- Book Assessment
+- View Packages
+- Start Your Journey
+
+====================================================
+2. VISUAL HIERARCHY IMPROVEMENTS
+====================================================
+
+The entire homepage currently feels too uniform.
+
+Improve:
+- Section differentiation
+- Content rhythm
+- Alternating layouts
+- Card variety
+- Highlight sections
+- Full-width sections where appropriate
+
+Avoid:
+- Repeating identical dark cards endlessly
+- Flat visual flow
+
+====================================================
+3. ABOUT SECTION OVERHAUL
+====================================================
+
+Redesign About section completely.
+
+Goals:
+- More personal
+- More trustworthy
+- More intelligent
+- More premium
+
+Include:
+- Professional photo
+- Certifications
+- Philosophy
+- Training mindset
+- Scientific approach
+- Real coaching logic
+
+Add premium mini sections:
+- Experience
+- Education
+- Certifications
+- Coaching philosophy
+
+====================================================
+4. ADD “YOUSSEF LOGIC” SECTION
+====================================================
+
+Create a NEW premium section called:
+“Youssef Logic”
+
+This section should explain:
+- Why coaching is not copy-paste
+- Why every client is different
+- Why trainer physique alone means nothing
+- Why science + structure matter
+- Why assessments matter
+- Why programming differs by goal/personality/recovery/lifestyle
+
+Style:
+- Premium
+- Personal
+- Intelligent
+- Educational
+- Human
+
+Layout:
+- Elegant cards or timeline
+- Icons
+- Animated transitions
+- Luxury feel
+
+====================================================
+5. TRANSFORMATIONS SECTION UPGRADE
+====================================================
+
+Transformations must feel elite.
+
+Add:
+- Before/after sliders
+- Hover effects
+- Premium glow
+- Better spacing
+- Better image cropping
+- Smooth loading
+- Transformation stats
+- Client achievements
+
+Optional:
+- Weight lost
+- Muscle gained
+- Time duration
+
+====================================================
+6. TESTIMONIALS & SOCIAL PROOF
+====================================================
+
+Add stronger social proof.
+
+Support:
+- Client reviews
+- WhatsApp-style review cards
+- Video testimonials support
+- Star ratings
+- Transformation quotes
+
+Design:
+- Premium
+- Minimal
+- Authentic
+- Trustworthy
+
+====================================================
+7. PREMIUM ANIMATIONS
+====================================================
+
+Improve animation quality globally.
+
+Add:
+- Smooth fade transitions
+- Scroll reveal animations
+- Elegant hover states
+- Button interactions
+- Loading skeletons
+- Page transitions
+
+Avoid:
+- Cheap animations
+- Laggy effects
+- Over-animation
+
+Everything should feel:
+- Smooth
+- Expensive
+- Modern
+
+====================================================
+8. ADMIN DASHBOARD IMPROVEMENTS
+====================================================
+
+Current admin dashboard is strong.
+Now make it enterprise-level.
+
+====================================================
+ADD ANALYTICS SYSTEM
+====================================================
+
+Create professional analytics cards/charts:
+- Monthly revenue
+- Active clients
+- Package renewals
+- Attendance rate
+- Session completion rate
+- Most active clients
+- Expiring packages
+- Trainer growth metrics
+- Retention analytics
+
+Use:
+- Elegant charts
+- Responsive graphs
+- Premium dashboard widgets
+
+====================================================
+9. BOOKING SYSTEM UX IMPROVEMENTS
+====================================================
+
+Improve booking management UX.
+
+Add:
+- Better filters
+- Better spacing
+- Session color logic
+- Status clarity
+- Cleaner action buttons
+- Better mobile responsiveness
+
+====================================================
+10. CLIENT PROFILE EXPERIENCE
+====================================================
+
+Upgrade client profiles.
+
+Add:
+- Progress timeline
+- InBody history
+- Progress charts
+- Goal tracking
+- Session history
+- Notes section
+- Transformation gallery
+- Export PDF support
+
+====================================================
+11. IMAGE OPTIMIZATION SYSTEM
+====================================================
+
+IMPORTANT.
+
+Implement automatic image optimization.
+
+Requirements:
+- Convert uploaded images automatically to WebP
+- Compress large uploads intelligently
+- Maintain high visual quality
+- Reduce storage size massively
+- Generate responsive image sizes
+- Lazy load images
+- Improve performance scores
+
+Target:
+- Large 20MB uploads should become optimized lightweight images automatically.
+
+====================================================
+12. PERFORMANCE OPTIMIZATION
+====================================================
+
+Optimize entire platform performance.
+
+Goals:
+- Fast mobile loading
+- Smooth animations
+- Better Lighthouse score
+- Reduced JS bloat
+- Better image handling
+- Better caching
+
+====================================================
+13. THEME SYSTEM
+====================================================
+
+Add optional theme architecture.
+
+Support:
+- Dark theme (default)
+- Optional light theme later
+
+Architecture should already support theme expansion cleanly.
+
+====================================================
+14. GLOBAL POLISH
+====================================================
+
+Fix all:
+- Inconsistent paddings
+- Small alignment issues
+- Uneven cards
+- Mobile spacing bugs
+- Typography inconsistencies
+- Overflow issues
+- Touch target sizes
+- Dropdown responsiveness
+
+====================================================
+15. PRODUCTION REQUIREMENTS
+====================================================
+
+After ALL updates:
+- Push latest code to GitHub
+- Deploy production to Vercel
+- Verify deployment
+- Verify all routes
+- Verify login/register
+- Verify admin access
+- Verify mobile responsiveness
+- Verify image optimization
+- Verify OG image still works
+- Verify no console errors
+- Verify no hydration issues
+
+====================================================
+CRITICAL RULES
+====================================================
+
+DO NOT:
+- Break authentication
+- Break admin protection
+- Break Neon database
+- Remove existing functionality
+- Remove multilingual support
+- Remove package system
+- Remove booking system
+
+DO:
+- Improve existing systems safely
+- Maintain data integrity
+- Keep everything production-ready
+- Keep code clean and scalable
+- Use reusable components
+- Use premium UI patterns
+
+FINAL GOAL:
+The platform should feel like a premium international fitness-tech company,
+not just a trainer website.

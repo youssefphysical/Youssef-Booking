@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "W53-NeDRooQU8-W3xkGZh"
+uri = "file://client/public/og-image.png"
+type = "image"
+title = "og-image-youssef-ahmed"
+
+[[generated]]
+id = "rmwOSmT--YkyDSawjjroq"
+uri = "file://client/public/og-premium.png"
+type = "image"
+title = "og-premium-luxury"
