@@ -9,6 +9,7 @@ import { I18nProvider } from "@/i18n";
 import { Navigation } from "@/components/Navigation";
 import { Loader } from "@/components/Loader";
 import { isEffectiveSuperAdmin } from "@shared/schema";
+import { trackPageView } from "@/lib/analytics";
 
 import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
@@ -71,6 +72,14 @@ function ProtectedRoute({
 }
 
 function Router() {
+  // Track SPA route changes for Google Analytics 4. The hook itself
+  // is a no-op when VITE_GA_MEASUREMENT_ID is unset, so this is safe
+  // to leave on in every environment (dev, preview, prod).
+  const [pathname] = useLocation();
+  useEffect(() => {
+    trackPageView(pathname);
+  }, [pathname]);
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
       <Navigation />

@@ -8,11 +8,62 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
 
+    <!-- ===== PWA / installable app ===== -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="application-name" content="Youssef Ahmed Personal Training" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="YA Training" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
     <!-- ===== PRIMARY SEO META ===== -->
     <title>Youssef Ahmed Personal Training</title>
     <meta name="description" content="Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance." />
     <meta name="theme-color" content="#0b1220" />
     <link rel="canonical" href="https://youssef-booking.vercel.app/" />
+
+    <!-- ===== Structured data (LocalBusiness / PersonalTrainer) =====
+         Helps Google, Bing, WhatsApp link previews, and Search Console
+         understand the brand. Pure JSON-LD, no script execution. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["LocalBusiness", "HealthAndBeautyBusiness"],
+      "name": "Youssef Ahmed Personal Training",
+      "description": "Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.",
+      "url": "https://youssef-booking.vercel.app/",
+      "image": "https://youssef-booking.vercel.app/og-hero-current.jpg",
+      "priceRange": "$$",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Dubai",
+        "addressCountry": "AE"
+      },
+      "areaServed": {
+        "@type": "City",
+        "name": "Dubai"
+      },
+      "founder": {
+        "@type": "Person",
+        "name": "Youssef Ahmed",
+        "jobTitle": "Personal Trainer",
+        "worksFor": {
+          "@type": "Organization",
+          "name": "Youssef Ahmed Personal Training"
+        }
+      },
+      "knowsAbout": [
+        "Personal Training",
+        "Strength and Conditioning",
+        "Fat Loss",
+        "Muscle Gain",
+        "Movement Quality",
+        "Body Composition Analysis",
+        "InBody Tracking"
+      ]
+    }
+    </script>
 
     <!-- ===== OPEN GRAPH (Facebook, WhatsApp, LinkedIn, Telegram, iMessage) ===== -->
     <meta property="og:type" content="website" />

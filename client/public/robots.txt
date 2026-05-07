@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin-access
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /book
+Disallow: /reset-password
+Disallow: /direct-payment
+
+Sitemap: https://youssef-booking.vercel.app/sitemap.xml
