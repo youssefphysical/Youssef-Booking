@@ -48,4 +48,4 @@ if (!ok) {
   console.error("\ni18n parity check FAILED");
   process.exit(1);
 }
-console.log("\ni18n parity check passed: all 10 languages share the same keys.");
+console.log(`\ni18n parity check passed: all ${blocks.length} languages share the same keys.`);

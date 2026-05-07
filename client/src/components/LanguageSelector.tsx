@@ -19,6 +19,7 @@ type Variant = "compact" | "full";
 const FLAG_SRC: Record<LanguageCode, string> = {
   en: "/flags/gb.svg",
   ar: "/flags/ae.svg",
+  ur: "/flags/pk.svg",
   fr: "/flags/fr.svg",
   es: "/flags/es.svg",
   de: "/flags/de.svg",

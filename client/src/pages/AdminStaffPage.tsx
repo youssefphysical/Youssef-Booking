@@ -55,6 +55,7 @@ import {
   type AdminRole,
   type UserResponse,
 } from "@shared/schema";
+import { useTranslation } from "@/i18n";
 
 const formSchema = z.object({
   email: z.string().email("Valid email required"),
@@ -72,6 +73,7 @@ type AdminUser = UserResponse & {
 };
 
 export default function AdminStaffPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -139,11 +141,11 @@ export default function AdminStaffPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/admins"] });
-      toast({ title: "Admin created" });
+      toast({ title: t("admin.staff.toast.created", "Admin created") });
       setDialogOpen(false);
     },
     onError: (e: Error) =>
-      toast({ title: "Could not create admin", description: e.message, variant: "destructive" }),
+      toast({ title: t("admin.staff.toast.createFailed", "Could not create admin"), description: e.message, variant: "destructive" }),
   });
 
   const updateMut = useMutation({
@@ -153,11 +155,11 @@ export default function AdminStaffPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/admins"] });
-      toast({ title: "Admin updated" });
+      toast({ title: t("admin.staff.toast.updated", "Admin updated") });
       setDialogOpen(false);
     },
     onError: (e: Error) =>
-      toast({ title: "Update failed", description: e.message, variant: "destructive" }),
+      toast({ title: t("admin.staff.toast.updateFailed", "Update failed"), description: e.message, variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
@@ -166,10 +168,10 @@ export default function AdminStaffPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/admin/admins"] });
-      toast({ title: "Admin deleted" });
+      toast({ title: t("admin.staff.toast.deleted", "Admin deleted") });
     },
     onError: (e: Error) =>
-      toast({ title: "Delete failed", description: e.message, variant: "destructive" }),
+      toast({ title: t("admin.staff.toast.deleteFailed", "Delete failed"), description: e.message, variant: "destructive" }),
   });
 
   function onSubmit(values: FormValues) {
@@ -183,8 +185,8 @@ export default function AdminStaffPage() {
       if (values.password && values.password.length > 0) {
         if (values.password.length < 6) {
           toast({
-            title: "Password too short",
-            description: "Use at least 6 characters or leave blank.",
+            title: t("admin.staff.toast.pwTooShortTitle", "Password too short"),
+            description: t("admin.staff.toast.pwTooShortDesc", "Use at least 6 characters or leave blank."),
             variant: "destructive",
           });
           return;
@@ -195,8 +197,8 @@ export default function AdminStaffPage() {
     } else {
       if (!values.password || values.password.length < 6) {
         toast({
-          title: "Password required",
-          description: "New admins need a temporary password (min 6 chars).",
+          title: t("admin.staff.toast.pwRequiredTitle", "Password required"),
+          description: t("admin.staff.toast.pwRequiredDesc", "New admins need a temporary password (min 6 chars)."),
           variant: "destructive",
         });
         return;
@@ -221,10 +223,10 @@ export default function AdminStaffPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-display font-bold" data-testid="text-staff-title">
-            Admin & Staff
+            {t("admin.staff.title", "Admin & Staff")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Manage who can access the admin panel and what they can do.
+            {t("admin.staff.subtitle", "Manage who can access the admin panel and what they can do.")}
           </p>
         </div>
         <Button
@@ -232,25 +234,25 @@ export default function AdminStaffPage() {
           onClick={openCreate}
           data-testid="button-add-admin"
         >
-          <Plus size={14} className="mr-1.5" /> Add admin
+          <Plus size={14} className="mr-1.5 rtl:mr-0 rtl:ml-1.5" /> {t("admin.staff.add", "Add admin")}
         </Button>
       </div>
 
       <div className="rounded-3xl border border-white/5 bg-card/60 overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-muted-foreground">Loading…</div>
+          <div className="p-12 text-center text-muted-foreground">{t("common.loading", "Loading…")}</div>
         ) : admins.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">No admin staff yet.</div>
+          <div className="p-12 text-center text-muted-foreground">{t("admin.staff.empty", "No admin staff yet.")}</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/[0.02]">
               <tr>
-                <th className="text-left px-4 py-3">Name</th>
-                <th className="text-left px-4 py-3">Email</th>
-                <th className="text-left px-4 py-3">Role</th>
-                <th className="text-left px-4 py-3">Permissions</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
+                <th className="text-start px-4 py-3">{t("admin.staff.col.name", "Name")}</th>
+                <th className="text-start px-4 py-3">{t("admin.staff.col.email", "Email")}</th>
+                <th className="text-start px-4 py-3">{t("admin.staff.col.role", "Role")}</th>
+                <th className="text-start px-4 py-3">{t("admin.staff.col.perms", "Permissions")}</th>
+                <th className="text-start px-4 py-3">{t("admin.staff.col.status", "Status")}</th>
+                <th className="text-end px-4 py-3">{t("admin.staff.col.actions", "Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -275,7 +277,7 @@ export default function AdminStaffPage() {
                           className="ml-2 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-300"
                           data-testid={`badge-super-${a.id}`}
                         >
-                          You
+                          {t("admin.staff.you", "You")}
                         </span>
                       )}
                     </td>
@@ -285,8 +287,8 @@ export default function AdminStaffPage() {
                         {ADMIN_ROLE_LABELS[role]}
                       </span>
                       {isLegacy && (
-                        <span className="ml-1.5 text-[9px] uppercase tracking-wider text-muted-foreground">
-                          legacy
+                        <span className="ms-1.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+                          {t("admin.staff.legacy", "legacy")}
                         </span>
                       )}
                     </td>
@@ -294,20 +296,20 @@ export default function AdminStaffPage() {
                       className="px-4 py-3 text-muted-foreground text-xs"
                       data-testid={`text-perms-${a.id}`}
                     >
-                      {role === "super_admin" ? "All" : `${permsCount}/${totalPerms}`}
+                      {role === "super_admin" ? t("admin.staff.all", "All") : `${permsCount}/${totalPerms}`}
                     </td>
                     <td className="px-4 py-3">
                       {active ? (
                         <span className="inline-flex items-center gap-1 text-xs text-emerald-300">
-                          <ShieldCheck size={12} /> Active
+                          <ShieldCheck size={12} /> {t("admin.staff.active", "Active")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <ShieldOff size={12} /> Disabled
+                          <ShieldOff size={12} /> {t("admin.staff.disabled", "Disabled")}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
+                    <td className="px-4 py-3 text-end space-x-1.5 whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -330,18 +332,18 @@ export default function AdminStaffPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this admin?</AlertDialogTitle>
+                              <AlertDialogTitle>{t("admin.staff.deleteTitle", "Delete this admin?")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                {a.fullName} will lose all admin access. This cannot be undone.
+                                {t("admin.staff.deleteDesc", "{name} will lose all admin access. This cannot be undone.").replace("{name}", a.fullName)}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteMut.mutate(a.id)}
                                 data-testid={`button-confirm-delete-admin-${a.id}`}
                               >
-                                Delete
+                                {t("common.delete", "Delete")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -359,7 +361,7 @@ export default function AdminStaffPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit admin" : "Add admin"}</DialogTitle>
+            <DialogTitle>{editing ? t("admin.staff.editTitle", "Edit admin") : t("admin.staff.add", "Add admin")}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -369,7 +371,7 @@ export default function AdminStaffPage() {
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full name</FormLabel>
+                      <FormLabel>{t("admin.staff.fullName", "Full name")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -386,7 +388,7 @@ export default function AdminStaffPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("admin.staff.email", "Email")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -408,7 +410,7 @@ export default function AdminStaffPage() {
                   name="adminRole"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>{t("admin.staff.role", "Role")}</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={(v) => onRoleChange(v as AdminRole)}
@@ -442,14 +444,14 @@ export default function AdminStaffPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-1.5">
                         <KeyRound size={12} />
-                        {editing ? "New password (optional)" : "Temporary password"}
+                        {editing ? t("admin.staff.newPassword", "New password (optional)") : t("admin.staff.tempPassword", "Temporary password")}
                       </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
                           type="password"
                           autoComplete="new-password"
-                          placeholder={editing ? "Leave blank to keep current" : "Min 6 chars"}
+                          placeholder={editing ? t("admin.staff.pwLeaveBlank", "Leave blank to keep current") : t("admin.staff.pwMin6", "Min 6 chars")}
                           className="bg-white/5 border-white/10"
                           data-testid="input-admin-password"
                         />
@@ -466,9 +468,9 @@ export default function AdminStaffPage() {
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
                     <div>
-                      <FormLabel className="text-sm">Active</FormLabel>
+                      <FormLabel className="text-sm">{t("admin.staff.active", "Active")}</FormLabel>
                       <p className="text-xs text-muted-foreground">
-                        Disabled admins cannot sign in.
+                        {t("admin.staff.disabledHint", "Disabled admins cannot sign in.")}
                       </p>
                     </div>
                     <FormControl>
@@ -487,10 +489,10 @@ export default function AdminStaffPage() {
               />
 
               <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-                <p className="text-sm font-semibold mb-3">Permissions</p>
+                <p className="text-sm font-semibold mb-3">{t("admin.staff.col.perms", "Permissions")}</p>
                 {form.watch("adminRole") === "super_admin" ? (
                   <p className="text-xs text-muted-foreground">
-                    Super Admin has full access to everything (cannot be limited).
+                    {t("admin.staff.superHint", "Super Admin has full access to everything (cannot be limited).")}
                   </p>
                 ) : (
                   <div className="space-y-4">
@@ -529,7 +531,7 @@ export default function AdminStaffPage() {
                   onClick={() => setDialogOpen(false)}
                   data-testid="button-cancel-admin-form"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -538,9 +540,9 @@ export default function AdminStaffPage() {
                   data-testid="button-save-admin"
                 >
                   {(createMut.isPending || updateMut.isPending) && (
-                    <Loader2 size={14} className="mr-1.5 animate-spin" />
+                    <Loader2 size={14} className="mr-1.5 rtl:mr-0 rtl:ml-1.5 animate-spin" />
                   )}
-                  {editing ? "Save changes" : "Create admin"}
+                  {editing ? t("admin.staff.saveChanges", "Save changes") : t("admin.staff.create", "Create admin")}
                 </Button>
               </DialogFooter>
             </form>

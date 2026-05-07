@@ -278,6 +278,7 @@ function OverviewTab({ client }: { client: UserResponse }) {
 }
 
 function ClientPrivilegesCard({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -359,7 +360,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
       </p>
 
       <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 space-y-3">
-        <p className="text-xs font-semibold">Membership Level</p>
+        <p className="text-xs font-semibold">{t("admin.clientDetail.membershipLevel", "Membership Level")}</p>
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className="text-[11px] text-muted-foreground block mb-1">
@@ -465,7 +466,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-white/10">
               <AlertDialogHeader>
-                <AlertDialogTitle>Reset Emergency Cancel?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.clientDetail.resetEmergencyTitle", "Reset Emergency Cancel?")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   This client will be able to use Emergency Cancel again this month. Use sparingly.
                 </AlertDialogDescription>
@@ -484,7 +485,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
         </div>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-          <p className="text-xs font-semibold mb-1">Same-Day Adjustment</p>
+          <p className="text-xs font-semibold mb-1">{t("admin.clientDetail.sameDayAdjustment", "Same-Day Adjustment")}</p>
           <p className="text-[11px] text-muted-foreground mb-2">
             {adjUsed > 0
               ? `Used ${adjUsed}/${adjQuota} this month. Reset to refill the counter.`
@@ -504,7 +505,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-white/10">
               <AlertDialogHeader>
-                <AlertDialogTitle>Reset Same-Day Adjustment?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.clientDetail.resetSameDayTitle", "Reset Same-Day Adjustment?")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   This client will be able to use Same-Day Adjustments again this month.
                 </AlertDialogDescription>
@@ -523,7 +524,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
         </div>
 
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 sm:col-span-2">
-          <p className="text-xs font-semibold mb-1">Free Trial Session</p>
+          <p className="text-xs font-semibold mb-1">{t("admin.clientDetail.freeTrialSession", "Free Trial Session")}</p>
           <p className="text-[11px] text-muted-foreground mb-2">
             {client.hasUsedFreeTrial
               ? "Already used. Reset only if appropriate (e.g., trial didn't happen)."
@@ -543,7 +544,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-card border-white/10">
               <AlertDialogHeader>
-                <AlertDialogTitle>Reset Free Trial?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.clientDetail.resetFreeTrialTitle", "Reset Free Trial?")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   This client will be able to book another free trial session.
                 </AlertDialogDescription>
@@ -566,6 +567,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
 }
 
 function ConsentsCard({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: consents = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/consent", { userId }],
     queryFn: async () => {
@@ -588,7 +590,7 @@ function ConsentsCard({ userId }: { userId: number }) {
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading…</p>
       ) : consents.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No consent records on file.</p>
+        <p className="text-xs text-muted-foreground">{t("admin.clientDetail.noConsent", "No consent records on file.")}</p>
       ) : (
         <div className="space-y-2" data-testid="list-consents">
           {consents
@@ -681,6 +683,7 @@ function todayIso(): string {
 }
 
 function BookingsTab({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const { data: packages = [] } = usePackages({ userId: client.id });
   const activePackages = (packages as Package[]).filter((p) => p.isActive);
   const [singleOpen, setSingleOpen] = useState(false);
@@ -813,7 +816,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Session History</h3>
+          <h3 className="text-sm font-semibold">{t("admin.clientDetail.sessionHistory", "Session History")}</h3>
           <p className="text-xs text-muted-foreground">
             Includes manual historical sessions added by admin.
           </p>
@@ -845,7 +848,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
       <Dialog open={singleOpen} onOpenChange={setSingleOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add manual session</DialogTitle>
+            <DialogTitle>{t("admin.clientDetail.addManualSession", "Add manual session")}</DialogTitle>
             <p className="text-xs text-muted-foreground">
               Backfill a historical 1-hour session. Marking it Completed deducts a session
               from the linked package.
@@ -1046,7 +1049,7 @@ function BookingsTab({ client }: { client: UserResponse }) {
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Bulk add historical sessions</DialogTitle>
+            <DialogTitle>{t("admin.clientDetail.bulkAddSessions", "Bulk add historical sessions")}</DialogTitle>
             <p className="text-xs text-muted-foreground">
               Generates N consecutive 1-hour sessions starting from the chosen date. Useful
               when a client used several sessions before joining the app.
@@ -1369,6 +1372,7 @@ function addDaysISO(start: string, days: number): string {
 }
 
 function PackagesPanel({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const { data: packages = [] } = usePackages({ userId: client.id });
   const list = packages as Package[];
   const create = useCreatePackage();
@@ -1476,7 +1480,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">Session Packages</h3>
+        <h3 className="text-sm font-semibold">{t("admin.clientDetail.sessionPackages", "Session Packages")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="rounded-xl" data-testid="button-add-package">
@@ -1485,7 +1489,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
           </DialogTrigger>
           <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Assign Package</DialogTitle>
+              <DialogTitle>{t("admin.clientDetail.assignPackage", "Assign Package")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
@@ -1698,6 +1702,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
 // =============== ADMIN PACKAGE CONTROLS (payment / freeze / approve / sessions adjust) ===============
 
 function PackageAdminControls({ pkg }: { pkg: Package }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
   const invalidate = () => {
@@ -1828,7 +1833,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-sm">
-            <DialogHeader><DialogTitle>Adjust sessions</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("admin.clientDetail.adjustSessions", "Adjust sessions")}</DialogTitle></DialogHeader>
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-muted-foreground">Delta (positive adds, negative removes)</label>
@@ -1895,6 +1900,7 @@ const inbodySchema = z.object({
 });
 
 function InbodyPanel({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data: records = [] } = useInbodyRecords({ userId });
   const upload = useUploadInbody();
   const del = useDeleteInbody();
@@ -1913,7 +1919,7 @@ function InbodyPanel({ userId }: { userId: number }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">InBody Scans</h3>
+        <h3 className="text-sm font-semibold">{t("admin.clientDetail.inbodyScans", "InBody Scans")}</h3>
         <Button size="sm" className="rounded-xl" onClick={() => fileRef.current?.click()} disabled={upload.isPending} data-testid="button-admin-upload-inbody">
           {upload.isPending ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Upload size={13} className="mr-1.5" />}
           Upload Scan
@@ -2248,6 +2254,7 @@ function VerifiedToggle({
   verifiedOverride: boolean | null | undefined;
   isVerified: boolean;
 }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const m = useMutation({
     mutationFn: async (value: boolean | null) => {
@@ -2287,7 +2294,7 @@ function VerifiedToggle({
           disabled={m.isPending}
           data-testid="button-reset-verified"
           className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[11px] border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50"
-          title="Reset to automatic"
+          title={t("admin.clientDetail.resetToAuto", "Reset to automatic")}
         >
           <ResetIcon size={12} />
         </button>
@@ -2319,6 +2326,7 @@ function ClientStatusBadge({ status }: { status: ClientStatus }) {
 }
 
 function ClientStatusControl({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
   const m = useMutation({
@@ -2336,7 +2344,7 @@ function ClientStatusControl({ client }: { client: UserResponse }) {
   const current = (client.clientStatus ?? "incomplete") as ClientStatus;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Lifecycle</span>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("admin.clientDetail.lifecycle", "Lifecycle")}</span>
       <Select value={current} onValueChange={(v) => m.mutate(v as ClientStatus)}>
         <SelectTrigger className="h-8 w-44 text-xs bg-white/5 border-white/10" data-testid="select-client-status">
           <SelectValue />
@@ -2354,6 +2362,7 @@ function ClientStatusControl({ client }: { client: UserResponse }) {
 // =============== HEALTH & GOALS PANEL ===============
 
 function HealthGoalsPanel({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [form, setForm] = useState({
@@ -2399,7 +2408,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-[11px] text-muted-foreground block mb-1">Primary Goal</label>
+          <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.primaryGoal", "Primary Goal")}</label>
           <Select value={form.primaryGoal} onValueChange={(v) => setForm({ ...form, primaryGoal: v })}>
             <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10" data-testid="select-primary-goal">
               <SelectValue placeholder="Select" />
@@ -2412,7 +2421,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
           </Select>
         </div>
         <div>
-          <label className="text-[11px] text-muted-foreground block mb-1">Weekly Frequency</label>
+          <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.weeklyFrequency", "Weekly Frequency")}</label>
           <Select value={String(form.weeklyFrequency ?? "")} onValueChange={(v) => setForm({ ...form, weeklyFrequency: Number(v) })}>
             <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10" data-testid="select-health-frequency">
               <SelectValue />
@@ -2427,7 +2436,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
       </div>
 
       <div>
-        <label className="text-[11px] text-muted-foreground block mb-2">Preferred Training Days</label>
+        <label className="text-[11px] text-muted-foreground block mb-2">{t("admin.clientDetail.preferredDays", "Preferred Training Days")}</label>
         <div className="flex flex-wrap gap-2">
           {DAYS.map((d) => (
             <button
@@ -2448,7 +2457,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
       </div>
 
       <div>
-        <label className="text-[11px] text-muted-foreground block mb-1">Free-form fitness goal</label>
+        <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.freeFormGoal", "Free-form fitness goal")}</label>
         <Textarea
           value={form.fitnessGoal}
           onChange={(e) => setForm({ ...form, fitnessGoal: e.target.value })}
@@ -2460,7 +2469,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-[11px] text-muted-foreground block mb-1">Injuries / limitations</label>
+          <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.injuries", "Injuries / limitations")}</label>
           <Textarea
             value={form.injuries}
             onChange={(e) => setForm({ ...form, injuries: e.target.value })}
@@ -2470,7 +2479,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
           />
         </div>
         <div>
-          <label className="text-[11px] text-muted-foreground block mb-1">Medical notes</label>
+          <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.medicalNotes", "Medical notes")}</label>
           <Textarea
             value={form.medicalNotes}
             onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })}
@@ -2482,7 +2491,7 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
       </div>
 
       <div>
-        <label className="text-[11px] text-muted-foreground block mb-1">Medical clearance note</label>
+        <label className="text-[11px] text-muted-foreground block mb-1">{t("admin.clientDetail.medicalClearance", "Medical clearance note")}</label>
         <Textarea
           value={form.medicalClearanceNote}
           onChange={(e) => setForm({ ...form, medicalClearanceNote: e.target.value })}
@@ -2588,6 +2597,7 @@ function NotesPanel({ client }: { client: UserResponse }) {
 // =============== DOCUMENTS PANEL (consents + checklists) ===============
 
 function DocumentsPanel({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const parq = !!(client as any).parqCompleted;
   const waiver = !!(client as any).waiverAccepted;
   const medical = (client as any).medicalClearanceNote;
@@ -2605,7 +2615,7 @@ function DocumentsPanel({ client }: { client: UserResponse }) {
           detail={medical || "Not on file"}
         />
         <p className="text-[11px] text-muted-foreground/70">
-          Tick PAR-Q / waiver from the <strong>Health & Goals</strong> tab.
+          {t("admin.clientDetail.tickParQHint", "Tick PAR-Q / waiver from the Health & Goals tab.")}
         </p>
       </div>
       <ConsentsCard userId={client.id} />
@@ -2636,6 +2646,7 @@ function DocRow({ label, done, detail }: { label: string; done: boolean; detail?
 // =============== ALERTS PANEL (computed) ===============
 
 function AlertsPanel({ client }: { client: UserResponse }) {
+  const { t } = useTranslation();
   const { data: packages = [] } = usePackages({ userId: client.id });
   const list = packages as Package[];
   const status = (client.clientStatus ?? "incomplete") as ClientStatus;
@@ -2668,7 +2679,7 @@ function AlertsPanel({ client }: { client: UserResponse }) {
         <Bell size={13} /> Alerts ({alerts.length})
       </p>
       {alerts.length === 0 ? (
-        <p className="text-sm text-muted-foreground">All clear — no active alerts for this client.</p>
+        <p className="text-sm text-muted-foreground">{t("admin.clientDetail.noAlerts", "All clear — no active alerts for this client.")}</p>
       ) : (
         <ul className="space-y-2">
           {alerts.map((a, i) => (
@@ -2696,6 +2707,7 @@ function AlertsPanel({ client }: { client: UserResponse }) {
 // =============== SESSION HISTORY (audit log) ===============
 
 function SessionHistoryCard({ userId }: { userId: number }) {
+  const { t } = useTranslation();
   const { data = [], isLoading } = useQuery<PackageSessionHistory[]>({
     queryKey: ["/api/admin/clients", userId, "session-history"],
     queryFn: async () => {
@@ -2712,7 +2724,7 @@ function SessionHistoryCard({ userId }: { userId: number }) {
       {isLoading ? (
         <div className="text-xs text-muted-foreground">Loading…</div>
       ) : data.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No history yet.</p>
+        <p className="text-xs text-muted-foreground">{t("admin.clientDetail.noHistory", "No history yet.")}</p>
       ) : (
         <ul className="space-y-2 max-h-96 overflow-y-auto">
           {data.map((row) => (
