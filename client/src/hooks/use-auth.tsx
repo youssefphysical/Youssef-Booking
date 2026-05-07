@@ -70,15 +70,29 @@ function useRegisterMutation() {
 }
 
 function useLogoutMutation() {
-  const { toast } = useToast();
   return useMutation({
     mutationFn: async () => {
-      await fetch(api.auth.logout.path, { method: api.auth.logout.method, credentials: "include" });
+      // Optimistically flip auth state synchronously so the UI redirects
+      // and re-renders as guest immediately, without waiting for the
+      // round-trip. This is what makes logout feel instant.
+      queryClient.setQueryData([api.auth.me.path], null);
+      try {
+        await fetch(api.auth.logout.path, {
+          method: api.auth.logout.method,
+          credentials: "include",
+          keepalive: true,
+        });
+      } catch {
+        // Best-effort: even if the network call fails, the local session
+        // cache is already cleared below, so the user is locally logged out.
+      }
     },
-    onSuccess: () => {
+    onSettled: () => {
+      // Drop ALL cached data so a stale client/admin payload can't leak
+      // across users on the same browser. Done in onSettled (not onSuccess)
+      // so it runs even if the network call fails.
       queryClient.setQueryData([api.auth.me.path], null);
       queryClient.clear();
-      toast({ title: "Logged out" });
     },
   });
 }

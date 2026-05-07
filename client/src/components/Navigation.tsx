@@ -14,13 +14,14 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { isEffectiveSuperAdmin } from "@shared/schema";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { useTranslation } from "@/i18n";
 
 export function Navigation() {
@@ -28,6 +29,25 @@ export function Navigation() {
   const { user, isLoading: authLoading, logoutMutation } = useAuth();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+
+  const requestLogout = useCallback(() => {
+    // Always close the mobile drawer if it was open, then surface the
+    // confirmation modal. Never trigger the mutation directly from a
+    // header/sidebar button — confirmation is mandatory.
+    setOpen(false);
+    setLogoutOpen(true);
+  }, []);
+
+  const confirmLogout = useCallback(() => {
+    if (logoutMutation.isPending) return; // de-dupe double clicks
+    // Fire-and-forget. Cache flip happens synchronously inside the
+    // mutationFn so the redirect below renders as guest immediately.
+    logoutMutation.mutate(undefined, {
+      onSettled: () => setLogoutOpen(false),
+    });
+    navigate("/");
+  }, [logoutMutation, navigate]);
 
   // ============== AUTH STATE — single source of truth ==============
   // The auth area MUST NEVER disappear. It must always show one of two
@@ -140,10 +160,7 @@ export function Navigation() {
               <span>{t("nav.publicSite")}</span>
             </Link>
             <button
-              onClick={() => {
-                logoutMutation.mutate();
-                navigate("/");
-              }}
+              onClick={requestLogout}
               data-testid="button-logout"
               className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10"
             >
@@ -234,10 +251,7 @@ export function Navigation() {
                 </Link>
               )}
               <button
-                onClick={() => {
-                  logoutMutation.mutate();
-                  navigate("/");
-                }}
+                onClick={requestLogout}
                 data-testid="button-logout"
                 className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 whitespace-nowrap btn-soft"
               >
@@ -268,10 +282,7 @@ export function Navigation() {
           {isConfirmedUser ? (
             <button
               type="button"
-              onClick={() => {
-                logoutMutation.mutate();
-                navigate("/");
-              }}
+              onClick={requestLogout}
               data-testid="button-mobile-signout-pill"
               style={{
                 position: "relative",
@@ -311,6 +322,12 @@ export function Navigation() {
         </div>
       </div>
 
+      <LogoutConfirmDialog
+        open={logoutOpen}
+        onOpenChange={setLogoutOpen}
+        onConfirm={confirmLogout}
+        isPending={logoutMutation.isPending}
+      />
       {open && (
         <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-md">
           <div className="px-5 py-4 space-y-1">
@@ -355,11 +372,7 @@ export function Navigation() {
             {isConfirmedUser && (
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  logoutMutation.mutate();
-                  navigate("/");
-                }}
+                onClick={requestLogout}
                 data-testid="button-mobile-logout"
                 className="flex w-full items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 active:bg-destructive/15 btn-soft"
               >
