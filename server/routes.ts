@@ -7,6 +7,7 @@ import multer from "multer";
 import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
 import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
+import { pool } from "./db";
 import {
   insertBookingSchema,
   updateBookingSchema,
@@ -2177,6 +2178,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
         const dispatch = async (kind: "24h" | "1h") => {
           try {
+            // Atomic check-and-claim: stamp the column NOW with a UPDATE ...
+            // WHERE col IS NULL RETURNING id. If two cron invocations race,
+            // exactly one wins the row. The loser sees rowCount=0 and skips.
+            const col = kind === "24h" ? "reminder_24h_sent_at" : "reminder_1h_sent_at";
+            const claim = await pool.query(
+              `UPDATE bookings SET ${col} = now() WHERE id = $1 AND ${col} IS NULL RETURNING id`,
+              [b.id],
+            );
+            if (claim.rowCount === 0) return; // already claimed by another worker
+
             const owner = await storage.getUser(b.userId).catch(() => undefined);
             if (!owner?.email) return;
             const ownerLang = (owner as any).preferredLanguage || "en";
@@ -2198,10 +2209,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               html: built.html,
               replyTo: trainerEmail(),
             });
-            const stamp = kind === "24h"
-              ? { reminder24hSentAt: new Date() }
-              : { reminder1hSentAt: new Date() };
-            await storage.updateBooking(b.id, stamp as any);
             (result.sent ? sent : failed).push(
               result.sent
                 ? { id: b.id, kind }

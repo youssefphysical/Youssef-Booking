@@ -81,7 +81,9 @@ export async function sendEmail(opts: {
       body: JSON.stringify({
         from,
         to: [opts.to],
-        subject: opts.subject,
+        // Strip CR/LF + control chars from subject to defeat header-injection
+        // attempts via user-controlled values like clientName / clientNotes.
+        subject: String(opts.subject).replace(/[\r\n\u0000-\u001f]+/g, " ").trim().slice(0, 250),
         text: opts.text,
         html: opts.html,
         reply_to: opts.replyTo,
