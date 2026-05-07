@@ -1,7 +1,7 @@
 import { useEffect, useState, memo } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Eye } from "lucide-react";
+import { ArrowRight, Eye, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
@@ -308,6 +308,24 @@ export function HeroSlider() {
         </div>
       )}
 
+      {/* CINEMATIC PREMIUM LAYERS (v9, May-2026, "world-class fitness brand").
+          Four purely-decorative, additive sibling layers stacked between
+          the image (z-auto) and the copy overlay (z-10) so none of them
+          interfere with text contrast, the slide cross-fade, the headline
+          mask reveal, the CTA breathing animation, or the existing v8.7
+          overlays below. References: Apple keynote brand-plate, Nike side
+          accent, WHOOP/Equinox trust micro-strip, A24 film grain.
+          All five honour prefers-reduced-motion via the global block in
+          index.css and use logical properties so the side accent + brand
+          plate auto-flip for RTL (Arabic / Persian / Urdu). */}
+      <div className="hero-brand-plate" data-testid="hero-brand-plate" aria-hidden="true">
+        <span>{t("hero.signature.coachName", "COACH YOUSSEF AHMED")}</span>
+        <span className="hero-brand-dot" />
+        <span>{t("hero.signature.location", "DUBAI · UAE")}</span>
+      </div>
+      <div className="hero-side-accent" aria-hidden="true" />
+      <div className="hero-grain" aria-hidden="true" />
+
       {/* HERO VISUAL POLISH OVERLAYS (v8.7 + v8.7.1, May-2026).
           Two decorative layers on top of the image, both below the
           z-10 copy overlay so neither dims badge/headline/subhead/
@@ -563,9 +581,54 @@ export function HeroSlider() {
                 className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
               />
             </div>
+
+            {/* TRUST MICRO-STRIP — additive, sits below the CTAs only.
+                3 chips separated by tiny dots, uppercase, tracking-wide,
+                white/65. Mirrors the WHOOP/Equinox "credentials at a
+                glance" pattern: certification + experience + reach. The
+                certifications are deliberately left in Latin script
+                (REPs UAE) since the certifying bodies use that exact
+                wording globally. The other two strings are translatable
+                via fallback-keyed t() calls — non-EN locales fall back
+                to English until translations are added. */}
+            <div className="hero-trust-strip" data-testid="hero-trust-strip">
+              <span>{t("hero.trust.cert", "REPs UAE Certified")}</span>
+              <span className="hero-trust-dot" aria-hidden="true" />
+              <span>{t("hero.trust.experience", "10+ Years Experience")}</span>
+              <span className="hero-trust-dot" aria-hidden="true" />
+              <span>{t("hero.trust.clients", "500+ Clients Coached")}</span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* SCROLL CUE — desktop-only Apple/WHOOP signature affordance.
+          Centered horizontally, sits above the pagination dots so they
+          never collide. Hidden on mobile (the bottom-anchored copy
+          block already lives in that vertical space). Smooth scroll
+          jumps to the next section so it doubles as a real navigation
+          aid, not just decoration. */}
+      <button
+        type="button"
+        onClick={() => {
+          const target =
+            document.getElementById("transformations") ??
+            document.getElementById("why") ??
+            document.querySelector("section");
+          (target as HTMLElement | null)?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }}
+        className="hero-scroll-cue"
+        data-testid="hero-scroll-cue"
+        aria-label={t("hero.scrollCue", "Scroll to explore")}
+      >
+        <span className="hero-scroll-cue-label">
+          {t("hero.scrollCueLabel", "SCROLL")}
+        </span>
+        <ChevronDown size={16} strokeWidth={2.2} />
+      </button>
 
       {/* Pagination dots */}
       {slides.length > 1 && (
