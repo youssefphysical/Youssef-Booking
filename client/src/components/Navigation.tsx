@@ -169,6 +169,12 @@ export function Navigation() {
             </button>
           </div>
         </nav>
+        <LogoutConfirmDialog
+          open={logoutOpen}
+          onOpenChange={setLogoutOpen}
+          onConfirm={confirmLogout}
+          isPending={logoutMutation.isPending}
+        />
       </>
     );
   }

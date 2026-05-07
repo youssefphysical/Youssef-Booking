@@ -90,9 +90,14 @@ function useLogoutMutation() {
     onSettled: () => {
       // Drop ALL cached data so a stale client/admin payload can't leak
       // across users on the same browser. Done in onSettled (not onSuccess)
-      // so it runs even if the network call fails.
-      queryClient.setQueryData([api.auth.me.path], null);
+      // so it runs even if the network call fails. Order matters:
+      //   1) clear() wipes EVERYTHING including [me]
+      //   2) re-seed [me]=null so any subscriber that re-renders right
+      //      after the clear sees "guest" and does NOT trigger an
+      //      automatic refetch that could re-hydrate the user from the
+      //      browser's still-valid cookie if the server logout failed.
       queryClient.clear();
+      queryClient.setQueryData([api.auth.me.path], null);
     },
   });
 }
