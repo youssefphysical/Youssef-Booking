@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "npx esbuild server/app.ts --bundle --format=esm --platform=node --target=node20 --packages=external --alias:@shared=./shared --tsconfig=tsconfig.json --outfile=dist/server.mjs && vite build && node scripts/inject-hero.mjs && node scripts/generate-og-hero.mjs",
+  "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "dist/public",
   "installCommand": "npm install",
   "framework": null,
