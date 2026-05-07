@@ -132,23 +132,38 @@ export function Navigation() {
             open ? "flex translate-x-0" : "hidden md:flex md:translate-x-0 -translate-x-full",
           )}
         >
-          <Link href="/" className="mb-10 px-2 block" data-testid="link-home">
-            <h1 className="text-xl font-bold font-display text-gradient-blue whitespace-nowrap">{t("brand.trainerName", "Youssef Ahmed")}</h1>
-            <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase">
+          <Link href="/" className="mb-8 px-1 block min-w-0" data-testid="link-home">
+            <h1 className="text-lg font-bold font-display text-gradient-blue truncate leading-tight px-0.5 py-0.5">{t("brand.trainerName", "Youssef Ahmed")}</h1>
+            <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase leading-snug line-clamp-2">
               {t("nav.adminTagline")}
             </p>
           </Link>
 
-          <div className="flex-1 space-y-1">
-            <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location === "/admin/packages"} onClick={() => setOpen(false)} />
-            <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
-            {isSuperAdmin && (
-              <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
-            )}
-            <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
+          <div className="flex-1 space-y-4">
+            <div className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-main">
+                {t("nav.section.main")}
+              </p>
+              <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
+            </div>
+            <div className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-business">
+                {t("nav.section.business")}
+              </p>
+              <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location === "/admin/packages"} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
+            </div>
+            <div className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-system">
+                {t("nav.section.system")}
+              </p>
+              {isSuperAdmin && (
+                <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
+              )}
+              <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
+            </div>
           </div>
 
           <div className="pt-4 border-t border-border space-y-2">
