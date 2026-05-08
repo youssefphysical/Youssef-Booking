@@ -1,0 +1,163 @@
+Proceed with:
+
+FULL PERFORMANCE & DELIVERY OPTIMIZATION SPRINT
+before starting AI systems.
+
+Priority:
+turn the platform into a truly fast, premium-feeling production app across mobile + desktop.
+
+==================================================
+MAIN GOALS
+==================================================
+
+1. Reduce CLS/layout shifts
+2. Reduce image payload size
+3. Improve mobile loading speed
+4. Improve perceived performance
+5. Improve scroll/render smoothness
+6. Improve low-network experience
+7. Improve route transition feel
+8. Reduce unnecessary re-renders
+9. Harden responsive behavior
+10. Make the platform feel ultra-fluid
+
+==================================================
+IMAGE OPTIMIZATION
+==================================================
+
+Implement:
+
+- automatic WebP/AVIF generation
+- responsive srcset sizes
+- lazy loading everywhere appropriate
+- blur placeholders / shimmer placeholders
+- priority loading ONLY for above-the-fold hero assets
+- defer below-the-fold media
+- compression pipeline
+- gallery image optimization
+- transformation image optimization
+- avatar optimization
+- nutrition attachment optimization
+
+Audit all:
+- homepage images
+- transformation gallery
+- profile images
+- uploaded media
+- nutrition assets
+
+==================================================
+CLS / LAYOUT STABILITY
+==================================================
+
+Fix:
+- unstable image containers
+- dynamic card resizing
+- loading jumps
+- skeleton mismatches
+- tab height jumps
+- drawer width shifts
+- sticky header movement
+- mobile viewport snapping
+
+Every component should reserve stable layout space before content loads.
+
+==================================================
+PERCEIVED PERFORMANCE
+==================================================
+
+Improve:
+- route transitions
+- optimistic UI updates
+- progressive rendering
+- staggered loading
+- smarter skeleton timing
+- smooth micro-interactions
+- scroll momentum feel
+- instant-feeling navigation
+
+Dashboard should feel:
+fast even before everything fully loads.
+
+==================================================
+REACT PERFORMANCE
+==================================================
+
+Audit and optimize:
+- unnecessary renders
+- large table rendering
+- expensive chart renders
+- context over-rendering
+- unstable callbacks
+- oversized state trees
+- repeated selectors
+
+Use:
+- memoization where truly needed
+- virtualization for long tables/lists
+- code splitting
+- route-level lazy loading
+
+==================================================
+MOBILE EXPERIENCE HARDENING
+==================================================
+
+Validate on:
+- small Android devices
+- Samsung Internet
+- iPhone Safari
+- low-memory devices
+
+Fix:
+- touch targets
+- keyboard overlaps
+- drawer responsiveness
+- scroll locking
+- overscroll behavior
+- sticky footer issues
+- bottom-nav spacing
+- viewport resize behavior
+
+==================================================
+NETWORK & DELIVERY
+==================================================
+
+Optimize:
+- cache headers
+- static asset delivery
+- CDN usage
+- font loading
+- preconnect/preload strategy
+- chunk splitting
+- JS bundle sizes
+
+Reduce initial JS as much as safely possible.
+
+==================================================
+SAFETY RULES
+==================================================
+
+DO NOT:
+- break auth
+- touch database schema unnecessarily
+- break analytics
+- break nutrition systems
+- break supplements
+- break bookings
+- break translations
+
+==================================================
+DELIVERY FLOW
+==================================================
+
+Implement in safe deployable batches:
+audit → optimize → typecheck → architect review → push → deploy → verify
+
+At the end provide:
+- before vs after performance summary
+- Lighthouse improvements
+- mobile improvements
+- bundle reductions
+- CLS fixes summary
+- remaining bottlenecks
+- recommendation for AI-readiness
