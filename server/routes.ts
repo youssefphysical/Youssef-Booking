@@ -22,6 +22,8 @@ import {
   updateFoodSchema,
   insertMealSchema,
   updateMealSchema,
+  insertNutritionPlanSchema,
+  updateNutritionPlanSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2178,6 +2180,106 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const me = req.user as User;
     const dup = await storage.duplicateMeal(id, me.id);
     if (!dup) return res.status(404).json({ message: "Meal not found" });
+    res.status(201).json(dup);
+  });
+
+  // ============== NUTRITION PLANS (Phase 4) ==============
+  // Admin-managed client nutrition plans. The full plan tree
+  // (plan → days → meals → items) is FULL-snapshotted server-side
+  // so editing/deleting library foods or meals never mutates a
+  // delivered plan. Cached per-meal totals are recomputed on every
+  // write via shared/nutrition.ts. There is exactly one /me/active
+  // endpoint for the client view — it strips private trainer notes
+  // and enforces ownership at the DB filter level.
+
+  // CLIENT-FACING: must be registered BEFORE the admin /:id route
+  // so Express doesn't treat "me" as a numeric id.
+  app.get("/api/nutrition-plans/me/active", async (req, res) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const me = req.user as User;
+    const plan = await storage.getActiveNutritionPlanForUser(me.id);
+    if (!plan) return res.status(404).json({ message: "No active nutrition plan" });
+    // Trainer-only field — never leak to client surface.
+    const { privateNotes: _strip, ...rest } = plan as any;
+    res.json(rest);
+  });
+
+  app.get("/api/nutrition-plans", requireAdmin, async (req, res) => {
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    const status =
+      typeof req.query.status === "string" && req.query.status ? req.query.status : undefined;
+    const limit = req.query.limit
+      ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200)
+      : 50;
+    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
+    const result = await storage.getNutritionPlans({
+      userId: userId && Number.isFinite(userId) ? userId : undefined,
+      status,
+      limit,
+      offset,
+    });
+    res.json(result);
+  });
+
+  app.get("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const plan = await storage.getNutritionPlan(id);
+    if (!plan) return res.status(404).json({ message: "Plan not found" });
+    res.json(plan);
+  });
+
+  app.post("/api/nutrition-plans", requireAdmin, async (req, res) => {
+    const parsed = insertNutritionPlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid plan",
+        errors: parsed.error.errors,
+      });
+    }
+    // Reject if the target user doesn't exist or isn't a client.
+    const target = await storage.getUser(parsed.data.userId);
+    if (!target) return res.status(400).json({ message: "Client not found" });
+    const me = req.user as User;
+    const { days, ...plan } = parsed.data;
+    const created = await storage.createNutritionPlan(plan, days, me.id);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateNutritionPlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid update",
+        errors: parsed.error.errors,
+      });
+    }
+    const existing = await storage.getNutritionPlan(id);
+    if (!existing) return res.status(404).json({ message: "Plan not found" });
+    const { days, userId: _ignore, ...rest } = parsed.data as any;
+    const updated = await storage.updateNutritionPlan(id, rest, days);
+    res.json(updated);
+  });
+
+  app.delete("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const existing = await storage.getNutritionPlan(id);
+    if (!existing) return res.status(404).json({ message: "Plan not found" });
+    await storage.deleteNutritionPlan(id);
+    res.sendStatus(204);
+  });
+
+  app.post("/api/nutrition-plans/:id/duplicate", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const me = req.user as User;
+    const dup = await storage.duplicateNutritionPlan(id, me.id);
+    if (!dup) return res.status(404).json({ message: "Plan not found" });
     res.status(201).json(dup);
   });
 

@@ -17,6 +17,8 @@ import {
   updateFoodSchema,
   insertMealSchema,
   updateMealSchema,
+  insertNutritionPlanSchema,
+  updateNutritionPlanSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -211,6 +213,28 @@ export const api = {
     duplicate: { method: "POST" as const, path: "/api/meals/:id/duplicate" },
   },
 
+  nutritionPlans: {
+    // Admin: ?userId=&status=&limit=&offset=
+    list: { method: "GET" as const, path: "/api/nutrition-plans" },
+    // Admin: full plan (including private notes).
+    get: { method: "GET" as const, path: "/api/nutrition-plans/:id" },
+    create: {
+      method: "POST" as const,
+      path: "/api/nutrition-plans",
+      input: insertNutritionPlanSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/nutrition-plans/:id",
+      input: updateNutritionPlanSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/nutrition-plans/:id" },
+    duplicate: { method: "POST" as const, path: "/api/nutrition-plans/:id/duplicate" },
+    // Client-facing: returns the requesting user's active plan with
+    // private notes stripped. 404 if no active plan exists.
+    mine: { method: "GET" as const, path: "/api/nutrition-plans/me/active" },
+  },
+
   inbody: {
     list: { method: "GET" as const, path: "/api/inbody" }, // ?userId=
     get: { method: "GET" as const, path: "/api/inbody/:id" },
@@ -283,6 +307,8 @@ export type CreateFoodInput = z.infer<typeof api.foods.create.input>;
 export type UpdateFoodInput = z.infer<typeof api.foods.update.input>;
 export type CreateMealInput = z.infer<typeof api.meals.create.input>;
 export type UpdateMealInput = z.infer<typeof api.meals.update.input>;
+export type CreateNutritionPlanInput = z.infer<typeof api.nutritionPlans.create.input>;
+export type UpdateNutritionPlanInput = z.infer<typeof api.nutritionPlans.update.input>;
 export type UpdatePackageInput = z.infer<typeof api.packages.update.input>;
 export type CreatePackageTemplateInput = z.infer<typeof api.packageTemplates.create.input>;
 export type UpdatePackageTemplateInput = z.infer<typeof api.packageTemplates.update.input>;

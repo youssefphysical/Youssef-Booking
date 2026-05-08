@@ -18,6 +18,10 @@ import {
   foods,
   meals,
   mealItems,
+  nutritionPlans,
+  nutritionPlanDays,
+  nutritionPlanMeals,
+  nutritionPlanMealItems,
   type Food,
   type InsertFood,
   type UpdateFood,
@@ -27,6 +31,11 @@ import {
   type InsertMeal,
   type UpdateMeal,
   type MealWithItems,
+  type NutritionPlan,
+  type InsertNutritionPlan,
+  type UpdateNutritionPlan,
+  type PlanDayInput,
+  type NutritionPlanFull,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -220,6 +229,31 @@ export interface IStorage {
   ): Promise<MealWithItems | undefined>;
   deleteMeal(id: number): Promise<void>;
   duplicateMeal(id: number, createdByUserId: number | null): Promise<MealWithItems | undefined>;
+
+  // Nutrition Plans (Phase 4) — full plan tree with snapshots.
+  getNutritionPlans(filters?: {
+    userId?: number;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: NutritionPlan[]; total: number }>;
+  getNutritionPlan(id: number): Promise<NutritionPlanFull | undefined>;
+  getActiveNutritionPlanForUser(userId: number): Promise<NutritionPlanFull | undefined>;
+  createNutritionPlan(
+    plan: Omit<InsertNutritionPlan, "days">,
+    days: PlanDayInput[],
+    createdByUserId: number | null,
+  ): Promise<NutritionPlanFull>;
+  updateNutritionPlan(
+    id: number,
+    updates: Omit<UpdateNutritionPlan, "days" | "userId">,
+    days?: PlanDayInput[],
+  ): Promise<NutritionPlanFull | undefined>;
+  deleteNutritionPlan(id: number): Promise<void>;
+  duplicateNutritionPlan(
+    id: number,
+    createdByUserId: number | null,
+  ): Promise<NutritionPlanFull | undefined>;
 
   // Package session-history audit log
   getPackageSessionHistory(filters?: {
@@ -875,6 +909,286 @@ export class DatabaseStorage implements IStorage {
   async deleteMeal(id: number) {
     // ON DELETE CASCADE on meal_items.meal_id cleans up children.
     await db.delete(meals).where(eq(meals.id, id));
+  }
+
+  // ===== Nutrition Plans (Phase 4) =====
+  // The plan tree (plan → days → meals → items) is FULLY snapshotted
+  // at insert time so editing/deleting a food or library meal never
+  // mutates a delivered client plan. Cached totals on plan_meals row
+  // are recomputed on every write via shared/nutrition.ts.
+  async getNutritionPlans(filters?: {
+    userId?: number;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const conds: any[] = [];
+    if (filters?.userId) conds.push(eq(nutritionPlans.userId, filters.userId));
+    if (filters?.status) conds.push(eq(nutritionPlans.status, filters.status));
+    const where = conds.length > 0 ? and(...conds) : undefined;
+    const itemsQ = where
+      ? db.select().from(nutritionPlans).where(where)
+      : db.select().from(nutritionPlans);
+    const items = await itemsQ
+      .orderBy(desc(nutritionPlans.updatedAt), desc(nutritionPlans.id))
+      .limit(limit)
+      .offset(offset);
+    const totalQ = where
+      ? db.select({ count: sql<number>`count(*)::int` }).from(nutritionPlans).where(where)
+      : db.select({ count: sql<number>`count(*)::int` }).from(nutritionPlans);
+    const [{ count }] = await totalQ;
+    return { items, total: Number(count) || 0 };
+  }
+
+  async getNutritionPlan(id: number): Promise<NutritionPlanFull | undefined> {
+    const [plan] = await db.select().from(nutritionPlans).where(eq(nutritionPlans.id, id));
+    if (!plan) return undefined;
+    const days = await db
+      .select()
+      .from(nutritionPlanDays)
+      .where(eq(nutritionPlanDays.planId, id))
+      .orderBy(asc(nutritionPlanDays.sortOrder), asc(nutritionPlanDays.id));
+    const dayIds = days.map((d) => d.id);
+    const allMeals = dayIds.length
+      ? await db
+          .select()
+          .from(nutritionPlanMeals)
+          .where(inArray(nutritionPlanMeals.planDayId, dayIds))
+          .orderBy(asc(nutritionPlanMeals.sortOrder), asc(nutritionPlanMeals.id))
+      : [];
+    const mealIds = allMeals.map((m) => m.id);
+    const allItems = mealIds.length
+      ? await db
+          .select()
+          .from(nutritionPlanMealItems)
+          .where(inArray(nutritionPlanMealItems.planMealId, mealIds))
+          .orderBy(asc(nutritionPlanMealItems.sortOrder), asc(nutritionPlanMealItems.id))
+      : [];
+    const itemsByMeal = new Map<number, typeof allItems>();
+    for (const it of allItems) {
+      const arr = itemsByMeal.get(it.planMealId) ?? [];
+      arr.push(it);
+      itemsByMeal.set(it.planMealId, arr);
+    }
+    const mealsByDay = new Map<number, any[]>();
+    for (const m of allMeals) {
+      const arr = mealsByDay.get(m.planDayId) ?? [];
+      arr.push({ ...m, items: itemsByMeal.get(m.id) ?? [] });
+      mealsByDay.set(m.planDayId, arr);
+    }
+    return {
+      ...plan,
+      days: days.map((d) => ({ ...d, meals: mealsByDay.get(d.id) ?? [] })),
+    };
+  }
+
+  async getActiveNutritionPlanForUser(userId: number) {
+    const [plan] = await db
+      .select()
+      .from(nutritionPlans)
+      .where(and(eq(nutritionPlans.userId, userId), eq(nutritionPlans.status, "active")))
+      .orderBy(desc(nutritionPlans.updatedAt))
+      .limit(1);
+    if (!plan) return undefined;
+    return this.getNutritionPlan(plan.id);
+  }
+
+  /**
+   * Insert the full days → meals → items tree for a plan, snapshotting
+   * everything and recomputing per-meal cached totals via shared math.
+   */
+  private async insertPlanTree(planId: number, days: PlanDayInput[]) {
+    const { computeMealTotals } = await import("@shared/nutrition");
+    for (let dIdx = 0; dIdx < days.length; dIdx++) {
+      const d = days[dIdx];
+      const [insertedDay] = await db
+        .insert(nutritionPlanDays)
+        .values({
+          planId,
+          dayType: d.dayType,
+          label: d.label ?? null,
+          sortOrder: d.sortOrder ?? dIdx,
+          targetKcal: d.targetKcal,
+          targetProteinG: d.targetProteinG,
+          targetCarbsG: d.targetCarbsG,
+          targetFatsG: d.targetFatsG,
+          notes: d.notes ?? null,
+        })
+        .returning();
+      for (let mIdx = 0; mIdx < d.meals.length; mIdx++) {
+        const m = d.meals[mIdx];
+        const totals = computeMealTotals(
+          m.items.map((i) => ({
+            quantity: i.quantity,
+            kcal: i.kcal,
+            proteinG: i.proteinG,
+            carbsG: i.carbsG,
+            fatsG: i.fatsG,
+            fiberG: i.fiberG,
+            sugarG: i.sugarG,
+            sodiumMg: i.sodiumMg,
+          })),
+        );
+        const [insertedMeal] = await db
+          .insert(nutritionPlanMeals)
+          .values({
+            planDayId: insertedDay.id,
+            sourceMealId: m.sourceMealId ?? null,
+            name: m.name,
+            category: m.category,
+            notes: m.notes ?? null,
+            sortOrder: m.sortOrder ?? mIdx,
+            totalKcal: totals.kcal,
+            totalProteinG: totals.proteinG,
+            totalCarbsG: totals.carbsG,
+            totalFatsG: totals.fatsG,
+          })
+          .returning();
+        if (m.items.length > 0) {
+          await db.insert(nutritionPlanMealItems).values(
+            m.items.map((it, iIdx) => ({
+              planMealId: insertedMeal.id,
+              sourceFoodId: it.sourceFoodId ?? null,
+              name: it.name,
+              servingSize: it.servingSize,
+              servingUnit: it.servingUnit,
+              kcal: it.kcal,
+              proteinG: it.proteinG,
+              carbsG: it.carbsG,
+              fatsG: it.fatsG,
+              fiberG: it.fiberG ?? null,
+              sugarG: it.sugarG ?? null,
+              sodiumMg: it.sodiumMg ?? null,
+              quantity: it.quantity,
+              notes: it.notes ?? null,
+              sortOrder: it.sortOrder ?? iIdx,
+            })),
+          );
+        }
+      }
+    }
+  }
+
+  async createNutritionPlan(
+    plan: Omit<InsertNutritionPlan, "days">,
+    days: PlanDayInput[],
+    createdByUserId: number | null,
+  ): Promise<NutritionPlanFull> {
+    // If creating an active plan, archive any other actives for this
+    // client so the "current active plan" lookup stays unambiguous.
+    if ((plan.status ?? "draft") === "active") {
+      await db
+        .update(nutritionPlans)
+        .set({ status: "archived", updatedAt: new Date() })
+        .where(
+          and(
+            eq(nutritionPlans.userId, plan.userId),
+            eq(nutritionPlans.status, "active"),
+          ),
+        );
+    }
+    const [created] = await db
+      .insert(nutritionPlans)
+      .values({
+        ...plan,
+        status: plan.status ?? "draft",
+        createdByUserId: createdByUserId ?? null,
+      })
+      .returning();
+    await this.insertPlanTree(created.id, days);
+    const full = await this.getNutritionPlan(created.id);
+    return full!;
+  }
+
+  async updateNutritionPlan(
+    id: number,
+    updates: Omit<UpdateNutritionPlan, "days" | "userId">,
+    days?: PlanDayInput[],
+  ): Promise<NutritionPlanFull | undefined> {
+    const [existing] = await db.select().from(nutritionPlans).where(eq(nutritionPlans.id, id));
+    if (!existing) return undefined;
+    // Promote-to-active: archive any other actives for this client.
+    if (updates.status === "active" && existing.status !== "active") {
+      await db
+        .update(nutritionPlans)
+        .set({ status: "archived", updatedAt: new Date() })
+        .where(
+          and(
+            eq(nutritionPlans.userId, existing.userId),
+            eq(nutritionPlans.status, "active"),
+          ),
+        );
+    }
+    const patch: Record<string, unknown> = { ...updates, updatedAt: new Date() };
+    if (Object.keys(patch).length > 1) {
+      await db.update(nutritionPlans).set(patch).where(eq(nutritionPlans.id, id));
+    }
+    if (days) {
+      // Atomic replace of the day/meal/item tree. ON DELETE CASCADE on
+      // plan_id walks the whole tree down — single delete here.
+      await db.delete(nutritionPlanDays).where(eq(nutritionPlanDays.planId, id));
+      await this.insertPlanTree(id, days);
+    }
+    return this.getNutritionPlan(id);
+  }
+
+  async deleteNutritionPlan(id: number) {
+    await db.delete(nutritionPlans).where(eq(nutritionPlans.id, id));
+  }
+
+  async duplicateNutritionPlan(id: number, createdByUserId: number | null) {
+    const src = await this.getNutritionPlan(id);
+    if (!src) return undefined;
+    const days: PlanDayInput[] = src.days.map((d) => ({
+      dayType: d.dayType as any,
+      label: d.label,
+      sortOrder: d.sortOrder,
+      targetKcal: d.targetKcal,
+      targetProteinG: d.targetProteinG,
+      targetCarbsG: d.targetCarbsG,
+      targetFatsG: d.targetFatsG,
+      notes: d.notes,
+      meals: d.meals.map((m) => ({
+        sourceMealId: m.sourceMealId,
+        name: m.name,
+        category: m.category as any,
+        notes: m.notes,
+        sortOrder: m.sortOrder,
+        items: m.items.map((it) => ({
+          sourceFoodId: it.sourceFoodId,
+          name: it.name,
+          servingSize: it.servingSize,
+          servingUnit: it.servingUnit,
+          kcal: it.kcal,
+          proteinG: it.proteinG,
+          carbsG: it.carbsG,
+          fatsG: it.fatsG,
+          fiberG: it.fiberG,
+          sugarG: it.sugarG,
+          sodiumMg: it.sodiumMg,
+          quantity: it.quantity,
+          notes: it.notes,
+          sortOrder: it.sortOrder,
+        })),
+      })),
+    }));
+    return this.createNutritionPlan(
+      {
+        userId: src.userId,
+        name: `${src.name} (copy)`,
+        goal: src.goal as any,
+        status: "draft",
+        startDate: src.startDate,
+        reviewDate: src.reviewDate,
+        waterTargetMl: src.waterTargetMl,
+        publicNotes: src.publicNotes,
+        privateNotes: src.privateNotes,
+      },
+      days,
+      createdByUserId,
+    );
   }
 
   async duplicateMeal(id: number, createdByUserId: number | null) {

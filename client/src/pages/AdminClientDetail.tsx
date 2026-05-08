@@ -76,6 +76,7 @@ import { motion } from "framer-motion";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ClientNutritionTab } from "@/components/ClientNutritionTab";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -225,6 +226,9 @@ export default function AdminClientDetail() {
           <TabsTrigger value="documents" data-testid="tab-detail-documents">
             <FileCheck2 size={13} className="mr-1.5" /> {t("admin.clientDetail.tabDocuments", "Documents")}
           </TabsTrigger>
+          <TabsTrigger value="nutrition" data-testid="tab-detail-nutrition">
+            {t("admin.tabs.nutrition", "Nutrition")}
+          </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
             <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
           </TabsTrigger>
@@ -247,6 +251,7 @@ export default function AdminClientDetail() {
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
         <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
         <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
+        <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
         <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
       </Tabs>
       </div>

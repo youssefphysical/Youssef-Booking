@@ -34,6 +34,9 @@ import AdminMacroCalculator from "@/pages/AdminMacroCalculator";
 import AdminFoodLibrary from "@/pages/AdminFoodLibrary";
 import AdminMealLibrary from "@/pages/AdminMealLibrary";
 import AdminMealBuilder from "@/pages/AdminMealBuilder";
+import AdminNutritionPlans from "@/pages/AdminNutritionPlans";
+import AdminNutritionPlanBuilder from "@/pages/AdminNutritionPlanBuilder";
+import ClientNutritionPlan from "@/pages/ClientNutritionPlan";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
 import DirectPaymentPage from "@/pages/DirectPaymentPage";
@@ -115,6 +118,9 @@ function Router() {
         <Route path="/profile">
           <ProtectedRoute component={ProfilePage} clientOnly />
         </Route>
+        <Route path="/my-nutrition">
+          <ProtectedRoute component={ClientNutritionPlan} clientOnly />
+        </Route>
 
         {/* Admin */}
         <Route path="/admin">
@@ -146,6 +152,12 @@ function Router() {
         </Route>
         <Route path="/admin/nutrition/meals/:id">
           <ProtectedRoute component={AdminMealBuilder} adminOnly />
+        </Route>
+        <Route path="/admin/nutrition/plans">
+          <ProtectedRoute component={AdminNutritionPlans} adminOnly />
+        </Route>
+        <Route path="/admin/nutrition/plans/:id">
+          <ProtectedRoute component={AdminNutritionPlanBuilder} adminOnly />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />
