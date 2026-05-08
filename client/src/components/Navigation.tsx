@@ -9,6 +9,7 @@ import {
   PackagePlus,
   Calculator,
   Apple,
+  UtensilsCrossed,
   Settings as SettingsIcon,
   ShieldCheck,
   LogOut,
@@ -158,6 +159,7 @@ export function Navigation() {
               <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
               <SidebarLink href="/admin/nutrition/macro-calculator" icon={<Calculator size={18} />} label={t("nav.macroCalculator", "Macro Calculator")} active={location === "/admin/nutrition/macro-calculator"} onClick={() => setOpen(false)} />
               <SidebarLink href="/admin/nutrition/foods" icon={<Apple size={18} />} label={t("nav.foodLibrary", "Food Library")} active={location.startsWith("/admin/nutrition/foods")} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/nutrition/meals" icon={<UtensilsCrossed size={18} />} label={t("nav.mealLibrary", "Meal Library")} active={location.startsWith("/admin/nutrition/meals")} onClick={() => setOpen(false)} />
             </div>
             <div className="space-y-1">
               <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-system">

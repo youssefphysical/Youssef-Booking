@@ -15,6 +15,8 @@ import {
   insertProgressPhotoSchema,
   insertFoodSchema,
   updateFoodSchema,
+  insertMealSchema,
+  updateMealSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -189,6 +191,26 @@ export const api = {
     duplicate: { method: "POST" as const, path: "/api/foods/:id/duplicate" },
   },
 
+  meals: {
+    // ?search=&category=&templateOnly=true&activeOnly=true&limit=50&offset=0
+    // Returns { items: Meal[], total: number } (cached totals included).
+    list: { method: "GET" as const, path: "/api/meals" },
+    // Returns MealWithItems (items sorted by sort_order asc).
+    get: { method: "GET" as const, path: "/api/meals/:id" },
+    create: {
+      method: "POST" as const,
+      path: "/api/meals",
+      input: insertMealSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/meals/:id",
+      input: updateMealSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/meals/:id" },
+    duplicate: { method: "POST" as const, path: "/api/meals/:id/duplicate" },
+  },
+
   inbody: {
     list: { method: "GET" as const, path: "/api/inbody" }, // ?userId=
     get: { method: "GET" as const, path: "/api/inbody/:id" },
@@ -257,11 +279,13 @@ export type UpdateSettingsInput = z.infer<typeof api.settings.update.input>;
 export type CreateBlockedSlotInput = z.infer<typeof api.blockedSlots.create.input>;
 export type UpdateProfileInput = z.infer<typeof api.users.update.input>;
 export type CreatePackageInput = z.infer<typeof api.packages.create.input>;
+export type CreateFoodInput = z.infer<typeof api.foods.create.input>;
+export type UpdateFoodInput = z.infer<typeof api.foods.update.input>;
+export type CreateMealInput = z.infer<typeof api.meals.create.input>;
+export type UpdateMealInput = z.infer<typeof api.meals.update.input>;
 export type UpdatePackageInput = z.infer<typeof api.packages.update.input>;
 export type CreatePackageTemplateInput = z.infer<typeof api.packageTemplates.create.input>;
 export type UpdatePackageTemplateInput = z.infer<typeof api.packageTemplates.update.input>;
 export type CreateInbodyInput = z.infer<typeof api.inbody.create.input>;
 export type UpdateInbodyInput = z.infer<typeof api.inbody.update.input>;
 export type CreateProgressInput = z.infer<typeof api.progress.create.input>;
-export type CreateFoodInput = z.infer<typeof api.foods.create.input>;
-export type UpdateFoodInput = z.infer<typeof api.foods.update.input>;

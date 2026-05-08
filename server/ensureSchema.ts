@@ -270,6 +270,52 @@ async function run(): Promise<void> {
       ON foods (is_supplement);
     CREATE INDEX IF NOT EXISTS foods_created_by_idx
       ON foods (created_by_user_id);
+
+    -- Nutrition OS — Phase 3: Meal Builder
+    CREATE TABLE IF NOT EXISTS meals (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      name_ar text,
+      description text,
+      category text NOT NULL DEFAULT 'other',
+      notes text,
+      is_template boolean NOT NULL DEFAULT true,
+      is_active boolean NOT NULL DEFAULT true,
+      total_kcal double precision NOT NULL DEFAULT 0,
+      total_protein_g double precision NOT NULL DEFAULT 0,
+      total_carbs_g double precision NOT NULL DEFAULT 0,
+      total_fats_g double precision NOT NULL DEFAULT 0,
+      created_by_user_id integer,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS meals_category_idx ON meals (category);
+    CREATE INDEX IF NOT EXISTS meals_active_idx ON meals (is_active);
+    CREATE INDEX IF NOT EXISTS meals_template_idx ON meals (is_template);
+    CREATE INDEX IF NOT EXISTS meals_created_by_idx ON meals (created_by_user_id);
+    CREATE INDEX IF NOT EXISTS meals_name_lower_idx ON meals (lower(name));
+
+    CREATE TABLE IF NOT EXISTS meal_items (
+      id serial PRIMARY KEY,
+      meal_id integer NOT NULL REFERENCES meals(id) ON DELETE CASCADE,
+      food_id integer,
+      name text NOT NULL,
+      serving_size double precision NOT NULL DEFAULT 100,
+      serving_unit text NOT NULL DEFAULT 'g',
+      kcal double precision NOT NULL DEFAULT 0,
+      protein_g double precision NOT NULL DEFAULT 0,
+      carbs_g double precision NOT NULL DEFAULT 0,
+      fats_g double precision NOT NULL DEFAULT 0,
+      fiber_g double precision,
+      sugar_g double precision,
+      sodium_mg double precision,
+      quantity double precision NOT NULL DEFAULT 1,
+      notes text,
+      sort_order integer NOT NULL DEFAULT 0,
+      created_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS meal_items_meal_idx ON meal_items (meal_id);
+    CREATE INDEX IF NOT EXISTS meal_items_food_idx ON meal_items (food_id);
   `;
 
   try {

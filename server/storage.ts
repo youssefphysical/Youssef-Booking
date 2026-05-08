@@ -16,9 +16,17 @@ import {
   extensionRequests,
   packageSessionHistory,
   foods,
+  meals,
+  mealItems,
   type Food,
   type InsertFood,
   type UpdateFood,
+  type Meal,
+  type MealItem,
+  type MealItemInput,
+  type InsertMeal,
+  type UpdateMeal,
+  type MealWithItems,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -189,6 +197,29 @@ export interface IStorage {
   updateFood(id: number, updates: UpdateFood): Promise<Food>;
   deleteFood(id: number): Promise<void>;
   duplicateFood(id: number, createdByUserId: number | null): Promise<Food | undefined>;
+
+  // Meals (Nutrition OS — Phase 3)
+  getMeals(filters?: {
+    search?: string;
+    category?: string;
+    templateOnly?: boolean;
+    activeOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: Meal[]; total: number }>;
+  getMeal(id: number): Promise<MealWithItems | undefined>;
+  createMeal(
+    meal: Omit<InsertMeal, "items">,
+    items: MealItemInput[],
+    createdByUserId: number | null,
+  ): Promise<MealWithItems>;
+  updateMeal(
+    id: number,
+    updates: Omit<UpdateMeal, "items">,
+    items?: MealItemInput[],
+  ): Promise<MealWithItems | undefined>;
+  deleteMeal(id: number): Promise<void>;
+  duplicateMeal(id: number, createdByUserId: number | null): Promise<MealWithItems | undefined>;
 
   // Package session-history audit log
   getPackageSessionHistory(filters?: {
@@ -678,6 +709,200 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return dup;
+  }
+
+  // ===== Meals (Nutrition OS — Phase 3) =====
+  // Meals are composed of N meal_items. Items are SNAPSHOTS of foods,
+  // so editing/deleting the underlying food never mutates an existing
+  // meal. Cached totals on the meal row are recomputed from items on
+  // every write via the shared `computeMealTotals` helper, so list
+  // views, PDF exports and AI inputs never need to JOIN+SUM.
+  async getMeals(filters?: {
+    search?: string;
+    category?: string;
+    templateOnly?: boolean;
+    activeOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }) {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const conds: any[] = [];
+    if (filters?.search && filters.search.trim().length > 0) {
+      conds.push(ilike(meals.name, `%${filters.search.trim()}%`));
+    }
+    if (filters?.category) conds.push(eq(meals.category, filters.category));
+    if (filters?.templateOnly) conds.push(eq(meals.isTemplate, true));
+    if (filters?.activeOnly) conds.push(eq(meals.isActive, true));
+    const where = conds.length > 0 ? and(...conds) : undefined;
+
+    const itemsQ = where ? db.select().from(meals).where(where) : db.select().from(meals);
+    const items = await itemsQ
+      .orderBy(asc(meals.name), asc(meals.id))
+      .limit(limit)
+      .offset(offset);
+
+    const totalQ = where
+      ? db.select({ count: sql<number>`count(*)::int` }).from(meals).where(where)
+      : db.select({ count: sql<number>`count(*)::int` }).from(meals);
+    const [{ count }] = await totalQ;
+    return { items, total: Number(count) || 0 };
+  }
+
+  async getMeal(id: number): Promise<MealWithItems | undefined> {
+    const [m] = await db.select().from(meals).where(eq(meals.id, id));
+    if (!m) return undefined;
+    const its = await db
+      .select()
+      .from(mealItems)
+      .where(eq(mealItems.mealId, id))
+      .orderBy(asc(mealItems.sortOrder), asc(mealItems.id));
+    return { ...m, items: its };
+  }
+
+  /**
+   * Recompute & persist cached totals on the meals row from the
+   * authoritative meal_items list. Single source of truth for math
+   * lives in `shared/nutrition.ts` so server / client / PDF / AI all
+   * agree on the numbers down to the same rounding rule.
+   */
+  private async recomputeMealTotals(mealId: number) {
+    const its = await db.select().from(mealItems).where(eq(mealItems.mealId, mealId));
+    const { computeMealTotals } = await import("@shared/nutrition");
+    const t = computeMealTotals(
+      its.map((i) => ({
+        quantity: i.quantity,
+        kcal: i.kcal,
+        proteinG: i.proteinG,
+        carbsG: i.carbsG,
+        fatsG: i.fatsG,
+        fiberG: i.fiberG,
+        sugarG: i.sugarG,
+        sodiumMg: i.sodiumMg,
+      })),
+    );
+    await db
+      .update(meals)
+      .set({
+        totalKcal: t.kcal,
+        totalProteinG: t.proteinG,
+        totalCarbsG: t.carbsG,
+        totalFatsG: t.fatsG,
+        updatedAt: new Date(),
+      })
+      .where(eq(meals.id, mealId));
+  }
+
+  async createMeal(
+    meal: Omit<InsertMeal, "items">,
+    items: MealItemInput[],
+    createdByUserId: number | null,
+  ): Promise<MealWithItems> {
+    const [created] = await db
+      .insert(meals)
+      .values({ ...meal, createdByUserId: createdByUserId ?? null })
+      .returning();
+    if (items.length > 0) {
+      await db.insert(mealItems).values(
+        items.map((it, idx) => ({
+          mealId: created.id,
+          foodId: it.foodId ?? null,
+          name: it.name,
+          servingSize: it.servingSize,
+          servingUnit: it.servingUnit,
+          kcal: it.kcal,
+          proteinG: it.proteinG,
+          carbsG: it.carbsG,
+          fatsG: it.fatsG,
+          fiberG: it.fiberG ?? null,
+          sugarG: it.sugarG ?? null,
+          sodiumMg: it.sodiumMg ?? null,
+          quantity: it.quantity,
+          notes: it.notes ?? null,
+          sortOrder: it.sortOrder ?? idx,
+        })),
+      );
+    }
+    await this.recomputeMealTotals(created.id);
+    const full = await this.getMeal(created.id);
+    return full!;
+  }
+
+  async updateMeal(
+    id: number,
+    updates: Omit<UpdateMeal, "items">,
+    items?: MealItemInput[],
+  ): Promise<MealWithItems | undefined> {
+    const [existing] = await db.select().from(meals).where(eq(meals.id, id));
+    if (!existing) return undefined;
+    if (Object.keys(updates).length > 0) {
+      await db
+        .update(meals)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(meals.id, id));
+    }
+    if (items) {
+      // Atomic replace: delete-then-insert is simpler & safer than a
+      // diff for what is at most ~50 rows. Cascading FK isn't needed
+      // here because we only delete by mealId.
+      await db.delete(mealItems).where(eq(mealItems.mealId, id));
+      if (items.length > 0) {
+        await db.insert(mealItems).values(
+          items.map((it, idx) => ({
+            mealId: id,
+            foodId: it.foodId ?? null,
+            name: it.name,
+            servingSize: it.servingSize,
+            servingUnit: it.servingUnit,
+            kcal: it.kcal,
+            proteinG: it.proteinG,
+            carbsG: it.carbsG,
+            fatsG: it.fatsG,
+            fiberG: it.fiberG ?? null,
+            sugarG: it.sugarG ?? null,
+            sodiumMg: it.sodiumMg ?? null,
+            quantity: it.quantity,
+            notes: it.notes ?? null,
+            sortOrder: it.sortOrder ?? idx,
+          })),
+        );
+      }
+    }
+    await this.recomputeMealTotals(id);
+    return this.getMeal(id);
+  }
+
+  async deleteMeal(id: number) {
+    // ON DELETE CASCADE on meal_items.meal_id cleans up children.
+    await db.delete(meals).where(eq(meals.id, id));
+  }
+
+  async duplicateMeal(id: number, createdByUserId: number | null) {
+    const src = await this.getMeal(id);
+    if (!src) return undefined;
+    const { id: _id, createdAt: _ca, updatedAt: _ua, createdByUserId: _cu, items, ...rest } =
+      src as any;
+    const items2: MealItemInput[] = (src.items || []).map((it: MealItem) => ({
+      foodId: it.foodId,
+      name: it.name,
+      servingSize: it.servingSize,
+      servingUnit: it.servingUnit,
+      kcal: it.kcal,
+      proteinG: it.proteinG,
+      carbsG: it.carbsG,
+      fatsG: it.fatsG,
+      fiberG: it.fiberG ?? null,
+      sugarG: it.sugarG ?? null,
+      sodiumMg: it.sodiumMg ?? null,
+      quantity: it.quantity,
+      notes: it.notes ?? null,
+      sortOrder: it.sortOrder,
+    }));
+    return this.createMeal(
+      { ...rest, name: `${src.name} (copy)` },
+      items2,
+      createdByUserId,
+    );
   }
 
   // ===== InBody =====
