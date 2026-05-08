@@ -3,7 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Edit3, ShieldCheck, ShieldOff, Loader2, KeyRound } from "lucide-react";
+import { Plus, Trash2, Edit3, ShieldCheck, ShieldOff, Loader2, KeyRound, Users as UsersIcon } from "lucide-react";
+import {
+  AdminPageHeader,
+  AdminCard,
+  AdminStatCard,
+  AdminEmptyState,
+} from "@/components/admin/primitives";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -217,33 +223,77 @@ export default function AdminStaffPage() {
   const isCanonicalSuper = (a: AdminUser) =>
     a.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
+  const totalAdmins = admins.length;
+  const activeAdmins = admins.filter((a) => a.isActive !== false).length;
+  const superAdmins = admins.filter((a) => (a.adminRole || "super_admin") === "super_admin").length;
+  const disabledAdmins = totalAdmins - activeAdmins;
+
   return (
     <div className="admin-shell">
-      <div className="admin-container">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-display font-bold" data-testid="text-staff-title">
-            {t("admin.staff.title", "Admin & Staff")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t("admin.staff.subtitle", "Manage who can access the admin panel and what they can do.")}
-          </p>
-        </div>
-        <Button
-          className="rounded-xl"
-          onClick={openCreate}
-          data-testid="button-add-admin"
-        >
-          <Plus size={14} className="mr-1.5 rtl:mr-0 rtl:ml-1.5" /> {t("admin.staff.add", "Add admin")}
-        </Button>
-      </div>
+      <div className="admin-container space-y-5">
+        <AdminPageHeader
+          title={t("admin.staff.title", "Admin & Staff")}
+          subtitle={t(
+            "admin.staff.subtitle",
+            "Manage who can access the admin panel and what they can do.",
+          )}
+          testId="text-staff-title"
+          right={
+            <Button
+              className="rounded-xl h-9"
+              onClick={openCreate}
+              data-testid="button-add-admin"
+            >
+              <Plus size={14} className="me-1.5" /> {t("admin.staff.add", "Add admin")}
+            </Button>
+          }
+        />
 
-      <div className="rounded-3xl border border-white/5 bg-card/60 overflow-hidden">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <AdminStatCard
+            icon={<UsersIcon size={16} />}
+            label={t("admin.staff.statTotal", "Total")}
+            value={totalAdmins}
+            tone="info"
+            animate
+            testId="stat-staff-total"
+          />
+          <AdminStatCard
+            icon={<ShieldCheck size={16} />}
+            label={t("admin.staff.statActive", "Active")}
+            value={activeAdmins}
+            tone="success"
+            animate
+            testId="stat-staff-active"
+          />
+          <AdminStatCard
+            icon={<KeyRound size={16} />}
+            label={t("admin.staff.statSuper", "Super admins")}
+            value={superAdmins}
+            tone="warning"
+            animate
+            testId="stat-staff-super"
+          />
+          <AdminStatCard
+            icon={<ShieldOff size={16} />}
+            label={t("admin.staff.statDisabled", "Disabled")}
+            value={disabledAdmins}
+            tone="muted"
+            animate
+            testId="stat-staff-disabled"
+          />
+        </div>
+
+        <AdminCard padded={false} className="overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-muted-foreground">{t("common.loading", "Loading…")}</div>
         ) : admins.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">{t("admin.staff.empty", "No admin staff yet.")}</div>
+          <AdminEmptyState
+            icon={<UsersIcon size={28} />}
+            title={t("admin.staff.empty", "No admin staff yet.")}
+          />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[10px] uppercase tracking-wider text-muted-foreground bg-white/[0.02]">
               <tr>
@@ -355,8 +405,9 @@ export default function AdminStaffPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
-      </div>
+        </AdminCard>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-2xl max-h-[85vh] overflow-y-auto">
