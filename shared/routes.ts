@@ -28,6 +28,8 @@ import {
   applyStackToClientSchema,
   insertBodyMetricSchema,
   updateBodyMetricSchema,
+  insertWeeklyCheckinSchema,
+  updateWeeklyCheckinSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -315,6 +317,24 @@ export const api = {
       input: updateBodyMetricSchema,
     },
     delete: { method: "DELETE" as const, path: "/api/body-metrics/:id" },
+  },
+
+  weeklyCheckins: {
+    // Admin: ?userId=. Client (non-admin) always reads own.
+    list: { method: "GET" as const, path: "/api/weekly-checkins" },
+    mine: { method: "GET" as const, path: "/api/weekly-checkins/me" },
+    pending: { method: "GET" as const, path: "/api/weekly-checkins/pending" }, // admin queue
+    create: {
+      method: "POST" as const,
+      path: "/api/weekly-checkins",
+      input: insertWeeklyCheckinSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/weekly-checkins/:id",
+      input: updateWeeklyCheckinSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/weekly-checkins/:id" },
   },
 
   inbody: {

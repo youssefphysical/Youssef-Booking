@@ -491,6 +491,49 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS body_metrics_user_idx ON body_metrics (user_id);
     CREATE INDEX IF NOT EXISTS body_metrics_user_date_idx ON body_metrics (user_id, recorded_on DESC);
+
+    -- P4b Weekly Check-ins
+    CREATE TABLE IF NOT EXISTS weekly_checkins (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week_start date NOT NULL,
+      weight double precision,
+      sleep_quality integer,
+      energy integer,
+      stress integer,
+      hunger integer,
+      digestion integer,
+      mood integer,
+      cardio_adherence integer,
+      training_adherence integer,
+      water_litres double precision,
+      notes text,
+      coach_response text,
+      coach_responded_at timestamp,
+      coach_responded_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS weekly_checkins_user_week_uniq ON weekly_checkins (user_id, week_start);
+    CREATE INDEX IF NOT EXISTS weekly_checkins_user_idx ON weekly_checkins (user_id);
+    CREATE INDEX IF NOT EXISTS weekly_checkins_pending_idx ON weekly_checkins (coach_response) WHERE coach_response IS NULL;
+
+    -- P4c Progress Photos: view-angle column (front/side/back) for
+    -- before/after comparison pairing. Backfill existing rows to 'front'
+    -- since that's the most common transformation shot angle.
+    ALTER TABLE progress_photos ADD COLUMN IF NOT EXISTS view_angle text NOT NULL DEFAULT 'front';
+    CREATE INDEX IF NOT EXISTS progress_photos_user_angle_idx ON progress_photos (user_id, view_angle, recorded_at DESC);
+
+    -- P4d Per-Session Coach Notes — additive nullable columns on bookings.
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_energy integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_performance integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_sleep integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_adherence integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_cardio text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_pain_injury text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS private_coach_notes text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_visible_coach_notes text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS coach_notes_updated_at timestamp;
   `;
 
   try {

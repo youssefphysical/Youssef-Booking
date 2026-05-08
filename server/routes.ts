@@ -33,6 +33,8 @@ import {
   applyStackToClientSchema,
   insertBodyMetricSchema,
   updateBodyMetricSchema,
+  insertWeeklyCheckinSchema,
+  updateWeeklyCheckinSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -528,6 +530,185 @@ async function dispatchBookingChangeNotification(opts: {
   }
 }
 
+// P4d: centralized booking-response sanitizer. Strips admin-private
+// coach fields (privateCoachNotes) from any booking payload returned
+// to a non-admin user. Apply to every endpoint that returns booking
+// objects (list, create, patch, cancel, same-day-adjust). Admin
+// responses are returned unchanged.
+// P4e: unified activity-feed event shape. The aggregator unions across
+// bookings, packages, body metrics, weekly check-ins, inbody records,
+// and progress photos. Keep this lean — no ORM-specific shapes leak.
+type ActivityEvent = {
+  id: string;
+  kind:
+    | "session_completed"
+    | "session_booked"
+    | "session_cancelled"
+    | "package_activated"
+    | "body_metric"
+    | "weekly_checkin"
+    | "inbody"
+    | "progress_photo"
+    | "coach_note";
+  at: string;
+  title: string;
+  subtitle?: string | null;
+};
+
+async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEvent[]> {
+  const events: ActivityEvent[] = [];
+  const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try { return await fn(); } catch { return fallback; }
+  };
+
+  const [bookings, packagesList, bodyMetrics, checkins, inbody, photos] = await Promise.all([
+    safe(() => storage.getBookings({ userId }), [] as any[]),
+    safe(() => storage.getPackages({ userId }), [] as any[]),
+    safe(() => storage.listBodyMetrics(userId, { limit: 50 }), [] as any[]),
+    safe(() => storage.listWeeklyCheckins(userId, { limit: 25 }), [] as any[]),
+    safe(() => storage.getInbodyRecords({ userId }), [] as any[]),
+    safe(() => storage.getProgressPhotos({ userId }), [] as any[]),
+  ]);
+
+  // Map our canonical booking statuses (BOOKING_STATUSES in shared/schema.ts)
+  // to the three timeline event kinds. Anything not in this map is skipped
+  // intentionally so unrecognised statuses never fall back to "booked".
+  const BOOKING_STATUS_TO_KIND: Record<
+    string,
+    { kind: ActivityEvent["kind"]; title: string; idPrefix: string }
+  > = {
+    upcoming: { kind: "session_booked", title: "Session booked", idPrefix: "booked" },
+    confirmed: { kind: "session_booked", title: "Session booked", idPrefix: "booked" },
+    completed: { kind: "session_completed", title: "Session completed", idPrefix: "completed" },
+    cancelled: { kind: "session_cancelled", title: "Session cancelled", idPrefix: "cancelled" },
+    free_cancelled: { kind: "session_cancelled", title: "Session cancelled", idPrefix: "cancelled" },
+    late_cancelled: { kind: "session_cancelled", title: "Session cancelled (late)", idPrefix: "cancelled" },
+    emergency_cancelled: { kind: "session_cancelled", title: "Session cancelled (protected)", idPrefix: "cancelled" },
+    no_show: { kind: "session_cancelled", title: "Session no-show", idPrefix: "noshow" },
+  };
+
+  for (const b of bookings as any[]) {
+    const when = b.date instanceof Date ? b.date.toISOString() : (b.date ?? null);
+    if (!when) continue;
+    const map = BOOKING_STATUS_TO_KIND[String(b.status)];
+    if (map) {
+      events.push({
+        id: `booking-${map.idPrefix}-${b.id}`,
+        kind: map.kind,
+        at: when,
+        title: map.title,
+        subtitle: b.sessionType ? String(b.sessionType) : null,
+      });
+    }
+    // Coach-note event: emit whenever the coach has touched this booking's
+    // notes (regardless of which specific field changed). Subtitle is
+    // sourced ONLY from the client-visible portion — privateCoachNotes
+    // must never reach this payload.
+    if (b.coachNotesUpdatedAt) {
+      const nAt = b.coachNotesUpdatedAt instanceof Date
+        ? b.coachNotesUpdatedAt.toISOString()
+        : String(b.coachNotesUpdatedAt);
+      events.push({
+        id: `coach-note-${b.id}`,
+        kind: "coach_note",
+        at: nAt,
+        title: "Coach logged a session note",
+        subtitle: b.clientVisibleCoachNotes
+          ? String(b.clientVisibleCoachNotes).slice(0, 140)
+          : "Session reviewed by your coach",
+      });
+    }
+  }
+
+  for (const p of packagesList as any[]) {
+    if (!p.adminApproved) continue;
+    const when = p.adminApprovedAt ?? p.purchasedAt;
+    const at = when instanceof Date ? when.toISOString() : (when ? String(when) : null);
+    if (!at) continue;
+    events.push({
+      id: `package-${p.id}`,
+      kind: "package_activated",
+      at,
+      title: `Package activated${p.name ? ": " + p.name : ""}`,
+      subtitle: p.totalSessions ? `${p.totalSessions} sessions` : null,
+    });
+  }
+
+  for (const m of bodyMetrics as any[]) {
+    const at = m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt ?? m.recordedOn);
+    const bits: string[] = [];
+    if (m.weight != null) bits.push(`${m.weight} kg`);
+    if (m.bodyFat != null) bits.push(`${m.bodyFat}% BF`);
+    events.push({
+      id: `body-metric-${m.id}`,
+      kind: "body_metric",
+      at,
+      title: "Body metrics logged",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const c of checkins as any[]) {
+    const at = c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt ?? c.weekStart);
+    const bits: string[] = [];
+    if (c.energy != null) bits.push(`Energy ${c.energy}/10`);
+    if (c.trainingAdherence != null) bits.push(`Training ${c.trainingAdherence}%`);
+    events.push({
+      id: `checkin-${c.id}`,
+      kind: "weekly_checkin",
+      at,
+      title: "Weekly check-in submitted",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const r of inbody as any[]) {
+    const at = r.recordedAt instanceof Date ? r.recordedAt.toISOString() : (r.recordedAt ? String(r.recordedAt) : null);
+    if (!at) continue;
+    const bits: string[] = [];
+    if (r.weight != null) bits.push(`${r.weight} kg`);
+    if (r.bodyFat != null) bits.push(`${r.bodyFat}% BF`);
+    if (r.muscleMass != null) bits.push(`${r.muscleMass} kg muscle`);
+    events.push({
+      id: `inbody-${r.id}`,
+      kind: "inbody",
+      at,
+      title: "InBody scan recorded",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const ph of photos as any[]) {
+    const at = ph.recordedAt instanceof Date ? ph.recordedAt.toISOString() : (ph.recordedAt ? String(ph.recordedAt) : null);
+    if (!at) continue;
+    events.push({
+      id: `photo-${ph.id}`,
+      kind: "progress_photo",
+      at,
+      title: ph.type === "before" ? "Before photo uploaded" : "Progress photo uploaded",
+      subtitle: ph.viewAngle ? `${ph.viewAngle} view` : null,
+    });
+  }
+
+  events.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return events.slice(0, limit);
+}
+
+function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
+  me: { role?: string } | undefined,
+  booking: T,
+): Omit<T, "privateCoachNotes"> {
+  if (!booking) return booking as Omit<T, "privateCoachNotes">;
+  if (me?.role === "admin") {
+    // Admin sees the full payload, including privateCoachNotes — the
+    // returned shape still satisfies Omit<T, "privateCoachNotes"> because
+    // T may have the property and Omit allows the remaining keys.
+    return booking as unknown as Omit<T, "privateCoachNotes">;
+  }
+  const { privateCoachNotes: _omit, ...rest } = booking;
+  return rest;
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   setupAuth(app);
 
@@ -740,7 +921,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (from) filters.from = from;
 
     const list = await storage.getBookings(filters);
-    if (!includeUser) return res.json(list);
+    if (!includeUser) return res.json(list.map((b) => sanitizeBookingForUser(me, b)));
 
     const userIds = Array.from(new Set(list.map((b) => b.userId)));
     const usersById: Record<number, ReturnType<typeof sanitizeUser>> = {};
@@ -748,7 +929,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const u = await storage.getUser(uid);
       if (u) usersById[uid] = sanitizeUser(u);
     }
-    res.json(list.map((b) => ({ ...b, user: usersById[b.userId] || null })));
+    res.json(list.map((b) => sanitizeBookingForUser(me, { ...b, user: usersById[b.userId] || null })));
   });
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
@@ -979,7 +1160,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[booking] consent log failed:", e);
     }
 
-    res.status(201).json(booking);
+    res.status(201).json(sanitizeBookingForUser(me, booking));
   });
 
   // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============
@@ -1155,7 +1336,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
     });
 
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   // Same-Day Adjustment: shift a session to a different time the SAME day.
@@ -1269,7 +1450,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   // Admin: clear protected (legacy: emergency) cancel usage so the client can use it again
@@ -1323,6 +1504,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(403).json({ message: "Cannot change admin notes" });
       if (parsed.data.workoutCategory !== undefined)
         return res.status(403).json({ message: "Cannot change workout category" });
+      // P4d: clients cannot write any coach-note field.
+      const coachWrite = [
+        "sessionEnergy",
+        "sessionPerformance",
+        "sessionSleep",
+        "sessionAdherence",
+        "sessionCardio",
+        "sessionPainInjury",
+        "privateCoachNotes",
+        "clientVisibleCoachNotes",
+      ].some((k) => (parsed.data as any)[k] !== undefined);
+      if (coachWrite)
+        return res.status(403).json({ message: "Cannot change coach notes" });
 
       // If the client is only adding a personal note, skip cutoff/conflict checks.
       const onlyNoteEdit =
@@ -1362,7 +1556,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const newStatus = updateFields.status ?? previousStatus;
     const fromDate = booking.date;
     const fromTime12 = formatTime12Server(booking.timeSlot);
-    const updated = await storage.updateBooking(id, updateFields as any);
+    // P4d: stamp coach-notes timestamp whenever an admin writes any
+    // coach-note field, so the UI can show "logged X ago".
+    const coachKeys = [
+      "sessionEnergy",
+      "sessionPerformance",
+      "sessionSleep",
+      "sessionAdherence",
+      "sessionCardio",
+      "sessionPainInjury",
+      "privateCoachNotes",
+      "clientVisibleCoachNotes",
+    ] as const;
+    const coachTouched =
+      me.role === "admin" && coachKeys.some((k) => (updateFields as any)[k] !== undefined);
+    const updated = await storage.updateBooking(
+      id,
+      coachTouched
+        ? ({ ...updateFields, coachNotesUpdatedAt: new Date() } as any)
+        : (updateFields as any),
+    );
 
     // If date or time changed, email the trainer (best-effort).
     if (
@@ -1398,7 +1611,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ) {
       void recomputeVipTier(booking.userId);
     }
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   app.delete("/api/bookings/:id", requireAdmin, async (req, res) => {
@@ -1961,6 +2174,141 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // Read the audit trail for a single client (used by the Sessions tab).
+  // P4e: Activity feed (admin scoping a specific client).
+  app.get("/api/admin/clients/:id/activity", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
+    const events = await buildActivityFeed(userId, limit);
+    res.json(events);
+  });
+
+  // P4f: Today Hero summary — next session, supplements-today count,
+  // water target, current weekly-active streak, goal progress. Self-
+  // scoped only; never trust client-supplied userId.
+  app.get("/api/me/today", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch { return fallback; }
+    };
+
+    const nowMs = Date.now();
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const [bookings, clientSupps, activePlan, checkins, bodyMetrics] = await Promise.all([
+      safe(() => storage.getBookings({ userId: me.id }), [] as any[]),
+      safe(() => storage.listClientSupplements(me.id, { activeOnly: true }), [] as any[]),
+      safe(() => storage.getActiveNutritionPlanForUser(me.id), undefined as any),
+      safe(() => storage.listWeeklyCheckins(me.id, { limit: 60 }), [] as any[]),
+      safe(() => storage.listBodyMetrics(me.id, { limit: 200 }), [] as any[]),
+    ]);
+
+    // Next session: earliest upcoming/confirmed booking strictly after now.
+    // Bookings store `date` (YYYY-MM-DD) and `timeSlot` ("HH:MM") separately,
+    // so we combine them into a real epoch before comparing — otherwise we
+    // would miss same-day future slots and misorder slots within a day.
+    let nextSession: { id: number; date: string; sessionType: string | null } | null = null;
+    {
+      const upcoming = (bookings as any[])
+        .filter((b) => b.status === "upcoming" || b.status === "confirmed")
+        .map((b) => {
+          const dateStr = b.date instanceof Date
+            ? b.date.toISOString().slice(0, 10)
+            : String(b.date ?? "").slice(0, 10);
+          const timeStr = String(b.timeSlot ?? "00:00");
+          const iso = dateStr ? `${dateStr}T${timeStr.length === 5 ? timeStr : "00:00"}:00` : "";
+          const epoch = iso ? new Date(iso).getTime() : NaN;
+          return {
+            id: b.id,
+            date: iso,
+            epoch,
+            sessionType: b.sessionType ? String(b.sessionType) : null,
+          };
+        })
+        .filter((b) => Number.isFinite(b.epoch) && b.epoch > nowMs)
+        .sort((a, b) => a.epoch - b.epoch);
+      const first = upcoming[0];
+      nextSession = first ? { id: first.id, date: first.date, sessionType: first.sessionType } : null;
+    }
+
+    // Supplements applicable today: active client supplements whose
+    // start/end window covers today (nullable = open-ended).
+    const supplementsToday = (clientSupps as any[]).filter((s) => {
+      if (s.status && s.status !== "active") return false;
+      if (s.startDate && String(s.startDate) > todayIso) return false;
+      if (s.endDate && String(s.endDate) < todayIso) return false;
+      return true;
+    }).length;
+
+    const waterTargetMl: number | null = activePlan?.waterTargetMl ?? null;
+
+    // Streak: consecutive ISO weeks (Mon-anchored) ending at the current
+    // week, where the user logged ≥1 check-in OR ≥1 completed booking.
+    const mondayOf = (d: Date): string => {
+      const x = new Date(d);
+      x.setUTCHours(0, 0, 0, 0);
+      const day = x.getUTCDay(); // 0=Sun..6=Sat
+      const offset = day === 0 ? -6 : 1 - day;
+      x.setUTCDate(x.getUTCDate() + offset);
+      return x.toISOString().slice(0, 10);
+    };
+    const activeWeeks = new Set<string>();
+    for (const c of checkins as any[]) {
+      const ws = c.weekStart ? String(c.weekStart) : null;
+      if (ws) activeWeeks.add(mondayOf(new Date(ws)));
+    }
+    for (const b of bookings as any[]) {
+      if (b.status !== "completed") continue;
+      const d = b.date instanceof Date ? b.date : new Date(String(b.date));
+      if (!isNaN(d.getTime())) activeWeeks.add(mondayOf(d));
+    }
+    let streakWeeks = 0;
+    {
+      const cursor = new Date();
+      while (true) {
+        const wk = mondayOf(cursor);
+        if (activeWeeks.has(wk)) {
+          streakWeeks += 1;
+          cursor.setUTCDate(cursor.getUTCDate() - 7);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Goal progress: earliest vs latest body-metric weight.
+    const sortedMetrics = (bodyMetrics as any[])
+      .filter((m) => m.weight != null && m.recordedOn)
+      .sort((a, b) => (String(a.recordedOn) < String(b.recordedOn) ? -1 : 1));
+    const weightStartKg = sortedMetrics[0]?.weight ?? null;
+    const weightLatestKg = sortedMetrics[sortedMetrics.length - 1]?.weight ?? null;
+    const deltaKg =
+      weightStartKg != null && weightLatestKg != null
+        ? Number((weightLatestKg - weightStartKg).toFixed(1))
+        : null;
+
+    res.json({
+      nextSession,
+      supplementsToday,
+      waterTargetMl,
+      streakWeeks,
+      goal: {
+        primary: me.primaryGoal ?? null,
+        weightStartKg,
+        weightLatestKg,
+        deltaKg,
+      },
+    });
+  });
+
+  // P4e: Activity feed (self-scoped — never trust client-supplied userId).
+  app.get("/api/me/activity", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
+    const events = await buildActivityFeed(me.id, limit);
+    res.json(events);
+  });
+
   app.get("/api/admin/clients/:id/session-history", requireAdmin, async (req, res) => {
     const userId = Number(req.params.id);
     if (!userId) return res.status(400).json({ message: "Invalid client id" });
@@ -2469,6 +2817,85 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   });
 
+  // ============== WEEKLY CHECK-INS (P4b) ==============
+  // Clients submit + edit their own. Admin reads any, responds with
+  // `coachResponse`, and can mutate/delete. The owner can edit fields
+  // EXCEPT `coachResponse` (silently stripped on non-admin PATCH).
+  app.get("/api/weekly-checkins/me", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const list = await storage.listWeeklyCheckins(me.id);
+    res.json(list);
+  });
+  app.get("/api/weekly-checkins/pending", requireAdmin, async (_req, res) => {
+    const list = await storage.listPendingWeeklyCheckins();
+    res.json(list);
+  });
+  app.get("/api/weekly-checkins", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
+    const userId = me.role === "admin" ? userIdQuery : me.id;
+    if (!userId || !Number.isFinite(userId)) {
+      return res.status(400).json({ message: "userId required" });
+    }
+    const list = await storage.listWeeklyCheckins(userId);
+    res.json(list);
+  });
+  app.post("/api/weekly-checkins", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    // Non-admins can ONLY create rows for themselves; userId in payload
+    // is forced to me.id. Admin may target any client.
+    const body = me.role === "admin"
+      ? req.body
+      : { ...req.body, userId: me.id };
+    const parsed = insertWeeklyCheckinSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    // Enforce one row per (user, week): if a row exists, return 409 so
+    // the client can fall back to PATCH.
+    const existing = await storage.getWeeklyCheckinByWeek(parsed.data.userId, parsed.data.weekStart);
+    if (existing) {
+      return res.status(409).json({ message: "Check-in already exists for this week", id: existing.id });
+    }
+    try {
+      const row = await storage.createWeeklyCheckin(parsed.data);
+      res.status(201).json(row);
+    } catch (err: any) {
+      // Race-safe fallback: the unique index on (user_id, week_start)
+      // catches concurrent creates that slipped past the pre-check.
+      if (err?.code === "23505") {
+        const dup = await storage.getWeeklyCheckinByWeek(parsed.data.userId, parsed.data.weekStart);
+        return res.status(409).json({ message: "Check-in already exists for this week", id: dup?.id });
+      }
+      throw err;
+    }
+  });
+  app.patch("/api/weekly-checkins/:id", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const existing = await storage.getWeeklyCheckin(id);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+    if (me.role !== "admin" && existing.userId !== me.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    // Strip admin-only fields from non-admin patches.
+    const body = me.role === "admin" ? req.body : { ...req.body, coachResponse: undefined };
+    const parsed = updateWeeklyCheckinSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    const row = await storage.updateWeeklyCheckin(id, parsed.data, me.role === "admin" ? me.id : null);
+    res.json(row);
+  });
+  app.delete("/api/weekly-checkins/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteWeeklyCheckin(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  });
+
   // ============== INBODY ==============
   app.get("/api/inbody", requireAuth, async (req, res) => {
     const me = req.user as User;
@@ -2753,10 +3180,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const type =
         ["before", "current", "after"].includes(req.body.type) ? req.body.type : "current";
+      const viewAngle =
+        ["front", "side", "back"].includes(req.body.viewAngle) ? req.body.viewAngle : "front";
       const created = await storage.createProgressPhoto({
         userId: targetUserId,
         photoUrl,
         type,
+        viewAngle,
         notes: req.body.notes || null,
       });
 

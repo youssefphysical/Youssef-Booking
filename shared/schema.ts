@@ -8,6 +8,7 @@ import {
   date,
   boolean,
   jsonb,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -239,9 +240,33 @@ export const bookings = pgTable("bookings", {
   reminder24hSentAt: timestamp("reminder_24h_sent_at"),
   reminder1hSentAt: timestamp("reminder_1h_sent_at"),
   attendanceReason: text("attendance_reason"),
+  // P4d Per-Session Coach Notes (admin-logged after each session).
+  // 1-10 scales for energy/performance/sleep/adherence; freeform for
+  // cardio + pain/injury + notes. clientVisibleCoachNotes surfaces to
+  // the client; privateCoachNotes is admin-only (stripped server-side).
+  sessionEnergy: integer("session_energy"),
+  sessionPerformance: integer("session_performance"),
+  sessionSleep: integer("session_sleep"),
+  sessionAdherence: integer("session_adherence"),
+  sessionCardio: text("session_cardio"),
+  sessionPainInjury: text("session_pain_injury"),
+  privateCoachNotes: text("private_coach_notes"),
+  clientVisibleCoachNotes: text("client_visible_coach_notes"),
+  coachNotesUpdatedAt: timestamp("coach_notes_updated_at"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
+
+export const COACH_NOTE_FIELDS = [
+  "sessionEnergy",
+  "sessionPerformance",
+  "sessionSleep",
+  "sessionAdherence",
+  "sessionCardio",
+  "sessionPainInjury",
+  "privateCoachNotes",
+  "clientVisibleCoachNotes",
+] as const;
 
 // =============================
 // SETTINGS (single-row config)
@@ -355,14 +380,19 @@ export const inbodyRecords = pgTable("inbody_records", {
 // PROGRESS PHOTOS
 // =============================
 // type: 'before' | 'current' | 'after'
+// viewAngle: 'front' | 'side' | 'back' (P4c — comparison slider pairing)
 export const progressPhotos = pgTable("progress_photos", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   photoUrl: text("photo_url").notNull(),
   type: text("type").notNull().default("current"),
+  viewAngle: text("view_angle").notNull().default("front"),
   notes: text("notes"),
   recordedAt: timestamp("recorded_at").defaultNow(),
 });
+
+export const PROGRESS_VIEW_ANGLES = ["front", "side", "back"] as const;
+export type ProgressViewAngle = (typeof PROGRESS_VIEW_ANGLES)[number];
 
 // =============================
 // CONSENT RECORDS (legal/audit)
@@ -596,6 +626,15 @@ export const updateBookingSchema = z.object({
   protectedCancellation: z.boolean().optional(),
   sessionFocus: z.enum(SESSION_FOCUS_OPTIONS).nullable().optional(),
   trainingGoal: z.enum(BOOKING_TRAINING_GOALS).nullable().optional(),
+  // P4d coach-notes fields. All nullable; numeric 1-10 sliders.
+  sessionEnergy: z.number().int().min(1).max(10).nullable().optional(),
+  sessionPerformance: z.number().int().min(1).max(10).nullable().optional(),
+  sessionSleep: z.number().int().min(1).max(10).nullable().optional(),
+  sessionAdherence: z.number().int().min(1).max(10).nullable().optional(),
+  sessionCardio: z.string().max(500).nullable().optional(),
+  sessionPainInjury: z.string().max(500).nullable().optional(),
+  privateCoachNotes: z.string().max(2000).nullable().optional(),
+  clientVisibleCoachNotes: z.string().max(2000).nullable().optional(),
 });
 
 // =============================
@@ -1022,6 +1061,7 @@ export const insertProgressPhotoSchema = createInsertSchema(progressPhotos)
   .extend({
     photoUrl: z.string().min(1),
     type: z.enum(["before", "current", "after"]).optional(),
+    viewAngle: z.enum(PROGRESS_VIEW_ANGLES).optional(),
     notes: z.string().nullable().optional(),
   });
 
@@ -2611,6 +2651,101 @@ export const BODY_METRIC_FIELDS = [
   "waist", "hips", "thighs", "calves",
 ] as const;
 export type BodyMetricField = (typeof BODY_METRIC_FIELDS)[number];
+
+// =============================
+// WEEKLY CHECK-INS (P4b — Adherence + Retention)
+// =============================
+// One row per (userId, weekStart). `weekStart` is the Monday of the
+// reporting week (date, not timestamp). Numeric self-reported scales
+// are 1..10 (sleep/energy/stress/hunger/digestion/mood). Adherence
+// percentages are 0..100. The client owns submission + editing of
+// their row; admin can read every row and append `coachResponse`.
+export const weeklyCheckins = pgTable("weekly_checkins", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  weekStart: date("week_start").notNull(),
+  weight: doublePrecision("weight"),                    // kg, optional
+  sleepQuality: integer("sleep_quality"),               // 1..10
+  energy: integer("energy"),                            // 1..10
+  stress: integer("stress"),                            // 1..10 (high = bad)
+  hunger: integer("hunger"),                            // 1..10
+  digestion: integer("digestion"),                      // 1..10
+  mood: integer("mood"),                                // 1..10
+  cardioAdherence: integer("cardio_adherence"),         // 0..100 %
+  trainingAdherence: integer("training_adherence"),     // 0..100 %
+  waterLitres: doublePrecision("water_litres"),         // litres/day avg
+  notes: text("notes"),                                 // client-authored
+  coachResponse: text("coach_response"),                // admin-authored
+  coachRespondedAt: timestamp("coach_responded_at"),
+  coachRespondedByUserId: integer("coach_responded_by_user_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => ({
+  userWeekUnique: uniqueIndex("weekly_checkins_user_week_uniq").on(t.userId, t.weekStart),
+}));
+
+const scale1to10 = z.number().int().min(1).max(10).nullish();
+const pct0to100 = z.number().int().min(0).max(100).nullish();
+
+export const insertWeeklyCheckinSchema = createInsertSchema(weeklyCheckins)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    coachResponse: true,
+    coachRespondedAt: true,
+    coachRespondedByUserId: true,
+  })
+  .extend({
+    userId: z.number().int().positive(),
+    weekStart: z.string().min(1, "Week start is required"),
+    weight: z.number().positive().max(500).nullish(),
+    sleepQuality: scale1to10,
+    energy: scale1to10,
+    stress: scale1to10,
+    hunger: scale1to10,
+    digestion: scale1to10,
+    mood: scale1to10,
+    cardioAdherence: pct0to100,
+    trainingAdherence: pct0to100,
+    waterLitres: z.number().min(0).max(20).nullish(),
+    notes: z.string().max(4000).nullish(),
+  });
+
+export const updateWeeklyCheckinSchema = createInsertSchema(weeklyCheckins)
+  .omit({
+    id: true,
+    userId: true,
+    weekStart: true,
+    createdAt: true,
+    updatedAt: true,
+    coachRespondedAt: true,
+    coachRespondedByUserId: true,
+  })
+  .extend({
+    weight: z.number().positive().max(500).nullish(),
+    sleepQuality: scale1to10,
+    energy: scale1to10,
+    stress: scale1to10,
+    hunger: scale1to10,
+    digestion: scale1to10,
+    mood: scale1to10,
+    cardioAdherence: pct0to100,
+    trainingAdherence: pct0to100,
+    waterLitres: z.number().min(0).max(20).nullish(),
+    notes: z.string().max(4000).nullish(),
+    coachResponse: z.string().max(4000).nullish(),
+  })
+  .partial();
+
+export type WeeklyCheckin = typeof weeklyCheckins.$inferSelect;
+export type InsertWeeklyCheckin = z.infer<typeof insertWeeklyCheckinSchema>;
+export type UpdateWeeklyCheckin = z.infer<typeof updateWeeklyCheckinSchema>;
+
+export const WEEKLY_CHECKIN_SCALE_FIELDS = [
+  "sleepQuality", "energy", "stress", "hunger", "digestion", "mood",
+] as const;
+export type WeeklyCheckinScaleField = (typeof WEEKLY_CHECKIN_SCALE_FIELDS)[number];
 
 // Apply-stack body: snapshot all items of a stack onto a client.
 export const applyStackToClientSchema = z.object({

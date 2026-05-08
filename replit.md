@@ -70,6 +70,15 @@ Premium dark-luxury platform for Youssef Ahmed, offering client booking, InBody 
 - **Premium Business Workflow:** Explicit package lifecycles (start/expiry dates, status), attendance tracking, and admin notes for clients.
 - **Password Reset:** Secure forgot/reset password flow with email notification and token invalidation.
 
+## Transformation Ecosystem (Phase 4 — shipped May 2026)
+
+- **P4a Body Metrics + Trend Charts** — `body_metrics` table, admin/self routes, recharts trend on Body tab.
+- **P4b Weekly Check-ins + Adherence** — `weekly_checkins` (energy/sleep/training/cardio adherence + coach response), unique per user/week.
+- **P4c Before/After Comparison Slider** — `view_angle` on `progress_photos`, `BeforeAfterCompare` clip-path component, Compare/Gallery toggle.
+- **P4d Per-Session Coach Notes** — 9 nullable cols on `bookings` (energy/performance/sleep/adherence sliders + cardio/painInjury/private+clientVisible notes + `coachNotesUpdatedAt`). PATCH guard rejects coach fields for non-admin. Centralized `sanitizeBookingForUser(me, b)` strips `privateCoachNotes` from every booking response (list, create, cancel, same-day-adjust, patch).
+- **P4e Activity Timeline** — `buildActivityFeed(userId, limit)` aggregator unions bookings (explicit BOOKING_STATUSES → booked/completed/cancelled), packages (adminApproved), bodyMetrics, weeklyCheckins, inbody, progress photos, and coach_note (any `coachNotesUpdatedAt`, subtitle from `clientVisibleCoachNotes` only). Endpoints: `GET /api/me/activity`, `GET /api/admin/clients/:id/activity`. New `ActivityFeed.tsx` vertical timeline mounted as Activity tab on both client + admin.
+- **P4f Today Hero Card** — `GET /api/me/today` returns nextSession (date+timeSlot epoch, strictly > now), supplementsToday (active client_supplements within window), waterTargetMl (active nutrition plan), streakWeeks (consecutive Mon-anchored ISO weeks with ≥1 check-in OR ≥1 completed booking), goal (primaryGoal + first/latest body-metric weight delta). `TodayHero.tsx` luxury 4-stat card mounted at top of dashboard, streak flame badge at ≥4 weeks.
+
 ## User preferences
 
 _Populate as you build_

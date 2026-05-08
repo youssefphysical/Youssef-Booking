@@ -46,6 +46,7 @@ import {
 import { useClients } from "@/hooks/use-clients";
 import { useSettings } from "@/hooks/use-settings";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,6 +80,9 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { ClientNutritionTab } from "@/components/ClientNutritionTab";
 import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
+import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import BeforeAfterCompare from "@/components/BeforeAfterCompare";
+import CoachNotesDialog from "@/components/CoachNotesDialog";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -225,6 +229,9 @@ export default function AdminClientDetail() {
           <TabsTrigger value="body" data-testid="tab-detail-body">
             {t("admin.clientDetail.tabBody", "Body Metrics")}
           </TabsTrigger>
+          <TabsTrigger value="checkins" data-testid="tab-detail-checkins">
+            {t("admin.clientDetail.tabCheckins", "Check-ins")}
+          </TabsTrigger>
           <TabsTrigger value="notes" data-testid="tab-detail-notes">
             <FileText size={13} className="mr-1.5" /> {t("admin.clientDetail.tabNotes", "Notes")}
           </TabsTrigger>
@@ -236,6 +243,9 @@ export default function AdminClientDetail() {
           </TabsTrigger>
           <TabsTrigger value="supplements" data-testid="tab-detail-supplements">
             {t("admin.tabs.supplements", "Supplements")}
+          </TabsTrigger>
+          <TabsTrigger value="activity" data-testid="tab-detail-activity">
+            {t("admin.tabs.activity", "Activity")}
           </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
             <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
@@ -258,10 +268,17 @@ export default function AdminClientDetail() {
         </TabsContent>
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
         <TabsContent value="body"><BodyMetricsPanel userId={client.id} canEdit={true} /></TabsContent>
+        <TabsContent value="checkins"><WeeklyCheckinsPanel userId={client.id} isAdmin={true} /></TabsContent>
         <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
         <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
         <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
         <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
+        <TabsContent value="activity">
+          <ActivityFeed
+            endpoint={`/api/admin/clients/${client.id}/activity`}
+            title={t("admin.tabs.activity", "Activity")}
+          />
+        </TabsContent>
         <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
       </Tabs>
       </div>
@@ -1288,12 +1305,30 @@ function BookingsList({ userId }: { userId: number }) {
   const { t } = useTranslation();
   const { data: bookings = [], isLoading } = useBookings({ userId });
   const list = bookings as any[];
+  const [coachOpen, setCoachOpen] = useState<any>(null);
 
   if (isLoading) return <Skeleton />;
   if (list.length === 0) return <EmptyBox text="No bookings yet" />;
 
+  const hasCoachNotes = (b: any) =>
+    b.sessionEnergy != null ||
+    b.sessionPerformance != null ||
+    b.sessionSleep != null ||
+    b.sessionAdherence != null ||
+    b.sessionCardio ||
+    b.sessionPainInjury ||
+    b.privateCoachNotes ||
+    b.clientVisibleCoachNotes;
+
   return (
     <div className="space-y-2">
+      {coachOpen && (
+        <CoachNotesDialog
+          open={!!coachOpen}
+          onOpenChange={(o) => !o && setCoachOpen(null)}
+          booking={coachOpen}
+        />
+      )}
       {list
         .sort((a, b) => `${b.date}T${b.timeSlot}`.localeCompare(`${a.date}T${a.timeSlot}`))
         .map((b) => (
@@ -1347,6 +1382,65 @@ function BookingsList({ userId }: { userId: number }) {
                 )}
               </div>
             )}
+            {hasCoachNotes(b) && (
+              <div className="space-y-1 pt-1 border-t border-white/5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {b.sessionEnergy != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                      Energy {b.sessionEnergy}/10
+                    </span>
+                  )}
+                  {b.sessionPerformance != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-300">
+                      Perf {b.sessionPerformance}/10
+                    </span>
+                  )}
+                  {b.sessionSleep != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
+                      Sleep {b.sessionSleep}/10
+                    </span>
+                  )}
+                  {b.sessionAdherence != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                      Adherence {b.sessionAdherence}/10
+                    </span>
+                  )}
+                  {b.sessionCardio && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/70">
+                      Cardio: {b.sessionCardio}
+                    </span>
+                  )}
+                  {b.sessionPainInjury && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-red-500/20 bg-red-500/10 text-red-300">
+                      Pain: {b.sessionPainInjury}
+                    </span>
+                  )}
+                </div>
+                {b.privateCoachNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-amber-300/80 font-semibold">Private: </span>
+                    <span className="text-foreground/80">{b.privateCoachNotes}</span>
+                  </p>
+                )}
+                {b.clientVisibleCoachNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-blue-300/80 font-semibold">For client: </span>
+                    <span className="text-foreground/80">{b.clientVisibleCoachNotes}</span>
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-end pt-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[11px] text-blue-300 hover:bg-blue-500/10"
+                onClick={() => setCoachOpen(b)}
+                data-testid={`button-log-session-${b.id}`}
+              >
+                {hasCoachNotes(b) ? "Edit coach notes" : "Log session"}
+              </Button>
+            </div>
           </div>
         ))}
     </div>
@@ -2105,6 +2199,8 @@ function ProgressPanel({ userId }: { userId: number }) {
   const upload = useUploadProgressPhoto();
   const del = useDeleteProgressPhoto();
   const [cropperOpen, setCropperOpen] = useState(false);
+  const [uploadAngle, setUploadAngle] = useState<"front" | "side" | "back">("front");
+  const [view, setView] = useState<"compare" | "gallery">("compare");
 
   const list = (photos as ProgressPhoto[]).sort(
     (a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime(),
@@ -2121,7 +2217,7 @@ function ProgressPanel({ userId }: { userId: number }) {
   async function handleCropped(dataUrl: string) {
     try {
       const file = dataUrlToFile(dataUrl, `progress-${Date.now()}.webp`);
-      await upload.mutateAsync({ file, userId, type: "current" });
+      await upload.mutateAsync({ file, userId, type: "current", viewAngle: uploadAngle });
       setCropperOpen(false);
     } catch {
       // useUploadProgressPhoto already surfaces a toast on error.
@@ -2130,22 +2226,38 @@ function ProgressPanel({ userId }: { userId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="text-sm font-semibold">{t("admin.clientDetail.progressTitle")}</h3>
-        <Button
-          size="sm"
-          className="rounded-xl"
-          onClick={() => setCropperOpen(true)}
-          disabled={upload.isPending}
-          data-testid="button-admin-upload-photo"
-        >
-          {upload.isPending ? (
-            <Loader2 size={13} className="animate-spin mr-1.5" />
-          ) : (
-            <Upload size={13} className="mr-1.5" />
-          )}
-          {t("admin.clientDetail.addPhoto")}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+            {(["front", "side", "back"] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => setUploadAngle(a)}
+                className={`px-2 py-1 text-[10px] uppercase tracking-wider rounded-md capitalize ${
+                  uploadAngle === a ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+                }`}
+                data-testid={`button-admin-upload-angle-${a}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            className="rounded-xl"
+            onClick={() => setCropperOpen(true)}
+            disabled={upload.isPending}
+            data-testid="button-admin-upload-photo"
+          >
+            {upload.isPending ? (
+              <Loader2 size={13} className="animate-spin mr-1.5" />
+            ) : (
+              <Upload size={13} className="mr-1.5" />
+            )}
+            {t("admin.clientDetail.addPhoto")}
+          </Button>
+        </div>
         <ImageCropper
           open={cropperOpen}
           onOpenChange={setCropperOpen}
@@ -2158,16 +2270,35 @@ function ProgressPanel({ userId }: { userId: number }) {
         />
       </div>
 
+      <div className="inline-flex rounded-lg bg-white/5 p-1">
+        <button
+          onClick={() => setView("compare")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "compare" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-admin-view-compare"
+        >
+          Compare
+        </button>
+        <button
+          onClick={() => setView("gallery")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "gallery" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-admin-view-gallery"
+        >
+          Gallery
+        </button>
+      </div>
+
       {list.length === 0 ? (
         <EmptyBox text={t("admin.clientDetail.noProgressPhotos")} />
+      ) : view === "compare" ? (
+        <BeforeAfterCompare photos={list} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {list.map((p) => (
             <div key={p.id} className="relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-white/5 group" data-testid={`admin-photo-${p.id}`}>
-              <img src={p.photoUrl} alt="Progress" className="w-full h-full object-cover" />
+              <img src={p.photoUrl} alt="Progress" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent text-white">
                 <p className="text-[11px] font-medium">{p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}</p>
-                <p className="text-[9px] uppercase tracking-wider text-primary">{p.type}</p>
+                <p className="text-[9px] uppercase tracking-wider text-primary">{p.type} · {(p as any).viewAngle ?? "front"}</p>
               </div>
               <button
                 onClick={() => del.mutate(p.id)}

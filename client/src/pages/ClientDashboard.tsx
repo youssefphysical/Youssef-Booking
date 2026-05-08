@@ -37,10 +37,15 @@ import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
+import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import BeforeAfterCompare from "@/components/BeforeAfterCompare";
+import { ClipboardCheck } from "lucide-react";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { TodayHero } from "@/components/TodayHero";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,11 +168,12 @@ export default function ClientDashboard() {
         </div>
       </div>
 
+      <TodayHero name={user.fullName} />
       <MembershipBlock user={user} />
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl bg-white/5 mb-6 h-auto sm:h-11 gap-1 p-1">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
@@ -180,11 +186,17 @@ export default function ClientDashboard() {
           <TabsTrigger value="body" data-testid="tab-body">
             <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.tabBody", "Body")}
           </TabsTrigger>
+          <TabsTrigger value="checkins" data-testid="tab-checkins">
+            <ClipboardCheck size={14} className="mr-1.5" /> {t("dashboard.tabCheckins", "Check-ins")}
+          </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
             <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">
             <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.tabProgress")}
+          </TabsTrigger>
+          <TabsTrigger value="activity" data-testid="tab-activity">
+            <Activity size={14} className="mr-1.5" /> {t("dashboard.tabActivity", "Activity")}
           </TabsTrigger>
         </TabsList>
 
@@ -192,8 +204,12 @@ export default function ClientDashboard() {
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
         <TabsContent value="supplements"><SupplementsTab /></TabsContent>
         <TabsContent value="body"><BodyMetricsPanel userId={user.id} canEdit={false} /></TabsContent>
+        <TabsContent value="checkins"><WeeklyCheckinsPanel /></TabsContent>
         <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
+        <TabsContent value="activity">
+          <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -543,6 +559,17 @@ function BookingCard({
           </div>
         </div>
       </div>
+
+      {(booking as any).clientVisibleCoachNotes && (
+        <div className="basis-full mt-1 px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/10">
+          <div className="text-[10px] uppercase tracking-wider text-blue-300/80 font-semibold mb-1">
+            Coach notes
+          </div>
+          <p className="text-xs text-foreground/90 whitespace-pre-wrap">
+            {(booking as any).clientVisibleCoachNotes}
+          </p>
+        </div>
+      )}
 
       {canCancel && (
         <div className="flex flex-col items-stretch sm:items-end gap-2">
@@ -1587,6 +1614,8 @@ function ProgressTab({ userId }: { userId: number }) {
   const { data: photos = [], isLoading } = useProgressPhotos({ userId });
   const upload = useUploadProgressPhoto();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadAngle, setUploadAngle] = useState<"front" | "side" | "back">("front");
+  const [view, setView] = useState<"compare" | "gallery">("compare");
 
   const list = photos as ProgressPhoto[];
   const sorted = [...list].sort(
@@ -1595,7 +1624,7 @@ function ProgressTab({ userId }: { userId: number }) {
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) upload.mutate({ file, type: "current" });
+    if (file) upload.mutate({ file, type: "current", viewAngle: uploadAngle });
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -1606,33 +1635,72 @@ function ProgressTab({ userId }: { userId: number }) {
           <h2 className="text-lg font-display font-bold">{t("dashboard.progressTitle")}</h2>
           <p className="text-xs text-muted-foreground">{t("dashboard.progressTrack")}</p>
         </div>
-        <Button
-          onClick={() => fileRef.current?.click()}
-          className="rounded-xl"
-          disabled={upload.isPending}
-          data-testid="button-upload-progress"
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Angle selector for the upload */}
+          <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+            {(["front", "side", "back"] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => setUploadAngle(a)}
+                className={`px-2.5 py-1 text-[11px] uppercase tracking-wider rounded-md capitalize ${
+                  uploadAngle === a ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+                }`}
+                data-testid={`button-upload-angle-${a}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <Button
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl"
+            disabled={upload.isPending}
+            data-testid="button-upload-progress"
+          >
+            {upload.isPending ? (
+              <Loader2 size={14} className="animate-spin mr-1.5" />
+            ) : (
+              <Upload size={14} className="mr-1.5" />
+            )}
+            {t("dashboard.addPhoto")}
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onFile}
+          />
+        </div>
+      </div>
+
+      {/* View toggle */}
+      <div className="inline-flex rounded-lg bg-white/5 p-1">
+        <button
+          onClick={() => setView("compare")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "compare" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-view-compare"
         >
-          {upload.isPending ? (
-            <Loader2 size={14} className="animate-spin mr-1.5" />
-          ) : (
-            <Upload size={14} className="mr-1.5" />
-          )}
-          {t("dashboard.addPhoto")}
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onFile}
-        />
+          Compare
+        </button>
+        <button
+          onClick={() => setView("gallery")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "gallery" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-view-gallery"
+        >
+          Gallery
+        </button>
       </div>
 
       {isLoading && <SkeletonCards />}
 
       {!isLoading && sorted.length === 0 && <EmptyState title={t("dashboard.progressEmpty")} />}
 
-      {sorted.length > 0 && (
+      {!isLoading && sorted.length > 0 && view === "compare" && (
+        <BeforeAfterCompare photos={sorted} />
+      )}
+
+      {!isLoading && sorted.length > 0 && view === "gallery" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {sorted.map((p) => (
             <motion.div
@@ -1645,13 +1713,17 @@ function ProgressTab({ userId }: { userId: number }) {
               <img
                 src={p.photoUrl}
                 alt="Progress"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                 <p className="text-xs text-white font-medium">
                   {p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-primary">{p.type}</p>
+                <p className="text-[10px] uppercase tracking-wider text-primary">
+                  {p.type} · {(p as any).viewAngle ?? "front"}
+                </p>
               </div>
             </motion.div>
           ))}
