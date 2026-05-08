@@ -1817,3 +1817,156 @@ export const updateFoodSchema = insertFoodSchema.partial();
 export type Food = typeof foods.$inferSelect;
 export type InsertFood = z.infer<typeof insertFoodSchema>;
 export type UpdateFood = z.infer<typeof updateFoodSchema>;
+
+// =============================
+// NUTRITION OS — PHASE 3: MEAL BUILDER
+// =============================
+// `meals` defines a meal (template by default) made of N rows in
+// `meal_items`. Each meal_items row is a SNAPSHOT of the food at the
+// moment it was added — name, serving, macros are copied so editing
+// or deleting the underlying food NEVER mutates an existing meal
+// (mirrors the package_templates → packages snapshot pattern).
+//
+// `food_id` is kept as a soft reference (no FK) for traceability:
+//   1. AI substitution: "swap chicken for turkey" needs the link.
+//   2. Future analytics: which foods are most-used across meals.
+// We deliberately do not enforce a FK so deleting a food never
+// blocks meal cleanup.
+//
+// Cached totals (`total_kcal` etc.) live on the meals row and are
+// recomputed server-side on every write via `computeMealTotals` from
+// shared/nutrition.ts — list views, PDF exports, WhatsApp summaries
+// and AI inputs all read the cached value without re-joining items.
+export const meals = pgTable("meals", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  description: text("description"),
+  // MEAL_CATEGORIES — soft-typed at DB level.
+  category: text("category").notNull().default("other"),
+  notes: text("notes"),
+  // True = visible in the trainer's library/picker (default for now).
+  // Phase 4 client-specific meals will flip this to false.
+  isTemplate: boolean("is_template").notNull().default(true),
+  // Soft archive — hidden from default listings but kept so any plan
+  // that already references this meal still resolves.
+  isActive: boolean("is_active").notNull().default(true),
+  // Cached totals. Source of truth = items; recomputed on every write.
+  totalKcal: doublePrecision("total_kcal").notNull().default(0),
+  totalProteinG: doublePrecision("total_protein_g").notNull().default(0),
+  totalCarbsG: doublePrecision("total_carbs_g").notNull().default(0),
+  totalFatsG: doublePrecision("total_fats_g").notNull().default(0),
+  // Author. Nullable, no FK — deleting a trainer must not break library.
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const mealItems = pgTable("meal_items", {
+  id: serial("id").primaryKey(),
+  // Hard FK so cascading delete cleans up children when a meal is
+  // hard-deleted. (Soft archive still works because we only flip
+  // isActive on the parent in that path.)
+  mealId: integer("meal_id")
+    .notNull()
+    .references(() => meals.id, { onDelete: "cascade" }),
+  // Soft reference to the originating food for AI/analytics. No FK
+  // so deleting a food never blocks anything.
+  foodId: integer("food_id"),
+  // ===== SNAPSHOT FIELDS (copied from foods at insert time) =====
+  name: text("name").notNull(),
+  servingSize: doublePrecision("serving_size").notNull().default(100),
+  servingUnit: text("serving_unit").notNull().default("g"),
+  kcal: doublePrecision("kcal").notNull().default(0),
+  proteinG: doublePrecision("protein_g").notNull().default(0),
+  carbsG: doublePrecision("carbs_g").notNull().default(0),
+  fatsG: doublePrecision("fats_g").notNull().default(0),
+  fiberG: doublePrecision("fiber_g"),
+  sugarG: doublePrecision("sugar_g"),
+  sodiumMg: doublePrecision("sodium_mg"),
+  // ===== PER-INSTANCE FIELDS =====
+  // How many of `servingSize × servingUnit` the trainer is serving.
+  // 1 = one whole snapshot serving; 1.5 = one and a half; 0.5 = half.
+  quantity: doublePrecision("quantity").notNull().default(1),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const MEAL_CATEGORIES = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+  "pre_workout",
+  "post_workout",
+  "other",
+] as const;
+export type MealCategory = (typeof MEAL_CATEGORIES)[number];
+
+export const MEAL_CATEGORY_LABELS_EN: Record<MealCategory, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  dinner: "Dinner",
+  snack: "Snack",
+  pre_workout: "Pre-workout",
+  post_workout: "Post-workout",
+  other: "Other",
+};
+
+// Item input shape — every snapshot field is explicit so the server
+// never has to look up a food (saves a round-trip and makes import
+// scripts trivial).
+export const mealItemInputSchema = z.object({
+  foodId: z.number().int().nullish(),
+  name: z.string().min(1, "Name is required").max(200),
+  servingSize: z.number().min(0.01).max(10000),
+  servingUnit: z.string().min(1).max(20),
+  kcal: z.number().min(0).max(10000),
+  proteinG: z.number().min(0).max(1000),
+  carbsG: z.number().min(0).max(1000),
+  fatsG: z.number().min(0).max(1000),
+  fiberG: z.number().min(0).max(500).nullish(),
+  sugarG: z.number().min(0).max(1000).nullish(),
+  sodiumMg: z.number().min(0).max(50000).nullish(),
+  quantity: z.number().min(0.01, "Quantity must be > 0").max(100),
+  notes: z.string().max(500).nullish(),
+  sortOrder: z.number().int().min(0).max(10000).optional(),
+});
+
+export const insertMealSchema = createInsertSchema(meals)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    createdByUserId: true,
+    totalKcal: true,
+    totalProteinG: true,
+    totalCarbsG: true,
+    totalFatsG: true,
+  })
+  .extend({
+    name: z.string().min(1, "Name is required").max(200),
+    nameAr: z.string().max(200).nullish(),
+    description: z.string().max(1000).nullish(),
+    category: z.enum(MEAL_CATEGORIES),
+    notes: z.string().max(1000).nullish(),
+    isTemplate: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+    items: z.array(mealItemInputSchema).min(1, "At least one item is required").max(50),
+  });
+
+// Update accepts every field optional. If `items` is supplied, the
+// server treats it as a full replacement (simpler & atomic vs diff).
+export const updateMealSchema = insertMealSchema.partial().extend({
+  items: z.array(mealItemInputSchema).min(1).max(50).optional(),
+});
+
+export type Meal = typeof meals.$inferSelect;
+export type MealItem = typeof mealItems.$inferSelect;
+export type MealItemInput = z.infer<typeof mealItemInputSchema>;
+export type InsertMeal = z.infer<typeof insertMealSchema>;
+export type UpdateMeal = z.infer<typeof updateMealSchema>;
+export interface MealWithItems extends Meal {
+  items: MealItem[];
+}

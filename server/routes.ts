@@ -20,6 +20,8 @@ import {
   updatePackageTemplateSchema,
   insertFoodSchema,
   updateFoodSchema,
+  insertMealSchema,
+  updateMealSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2090,6 +2092,92 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const me = req.user as User;
     const dup = await storage.duplicateFood(id, me.id);
     if (!dup) return res.status(404).json({ message: "Food not found" });
+    res.status(201).json(dup);
+  });
+
+  // ============== MEALS (Nutrition OS — Phase 3) ==============
+  // Admin-only meal builder. Each meal has N meal_items which
+  // SNAPSHOT the food fields, so editing/deleting a food never
+  // mutates an existing meal. Cached totals are recomputed
+  // server-side on every write via the shared computeMealTotals
+  // helper — list views never need to JOIN + SUM.
+  app.get("/api/meals", requireAdmin, async (req, res) => {
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const category =
+      typeof req.query.category === "string" && req.query.category
+        ? req.query.category
+        : undefined;
+    const templateOnly = req.query.templateOnly === "true";
+    const activeOnly = req.query.activeOnly === "true";
+    const limit = req.query.limit
+      ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200)
+      : 50;
+    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
+    const result = await storage.getMeals({
+      search,
+      category,
+      templateOnly,
+      activeOnly,
+      limit,
+      offset,
+    });
+    res.json(result);
+  });
+
+  app.get("/api/meals/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const meal = await storage.getMeal(id);
+    if (!meal) return res.status(404).json({ message: "Meal not found" });
+    res.json(meal);
+  });
+
+  app.post("/api/meals", requireAdmin, async (req, res) => {
+    const parsed = insertMealSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid meal",
+        errors: parsed.error.errors,
+      });
+    }
+    const me = req.user as User;
+    const { items, ...meal } = parsed.data;
+    const created = await storage.createMeal(meal, items, me.id);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/meals/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateMealSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid update",
+        errors: parsed.error.errors,
+      });
+    }
+    const existing = await storage.getMeal(id);
+    if (!existing) return res.status(404).json({ message: "Meal not found" });
+    const { items, ...meal } = parsed.data;
+    const updated = await storage.updateMeal(id, meal, items);
+    res.json(updated);
+  });
+
+  app.delete("/api/meals/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const existing = await storage.getMeal(id);
+    if (!existing) return res.status(404).json({ message: "Meal not found" });
+    await storage.deleteMeal(id);
+    res.sendStatus(204);
+  });
+
+  app.post("/api/meals/:id/duplicate", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const me = req.user as User;
+    const dup = await storage.duplicateMeal(id, me.id);
+    if (!dup) return res.status(404).json({ message: "Meal not found" });
     res.status(201).json(dup);
   });
 
