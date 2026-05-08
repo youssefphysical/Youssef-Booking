@@ -367,7 +367,7 @@ export default function AdminAnalytics() {
 
               <ChartCard
                 title={t("admin.analytics.dowLoad", "Demand by weekday")}
-                subtitle={t("admin.analytics.dowLoadSub", "All-time completed sessions")}
+                subtitle={t("admin.analytics.dowLoadSub", "All non-cancelled sessions by weekday")}
                 testId="chart-dow"
               >
                 <ResponsiveContainer width="100%" height="100%">
