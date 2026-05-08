@@ -64,9 +64,9 @@ export default function NutritionPlanPdf() {
 
   // Resolve the recipient name. For admin printing, look up the client
   // in the clients list (same hook used elsewhere). For self-print,
-  // use the signed-in user's full name.
-  const { data: clients = [] } = useClients();
-  void isAdmin;
+  // use the signed-in user's full name — and skip the admin-only
+  // /api/users query so clients don't see 403 noise.
+  const { data: clients = [] } = useClients({ enabled: !isMe && isAdmin });
   const recipientName = useMemo(() => {
     if (!plan) return "";
     if (isMe) return user?.fullName ?? "";

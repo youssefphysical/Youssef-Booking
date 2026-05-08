@@ -88,10 +88,15 @@ function Router() {
     trackPageView(pathname);
   }, [pathname]);
 
+  // Print routes (`/print/*`) render a standalone A4 document and must
+  // not include any app chrome (header, cookie banner, etc.) or it would
+  // bleed into the printed PDF.
+  const isPrintRoute = pathname.startsWith("/print/");
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
-      <Navigation />
-      <CookieBanner />
+      {!isPrintRoute && <Navigation />}
+      {!isPrintRoute && <CookieBanner />}
       <Switch>
         {/* Public */}
         <Route path="/" component={HomePage} />
