@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { format, formatDistanceToNow, isToday, isTomorrow } from "date-fns";
 import {
+  ArrowRight,
   CalendarClock,
   Droplets,
   Flame,
@@ -187,6 +189,21 @@ export function TodayHero({ name }: { name?: string | null }) {
         </p>
         {goalSub ? <p className="ms-auto text-xs text-white/55">{goalSub}</p> : null}
       </div>
+
+      {/* Primary action row — surfaces the most-likely next action so a
+          brand-new client never lands on dead text. Defaults to "Book a
+          session" when none is scheduled; switches to "View today's plan"
+          when one is. */}
+      {!data.nextSession ? (
+        <Link
+          href="/book"
+          data-testid="link-today-hero-book"
+          className="mt-3 inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-primary px-4 h-10 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)]"
+        >
+          Book your first session
+          <ArrowRight size={14} className="rtl:rotate-180" />
+        </Link>
+      ) : null}
     </section>
   );
 }
