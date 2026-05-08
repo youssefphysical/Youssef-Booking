@@ -133,7 +133,7 @@ export default function ClientDashboard() {
   if (!user) return null;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-5 pt-20 sm:pt-24 pb-20">
+    <div className="max-w-5xl mx-auto px-5 sm:px-6 pt-20 sm:pt-24 pb-20">
       {/* Header — softened on mobile: avatar stays 64 (recognition), but
           the H1 drops one step (text-2xl → text-3xl at sm) and the eyebrow
           tracking is tighter so the greeting feels less admin-panel-like
@@ -151,7 +151,7 @@ export default function ClientDashboard() {
           <div className="min-w-0">
             <p className="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-primary mb-1.5 sm:mb-2">{t("dashboard.eyebrow")}</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-display font-bold leading-tight" data-testid="text-greeting">
+              <h1 className="text-2xl sm:text-3xl font-display font-semibold leading-tight" data-testid="text-greeting">
                 {t("dashboard.greeting").replace("{name}", user.fullName.split(" ")[0])}
               </h1>
               {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
@@ -292,7 +292,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 
   return (
     <div
-      className="rounded-2xl border border-white/10 bg-card/40 p-4 sm:p-5"
+      className="rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-5"
       data-testid="block-membership"
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -330,7 +330,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         <div
-          className="rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"
           data-testid="block-protected-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-amber-200/80 inline-flex items-center gap-1.5">
@@ -348,7 +348,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           </p>
         </div>
         <div
-          className="rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"
           data-testid="block-sameday-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-blue-200/80 inline-flex items-center gap-1.5">

@@ -107,7 +107,7 @@ export function TodayHero({ name }: { name?: string | null }) {
   if (isLoading || !data) {
     return (
       <div
-        className="rounded-2xl border border-white/10 bg-card/50 p-4 sm:p-6"
+        className="rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-6"
         data-testid="today-hero-loading"
       >
         <div className="h-5 w-40 animate-pulse rounded bg-white/10" />
@@ -152,7 +152,7 @@ export function TodayHero({ name }: { name?: string | null }) {
 
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-white/10 bg-card/50 p-4 sm:p-6"
+      className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-6"
       data-testid="today-hero"
     >
       {/* Header — eyebrow + greeting + (optional) goal sub-line.
@@ -181,7 +181,7 @@ export function TodayHero({ name }: { name?: string | null }) {
               </Tooltip>
             </TooltipProvider>
           </p>
-          <h2 className="mt-0.5 text-lg sm:text-2xl font-semibold text-white leading-tight">
+          <h2 className="mt-0.5 text-lg sm:text-[22px] font-medium text-white/95 leading-tight tracking-tight">
             {name ? `Hey ${name.split(" ")[0]},` : "Welcome back,"}{" "}
             <span className="text-white/65 font-normal">here's your snapshot</span>
           </h2>

@@ -106,16 +106,16 @@ export function GettingStartedChecklist() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card/50 p-4 sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-6"
       data-testid="getting-started-checklist"
     >
 
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.28em] text-primary/90 font-semibold">
+          <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.22em] text-white/55 font-medium">
             <Sparkles size={12} /> {t("onboard.eyebrow", "Getting started")}
           </p>
-          <h2 className="mt-1.5 text-lg sm:text-xl font-semibold text-white">
+          <h2 className="mt-1.5 text-lg sm:text-[20px] font-medium text-white/95 tracking-tight">
             {t("onboard.title", "A few quick steps to set you up for results")}
           </h2>
           <p className="mt-1 text-xs sm:text-[13px] text-white/60 max-w-xl">
@@ -126,7 +126,7 @@ export function GettingStartedChecklist() {
           </p>
         </div>
         <div
-          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-white/70"
           data-testid="onboard-progress-badge"
         >
           {completed} / {total}
