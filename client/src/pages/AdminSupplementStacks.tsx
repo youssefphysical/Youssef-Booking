@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "@/i18n";
 import { ArrowLeft, Plus, Layers, Trash2, Edit3, GripVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,7 @@ const STACK_GOALS = [
 ];
 
 export default function AdminSupplementStacks() {
+  const { t } = useTranslation();
   const { data: stacks = [], isLoading } = useSupplementStacks();
   const remove = useDeleteSupplementStack();
   const [editing, setEditing] = useState<SupplementStackFull | "new" | null>(null);
@@ -74,23 +76,23 @@ export default function AdminSupplementStacks() {
           className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
           data-testid="link-back-admin"
         >
-          <ArrowLeft size={14} /> Back to Admin
+          <ArrowLeft size={14} /> {t("admin.backToAdmin", "Back to Admin")}
         </Link>
 
         <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Templates</p>
-            <h1 className="text-3xl font-display font-bold leading-tight">Supplement Stacks</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.supplementStacks.eyebrow", "Templates")}</p>
+            <h1 className="text-3xl font-display font-bold leading-tight">{t("admin.supplementStacks.title", "Supplement Stacks")}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Build reusable protocols you can apply to a client in one tap.
+              {t("admin.supplementStacks.subtitle", "Build reusable protocols you can apply to a client in one tap.")}
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/supplements">
-              <Button variant="outline" data-testid="link-library">Library →</Button>
+              <Button variant="outline" data-testid="link-library">{t("admin.supplementStacks.libraryLink", "Library →")}</Button>
             </Link>
             <Button onClick={() => setEditing("new")} data-testid="button-new-stack">
-              <Plus size={16} className="mr-1.5" /> New stack
+              <Plus size={16} className="mr-1.5" /> {t("admin.supplementStacks.newStack", "New stack")}
             </Button>
           </div>
         </div>
@@ -197,6 +199,7 @@ function StackDialog({
   initial: SupplementStackFull | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const create = useCreateSupplementStack();
   const update = useUpdateSupplementStack();
   const { data: library = [] } = useSupplements({ activeOnly: true, enabled: open });
@@ -361,7 +364,7 @@ function StackDialog({
               ))}
               {items.length === 0 && (
                 <li className="text-xs text-muted-foreground text-center py-6">
-                  No items yet. Add from library or blank.
+                  {t("admin.supplementStacks.noItemsYet", "No items yet. Add from library or blank.")}
                 </li>
               )}
             </ul>

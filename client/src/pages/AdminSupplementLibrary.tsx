@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useTranslation } from "@/i18n";
 import { ArrowLeft, Plus, Pill, Trash2, Edit3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ import {
 // Admin-curated supplement library. Editing or deleting a row here is
 // always safe — every assignment / stack carries its own snapshot.
 export default function AdminSupplementLibrary() {
+  const { t } = useTranslation();
   const { data: items = [], isLoading } = useSupplements();
   const create = useCreateSupplement();
   const update = useUpdateSupplement();
@@ -84,23 +86,23 @@ export default function AdminSupplementLibrary() {
           className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
           data-testid="link-back-admin"
         >
-          <ArrowLeft size={14} /> Back to Admin
+          <ArrowLeft size={14} /> {t("admin.backToAdmin", "Back to Admin")}
         </Link>
 
         <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Catalogue</p>
-            <h1 className="text-3xl font-display font-bold leading-tight">Supplement Library</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.supplementLibrary.eyebrow", "Catalogue")}</p>
+            <h1 className="text-3xl font-display font-bold leading-tight">{t("admin.supplementLibrary.title", "Supplement Library")}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Curate the supplements you prescribe. Edits never affect existing client protocols.
+              {t("admin.supplementLibrary.subtitle", "Curate the supplements you prescribe. Edits never affect existing client protocols.")}
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/supplement-stacks">
-              <Button variant="outline" data-testid="link-stacks">Stacks →</Button>
+              <Button variant="outline" data-testid="link-stacks">{t("admin.supplementLibrary.stacksLink", "Stacks →")}</Button>
             </Link>
             <Button onClick={startNew} data-testid="button-new-supplement">
-              <Plus size={16} className="mr-1.5" /> New
+              <Plus size={16} className="mr-1.5" /> {t("common.new", "New")}
             </Button>
           </div>
         </div>
