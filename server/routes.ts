@@ -570,35 +570,41 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
     safe(() => storage.getProgressPhotos({ userId }), [] as any[]),
   ]);
 
+  // Map our canonical booking statuses (BOOKING_STATUSES in shared/schema.ts)
+  // to the three timeline event kinds. Anything not in this map is skipped
+  // intentionally so unrecognised statuses never fall back to "booked".
+  const BOOKING_STATUS_TO_KIND: Record<
+    string,
+    { kind: ActivityEvent["kind"]; title: string; idPrefix: string }
+  > = {
+    upcoming: { kind: "session_booked", title: "Session booked", idPrefix: "booked" },
+    confirmed: { kind: "session_booked", title: "Session booked", idPrefix: "booked" },
+    completed: { kind: "session_completed", title: "Session completed", idPrefix: "completed" },
+    cancelled: { kind: "session_cancelled", title: "Session cancelled", idPrefix: "cancelled" },
+    free_cancelled: { kind: "session_cancelled", title: "Session cancelled", idPrefix: "cancelled" },
+    late_cancelled: { kind: "session_cancelled", title: "Session cancelled (late)", idPrefix: "cancelled" },
+    emergency_cancelled: { kind: "session_cancelled", title: "Session cancelled (protected)", idPrefix: "cancelled" },
+    no_show: { kind: "session_cancelled", title: "Session no-show", idPrefix: "noshow" },
+  };
+
   for (const b of bookings as any[]) {
     const when = b.date instanceof Date ? b.date.toISOString() : (b.date ?? null);
     if (!when) continue;
-    if (b.status === "completed") {
+    const map = BOOKING_STATUS_TO_KIND[String(b.status)];
+    if (map) {
       events.push({
-        id: `booking-completed-${b.id}`,
-        kind: "session_completed",
+        id: `booking-${map.idPrefix}-${b.id}`,
+        kind: map.kind,
         at: when,
-        title: "Session completed",
-        subtitle: b.sessionType ? String(b.sessionType) : null,
-      });
-    } else if (b.status === "cancelled") {
-      events.push({
-        id: `booking-cancelled-${b.id}`,
-        kind: "session_cancelled",
-        at: when,
-        title: "Session cancelled",
-        subtitle: b.sessionType ? String(b.sessionType) : null,
-      });
-    } else {
-      events.push({
-        id: `booking-booked-${b.id}`,
-        kind: "session_booked",
-        at: when,
-        title: "Session booked",
+        title: map.title,
         subtitle: b.sessionType ? String(b.sessionType) : null,
       });
     }
-    if (b.coachNotesUpdatedAt && (b.clientVisibleCoachNotes || b.sessionPerformance != null)) {
+    // Coach-note event: emit whenever the coach has touched this booking's
+    // notes (regardless of which specific field changed). Subtitle is
+    // sourced ONLY from the client-visible portion — privateCoachNotes
+    // must never reach this payload.
+    if (b.coachNotesUpdatedAt) {
       const nAt = b.coachNotesUpdatedAt instanceof Date
         ? b.coachNotesUpdatedAt.toISOString()
         : String(b.coachNotesUpdatedAt);
@@ -609,7 +615,7 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
         title: "Coach logged a session note",
         subtitle: b.clientVisibleCoachNotes
           ? String(b.clientVisibleCoachNotes).slice(0, 140)
-          : "Performance recorded",
+          : "Session reviewed by your coach",
       });
     }
   }
