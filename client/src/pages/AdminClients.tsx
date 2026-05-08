@@ -20,6 +20,7 @@ import {
   AdminCard,
   AdminStatCard,
   AdminEmptyState,
+  AdminSkeletonStack,
 } from "@/components/admin/primitives";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/use-clients";
@@ -294,11 +295,7 @@ export default function AdminClients() {
         </AdminCard>
 
         {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-white/5 animate-pulse" />
-            ))}
-          </div>
+          <AdminSkeletonStack count={6} height="h-16" />
         ) : filtered.length === 0 ? (
           <AdminEmptyState
             icon={<Users size={28} />}

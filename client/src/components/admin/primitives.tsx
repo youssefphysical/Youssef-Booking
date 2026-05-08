@@ -338,6 +338,55 @@ export function AdminChartCard({
 }
 
 // =====================================================
+// Skeleton — premium shimmer placeholder
+// =====================================================
+export function AdminSkeleton({
+  className,
+  rounded = "xl",
+  testId,
+}: {
+  className?: string;
+  rounded?: "md" | "lg" | "xl" | "2xl" | "full";
+  testId?: string;
+}) {
+  const roundedMap: Record<string, string> = {
+    md: "rounded-md",
+    lg: "rounded-lg",
+    xl: "rounded-xl",
+    "2xl": "rounded-2xl",
+    full: "rounded-full",
+  };
+  return (
+    <div
+      className={cn("admin-shimmer", roundedMap[rounded], className)}
+      data-testid={testId}
+      aria-hidden="true"
+    />
+  );
+}
+
+// SkeletonStack — stack of N rows of fixed height
+export function AdminSkeletonStack({
+  count = 4,
+  height = "h-16",
+  rounded = "xl",
+  className,
+}: {
+  count?: number;
+  height?: string;
+  rounded?: "md" | "lg" | "xl" | "2xl" | "full";
+  className?: string;
+}) {
+  return (
+    <div className={cn("space-y-2", className)} aria-hidden="true">
+      {Array.from({ length: count }).map((_, i) => (
+        <AdminSkeleton key={i} className={height} rounded={rounded} />
+      ))}
+    </div>
+  );
+}
+
+// =====================================================
 // EmptyState — premium empty placeholder
 // =====================================================
 export function AdminEmptyState({
