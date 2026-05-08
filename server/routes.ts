@@ -1261,6 +1261,40 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(list);
   });
 
+  // EMAIL DIAGNOSTICS — admin-only. Returns Resend config status and (optionally)
+  // sends a test welcome email to ?to=<address>, returning the LITERAL Resend
+  // status + error so we can diagnose deliverability without needing Vercel
+  // log access. Most common cause of "admin gets it, client doesn't":
+  // Resend free-tier sandbox mode where the sender domain isn't verified, so
+  // sends are restricted to the account-owner email — Resend returns 403
+  // with a "You can only send testing emails to your own email address" body.
+  app.get("/api/admin/email-diagnostics", requireAdmin, async (req, res) => {
+    const config = emailConfigStatus();
+    const to = (req.query.to as string | undefined)?.trim();
+    let testSend: any = null;
+    if (to) {
+      // Build the same template a real signup would send so we test the
+      // exact production code path, not a synthetic minimal payload.
+      const built = (await import("./email-templates")).buildWelcomeEmail({
+        clientName: "Email Diagnostics Test",
+        lang: "en",
+        websiteUrl:
+          process.env.PUBLIC_APP_URL ||
+          (process.env.NODE_ENV === "production"
+            ? "https://youssef-booking.vercel.app"
+            : `http://localhost:${process.env.PORT || 5000}`),
+      });
+      const result = await sendEmail({
+        to,
+        subject: `[DIAGNOSTIC] ${built.subject}`,
+        text: built.text,
+        html: built.html,
+      });
+      testSend = { to, ...result };
+    }
+    res.json({ config, testSend, trainerEmail: process.env.TRAINER_EMAIL || null });
+  });
+
   app.get("/api/admin/notifications/unread-count", requireAdmin, async (_req, res) => {
     const count = await storage.getAdminUnreadCount();
     res.json({ count });
