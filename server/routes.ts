@@ -535,14 +535,19 @@ async function dispatchBookingChangeNotification(opts: {
 // to a non-admin user. Apply to every endpoint that returns booking
 // objects (list, create, patch, cancel, same-day-adjust). Admin
 // responses are returned unchanged.
-function sanitizeBookingForUser<T extends { privateCoachNotes?: any }>(
+function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
   me: { role?: string } | undefined,
   booking: T,
-): T {
-  if (!booking) return booking;
-  if (me?.role === "admin") return booking;
-  const { privateCoachNotes, ...rest } = booking as any;
-  return rest as T;
+): Omit<T, "privateCoachNotes"> {
+  if (!booking) return booking as Omit<T, "privateCoachNotes">;
+  if (me?.role === "admin") {
+    // Admin sees the full payload, including privateCoachNotes — the
+    // returned shape still satisfies Omit<T, "privateCoachNotes"> because
+    // T may have the property and Omit allows the remaining keys.
+    return booking as unknown as Omit<T, "privateCoachNotes">;
+  }
+  const { privateCoachNotes: _omit, ...rest } = booking;
+  return rest;
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
