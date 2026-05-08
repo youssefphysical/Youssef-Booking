@@ -1,0 +1,69 @@
+Critical mobile navbar overflow issue after login.
+
+I uploaded a video. Please watch it to the end and focus on the top navbar, especially the hamburger button on the far right.
+
+Problem:
+In logged-in mobile state, the top navbar controls are too wide:
+
+- logo/name
+- notification button
+- language selector
+- sign out button
+- hamburger menu
+
+Because of this, the hamburger menu on the right becomes partially clipped / pushed outside the viewport.
+This is not professional and must be fixed.
+
+Root issue:
+The logged-in navbar does not have proper mobile responsive compression logic.
+It is trying to fit too many full-size controls in one row.
+
+Required fix:
+Make the logged-in and logged-out navbar fully responsive and never overflow.
+
+On small mobile widths:
+
+1. Keep logo/name on the left.
+2. Keep hamburger menu fully visible on the right.
+3. Never allow the hamburger to be clipped.
+4. If space is tight, compress secondary actions:
+   - reduce Sign out pill width
+   - optionally show Sign out as icon-only on small screens
+   - reduce gaps between controls
+   - reduce language pill width
+   - move notification into menu if needed
+5. Header must use:
+   - min-width: 0
+   - flex-shrink rules correctly
+   - overflow hidden only on text, never on action buttons
+   - safe max-width calculations
+6. Logo text can truncate if needed, but action buttons must remain visible.
+7. Hamburger button must always remain fully inside viewport with proper right padding.
+
+Audit both states:
+
+- logged out navbar
+- logged in navbar
+
+Audit widths:
+
+- 360px
+- 390px
+- 412px
+- Samsung S25 Ultra viewport
+
+Expected result:
+Top navbar should look balanced, premium, and never clipped.
+The hamburger menu should be fully visible, aligned, and consistent with the other buttons.
+
+Do NOT change auth logic.
+Do NOT change routing.
+Do NOT redesign homepage.
+This is a mobile navbar layout/responsive fix only.
+
+After fixing:
+
+- typecheck
+- build
+- deploy
+- verify with screenshots/video for logged-in and logged-out mobile states.
