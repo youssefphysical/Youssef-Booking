@@ -106,11 +106,9 @@ export function GettingStartedChecklist() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card/40 to-primary/[0.03] p-5 sm:p-6"
+      className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card/50 p-4 sm:p-6"
       data-testid="getting-started-checklist"
     >
-      {/* Soft cyan corner accent */}
-      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
 
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">

@@ -65,10 +65,10 @@ function Stat({
 }) {
   return (
     <div
-      className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition"
+      className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 sm:p-4 hover:bg-white/[0.05] transition"
       data-testid={testId}
     >
-      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 ring-1 ring-white/10">
+      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-white/[0.04] ring-1 ring-white/10">
         <Icon size={16} className={tone} />
       </span>
       <div className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function TodayHero({ name }: { name?: string | null }) {
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-950/40 via-black/30 to-indigo-950/40 p-5 sm:p-6"
+      className="overflow-hidden rounded-2xl border border-white/10 bg-card/50 p-4 sm:p-6"
       data-testid="today-hero"
     >
       <header className="flex items-end justify-between gap-3">
