@@ -26,6 +26,10 @@ import {
   supplementStacks,
   supplementStackItems,
   clientSupplements,
+  bodyMetrics,
+  type BodyMetric,
+  type InsertBodyMetric,
+  type UpdateBodyMetric,
   type Food,
   type InsertFood,
   type UpdateFood,
@@ -1715,5 +1719,86 @@ export class DatabaseStorage implements IStorage {
     });
   }
 }
+
+// =====================================================================
+// P4a — BODY METRICS (Progress Tracking)
+// Mounted on the prototype below so `storage.listBodyMetrics(...)` etc.
+// resolve without restructuring the existing class. Keeping all storage
+// surfaces on a single instance is the project convention.
+// =====================================================================
+declare module "./storage" {
+  interface DatabaseStorage {
+    listBodyMetrics(userId: number, opts?: { limit?: number }): Promise<BodyMetric[]>;
+    getBodyMetric(id: number): Promise<BodyMetric | undefined>;
+    createBodyMetric(input: InsertBodyMetric, loggedByUserId: number | null): Promise<BodyMetric>;
+    updateBodyMetric(id: number, patch: UpdateBodyMetric): Promise<BodyMetric | undefined>;
+    deleteBodyMetric(id: number): Promise<boolean>;
+  }
+}
+
+(DatabaseStorage.prototype as any).listBodyMetrics = async function (
+  userId: number,
+  opts?: { limit?: number },
+): Promise<BodyMetric[]> {
+  const q = db
+    .select()
+    .from(bodyMetrics)
+    .where(eq(bodyMetrics.userId, userId))
+    .orderBy(desc(bodyMetrics.recordedOn), desc(bodyMetrics.id));
+  return opts?.limit ? q.limit(opts.limit) : q;
+};
+(DatabaseStorage.prototype as any).getBodyMetric = async function (
+  id: number,
+): Promise<BodyMetric | undefined> {
+  const [row] = await db.select().from(bodyMetrics).where(eq(bodyMetrics.id, id));
+  return row;
+};
+(DatabaseStorage.prototype as any).createBodyMetric = async function (
+  input: InsertBodyMetric,
+  loggedByUserId: number | null,
+): Promise<BodyMetric> {
+  const [row] = await db
+    .insert(bodyMetrics)
+    .values({
+      userId: input.userId,
+      recordedOn: input.recordedOn,
+      weight: input.weight ?? null,
+      bodyFat: input.bodyFat ?? null,
+      neck: input.neck ?? null,
+      shoulders: input.shoulders ?? null,
+      chest: input.chest ?? null,
+      arms: input.arms ?? null,
+      waist: input.waist ?? null,
+      hips: input.hips ?? null,
+      thighs: input.thighs ?? null,
+      calves: input.calves ?? null,
+      notes: input.notes ?? null,
+      loggedByUserId: loggedByUserId ?? null,
+    })
+    .returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).updateBodyMetric = async function (
+  id: number,
+  patch: UpdateBodyMetric,
+): Promise<BodyMetric | undefined> {
+  const update: any = { updatedAt: new Date() };
+  for (const k of [
+    "recordedOn", "weight", "bodyFat",
+    "neck", "shoulders", "chest", "arms",
+    "waist", "hips", "thighs", "calves",
+    "notes",
+  ] as const) {
+    if ((patch as any)[k] !== undefined) update[k] = (patch as any)[k];
+  }
+  const [row] = await db.update(bodyMetrics).set(update).where(eq(bodyMetrics.id, id)).returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).deleteBodyMetric = async function (
+  id: number,
+): Promise<boolean> {
+  const r = await db.delete(bodyMetrics).where(eq(bodyMetrics.id, id)).returning({ id: bodyMetrics.id });
+  return r.length > 0;
+};
 
 export const storage = new DatabaseStorage();

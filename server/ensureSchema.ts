@@ -468,6 +468,29 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS client_supplements_user_idx ON client_supplements (user_id);
     CREATE INDEX IF NOT EXISTS client_supplements_user_status_idx ON client_supplements (user_id, status);
+
+    -- P4a Progress Tracking — body metrics
+    CREATE TABLE IF NOT EXISTS body_metrics (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      recorded_on date NOT NULL,
+      weight double precision,
+      body_fat double precision,
+      neck double precision,
+      shoulders double precision,
+      chest double precision,
+      arms double precision,
+      waist double precision,
+      hips double precision,
+      thighs double precision,
+      calves double precision,
+      notes text,
+      logged_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS body_metrics_user_idx ON body_metrics (user_id);
+    CREATE INDEX IF NOT EXISTS body_metrics_user_date_idx ON body_metrics (user_id, recorded_on DESC);
   `;
 
   try {

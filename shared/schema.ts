@@ -2534,6 +2534,84 @@ export type ClientSupplement = typeof clientSupplements.$inferSelect;
 export type InsertClientSupplement = z.infer<typeof insertClientSupplementSchema>;
 export type UpdateClientSupplement = z.infer<typeof updateClientSupplementSchema>;
 
+// =============================
+// BODY METRICS (P4a — Progress Tracking)
+// =============================
+// One row per dated measurement entry. Designed for charting + trend
+// detection: every numeric is `doublePrecision` so partial entries (e.g.
+// only weight today) are first-class. `recordedOn` is a date, not a
+// timestamp, because clients log "today's weigh-in" not a millisecond.
+export const bodyMetrics = pgTable("body_metrics", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  recordedOn: date("recorded_on").notNull(),
+  weight: doublePrecision("weight"),       // kg
+  bodyFat: doublePrecision("body_fat"),    // %
+  // Circumferences (cm). All optional — clients log what they measured.
+  neck: doublePrecision("neck"),
+  shoulders: doublePrecision("shoulders"),
+  chest: doublePrecision("chest"),
+  arms: doublePrecision("arms"),
+  waist: doublePrecision("waist"),
+  hips: doublePrecision("hips"),
+  thighs: doublePrecision("thighs"),
+  calves: doublePrecision("calves"),
+  notes: text("notes"),
+  loggedByUserId: integer("logged_by_user_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+const optionalPositive = z.number().positive().max(1000).nullish();
+const optionalPercent = z.number().min(0).max(100).nullish();
+
+export const insertBodyMetricSchema = createInsertSchema(bodyMetrics)
+  .omit({ id: true, createdAt: true, updatedAt: true, loggedByUserId: true })
+  .extend({
+    userId: z.number().int().positive(),
+    recordedOn: z.string().min(1, "Date is required"),
+    weight: optionalPositive,
+    bodyFat: optionalPercent,
+    neck: optionalPositive,
+    shoulders: optionalPositive,
+    chest: optionalPositive,
+    arms: optionalPositive,
+    waist: optionalPositive,
+    hips: optionalPositive,
+    thighs: optionalPositive,
+    calves: optionalPositive,
+    notes: z.string().max(2000).nullish(),
+  });
+export const updateBodyMetricSchema = createInsertSchema(bodyMetrics)
+  .omit({ id: true, createdAt: true, updatedAt: true, loggedByUserId: true, userId: true })
+  .extend({
+    recordedOn: z.string().min(1).optional(),
+    weight: optionalPositive,
+    bodyFat: optionalPercent,
+    neck: optionalPositive,
+    shoulders: optionalPositive,
+    chest: optionalPositive,
+    arms: optionalPositive,
+    waist: optionalPositive,
+    hips: optionalPositive,
+    thighs: optionalPositive,
+    calves: optionalPositive,
+    notes: z.string().max(2000).nullish(),
+  })
+  .partial();
+export type BodyMetric = typeof bodyMetrics.$inferSelect;
+export type InsertBodyMetric = z.infer<typeof insertBodyMetricSchema>;
+export type UpdateBodyMetric = z.infer<typeof updateBodyMetricSchema>;
+
+// The tracked numeric fields, in display order. Re-exported so the UI
+// and chart code can iterate without re-listing them and drifting.
+export const BODY_METRIC_FIELDS = [
+  "weight", "bodyFat",
+  "neck", "shoulders", "chest", "arms",
+  "waist", "hips", "thighs", "calves",
+] as const;
+export type BodyMetricField = (typeof BODY_METRIC_FIELDS)[number];
+
 // Apply-stack body: snapshot all items of a stack onto a client.
 export const applyStackToClientSchema = z.object({
   userId: z.number().int().positive(),

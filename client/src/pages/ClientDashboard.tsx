@@ -36,6 +36,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
+import BodyMetricsPanel from "@/components/BodyMetricsPanel";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,7 +108,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useTranslation } from "@/i18n";
 import { SupplementsTab } from "@/components/dashboard/SupplementsTab";
-import { Pill } from "lucide-react";
+import { Pill, LineChart as LineChartIcon } from "lucide-react";
 
 function currentMonthKey() {
   const d = new Date();
@@ -166,7 +167,7 @@ export default function ClientDashboard() {
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full max-w-3xl bg-white/5 mb-6 h-11">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl bg-white/5 mb-6 h-auto sm:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
@@ -175,6 +176,9 @@ export default function ClientDashboard() {
           </TabsTrigger>
           <TabsTrigger value="supplements" data-testid="tab-supplements">
             <Pill size={14} className="mr-1.5" /> {t("dashboard.tabSupplements", "Supplements")}
+          </TabsTrigger>
+          <TabsTrigger value="body" data-testid="tab-body">
+            <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.tabBody", "Body")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
             <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
@@ -187,6 +191,7 @@ export default function ClientDashboard() {
         <TabsContent value="bookings"><BookingsTab userId={user.id} /></TabsContent>
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
         <TabsContent value="supplements"><SupplementsTab /></TabsContent>
+        <TabsContent value="body"><BodyMetricsPanel userId={user.id} canEdit={false} /></TabsContent>
         <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
       </Tabs>
