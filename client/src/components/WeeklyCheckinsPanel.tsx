@@ -373,7 +373,10 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
                     labelStyle={{ color: "white" }}
                   />
                   <Legend wrapperStyle={{ color: "#ffffff90", fontSize: 11 }} />
-                  <Line type="monotone" dataKey="adherence" stroke="#60a5fa" strokeWidth={2} dot={false} name="Adherence %" />
+                  {/* Theme-aligned palette: primary = adherence (brand cyan),
+                      secondary metrics use calm 400-tier tints that read well
+                      on the dark luxury surface. */}
+                  <Line type="monotone" dataKey="adherence" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Adherence %" />
                   <Line type="monotone" dataKey="sleep" stroke="#34d399" strokeWidth={1.5} dot={false} name="Sleep /10" />
                   <Line type="monotone" dataKey="energy" stroke="#fbbf24" strokeWidth={1.5} dot={false} name="Energy /10" />
                   <Line type="monotone" dataKey="mood" stroke="#f472b6" strokeWidth={1.5} dot={false} name="Mood /10" />

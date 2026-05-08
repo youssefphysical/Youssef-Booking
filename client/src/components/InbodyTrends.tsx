@@ -178,15 +178,15 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
                   <CartesianGrid stroke="#ffffff10" vertical={false} />
                   <XAxis
                     dataKey="label"
-                    stroke="#888"
-                    tick={{ fontSize: 10, fill: "#888" }}
+                    stroke="rgba(255,255,255,0.5)"
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
                     interval="preserveStartEnd"
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    stroke="#888"
-                    tick={{ fontSize: 10, fill: "#888" }}
+                    stroke="rgba(255,255,255,0.5)"
+                    tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
                     domain={["dataMin - 1", "dataMax + 1"]}
                     width={28}
                     axisLine={false}

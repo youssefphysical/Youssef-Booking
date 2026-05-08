@@ -47,7 +47,9 @@ export function VerifiedBadge({
         className,
       )}
     >
-      <CheckCircle2 size={px} strokeWidth={2.5} fill="currentColor" stroke="#0b1220" />
+      {/* Stroke uses the theme background HSL so the verified badge always
+          reads as "punched out" of the surface regardless of future theme tweaks. */}
+      <CheckCircle2 size={px} strokeWidth={2.5} fill="currentColor" stroke="hsl(var(--background))" />
     </span>
   );
 
