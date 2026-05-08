@@ -41,7 +41,7 @@ import {
 
 const ANALYTICS_PATH = "/api/admin/analytics";
 const FMT_INT = new Intl.NumberFormat("en-US");
-const FMT_EGP = new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 });
+const FMT_AED = new Intl.NumberFormat("en-US", { style: "currency", currency: "AED", maximumFractionDigits: 0 });
 const DOW_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function shortMonth(ym: string) {
@@ -135,9 +135,9 @@ export default function AdminAnalytics() {
                 icon={<Wallet size={18} />}
                 label={t("admin.analytics.revenuePaid30d", "Revenue (30d)")}
                 value={data.revenue.paid30d}
-                sub={`${FMT_EGP.format(data.revenue.outstanding)} ${t("admin.analytics.outstanding", "outstanding")}`}
+                sub={`${FMT_AED.format(data.revenue.outstanding)} ${t("admin.analytics.outstanding", "outstanding")}`}
                 tone="success"
-                format="currencyEGP"
+                format="currencyAED"
                 testId="kpi-revenue-30d"
                 animate
               />
@@ -217,7 +217,7 @@ export default function AdminAnalytics() {
                         borderRadius: 12,
                         fontSize: 12,
                       }}
-                      formatter={(v: any) => FMT_EGP.format(Number(v))}
+                      formatter={(v: any) => FMT_AED.format(Number(v))}
                     />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" dataKey="total" name="Assigned" stroke="#38bdf8" strokeWidth={2} dot={false} />

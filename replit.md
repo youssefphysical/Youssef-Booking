@@ -123,7 +123,16 @@ Phased premium operating-system rebuild — Apple/Stripe/Notion clarity, mobile-
 
 ## User preferences
 
-_Populate as you build_
+- **Currency:** AED (United Arab Emirates Dirham). All revenue/money values render as `AED 0`, `AED 2,500`, `AED 12,000`. No EGP anywhere in the product.
+
+## Mobile UX Polish (May 2026)
+
+Surgical responsive pass — no logic changes, no schema changes.
+
+- **Currency switch EGP → AED** — three formatters (`AdminDashboard`, `AdminAnalytics`, `primitives`) renamed `FMT_EGP → FMT_AED` with `currency: "AED"`. `AdminStatCard` `format` prop now accepts `"currencyAED"` (preferred) and keeps `"currencyEGP"` as a deprecated alias mapping to the same AED formatter so any future stragglers don't break. Confirms the global "AED 0 / AED 2,500 / AED 12,000" formatting requirement.
+- **Tighter top spacing** — `.admin-shell` mobile `padding-top: 5rem → 4rem`, desktop `2rem → 1.5rem`, bottom `3rem → 2.25rem`. `AdminPageHeader` `mb-4 sm:mb-5 → mb-3 sm:mb-4`, eyebrow tracking softened, h1 `22→20px / 30→26px` with leading-[1.15], subtitle `12.5→12px / 14→13px`. Visual hierarchy now starts ~24-32px higher on mobile.
+- **Calmer mobile bottom dock** — `h-16 → h-14` (56px). FAB `h-12 w-12, shadow-lg/30, -translate-y-3 → h-10 w-10, shadow-md/20, -translate-y-2.5` plus `ring-4 ring-card/95` for a clean cut-out into the dock instead of dominating the bar. Dock icons `size 20 → 18`, label `text-[10px] → text-[9.5px]` with `mt-0.5`. `AdminMobileBottomSpacer h-16 → h-14`. Frees ~8px vertical real estate per page.
+- **AdminStatCard rebalance** — `min-h 92→84 / 108→100`, padding `p-3 sm:p-5 → p-3 sm:p-4`, value font `22→20 / 28→26` with `truncate` so long AED amounts never overflow the chip, label `text-xs → text-[11px]` with `min-w-0` parent so word-break works inside the tightened tile.
 
 ## Email reminders cron (external trigger)
 

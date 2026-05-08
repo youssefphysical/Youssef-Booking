@@ -40,7 +40,7 @@ import {
   useAdminCountUp,
 } from "@/components/admin/primitives";
 
-const FMT_EGP = new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 });
+const FMT_AED = new Intl.NumberFormat("en-US", { style: "currency", currency: "AED", maximumFractionDigits: 0 });
 
 type TabSpec = {
   href: string;
@@ -143,7 +143,7 @@ function TodayHero({
           <HeroChip icon={<AlertCircle size={13} />} value={urgentCount} label={t("admin.dashboard.urgentAlerts", "Urgent")} tone={urgentCount > 0 ? "danger" : "muted"} />
           <HeroChip
             icon={<Wallet size={13} />}
-            value={revenue30d == null ? "—" : FMT_EGP.format(revenue30d)}
+            value={revenue30d == null ? "—" : FMT_AED.format(revenue30d)}
             label={t("admin.dashboard.revenue30d", "Revenue 30d")}
             tone="success"
             wide

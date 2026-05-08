@@ -434,27 +434,27 @@ export function AdminMobileBottomNav({ onOpenPalette, onOpenMore }: AdminMobileB
       key: "home",
       href: "/admin",
       label: t("nav.dashboard"),
-      icon: <LayoutDashboard size={20} />,
+      icon: <LayoutDashboard size={18} />,
       isActive: (loc) => loc === "/admin",
     },
     {
       key: "clients",
       href: "/admin/clients",
       label: t("nav.clients"),
-      icon: <Users size={20} />,
+      icon: <Users size={18} />,
       isActive: (loc) => loc.startsWith("/admin/clients"),
     },
     {
       key: "calendar",
       href: "/admin/bookings",
       label: t("nav.bookings"),
-      icon: <Calendar size={20} />,
+      icon: <Calendar size={18} />,
       isActive: (loc) => loc.startsWith("/admin/bookings"),
     },
     {
       key: "more",
       label: t("nav.more", "More"),
-      icon: <MoreHorizontal size={20} />,
+      icon: <MoreHorizontal size={18} />,
       isActive: () => false,
       onPress: onOpenMore,
     },
@@ -467,22 +467,22 @@ export function AdminMobileBottomNav({ onOpenPalette, onOpenMore }: AdminMobileB
       data-testid="nav-admin-mobile-bottom"
       aria-label={t("nav.bottomNavLabel", "Admin navigation")}
     >
-      <div className="relative grid grid-cols-5 h-16">
+      <div className="relative grid grid-cols-5 h-14">
         {/* Slots 0,1 */}
         {items.slice(0, 2).map((it) => (
           <DockButton key={it.key} item={it} location={location} />
         ))}
 
-        {/* Center FAB — opens palette in create mode */}
-        <div className="flex items-start justify-center pt-1">
+        {/* Center FAB — opens palette in create mode (calm, not dominant) */}
+        <div className="flex items-start justify-center pt-0.5">
           <button
             type="button"
             onClick={onOpenPalette}
             data-testid="button-mobile-quick-add"
             aria-label={t("nav.quickAdd", "Quick add")}
-            className="relative -translate-y-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+            className="relative -translate-y-2.5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20 active:scale-95 transition-transform ring-4 ring-card/95"
           >
-            <Plus size={22} strokeWidth={2.5} />
+            <Plus size={18} strokeWidth={2.5} />
           </button>
         </div>
 
@@ -506,13 +506,13 @@ function DockButton({ item, location }: { item: DockItem; location: string }) {
     >
       <span
         className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+          "flex h-6 w-6 items-center justify-center rounded-lg transition-colors",
           active ? "bg-primary/10" : "",
         )}
       >
         {item.icon}
       </span>
-      <span className="text-[10px] font-medium tracking-wide truncate max-w-[60px]">
+      <span className="text-[9.5px] font-medium tracking-wide truncate max-w-[60px] mt-0.5">
         {item.label}
       </span>
     </div>
@@ -546,7 +546,7 @@ export function AdminMobileBottomSpacer() {
   return (
     <div
       aria-hidden
-      className="md:hidden h-16"
+      className="md:hidden h-14"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     />
   );

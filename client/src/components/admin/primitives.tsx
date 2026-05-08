@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 
 // Hoisted formatters — avoid per-frame allocations during count-up animation.
 const FMT_INT = new Intl.NumberFormat("en-US");
-const FMT_EGP = new Intl.NumberFormat("en-US", {
+const FMT_AED = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "EGP",
+  currency: "AED",
   maximumFractionDigits: 0,
 });
 
@@ -88,21 +88,21 @@ export function AdminPageHeader({
   testId?: string;
 }) {
   return (
-    <div className="mb-4 sm:mb-5 flex items-end justify-between gap-3">
+    <div className="mb-3 sm:mb-4 flex items-end justify-between gap-3">
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary mb-1 sm:mb-1.5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-primary/90 mb-0.5 sm:mb-1">
             {eyebrow}
           </p>
         ) : null}
         <h1
-          className="text-[22px] sm:text-3xl font-display font-bold leading-tight"
+          className="text-[20px] sm:text-[26px] font-display font-bold leading-[1.15]"
           data-testid={testId}
         >
           {title}
         </h1>
         {subtitle ? (
-          <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-0.5 sm:mt-1">
+          <p className="text-muted-foreground text-[12px] sm:text-[13px] mt-0.5">
             {subtitle}
           </p>
         ) : null}
@@ -193,7 +193,7 @@ export function AdminStatCard({
   tone?: AdminTone;
   testId: string;
   spanFullOnMobile?: boolean;
-  format?: "int" | "percent" | "currencyEGP" | "raw";
+  format?: "int" | "percent" | "currencyAED" | "currencyEGP" | "raw";
   animate?: boolean;
 }) {
   const isNumber = typeof value === "number";
@@ -203,8 +203,8 @@ export function AdminStatCard({
     ? (value as string)
     : format === "percent"
       ? `${Math.round((toRender as number) * 100)}%`
-      : format === "currencyEGP"
-        ? FMT_EGP.format(Math.round(toRender as number))
+      : format === "currencyAED" || format === "currencyEGP"
+        ? FMT_AED.format(Math.round(toRender as number))
         : format === "int"
           ? FMT_INT.format(Math.round(toRender as number))
           : String(toRender);
@@ -213,7 +213,7 @@ export function AdminStatCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3 sm:p-5 min-h-[92px] sm:min-h-[108px] flex flex-col justify-between shadow-sm shadow-black/20",
+        "rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3 sm:p-4 min-h-[84px] sm:min-h-[100px] flex flex-col justify-between shadow-sm shadow-black/20",
         spanFullOnMobile && "col-span-2 lg:col-span-1",
       )}
       data-testid={testId}
@@ -227,12 +227,12 @@ export function AdminStatCard({
         >
           {icon}
         </div>
-        <p className="text-[22px] sm:text-[28px] font-display font-bold leading-none tracking-tight tabular-nums text-end">
+        <p className="text-[20px] sm:text-[26px] font-display font-bold leading-none tracking-tight tabular-nums text-end truncate">
           {display}
         </p>
       </div>
-      <div>
-        <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 leading-snug break-words [overflow-wrap:anywhere] line-clamp-2 font-medium uppercase tracking-wide">
+      <div className="min-w-0">
+        <p className="text-[10.5px] sm:text-[11px] text-muted-foreground mt-1.5 sm:mt-2 leading-snug break-words [overflow-wrap:anywhere] line-clamp-2 font-medium uppercase tracking-wide">
           {label}
         </p>
         {sub ? (

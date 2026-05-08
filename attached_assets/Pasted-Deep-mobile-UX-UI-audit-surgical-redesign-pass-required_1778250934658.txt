@@ -1,0 +1,148 @@
+Deep mobile UX/UI audit + surgical redesign pass required.
+
+Analyze the attached screenshots carefully first before changing anything.
+
+Current problems visible in the screenshots:
+
+1. Top spacing / layout balance issues
+- There is too much empty space at the top of pages.
+- Safe-area/header spacing feels disconnected from content.
+- The visual hierarchy starts too low.
+- Dashboard and Clients pages do not feel vertically balanced.
+
+2. Bottom navigation inconsistency
+- Bottom nav height feels oversized.
+- Floating "+" button visually dominates too much.
+- Spacing between nav items is uneven.
+- Bottom area consumes too much screen space on mobile.
+
+3. Text truncation / overflow
+- Client names are getting cut incorrectly.
+- Long text handling is inconsistent.
+- Some cards overflow visually.
+- Need proper ellipsis + responsive typography scaling.
+
+4. Card proportion issues
+- Cards are not visually equal.
+- Metrics cards feel stretched vertically.
+- Client cards have awkward spacing.
+- Some sections feel compressed while others waste space.
+
+5. Poor visual rhythm
+- Inconsistent paddings/margins.
+- Some sections too crowded.
+- Others too empty.
+- Hard to scan quickly.
+
+6. Dashboard cognitive load
+- Too many similar-looking cards.
+- Important actions are not visually prioritized.
+- Metrics hierarchy is weak.
+- Need faster admin comprehension.
+
+7. Currency issue
+- Revenue and money values MUST use AED instead of EGP.
+- Entire platform should standardize currency formatting:
+  AED 0
+  AED 2,500
+  AED 12,000
+- Remove any EGP references globally.
+
+8. Mobile-first redesign required
+This admin dashboard is primarily used on phones during gym work.
+Optimize for:
+- one-hand usage
+- fast scanning
+- fast actions
+- thumb reach
+- minimal cognitive friction
+
+9. Clients page problems
+- Filters feel cramped.
+- Search input sizing inconsistent.
+- Client cards too tall.
+- Package/session info lacks hierarchy.
+- WhatsApp button alignment inconsistent.
+- Empty states and labels visually weak.
+
+10. Visual consistency issues
+Need a unified:
+- spacing system
+- card radius system
+- typography scale
+- icon sizing
+- vertical rhythm
+- section hierarchy
+
+MANDATORY DESIGN DIRECTION:
+- Premium luxury fitness SaaS feel
+- Dark blue / black premium aesthetic
+- Minimal but powerful
+- Calm UI
+- No clutter
+- No “template dashboard” feeling
+- Similar quality level to:
+  Stripe Dashboard
+  Linear
+  Notion Calendar
+  modern fitness SaaS apps
+
+IMPORTANT IMPLEMENTATION RULES:
+- Do NOT rebuild logic.
+- Do NOT touch auth.
+- Do NOT touch backend.
+- Do NOT break routes.
+- UI/UX layer only.
+- Surgical responsive improvements only.
+
+MOBILE REQUIREMENTS:
+- Perfect on Samsung S25 Ultra viewport.
+- Eliminate horizontal overflow completely.
+- Ensure all cards fit naturally.
+- Improve tap targets.
+- Reduce wasted vertical space.
+- Improve scrolling flow.
+
+SPECIFIC FIXES REQUIRED:
+1. Reduce top whitespace globally.
+2. Rebalance section spacing.
+3. Redesign metric cards into cleaner compact grid.
+4. Improve client card layout density.
+5. Fix truncated names elegantly.
+6. Improve bottom nav proportions.
+7. Make floating action button less overpowering.
+8. Improve typography responsiveness.
+9. Add proper content max widths/paddings.
+10. Standardize all card heights/radii/shadows.
+11. Improve quick actions section hierarchy.
+12. Improve mobile readability everywhere.
+
+ALSO:
+Run a full visual consistency audit across:
+- Dashboard
+- Clients
+- Bookings
+- Nutrition
+- Supplements
+- Analytics
+- Client detail pages
+
+Need:
+- one unified design language
+- consistent spacing tokens
+- consistent mobile behavior
+- consistent card architecture
+
+DELIVERABLE FORMAT:
+1. Audit findings
+2. Exact UI problems found
+3. UX reasoning
+4. Surgical implementation plan
+5. Then implement in safe phases
+6. Typecheck
+7. Architect review
+8. Deploy to Vercel
+
+Do NOT stop mid-way.
+Do NOT ask me unnecessary questions.
+Analyze screenshots first, then execute carefully.

@@ -1142,9 +1142,9 @@
    ===================================================================== */
 .admin-shell {
   min-height: 100vh;
-  padding-top: 5rem;        /* clears mobile top bar */
+  padding-top: 4rem;        /* clears mobile top bar (tightened May 2026) */
   /* breathing room above footer + iOS home indicator / device chrome */
-  padding-bottom: max(3rem, env(safe-area-inset-bottom) + 1.5rem);
+  padding-bottom: max(2.25rem, env(safe-area-inset-bottom) + 1rem);
   /* hard guard: never let a child force the page wider than the viewport.
      This kills the iOS Safari sideways-scroll that long form rows or
      unconstrained tables can introduce. */
@@ -1153,7 +1153,7 @@
 }
 @media (min-width: 768px) {
   .admin-shell {
-    padding-top: 2rem;
+    padding-top: 1.5rem;
     margin-left: 16rem;     /* offset for fixed admin sidebar */
     width: auto;            /* let it fill the rest of the viewport */
   }
