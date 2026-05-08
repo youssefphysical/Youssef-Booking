@@ -1,0 +1,114 @@
+Continue directly into UX5 — Client Profile Redesign.
+
+This is the highest-impact operational area for daily usage, so prioritize it before UX3.
+
+Main goal:
+Turn the client profile into a premium fitness operating system interface instead of a long admin page.
+
+The client profile must become:
+- visually calm
+- instantly understandable
+- extremely fast to manage
+- mobile-first
+- operationally efficient
+- premium and modern
+
+Focus heavily on:
+- hierarchy
+- clarity
+- quick actions
+- reduced scrolling fatigue
+- better grouping
+- easier daily coaching workflow
+
+Required improvements:
+
+1. Sticky top client header
+- client avatar
+- name
+- goal
+- active package
+- sessions remaining
+- status badges
+- quick actions
+
+2. Tab architecture redesign
+Clear premium tabs:
+- Overview
+- Bookings
+- Nutrition
+- Supplements
+- Progress
+- Body Metrics
+- Notes
+- Files/Photos
+- Payments
+
+3. Overview tab redesign
+Make it feel like a command center:
+- upcoming sessions
+- package usage
+- adherence indicators
+- latest body changes
+- latest nutrition updates
+- alerts/reminders
+
+4. Reduce cognitive overload
+- convert dense sections into cards
+- collapse secondary information
+- improve spacing
+- improve grouping logic
+- better empty states
+
+5. Quick actions everywhere
+- add booking
+- edit package
+- create nutrition plan
+- assign supplements
+- upload progress photo
+- add body metrics
+- WhatsApp client
+
+6. Mobile-first optimization
+The client profile should feel native on mobile:
+- thumb-friendly
+- less scrolling pain
+- sticky actions where useful
+- responsive cards
+- smooth tab switching
+
+7. Visual hierarchy
+Most important information must be visible first without hunting.
+
+8. Premium aesthetics
+Use:
+- elegant spacing
+- cleaner cards
+- modern typography
+- subtle gradients
+- luxury blue accents
+- soft shadows
+- smooth transitions
+
+9. Operational speed
+Optimize for real trainer workflow:
+I should be able to open a client and immediately:
+- understand status
+- see today's needs
+- take action quickly
+
+10. Safety rules
+Do NOT break:
+- auth
+- nutrition systems
+- supplement systems
+- bookings
+- package logic
+- analytics
+- translations
+- database integrity
+
+Deploy in safe verified batches:
+implement → typecheck → verify → push → deploy → continue.
+
+Do not stop for additional planning questions unless there is a real blocker.
