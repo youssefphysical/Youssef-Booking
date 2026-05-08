@@ -2403,7 +2403,19 @@ const timingsSchema = z
   .max(SUPPLEMENT_TIMINGS.length)
   .default([]);
 
-export const insertSupplementSchema = createInsertSchema(supplements)
+// A supplement cannot be flagged as BOTH training-only and rest-only —
+// that would silently make it invisible to the client on every day.
+// We reject the contradiction at the schema layer so neither the API
+// nor any importer can ever persist it.
+const noBothDayFlags = (val: { trainingDayOnly?: boolean | null; restDayOnly?: boolean | null }) =>
+  !(val.trainingDayOnly && val.restDayOnly);
+const noBothDayFlagsDefaults = (val: { defaultTrainingDayOnly?: boolean | null; defaultRestDayOnly?: boolean | null }) =>
+  !(val.defaultTrainingDayOnly && val.defaultRestDayOnly);
+const BOTH_FLAGS_MSG = "A supplement can be training-day-only OR rest-day-only, not both.";
+
+// Build the raw object first so we can derive both insert (refined) and
+// update (.partial() then refined) without losing the contradiction guard.
+const supplementBaseShape = createInsertSchema(supplements)
   .omit({ id: true, createdAt: true, updatedAt: true, createdByUserId: true })
   .extend({
     name: z.string().min(1, "Name is required").max(200),
@@ -2420,25 +2432,33 @@ export const insertSupplementSchema = createInsertSchema(supplements)
     isPrescription: z.boolean().optional(),
     active: z.boolean().optional(),
   });
-export const updateSupplementSchema = insertSupplementSchema.partial();
+export const insertSupplementSchema = supplementBaseShape.refine(noBothDayFlagsDefaults, {
+  message: BOTH_FLAGS_MSG,
+  path: ["defaultRestDayOnly"],
+});
+export const updateSupplementSchema = supplementBaseShape
+  .partial()
+  .refine(noBothDayFlagsDefaults, { message: BOTH_FLAGS_MSG, path: ["defaultRestDayOnly"] });
 export type Supplement = typeof supplements.$inferSelect;
 export type InsertSupplement = z.infer<typeof insertSupplementSchema>;
 export type UpdateSupplement = z.infer<typeof updateSupplementSchema>;
 
-export const stackItemInputSchema = z.object({
-  sourceSupplementId: z.number().int().nullish(),
-  name: z.string().min(1).max(200),
-  brand: z.string().max(120).nullish(),
-  category: z.enum(SUPPLEMENT_CATEGORIES),
-  dosage: z.number().min(0).max(10000),
-  unit: z.enum(SUPPLEMENT_UNITS),
-  timings: timingsSchema,
-  trainingDayOnly: z.boolean().optional(),
-  restDayOnly: z.boolean().optional(),
-  notes: z.string().max(1000).nullish(),
-  warnings: z.string().max(1000).nullish(),
-  sortOrder: z.number().int().min(0).max(1000).optional(),
-});
+export const stackItemInputSchema = z
+  .object({
+    sourceSupplementId: z.number().int().nullish(),
+    name: z.string().min(1).max(200),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES),
+    dosage: z.number().min(0).max(10000),
+    unit: z.enum(SUPPLEMENT_UNITS),
+    timings: timingsSchema,
+    trainingDayOnly: z.boolean().optional(),
+    restDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+  })
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
 export type StackItemInput = z.infer<typeof stackItemInputSchema>;
 
 export const insertSupplementStackSchema = createInsertSchema(supplementStacks)
@@ -2483,12 +2503,33 @@ export const insertClientSupplementSchema = createInsertSchema(clientSupplements
     startDate: z.string().nullish(),
     endDate: z.string().nullish(),
     sortOrder: z.number().int().min(0).max(1000).optional(),
-  });
-export const updateClientSupplementSchema = insertClientSupplementSchema
-  .partial()
+  })
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
+// .partial() strips the refinement, so we re-apply it on the patch
+// schema explicitly. PATCH bodies that omit both flags pass cleanly;
+// only an explicit `{trainingDayOnly:true, restDayOnly:true}` is rejected.
+export const updateClientSupplementSchema = createInsertSchema(clientSupplements)
+  .omit({ id: true, createdAt: true, updatedAt: true, assignedByUserId: true, userId: true })
   .extend({
-    userId: z.never().optional(), // never reassignable
-  });
+    sourceSupplementId: z.number().int().nullish(),
+    sourceStackId: z.number().int().nullish(),
+    name: z.string().min(1).max(200).optional(),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES).optional(),
+    dosage: z.number().min(0).max(10000).optional(),
+    unit: z.enum(SUPPLEMENT_UNITS).optional(),
+    timings: timingsSchema.optional(),
+    trainingDayOnly: z.boolean().optional(),
+    restDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    status: z.enum(SUPPLEMENT_STATUSES).optional(),
+    startDate: z.string().nullish(),
+    endDate: z.string().nullish(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+  })
+  .partial()
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
 export type ClientSupplement = typeof clientSupplements.$inferSelect;
 export type InsertClientSupplement = z.infer<typeof insertClientSupplementSchema>;
 export type UpdateClientSupplement = z.infer<typeof updateClientSupplementSchema>;

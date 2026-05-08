@@ -560,8 +560,10 @@ export function buildSupplementsWhatsApp(
     lines.push("");
   }
 
-  // Aggregate warnings — they're important enough to surface at the bottom.
-  const warned = items.filter((i) => i.warnings && i.warnings.trim());
+  // Aggregate warnings — only for the supplements actually in today's
+  // schedule, so a Training-Day share never surfaces warnings for items
+  // that won't be taken (e.g. rest-day-only formulas).
+  const warned = todays.filter((i) => i.warnings && i.warnings.trim());
   if (warned.length > 0) {
     lines.push(`⚠️  ${p.warnings}`);
     for (const w of warned) {
