@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Quote, Target, Calendar, TrendingUp, ImageOff } from "lucide-react";
+import { Link } from "wouter";
+import { Quote, Target, Calendar, TrendingUp, ImageOff, ArrowRight } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { useTransformations } from "@/hooks/use-transformations";
 
@@ -60,22 +61,37 @@ export function Transformations() {
   if (isLoading) return null;
   if (data.length === 0) return null;
 
+  // On the homepage we show only the first 3 cards as a teaser; the
+  // dedicated /transformations gallery is the full premium experience.
+  const preview = data.slice(0, 3);
+  const hasMore = data.length > preview.length;
+
   return (
     <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
-      <div className="mb-8">
-        <p className="tron-eyebrow text-xs mb-2">
-          {t("section.transformations.eyebrow")}
-        </p>
-        <h2 className="text-3xl md:text-4xl font-display font-bold">
-          {t("section.transformations.title")}
-        </h2>
-        <p className="text-muted-foreground mt-2">
-          {t("section.transformations.subtitle")}
-        </p>
+      <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <p className="tron-eyebrow text-xs mb-2">
+            {t("section.transformations.eyebrow")}
+          </p>
+          <h2 className="text-3xl md:text-4xl font-display font-bold">
+            {t("section.transformations.title")}
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            {t("section.transformations.subtitle")}
+          </p>
+        </div>
+        <Link
+          href="/transformations"
+          className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-xs font-semibold bg-white/[0.04] border border-white/10 text-foreground/90 hover:bg-white/[0.08] hover:border-primary/30 transition-colors"
+          data-testid="link-view-all-transformations"
+        >
+          {t("gallery.viewAll", "View gallery")}
+          <ArrowRight size={13} className="rtl:rotate-180" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {data.map((row, i) => {
+        {preview.map((row, i) => {
           const name = row.displayName?.trim() || t("transformations.anonymous");
           return (
             <motion.article
@@ -150,6 +166,19 @@ export function Transformations() {
           );
         })}
       </div>
+
+      {hasMore && (
+        <div className="mt-8 text-center">
+          <Link
+            href="/transformations"
+            className="inline-flex items-center gap-2 h-11 px-6 rounded-full text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity btn-press shadow-md shadow-primary/20"
+            data-testid="link-view-all-transformations-cta"
+          >
+            {t("gallery.viewAllN", `View all ${data.length} transformations`)}
+            <ArrowRight size={14} className="rtl:rotate-180" />
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

@@ -24,6 +24,7 @@ import TermsConditions from "@/pages/TermsConditions";
 import MedicalDisclaimer from "@/pages/MedicalDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
 import HowItWorks from "@/pages/HowItWorks";
+import TransformationsGallery from "@/pages/TransformationsGallery";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminBookings from "@/pages/AdminBookings";
@@ -115,6 +116,7 @@ function Router() {
         <Route path="/medical-disclaimer" component={MedicalDisclaimer} />
         <Route path="/cookies" component={CookiePolicy} />
         <Route path="/how-it-works" component={HowItWorks} />
+        <Route path="/transformations" component={TransformationsGallery} />
         <Route path="/direct-payment" component={DirectPaymentPage} />
 
         {/* Client */}
