@@ -240,9 +240,33 @@ export const bookings = pgTable("bookings", {
   reminder24hSentAt: timestamp("reminder_24h_sent_at"),
   reminder1hSentAt: timestamp("reminder_1h_sent_at"),
   attendanceReason: text("attendance_reason"),
+  // P4d Per-Session Coach Notes (admin-logged after each session).
+  // 1-10 scales for energy/performance/sleep/adherence; freeform for
+  // cardio + pain/injury + notes. clientVisibleCoachNotes surfaces to
+  // the client; privateCoachNotes is admin-only (stripped server-side).
+  sessionEnergy: integer("session_energy"),
+  sessionPerformance: integer("session_performance"),
+  sessionSleep: integer("session_sleep"),
+  sessionAdherence: integer("session_adherence"),
+  sessionCardio: text("session_cardio"),
+  sessionPainInjury: text("session_pain_injury"),
+  privateCoachNotes: text("private_coach_notes"),
+  clientVisibleCoachNotes: text("client_visible_coach_notes"),
+  coachNotesUpdatedAt: timestamp("coach_notes_updated_at"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
+
+export const COACH_NOTE_FIELDS = [
+  "sessionEnergy",
+  "sessionPerformance",
+  "sessionSleep",
+  "sessionAdherence",
+  "sessionCardio",
+  "sessionPainInjury",
+  "privateCoachNotes",
+  "clientVisibleCoachNotes",
+] as const;
 
 // =============================
 // SETTINGS (single-row config)
@@ -602,6 +626,15 @@ export const updateBookingSchema = z.object({
   protectedCancellation: z.boolean().optional(),
   sessionFocus: z.enum(SESSION_FOCUS_OPTIONS).nullable().optional(),
   trainingGoal: z.enum(BOOKING_TRAINING_GOALS).nullable().optional(),
+  // P4d coach-notes fields. All nullable; numeric 1-10 sliders.
+  sessionEnergy: z.number().int().min(1).max(10).nullable().optional(),
+  sessionPerformance: z.number().int().min(1).max(10).nullable().optional(),
+  sessionSleep: z.number().int().min(1).max(10).nullable().optional(),
+  sessionAdherence: z.number().int().min(1).max(10).nullable().optional(),
+  sessionCardio: z.string().max(500).nullable().optional(),
+  sessionPainInjury: z.string().max(500).nullable().optional(),
+  privateCoachNotes: z.string().max(2000).nullable().optional(),
+  clientVisibleCoachNotes: z.string().max(2000).nullable().optional(),
 });
 
 // =============================

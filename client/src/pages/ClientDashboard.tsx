@@ -551,6 +551,17 @@ function BookingCard({
         </div>
       </div>
 
+      {(booking as any).clientVisibleCoachNotes && (
+        <div className="basis-full mt-1 px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/10">
+          <div className="text-[10px] uppercase tracking-wider text-blue-300/80 font-semibold mb-1">
+            Coach notes
+          </div>
+          <p className="text-xs text-foreground/90 whitespace-pre-wrap">
+            {(booking as any).clientVisibleCoachNotes}
+          </p>
+        </div>
+      )}
+
       {canCancel && (
         <div className="flex flex-col items-stretch sm:items-end gap-2">
           {cancellable ? (

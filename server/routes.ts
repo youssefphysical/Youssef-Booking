@@ -742,7 +742,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (from) filters.from = from;
 
     const list = await storage.getBookings(filters);
-    if (!includeUser) return res.json(list);
+    // P4d: strip the admin-private coach fields from non-admin responses.
+    const stripPrivate = (b: any) => {
+      if (me.role === "admin") return b;
+      const { privateCoachNotes, ...rest } = b;
+      return rest;
+    };
+
+    if (!includeUser) return res.json(list.map(stripPrivate));
 
     const userIds = Array.from(new Set(list.map((b) => b.userId)));
     const usersById: Record<number, ReturnType<typeof sanitizeUser>> = {};
@@ -750,7 +757,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const u = await storage.getUser(uid);
       if (u) usersById[uid] = sanitizeUser(u);
     }
-    res.json(list.map((b) => ({ ...b, user: usersById[b.userId] || null })));
+    res.json(list.map((b) => stripPrivate({ ...b, user: usersById[b.userId] || null })));
   });
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
@@ -1325,6 +1332,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(403).json({ message: "Cannot change admin notes" });
       if (parsed.data.workoutCategory !== undefined)
         return res.status(403).json({ message: "Cannot change workout category" });
+      // P4d: clients cannot write any coach-note field.
+      const coachWrite = [
+        "sessionEnergy",
+        "sessionPerformance",
+        "sessionSleep",
+        "sessionAdherence",
+        "sessionCardio",
+        "sessionPainInjury",
+        "privateCoachNotes",
+        "clientVisibleCoachNotes",
+      ].some((k) => (parsed.data as any)[k] !== undefined);
+      if (coachWrite)
+        return res.status(403).json({ message: "Cannot change coach notes" });
 
       // If the client is only adding a personal note, skip cutoff/conflict checks.
       const onlyNoteEdit =
@@ -1364,7 +1384,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const newStatus = updateFields.status ?? previousStatus;
     const fromDate = booking.date;
     const fromTime12 = formatTime12Server(booking.timeSlot);
-    const updated = await storage.updateBooking(id, updateFields as any);
+    // P4d: stamp coach-notes timestamp whenever an admin writes any
+    // coach-note field, so the UI can show "logged X ago".
+    const coachKeys = [
+      "sessionEnergy",
+      "sessionPerformance",
+      "sessionSleep",
+      "sessionAdherence",
+      "sessionCardio",
+      "sessionPainInjury",
+      "privateCoachNotes",
+      "clientVisibleCoachNotes",
+    ] as const;
+    const coachTouched =
+      me.role === "admin" && coachKeys.some((k) => (updateFields as any)[k] !== undefined);
+    const updated = await storage.updateBooking(
+      id,
+      coachTouched
+        ? ({ ...updateFields, coachNotesUpdatedAt: new Date() } as any)
+        : (updateFields as any),
+    );
 
     // If date or time changed, email the trainer (best-effort).
     if (

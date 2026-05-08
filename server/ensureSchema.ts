@@ -523,6 +523,17 @@ async function run(): Promise<void> {
     -- since that's the most common transformation shot angle.
     ALTER TABLE progress_photos ADD COLUMN IF NOT EXISTS view_angle text NOT NULL DEFAULT 'front';
     CREATE INDEX IF NOT EXISTS progress_photos_user_angle_idx ON progress_photos (user_id, view_angle, recorded_at DESC);
+
+    -- P4d Per-Session Coach Notes — additive nullable columns on bookings.
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_energy integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_performance integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_sleep integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_adherence integer;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_cardio text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS session_pain_injury text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS private_coach_notes text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_visible_coach_notes text;
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS coach_notes_updated_at timestamp;
   `;
 
   try {

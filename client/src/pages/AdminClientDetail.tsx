@@ -81,6 +81,7 @@ import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
 import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
 import BeforeAfterCompare from "@/components/BeforeAfterCompare";
+import CoachNotesDialog from "@/components/CoachNotesDialog";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -1294,12 +1295,30 @@ function BookingsList({ userId }: { userId: number }) {
   const { t } = useTranslation();
   const { data: bookings = [], isLoading } = useBookings({ userId });
   const list = bookings as any[];
+  const [coachOpen, setCoachOpen] = useState<any>(null);
 
   if (isLoading) return <Skeleton />;
   if (list.length === 0) return <EmptyBox text="No bookings yet" />;
 
+  const hasCoachNotes = (b: any) =>
+    b.sessionEnergy != null ||
+    b.sessionPerformance != null ||
+    b.sessionSleep != null ||
+    b.sessionAdherence != null ||
+    b.sessionCardio ||
+    b.sessionPainInjury ||
+    b.privateCoachNotes ||
+    b.clientVisibleCoachNotes;
+
   return (
     <div className="space-y-2">
+      {coachOpen && (
+        <CoachNotesDialog
+          open={!!coachOpen}
+          onOpenChange={(o) => !o && setCoachOpen(null)}
+          booking={coachOpen}
+        />
+      )}
       {list
         .sort((a, b) => `${b.date}T${b.timeSlot}`.localeCompare(`${a.date}T${a.timeSlot}`))
         .map((b) => (
@@ -1353,6 +1372,65 @@ function BookingsList({ userId }: { userId: number }) {
                 )}
               </div>
             )}
+            {hasCoachNotes(b) && (
+              <div className="space-y-1 pt-1 border-t border-white/5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {b.sessionEnergy != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                      Energy {b.sessionEnergy}/10
+                    </span>
+                  )}
+                  {b.sessionPerformance != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-300">
+                      Perf {b.sessionPerformance}/10
+                    </span>
+                  )}
+                  {b.sessionSleep != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
+                      Sleep {b.sessionSleep}/10
+                    </span>
+                  )}
+                  {b.sessionAdherence != null && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                      Adherence {b.sessionAdherence}/10
+                    </span>
+                  )}
+                  {b.sessionCardio && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-white/70">
+                      Cardio: {b.sessionCardio}
+                    </span>
+                  )}
+                  {b.sessionPainInjury && (
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-red-500/20 bg-red-500/10 text-red-300">
+                      Pain: {b.sessionPainInjury}
+                    </span>
+                  )}
+                </div>
+                {b.privateCoachNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-amber-300/80 font-semibold">Private: </span>
+                    <span className="text-foreground/80">{b.privateCoachNotes}</span>
+                  </p>
+                )}
+                {b.clientVisibleCoachNotes && (
+                  <p className="text-[11px]">
+                    <span className="text-blue-300/80 font-semibold">For client: </span>
+                    <span className="text-foreground/80">{b.clientVisibleCoachNotes}</span>
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-end pt-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[11px] text-blue-300 hover:bg-blue-500/10"
+                onClick={() => setCoachOpen(b)}
+                data-testid={`button-log-session-${b.id}`}
+              >
+                {hasCoachNotes(b) ? "Edit coach notes" : "Log session"}
+              </Button>
+            </div>
           </div>
         ))}
     </div>
