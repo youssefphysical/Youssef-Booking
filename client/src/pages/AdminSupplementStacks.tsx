@@ -99,14 +99,14 @@ export default function AdminSupplementStacks() {
 
         {isLoading ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-            Loading…
+            {t("common.loading", "Loading…")}
           </div>
         ) : stacks.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center">
             <Layers className="mx-auto mb-3 text-muted-foreground" size={32} />
-            <p className="text-muted-foreground mb-4">No stacks yet — group supplements into reusable protocols.</p>
+            <p className="text-muted-foreground mb-4">{t("admin.supplementStacks.emptyText", "No stacks yet — group supplements into reusable protocols.")}</p>
             <Button onClick={() => setEditing("new")} data-testid="button-new-stack-empty">
-              <Plus size={16} className="mr-1.5" /> Build your first stack
+              <Plus size={16} className="mr-1.5" /> {t("admin.supplementStacks.buildFirst", "Build your first stack")}
             </Button>
           </div>
         ) : (
@@ -133,6 +133,7 @@ export default function AdminSupplementStacks() {
 }
 
 function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; onEdit: () => void; onDelete: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-white/5 bg-card/60 p-5" data-testid={`card-stack-${stack.id}`}>
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -142,7 +143,7 @@ function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; on
             <Badge variant="outline" className="text-[10px]">
               {STACK_GOALS.find((g) => g.value === stack.goal)?.label || stack.goal}
             </Badge>
-            <Badge variant="outline" className="text-[10px]">{stack.items.length} items</Badge>
+            <Badge variant="outline" className="text-[10px]">{stack.items.length} {t("common.items", "items")}</Badge>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -157,14 +158,14 @@ function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; on
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete stack "{stack.name}"?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.supplementStacks.deleteStack", "Delete stack")} "{stack.name}"?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Existing client assignments are unaffected (they snapshot the data).
+                  {t("admin.supplementStacks.deleteDesc", "Existing client assignments are unaffected (they snapshot the data).")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete} data-testid={`button-confirm-delete-stack-${stack.id}`}>Delete</AlertDialogAction>
+                <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete} data-testid={`button-confirm-delete-stack-${stack.id}`}>{t("common.delete", "Delete")}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
