@@ -2511,8 +2511,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (existing) {
       return res.status(409).json({ message: "Check-in already exists for this week", id: existing.id });
     }
-    const row = await storage.createWeeklyCheckin(parsed.data);
-    res.status(201).json(row);
+    try {
+      const row = await storage.createWeeklyCheckin(parsed.data);
+      res.status(201).json(row);
+    } catch (err: any) {
+      // Race-safe fallback: the unique index on (user_id, week_start)
+      // catches concurrent creates that slipped past the pre-check.
+      if (err?.code === "23505") {
+        const dup = await storage.getWeeklyCheckinByWeek(parsed.data.userId, parsed.data.weekStart);
+        return res.status(409).json({ message: "Check-in already exists for this week", id: dup?.id });
+      }
+      throw err;
+    }
   });
   app.patch("/api/weekly-checkins/:id", requireAuth, async (req, res) => {
     const me = req.user as User;
