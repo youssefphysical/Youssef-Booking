@@ -87,6 +87,14 @@ Premium dark-luxury platform for Youssef Ahmed, offering client booking, InBody 
 
 - **P5a Centralized Notifications** — `client_notifications` table (separate from `admin_notifications` trainer inbox). Channel-ready architecture: in-app active today; `channel_push` / `channel_email` + `push_sent_at` / `email_sent_at` columns scaffolded so future dispatchers can plug in without schema churn. Composite index `(user_id, read_at, created_at DESC)` for unread queries. Single dispatcher `server/services/notifications.ts → notifyUser(userId, kind, title, body, opts)` is the only entry point — best-effort, swallows errors so triggers can't block originating actions. Self-scoped routes `GET /api/me/notifications`, `GET /api/me/notifications/unread-count`, `POST /api/me/notifications/:id/read`, `POST /api/me/notifications/read-all` (userId always read from `req.user`, never from client input). Premium `NotificationsBell.tsx` mounted in `Navigation` for clients only — unread badge with 60s poll, mobile-first popover, deep-link support, optimistic mark-read + segmented `[LIST_PREFIX, params]` query keys so prefix invalidation works under `staleTime: Infinity`.
 
+## Admin UX Rebuild (in progress May 2026)
+
+Phased premium operating-system rebuild — Apple/Stripe/Notion clarity, mobile-first, no logic changes to auth/booking/packages/nutrition/supplements/notifications/analytics endpoints.
+
+- **UX1 Design system primitives** — `client/src/components/admin/primitives.tsx` is the single source for the dark-luxury card pattern. Exports: `AdminCard`, `AdminPageHeader`, `AdminSectionTitle`, `AdminStatCard` (animated count-up via `useAdminCountUp`, format = int|percent|currencyEGP|raw, hoisted `Intl.NumberFormat` instances to avoid per-frame allocations), `AdminAlertRow` (priority-tone tile with chevron), `AdminEmptyState`, `AdminChartCard` (consistent recharts wrapper). Tone tokens: `info | success | warning | danger | schedule | muted | default`. RTL-safe chevrons (`rtl:rotate-180`).
+
+- **UX2 Home rebuild** — `AdminDashboard.tsx` anchored by `TodayHero` (large today-session count + date + 3 chips: upcoming/urgent/revenue30d). `revenue30d` from `/api/admin/analytics` (lazy `useQuery`, `staleTime: 60_000`, silent on fail — no extra round-trip beyond what existing pages do). Urgent-alerts strip (5 `AdminAlertRow` tiles: expiring/expired/pendingRenewals/pendingExtensions/lowSessionClients) only renders when `urgentCount>0`. KPI grid + upcoming-sessions list (with `AdminEmptyState` fallback) + tightened `QuickAction` rail (added Analytics quick-action). `AdminAnalytics.tsx` consumes the same primitives (StatCard + ChartCard + PageHeader + SectionTitle), eliminating duplicate count-up/StatCard/ChartCard implementations.
+
 ## User preferences
 
 _Populate as you build_

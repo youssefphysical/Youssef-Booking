@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
 import {
   Users,
   CalendarCheck,
   Clock,
   TrendingUp,
-  ArrowRight,
   ExternalLink,
   LayoutDashboard,
   Calendar,
@@ -21,15 +19,28 @@ import {
   CalendarPlus,
   AlertCircle,
   ChevronRight,
+  Wallet,
+  Sun,
 } from "lucide-react";
 import { format } from "date-fns";
 import { api } from "@shared/routes";
-import type { DashboardStats, BookingWithUser } from "@shared/schema";
+import type { DashboardStats, BookingWithUser, AdminAnalytics } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
 import { translateStatus, statusColor } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import {
+  AdminCard,
+  AdminPageHeader,
+  AdminSectionTitle,
+  AdminStatCard,
+  AdminAlertRow,
+  AdminEmptyState,
+  useAdminCountUp,
+} from "@/components/admin/primitives";
+
+const FMT_EGP = new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 });
 
 type TabSpec = {
   href: string;
@@ -84,6 +95,105 @@ export function AdminTabs() {
   );
 }
 
+// =====================================================
+// TodayHero — calm, premium "what matters today" panel.
+// Uses already-fetched DashboardStats + AdminAnalytics so
+// there's no extra round-trip beyond what the page does.
+// =====================================================
+function TodayHero({
+  todayCount,
+  upcomingCount,
+  urgentCount,
+  revenue30d,
+}: {
+  todayCount: number;
+  upcomingCount: number;
+  urgentCount: number;
+  revenue30d: number | null;
+}) {
+  const { t } = useTranslation();
+  const animatedToday = useAdminCountUp(todayCount);
+  const dateLabel = format(new Date(), "EEEE, MMM d");
+  return (
+    <AdminCard className="mb-3 sm:mb-5 relative overflow-hidden" testId="today-hero">
+      {/* Soft brand glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-20 -end-20 w-64 h-64 rounded-full bg-primary/15 blur-3xl"
+      />
+      <div className="relative grid sm:grid-cols-[1fr_auto] gap-4 items-end">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary font-semibold">
+            <Sun size={12} /> {t("admin.dashboard.todayLabel", "Today")}
+          </p>
+          <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">{dateLabel}</p>
+          <div className="flex items-baseline gap-2 mt-2">
+            <span className="font-display font-bold text-[40px] sm:text-[56px] leading-none tabular-nums">
+              {Math.round(animatedToday)}
+            </span>
+            <span className="text-[12.5px] sm:text-sm text-muted-foreground">
+              {todayCount === 1
+                ? t("admin.dashboard.sessionScheduled", "session scheduled")
+                : t("admin.dashboard.sessionsScheduled", "sessions scheduled")}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 sm:min-w-[340px]">
+          <HeroChip icon={<CalendarCheck size={13} />} value={upcomingCount} label={t("admin.dashboard.statUpcoming", "Upcoming")} tone="info" />
+          <HeroChip icon={<AlertCircle size={13} />} value={urgentCount} label={t("admin.dashboard.urgentAlerts", "Urgent")} tone={urgentCount > 0 ? "danger" : "muted"} />
+          <HeroChip
+            icon={<Wallet size={13} />}
+            value={revenue30d == null ? "—" : FMT_EGP.format(revenue30d)}
+            label={t("admin.dashboard.revenue30d", "Revenue 30d")}
+            tone="success"
+            wide
+          />
+        </div>
+      </div>
+    </AdminCard>
+  );
+}
+
+function HeroChip({
+  icon,
+  value,
+  label,
+  tone,
+  wide = false,
+}: {
+  icon: React.ReactNode;
+  value: number | string;
+  label: string;
+  tone: "info" | "danger" | "success" | "muted";
+  wide?: boolean;
+}) {
+  const toneText =
+    tone === "danger"
+      ? "text-red-300"
+      : tone === "success"
+        ? "text-emerald-300"
+        : tone === "muted"
+          ? "text-muted-foreground"
+          : "text-sky-300";
+  return (
+    <div className="rounded-xl sm:rounded-2xl border border-white/8 bg-white/[0.03] px-2.5 sm:px-3 py-2 sm:py-2.5 min-w-0">
+      <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider font-semibold text-muted-foreground">
+        <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded-md bg-white/[0.05]", toneText)}>{icon}</span>
+        <span className="truncate">{label}</span>
+      </div>
+      <p
+        className={cn(
+          "font-display font-bold tabular-nums leading-none mt-1.5",
+          wide ? "text-[17px] sm:text-[20px]" : "text-[20px] sm:text-[24px]",
+          toneText,
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { t } = useTranslation();
   const { data: stats } = useQuery<DashboardStats>({
@@ -95,6 +205,18 @@ export default function AdminDashboard() {
     },
   });
 
+  // Premium revenue snapshot — fetched lazily so the page paints fast
+  // even before this larger payload returns. Failure is silent.
+  const { data: analytics } = useQuery<AdminAnalytics>({
+    queryKey: ["/api/admin/analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/analytics", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load analytics");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
   const today = new Date().toISOString().slice(0, 10);
   const { data: upcomingRaw = [] } = useBookings({ from: today, includeUser: true });
   const upcoming = (upcomingRaw as BookingWithUser[])
@@ -103,102 +225,104 @@ export default function AdminDashboard() {
 
   const todayCount = stats?.bookingsToday ?? 0;
   const upcomingCount = stats?.upcomingBookings ?? 0;
-  const urgentCount = (stats?.expiredPackages ?? 0) + (stats?.expiringPackages ?? 0);
+  const urgentCount =
+    (stats?.expiredPackages ?? 0) +
+    (stats?.expiringPackages ?? 0) +
+    (stats?.pendingRenewals ?? 0) +
+    (stats?.pendingExtensions ?? 0) +
+    (stats?.lowSessionClients ?? 0);
 
   return (
     <div className="admin-shell">
       <div className="admin-container">
-        <div className="mb-4 sm:mb-5">
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary mb-1 sm:mb-1.5">
-            {t("admin.tabs.overview")}
-          </p>
-          <h1 className="text-[22px] sm:text-3xl font-display font-bold leading-tight" data-testid="text-admin-title">
-            {t("admin.dashboardTitle")}
-          </h1>
-          <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-0.5 sm:mt-1">
-            {t("admin.dashboard.subtitle")}
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow={t("admin.tabs.overview")}
+          title={t("admin.dashboardTitle")}
+          subtitle={t("admin.dashboard.subtitle")}
+          testId="text-admin-title"
+        />
 
         <AdminTabs />
 
-        {/* Today summary strip — premium glass one-liner. Uses existing
-            DashboardStats values only; no new API calls or calculations. */}
-        <div
-          className="rounded-xl sm:rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] px-3 sm:px-4 py-2.5 sm:py-3 mb-3 sm:mb-5 shadow-sm shadow-black/20"
-          data-testid="today-summary-strip"
-        >
-          <div className="flex items-center gap-2.5 sm:gap-4 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
-            <SummaryPill icon={<Clock size={13} />} value={todayCount} label={t("admin.dashboard.statToday", "Today")} tone="schedule" />
-            <SummaryDivider />
-            <SummaryPill icon={<CalendarCheck size={13} />} value={upcomingCount} label={t("admin.dashboard.statUpcoming", "Upcoming")} tone="info" />
-            <SummaryDivider />
-            <SummaryPill icon={<AlertCircle size={13} />} value={urgentCount} label={t("admin.dashboard.urgentAlerts", "Urgent")} tone={urgentCount > 0 ? "danger" : "muted"} />
+        {/* Today hero — anchors the page in "what matters now" */}
+        <TodayHero
+          todayCount={todayCount}
+          upcomingCount={upcomingCount}
+          urgentCount={urgentCount}
+          revenue30d={analytics?.revenue.paid30d ?? null}
+        />
+
+        {/* Urgent alerts strip — scannable, color-coded, all link out */}
+        {urgentCount > 0 ? (
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6"
+            data-testid="urgent-alerts-strip"
+          >
+            <AdminAlertRow
+              icon={<AlertTriangle size={15} />}
+              count={stats?.expiringPackages ?? 0}
+              label={t("admin.dashboard.statExpiring", "Expiring soon")}
+              href="/admin/packages"
+              tone="warning"
+              testId="alert-expiring"
+            />
+            <AdminAlertRow
+              icon={<CalendarX size={15} />}
+              count={stats?.expiredPackages ?? 0}
+              label={t("admin.dashboard.statExpired", "Expired packages")}
+              href="/admin/packages"
+              tone="danger"
+              testId="alert-expired"
+            />
+            <AdminAlertRow
+              icon={<RefreshCw size={15} />}
+              count={stats?.pendingRenewals ?? 0}
+              label={t("admin.dashboard.statPendingRenewals", "Pending renewals")}
+              href="/admin/packages"
+              tone="info"
+              testId="alert-renewals"
+            />
+            <AdminAlertRow
+              icon={<CalendarPlus size={15} />}
+              count={stats?.pendingExtensions ?? 0}
+              label={t("admin.dashboard.statPendingExtensions", "Pending extensions")}
+              href="/admin/packages"
+              tone="info"
+              testId="alert-extensions"
+            />
+            <AdminAlertRow
+              icon={<AlertCircle size={15} />}
+              count={stats?.lowSessionClients ?? 0}
+              label={t("admin.dashboard.statLowSessions", "Low-session clients")}
+              href="/admin/clients"
+              tone="warning"
+              testId="alert-low-sessions"
+            />
           </div>
-        </div>
+        ) : null}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-2.5 sm:mb-4">
-          <StatCard icon={<Users size={18} />} label={t("admin.dashboard.statTotalClients")} value={stats?.totalClients ?? 0} testId="stat-clients" tone="info" />
-          <StatCard icon={<CalendarCheck size={18} />} label={t("admin.dashboard.statUpcoming")} value={upcomingCount} testId="stat-upcoming" tone="schedule" />
-          <StatCard icon={<Clock size={18} />} label={t("admin.dashboard.statToday")} value={todayCount} testId="stat-today" tone="schedule" />
-          <StatCard icon={<TrendingUp size={18} />} label={t("admin.dashboard.statCompletedMo")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" tone="success" />
-        </div>
-
-        {/* Lifecycle counts. 5th card spans 2 cols on mobile so the row
-            never leaves an orphan tile. */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
-          <StatCard
-            icon={<AlertTriangle size={18} />}
-            label={t("admin.dashboard.statExpiring", "Expiring soon")}
-            value={stats?.expiringPackages ?? 0}
-            testId="stat-expiring"
-            tone="warning"
-          />
-          <StatCard
-            icon={<CalendarX size={18} />}
-            label={t("admin.dashboard.statExpired", "Expired packages")}
-            value={stats?.expiredPackages ?? 0}
-            testId="stat-expired"
-            tone="danger"
-          />
-          <StatCard
-            icon={<RefreshCw size={18} />}
-            label={t("admin.dashboard.statPendingRenewals", "Pending renewals")}
-            value={stats?.pendingRenewals ?? 0}
-            testId="stat-pending-renewals"
-            tone="info"
-          />
-          <StatCard
-            icon={<CalendarPlus size={18} />}
-            label={t("admin.dashboard.statPendingExtensions", "Pending extensions")}
-            value={stats?.pendingExtensions ?? 0}
-            testId="stat-pending-extensions"
-            tone="info"
-          />
-          <StatCard
-            icon={<AlertCircle size={18} />}
-            label={t("admin.dashboard.statLowSessions", "Low-session clients")}
-            value={stats?.lowSessionClients ?? 0}
-            testId="stat-low-sessions"
-            tone="warning"
-            spanFullOnMobile
-          />
+        {/* Headline KPIs — concise, premium count-ups */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
+          <AdminStatCard icon={<Users size={18} />} label={t("admin.dashboard.statTotalClients")} value={stats?.totalClients ?? 0} testId="stat-clients" tone="info" animate />
+          <AdminStatCard icon={<CalendarCheck size={18} />} label={t("admin.dashboard.statUpcoming")} value={upcomingCount} testId="stat-upcoming" tone="schedule" animate />
+          <AdminStatCard icon={<Clock size={18} />} label={t("admin.dashboard.statToday")} value={todayCount} testId="stat-today" tone="schedule" animate />
+          <AdminStatCard icon={<TrendingUp size={18} />} label={t("admin.dashboard.statCompletedMo")} value={stats?.completedThisMonth ?? 0} testId="stat-completed" tone="success" animate />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-3 sm:gap-5">
-          <div className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-6 shadow-sm shadow-black/20">
-            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-3">
-              <h3 className="font-display font-bold text-[15px] sm:text-lg truncate">
-                {t("admin.dashboard.upcomingSessions")}
-              </h3>
-              <Link href="/admin/bookings" className="text-[11px] sm:text-xs text-primary inline-flex items-center gap-1 shrink-0 whitespace-nowrap" data-testid="link-all-bookings">
-                {t("admin.dashboard.viewAll")} <ArrowRight size={12} className="rtl:rotate-180" />
-              </Link>
-            </div>
+          <AdminCard className="lg:col-span-2">
+            <AdminSectionTitle
+              title={t("admin.dashboard.upcomingSessions")}
+              cta={{ href: "/admin/bookings", label: t("admin.dashboard.viewAll"), testId: "link-all-bookings" }}
+            />
             {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-8 text-center">
-                {t("admin.dashboard.noUpcoming")}
-              </p>
+              <AdminEmptyState
+                icon={<CalendarCheck size={20} />}
+                title={t("admin.dashboard.noUpcoming", "No upcoming sessions")}
+                body={t("admin.dashboard.noUpcomingHint", "When clients book, they'll show up here.")}
+                cta={{ href: "/admin/bookings", label: t("admin.dashboard.qaManageBookings", "Manage bookings"), testId: "empty-go-bookings" }}
+                testId="empty-upcoming"
+              />
             ) : (
               <div className="divide-y divide-white/5 -mx-1">
                 {upcoming.map((b) => (
@@ -232,110 +356,26 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
-          </div>
+          </AdminCard>
 
-          <div className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-6 shadow-sm shadow-black/20">
-            <h3 className="font-display font-bold text-[15px] sm:text-lg mb-3 sm:mb-4">
-              {t("admin.dashboard.quickActions")}
-            </h3>
+          <AdminCard>
+            <AdminSectionTitle title={t("admin.dashboard.quickActions")} />
             <div className="space-y-1.5 sm:space-y-2">
               <QuickAction icon={<Users size={15} />} href="/admin/clients" label={t("admin.dashboard.qaViewClients")} testKey="view-clients" />
               <QuickAction icon={<Calendar size={15} />} href="/admin/bookings" label={t("admin.dashboard.qaManageBookings")} testKey="manage-bookings" />
               <QuickAction icon={<PackageIcon size={15} />} href="/admin/packages" label={t("admin.dashboard.qaSessions")} testKey="sessions-packages" />
+              <QuickAction icon={<BarChart3 size={15} />} href="/admin/analytics" label={t("admin.dashboard.qaAnalytics", "View analytics")} testKey="analytics" />
               <QuickAction icon={<SettingsIcon size={15} />} href="/admin/settings" label={t("admin.dashboard.qaSettings")} testKey="settings" />
               <QuickAction icon={<ExternalLink size={15} />} href="/" label={t("admin.dashboard.qaPublic")} testKey="public" external />
             </div>
             <p className="text-[11px] text-muted-foreground mt-3 sm:mt-4 leading-relaxed">
               {t("admin.dashboard.qaHint")}
             </p>
-          </div>
+          </AdminCard>
         </div>
       </div>
     </div>
   );
-}
-
-type StatTone = "default" | "warning" | "danger" | "info" | "success" | "schedule";
-
-const TONE_STYLES: Record<StatTone, string> = {
-  default: "bg-primary/15 text-primary",
-  warning: "bg-amber-500/15 text-amber-300",
-  danger: "bg-red-500/15 text-red-300",
-  info: "bg-sky-500/15 text-sky-300",
-  success: "bg-emerald-500/15 text-emerald-300",
-  schedule: "bg-cyan-500/15 text-cyan-300",
-};
-
-function StatCard({
-  icon,
-  label,
-  value,
-  testId,
-  tone = "default",
-  spanFullOnMobile = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  testId: string;
-  tone?: StatTone;
-  spanFullOnMobile?: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3 sm:p-5 min-h-[92px] sm:min-h-[108px] flex flex-col justify-between shadow-sm shadow-black/20",
-        spanFullOnMobile && "col-span-2 lg:col-span-1",
-      )}
-      data-testid={testId}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${TONE_STYLES[tone]}`}>
-          {icon}
-        </div>
-        <p className="text-[22px] sm:text-[28px] font-display font-bold leading-none tracking-tight tabular-nums text-end">{value}</p>
-      </div>
-      <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 leading-snug break-words [overflow-wrap:anywhere] line-clamp-2">{label}</p>
-    </motion.div>
-  );
-}
-
-function SummaryPill({
-  icon,
-  value,
-  label,
-  tone,
-}: {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  tone: "schedule" | "info" | "danger" | "muted";
-}) {
-  const toneStyle =
-    tone === "danger"
-      ? "text-red-300"
-      : tone === "muted"
-        ? "text-muted-foreground"
-        : tone === "schedule"
-          ? "text-cyan-300"
-          : "text-sky-300";
-  return (
-    <div className="flex items-center gap-2 shrink-0">
-      <span className={cn("inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/[0.04] border border-white/5", toneStyle)}>
-        {icon}
-      </span>
-      <div className="leading-tight min-w-0">
-        <span className={cn("font-display font-bold text-base tabular-nums", tone === "danger" && "text-red-300")}>{value}</span>
-        <span className="text-[11px] text-muted-foreground ms-1.5 uppercase tracking-wide font-semibold whitespace-nowrap">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-function SummaryDivider() {
-  return <span aria-hidden className="w-px h-6 shrink-0 bg-white/8" />;
 }
 
 function QuickAction({
