@@ -1174,6 +1174,62 @@ export type UserResponse = Omit<User, "password"> & {
   isVerified?: boolean;
   health?: ClientHealth;
 };
+
+// ===== OI2 Client Command Center / Intelligence =====
+export type ClientSnapshot = {
+  sessionsLeft: number | null;
+  sessionsTotal: number | null;
+  packageDaysLeft: number | null;
+  attendanceRate30d: number | null;
+  checkinAdherence4w: number | null;
+  lastCompletedDate: string | null;
+  nextBookingDate: string | null;
+  nextBookingTimeSlot: string | null;
+  weightLatest: number | null;
+  weightDelta30d: number | null;
+  bodyFatLatest: number | null;
+};
+export const MOMENTUM_STATES = [
+  "improving",
+  "stable",
+  "slowing",
+  "inactive",
+  "inconsistent",
+] as const;
+export type MomentumState = (typeof MOMENTUM_STATES)[number];
+export type ClientMomentum = { state: MomentumState; reason: string };
+export const ATTENTION_SEVERITIES = ["info", "watch", "warning", "critical"] as const;
+export type AttentionSeverity = (typeof ATTENTION_SEVERITIES)[number];
+export type AttentionItem = {
+  id: string;
+  severity: AttentionSeverity;
+  title: string;
+  body: string;
+  tab: string;
+};
+export const RECENT_CHANGE_KINDS = [
+  "session_completed",
+  "session_missed",
+  "checkin",
+  "body_metric",
+  "package",
+  "coach_note",
+  "renewal",
+] as const;
+export type RecentChangeKind = (typeof RECENT_CHANGE_KINDS)[number];
+export type RecentChange = {
+  id: string;
+  kind: RecentChangeKind;
+  label: string;
+  sublabel?: string;
+  when: string;
+};
+export type ClientIntelligence = {
+  snapshot: ClientSnapshot;
+  momentum: ClientMomentum;
+  attentionItems: AttentionItem[];
+  recentChanges: RecentChange[];
+};
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;

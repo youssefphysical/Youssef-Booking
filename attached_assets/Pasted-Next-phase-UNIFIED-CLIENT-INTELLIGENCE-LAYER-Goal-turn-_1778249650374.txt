@@ -1,0 +1,193 @@
+Next phase:
+
+UNIFIED CLIENT INTELLIGENCE LAYER
+
+Goal:
+turn every client profile into a clear operational story,
+not disconnected tabs.
+
+==================================================
+MAIN OBJECTIVE
+==================================================
+
+The trainer/admin should instantly understand:
+
+- how the client is doing
+- what needs attention
+- what changed recently
+- what actions are needed next
+
+without opening many tabs mentally.
+
+==================================================
+BUILD A UNIFIED CLIENT STORY SYSTEM
+==================================================
+
+Transform the client profile into a connected intelligence experience.
+
+Every major system should contribute to one unified view:
+- bookings
+- attendance
+- nutrition
+- supplements
+- body metrics
+- check-ins
+- payments
+- notes
+- transformations
+- adherence
+- inactivity
+- milestones
+
+==================================================
+CLIENT OVERVIEW EVOLUTION
+==================================================
+
+Upgrade the Overview tab into:
+
+“Client Command Center”
+
+Include:
+
+1. Current Status Snapshot
+2. Attention Needed
+3. Recent Changes
+4. Progress Momentum
+5. Coach Recommendations
+6. Operational Risks
+7. Upcoming Actions
+8. Timeline Highlights
+
+==================================================
+SMART SNAPSHOT BLOCK
+==================================================
+
+At the top show a compact premium snapshot:
+
+- sessions left
+- package expiry
+- attendance consistency
+- nutrition adherence
+- supplement adherence
+- latest body trend
+- check-in consistency
+- client health score
+- last activity
+- next booking
+
+Everything should be:
+fast-scannable and calm.
+
+==================================================
+PROGRESS MOMENTUM
+==================================================
+
+Introduce subtle operational momentum indicators:
+
+- improving
+- stable
+- slowing
+- inactive
+- inconsistent
+
+Based on:
+attendance + metrics + check-ins + engagement.
+
+Avoid fake AI claims.
+Keep logic transparent and lightweight.
+
+==================================================
+ATTENTION NEEDED SURFACE
+==================================================
+
+Show actionable items like:
+
+- package ending soon
+- missed check-ins
+- no recent metrics
+- missed sessions
+- stalled weight trend
+- payment pending
+- inactive > X days
+- nutrition outdated
+- supplements not updated
+
+Prioritize intelligently.
+
+==================================================
+TIMELINE EVOLUTION
+==================================================
+
+Upgrade timeline into:
+“Operational Journey”
+
+Highlight:
+- milestones
+- transformations
+- streaks
+- regressions
+- nutrition changes
+- supplement changes
+- package renewals
+- adherence shifts
+- important notes
+
+Timeline should feel:
+clean, premium, story-like.
+
+==================================================
+COACH EFFICIENCY
+==================================================
+
+Reduce:
+- tab switching
+- repetitive scanning
+- hunting for information
+- remembering context manually
+
+Goal:
+the system should surface context automatically.
+
+==================================================
+VISUAL DESIGN RULES
+==================================================
+
+Maintain:
+- minimal premium aesthetic
+- low visual noise
+- soft hierarchy
+- subtle highlights
+- calm spacing
+- operational clarity
+
+Avoid:
+- dashboard clutter
+- excessive charts
+- flashy widgets
+- gaming-style UI
+
+==================================================
+PERFORMANCE RULES
+==================================================
+
+Keep:
+- mobile smoothness
+- fast rendering
+- stable layouts
+- efficient data loading
+
+Avoid heavy live calculations.
+
+==================================================
+DELIVERY FLOW
+==================================================
+
+Implement safely in phases:
+design → build → typecheck → architect review → deploy → verify
+
+At the end provide:
+- client intelligence summary
+- workflow reduction analysis
+- trainer efficiency improvements
+- cognitive-load reduction summary
+- remaining operational blind spots

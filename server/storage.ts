@@ -165,6 +165,39 @@ export interface IStorage {
     >
   >;
 
+  /**
+   * OI2 — gather all data needed by `computeClientIntelligence` for a single
+   * client. 5 lightweight bounded queries (60-day booking window, 12 latest
+   * check-ins, 5 latest body metrics, active package, pending requests count).
+   */
+  getClientIntelligenceData(userId: number): Promise<{
+    activePackage:
+      | {
+          totalSessions: number | null;
+          usedSessions: number | null;
+          expiryDate: string | null;
+          frozen: boolean;
+          paymentStatus: string | null;
+        }
+      | null;
+    bookings: Array<{
+      id: number;
+      date: string;
+      timeSlot: string | null;
+      status: string;
+      coachNotesUpdatedAt: Date | null;
+    }>;
+    checkins: Array<{ id: number; weekStart: string }>;
+    bodyMetrics: Array<{
+      id: number;
+      recordedOn: string;
+      weight: number | null;
+      bodyFat: number | null;
+    }>;
+    pendingRenewalCount: number;
+    pendingExtensionCount: number;
+  }>;
+
   // Bookings
   getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
   getBooking(id: number): Promise<Booking | undefined>;
@@ -1833,6 +1866,88 @@ export class DatabaseStorage implements IStorage {
     }
 
     return out;
+  }
+
+  async getClientIntelligenceData(userId: number) {
+    const sixtyAgoIso = new Date(Date.now() - 60 * 86_400_000).toISOString().slice(0, 10);
+
+    const [activePkgRow] = await db
+      .select({
+        totalSessions: packages.totalSessions,
+        usedSessions: packages.usedSessions,
+        expiryDate: packages.expiryDate,
+        frozen: packages.frozen,
+        paymentStatus: packages.paymentStatus,
+      })
+      .from(packages)
+      .where(and(eq(packages.userId, userId), eq(packages.isActive, true)))
+      .orderBy(desc(packages.id))
+      .limit(1);
+
+    const bookingRows = await db
+      .select({
+        id: bookings.id,
+        date: bookings.date,
+        timeSlot: bookings.timeSlot,
+        status: bookings.status,
+        coachNotesUpdatedAt: bookings.coachNotesUpdatedAt,
+      })
+      .from(bookings)
+      .where(and(eq(bookings.userId, userId), gte(bookings.date, sixtyAgoIso)))
+      .orderBy(desc(bookings.date))
+      .limit(200);
+
+    const checkinRows = await db
+      .select({ id: weeklyCheckins.id, weekStart: weeklyCheckins.weekStart })
+      .from(weeklyCheckins)
+      .where(eq(weeklyCheckins.userId, userId))
+      .orderBy(desc(weeklyCheckins.weekStart))
+      .limit(12);
+
+    const bmRows = await db
+      .select({
+        id: bodyMetrics.id,
+        recordedOn: bodyMetrics.recordedOn,
+        weight: bodyMetrics.weight,
+        bodyFat: bodyMetrics.bodyFat,
+      })
+      .from(bodyMetrics)
+      .where(eq(bodyMetrics.userId, userId))
+      .orderBy(desc(bodyMetrics.recordedOn))
+      .limit(5);
+
+    const [renewalRow] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(renewalRequests)
+      .where(and(eq(renewalRequests.userId, userId), eq(renewalRequests.status, "pending")));
+
+    const [extensionRow] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(extensionRequests)
+      .where(and(eq(extensionRequests.userId, userId), eq(extensionRequests.status, "pending")));
+
+    return {
+      activePackage: activePkgRow
+        ? {
+            totalSessions: activePkgRow.totalSessions,
+            usedSessions: activePkgRow.usedSessions,
+            expiryDate: activePkgRow.expiryDate,
+            frozen: activePkgRow.frozen,
+            paymentStatus: activePkgRow.paymentStatus,
+          }
+        : null,
+      bookings: bookingRows.map((b) => ({
+        id: b.id,
+        date: b.date,
+        timeSlot: b.timeSlot,
+        status: b.status,
+        coachNotesUpdatedAt: b.coachNotesUpdatedAt,
+      })),
+      checkins: checkinRows,
+      bodyMetrics: bmRows,
+      pendingRenewalCount: renewalRow?.n ?? 0,
+      pendingExtensionCount: extensionRow?.n ?? 0,
+    };
   }
 
   // ===== SUPPLEMENT LIBRARY =====

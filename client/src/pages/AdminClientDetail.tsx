@@ -7,6 +7,7 @@ import {
   AdminSectionTitle,
   AdminEmptyState,
 } from "@/components/admin/primitives";
+import { ClientCommandCenter } from "@/components/admin/ClientCommandCenter";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -525,7 +526,10 @@ function OverviewTab({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      {/* Command center grid: 4 mini cards */}
+      {/* OI2 Client Command Center: snapshot + momentum + attention + recent changes */}
+      <ClientCommandCenter clientId={client.id} onJump={onJump} />
+
+      {/* Detail entry-point cards: 4 mini cards */}
       <div className="grid sm:grid-cols-2 gap-3">
         {/* Upcoming sessions */}
         <AdminCard testId="overview-upcoming">

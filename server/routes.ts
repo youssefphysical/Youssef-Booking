@@ -99,6 +99,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
+import { computeClientIntelligence } from "./services/clientIntelligence";
 import { optimizeImageFile } from "./image-utils";
 
 function currentMonthKey(d: Date = new Date()): string {
@@ -2381,6 +2382,38 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
     const events = await buildActivityFeed(userId, limit);
     res.json(events);
+  });
+
+  // OI2 — Client Command Center intelligence aggregator. Admin-only.
+  // Single endpoint returning snapshot + momentum + attention items + recent
+  // changes computed by the pure `computeClientIntelligence` service over
+  // 5 bounded queries from `storage.getClientIntelligenceData`.
+  app.get("/api/admin/clients/:id/intelligence", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    try {
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "client") {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      const data = await storage.getClientIntelligenceData(userId);
+      const intel = computeClientIntelligence({
+        now: new Date(),
+        clientStatus: user.clientStatus ?? null,
+        primaryGoal: user.primaryGoal ?? null,
+        joinedAt: (user.createdAt as any) ?? null,
+        activePackage: data.activePackage,
+        bookings: data.bookings,
+        checkins: data.checkins,
+        bodyMetrics: data.bodyMetrics,
+        pendingRenewalCount: data.pendingRenewalCount,
+        pendingExtensionCount: data.pendingExtensionCount,
+      });
+      res.json(intel);
+    } catch (e) {
+      console.error("[intelligence] compute failed:", e);
+      res.status(500).json({ message: "Failed to compute intelligence" });
+    }
   });
 
   // P4f: Today Hero summary — next session, supplements-today count,
