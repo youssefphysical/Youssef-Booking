@@ -2575,6 +2575,19 @@ export const supplements = pgTable("supplements", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Coach-Curated Protocol tiers (May 2026). A stack belongs to one tier;
+// the 3 public tiers (essentials/performance/concierge) are the ones we
+// surface on the homepage and as the locked-state in the client dashboard.
+// "custom" stacks are private to the admin/client they're built for and
+// never appear in any public list — `isPublic` is the actual gate.
+//
+// IMPORTANT: these names are deliberately distinct from the VIP membership
+// tiers (foundation/elite/diamond_elite). VIP = membership/access level.
+// Protocol tier = coaching service level. No naming overlap anywhere in
+// schema, enums, fields, or client copy.
+export const PROTOCOL_TIERS = ["essentials", "performance", "concierge", "custom"] as const;
+export type ProtocolTier = (typeof PROTOCOL_TIERS)[number];
+
 export const supplementStacks = pgTable("supplement_stacks", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -2583,6 +2596,26 @@ export const supplementStacks = pgTable("supplement_stacks", {
   notes: text("notes"),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  // ===== Coach-Curated Protocol public surface (Phase A, May 2026) =====
+  // Tier classification. Drives ordering + iconography on the homepage.
+  tier: text("tier").notNull().default("custom"),
+  // Public-facing copy. Kept separate from internal `name`/`description`
+  // so admins can have a working name like "Cutting v3" while clients
+  // see "Performance Protocol — Advanced Body Transformation Support".
+  publicTitle: text("public_title"),
+  publicSubtitle: text("public_subtitle"),
+  publicDescription: text("public_description"),
+  // Bullet-list of "ideal for" client profiles, displayed under the
+  // protocol card. Empty array = render no list.
+  idealFor: text("ideal_for").array().notNull().default(sql`ARRAY[]::text[]`),
+  // Coach-voice paragraph explaining the philosophy behind this protocol.
+  // Optional; renders only if present.
+  philosophy: text("philosophy"),
+  // Gate for homepage exposure. `active=true` keeps the template usable by
+  // the admin; `isPublic=true` additionally surfaces the public copy on
+  // the homepage + dashboard locked state. Custom-per-client stacks stay
+  // false so they never appear in any public list.
+  isPublic: boolean("is_public").notNull().default(false),
   createdByUserId: integer("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -2714,6 +2747,15 @@ export const insertSupplementStackSchema = createInsertSchema(supplementStacks)
     notes: z.string().max(1000).nullish(),
     active: z.boolean().optional(),
     sortOrder: z.number().int().min(0).max(1000).optional(),
+    // Coach-Curated Protocol fields — all optional so existing admin
+    // forms keep working until the protocol UI ships in Phase A.B.
+    tier: z.enum(PROTOCOL_TIERS).optional(),
+    publicTitle: z.string().max(120).nullish(),
+    publicSubtitle: z.string().max(160).nullish(),
+    publicDescription: z.string().max(1000).nullish(),
+    idealFor: z.array(z.string().min(1).max(120)).max(8).optional(),
+    philosophy: z.string().max(1500).nullish(),
+    isPublic: z.boolean().optional(),
     items: z.array(stackItemInputSchema).min(1, "Add at least one supplement").max(40),
   });
 export const updateSupplementStackSchema = insertSupplementStackSchema.partial().extend({
@@ -2726,6 +2768,78 @@ export type UpdateSupplementStack = z.infer<typeof updateSupplementStackSchema>;
 export interface SupplementStackFull extends SupplementStack {
   items: SupplementStackItem[];
 }
+
+// ===== Coach-Curated Protocols — public surface =====
+//
+// Sanitized shape returned by `GET /api/protocols/public`. Deliberately
+// excludes every internal field (items, notes, internal description, the
+// admin name, brand/sourcing data) so the public endpoint can never leak
+// product details. The route is hand-written (not a select-with-omit) so
+// adding a new column upstream cannot accidentally widen this shape.
+export interface PublicProtocol {
+  id: number | null;          // null when this is the default fallback row
+  tier: ProtocolTier;
+  title: string;              // resolved publicTitle, with sensible default
+  subtitle: string;           // resolved publicSubtitle, with sensible default
+  description: string;        // resolved publicDescription, with sensible default
+  idealFor: readonly string[];
+  philosophy: string | null;
+  sortOrder: number;
+}
+
+// Day-1 fallback content. Returned by `/api/protocols/public` ONLY when no
+// `is_public` rows exist yet, so the homepage and dashboard locked-state
+// have something premium to render before the admin authors real entries.
+// English copy only — the UI layer can translate via t(key, fallback) keyed
+// off the tier name. Kept in shared/ so the homepage SSR / dashboard code
+// can both reach the same source.
+export const DEFAULT_COACH_PROTOCOLS: readonly PublicProtocol[] = [
+  {
+    id: null,
+    tier: "essentials",
+    title: "Essentials Protocol",
+    subtitle: "Essential Health & Recovery Support",
+    description:
+      "A focused starting system designed to support daily recovery, hydration, nutrient consistency, sleep quality, and training readiness.",
+    idealFor: [
+      "Beginners starting their first transformation",
+      "Clients with inconsistent nutrition",
+      "Anyone who wants a simple, structured foundation",
+    ],
+    philosophy: null,
+    sortOrder: 10,
+  },
+  {
+    id: null,
+    tier: "performance",
+    title: "Performance Protocol",
+    subtitle: "Advanced Body Transformation Support",
+    description:
+      "An advanced system for clients training consistently and aiming to improve body composition, recovery, training output, digestion, and consistency.",
+    idealFor: [
+      "Fat loss and muscle gain clients",
+      "Recomposition and active gym clients",
+      "Clients who need more structured support",
+    ],
+    philosophy: null,
+    sortOrder: 20,
+  },
+  {
+    id: null,
+    tier: "concierge",
+    title: "Concierge Protocol",
+    subtitle: "Concierge-Level Performance Optimization",
+    description:
+      "A fully personalized high-touch protocol built around your body composition, lifestyle, recovery, training intensity, and long-term transformation goals.",
+    idealFor: [
+      "Premium clients and busy professionals",
+      "Advanced transformation clients",
+      "High-performance lifestyles needing deeper personalization",
+    ],
+    philosophy: null,
+    sortOrder: 30,
+  },
+] as const;
 
 export const insertClientSupplementSchema = createInsertSchema(clientSupplements)
   .omit({ id: true, createdAt: true, updatedAt: true, assignedByUserId: true })

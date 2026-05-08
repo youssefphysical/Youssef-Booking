@@ -425,6 +425,18 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS supplement_stacks_active_idx ON supplement_stacks (active);
 
+    -- Coach-Curated Protocol public surface (Phase A, May 2026). All
+    -- additive — existing rows default to tier='custom', is_public=false
+    -- so nothing changes for stacks created before this migration.
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'custom';
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_title text;
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_subtitle text;
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_description text;
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS ideal_for text[] NOT NULL DEFAULT ARRAY[]::text[];
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS philosophy text;
+    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
+    CREATE INDEX IF NOT EXISTS supplement_stacks_public_idx ON supplement_stacks (is_public) WHERE is_public = true;
+
     CREATE TABLE IF NOT EXISTS supplement_stack_items (
       id serial PRIMARY KEY,
       stack_id integer NOT NULL REFERENCES supplement_stacks(id) ON DELETE CASCADE,

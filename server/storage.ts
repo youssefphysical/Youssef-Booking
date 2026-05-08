@@ -2005,6 +2005,60 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ===== SUPPLEMENT STACKS =====
+
+  // Coach-Curated Protocols — public surface (Phase A, May 2026).
+  // Returns ONLY the sanitized PublicProtocol shape. Never reads or
+  // returns supplement_stack_items, internal `notes`, or `description`,
+  // so this method cannot leak product details even if the route layer
+  // forgets to whitelist fields. Falls back to DEFAULT_COACH_PROTOCOLS
+  // (3 hard-coded tier descriptors) when no rows are publicly flagged
+  // yet, so the homepage and dashboard locked-state always render.
+  async listPublicProtocols(): Promise<import("@shared/schema").PublicProtocol[]> {
+    const rows = await db
+      .select({
+        id: supplementStacks.id,
+        tier: supplementStacks.tier,
+        publicTitle: supplementStacks.publicTitle,
+        publicSubtitle: supplementStacks.publicSubtitle,
+        publicDescription: supplementStacks.publicDescription,
+        idealFor: supplementStacks.idealFor,
+        philosophy: supplementStacks.philosophy,
+        sortOrder: supplementStacks.sortOrder,
+      })
+      .from(supplementStacks)
+      .where(and(eq(supplementStacks.active, true), eq(supplementStacks.isPublic, true)))
+      .orderBy(asc(supplementStacks.sortOrder), asc(supplementStacks.publicTitle));
+
+    if (rows.length === 0) {
+      // Mutable copy so the caller can sort/filter without mutating the
+      // shared frozen default.
+      const { DEFAULT_COACH_PROTOCOLS } = await import("@shared/schema");
+      return DEFAULT_COACH_PROTOCOLS.map((p) => ({ ...p, idealFor: [...p.idealFor] }));
+    }
+
+    // Resolve display copy with sensible defaults so a half-configured
+    // row (admin only set publicTitle, forgot subtitle) still renders.
+    const { DEFAULT_COACH_PROTOCOLS } = await import("@shared/schema");
+    const defaultsByTier = new Map(DEFAULT_COACH_PROTOCOLS.map((d) => [d.tier, d] as const));
+    return rows.map((r) => {
+      const tier = (r.tier as import("@shared/schema").ProtocolTier) ?? "custom";
+      const fallback = defaultsByTier.get(tier);
+      return {
+        id: r.id,
+        tier,
+        title: r.publicTitle?.trim() || fallback?.title || "Coach Protocol",
+        subtitle: r.publicSubtitle?.trim() || fallback?.subtitle || "Coach-Curated Protocol",
+        description:
+          r.publicDescription?.trim() ||
+          fallback?.description ||
+          "A coach-curated protocol tailored to your goals.",
+        idealFor: r.idealFor?.length ? r.idealFor : (fallback?.idealFor ? [...fallback.idealFor] : []),
+        philosophy: r.philosophy?.trim() || null,
+        sortOrder: r.sortOrder ?? fallback?.sortOrder ?? 0,
+      };
+    });
+  }
+
   async listSupplementStacks(opts?: { activeOnly?: boolean }): Promise<SupplementStackFull[]> {
     const conds: any[] = [];
     if (opts?.activeOnly) conds.push(eq(supplementStacks.active, true));

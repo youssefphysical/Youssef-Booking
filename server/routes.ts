@@ -2984,6 +2984,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   });
 
+  // ============== COACH-CURATED PROTOCOLS — public surface ==============
+  // Returns the sanitized PublicProtocol[] only. No auth required (homepage
+  // teaser uses it). Storage layer enforces the field whitelist; route
+  // adds an HTTP cache hint since this changes at most a few times/year.
+  app.get("/api/protocols/public", async (_req, res) => {
+    const list = await storage.listPublicProtocols();
+    res.set("Cache-Control", "public, max-age=60, s-maxage=300");
+    res.json(list);
+  });
+
   // Stacks — reusable templates of supplements with snapshotted items.
   app.get("/api/supplement-stacks", requireAdmin, async (req, res) => {
     const activeOnly = req.query.activeOnly === "true";

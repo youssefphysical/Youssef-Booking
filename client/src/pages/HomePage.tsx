@@ -29,6 +29,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { Footer } from "@/components/Footer";
 import { HeroSlider } from "@/components/HeroSlider";
 import { Transformations } from "@/components/Transformations";
+import { CoachProtocols } from "@/components/CoachProtocols";
 import { useTranslation } from "@/i18n";
 
 const TRAIN_KEYS = [
@@ -418,6 +419,13 @@ export default function HomePage() {
 
       {/* PACKAGES — admin-managed catalogue. Renders nothing when empty. */}
       <PublicPackages />
+
+      {/* COACH-CURATED PROTOCOLS — public teaser. Renders the 3 public
+          tiers (Essentials / Performance / Concierge) with locked-state
+          framing + WhatsApp request CTA. Falls back to default copy when
+          admin hasn't authored any rows yet, so this section is never
+          empty for visitors. */}
+      <CoachProtocols mode="homepage" />
 
       {/* TRANSFORMATIONS — admin-managed before/after cards.
           Renders nothing until at least one active row exists. */}

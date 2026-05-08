@@ -14,6 +14,7 @@ import {
 } from "@shared/schema";
 import { whatsappUrl, buildSupplementsWhatsApp } from "@/lib/whatsapp";
 import { useTranslation } from "@/i18n";
+import { CoachProtocols } from "@/components/CoachProtocols";
 
 // Client-facing "Today" + "All" view of their supplement protocol.
 // We default the day-mode to "training" because most clients open the
@@ -49,16 +50,13 @@ export function SupplementsTab() {
     );
   }
 
+  // Locked state — client has no active assignments. Replaces the old
+  // "no supplements assigned" empty card with the 3-tier Coach-Curated
+  // Protocols teaser. Single primary action per card (WhatsApp request),
+  // calm coach-led copy, no marketplace feel. After admin activation,
+  // this entire branch disappears and the regular protocol view renders.
   if (items.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center">
-        <Pill className="mx-auto mb-3 text-muted-foreground" size={32} />
-        <h3 className="font-display text-lg mb-1">No supplements assigned yet</h3>
-        <p className="text-sm text-muted-foreground">
-          Coach Youssef will set up your protocol after your consultation.
-        </p>
-      </div>
-    );
+    return <CoachProtocols mode="dashboard" />;
   }
 
   return (
