@@ -641,6 +641,63 @@ export const updateBookingSchema = z.object({
 // ADMIN NOTIFICATIONS (in-app trainer inbox)
 // =============================
 // kind: 'booking_new' | 'booking_cancelled' | 'booking_rescheduled' | 'system'
+// =============================
+// CLIENT-FACING NOTIFICATIONS (P5a)
+// =============================
+// Distinct from `admin_notifications` (which is the trainer inbox).
+// One row per delivery target. Channel-ready architecture: in-app is
+// active today, push + email are wired through the same row so future
+// dispatchers can fan out without schema churn.
+export const NOTIFICATION_KINDS = [
+  "session_reminder",
+  "package_expiring",
+  "missed_checkin",
+  "nutrition_update",
+  "supplement_reminder",
+  "coach_message",
+  "payment_reminder",
+  "milestone",
+  "system",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+export const clientNotifications = pgTable("client_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("system"),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  // Optional deep-link target inside the app (e.g. "/dashboard?tab=activity").
+  link: text("link"),
+  // Optional structured payload — used by triggers to dedupe (e.g.
+  // { bookingId: 123 } or { weekStart: "2026-05-04" }).
+  meta: jsonb("meta"),
+  // Channel state — additive, future dispatchers stamp these.
+  channelInApp: boolean("channel_in_app").notNull().default(true),
+  channelPush: boolean("channel_push").notNull().default(false),
+  channelEmail: boolean("channel_email").notNull().default(false),
+  pushSentAt: timestamp("push_sent_at"),
+  emailSentAt: timestamp("email_sent_at"),
+  // null = unread, set on first read.
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertClientNotificationSchema = createInsertSchema(clientNotifications)
+  .omit({ id: true, createdAt: true, readAt: true, pushSentAt: true, emailSentAt: true })
+  .extend({
+    kind: z.enum(NOTIFICATION_KINDS),
+    title: z.string().min(1).max(200),
+    body: z.string().min(1).max(2000),
+    link: z.string().max(500).nullish(),
+    meta: z.any().nullish(),
+  });
+
+export type ClientNotification = typeof clientNotifications.$inferSelect;
+export type InsertClientNotification = z.infer<typeof insertClientNotificationSchema>;
+
 export const adminNotifications = pgTable("admin_notifications", {
   id: serial("id").primaryKey(),
   kind: text("kind").notNull().default("system"),

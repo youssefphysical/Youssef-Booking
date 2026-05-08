@@ -2309,6 +2309,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(events);
   });
 
+  // P5a: Client-facing notifications. All routes are self-scoped — the
+  // server reads userId from the session, never from the request body
+  // or query, so a client can only ever see/mutate its own rows.
+  app.get("/api/me/notifications", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const unreadOnly = req.query.unreadOnly === "true";
+    const limitRaw = Number(req.query.limit ?? 50);
+    const limit = Number.isFinite(limitRaw) ? limitRaw : 50;
+    const list = await storage.getClientNotifications(me.id, { unreadOnly, limit });
+    res.json(list);
+  });
+
+  app.get("/api/me/notifications/unread-count", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const count = await storage.getClientUnreadNotificationCount(me.id);
+    res.json({ count });
+  });
+
+  app.post("/api/me/notifications/:id/read", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const updated = await storage.markClientNotificationRead(id, me.id);
+    if (!updated) {
+      // Either not found, not owned, or already read — all map to 204
+      // so clients can call this idempotently without surfacing errors.
+      return res.status(204).end();
+    }
+    res.json(updated);
+  });
+
+  app.post("/api/me/notifications/read-all", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    await storage.markAllClientNotificationsRead(me.id);
+    res.json({ ok: true });
+  });
+
   app.get("/api/admin/clients/:id/session-history", requireAdmin, async (req, res) => {
     const userId = Number(req.params.id);
     if (!userId) return res.status(400).json({ message: "Invalid client id" });

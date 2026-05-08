@@ -12,6 +12,7 @@ import {
   heroImages,
   transformations,
   adminNotifications,
+  clientNotifications,
   renewalRequests,
   extensionRequests,
   packageSessionHistory,
@@ -78,6 +79,8 @@ import {
   type UpdateTransformation,
   type AdminNotification,
   type InsertAdminNotification,
+  type ClientNotification,
+  type InsertClientNotification,
   type RenewalRequest,
   type InsertRenewalRequest,
   type ExtensionRequest,
@@ -197,6 +200,16 @@ export interface IStorage {
   createAdminNotification(notif: InsertAdminNotification): Promise<AdminNotification>;
   markAdminNotificationRead(id: number): Promise<AdminNotification | undefined>;
   markAllAdminNotificationsRead(): Promise<void>;
+
+  // Client-facing notifications (P5a)
+  getClientNotifications(
+    userId: number,
+    filters?: { unreadOnly?: boolean; limit?: number },
+  ): Promise<ClientNotification[]>;
+  getClientUnreadNotificationCount(userId: number): Promise<number>;
+  createClientNotification(notif: InsertClientNotification): Promise<ClientNotification>;
+  markClientNotificationRead(id: number, userId: number): Promise<ClientNotification | undefined>;
+  markAllClientNotificationsRead(userId: number): Promise<void>;
 
   // Renewal requests
   getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<RenewalRequest[]>;
@@ -1360,6 +1373,64 @@ export class DatabaseStorage implements IStorage {
 
   async markAllAdminNotificationsRead() {
     await db.update(adminNotifications).set({ isRead: true }).where(eq(adminNotifications.isRead, false));
+  }
+
+  // ===== Client-facing notifications (P5a) =====
+  async getClientNotifications(
+    userId: number,
+    filters?: { unreadOnly?: boolean; limit?: number },
+  ): Promise<ClientNotification[]> {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const conds: any[] = [eq(clientNotifications.userId, userId)];
+    if (filters?.unreadOnly) conds.push(sql`${clientNotifications.readAt} IS NULL`);
+    return db
+      .select()
+      .from(clientNotifications)
+      .where(and(...conds))
+      .orderBy(desc(clientNotifications.createdAt))
+      .limit(limit);
+  }
+
+  async getClientUnreadNotificationCount(userId: number): Promise<number> {
+    const rows = await db
+      .select({ id: clientNotifications.id })
+      .from(clientNotifications)
+      .where(
+        and(eq(clientNotifications.userId, userId), sql`${clientNotifications.readAt} IS NULL`),
+      );
+    return rows.length;
+  }
+
+  async createClientNotification(notif: InsertClientNotification): Promise<ClientNotification> {
+    const [n] = await db.insert(clientNotifications).values(notif).returning();
+    return n;
+  }
+
+  async markClientNotificationRead(
+    id: number,
+    userId: number,
+  ): Promise<ClientNotification | undefined> {
+    const [n] = await db
+      .update(clientNotifications)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(clientNotifications.id, id),
+          eq(clientNotifications.userId, userId),
+          sql`${clientNotifications.readAt} IS NULL`,
+        ),
+      )
+      .returning();
+    return n;
+  }
+
+  async markAllClientNotificationsRead(userId: number): Promise<void> {
+    await db
+      .update(clientNotifications)
+      .set({ readAt: new Date() })
+      .where(
+        and(eq(clientNotifications.userId, userId), sql`${clientNotifications.readAt} IS NULL`),
+      );
   }
 
   // ===== Renewal requests =====

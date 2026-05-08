@@ -534,6 +534,29 @@ async function run(): Promise<void> {
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS private_coach_notes text;
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS client_visible_coach_notes text;
     ALTER TABLE bookings ADD COLUMN IF NOT EXISTS coach_notes_updated_at timestamp;
+
+    -- P5a Centralized client-facing notifications. Distinct from
+    -- admin_notifications (trainer inbox). Channel-ready architecture:
+    -- in-app active today; push + email columns are scaffolded so future
+    -- dispatchers can fan out without schema churn.
+    CREATE TABLE IF NOT EXISTS client_notifications (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind text NOT NULL DEFAULT 'system',
+      title text NOT NULL,
+      body text NOT NULL,
+      link text,
+      meta jsonb,
+      channel_in_app boolean NOT NULL DEFAULT true,
+      channel_push boolean NOT NULL DEFAULT false,
+      channel_email boolean NOT NULL DEFAULT false,
+      push_sent_at timestamp,
+      email_sent_at timestamp,
+      read_at timestamp,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS client_notifications_user_unread_idx
+      ON client_notifications (user_id, read_at, created_at DESC);
   `;
 
   try {
