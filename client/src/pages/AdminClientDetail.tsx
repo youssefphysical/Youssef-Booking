@@ -442,7 +442,7 @@ export default function AdminClientDetail() {
                   key={tabSpec.value}
                   value={tabSpec.value}
                   data-testid={`tab-detail-${tabSpec.value}`}
-                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] sm:text-xs font-semibold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/20 text-muted-foreground hover:text-foreground"
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[12px] sm:text-[12.5px] font-semibold whitespace-nowrap transition-all data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:ring-1 data-[state=active]:ring-primary/30 text-muted-foreground/80 hover:text-foreground hover:bg-white/[0.04]"
                 >
                   {tabSpec.icon}
                   {t(tabSpec.labelKey, tabSpec.fallback)}
