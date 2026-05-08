@@ -1,0 +1,659 @@
+MASTER PROMPT — NUTRITION OPERATING SYSTEM + PERSONAL TRAINING PLATFORM EVOLUTION
+
+Project:
+Youssef Ahmed Personal Training Platform
+
+Stack:
+Replit + GitHub + Vercel + Neon PostgreSQL
+
+Mission:
+Build a premium, scalable Nutrition Management System inside the existing platform, with the same quality level as the Personal Training booking/admin system.
+
+This should NOT feel like a simple diet PDF tool.
+It must feel like a professional coaching operating system:
+- premium
+- intelligent
+- practical
+- fast
+- client-friendly
+- admin-friendly
+- mobile-first
+- scalable for future trainers and clients
+
+Design reference:
+Apple Health × MyFitnessPal Premium × WHOOP × Stripe Dashboard × Equinox luxury fitness.
+
+====================================================
+CRITICAL PRODUCTION RULES
+====================================================
+
+DO NOT break:
+- authentication
+- admin permissions
+- booking system
+- packages/sessions logic
+- client profiles
+- email system
+- multilingual/i18n system
+- RTL support
+- existing database data
+- Vercel deployment
+- GitHub workflow
+- Neon database stability
+
+DO:
+- Work safely in phases.
+- Add reusable components.
+- Keep code clean and scalable.
+- Use migrations only if needed.
+- Validate TypeScript and production build.
+- Keep mobile-first UX.
+- Keep dark luxury blue/black identity.
+- Push to GitHub and deploy to Vercel only after build passes.
+
+====================================================
+CORE GOAL
+====================================================
+
+Create a new admin/client system called:
+
+Nutrition
+
+The Nutrition system must allow the admin/coach to:
+1. Create nutrition plans
+2. Assign plans to clients
+3. Build meals
+4. Add foods
+5. Calculate calories/macros automatically
+6. Add supplements with timing/dosage/notes
+7. Create reusable templates
+8. Export/share nutrition plans later
+9. View client nutrition progress later
+
+Client should eventually be able to:
+1. View assigned nutrition plan
+2. Understand meals clearly
+3. See total calories/macros
+4. See supplements/timing
+5. Track simple daily compliance later
+
+====================================================
+PHASE 1 — SMART MACRO CALCULATOR
+====================================================
+
+Add a premium Macro Calculator tool inside admin.
+
+Inputs:
+- Protein grams
+- Carbs grams
+- Fats grams
+
+Auto output:
+- Protein calories = protein × 4
+- Carbs calories = carbs × 4
+- Fat calories = fats × 9
+- Total calories
+- Macro percentages
+- Clean visual bars or rings
+
+UI requirements:
+- Premium cards
+- Live auto-calculation
+- Animated values
+- Clear labels
+- Mobile-first
+- No page reload
+- No console errors
+
+Also add reverse helper if safe:
+- enter total calories + target protein
+- suggest remaining carbs/fats split
+
+Do not make it medically complicated.
+Keep it coach-friendly and practical.
+
+====================================================
+PHASE 2 — FOOD DATABASE / FOOD LIBRARY
+====================================================
+
+Create a reusable Food Library.
+
+Each food item should support:
+- name
+- category
+  examples:
+  Protein
+  Carbs
+  Fats
+  Vegetables
+  Fruits
+  Dairy
+  Supplements
+  Drinks
+  Custom
+- serving size
+- serving unit
+  examples:
+  g, ml, piece, scoop, cup, tbsp
+- calories per serving
+- protein grams
+- carbs grams
+- fat grams
+- notes
+- digestion speed optional:
+  fast / moderate / slow
+- best timing optional:
+  pre-workout / post-workout / breakfast / night / any
+- active/inactive
+
+Admin actions:
+- add food
+- edit food
+- delete or archive food safely
+- search food by name/category
+- filter category
+- duplicate food
+
+Important:
+Food library should be reusable inside meal plans.
+
+UI:
+- premium searchable table/cards
+- mobile cards
+- clear macro chips
+- fast search
+- no clutter
+
+====================================================
+PHASE 3 — MEAL BUILDER
+====================================================
+
+Create a Meal Builder.
+
+A meal should include:
+- meal name
+  examples:
+  Meal 1, Breakfast, Pre-workout, Post-workout, Dinner
+- meal time optional
+- meal notes
+- list of food items
+- quantity per food
+- auto-calculated meal totals:
+  calories
+  protein
+  carbs
+  fats
+
+Rules:
+- When quantity changes, macros update automatically.
+- Food values should scale correctly by quantity.
+- Allow custom food added directly inside a meal if needed.
+- Support notes like:
+  “If digestion feels heavy, swap oats with rice cakes.”
+- Support meal alternatives later.
+
+UI:
+- meal card design
+- food rows inside meal
+- macro totals at top/bottom
+- add/remove food smoothly
+- mobile optimized
+- avoid Excel-looking UI
+
+====================================================
+PHASE 4 — NUTRITION PLAN BUILDER
+====================================================
+
+Create a complete Nutrition Plan Builder.
+
+Plan fields:
+- plan name
+- client assignment optional
+- goal:
+  Fat loss
+  Muscle gain
+  Recomposition
+  Performance
+  Maintenance
+  Ramadan
+  Custom
+- training day calories
+- rest day calories
+- target protein
+- target carbs
+- target fats
+- meals count
+- water target
+- sodium/electrolyte notes
+- general notes
+- coach notes private/public
+- plan status:
+  draft / active / archived
+
+Plan should contain:
+- Training Day meals
+- Rest Day meals
+- Optional Refeed Day meals
+- Supplement stack
+- Coach notes
+- Substitution rules
+
+Auto calculate:
+- total daily calories
+- total protein/carbs/fats
+- difference between target macros and actual meal totals
+- visual warning if actual macros are too far from target
+
+Example:
+Target: 2200 kcal
+Actual meals: 2185 kcal
+Difference: -15 kcal
+
+Use color logic:
+- Green = close
+- Yellow = small difference
+- Red = needs correction
+
+====================================================
+PHASE 5 — CLIENT NUTRITION ASSIGNMENT
+====================================================
+
+Add nutrition assignment to client profile.
+
+Admin should be able to:
+- assign nutrition plan to client
+- duplicate a template and customize it for a client
+- edit assigned plan
+- archive old plan
+- see current plan status
+- see plan start date
+- see plan review date
+- add private coach notes
+
+Client profile should show:
+- current nutrition plan
+- calories/macros
+- goal
+- meals summary
+- supplements summary
+- last updated date
+
+Future-friendly:
+Structure should support progress tracking later.
+
+====================================================
+PHASE 6 — PLAN TEMPLATES
+====================================================
+
+Create nutrition templates.
+
+Default template ideas:
+- Fat Loss Beginner
+- Lean Bulk
+- Body Recomposition
+- High Protein UAE Lifestyle
+- Ramadan Fat Loss
+- Busy Schedule Plan
+- Female Fat Loss
+- Muscle Gain 4 Meals
+- Travel Friendly Plan
+
+Admin actions:
+- create template
+- duplicate template
+- assign template to client
+- edit template
+- archive template
+
+Important:
+Templates save time. Do not force every client plan to be built from scratch.
+
+====================================================
+PHASE 7 — SUPPLEMENT STACK SYSTEM
+====================================================
+
+Create Supplement Stack section inside nutrition plans.
+
+Each supplement item:
+- supplement name
+- purpose
+- dosage
+- timing
+- with meal / empty stomach
+- notes
+- optional brand/source notes
+- optional quality logic
+
+Examples:
+- Creatine Monohydrate
+  Dosage: 5g daily
+  Timing: any time
+  Notes: consistency matters more than timing
+
+- Omega-3
+  Dosage: based on EPA/DHA
+  Timing: with meal
+  Notes: prioritize quality-tested sources
+
+- Magnesium Glycinate
+  Timing: night
+  Notes: supports sleep/recovery
+
+Add “Youssef Quality Logic” notes:
+- source quality
+- manufacturing standards
+- purity
+- bioavailability
+- climate/lifestyle suitability
+- UAE heat/hydration relevance
+
+Keep language professional.
+Do not make medical claims.
+Add disclaimer:
+“Supplement guidance is educational and should not replace medical advice.”
+
+====================================================
+PHASE 8 — UAE CLIMATE NUTRITION INTELLIGENCE
+====================================================
+
+Add optional premium educational section:
+“Dubai / UAE Climate Nutrition Logic”
+
+This section explains coach logic around:
+- hydration
+- electrolytes
+- sodium/potassium
+- sweating
+- gym AC dehydration
+- heat exposure
+- training performance
+- recovery
+
+This can be part of Nutrition page or Youssef Logic.
+
+Keep it simple and client-friendly.
+
+Example message:
+“In Dubai, hydration is not just water. Sweat, AC exposure, training intensity, and daily movement all affect performance and recovery.”
+
+====================================================
+PHASE 9 — CLIENT-FACING NUTRITION VIEW
+====================================================
+
+Create a clean client view for assigned nutrition plan.
+
+Client should see:
+- plan name
+- goal
+- daily calories/macros
+- meals
+- food quantities
+- supplement timing
+- water target
+- coach notes
+- plan review date
+
+UI:
+- premium mobile cards
+- meal timeline
+- macro rings/bars
+- collapsible meals
+- simple readable layout
+- no admin-only controls
+
+Client should not feel overwhelmed.
+
+====================================================
+PHASE 10 — EXPORT / SHARE READY
+====================================================
+
+Prepare export system architecture.
+
+Do not overbuild if risky, but make structure ready for:
+- PDF export
+- image export
+- WhatsApp formatted summary
+- print view
+
+First version:
+Add a clean “Copy WhatsApp Summary” button for admin.
+
+Output format example:
+Nutrition Plan — Client Name
+Goal:
+Calories:
+Protein:
+Carbs:
+Fats:
+Meals:
+Supplements:
+Notes:
+
+Later version:
+PDF export.
+
+====================================================
+PHASE 11 — PERSONAL TRAINING SYSTEM IMPROVEMENTS
+====================================================
+
+While building Nutrition, improve Personal Training system integration.
+
+Add client profile tabs:
+- Overview
+- Bookings
+- Packages
+- Nutrition
+- Progress
+- Notes
+- Documents
+
+If tabs already exist, improve them.
+
+Connect systems:
+- Client goal should appear in both training and nutrition.
+- Training frequency should inform nutrition notes.
+- Package status should not affect nutrition visibility unless intentionally configured.
+- Coach notes should be organized by category:
+  Training
+  Nutrition
+  Injury
+  Lifestyle
+  Progress
+
+Add future-ready fields:
+- main goal
+- training frequency
+- injuries/limitations
+- sleep quality
+- digestion notes
+- food preferences
+- allergies
+- disliked foods
+- budget level
+- schedule type
+
+Keep it clean and not overwhelming.
+
+====================================================
+PHASE 12 — PREMIUM UI DESIGN REQUIREMENTS
+====================================================
+
+The Nutrition system must look premium.
+
+Do NOT make it look like a spreadsheet.
+
+Use:
+- macro rings
+- nutrient bars
+- meal cards
+- supplement cards
+- progress indicators
+- glass cards
+- soft blue glow
+- green positive indicators
+- amber warning indicators
+- red correction indicators
+- clean empty states
+- skeleton loaders
+
+Mobile-first:
+- no horizontal overflow
+- no clipped dropdowns
+- large touch targets
+- readable text
+- sticky save actions if useful
+
+====================================================
+PHASE 13 — I18N / LANGUAGES
+====================================================
+
+All new visible text must support the existing translation system.
+
+Languages:
+- English
+- Arabic
+- Persian/Farsi
+- Urdu
+- French
+- German
+- Russian
+- Turkish
+- Spanish
+- Italian
+- Portuguese
+- Chinese
+- Hindi
+
+RTL:
+- Arabic
+- Persian/Farsi
+- Urdu
+
+No raw translation keys.
+No mixed language UI.
+No hardcoded user-facing strings.
+
+====================================================
+PHASE 14 — PERMISSIONS / SECURITY
+====================================================
+
+Nutrition admin tools:
+- admin/super_admin only for editing
+- clients only view their own assigned plan
+- unauthorized users must not access private plans
+
+Protect:
+- client nutrition data
+- private coach notes
+- supplements notes
+- client health/lifestyle info
+
+No public exposure of private plans.
+
+====================================================
+PHASE 15 — DATABASE / DATA MODEL
+====================================================
+
+Design database carefully.
+
+Suggested tables if needed:
+- foods
+- nutrition_templates
+- nutrition_plans
+- nutrition_meals
+- nutrition_meal_items
+- nutrition_supplements
+- client_nutrition_assignments
+- nutrition_notes
+
+Rules:
+- Use safe migrations
+- Preserve existing data
+- Add timestamps
+- Add owner/client relationship
+- Avoid deleting records permanently if archive is better
+- Add indexes for search where needed
+
+If database change is risky, stop and explain before making destructive changes.
+
+====================================================
+PHASE 16 — VALIDATION + TESTING
+====================================================
+
+Before deploy:
+- TypeScript clean
+- Build clean
+- No console errors
+- No hydration errors
+- No broken routes
+- No broken mobile layouts
+- No broken i18n
+- No broken RTL
+- No unauthorized access
+
+Test screens:
+- 360px
+- 390px
+- 412px
+- tablet
+- desktop
+
+Test flows:
+- admin creates food
+- admin creates nutrition plan
+- admin adds meals
+- macros calculate correctly
+- admin assigns plan to client
+- client views plan
+- WhatsApp summary copy works
+- translations work
+- RTL works
+
+====================================================
+PHASE 17 — DEPLOYMENT
+====================================================
+
+After safe implementation:
+- push to GitHub main
+- deploy to Vercel
+- confirm Vercel READY
+- confirm production HTTP 200
+- confirm Neon migration if any
+- report exact commit ID
+
+====================================================
+FINAL REPORT REQUIRED
+====================================================
+
+Report must include:
+- what was built
+- what files changed
+- database changes if any
+- nutrition features completed
+- personal training improvements completed
+- macro calculation verification
+- mobile verification
+- RTL/i18n verification
+- permission/security verification
+- build result
+- production deployment result
+- GitHub commit ID
+- Vercel READY status
+- Neon status
+
+====================================================
+IMPORTANT FINAL DIRECTION
+====================================================
+
+This Nutrition system should make the platform feel like:
+“a complete coaching ecosystem”
+
+Not:
+“a trainer website with a diet page”
+
+Think creatively.
+Solve problems elegantly.
+Use premium UX.
+Keep it simple for clients.
+Make it powerful for the coach.
+Make it scalable for future trainers.
