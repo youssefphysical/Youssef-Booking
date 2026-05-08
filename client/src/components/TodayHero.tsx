@@ -67,25 +67,29 @@ function MiniChip({
   label,
   value,
   sub,
+  isEmpty = false,
   testId,
 }: {
   icon: typeof Trophy;
   label: string;
   value: string;
   sub?: string | null;
+  isEmpty?: boolean;
   testId: string;
 }) {
   return (
     <div
-      className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-3.5"
+      className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 sm:p-3.5"
       data-testid={testId}
     >
       <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest text-white/45">
-        <Icon size={11} className="text-white/55" />
+        <Icon size={11} className="text-white/45" />
         <span className="truncate">{label}</span>
       </p>
       <p
-        className="mt-1 truncate text-base sm:text-[17px] font-semibold text-white"
+        className={`mt-1 truncate text-base sm:text-[17px] font-semibold ${
+          isEmpty ? "text-white/40" : "text-white"
+        }`}
         data-testid={`${testId}-value`}
       >
         {value}
@@ -129,27 +133,22 @@ export function TodayHero({ name }: { name?: string | null }) {
      replaces cold system phrases ("No plan yet", "Nothing booked",
      "No active supplements") with supportive coaching language. */
   const session = data.nextSession ? formatNextSession(data.nextSession.date) : null;
-  const sessionPrimary = session?.primary ?? "Ready when you are";
-  const sessionSub =
-    session?.sub ??
-    (data.nextSession?.sessionType ?? "Schedule your next session below");
+  const sessionPrimary = session?.primary ?? "Ready for your first session";
+  const sessionSub = session
+    ? (session.sub ?? data.nextSession?.sessionType ?? null)
+    : null;
 
-  const waterValue = data.waterTargetMl ? `${(data.waterTargetMl / 1000).toFixed(1)} L` : "—";
-  const waterSub = data.waterTargetMl
-    ? "Daily target"
-    : "Appears once your plan is active";
+  const hasWater = !!data.waterTargetMl;
+  const waterValue = hasWater ? `${(data.waterTargetMl! / 1000).toFixed(1)} L` : "—";
+  const waterSub = hasWater ? "Daily target" : "Activates with your plan";
 
-  const streakValue = data.streakWeeks > 0 ? `${data.streakWeeks} wk` : "—";
-  const streakSub =
-    data.streakWeeks > 0 ? "Active weeks in a row" : "Start one this week";
+  const hasStreak = data.streakWeeks > 0;
+  const streakValue = hasStreak ? `${data.streakWeeks} wk` : "—";
+  const streakSub = hasStreak ? "Active weeks in a row" : "Begins with your first week";
 
-  const suppValue = `${data.supplementsToday}`;
-  const suppSub =
-    data.supplementsToday === 0
-      ? "Guidance appears when assigned"
-      : data.supplementsToday === 1
-        ? "Active today"
-        : "Active today";
+  const hasSupps = data.supplementsToday > 0;
+  const suppValue = hasSupps ? `${data.supplementsToday}` : "—";
+  const suppSub = hasSupps ? "Active today" : "Guidance will appear here";
 
   return (
     <section
@@ -213,19 +212,21 @@ export function TodayHero({ name }: { name?: string | null }) {
           and toned to feel integrated, not dominant: h-9, single soft
           shadow, no aggressive double-glow. */}
       <div
-        className="mt-4 sm:mt-5 rounded-2xl border border-white/10 bg-gradient-to-br from-primary/[0.06] to-white/[0.02] p-4 sm:p-5"
+        className="mt-4 sm:mt-5 rounded-2xl border border-white/[0.09] bg-white/[0.025] p-4 sm:p-5"
         data-testid="primary-next-session"
       >
         <div className="flex items-start gap-3 sm:gap-4">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 ring-1 ring-primary/25">
-            <CalendarClock size={18} className="text-primary" />
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.04] ring-1 ring-white/10">
+            <CalendarClock size={18} className="text-primary/90" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-[10.5px] uppercase tracking-widest text-white/50">
               Next session
             </p>
             <p
-              className="mt-0.5 text-xl sm:text-2xl font-semibold text-white leading-tight truncate"
+              className={`mt-0.5 text-xl sm:text-2xl font-semibold leading-tight truncate ${
+                data.nextSession ? "text-white" : "text-white/75"
+              }`}
               data-testid="primary-next-session-value"
             >
               {sessionPrimary}
@@ -242,7 +243,7 @@ export function TodayHero({ name }: { name?: string | null }) {
           <Link
             href="/book"
             data-testid="link-today-hero-book"
-            className="mt-3.5 sm:mt-4 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-4 h-9 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-[0_4px_14px_-4px_hsl(195_100%_60%/0.35)]"
+            className="mt-3.5 sm:mt-4 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary/95 px-4 h-9 text-sm font-medium text-primary-foreground hover:bg-primary transition-colors"
           >
             Book your first session
             <ArrowRight size={14} className="rtl:rotate-180" />
@@ -261,6 +262,7 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Streak"
           value={streakValue}
           sub={streakSub}
+          isEmpty={!hasStreak}
           testId="stat-streak"
         />
         <MiniChip
@@ -268,6 +270,7 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Supplements"
           value={suppValue}
           sub={suppSub}
+          isEmpty={!hasSupps}
           testId="stat-supplements-today"
         />
         <MiniChip
@@ -275,6 +278,7 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Water"
           value={waterValue}
           sub={waterSub}
+          isEmpty={!hasWater}
           testId="stat-water-target"
         />
       </div>
