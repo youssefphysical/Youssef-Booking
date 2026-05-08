@@ -51,9 +51,11 @@ interface MacroRingProps {
   color: string;
   icon: React.ReactNode;
   testId: string;
+  unitG: string;
+  unitKcal: string;
 }
 
-function MacroRing({ label, grams, kcal, percent, color, icon, testId }: MacroRingProps) {
+function MacroRing({ label, grams, kcal, percent, color, icon, testId, unitG, unitKcal }: MacroRingProps) {
   const animatedPercent = useAnimatedNumber(percent);
   const animatedGrams = useAnimatedNumber(grams);
   const animatedKcal = useAnimatedNumber(kcal);
@@ -62,11 +64,13 @@ function MacroRing({ label, grams, kcal, percent, color, icon, testId }: MacroRi
   const offset = c - (c * Math.max(0, Math.min(100, animatedPercent))) / 100;
   return (
     <div
-      className="shadcn-card hairline-top fade-in-up rounded-xl border bg-card border-card-border p-4 sm:p-5 flex flex-col items-center text-center"
+      role="group"
+      aria-label={`${label}: ${Math.round(grams)}${unitG}, ${Math.round(kcal)} ${unitKcal}, ${Math.round(percent)}%`}
+      className="shadcn-card hairline-top fade-in-up rounded-xl border bg-card border-card-border p-3 sm:p-5 flex flex-col items-center text-center"
       data-testid={`macro-ring-${testId}`}
     >
-      <div className="relative w-[112px] h-[112px]">
-        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+      <div className="relative w-[clamp(80px,26vw,112px)] aspect-square">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90" aria-hidden="true">
           <circle cx="50" cy="50" r={r} stroke="hsl(var(--muted))" strokeWidth="8" fill="none" opacity="0.25" />
           <circle
             cx="50"
@@ -82,20 +86,20 @@ function MacroRing({ label, grams, kcal, percent, color, icon, testId }: MacroRi
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-[10px] text-muted-foreground" style={{ color }}>
+          <div className="text-[10px]" style={{ color }} aria-hidden="true">
             {icon}
           </div>
-          <div className="tabular-nums-stat text-xl font-bold leading-none mt-1" data-testid={`text-${testId}-percent`}>
+          <div className="tabular-nums-stat text-base sm:text-xl font-bold leading-none mt-1" data-testid={`text-${testId}-percent`}>
             {Math.round(animatedPercent)}%
           </div>
         </div>
       </div>
-      <div className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">{label}</div>
-      <div className="tabular-nums-stat text-lg font-bold mt-1" data-testid={`text-${testId}-grams`}>
-        {Math.round(animatedGrams)}<span className="text-xs text-muted-foreground font-medium ml-0.5">g</span>
+      <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs uppercase tracking-[0.14em] sm:tracking-[0.16em] text-muted-foreground font-semibold">{label}</div>
+      <div className="tabular-nums-stat text-base sm:text-lg font-bold mt-1" data-testid={`text-${testId}-grams`}>
+        {Math.round(animatedGrams)}<span className="text-[10px] sm:text-xs text-muted-foreground font-medium ml-0.5">{unitG}</span>
       </div>
-      <div className="tabular-nums-stat text-[11px] text-muted-foreground mt-0.5" data-testid={`text-${testId}-kcal`}>
-        {Math.round(animatedKcal)} kcal
+      <div className="tabular-nums-stat text-[10px] sm:text-[11px] text-muted-foreground mt-0.5" data-testid={`text-${testId}-kcal`}>
+        {Math.round(animatedKcal)} {unitKcal}
       </div>
     </div>
   );
@@ -111,13 +115,31 @@ interface MacroInputProps {
   step?: number;
   max?: number;
   testId: string;
+  decreaseLabel: string;
+  increaseLabel: string;
 }
 
-function MacroInput({ id, label, value, onChange, color, unit = "g", step = 5, max = 1500, testId }: MacroInputProps) {
+function MacroInput({
+  id,
+  label,
+  value,
+  onChange,
+  color,
+  unit = "g",
+  step = 5,
+  max = 1500,
+  testId,
+  decreaseLabel,
+  increaseLabel,
+}: MacroInputProps) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-xs uppercase tracking-[0.14em] font-semibold flex items-center gap-2">
-        <span className="inline-block w-2 h-2 rounded-full" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
+        <span
+          className="inline-block w-2 h-2 rounded-full"
+          style={{ background: color, boxShadow: `0 0 8px ${color}` }}
+          aria-hidden="true"
+        />
         {label}
       </Label>
       <div className="flex items-stretch gap-2">
@@ -127,9 +149,10 @@ function MacroInput({ id, label, value, onChange, color, unit = "g", step = 5, m
           size="icon"
           onClick={() => onChange(clampNumber(value - step, 0, max))}
           className="shrink-0 h-11 w-11 sm:h-10 sm:w-10 text-lg"
+          aria-label={decreaseLabel}
           data-testid={`button-${testId}-decrement`}
         >
-          −
+          <span aria-hidden="true">−</span>
         </Button>
         <div className="relative flex-1">
           <Input
@@ -142,10 +165,16 @@ function MacroInput({ id, label, value, onChange, color, unit = "g", step = 5, m
             value={value === 0 ? "" : value}
             onChange={(e) => onChange(clampNumber(parseFloat(e.target.value) || 0, 0, max))}
             placeholder="0"
+            aria-describedby={`${id}-unit`}
             className="h-11 sm:h-10 text-center text-lg font-bold tabular-nums-stat pr-8"
             data-testid={`input-${testId}`}
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">{unit}</span>
+          <span
+            id={`${id}-unit`}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none"
+          >
+            {unit}
+          </span>
         </div>
         <Button
           type="button"
@@ -153,9 +182,10 @@ function MacroInput({ id, label, value, onChange, color, unit = "g", step = 5, m
           size="icon"
           onClick={() => onChange(clampNumber(value + step, 0, max))}
           className="shrink-0 h-11 w-11 sm:h-10 sm:w-10 text-lg"
+          aria-label={increaseLabel}
           data-testid={`button-${testId}-increment`}
         >
-          +
+          <span aria-hidden="true">+</span>
         </Button>
       </div>
     </div>
@@ -229,6 +259,13 @@ export default function AdminMacroCalculator() {
 
 function ForwardMode() {
   const { t } = useTranslation();
+  const unitG = t("nutrition.units.g", "g");
+  const unitKcal = t("nutrition.units.kcal", "kcal");
+  const labelProtein = t("nutrition.macros.protein", "Protein");
+  const labelCarbs = t("nutrition.macros.carbs", "Carbs");
+  const labelFats = t("nutrition.macros.fats", "Fats");
+  const decreaseTpl = t("nutrition.macroCalc.decrease", "Decrease {macro}");
+  const increaseTpl = t("nutrition.macroCalc.increase", "Increase {macro}");
   const [protein, setProtein] = useState(180);
   const [carbs, setCarbs] = useState(220);
   const [fats, setFats] = useState(70);
@@ -267,27 +304,36 @@ function ForwardMode() {
         <CardContent className="space-y-4 sm:space-y-5">
           <MacroInput
             id="protein-g"
-            label={t("nutrition.macros.protein", "Protein")}
+            label={labelProtein}
             value={protein}
             onChange={setProtein}
             color={COLOR_PROTEIN}
+            unit={unitG}
             testId="protein"
+            decreaseLabel={decreaseTpl.replace("{macro}", labelProtein)}
+            increaseLabel={increaseTpl.replace("{macro}", labelProtein)}
           />
           <MacroInput
             id="carbs-g"
-            label={t("nutrition.macros.carbs", "Carbs")}
+            label={labelCarbs}
             value={carbs}
             onChange={setCarbs}
             color={COLOR_CARBS}
+            unit={unitG}
             testId="carbs"
+            decreaseLabel={decreaseTpl.replace("{macro}", labelCarbs)}
+            increaseLabel={increaseTpl.replace("{macro}", labelCarbs)}
           />
           <MacroInput
             id="fats-g"
-            label={t("nutrition.macros.fats", "Fats")}
+            label={labelFats}
             value={fats}
             onChange={setFats}
             color={COLOR_FATS}
+            unit={unitG}
             testId="fats"
+            decreaseLabel={decreaseTpl.replace("{macro}", labelFats)}
+            increaseLabel={increaseTpl.replace("{macro}", labelFats)}
           />
           <Button
             type="button"
@@ -308,70 +354,87 @@ function ForwardMode() {
 
       <div className="space-y-4 sm:space-y-5">
         <Card className="hairline-top fade-in-up fade-in-up-delay-1 ring-glow-primary" data-testid="card-total-kcal">
-          <CardContent className="p-5 sm:p-6 flex items-center justify-between">
-            <div>
+          <CardContent className="p-5 sm:p-6 flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-semibold flex items-center gap-1.5">
-                <Flame size={11} /> {t("nutrition.macroCalc.totalKcal", "Total daily calories")}
+                <Flame size={11} aria-hidden="true" /> {t("nutrition.macroCalc.totalKcal", "Total daily calories")}
               </div>
-              <div className="tabular-nums-stat text-3xl sm:text-4xl font-bold mt-1.5" data-testid="text-total-kcal">
+              <div
+                className="tabular-nums-stat text-3xl sm:text-4xl font-bold mt-1.5"
+                data-testid="text-total-kcal"
+                aria-live="polite"
+              >
                 {Math.round(animatedTotal).toLocaleString()}
-                <span className="text-base sm:text-lg text-muted-foreground font-medium ml-1.5">kcal</span>
+                <span className="text-base sm:text-lg text-muted-foreground font-medium ml-1.5">{unitKcal}</span>
               </div>
             </div>
-            <div className="hidden sm:flex flex-col items-end gap-1 text-[11px] tabular-nums-stat">
-              <span className="text-muted-foreground">P · {Math.round(calc.pPct)}%</span>
-              <span className="text-muted-foreground">C · {Math.round(calc.cPct)}%</span>
-              <span className="text-muted-foreground">F · {Math.round(calc.fPct)}%</span>
+            <div className="hidden sm:flex flex-col items-end gap-1 text-[11px] tabular-nums-stat shrink-0">
+              <span className="text-muted-foreground">{labelProtein.charAt(0)} · {Math.round(calc.pPct)}%</span>
+              <span className="text-muted-foreground">{labelCarbs.charAt(0)} · {Math.round(calc.cPct)}%</span>
+              <span className="text-muted-foreground">{labelFats.charAt(0)} · {Math.round(calc.fPct)}%</span>
             </div>
           </CardContent>
           <div className="px-5 sm:px-6 pb-5">
-            <div className="h-2.5 rounded-full overflow-hidden bg-muted/30 flex">
+            <div
+              role="img"
+              aria-label={t(
+                "nutrition.macroCalc.distributionLabel",
+                "Macro distribution: {p}% protein, {c}% carbs, {f}% fats",
+              )
+                .replace("{p}", String(Math.round(calc.pPct)))
+                .replace("{c}", String(Math.round(calc.cPct)))
+                .replace("{f}", String(Math.round(calc.fPct)))}
+              className="h-2.5 rounded-full overflow-hidden bg-muted/30 flex"
+            >
               <div
                 className="h-full transition-all duration-500 ease-out"
                 style={{ width: `${calc.pPct}%`, background: COLOR_PROTEIN }}
-                aria-label="protein-percent"
               />
               <div
                 className="h-full transition-all duration-500 ease-out"
                 style={{ width: `${calc.cPct}%`, background: COLOR_CARBS }}
-                aria-label="carbs-percent"
               />
               <div
                 className="h-full transition-all duration-500 ease-out"
                 style={{ width: `${calc.fPct}%`, background: COLOR_FATS }}
-                aria-label="fats-percent"
               />
             </div>
           </div>
         </Card>
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <MacroRing
-            label={t("nutrition.macros.protein", "Protein")}
+            label={labelProtein}
             grams={protein}
             kcal={calc.pKcal}
             percent={calc.pPct}
             color={COLOR_PROTEIN}
             icon={<Beef size={14} />}
             testId="protein"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
           <MacroRing
-            label={t("nutrition.macros.carbs", "Carbs")}
+            label={labelCarbs}
             grams={carbs}
             kcal={calc.cKcal}
             percent={calc.cPct}
             color={COLOR_CARBS}
             icon={<Wheat size={14} />}
             testId="carbs"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
           <MacroRing
-            label={t("nutrition.macros.fats", "Fats")}
+            label={labelFats}
             grams={fats}
             kcal={calc.fKcal}
             percent={calc.fPct}
             color={COLOR_FATS}
             icon={<Droplets size={14} />}
             testId="fats"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
         </div>
       </div>
@@ -381,6 +444,15 @@ function ForwardMode() {
 
 function ReverseMode() {
   const { t } = useTranslation();
+  const unitG = t("nutrition.units.g", "g");
+  const unitKcal = t("nutrition.units.kcal", "kcal");
+  const labelProtein = t("nutrition.macros.protein", "Protein");
+  const labelCarbs = t("nutrition.macros.carbs", "Carbs");
+  const labelFats = t("nutrition.macros.fats", "Fats");
+  const decreaseTpl = t("nutrition.macroCalc.decrease", "Decrease {macro}");
+  const increaseTpl = t("nutrition.macroCalc.increase", "Increase {macro}");
+  const carbAbbr = t("nutrition.macroCalc.carbsAbbr", "C");
+  const fatAbbr = t("nutrition.macroCalc.fatsAbbr", "F");
   const [totalKcal, setTotalKcal] = useState(2200);
   const [proteinG, setProteinG] = useState(180);
   const [carbRatio, setCarbRatio] = useState(55); // % of remaining kcal that go to carbs
@@ -431,7 +503,7 @@ function ReverseMode() {
                 data-testid="input-target-total"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
-                kcal
+                {unitKcal}
               </span>
             </div>
           </div>
@@ -441,18 +513,21 @@ function ReverseMode() {
             value={proteinG}
             onChange={setProteinG}
             color={COLOR_PROTEIN}
+            unit={unitG}
             step={5}
             testId="target-protein"
+            decreaseLabel={decreaseTpl.replace("{macro}", labelProtein)}
+            increaseLabel={increaseTpl.replace("{macro}", labelProtein)}
           />
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <Label className="text-xs uppercase tracking-[0.14em] font-semibold">
+              <Label htmlFor="slider-carb-ratio-label" id="slider-carb-ratio-label" className="text-xs uppercase tracking-[0.14em] font-semibold">
                 {t("nutrition.macroCalc.carbFatSplit", "Carb / fat split")}
               </Label>
-              <div className="text-[11px] tabular-nums-stat text-muted-foreground">
-                <span style={{ color: COLOR_CARBS }}>{carbRatio}%C</span>
+              <div className="text-[11px] tabular-nums-stat text-muted-foreground" aria-live="polite">
+                <span style={{ color: COLOR_CARBS }}>{carbRatio}%{carbAbbr}</span>
                 {" / "}
-                <span style={{ color: COLOR_FATS }}>{100 - carbRatio}%F</span>
+                <span style={{ color: COLOR_FATS }}>{100 - carbRatio}%{fatAbbr}</span>
               </div>
             </div>
             <Slider
@@ -461,6 +536,8 @@ function ReverseMode() {
               min={20}
               max={80}
               step={5}
+              aria-labelledby="slider-carb-ratio-label"
+              aria-valuetext={`${carbRatio}% ${labelCarbs}, ${100 - carbRatio}% ${labelFats}`}
               data-testid="slider-carb-ratio"
             />
           </div>
@@ -492,28 +569,34 @@ function ReverseMode() {
             </div>
           )}
           <ResultRow
-            label={t("nutrition.macros.protein", "Protein")}
+            label={labelProtein}
             grams={proteinG}
             kcal={calc.proteinKcal}
             color={COLOR_PROTEIN}
             icon={<Beef size={14} />}
             testId="result-protein"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
           <ResultRow
-            label={t("nutrition.macros.carbs", "Carbs")}
+            label={labelCarbs}
             grams={calc.carbsG}
             kcal={calc.carbsKcal}
             color={COLOR_CARBS}
             icon={<Wheat size={14} />}
             testId="result-carbs"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
           <ResultRow
-            label={t("nutrition.macros.fats", "Fats")}
+            label={labelFats}
             grams={calc.fatsG}
             kcal={calc.fatsKcal}
             color={COLOR_FATS}
             icon={<Droplets size={14} />}
             testId="result-fats"
+            unitG={unitG}
+            unitKcal={unitKcal}
           />
           <div className="pt-3 mt-1 border-t border-border/60 flex items-center justify-between">
             <span className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">
@@ -521,7 +604,7 @@ function ReverseMode() {
             </span>
             <span className="tabular-nums-stat text-2xl font-bold" data-testid="text-reverse-total">
               {Math.round(totalKcal).toLocaleString()}
-              <span className="text-xs text-muted-foreground font-medium ml-1">kcal</span>
+              <span className="text-xs text-muted-foreground font-medium ml-1">{unitKcal}</span>
             </span>
           </div>
         </CardContent>
@@ -537,17 +620,24 @@ interface ResultRowProps {
   color: string;
   icon: React.ReactNode;
   testId: string;
+  unitG: string;
+  unitKcal: string;
 }
 
-function ResultRow({ label, grams, kcal, color, icon, testId }: ResultRowProps) {
+function ResultRow({ label, grams, kcal, color, icon, testId, unitG, unitKcal }: ResultRowProps) {
   const animatedG = useAnimatedNumber(grams);
   const animatedK = useAnimatedNumber(kcal);
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5" data-testid={testId}>
+    <div
+      className="flex items-center justify-between gap-3 rounded-lg bg-muted/30 border border-border/50 px-3 py-2.5"
+      data-testid={testId}
+      aria-label={`${label}: ${Math.round(grams)}${unitG}, ${Math.round(kcal)} ${unitKcal}`}
+    >
       <div className="flex items-center gap-2.5 min-w-0">
         <span
           className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-md"
           style={{ background: `${color}20`, color }}
+          aria-hidden="true"
         >
           {icon}
         </span>
@@ -556,10 +646,10 @@ function ResultRow({ label, grams, kcal, color, icon, testId }: ResultRowProps) 
       <div className="flex items-baseline gap-2 shrink-0">
         <span className="tabular-nums-stat text-lg font-bold" style={{ color }}>
           {Math.round(animatedG)}
-          <span className="text-xs text-muted-foreground font-medium ml-0.5">g</span>
+          <span className="text-xs text-muted-foreground font-medium ml-0.5">{unitG}</span>
         </span>
         <span className="tabular-nums-stat text-[11px] text-muted-foreground">
-          {Math.round(animatedK)} kcal
+          {Math.round(animatedK)} {unitKcal}
         </span>
       </div>
     </div>
