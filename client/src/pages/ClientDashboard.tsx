@@ -106,6 +106,8 @@ import {
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useTranslation } from "@/i18n";
+import { SupplementsTab } from "@/components/dashboard/SupplementsTab";
+import { Pill } from "lucide-react";
 
 function currentMonthKey() {
   const d = new Date();
@@ -164,12 +166,15 @@ export default function ClientDashboard() {
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl bg-white/5 mb-6 h-11">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl bg-white/5 mb-6 h-11">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-packages">
             <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.tabPackages")}
+          </TabsTrigger>
+          <TabsTrigger value="supplements" data-testid="tab-supplements">
+            <Pill size={14} className="mr-1.5" /> {t("dashboard.tabSupplements", "Supplements")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
             <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
@@ -181,6 +186,7 @@ export default function ClientDashboard() {
 
         <TabsContent value="bookings"><BookingsTab userId={user.id} /></TabsContent>
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
+        <TabsContent value="supplements"><SupplementsTab /></TabsContent>
         <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
       </Tabs>

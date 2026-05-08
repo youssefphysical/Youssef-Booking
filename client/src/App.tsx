@@ -38,6 +38,8 @@ import AdminNutritionPlans from "@/pages/AdminNutritionPlans";
 import AdminNutritionPlanBuilder from "@/pages/AdminNutritionPlanBuilder";
 import NutritionPlanPdf from "@/pages/NutritionPlanPdf";
 import ClientNutritionPlan from "@/pages/ClientNutritionPlan";
+import AdminSupplementLibrary from "@/pages/AdminSupplementLibrary";
+import AdminSupplementStacks from "@/pages/AdminSupplementStacks";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
 import DirectPaymentPage from "@/pages/DirectPaymentPage";
@@ -164,6 +166,12 @@ function Router() {
         </Route>
         <Route path="/admin/nutrition/plans/:id">
           <ProtectedRoute component={AdminNutritionPlanBuilder} adminOnly />
+        </Route>
+        <Route path="/admin/supplements">
+          <ProtectedRoute component={AdminSupplementLibrary} adminOnly />
+        </Route>
+        <Route path="/admin/supplement-stacks">
+          <ProtectedRoute component={AdminSupplementStacks} adminOnly />
         </Route>
         <Route path="/print/nutrition-plan/:id">
           <ProtectedRoute component={NutritionPlanPdf} />

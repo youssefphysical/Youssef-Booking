@@ -19,6 +19,13 @@ import {
   updateMealSchema,
   insertNutritionPlanSchema,
   updateNutritionPlanSchema,
+  insertSupplementSchema,
+  updateSupplementSchema,
+  insertSupplementStackSchema,
+  updateSupplementStackSchema,
+  insertClientSupplementSchema,
+  updateClientSupplementSchema,
+  applyStackToClientSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -233,6 +240,62 @@ export const api = {
     // Client-facing: returns the requesting user's active plan with
     // private notes stripped. 404 if no active plan exists.
     mine: { method: "GET" as const, path: "/api/nutrition-plans/me/active" },
+  },
+
+  supplements: {
+    // Library (admin)
+    list: { method: "GET" as const, path: "/api/supplements" },
+    get: { method: "GET" as const, path: "/api/supplements/:id" },
+    create: {
+      method: "POST" as const,
+      path: "/api/supplements",
+      input: insertSupplementSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/supplements/:id",
+      input: updateSupplementSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/supplements/:id" },
+  },
+
+  supplementStacks: {
+    list: { method: "GET" as const, path: "/api/supplement-stacks" },
+    get: { method: "GET" as const, path: "/api/supplement-stacks/:id" },
+    create: {
+      method: "POST" as const,
+      path: "/api/supplement-stacks",
+      input: insertSupplementStackSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/supplement-stacks/:id",
+      input: updateSupplementStackSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/supplement-stacks/:id" },
+  },
+
+  clientSupplements: {
+    // Admin: ?userId=
+    list: { method: "GET" as const, path: "/api/client-supplements" },
+    create: {
+      method: "POST" as const,
+      path: "/api/client-supplements",
+      input: insertClientSupplementSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/client-supplements/:id",
+      input: updateClientSupplementSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/client-supplements/:id" },
+    applyStack: {
+      method: "POST" as const,
+      path: "/api/client-supplements/apply-stack",
+      input: applyStackToClientSchema,
+    },
+    // Client-facing: signed-in user's own active supplements.
+    mine: { method: "GET" as const, path: "/api/client-supplements/me" },
   },
 
   inbody: {

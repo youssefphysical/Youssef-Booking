@@ -22,6 +22,10 @@ import {
   nutritionPlanDays,
   nutritionPlanMeals,
   nutritionPlanMealItems,
+  supplements,
+  supplementStacks,
+  supplementStackItems,
+  clientSupplements,
   type Food,
   type InsertFood,
   type UpdateFood,
@@ -72,6 +76,19 @@ import {
   type InsertExtensionRequest,
   type PackageSessionHistory,
   type InsertPackageSessionHistory,
+  type Supplement,
+  type InsertSupplement,
+  type UpdateSupplement,
+  type SupplementStack,
+  type SupplementStackItem,
+  type SupplementStackFull,
+  type InsertSupplementStack,
+  type UpdateSupplementStack,
+  type ClientSupplement,
+  type InsertClientSupplement,
+  type UpdateClientSupplement,
+  type ApplyStackToClientInput,
+  type StackItemInput,
 } from "@shared/schema";
 import { eq, and, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -1432,6 +1449,270 @@ export class DatabaseStorage implements IStorage {
     }
 
     return out;
+  }
+  // ===== SUPPLEMENT LIBRARY =====
+  async listSupplements(opts?: { activeOnly?: boolean; category?: string }): Promise<Supplement[]> {
+    const conds: any[] = [];
+    if (opts?.activeOnly) conds.push(eq(supplements.active, true));
+    if (opts?.category) conds.push(eq(supplements.category, opts.category));
+    const q = conds.length
+      ? db.select().from(supplements).where(and(...conds))
+      : db.select().from(supplements);
+    return q.orderBy(asc(supplements.category), asc(supplements.name));
+  }
+  async getSupplement(id: number): Promise<Supplement | undefined> {
+    const [row] = await db.select().from(supplements).where(eq(supplements.id, id));
+    return row;
+  }
+  async createSupplement(data: InsertSupplement, createdByUserId: number | null): Promise<Supplement> {
+    const [row] = await db
+      .insert(supplements)
+      .values({
+        name: data.name,
+        nameAr: data.nameAr ?? null,
+        brand: data.brand ?? null,
+        category: data.category,
+        defaultDosage: data.defaultDosage,
+        defaultUnit: data.defaultUnit,
+        defaultTimings: data.defaultTimings ?? [],
+        defaultTrainingDayOnly: data.defaultTrainingDayOnly ?? false,
+        defaultRestDayOnly: data.defaultRestDayOnly ?? false,
+        notes: data.notes ?? null,
+        warnings: data.warnings ?? null,
+        isPrescription: data.isPrescription ?? false,
+        active: data.active ?? true,
+        createdByUserId: createdByUserId ?? null,
+      })
+      .returning();
+    return row;
+  }
+  async updateSupplement(id: number, data: UpdateSupplement): Promise<Supplement | undefined> {
+    const patch: any = { updatedAt: new Date() };
+    for (const k of [
+      "name", "nameAr", "brand", "category",
+      "defaultDosage", "defaultUnit", "defaultTimings",
+      "defaultTrainingDayOnly", "defaultRestDayOnly",
+      "notes", "warnings", "isPrescription", "active",
+    ] as const) {
+      if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
+    }
+    const [row] = await db.update(supplements).set(patch).where(eq(supplements.id, id)).returning();
+    return row;
+  }
+  async deleteSupplement(id: number): Promise<boolean> {
+    const r = await db.delete(supplements).where(eq(supplements.id, id)).returning({ id: supplements.id });
+    return r.length > 0;
+  }
+
+  // ===== SUPPLEMENT STACKS =====
+  async listSupplementStacks(opts?: { activeOnly?: boolean }): Promise<SupplementStackFull[]> {
+    const conds: any[] = [];
+    if (opts?.activeOnly) conds.push(eq(supplementStacks.active, true));
+    const stacks = await (conds.length
+      ? db.select().from(supplementStacks).where(and(...conds))
+      : db.select().from(supplementStacks)
+    ).orderBy(asc(supplementStacks.sortOrder), asc(supplementStacks.name));
+    if (stacks.length === 0) return [];
+    const items = await db
+      .select()
+      .from(supplementStackItems)
+      .where(inArray(supplementStackItems.stackId, stacks.map((s) => s.id)))
+      .orderBy(asc(supplementStackItems.sortOrder), asc(supplementStackItems.name));
+    const byStack = new Map<number, SupplementStackItem[]>();
+    for (const it of items) {
+      const arr = byStack.get(it.stackId) ?? [];
+      arr.push(it);
+      byStack.set(it.stackId, arr);
+    }
+    return stacks.map((s) => ({ ...s, items: byStack.get(s.id) ?? [] }));
+  }
+  async getSupplementStack(id: number): Promise<SupplementStackFull | undefined> {
+    const [stack] = await db.select().from(supplementStacks).where(eq(supplementStacks.id, id));
+    if (!stack) return undefined;
+    const items = await db
+      .select()
+      .from(supplementStackItems)
+      .where(eq(supplementStackItems.stackId, id))
+      .orderBy(asc(supplementStackItems.sortOrder), asc(supplementStackItems.name));
+    return { ...stack, items };
+  }
+  async createSupplementStack(data: InsertSupplementStack, createdByUserId: number | null): Promise<SupplementStackFull> {
+    return db.transaction(async (tx) => {
+      const [stack] = await tx
+        .insert(supplementStacks)
+        .values({
+          name: data.name,
+          goal: data.goal,
+          description: data.description ?? null,
+          notes: data.notes ?? null,
+          active: data.active ?? true,
+          sortOrder: data.sortOrder ?? 0,
+          createdByUserId: createdByUserId ?? null,
+        })
+        .returning();
+      const items = await tx
+        .insert(supplementStackItems)
+        .values(
+          data.items.map((it: StackItemInput, idx: number) => ({
+            stackId: stack.id,
+            sourceSupplementId: it.sourceSupplementId ?? null,
+            name: it.name,
+            brand: it.brand ?? null,
+            category: it.category,
+            dosage: it.dosage,
+            unit: it.unit,
+            timings: it.timings ?? [],
+            trainingDayOnly: it.trainingDayOnly ?? false,
+            restDayOnly: it.restDayOnly ?? false,
+            notes: it.notes ?? null,
+            warnings: it.warnings ?? null,
+            sortOrder: it.sortOrder ?? idx,
+          })),
+        )
+        .returning();
+      return { ...stack, items };
+    });
+  }
+  async updateSupplementStack(id: number, data: UpdateSupplementStack): Promise<SupplementStackFull | undefined> {
+    return db.transaction(async (tx) => {
+      const patch: any = { updatedAt: new Date() };
+      for (const k of ["name", "goal", "description", "notes", "active", "sortOrder"] as const) {
+        if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
+      }
+      const [stack] = await tx.update(supplementStacks).set(patch).where(eq(supplementStacks.id, id)).returning();
+      if (!stack) return undefined;
+      let items: SupplementStackItem[];
+      if (data.items) {
+        await tx.delete(supplementStackItems).where(eq(supplementStackItems.stackId, id));
+        items = await tx
+          .insert(supplementStackItems)
+          .values(
+            data.items.map((it: StackItemInput, idx: number) => ({
+              stackId: id,
+              sourceSupplementId: it.sourceSupplementId ?? null,
+              name: it.name,
+              brand: it.brand ?? null,
+              category: it.category,
+              dosage: it.dosage,
+              unit: it.unit,
+              timings: it.timings ?? [],
+              trainingDayOnly: it.trainingDayOnly ?? false,
+              restDayOnly: it.restDayOnly ?? false,
+              notes: it.notes ?? null,
+              warnings: it.warnings ?? null,
+              sortOrder: it.sortOrder ?? idx,
+            })),
+          )
+          .returning();
+      } else {
+        items = await tx
+          .select()
+          .from(supplementStackItems)
+          .where(eq(supplementStackItems.stackId, id))
+          .orderBy(asc(supplementStackItems.sortOrder));
+      }
+      return { ...stack, items };
+    });
+  }
+  async deleteSupplementStack(id: number): Promise<boolean> {
+    const r = await db.delete(supplementStacks).where(eq(supplementStacks.id, id)).returning({ id: supplementStacks.id });
+    return r.length > 0;
+  }
+
+  // ===== CLIENT SUPPLEMENTS (per-user assignments) =====
+  async listClientSupplements(userId: number, opts?: { activeOnly?: boolean }): Promise<ClientSupplement[]> {
+    const conds: any[] = [eq(clientSupplements.userId, userId)];
+    if (opts?.activeOnly) conds.push(eq(clientSupplements.status, "active"));
+    return db
+      .select()
+      .from(clientSupplements)
+      .where(and(...conds))
+      .orderBy(asc(clientSupplements.sortOrder), asc(clientSupplements.name));
+  }
+  async createClientSupplement(data: InsertClientSupplement, assignedByUserId: number | null): Promise<ClientSupplement> {
+    const [row] = await db
+      .insert(clientSupplements)
+      .values({
+        userId: data.userId,
+        sourceSupplementId: data.sourceSupplementId ?? null,
+        sourceStackId: data.sourceStackId ?? null,
+        name: data.name,
+        brand: data.brand ?? null,
+        category: data.category,
+        dosage: data.dosage,
+        unit: data.unit,
+        timings: data.timings ?? [],
+        trainingDayOnly: data.trainingDayOnly ?? false,
+        restDayOnly: data.restDayOnly ?? false,
+        notes: data.notes ?? null,
+        warnings: data.warnings ?? null,
+        status: data.status ?? "active",
+        startDate: data.startDate ?? null,
+        endDate: data.endDate ?? null,
+        sortOrder: data.sortOrder ?? 0,
+        assignedByUserId: assignedByUserId ?? null,
+      })
+      .returning();
+    return row;
+  }
+  async updateClientSupplement(id: number, data: UpdateClientSupplement): Promise<ClientSupplement | undefined> {
+    const patch: any = { updatedAt: new Date() };
+    for (const k of [
+      "sourceSupplementId", "sourceStackId",
+      "name", "brand", "category",
+      "dosage", "unit", "timings",
+      "trainingDayOnly", "restDayOnly",
+      "notes", "warnings",
+      "status", "startDate", "endDate", "sortOrder",
+    ] as const) {
+      if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
+    }
+    const [row] = await db.update(clientSupplements).set(patch).where(eq(clientSupplements.id, id)).returning();
+    return row;
+  }
+  async deleteClientSupplement(id: number): Promise<boolean> {
+    const r = await db.delete(clientSupplements).where(eq(clientSupplements.id, id)).returning({ id: clientSupplements.id });
+    return r.length > 0;
+  }
+  async applyStackToClient(input: ApplyStackToClientInput, assignedByUserId: number | null): Promise<ClientSupplement[]> {
+    return db.transaction(async (tx) => {
+      const [stack] = await tx.select().from(supplementStacks).where(eq(supplementStacks.id, input.stackId));
+      if (!stack) throw new Error("Stack not found");
+      const items = await tx
+        .select()
+        .from(supplementStackItems)
+        .where(eq(supplementStackItems.stackId, input.stackId))
+        .orderBy(asc(supplementStackItems.sortOrder));
+      if (items.length === 0) throw new Error("Stack is empty");
+      if (input.replace) {
+        await tx.delete(clientSupplements).where(eq(clientSupplements.userId, input.userId));
+      }
+      const rows = await tx
+        .insert(clientSupplements)
+        .values(
+          items.map((it, idx) => ({
+            userId: input.userId,
+            sourceSupplementId: it.sourceSupplementId ?? null,
+            sourceStackId: input.stackId,
+            name: it.name,
+            brand: it.brand ?? null,
+            category: it.category,
+            dosage: it.dosage,
+            unit: it.unit,
+            timings: it.timings ?? [],
+            trainingDayOnly: it.trainingDayOnly,
+            restDayOnly: it.restDayOnly,
+            notes: it.notes ?? null,
+            warnings: it.warnings ?? null,
+            status: "active" as const,
+            startDate: input.startDate ?? null,
+            sortOrder: it.sortOrder ?? idx,
+            assignedByUserId: assignedByUserId ?? null,
+          })),
+        )
+        .returning();
+      return rows;
+    });
   }
 }
 

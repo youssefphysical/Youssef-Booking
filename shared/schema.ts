@@ -2202,3 +2202,345 @@ export interface NutritionPlanDayWithMeals extends NutritionPlanDay {
 export interface NutritionPlanFull extends NutritionPlan {
   days: NutritionPlanDayWithMeals[];
 }
+
+// =============================
+// SUPPLEMENT SYSTEM (Phase 3)
+// =============================
+// Three-layer architecture mirrors the package-template / nutrition-
+// plan pattern that has worked elsewhere in the codebase:
+//
+//   supplements          → admin-curated catalogue (the library)
+//   supplement_stacks    → reusable templates (e.g. "Cutting Stack")
+//   supplement_stack_items → snapshot rows that compose a stack
+//   client_supplements   → SNAPSHOT rows assigned to a single client
+//
+// Snapshots are critical: editing a library row or stack template
+// must NEVER mutate the protocols clients are currently following.
+// Every assignment carries its own copy of name / dosage / timings
+// so historical data is preserved and admins can fearlessly tidy
+// the catalogue.
+//
+// `timings` is a text array (morning, pre_workout, with_breakfast,
+// before_bed, etc.) — leaving it open-ended at the DB layer means
+// adding a new timing slot requires zero migration.
+//
+// Train-vs-rest day differences: each supplement carries TWO boolean
+// flags (`trainingDayOnly`, `restDayOnly`). Both false ⇒ take every
+// day. We use two booleans rather than an enum so the "Today" view
+// can answer "is today a training day?" with a single boolean lookup
+// without enum coercion.
+export const SUPPLEMENT_CATEGORIES = [
+  "vitamin",
+  "mineral",
+  "protein",
+  "creatine",
+  "amino",
+  "pre_workout",
+  "fat_burner",
+  "omega",
+  "probiotic",
+  "herbal",
+  "recovery",
+  "hormone_support",
+  "electrolyte",
+  "other",
+] as const;
+export type SupplementCategory = (typeof SUPPLEMENT_CATEGORIES)[number];
+export const SUPPLEMENT_CATEGORY_LABELS_EN: Record<SupplementCategory, string> = {
+  vitamin: "Vitamin",
+  mineral: "Mineral",
+  protein: "Protein",
+  creatine: "Creatine",
+  amino: "Amino Acid",
+  pre_workout: "Pre-Workout",
+  fat_burner: "Fat Burner",
+  omega: "Omega / EFA",
+  probiotic: "Probiotic",
+  herbal: "Herbal",
+  recovery: "Recovery",
+  hormone_support: "Hormone Support",
+  electrolyte: "Electrolyte",
+  other: "Other",
+};
+
+export const SUPPLEMENT_UNITS = [
+  "g", "mg", "mcg", "iu", "scoop", "capsule", "tablet", "softgel", "ml", "drop", "sachet",
+] as const;
+export type SupplementUnit = (typeof SUPPLEMENT_UNITS)[number];
+
+export const SUPPLEMENT_TIMINGS = [
+  "morning",
+  "with_breakfast",
+  "pre_workout",
+  "intra_workout",
+  "post_workout",
+  "with_lunch",
+  "with_dinner",
+  "before_bed",
+  "anytime",
+] as const;
+export type SupplementTiming = (typeof SUPPLEMENT_TIMINGS)[number];
+export const SUPPLEMENT_TIMING_LABELS_EN: Record<SupplementTiming, string> = {
+  morning: "Morning",
+  with_breakfast: "With Breakfast",
+  pre_workout: "Pre-Workout",
+  intra_workout: "Intra-Workout",
+  post_workout: "Post-Workout",
+  with_lunch: "With Lunch",
+  with_dinner: "With Dinner",
+  before_bed: "Before Bed",
+  anytime: "Anytime",
+};
+// Stable ordering for the "Today" timeline rendering — earliest first.
+export const SUPPLEMENT_TIMING_ORDER: Record<SupplementTiming, number> = {
+  morning: 1,
+  with_breakfast: 2,
+  pre_workout: 3,
+  intra_workout: 4,
+  post_workout: 5,
+  with_lunch: 6,
+  with_dinner: 7,
+  before_bed: 8,
+  anytime: 9,
+};
+
+export const SUPPLEMENT_STATUSES = ["active", "paused", "stopped"] as const;
+export type SupplementStatus = (typeof SUPPLEMENT_STATUSES)[number];
+
+// ---------- TABLES ----------
+export const supplements = pgTable("supplements", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  brand: text("brand"),
+  category: text("category").notNull().default("other"),
+  defaultDosage: doublePrecision("default_dosage").notNull().default(1),
+  defaultUnit: text("default_unit").notNull().default("capsule"),
+  // Postgres text[] — kept loose at DB level (cf. timings comment above).
+  defaultTimings: text("default_timings").array().notNull().default(sql`ARRAY[]::text[]`),
+  defaultTrainingDayOnly: boolean("default_training_day_only").notNull().default(false),
+  defaultRestDayOnly: boolean("default_rest_day_only").notNull().default(false),
+  // Public coach guidance (visible to client when prescribed).
+  notes: text("notes"),
+  // Health warnings (visible to client; e.g. "do not exceed 3g/day").
+  warnings: text("warnings"),
+  isPrescription: boolean("is_prescription").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const supplementStacks = pgTable("supplement_stacks", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  goal: text("goal").notNull().default("custom"),
+  description: text("description"),
+  notes: text("notes"),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const supplementStackItems = pgTable("supplement_stack_items", {
+  id: serial("id").primaryKey(),
+  stackId: integer("stack_id")
+    .notNull()
+    .references(() => supplementStacks.id, { onDelete: "cascade" }),
+  // Soft pointer back to the originating library entry — no FK so the
+  // stack survives library tidying. Used by the admin UI to show "X
+  // edits to library item" affordances; nothing else relies on it.
+  sourceSupplementId: integer("source_supplement_id"),
+  // ===== SNAPSHOT FIELDS =====
+  name: text("name").notNull(),
+  brand: text("brand"),
+  category: text("category").notNull().default("other"),
+  dosage: doublePrecision("dosage").notNull().default(1),
+  unit: text("unit").notNull().default("capsule"),
+  timings: text("timings").array().notNull().default(sql`ARRAY[]::text[]`),
+  trainingDayOnly: boolean("training_day_only").notNull().default(false),
+  restDayOnly: boolean("rest_day_only").notNull().default(false),
+  notes: text("notes"),
+  warnings: text("warnings"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const clientSupplements = pgTable("client_supplements", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Soft pointers — both nullable; both no FK so library / stack tidying
+  // is safe. Useful for "applied from stack X" provenance UI.
+  sourceSupplementId: integer("source_supplement_id"),
+  sourceStackId: integer("source_stack_id"),
+  // ===== SNAPSHOT FIELDS =====
+  name: text("name").notNull(),
+  brand: text("brand"),
+  category: text("category").notNull().default("other"),
+  dosage: doublePrecision("dosage").notNull().default(1),
+  unit: text("unit").notNull().default("capsule"),
+  timings: text("timings").array().notNull().default(sql`ARRAY[]::text[]`),
+  trainingDayOnly: boolean("training_day_only").notNull().default(false),
+  restDayOnly: boolean("rest_day_only").notNull().default(false),
+  notes: text("notes"),
+  warnings: text("warnings"),
+  // Lifecycle
+  status: text("status").notNull().default("active"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  assignedByUserId: integer("assigned_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ---------- ZOD ----------
+const timingsSchema = z
+  .array(z.enum(SUPPLEMENT_TIMINGS))
+  .max(SUPPLEMENT_TIMINGS.length)
+  .default([]);
+
+// A supplement cannot be flagged as BOTH training-only and rest-only —
+// that would silently make it invisible to the client on every day.
+// We reject the contradiction at the schema layer so neither the API
+// nor any importer can ever persist it.
+const noBothDayFlags = (val: { trainingDayOnly?: boolean | null; restDayOnly?: boolean | null }) =>
+  !(val.trainingDayOnly && val.restDayOnly);
+const noBothDayFlagsDefaults = (val: { defaultTrainingDayOnly?: boolean | null; defaultRestDayOnly?: boolean | null }) =>
+  !(val.defaultTrainingDayOnly && val.defaultRestDayOnly);
+const BOTH_FLAGS_MSG = "A supplement can be training-day-only OR rest-day-only, not both.";
+
+// Build the raw object first so we can derive both insert (refined) and
+// update (.partial() then refined) without losing the contradiction guard.
+const supplementBaseShape = createInsertSchema(supplements)
+  .omit({ id: true, createdAt: true, updatedAt: true, createdByUserId: true })
+  .extend({
+    name: z.string().min(1, "Name is required").max(200),
+    nameAr: z.string().max(200).nullish(),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES),
+    defaultDosage: z.number().min(0).max(10000),
+    defaultUnit: z.enum(SUPPLEMENT_UNITS),
+    defaultTimings: timingsSchema,
+    defaultTrainingDayOnly: z.boolean().optional(),
+    defaultRestDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    isPrescription: z.boolean().optional(),
+    active: z.boolean().optional(),
+  });
+export const insertSupplementSchema = supplementBaseShape.refine(noBothDayFlagsDefaults, {
+  message: BOTH_FLAGS_MSG,
+  path: ["defaultRestDayOnly"],
+});
+export const updateSupplementSchema = supplementBaseShape
+  .partial()
+  .refine(noBothDayFlagsDefaults, { message: BOTH_FLAGS_MSG, path: ["defaultRestDayOnly"] });
+export type Supplement = typeof supplements.$inferSelect;
+export type InsertSupplement = z.infer<typeof insertSupplementSchema>;
+export type UpdateSupplement = z.infer<typeof updateSupplementSchema>;
+
+export const stackItemInputSchema = z
+  .object({
+    sourceSupplementId: z.number().int().nullish(),
+    name: z.string().min(1).max(200),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES),
+    dosage: z.number().min(0).max(10000),
+    unit: z.enum(SUPPLEMENT_UNITS),
+    timings: timingsSchema,
+    trainingDayOnly: z.boolean().optional(),
+    restDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+  })
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
+export type StackItemInput = z.infer<typeof stackItemInputSchema>;
+
+export const insertSupplementStackSchema = createInsertSchema(supplementStacks)
+  .omit({ id: true, createdAt: true, updatedAt: true, createdByUserId: true })
+  .extend({
+    name: z.string().min(1, "Name is required").max(200),
+    goal: z.string().min(1).max(60),
+    description: z.string().max(500).nullish(),
+    notes: z.string().max(1000).nullish(),
+    active: z.boolean().optional(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+    items: z.array(stackItemInputSchema).min(1, "Add at least one supplement").max(40),
+  });
+export const updateSupplementStackSchema = insertSupplementStackSchema.partial().extend({
+  items: z.array(stackItemInputSchema).min(1).max(40).optional(),
+});
+export type SupplementStack = typeof supplementStacks.$inferSelect;
+export type SupplementStackItem = typeof supplementStackItems.$inferSelect;
+export type InsertSupplementStack = z.infer<typeof insertSupplementStackSchema>;
+export type UpdateSupplementStack = z.infer<typeof updateSupplementStackSchema>;
+export interface SupplementStackFull extends SupplementStack {
+  items: SupplementStackItem[];
+}
+
+export const insertClientSupplementSchema = createInsertSchema(clientSupplements)
+  .omit({ id: true, createdAt: true, updatedAt: true, assignedByUserId: true })
+  .extend({
+    userId: z.number().int().positive(),
+    sourceSupplementId: z.number().int().nullish(),
+    sourceStackId: z.number().int().nullish(),
+    name: z.string().min(1).max(200),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES),
+    dosage: z.number().min(0).max(10000),
+    unit: z.enum(SUPPLEMENT_UNITS),
+    timings: timingsSchema,
+    trainingDayOnly: z.boolean().optional(),
+    restDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    status: z.enum(SUPPLEMENT_STATUSES).optional(),
+    startDate: z.string().nullish(),
+    endDate: z.string().nullish(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+  })
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
+// .partial() strips the refinement, so we re-apply it on the patch
+// schema explicitly. PATCH bodies that omit both flags pass cleanly;
+// only an explicit `{trainingDayOnly:true, restDayOnly:true}` is rejected.
+export const updateClientSupplementSchema = createInsertSchema(clientSupplements)
+  .omit({ id: true, createdAt: true, updatedAt: true, assignedByUserId: true, userId: true })
+  .extend({
+    sourceSupplementId: z.number().int().nullish(),
+    sourceStackId: z.number().int().nullish(),
+    name: z.string().min(1).max(200).optional(),
+    brand: z.string().max(120).nullish(),
+    category: z.enum(SUPPLEMENT_CATEGORIES).optional(),
+    dosage: z.number().min(0).max(10000).optional(),
+    unit: z.enum(SUPPLEMENT_UNITS).optional(),
+    timings: timingsSchema.optional(),
+    trainingDayOnly: z.boolean().optional(),
+    restDayOnly: z.boolean().optional(),
+    notes: z.string().max(1000).nullish(),
+    warnings: z.string().max(1000).nullish(),
+    status: z.enum(SUPPLEMENT_STATUSES).optional(),
+    startDate: z.string().nullish(),
+    endDate: z.string().nullish(),
+    sortOrder: z.number().int().min(0).max(1000).optional(),
+  })
+  .partial()
+  .refine(noBothDayFlags, { message: BOTH_FLAGS_MSG, path: ["restDayOnly"] });
+export type ClientSupplement = typeof clientSupplements.$inferSelect;
+export type InsertClientSupplement = z.infer<typeof insertClientSupplementSchema>;
+export type UpdateClientSupplement = z.infer<typeof updateClientSupplementSchema>;
+
+// Apply-stack body: snapshot all items of a stack onto a client.
+export const applyStackToClientSchema = z.object({
+  userId: z.number().int().positive(),
+  stackId: z.number().int().positive(),
+  // Replace existing client supplements (default: append).
+  replace: z.boolean().optional(),
+  // Optional override start date for every newly-created assignment.
+  startDate: z.string().nullish(),
+});
+export type ApplyStackToClientInput = z.infer<typeof applyStackToClientSchema>;
