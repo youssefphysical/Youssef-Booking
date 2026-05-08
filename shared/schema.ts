@@ -1276,6 +1276,55 @@ export type DashboardStats = {
   lowSessionClients: number;
 };
 
+// =============================
+// P5c — Premium Analytics (admin)
+// =============================
+// Snapshot KPIs + 12-month trend buckets in one response so the
+// AnalyticsTab can render instantly without staggered fetches.
+export type AdminAnalytics = {
+  generatedAt: string; // ISO
+  clients: {
+    total: number;        // role='client'
+    active: number;       // clientStatus='active'
+    frozen: number;       // clientStatus='frozen'
+    new30d: number;       // signups in last 30 days
+  };
+  sessions: {
+    completed30d: number;
+    completed90d: number;
+    upcomingNext7d: number;
+    attendanceRate30d: number; // completed / (completed + no_show + late_cancelled), 0..1
+    noShowRate30d: number;     // no_show / scheduled-in-window, 0..1
+  };
+  packages: {
+    active: number;
+    expiringSoon: number;
+    expired: number;
+    frozen: number;
+    renewals30d: number; // renewal_requests created last 30 days
+  };
+  revenue: {
+    total: number;        // sum totalPrice across all packages
+    paid30d: number;      // sum totalPrice where paymentApprovedAt in last 30d
+    outstanding: number;  // sum totalPrice where paymentStatus != 'paid' && != 'free'
+  };
+  retention: {
+    multiPackageClients: number; // clients with ≥2 packages
+    churn30d: number;            // active clients with 0 bookings in last 30d
+    churn60d: number;
+    churn90d: number;
+  };
+  adherence: {
+    weeklyCheckinRate30d: number; // checkins / (active clients * weeks-in-window), 0..1
+  };
+  trends: {
+    revenueByMonth: Array<{ month: string; paid: number; total: number }>;
+    completedByMonth: Array<{ month: string; count: number }>;
+    signupsByMonth: Array<{ month: string; count: number }>;
+    bookingsByDow: Array<{ dow: number; count: number }>;
+  };
+};
+
 // Admin attendance marker payload
 export const attendanceUpdateSchema = z.object({
   attendance: z.enum(["attended", "no_show", "late_cancel_charged", "late_cancel_free"]),

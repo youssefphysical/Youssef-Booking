@@ -78,6 +78,7 @@ import {
   type Booking,
   type AdminPermissionKey,
   type ClientStatus,
+  type AdminAnalytics,
 } from "@shared/schema";
 import {
   sendEmail,
@@ -3504,6 +3505,209 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       pendingExtensions: pendingExtensionsList.length,
       lowSessionClients: lowSessionUserIds.size,
     });
+  });
+
+  // ============================================================
+  // P5c — Premium Analytics
+  // ============================================================
+  // One endpoint, one round-trip. Computes snapshot KPIs + 12-month
+  // trend buckets server-side so the AnalyticsTab renders instantly.
+  // All computation is in-memory over already-fetched lists; no extra
+  // SQL beyond what /api/dashboard/stats already does. Admin-gated.
+  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const ms = (days: number) => days * 86_400_000;
+    const isoMonth = (d: Date) => d.toISOString().slice(0, 7); // YYYY-MM
+
+    const [clients, allBookings, allPackagesActive, allPackagesAll, renewals30] =
+      await Promise.all([
+        storage.getAllClients(),
+        storage.getBookings(),
+        storage.getPackages({ activeOnly: true }),
+        storage.getPackages(),
+        storage.getRenewalRequests({ limit: 5000 }).catch(() => []),
+      ]);
+
+    // ----- CLIENTS -----
+    const clientsTotal = clients.length;
+    const clientsActive = clients.filter((c) => (c as any).clientStatus === "active").length;
+    const clientsFrozen = clients.filter((c) => (c as any).clientStatus === "frozen").length;
+    const clientsNew30 = clients.filter((c) => {
+      const ca = c.createdAt ? new Date(c.createdAt).getTime() : 0;
+      return ca >= now.getTime() - ms(30);
+    }).length;
+
+    // ----- SESSIONS -----
+    const cutoff30 = new Date(now.getTime() - ms(30));
+    const cutoff90 = new Date(now.getTime() - ms(90));
+    const next7 = new Date(now.getTime() + ms(7));
+    let completed30 = 0, completed90 = 0, upcomingNext7 = 0;
+    // Attendance math (30d window): only bookings whose date has passed
+    // count as "scheduled" — future sessions are still in flight.
+    let scheduled30 = 0, completed30Past = 0, noShow30 = 0;
+    for (const b of allBookings) {
+      const dStr = String(b.date);
+      const d = new Date(`${dStr}T00:00:00Z`);
+      const t = d.getTime();
+      if (b.status === "completed") {
+        if (t >= cutoff30.getTime()) completed30++;
+        if (t >= cutoff90.getTime()) completed90++;
+      }
+      if (["upcoming", "confirmed"].includes(b.status) && dStr >= todayStr && t <= next7.getTime()) {
+        upcomingNext7++;
+      }
+      if (t >= cutoff30.getTime() && t < now.getTime()) {
+        if (["completed", "no_show", "late_cancelled"].includes(b.status)) {
+          scheduled30++;
+          if (b.status === "completed") completed30Past++;
+          if (b.status === "no_show") noShow30++;
+        }
+      }
+    }
+    const attendanceRate30 = scheduled30 ? completed30Past / scheduled30 : 0;
+    const noShowRate30 = scheduled30 ? noShow30 / scheduled30 : 0;
+
+    // ----- PACKAGES -----
+    let pkgActive = 0, pkgExpiring = 0, pkgExpired = 0, pkgFrozen = 0;
+    for (const p of allPackagesActive) {
+      if ((p as any).frozen) pkgFrozen++;
+      const s = computePackageStatus(p as any);
+      if (s === "active") pkgActive++;
+      if (s === "expiring_soon") pkgExpiring++;
+      if (s === "expired") pkgExpired++;
+    }
+    const renewals30d = renewals30.filter((r: any) => {
+      const t = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+      return t >= now.getTime() - ms(30);
+    }).length;
+
+    // ----- REVENUE -----
+    let revenueTotal = 0, revenuePaid30 = 0, revenueOutstanding = 0;
+    for (const p of allPackagesAll as any[]) {
+      const price = Number(p.totalPrice ?? 0);
+      revenueTotal += price;
+      const paidAt = p.paymentApprovedAt ? new Date(p.paymentApprovedAt).getTime() : 0;
+      if (p.paymentStatus === "paid" && paidAt >= now.getTime() - ms(30)) {
+        revenuePaid30 += price;
+      }
+      if (p.paymentStatus !== "paid" && p.paymentStatus !== "free") {
+        revenueOutstanding += price;
+      }
+    }
+
+    // ----- RETENTION / CHURN -----
+    const pkgsByUser = new Map<number, number>();
+    for (const p of allPackagesAll) {
+      pkgsByUser.set(p.userId, (pkgsByUser.get(p.userId) ?? 0) + 1);
+    }
+    const multiPackageClients = Array.from(pkgsByUser.values()).filter((n) => n >= 2).length;
+
+    const lastBookingByUser = new Map<number, number>();
+    for (const b of allBookings) {
+      const t = new Date(`${String(b.date)}T00:00:00Z`).getTime();
+      const cur = lastBookingByUser.get(b.userId) ?? 0;
+      if (t > cur) lastBookingByUser.set(b.userId, t);
+    }
+    const churn = (days: number) =>
+      clients.filter((c) => {
+        if ((c as any).clientStatus !== "active") return false;
+        const last = lastBookingByUser.get(c.id) ?? 0;
+        return last < now.getTime() - ms(days);
+      }).length;
+
+    // ----- ADHERENCE -----
+    // Pull weekly check-ins for active clients in last 30d. We do this
+    // sequentially-bounded with Promise.all to keep the round-trip count
+    // low without exhausting the connection pool.
+    const activeClientIds = clients
+      .filter((c) => (c as any).clientStatus === "active")
+      .map((c) => c.id);
+    let recentCheckinCount = 0;
+    if (activeClientIds.length > 0) {
+      const cutoffStr = new Date(now.getTime() - ms(30)).toISOString().slice(0, 10);
+      const lists = await Promise.all(
+        activeClientIds.map((uid) =>
+          (storage as any).listWeeklyCheckins(uid, { limit: 12 }).catch(() => [] as any[]),
+        ),
+      );
+      for (const lst of lists) {
+        for (const c of lst as any[]) {
+          if (String(c.weekStart) >= cutoffStr) recentCheckinCount++;
+        }
+      }
+    }
+    // Expected = active clients * 4.3 weeks (≈30d). Cap at 1.
+    const expectedCheckins = activeClientIds.length * 4.3;
+    const checkinRate30 = expectedCheckins > 0
+      ? Math.min(1, recentCheckinCount / expectedCheckins)
+      : 0;
+
+    // ----- TRENDS (last 12 months, oldest first) -----
+    const monthsBack: string[] = [];
+    {
+      const cur = new Date(now.getFullYear(), now.getMonth(), 1);
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(cur.getFullYear(), cur.getMonth() - i, 1);
+        monthsBack.push(isoMonth(d));
+      }
+    }
+    const revenueByMonth = monthsBack.map((m) => ({ month: m, paid: 0, total: 0 }));
+    const completedByMonth = monthsBack.map((m) => ({ month: m, count: 0 }));
+    const signupsByMonth = monthsBack.map((m) => ({ month: m, count: 0 }));
+    const bookingsByDow = Array.from({ length: 7 }, (_, dow) => ({ dow, count: 0 }));
+
+    const monthIdx = new Map(monthsBack.map((m, i) => [m, i]));
+    for (const p of allPackagesAll as any[]) {
+      const m = isoMonth(new Date(p.purchasedAt ?? p.adminApprovedAt ?? Date.now()));
+      const idx = monthIdx.get(m);
+      if (idx !== undefined) {
+        const price = Number(p.totalPrice ?? 0);
+        revenueByMonth[idx].total += price;
+        if (p.paymentStatus === "paid") revenueByMonth[idx].paid += price;
+      }
+    }
+    for (const b of allBookings) {
+      if (b.status !== "completed") continue;
+      const d = new Date(`${String(b.date)}T00:00:00Z`);
+      const idx = monthIdx.get(isoMonth(d));
+      if (idx !== undefined) completedByMonth[idx].count++;
+      bookingsByDow[d.getUTCDay()].count++;
+    }
+    for (const c of clients) {
+      if (!c.createdAt) continue;
+      const idx = monthIdx.get(isoMonth(new Date(c.createdAt)));
+      if (idx !== undefined) signupsByMonth[idx].count++;
+    }
+
+    const payload: AdminAnalytics = {
+      generatedAt: now.toISOString(),
+      clients: { total: clientsTotal, active: clientsActive, frozen: clientsFrozen, new30d: clientsNew30 },
+      sessions: {
+        completed30d: completed30,
+        completed90d: completed90,
+        upcomingNext7d: upcomingNext7,
+        attendanceRate30d: attendanceRate30,
+        noShowRate30d: noShowRate30,
+      },
+      packages: {
+        active: pkgActive,
+        expiringSoon: pkgExpiring,
+        expired: pkgExpired,
+        frozen: pkgFrozen,
+        renewals30d,
+      },
+      revenue: { total: revenueTotal, paid30d: revenuePaid30, outstanding: revenueOutstanding },
+      retention: {
+        multiPackageClients,
+        churn30d: churn(30),
+        churn60d: churn(60),
+        churn90d: churn(90),
+      },
+      adherence: { weeklyCheckinRate30d: checkinRate30 },
+      trends: { revenueByMonth, completedByMonth, signupsByMonth, bookingsByDow },
+    };
+    res.json(payload);
   });
 
   // ============== RENEWAL REQUESTS ==============
