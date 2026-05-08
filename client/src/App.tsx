@@ -30,6 +30,7 @@ import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
 import AdminPackages from "@/pages/AdminPackages";
 import AdminPackageBuilder from "@/pages/AdminPackageBuilder";
+import AdminMacroCalculator from "@/pages/AdminMacroCalculator";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
 import DirectPaymentPage from "@/pages/DirectPaymentPage";
@@ -130,6 +131,9 @@ function Router() {
         </Route>
         <Route path="/admin/package-builder">
           <ProtectedRoute component={AdminPackageBuilder} adminOnly />
+        </Route>
+        <Route path="/admin/nutrition/macro-calculator">
+          <ProtectedRoute component={AdminMacroCalculator} adminOnly />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />
