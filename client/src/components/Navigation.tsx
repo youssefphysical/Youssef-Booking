@@ -248,7 +248,7 @@ export function Navigation() {
                 <Link
                   href="/profile"
                   data-testid="link-nav-profile-avatar"
-                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 hover:border-white/20 btn-soft"
+                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25 btn-press"
                   title={t("nav.profileTitle")}
                 >
                   <UserAvatar
@@ -267,7 +267,7 @@ export function Navigation() {
               <button
                 onClick={requestLogout}
                 data-testid="button-logout"
-                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 whitespace-nowrap btn-soft"
+                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25 whitespace-nowrap btn-press"
               >
                 <LogOut size={14} className="shrink-0" />
                 <span className="whitespace-nowrap">{t("nav.signOut")}</span>
