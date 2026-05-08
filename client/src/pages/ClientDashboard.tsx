@@ -44,6 +44,7 @@ import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,7 +171,7 @@ export default function ClientDashboard() {
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 w-full max-w-5xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
@@ -192,6 +193,9 @@ export default function ClientDashboard() {
           <TabsTrigger value="progress" data-testid="tab-progress">
             <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.tabProgress")}
           </TabsTrigger>
+          <TabsTrigger value="activity" data-testid="tab-activity">
+            <Activity size={14} className="mr-1.5" /> {t("dashboard.tabActivity", "Activity")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="bookings"><BookingsTab userId={user.id} /></TabsContent>
@@ -201,6 +205,9 @@ export default function ClientDashboard() {
         <TabsContent value="checkins"><WeeklyCheckinsPanel /></TabsContent>
         <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
+        <TabsContent value="activity">
+          <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -535,6 +535,159 @@ async function dispatchBookingChangeNotification(opts: {
 // to a non-admin user. Apply to every endpoint that returns booking
 // objects (list, create, patch, cancel, same-day-adjust). Admin
 // responses are returned unchanged.
+// P4e: unified activity-feed event shape. The aggregator unions across
+// bookings, packages, body metrics, weekly check-ins, inbody records,
+// and progress photos. Keep this lean — no ORM-specific shapes leak.
+type ActivityEvent = {
+  id: string;
+  kind:
+    | "session_completed"
+    | "session_booked"
+    | "session_cancelled"
+    | "package_activated"
+    | "body_metric"
+    | "weekly_checkin"
+    | "inbody"
+    | "progress_photo"
+    | "coach_note";
+  at: string;
+  title: string;
+  subtitle?: string | null;
+};
+
+async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEvent[]> {
+  const events: ActivityEvent[] = [];
+  const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+    try { return await fn(); } catch { return fallback; }
+  };
+
+  const [bookings, packagesList, bodyMetrics, checkins, inbody, photos] = await Promise.all([
+    safe(() => storage.getBookings({ userId }), [] as any[]),
+    safe(() => storage.getPackages({ userId }), [] as any[]),
+    safe(() => storage.listBodyMetrics(userId, { limit: 50 }), [] as any[]),
+    safe(() => storage.listWeeklyCheckins(userId, { limit: 25 }), [] as any[]),
+    safe(() => storage.getInbodyRecords({ userId }), [] as any[]),
+    safe(() => storage.getProgressPhotos({ userId }), [] as any[]),
+  ]);
+
+  for (const b of bookings as any[]) {
+    const when = b.date instanceof Date ? b.date.toISOString() : (b.date ?? null);
+    if (!when) continue;
+    if (b.status === "completed") {
+      events.push({
+        id: `booking-completed-${b.id}`,
+        kind: "session_completed",
+        at: when,
+        title: "Session completed",
+        subtitle: b.sessionType ? String(b.sessionType) : null,
+      });
+    } else if (b.status === "cancelled") {
+      events.push({
+        id: `booking-cancelled-${b.id}`,
+        kind: "session_cancelled",
+        at: when,
+        title: "Session cancelled",
+        subtitle: b.sessionType ? String(b.sessionType) : null,
+      });
+    } else {
+      events.push({
+        id: `booking-booked-${b.id}`,
+        kind: "session_booked",
+        at: when,
+        title: "Session booked",
+        subtitle: b.sessionType ? String(b.sessionType) : null,
+      });
+    }
+    if (b.coachNotesUpdatedAt && (b.clientVisibleCoachNotes || b.sessionPerformance != null)) {
+      const nAt = b.coachNotesUpdatedAt instanceof Date
+        ? b.coachNotesUpdatedAt.toISOString()
+        : String(b.coachNotesUpdatedAt);
+      events.push({
+        id: `coach-note-${b.id}`,
+        kind: "coach_note",
+        at: nAt,
+        title: "Coach logged a session note",
+        subtitle: b.clientVisibleCoachNotes
+          ? String(b.clientVisibleCoachNotes).slice(0, 140)
+          : "Performance recorded",
+      });
+    }
+  }
+
+  for (const p of packagesList as any[]) {
+    if (!p.adminApproved) continue;
+    const when = p.adminApprovedAt ?? p.purchasedAt;
+    const at = when instanceof Date ? when.toISOString() : (when ? String(when) : null);
+    if (!at) continue;
+    events.push({
+      id: `package-${p.id}`,
+      kind: "package_activated",
+      at,
+      title: `Package activated${p.name ? ": " + p.name : ""}`,
+      subtitle: p.totalSessions ? `${p.totalSessions} sessions` : null,
+    });
+  }
+
+  for (const m of bodyMetrics as any[]) {
+    const at = m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt ?? m.recordedOn);
+    const bits: string[] = [];
+    if (m.weight != null) bits.push(`${m.weight} kg`);
+    if (m.bodyFat != null) bits.push(`${m.bodyFat}% BF`);
+    events.push({
+      id: `body-metric-${m.id}`,
+      kind: "body_metric",
+      at,
+      title: "Body metrics logged",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const c of checkins as any[]) {
+    const at = c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt ?? c.weekStart);
+    const bits: string[] = [];
+    if (c.energy != null) bits.push(`Energy ${c.energy}/10`);
+    if (c.trainingAdherence != null) bits.push(`Training ${c.trainingAdherence}%`);
+    events.push({
+      id: `checkin-${c.id}`,
+      kind: "weekly_checkin",
+      at,
+      title: "Weekly check-in submitted",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const r of inbody as any[]) {
+    const at = r.recordedAt instanceof Date ? r.recordedAt.toISOString() : (r.recordedAt ? String(r.recordedAt) : null);
+    if (!at) continue;
+    const bits: string[] = [];
+    if (r.weight != null) bits.push(`${r.weight} kg`);
+    if (r.bodyFat != null) bits.push(`${r.bodyFat}% BF`);
+    if (r.muscleMass != null) bits.push(`${r.muscleMass} kg muscle`);
+    events.push({
+      id: `inbody-${r.id}`,
+      kind: "inbody",
+      at,
+      title: "InBody scan recorded",
+      subtitle: bits.join(" · ") || null,
+    });
+  }
+
+  for (const ph of photos as any[]) {
+    const at = ph.recordedAt instanceof Date ? ph.recordedAt.toISOString() : (ph.recordedAt ? String(ph.recordedAt) : null);
+    if (!at) continue;
+    events.push({
+      id: `photo-${ph.id}`,
+      kind: "progress_photo",
+      at,
+      title: ph.type === "before" ? "Before photo uploaded" : "Progress photo uploaded",
+      subtitle: ph.viewAngle ? `${ph.viewAngle} view` : null,
+    });
+  }
+
+  events.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return events.slice(0, limit);
+}
+
 function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
   me: { role?: string } | undefined,
   booking: T,
@@ -2015,6 +2168,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // Read the audit trail for a single client (used by the Sessions tab).
+  // P4e: Activity feed (admin scoping a specific client).
+  app.get("/api/admin/clients/:id/activity", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
+    const events = await buildActivityFeed(userId, limit);
+    res.json(events);
+  });
+
+  // P4e: Activity feed (self-scoped — never trust client-supplied userId).
+  app.get("/api/me/activity", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
+    const events = await buildActivityFeed(me.id, limit);
+    res.json(events);
+  });
+
   app.get("/api/admin/clients/:id/session-history", requireAdmin, async (req, res) => {
     const userId = Number(req.params.id);
     if (!userId) return res.status(400).json({ message: "Invalid client id" });

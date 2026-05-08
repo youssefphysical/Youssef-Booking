@@ -46,6 +46,7 @@ import {
 import { useClients } from "@/hooks/use-clients";
 import { useSettings } from "@/hooks/use-settings";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -243,6 +244,9 @@ export default function AdminClientDetail() {
           <TabsTrigger value="supplements" data-testid="tab-detail-supplements">
             {t("admin.tabs.supplements", "Supplements")}
           </TabsTrigger>
+          <TabsTrigger value="activity" data-testid="tab-detail-activity">
+            {t("admin.tabs.activity", "Activity")}
+          </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
             <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
           </TabsTrigger>
@@ -269,6 +273,12 @@ export default function AdminClientDetail() {
         <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
         <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
         <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
+        <TabsContent value="activity">
+          <ActivityFeed
+            endpoint={`/api/admin/clients/${client.id}/activity`}
+            title={t("admin.tabs.activity", "Activity")}
+          />
+        </TabsContent>
         <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
       </Tabs>
       </div>
