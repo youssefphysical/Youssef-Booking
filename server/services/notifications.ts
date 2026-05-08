@@ -64,6 +64,36 @@ export async function notifyUser(
 }
 
 /**
+ * Idempotent variant: only delivers if no prior notification exists for
+ * (userId, kind, dedupeKey). The dedupe key is stored on `meta.dedupeKey`
+ * so the lookup is a single indexed JSONB read. Use for triggers that may
+ * legitimately re-fire (cron passes, attendance toggles, milestone re-checks).
+ *
+ * Returns the freshly-created notification, or `null` if a duplicate was
+ * suppressed or the create failed.
+ */
+export async function notifyUserOnce(
+  userId: number,
+  kind: NotificationKind,
+  dedupeKey: string,
+  title: string,
+  body: string,
+  opts: NotifyOptions = {},
+): Promise<ClientNotification | null> {
+  try {
+    const existing = await storage.findClientNotificationByDedupeKey(userId, kind, dedupeKey);
+    if (existing) return null;
+  } catch (err) {
+    console.error("[notifyUserOnce] dedupe lookup failed (will skip):", err);
+    return null;
+  }
+  return notifyUser(userId, kind, title, body, {
+    ...opts,
+    meta: { ...(opts.meta ?? {}), dedupeKey },
+  });
+}
+
+/**
  * Convenience helper: deliver the same notification to many users.
  * Useful for system-wide announcements.
  */

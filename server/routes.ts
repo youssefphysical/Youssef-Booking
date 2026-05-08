@@ -97,6 +97,7 @@ import {
 } from "./email-templates";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
+import { notifyUser, notifyUserOnce } from "./services/notifications";
 import { optimizeImageFile } from "./image-utils";
 
 function currentMonthKey(d: Date = new Date()): string {
@@ -161,6 +162,79 @@ function requirePermission(key: AdminPermissionKey) {
 
 function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00`);
+}
+
+// Mon-anchored ISO week start (UTC YYYY-MM-DD). Mirrors the streak logic
+// used by /api/me/today so missed-checkin nudges line up with the streak.
+function mondayOfUtc(d: Date): string {
+  const x = new Date(d);
+  x.setUTCHours(0, 0, 0, 0);
+  const day = x.getUTCDay(); // 0=Sun..6=Sat
+  const offset = day === 0 ? -6 : 1 - day;
+  x.setUTCDate(x.getUTCDate() + offset);
+  return x.toISOString().slice(0, 10);
+}
+
+// =============================
+// P5b — Cron-driven trigger passes
+// =============================
+// Both helpers are idempotent: notifyUserOnce keys ensure the same
+// (user, kind, window) never fires twice across cron invocations.
+// Both swallow per-row errors so one bad record doesn't poison the pass.
+
+const EXPIRY_WINDOWS_DAYS = [7, 3, 1] as const;
+
+async function runPackageExpiryNotifications(): Promise<void> {
+  // Pull only active packages — expired/completed/frozen don't need
+  // expiry warnings. activeOnly=true filters to status='active' in storage.
+  const pkgs = await storage.getPackages({ activeOnly: true });
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  for (const p of pkgs) {
+    if (!p.expiryDate) continue;
+    const expiry = new Date(`${String(p.expiryDate)}T00:00:00Z`);
+    if (isNaN(expiry.getTime())) continue;
+    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
+    // Match the closest window the package falls into. Each window only
+    // fires once per (package, window) thanks to the dedupeKey.
+    const window = EXPIRY_WINDOWS_DAYS.find((w) => daysLeft === w);
+    if (window === undefined) continue;
+    const label = window === 1 ? "tomorrow" : `in ${window} days`;
+    void notifyUserOnce(
+      p.userId,
+      "package_expiring",
+      `pkg-${p.id}-d${window}`,
+      "Your package is expiring",
+      `Your ${p.type} package expires ${label} (${p.expiryDate}). Tap to renew.`,
+      { link: "/dashboard", meta: { packageId: p.id, daysLeft: window } },
+    );
+  }
+}
+
+async function runMissedCheckinNotifications(): Promise<void> {
+  // Only nudge from Tuesday onward — Mondays are too early to call a
+  // check-in "missed". UTC day: 0=Sun..6=Sat, Tue=2.
+  const now = new Date();
+  if (now.getUTCDay() < 2 && now.getUTCDay() !== 0) return; // skip Mon (day=1)
+  const weekStart = mondayOfUtc(now);
+  const clients = await storage.getAllClients();
+  for (const u of clients) {
+    if ((u as any).clientStatus !== "active") continue;
+    try {
+      const existing = await storage.getWeeklyCheckinByWeek(u.id, weekStart);
+      if (existing) continue;
+      void notifyUserOnce(
+        u.id,
+        "missed_checkin",
+        `checkin-${weekStart}`,
+        "Weekly check-in pending",
+        "Two minutes — log how this week's training, sleep, and nutrition went so we can adjust.",
+        { link: "/dashboard", meta: { weekStart } },
+      );
+    } catch {
+      /* per-row best-effort */
+    }
+  }
 }
 
 // Clients must book at least 3 hours before the session starts so the trainer
@@ -370,6 +444,16 @@ async function dispatchBookingNotifications(args: {
   } catch (e) {
     console.warn("[notif] createAdminNotification failed:", e);
   }
+
+  // ---- 1b. P5b: Client-facing in-app booking confirmation ----
+  // One-shot, no dedupe needed — booking creation is inherently single-fire.
+  void notifyUser(
+    targetUserId,
+    "system",
+    "Session booked",
+    `${booking.date} at ${time12} — ${sessionFocusLabel}`,
+    { link: "/dashboard", meta: { bookingId: booking.id } },
+  );
 
   const bookingDetails: BookingDetails = {
     clientName,
@@ -1336,6 +1420,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
     });
 
+    // P5b: When an admin cancels someone else's session, the client needs
+    // to be told. (Self-cancellations are user-initiated and don't need
+    // a self-notification.) dedupeKey by booking-id keeps it idempotent
+    // even if the admin re-cancels an already-cancelled booking.
+    if (me.role === "admin" && booking.userId !== me.id) {
+      const time12 = formatTime12Server(booking.timeSlot);
+      void notifyUserOnce(
+        booking.userId,
+        "system",
+        `booking-cancelled-${booking.id}`,
+        "Session cancelled",
+        `Your session on ${booking.date} at ${time12} was cancelled. Tap to rebook.`,
+        { link: "/book", meta: { bookingId: booking.id } },
+      );
+    }
+
     res.json(sanitizeBookingForUser(me, updated));
   });
 
@@ -1578,16 +1678,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
 
     // If date or time changed, email the trainer (best-effort).
-    if (
-      (updateFields.date && updateFields.date !== booking.date) ||
-      (updateFields.timeSlot && updateFields.timeSlot !== booking.timeSlot)
-    ) {
+    const dateChanged = !!(updateFields.date && updateFields.date !== booking.date);
+    const timeChanged = !!(updateFields.timeSlot && updateFields.timeSlot !== booking.timeSlot);
+    if (dateChanged || timeChanged) {
       void dispatchBookingChangeNotification({
         kind: "reschedule",
         booking: { ...booking, ...updateFields } as Booking,
         fromDate,
         fromTime12,
       });
+
+      // P5b: When an admin reschedules a client's session, notify the
+      // client of the new slot. Skip when the user reschedules their own
+      // (they already see the new time in the UI). Dedupe key combines
+      // booking + new slot so re-running the same change is a no-op,
+      // but a second reschedule to a different slot does notify.
+      if (me.role === "admin" && booking.userId !== me.id) {
+        const newDate = updateFields.date ?? booking.date;
+        const newSlot = updateFields.timeSlot ?? booking.timeSlot;
+        const newTime12 = formatTime12Server(newSlot);
+        void notifyUserOnce(
+          booking.userId,
+          "system",
+          `booking-reschedule-${booking.id}-${newDate}-${newSlot}`,
+          "Session rescheduled",
+          `Your session moved from ${fromDate} ${fromTime12} → ${newDate} ${newTime12}.`,
+          { link: "/dashboard", meta: { bookingId: booking.id } },
+        );
+      }
     }
 
     // Package deduction logic on status transition
@@ -3163,6 +3281,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 ? { id: b.id, kind }
                 : { id: b.id, kind, error: result.error || "send returned false" },
             );
+
+            // P5b: Mirror the reminder in-app. The atomic claim above
+            // already gates duplicate dispatches, but we belt-and-brace
+            // with notifyUserOnce so a manual cron retry can never
+            // double-post the in-app row either.
+            void notifyUserOnce(
+              b.userId,
+              "session_reminder",
+              `reminder-${b.id}-${kind}`,
+              kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
+              `${b.date} at ${formatTime12Server(b.timeSlot)}`,
+              { link: "/dashboard", meta: { bookingId: b.id, kind } },
+            );
           } catch (e: any) {
             failed.push({ id: b.id, kind, error: e?.message || "unknown" });
           }
@@ -3170,6 +3301,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
         if (want24 && !bAny.reminder24hSentAt) await dispatch("24h");
         if (want1 && !bAny.reminder1hSentAt) await dispatch("1h");
+      }
+
+      // P5b: Package-expiry warnings. For every active package whose
+      // expiry falls within 7d / 3d / 1d of today, fire one in-app
+      // notification per (package, window). dedupeKey ensures the same
+      // window never re-fires across cron invocations.
+      // Missed-weekly-check-in: from Tuesday onward, any active client
+      // who hasn't logged a check-in for the current Mon-anchored week
+      // gets a single nudge.
+      try {
+        await runPackageExpiryNotifications();
+      } catch (e) {
+        console.warn("[cron/reminders] expiry pass failed:", e);
+      }
+      try {
+        await runMissedCheckinNotifications();
+      } catch (e) {
+        console.warn("[cron/reminders] checkin pass failed:", e);
       }
 
       res.json({ ok: true, scanned: all.length, sent, failed });
@@ -3609,6 +3758,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // No-show counter on the user
     if (parsed.data.attendance === "no_show" && previousStatus !== "no_show") {
       try { await storage.incrementUserNoShow(booking.userId); } catch {}
+    }
+
+    // P5b: Milestone notification on the 5th / 10th / 25th / 50th / 100th
+    // completed session. Fired only on the transition INTO `completed`
+    // so toggling attendance back-and-forth never re-fires (a) because
+    // the count only matches at the boundary, and (b) because dedupeKey
+    // pins each milestone to its threshold.
+    if (newStatus === "completed" && previousStatus !== "completed") {
+      try {
+        const all = await storage.getBookings({ userId: booking.userId });
+        const completedCount = all.filter((b) => b.status === "completed").length;
+        const MILESTONES = [5, 10, 25, 50, 100, 200, 365, 500];
+        if (MILESTONES.includes(completedCount)) {
+          void notifyUserOnce(
+            booking.userId,
+            "milestone",
+            `sessions-completed-${completedCount}`,
+            `${completedCount} sessions completed`,
+            completedCount === 5
+              ? "Five sessions in. Keep showing up — the work is starting to compound."
+              : `That's ${completedCount} sessions logged. Real progress, built one rep at a time.`,
+            { link: "/dashboard" },
+          );
+        }
+      } catch (e) {
+        console.warn("[milestone] check failed:", e);
+      }
     }
 
     res.json(updated);

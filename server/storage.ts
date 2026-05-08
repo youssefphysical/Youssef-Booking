@@ -208,6 +208,11 @@ export interface IStorage {
   ): Promise<ClientNotification[]>;
   getClientUnreadNotificationCount(userId: number): Promise<number>;
   createClientNotification(notif: InsertClientNotification): Promise<ClientNotification>;
+  findClientNotificationByDedupeKey(
+    userId: number,
+    kind: string,
+    dedupeKey: string,
+  ): Promise<ClientNotification | undefined>;
   markClientNotificationRead(id: number, userId: number): Promise<ClientNotification | undefined>;
   markAllClientNotificationsRead(userId: number): Promise<void>;
 
@@ -1404,6 +1409,30 @@ export class DatabaseStorage implements IStorage {
   async createClientNotification(notif: InsertClientNotification): Promise<ClientNotification> {
     const [n] = await db.insert(clientNotifications).values(notif).returning();
     return n;
+  }
+
+  // Dedupe lookup for notifyUserOnce(): finds a previous notification for
+  // the same (userId, kind, meta.dedupeKey). Returns the most recent match
+  // or undefined. Used by triggers that may be re-invoked (cron passes,
+  // attendance toggles) so we never spam the same alert twice.
+  async findClientNotificationByDedupeKey(
+    userId: number,
+    kind: string,
+    dedupeKey: string,
+  ): Promise<ClientNotification | undefined> {
+    const rows = await db
+      .select()
+      .from(clientNotifications)
+      .where(
+        and(
+          eq(clientNotifications.userId, userId),
+          eq(clientNotifications.kind, kind),
+          sql`${clientNotifications.meta} ->> 'dedupeKey' = ${dedupeKey}`,
+        ),
+      )
+      .orderBy(desc(clientNotifications.createdAt))
+      .limit(1);
+    return rows[0];
   }
 
   async markClientNotificationRead(
