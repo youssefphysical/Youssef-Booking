@@ -4,6 +4,14 @@ import { Link } from "wouter";
 import { ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Hoisted formatters — avoid per-frame allocations during count-up animation.
+const FMT_INT = new Intl.NumberFormat("en-US");
+const FMT_EGP = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "EGP",
+  maximumFractionDigits: 0,
+});
+
 export type AdminTone =
   | "default"
   | "info"
@@ -196,9 +204,9 @@ export function AdminStatCard({
     : format === "percent"
       ? `${Math.round((toRender as number) * 100)}%`
       : format === "currencyEGP"
-        ? new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(Math.round(toRender as number))
+        ? FMT_EGP.format(Math.round(toRender as number))
         : format === "int"
-          ? new Intl.NumberFormat("en-US").format(Math.round(toRender as number))
+          ? FMT_INT.format(Math.round(toRender as number))
           : String(toRender);
   return (
     <motion.div
@@ -295,6 +303,37 @@ export function AdminAlertRow({
         )}
       />
     </Link>
+  );
+}
+
+// =====================================================
+// ChartCard — wrapper for recharts panels (consistent height + heading)
+// =====================================================
+export function AdminChartCard({
+  title,
+  subtitle,
+  children,
+  testId,
+  height = "h-[220px] sm:h-[260px]",
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  testId: string;
+  height?: string;
+}) {
+  return (
+    <AdminCard testId={testId}>
+      <div className="mb-3 sm:mb-4">
+        <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">
+          {title}
+        </h3>
+        {subtitle ? (
+          <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+        ) : null}
+      </div>
+      <div className={height}>{children}</div>
+    </AdminCard>
   );
 }
 

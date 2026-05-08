@@ -33,6 +33,7 @@ import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 import {
   AdminCard,
+  AdminChartCard,
   AdminPageHeader,
   AdminSectionTitle,
   AdminStatCard,
@@ -47,28 +48,6 @@ function shortMonth(ym: string) {
   // ym = "YYYY-MM"
   const [y, m] = ym.split("-").map(Number);
   return new Date(y, (m ?? 1) - 1, 1).toLocaleDateString("en-US", { month: "short" });
-}
-
-function ChartCard({
-  title,
-  subtitle,
-  children,
-  testId,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  testId: string;
-}) {
-  return (
-    <AdminCard testId={testId}>
-      <div className="mb-3 sm:mb-4">
-        <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">{title}</h3>
-        {subtitle ? <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p> : null}
-      </div>
-      <div className="h-[220px] sm:h-[260px]">{children}</div>
-    </AdminCard>
-  );
 }
 
 const PIE_COLORS = ["hsl(var(--primary))", "#f59e0b", "#ef4444", "#38bdf8"];
@@ -221,7 +200,7 @@ export default function AdminAnalytics() {
 
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <ChartCard
+              <AdminChartCard
                 title={t("admin.analytics.revenueTrend", "Revenue (12 months)")}
                 subtitle={t("admin.analytics.revenueTrendSub", "Paid vs total assigned")}
                 testId="chart-revenue"
@@ -245,9 +224,9 @@ export default function AdminAnalytics() {
                     <Line type="monotone" dataKey="paid" name="Paid" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
-              </ChartCard>
+              </AdminChartCard>
 
-              <ChartCard
+              <AdminChartCard
                 title={t("admin.analytics.completedTrend", "Completed sessions")}
                 subtitle={t("admin.analytics.completedTrendSub", "Last 12 months")}
                 testId="chart-completed"
@@ -268,9 +247,9 @@ export default function AdminAnalytics() {
                     <Bar dataKey="count" name="Sessions" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </ChartCard>
+              </AdminChartCard>
 
-              <ChartCard
+              <AdminChartCard
                 title={t("admin.analytics.signupsTrend", "New clients")}
                 subtitle={t("admin.analytics.signupsTrendSub", "Signups per month")}
                 testId="chart-signups"
@@ -291,9 +270,9 @@ export default function AdminAnalytics() {
                     <Line type="monotone" dataKey="count" name="Signups" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
-              </ChartCard>
+              </AdminChartCard>
 
-              <ChartCard
+              <AdminChartCard
                 title={t("admin.analytics.dowLoad", "Demand by weekday")}
                 subtitle={t("admin.analytics.dowLoadSub", "All non-cancelled sessions by weekday")}
                 testId="chart-dow"
@@ -314,12 +293,12 @@ export default function AdminAnalytics() {
                     <Bar dataKey="count" name="Sessions" fill="#38bdf8" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </ChartCard>
+              </AdminChartCard>
             </div>
 
             {/* Bottom: package mix + churn + adherence */}
             <div className="grid lg:grid-cols-3 gap-3 sm:gap-5">
-              <ChartCard
+              <AdminChartCard
                 title={t("admin.analytics.pkgMix", "Package mix")}
                 subtitle={t("admin.analytics.pkgMixSub", "Currently active packages")}
                 testId="chart-pkgmix"
@@ -351,7 +330,7 @@ export default function AdminAnalytics() {
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                   </PieChart>
                 </ResponsiveContainer>
-              </ChartCard>
+              </AdminChartCard>
 
               <AdminCard testId="card-churn">
                 <AdminSectionTitle title={t("admin.analytics.churn", "Churn signals")} />
