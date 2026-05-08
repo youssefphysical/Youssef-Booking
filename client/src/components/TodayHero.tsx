@@ -107,7 +107,7 @@ export function TodayHero({ name }: { name?: string | null }) {
   if (isLoading || !data) {
     return (
       <div
-        className="rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-6"
+        className="rounded-2xl bg-card/30 p-4 sm:p-5"
         data-testid="today-hero-loading"
       >
         <div className="h-5 w-40 animate-pulse rounded bg-white/10" />
@@ -133,7 +133,7 @@ export function TodayHero({ name }: { name?: string | null }) {
      replaces cold system phrases ("No plan yet", "Nothing booked",
      "No active supplements") with supportive coaching language. */
   const session = data.nextSession ? formatNextSession(data.nextSession.date) : null;
-  const sessionPrimary = session?.primary ?? "Ready for your first session";
+  const sessionPrimary = session?.primary ?? "Your next session starts your momentum";
   const sessionSub = session
     ? (session.sub ?? data.nextSession?.sessionType ?? null)
     : null;
@@ -152,7 +152,7 @@ export function TodayHero({ name }: { name?: string | null }) {
 
   return (
     <section
-      className="overflow-hidden rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-6"
+      className="overflow-hidden rounded-2xl bg-card/30 p-4 sm:p-5"
       data-testid="today-hero"
     >
       {/* Header — eyebrow + greeting + (optional) goal sub-line.
@@ -224,8 +224,10 @@ export function TodayHero({ name }: { name?: string | null }) {
               Next session
             </p>
             <p
-              className={`mt-0.5 text-xl sm:text-2xl font-semibold leading-tight truncate ${
-                data.nextSession ? "text-white" : "text-white/75"
+              className={`mt-0.5 leading-tight ${
+                data.nextSession
+                  ? "text-xl sm:text-2xl font-semibold text-white truncate"
+                  : "text-base sm:text-lg font-medium text-white/75 line-clamp-2"
               }`}
               data-testid="primary-next-session-value"
             >

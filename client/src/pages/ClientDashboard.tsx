@@ -138,46 +138,42 @@ export default function ClientDashboard() {
           the H1 drops one step (text-2xl → text-3xl at sm) and the eyebrow
           tracking is tighter so the greeting feels less admin-panel-like
           and more like a luxury coaching app. */}
-      <div className="flex items-start justify-between mb-5 sm:mb-6 gap-3 sm:gap-4 flex-wrap">
-        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+      <div className="flex items-center justify-between mb-4 sm:mb-5 gap-3 sm:gap-4 flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link href="/profile" data-testid="link-dashboard-avatar" className="shrink-0">
             <UserAvatar
               src={user.profilePictureUrl}
               name={user.fullName}
-              size={64}
+              size={56}
               testId="img-dashboard-avatar"
             />
           </Link>
           <div className="min-w-0">
-            <p className="text-[11px] sm:text-xs uppercase tracking-[0.22em] text-primary mb-1.5 sm:mb-2">{t("dashboard.eyebrow")}</p>
+            <p className="text-[10.5px] uppercase tracking-[0.22em] text-primary/85 mb-1">{t("dashboard.eyebrow")}</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-display font-semibold leading-tight" data-testid="text-greeting">
+              <h1 className="text-[22px] sm:text-3xl font-display font-semibold leading-tight tracking-tight" data-testid="text-greeting">
                 {t("dashboard.greeting").replace("{name}", user.fullName.split(" ")[0])}
               </h1>
               {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
-            </div>
-            <p className="text-muted-foreground text-[13px] sm:text-sm mt-1">
-              {t("dashboard.subtitle")}
-            </p>
-            <div className="mt-2.5 sm:mt-3">
               <VipBadge tier={user.vipTier ?? "foundation"} />
             </div>
+            <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-1 line-clamp-1">
+              {t("dashboard.subtitle")}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Link href="/book" data-testid="link-new-booking">
-            <Button className="h-10 rounded-xl">
-              <Plus size={16} className="mr-1.5" /> {t("dashboard.newBooking")}
-            </Button>
-          </Link>
-        </div>
+        <Link href="/book" data-testid="link-new-booking" className="shrink-0">
+          <Button className="h-9 rounded-xl text-sm font-medium">
+            <Plus size={15} className="mr-1.5" /> {t("dashboard.newBooking")}
+          </Button>
+        </Link>
       </div>
 
       {/* Unified rhythm — all top-level dashboard sections share the same
           vertical gap so the page reads as one calm column instead of a
           stack of cards with random spacing. Individual sections must NOT
           carry their own outer mb-* (they delegate to this parent). */}
-      <div className="space-y-5 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-5">
         <TodayHero name={user.fullName} />
         <GettingStartedChecklist />
         <MembershipBlock user={user} />
