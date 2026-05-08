@@ -67,6 +67,7 @@ function MiniChip({
   label,
   value,
   sub,
+  helper,
   isEmpty = false,
   testId,
 }: {
@@ -74,6 +75,7 @@ function MiniChip({
   label: string;
   value: string;
   sub?: string | null;
+  helper?: string;
   isEmpty?: boolean;
   testId: string;
 }) {
@@ -82,10 +84,29 @@ function MiniChip({
       className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 sm:p-3.5"
       data-testid={testId}
     >
-      <p className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest text-white/45">
-        <Icon size={11} className="text-white/45" />
+      <div className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest text-white/55">
+        <Icon size={11} className="text-white/50" />
         <span className="truncate">{label}</span>
-      </p>
+        {helper ? (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`About ${label}`}
+                  className="-m-1 p-1 text-white/35 hover:text-white/70 transition-colors"
+                  data-testid={`${testId}-info`}
+                >
+                  <Info size={10} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[220px] text-xs leading-snug normal-case tracking-normal">
+                {helper}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : null}
+      </div>
       <p
         className={`mt-1 truncate text-base sm:text-[17px] font-semibold ${
           isEmpty ? "text-white/40" : "text-white"
@@ -95,7 +116,7 @@ function MiniChip({
         {value}
       </p>
       {sub ? (
-        <p className="mt-0.5 text-[11.5px] text-white/50 line-clamp-1">{sub}</p>
+        <p className="mt-0.5 text-[11.5px] text-white/55 line-clamp-1">{sub}</p>
       ) : null}
     </div>
   );
@@ -148,7 +169,7 @@ export function TodayHero({ name }: { name?: string | null }) {
 
   const hasSupps = data.supplementsToday > 0;
   const suppValue = hasSupps ? `${data.supplementsToday}` : "—";
-  const suppSub = hasSupps ? "Active today" : "Guidance will appear here";
+  const suppSub = hasSupps ? "Active today" : "Your supplement plan will appear here";
 
   return (
     <section
@@ -261,9 +282,10 @@ export function TodayHero({ name }: { name?: string | null }) {
       <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-2.5">
         <MiniChip
           icon={Trophy}
-          label="Streak"
+          label="Consistency"
           value={streakValue}
           sub={streakSub}
+          helper="Small consistent actions create long-term results. Each active week builds momentum."
           isEmpty={!hasStreak}
           testId="stat-streak"
         />
@@ -272,14 +294,16 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Supplements"
           value={suppValue}
           sub={suppSub}
+          helper="Your coach-prescribed supplement protocol for today. Tap the Supplements tab for full guidance."
           isEmpty={!hasSupps}
           testId="stat-supplements-today"
         />
         <MiniChip
           icon={Droplets}
-          label="Water"
+          label="Hydration"
           value={waterValue}
           sub={waterSub}
+          helper="Better hydration improves recovery, energy, and training performance."
           isEmpty={!hasWater}
           testId="stat-water-target"
         />
