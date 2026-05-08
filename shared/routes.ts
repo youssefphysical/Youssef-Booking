@@ -26,6 +26,8 @@ import {
   insertClientSupplementSchema,
   updateClientSupplementSchema,
   applyStackToClientSchema,
+  insertBodyMetricSchema,
+  updateBodyMetricSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -296,6 +298,23 @@ export const api = {
     },
     // Client-facing: signed-in user's own active supplements.
     mine: { method: "GET" as const, path: "/api/client-supplements/me" },
+  },
+
+  bodyMetrics: {
+    // Admin: ?userId=. Client (non-admin): list returns own; /me also OK.
+    list: { method: "GET" as const, path: "/api/body-metrics" },
+    mine: { method: "GET" as const, path: "/api/body-metrics/me" },
+    create: {
+      method: "POST" as const,
+      path: "/api/body-metrics",
+      input: insertBodyMetricSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/body-metrics/:id",
+      input: updateBodyMetricSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/body-metrics/:id" },
   },
 
   inbody: {

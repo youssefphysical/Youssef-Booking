@@ -31,6 +31,8 @@ import {
   insertClientSupplementSchema,
   updateClientSupplementSchema,
   applyStackToClientSchema,
+  insertBodyMetricSchema,
+  updateBodyMetricSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2414,6 +2416,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (err: any) {
       res.status(400).json({ message: err?.message || "Failed to apply stack" });
     }
+  });
+
+  // ============== BODY METRICS (P4a) ==============
+  // Self-scoped: clients use /me. Admin uses /api/body-metrics?userId= to
+  // read any client and to mutate. Non-admin POST/PATCH/DELETE attempts
+  // are blocked at the requireAdmin layer; clients log via the public
+  // self-create flow below if/when we choose to enable it. For Phase 4a
+  // logging is admin-only (mirrors the InBody flow).
+  app.get("/api/body-metrics/me", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const list = await storage.listBodyMetrics(me.id);
+    res.json(list);
+  });
+  app.get("/api/body-metrics", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
+    // Non-admin callers always read their OWN row set. Admin must pass
+    // ?userId= to scope to a client.
+    const userId = me.role === "admin" ? userIdQuery : me.id;
+    if (!userId || !Number.isFinite(userId)) {
+      return res.status(400).json({ message: "userId required" });
+    }
+    const list = await storage.listBodyMetrics(userId);
+    res.json(list);
+  });
+  app.post("/api/body-metrics", requireAdmin, async (req, res) => {
+    const parsed = insertBodyMetricSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    const me = req.user as User;
+    const row = await storage.createBodyMetric(parsed.data, me.id);
+    res.status(201).json(row);
+  });
+  app.patch("/api/body-metrics/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateBodyMetricSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    const row = await storage.updateBodyMetric(id, parsed.data);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.delete("/api/body-metrics/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteBodyMetric(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
   });
 
   // ============== INBODY ==============

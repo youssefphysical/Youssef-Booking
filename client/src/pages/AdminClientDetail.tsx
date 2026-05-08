@@ -78,6 +78,7 @@ import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ClientNutritionTab } from "@/components/ClientNutritionTab";
 import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
+import BodyMetricsPanel from "@/components/BodyMetricsPanel";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -221,6 +222,9 @@ export default function AdminClientDetail() {
           <TabsTrigger value="progress" data-testid="tab-detail-progress">
             <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress", "Progress")}
           </TabsTrigger>
+          <TabsTrigger value="body" data-testid="tab-detail-body">
+            {t("admin.clientDetail.tabBody", "Body Metrics")}
+          </TabsTrigger>
           <TabsTrigger value="notes" data-testid="tab-detail-notes">
             <FileText size={13} className="mr-1.5" /> {t("admin.clientDetail.tabNotes", "Notes")}
           </TabsTrigger>
@@ -253,6 +257,7 @@ export default function AdminClientDetail() {
           </div>
         </TabsContent>
         <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
+        <TabsContent value="body"><BodyMetricsPanel userId={client.id} canEdit={true} /></TabsContent>
         <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
         <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
         <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
