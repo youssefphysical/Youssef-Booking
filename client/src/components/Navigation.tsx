@@ -4,22 +4,13 @@ import {
   Calendar,
   User,
   LayoutDashboard,
-  Users,
-  Package as PackageIcon,
-  PackagePlus,
-  Calculator,
-  Apple,
-  UtensilsCrossed,
-  ClipboardList,
   Settings as SettingsIcon,
-  ShieldCheck,
   LogOut,
   LogIn,
   Menu,
   X,
-  Search,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { isEffectiveSuperAdmin } from "@shared/schema";
@@ -29,6 +20,11 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { CommandPalette, useCommandPaletteShortcut } from "@/components/admin/CommandPalette";
+import {
+  AdminSidebar,
+  AdminMobileBottomNav,
+  AdminMobileBottomSpacer,
+} from "@/components/admin/AdminNavigation";
 import { useTranslation } from "@/i18n";
 
 export function Navigation() {
@@ -127,99 +123,58 @@ export function Navigation() {
   const isSuperAdmin = isEffectiveSuperAdmin(user as any);
   const isAdminPage = location.startsWith("/admin");
 
-  // ============= ADMIN SIDEBAR =============
+  // Close mobile sidebar drawer on Escape (admin only). The desktop
+  // sidebar is always visible (md:translate-x-0) so this is a no-op there.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // ============= ADMIN NAVIGATION (sidebar + mobile dock) =============
   if (isAdmin && isAdminPage) {
     return (
       <>
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-card/80 backdrop-blur-md rounded-xl border border-white/10"
-          data-testid="button-toggle-sidebar"
-          aria-label={t("nav.toggleMenu")}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-
-        <nav
-          className={cn(
-            "fixed left-0 top-0 h-screen w-64 bg-card border-r border-border p-6 z-50 flex-col transition-transform",
-            open ? "flex translate-x-0" : "hidden md:flex md:translate-x-0 -translate-x-full",
-          )}
-        >
-          <Link href="/" className="mb-4 px-1 block min-w-0" data-testid="link-home">
-            <h1 className="text-lg font-bold font-display text-gradient-blue truncate leading-tight px-0.5 py-0.5">{t("brand.trainerName", "Youssef Ahmed")}</h1>
-            <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase leading-snug line-clamp-2">
-              {t("nav.adminTagline")}
-            </p>
-          </Link>
-
-          {/* CMD+K SEARCH TRIGGER — visible affordance for the global palette.
-              Mirrors the Linear/Stripe/Raycast pattern: a button that looks
-              like a search input, with the keyboard shortcut on the right. */}
+        {/* MOBILE — slide-in sidebar drawer (triggered by "More" dock or
+            the legacy hamburger). Backdrop dims the content behind. */}
+        {open && (
           <button
             type="button"
-            onClick={() => setPaletteOpen(true)}
-            data-testid="button-open-command-palette"
-            className="mb-4 flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-sm text-muted-foreground hover:border-white/20 hover:bg-white/[0.06] transition-colors"
-          >
-            <Search size={14} className="opacity-60" />
-            <span className="flex-1 truncate text-xs">
-              {t("nav.searchPlaceholder", "Search or jump to…")}
-            </span>
-            <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              ⌘K
-            </kbd>
-          </button>
+            aria-label={t("nav.closeMenu", "Close menu")}
+            onClick={() => setOpen(false)}
+            className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            data-testid="button-sidebar-backdrop"
+          />
+        )}
+        <aside
+          className={cn(
+            "fixed left-0 top-0 h-screen w-72 z-50 border-r border-white/[0.06] transition-transform duration-200 ease-out",
+            "md:w-64 md:translate-x-0",
+            open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          )}
+          aria-hidden={!open}
+        >
+          <AdminSidebar
+            isSuperAdmin={isSuperAdmin}
+            onItemClick={() => setOpen(false)}
+            onOpenPalette={() => setPaletteOpen(true)}
+            onLogout={requestLogout}
+          />
+        </aside>
 
-          <div className="flex-1 space-y-4">
-            <div className="space-y-1">
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-main">
-                {t("nav.section.main")}
-              </p>
-              <SidebarLink href="/admin" icon={<LayoutDashboard size={18} />} label={t("nav.dashboard")} active={location === "/admin"} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/bookings" icon={<Calendar size={18} />} label={t("nav.bookings")} active={location.startsWith("/admin/bookings")} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/clients" icon={<Users size={18} />} label={t("nav.clients")} active={location.startsWith("/admin/clients")} onClick={() => setOpen(false)} />
-            </div>
-            <div className="space-y-1">
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-business">
-                {t("nav.section.business")}
-              </p>
-              <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location === "/admin/packages"} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/nutrition/macro-calculator" icon={<Calculator size={18} />} label={t("nav.macroCalculator", "Macro Calculator")} active={location === "/admin/nutrition/macro-calculator"} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/nutrition/foods" icon={<Apple size={18} />} label={t("nav.foodLibrary", "Food Library")} active={location.startsWith("/admin/nutrition/foods")} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/nutrition/meals" icon={<UtensilsCrossed size={18} />} label={t("nav.mealLibrary", "Meal Library")} active={location === "/admin/nutrition/meals" || location.startsWith("/admin/nutrition/meals/")} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/nutrition/plans" icon={<ClipboardList size={18} />} label={t("nav.nutritionPlans", "Nutrition Plans")} active={location.startsWith("/admin/nutrition/plans")} onClick={() => setOpen(false)} />
-            </div>
-            <div className="space-y-1">
-              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-system">
-                {t("nav.section.system")}
-              </p>
-              {isSuperAdmin && (
-                <SidebarLink href="/admin/staff" icon={<ShieldCheck size={18} />} label={t("nav.staff")} active={location.startsWith("/admin/staff")} onClick={() => setOpen(false)} />
-              )}
-              <SidebarLink href="/admin/settings" icon={<SettingsIcon size={18} />} label={t("nav.settings")} active={location.startsWith("/admin/settings")} onClick={() => setOpen(false)} />
-            </div>
-          </div>
+        {/* MOBILE BOTTOM DOCK — primary mobile navigation.
+            Uses safe-area-inset-bottom so content sits above the home
+            indicator on iOS. The center FAB opens the palette. */}
+        <AdminMobileBottomNav
+          onOpenPalette={() => setPaletteOpen(true)}
+          onOpenMore={() => setOpen(true)}
+        />
+        {/* Pad the page so the dock never covers content */}
+        <AdminMobileBottomSpacer />
 
-          <div className="pt-4 border-t border-border space-y-2">
-            <div className="px-2 pb-1">
-              <LanguageSelector variant="full" className="w-full justify-between" />
-            </div>
-            <Link href="/" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm hover:bg-white/5 text-muted-foreground" data-testid="link-public-site">
-              <Home size={16} />
-              <span>{t("nav.publicSite")}</span>
-            </Link>
-            <button
-              onClick={requestLogout}
-              data-testid="button-logout"
-              className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10"
-            >
-              <LogOut size={16} />
-              <span>{t("nav.signOut")}</span>
-            </button>
-          </div>
-        </nav>
         <LogoutConfirmDialog
           open={logoutOpen}
           onOpenChange={setLogoutOpen}
@@ -446,22 +401,6 @@ export function Navigation() {
         </div>
       )}
     </header>
-  );
-}
-
-function SidebarLink({ href, icon, label, active, onClick }: { href: string; icon: React.ReactNode; label: string; active: boolean; onClick?: () => void }) {
-  return (
-    <Link href={href} onClick={onClick} data-testid={`link-${label.toLowerCase().replace(/\s+/g, "-")}`}>
-      <div
-        className={cn(
-          "flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors",
-          active ? "bg-primary/15 text-primary border border-primary/20" : "hover:bg-white/5 text-muted-foreground hover:text-foreground",
-        )}
-      >
-        {icon}
-        <span className="font-medium">{label}</span>
-      </div>
-    </Link>
   );
 }
 
