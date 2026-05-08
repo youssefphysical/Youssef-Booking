@@ -17,6 +17,7 @@ import {
   Lock,
   Eye,
   Share2,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -452,25 +453,39 @@ export default function AdminNutritionPlanBuilder() {
             </h1>
           </div>
           {!isNew && existing && existing.days.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const client = clients.find((c) => c.id === existing.userId);
-                const msg = buildNutritionPlanWhatsApp(existing, {
-                  lang,
-                  clientName: client?.fullName ?? null,
-                  dayIndex: activeDayIdx,
-                });
-                window.open(whatsappUrl(client?.phone ?? null, msg), "_blank", "noopener,noreferrer");
-              }}
-              className="gap-2"
-              data-testid="button-share-plan-whatsapp"
-            >
-              <Share2 size={16} aria-hidden="true" />
-              <span className="hidden sm:inline">
-                {t("admin.planBuilder.shareWa", "Share to WhatsApp")}
-              </span>
-            </Button>
+            <>
+              <Link href={`/print/nutrition-plan/${existing.id}`}>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  data-testid="button-export-plan-pdf"
+                >
+                  <FileDown size={16} aria-hidden="true" />
+                  <span className="hidden sm:inline">
+                    {t("admin.planBuilder.exportPdf", "Export PDF")}
+                  </span>
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const client = clients.find((c) => c.id === existing.userId);
+                  const msg = buildNutritionPlanWhatsApp(existing, {
+                    lang,
+                    clientName: client?.fullName ?? null,
+                    dayIndex: activeDayIdx,
+                  });
+                  window.open(whatsappUrl(client?.phone ?? null, msg), "_blank", "noopener,noreferrer");
+                }}
+                className="gap-2"
+                data-testid="button-share-plan-whatsapp"
+              >
+                <Share2 size={16} aria-hidden="true" />
+                <span className="hidden sm:inline">
+                  {t("admin.planBuilder.shareWa", "Share to WhatsApp")}
+                </span>
+              </Button>
+            </>
           )}
           <Button
             onClick={onSave}

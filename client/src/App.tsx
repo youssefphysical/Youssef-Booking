@@ -36,6 +36,7 @@ import AdminMealLibrary from "@/pages/AdminMealLibrary";
 import AdminMealBuilder from "@/pages/AdminMealBuilder";
 import AdminNutritionPlans from "@/pages/AdminNutritionPlans";
 import AdminNutritionPlanBuilder from "@/pages/AdminNutritionPlanBuilder";
+import NutritionPlanPdf from "@/pages/NutritionPlanPdf";
 import ClientNutritionPlan from "@/pages/ClientNutritionPlan";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
@@ -87,10 +88,15 @@ function Router() {
     trackPageView(pathname);
   }, [pathname]);
 
+  // Print routes (`/print/*`) render a standalone A4 document and must
+  // not include any app chrome (header, cookie banner, etc.) or it would
+  // bleed into the printed PDF.
+  const isPrintRoute = pathname.startsWith("/print/");
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
-      <Navigation />
-      <CookieBanner />
+      {!isPrintRoute && <Navigation />}
+      {!isPrintRoute && <CookieBanner />}
       <Switch>
         {/* Public */}
         <Route path="/" component={HomePage} />
@@ -158,6 +164,9 @@ function Router() {
         </Route>
         <Route path="/admin/nutrition/plans/:id">
           <ProtectedRoute component={AdminNutritionPlanBuilder} adminOnly />
+        </Route>
+        <Route path="/print/nutrition-plan/:id">
+          <ProtectedRoute component={NutritionPlanPdf} />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />
