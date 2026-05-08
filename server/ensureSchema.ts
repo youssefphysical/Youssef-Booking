@@ -316,6 +316,77 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS meal_items_meal_idx ON meal_items (meal_id);
     CREATE INDEX IF NOT EXISTS meal_items_food_idx ON meal_items (food_id);
+
+    -- Nutrition OS — Phase 4: Client Nutrition Plans
+    CREATE TABLE IF NOT EXISTS nutrition_plans (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL,
+      name text NOT NULL,
+      goal text NOT NULL DEFAULT 'custom',
+      status text NOT NULL DEFAULT 'draft',
+      start_date text,
+      review_date text,
+      water_target_ml integer,
+      public_notes text,
+      private_notes text,
+      created_by_user_id integer,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS nutrition_plans_user_idx ON nutrition_plans (user_id);
+    CREATE INDEX IF NOT EXISTS nutrition_plans_status_idx ON nutrition_plans (status);
+    CREATE INDEX IF NOT EXISTS nutrition_plans_user_status_idx ON nutrition_plans (user_id, status);
+
+    CREATE TABLE IF NOT EXISTS nutrition_plan_days (
+      id serial PRIMARY KEY,
+      plan_id integer NOT NULL REFERENCES nutrition_plans(id) ON DELETE CASCADE,
+      day_type text NOT NULL DEFAULT 'training',
+      label text,
+      sort_order integer NOT NULL DEFAULT 0,
+      target_kcal integer NOT NULL DEFAULT 0,
+      target_protein_g integer NOT NULL DEFAULT 0,
+      target_carbs_g integer NOT NULL DEFAULT 0,
+      target_fats_g integer NOT NULL DEFAULT 0,
+      notes text
+    );
+    CREATE INDEX IF NOT EXISTS nutrition_plan_days_plan_idx ON nutrition_plan_days (plan_id);
+
+    CREATE TABLE IF NOT EXISTS nutrition_plan_meals (
+      id serial PRIMARY KEY,
+      plan_day_id integer NOT NULL REFERENCES nutrition_plan_days(id) ON DELETE CASCADE,
+      source_meal_id integer,
+      name text NOT NULL,
+      category text NOT NULL DEFAULT 'other',
+      notes text,
+      sort_order integer NOT NULL DEFAULT 0,
+      total_kcal double precision NOT NULL DEFAULT 0,
+      total_protein_g double precision NOT NULL DEFAULT 0,
+      total_carbs_g double precision NOT NULL DEFAULT 0,
+      total_fats_g double precision NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS nutrition_plan_meals_day_idx ON nutrition_plan_meals (plan_day_id);
+    CREATE INDEX IF NOT EXISTS nutrition_plan_meals_source_idx ON nutrition_plan_meals (source_meal_id);
+
+    CREATE TABLE IF NOT EXISTS nutrition_plan_meal_items (
+      id serial PRIMARY KEY,
+      plan_meal_id integer NOT NULL REFERENCES nutrition_plan_meals(id) ON DELETE CASCADE,
+      source_food_id integer,
+      name text NOT NULL,
+      serving_size double precision NOT NULL DEFAULT 100,
+      serving_unit text NOT NULL DEFAULT 'g',
+      kcal double precision NOT NULL DEFAULT 0,
+      protein_g double precision NOT NULL DEFAULT 0,
+      carbs_g double precision NOT NULL DEFAULT 0,
+      fats_g double precision NOT NULL DEFAULT 0,
+      fiber_g double precision,
+      sugar_g double precision,
+      sodium_mg double precision,
+      quantity double precision NOT NULL DEFAULT 1,
+      notes text,
+      sort_order integer NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS nutrition_plan_meal_items_meal_idx ON nutrition_plan_meal_items (plan_meal_id);
+    CREATE INDEX IF NOT EXISTS nutrition_plan_meal_items_source_idx ON nutrition_plan_meal_items (source_food_id);
   `;
 
   try {

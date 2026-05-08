@@ -1970,3 +1970,235 @@ export type UpdateMeal = z.infer<typeof updateMealSchema>;
 export interface MealWithItems extends Meal {
   items: MealItem[];
 }
+
+// =============================
+// NUTRITION OS — PHASE 4: CLIENT NUTRITION PLANS
+// =============================
+// A nutrition plan belongs to one client and is the operating
+// document the trainer hands them. Each plan has N day types
+// (training, rest, high-carb, low-carb, ramadan, custom). Each day
+// holds its own macro targets + N meals. Each meal holds N items.
+// Meals + items are FULL SNAPSHOTS (mirrors the package_templates →
+// packages and meals → meal_items pattern) so editing or deleting a
+// food / meal in the library NEVER mutates a delivered plan.
+//
+// Cached totals live on `nutrition_plan_meals` so the client view,
+// PDF export, WhatsApp summary and AI recommendations never JOIN +
+// SUM at read time. Day-level totals are derived live from the meals
+// (cheap — at most ~10 meals/day).
+
+export const nutritionPlans = pgTable("nutrition_plans", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  // NUTRITION_PLAN_GOALS — soft-typed at DB level.
+  goal: text("goal").notNull().default("custom"),
+  // NUTRITION_PLAN_STATUSES.
+  status: text("status").notNull().default("draft"),
+  startDate: text("start_date"),
+  reviewDate: text("review_date"),
+  waterTargetMl: integer("water_target_ml"),
+  publicNotes: text("public_notes"),
+  // Trainer-only — never shipped to client view.
+  privateNotes: text("private_notes"),
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const nutritionPlanDays = pgTable("nutrition_plan_days", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id")
+    .notNull()
+    .references(() => nutritionPlans.id, { onDelete: "cascade" }),
+  // NUTRITION_PLAN_DAY_TYPES.
+  dayType: text("day_type").notNull().default("training"),
+  // Optional override label — falls back to translated dayType.
+  label: text("label"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  // Per-day macro targets.
+  targetKcal: integer("target_kcal").notNull().default(0),
+  targetProteinG: integer("target_protein_g").notNull().default(0),
+  targetCarbsG: integer("target_carbs_g").notNull().default(0),
+  targetFatsG: integer("target_fats_g").notNull().default(0),
+  notes: text("notes"),
+});
+
+export const nutritionPlanMeals = pgTable("nutrition_plan_meals", {
+  id: serial("id").primaryKey(),
+  planDayId: integer("plan_day_id")
+    .notNull()
+    .references(() => nutritionPlanDays.id, { onDelete: "cascade" }),
+  // Soft reference to the originating Meal Library row (no FK).
+  sourceMealId: integer("source_meal_id"),
+  name: text("name").notNull(),
+  // MEAL_CATEGORIES (re-used from Phase 3).
+  category: text("category").notNull().default("other"),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  // Cached totals — recomputed every write via shared computeMealTotals.
+  totalKcal: doublePrecision("total_kcal").notNull().default(0),
+  totalProteinG: doublePrecision("total_protein_g").notNull().default(0),
+  totalCarbsG: doublePrecision("total_carbs_g").notNull().default(0),
+  totalFatsG: doublePrecision("total_fats_g").notNull().default(0),
+});
+
+export const nutritionPlanMealItems = pgTable("nutrition_plan_meal_items", {
+  id: serial("id").primaryKey(),
+  planMealId: integer("plan_meal_id")
+    .notNull()
+    .references(() => nutritionPlanMeals.id, { onDelete: "cascade" }),
+  // Soft reference to the originating Food (no FK).
+  sourceFoodId: integer("source_food_id"),
+  // ===== SNAPSHOT FIELDS =====
+  name: text("name").notNull(),
+  servingSize: doublePrecision("serving_size").notNull().default(100),
+  servingUnit: text("serving_unit").notNull().default("g"),
+  kcal: doublePrecision("kcal").notNull().default(0),
+  proteinG: doublePrecision("protein_g").notNull().default(0),
+  carbsG: doublePrecision("carbs_g").notNull().default(0),
+  fatsG: doublePrecision("fats_g").notNull().default(0),
+  fiberG: doublePrecision("fiber_g"),
+  sugarG: doublePrecision("sugar_g"),
+  sodiumMg: doublePrecision("sodium_mg"),
+  // ===== PER-INSTANCE =====
+  quantity: doublePrecision("quantity").notNull().default(1),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const NUTRITION_PLAN_GOALS = [
+  "fat_loss",
+  "muscle_gain",
+  "recomposition",
+  "performance",
+  "maintenance",
+  "ramadan",
+  "custom",
+] as const;
+export type NutritionPlanGoal = (typeof NUTRITION_PLAN_GOALS)[number];
+
+export const NUTRITION_PLAN_GOAL_LABELS_EN: Record<NutritionPlanGoal, string> = {
+  fat_loss: "Fat Loss",
+  muscle_gain: "Muscle Gain",
+  recomposition: "Recomposition",
+  performance: "Performance",
+  maintenance: "Maintenance",
+  ramadan: "Ramadan",
+  custom: "Custom",
+};
+
+export const NUTRITION_PLAN_STATUSES = ["draft", "active", "archived"] as const;
+export type NutritionPlanStatus = (typeof NUTRITION_PLAN_STATUSES)[number];
+
+export const NUTRITION_PLAN_STATUS_LABELS_EN: Record<NutritionPlanStatus, string> = {
+  draft: "Draft",
+  active: "Active",
+  archived: "Archived",
+};
+
+export const NUTRITION_PLAN_DAY_TYPES = [
+  "training",
+  "rest",
+  "high_carb",
+  "low_carb",
+  "ramadan",
+  "custom",
+] as const;
+export type NutritionPlanDayType = (typeof NUTRITION_PLAN_DAY_TYPES)[number];
+
+export const NUTRITION_PLAN_DAY_TYPE_LABELS_EN: Record<NutritionPlanDayType, string> = {
+  training: "Training Day",
+  rest: "Rest Day",
+  high_carb: "High Carb Day",
+  low_carb: "Low Carb Day",
+  ramadan: "Ramadan Day",
+  custom: "Custom Day",
+};
+
+// Item input — explicit snapshot fields, identical shape to
+// mealItemInputSchema so the client can pipe the same form data here
+// when adding a meal from the library.
+export const planMealItemInputSchema = z.object({
+  sourceFoodId: z.number().int().nullish(),
+  name: z.string().min(1).max(200),
+  servingSize: z.number().min(0.01).max(10000),
+  servingUnit: z.string().min(1).max(20),
+  kcal: z.number().min(0).max(10000),
+  proteinG: z.number().min(0).max(1000),
+  carbsG: z.number().min(0).max(1000),
+  fatsG: z.number().min(0).max(1000),
+  fiberG: z.number().min(0).max(500).nullish(),
+  sugarG: z.number().min(0).max(1000).nullish(),
+  sodiumMg: z.number().min(0).max(50000).nullish(),
+  quantity: z.number().min(0.01, "Quantity must be > 0").max(100),
+  notes: z.string().max(500).nullish(),
+  sortOrder: z.number().int().min(0).max(10000).optional(),
+});
+
+export const planMealInputSchema = z.object({
+  sourceMealId: z.number().int().nullish(),
+  name: z.string().min(1, "Meal name is required").max(200),
+  category: z.enum(MEAL_CATEGORIES),
+  notes: z.string().max(500).nullish(),
+  sortOrder: z.number().int().min(0).max(10000).optional(),
+  items: z.array(planMealItemInputSchema).min(1, "Meal needs at least one item").max(50),
+});
+
+export const planDayInputSchema = z.object({
+  dayType: z.enum(NUTRITION_PLAN_DAY_TYPES),
+  label: z.string().max(100).nullish(),
+  sortOrder: z.number().int().min(0).max(20).optional(),
+  targetKcal: z.number().int().min(0).max(20000),
+  targetProteinG: z.number().int().min(0).max(2000),
+  targetCarbsG: z.number().int().min(0).max(2000),
+  targetFatsG: z.number().int().min(0).max(2000),
+  notes: z.string().max(1000).nullish(),
+  meals: z.array(planMealInputSchema).max(20).default([]),
+});
+
+export const insertNutritionPlanSchema = createInsertSchema(nutritionPlans)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    createdByUserId: true,
+  })
+  .extend({
+    userId: z.number().int().positive(),
+    name: z.string().min(1, "Plan needs a name").max(200),
+    goal: z.enum(NUTRITION_PLAN_GOALS),
+    status: z.enum(NUTRITION_PLAN_STATUSES).optional(),
+    startDate: z.string().nullish(),
+    reviewDate: z.string().nullish(),
+    waterTargetMl: z.number().int().min(0).max(20000).nullish(),
+    publicNotes: z.string().max(2000).nullish(),
+    privateNotes: z.string().max(2000).nullish(),
+    days: z.array(planDayInputSchema).min(1, "Add at least one day type").max(10),
+  });
+
+export const updateNutritionPlanSchema = insertNutritionPlanSchema.partial().extend({
+  // userId can never be reassigned via update — server enforces.
+  userId: z.never().optional(),
+  days: z.array(planDayInputSchema).min(1).max(10).optional(),
+});
+
+export type NutritionPlan = typeof nutritionPlans.$inferSelect;
+export type NutritionPlanDay = typeof nutritionPlanDays.$inferSelect;
+export type NutritionPlanMeal = typeof nutritionPlanMeals.$inferSelect;
+export type NutritionPlanMealItem = typeof nutritionPlanMealItems.$inferSelect;
+export type PlanMealItemInput = z.infer<typeof planMealItemInputSchema>;
+export type PlanMealInput = z.infer<typeof planMealInputSchema>;
+export type PlanDayInput = z.infer<typeof planDayInputSchema>;
+export type InsertNutritionPlan = z.infer<typeof insertNutritionPlanSchema>;
+export type UpdateNutritionPlan = z.infer<typeof updateNutritionPlanSchema>;
+
+export interface NutritionPlanMealWithItems extends NutritionPlanMeal {
+  items: NutritionPlanMealItem[];
+}
+export interface NutritionPlanDayWithMeals extends NutritionPlanDay {
+  meals: NutritionPlanMealWithItems[];
+}
+export interface NutritionPlanFull extends NutritionPlan {
+  days: NutritionPlanDayWithMeals[];
+}

@@ -1,0 +1,236 @@
+NEXT PHASE — CLIENT NUTRITION PLANS SYSTEM
+
+Continue from the existing Nutrition foundation:
+- Macro Calculator already exists
+- Food Library already exists
+- Meal Builder already exists
+
+Now build the next critical phase:
+CLIENT NUTRITION PLANS
+
+Goal:
+Connect nutrition plans directly to clients so the platform becomes a real coaching operating system, not only a calculator/food tool.
+
+CRITICAL RULES:
+- Do NOT break existing bookings, packages, admin, auth, i18n, RTL, database, or Vercel deployment.
+- Work safely and incrementally.
+- Keep mobile-first premium UI.
+- Keep the current luxury black/blue design system.
+- Build reusable architecture for future PDF export, WhatsApp summaries, AI suggestions, and client app view.
+
+====================================
+1. NUTRITION PLAN DATA MODEL
+====================================
+
+Create a scalable nutrition plan structure.
+
+Each nutrition plan should support:
+- plan name
+- assigned client
+- goal
+  Fat Loss / Muscle Gain / Recomposition / Performance / Maintenance / Ramadan / Custom
+- status
+  draft / active / archived
+- start date
+- review date
+- training day targets:
+  calories, protein, carbs, fats
+- rest day targets:
+  calories, protein, carbs, fats
+- water target
+- public coach notes
+- private coach notes
+- created by admin/trainer
+- timestamps
+
+====================================
+2. DAY TYPES
+====================================
+
+Each plan should support multiple day types:
+
+- Training Day
+- Rest Day
+- Optional High Carb Day
+- Optional Low Carb Day
+- Optional Ramadan Day
+- Custom Day
+
+Each day type must contain:
+- target calories
+- target protein
+- target carbs
+- target fats
+- meals
+- notes
+
+====================================
+3. CONNECT MEAL BUILDER TO PLANS
+====================================
+
+Allow admin to:
+- add existing meal builder meals into a plan
+- create meals inside a plan
+- duplicate meals
+- reorder meals
+- remove meals
+- edit food quantities
+- auto-calculate meal totals
+- auto-calculate day totals
+- compare actual day totals vs target macros
+
+Color logic:
+- Green = close to target
+- Amber = slightly off
+- Red = needs correction
+
+====================================
+4. CLIENT PROFILE INTEGRATION
+====================================
+
+Add a Nutrition tab inside every client profile.
+
+The tab should show:
+- current active nutrition plan
+- goal
+- calories/macros
+- start date
+- review date
+- meals summary
+- supplement summary placeholder
+- water target
+- plan status
+- coach notes
+
+Admin actions:
+- assign plan
+- create new plan
+- duplicate existing plan
+- edit plan
+- archive old plan
+
+====================================
+5. NUTRITION PLAN BUILDER UI
+====================================
+
+Create premium admin UI for building plans.
+
+UI must include:
+- plan overview card
+- macro target cards
+- day type tabs
+- meal cards
+- food rows
+- live macro calculations
+- target vs actual comparison
+- status badges
+- save/update actions
+
+Mobile-first:
+- no horizontal overflow
+- no clipped text
+- large touch targets
+- clean spacing
+- premium cards
+
+Do NOT make it look like Excel.
+
+====================================
+6. CLIENT-FACING READ-ONLY VIEW
+====================================
+
+Prepare a clean read-only nutrition plan view for clients.
+
+Client should only see:
+- their assigned active plan
+- goal
+- daily macros
+- meals
+- quantities
+- coach notes
+- water target
+- review date
+
+Client must NOT see:
+- private coach notes
+- admin controls
+- other clients’ plans
+
+Security:
+- client can only access their own plan
+
+====================================
+7. TEMPLATE-READY ARCHITECTURE
+====================================
+
+Structure the system so later we can add:
+- nutrition templates
+- PDF export
+- WhatsApp summary
+- AI meal suggestions
+- supplement stack
+- progress tracking
+
+Do not overbuild those now.
+Just make the architecture ready.
+
+====================================
+8. I18N / RTL
+====================================
+
+All new visible text must use existing translation system.
+
+Support:
+- English
+- Arabic
+- Persian/Farsi
+- Urdu
+- French
+- German
+- Russian
+- Turkish
+- Spanish
+- Italian
+- Portuguese
+- Chinese
+- Hindi
+
+RTL must work for:
+- Arabic
+- Persian
+- Urdu
+
+No raw translation keys.
+No hardcoded visible strings.
+
+====================================
+9. VALIDATION
+====================================
+
+Test:
+- admin creates plan
+- admin assigns plan to client
+- admin adds meals
+- macros calculate correctly
+- client profile shows nutrition tab
+- client read-only view works
+- unauthorized users cannot access private plans
+- mobile responsive at 360px / 390px / 412px
+- TypeScript clean
+- build clean
+- production deploy clean
+
+====================================
+10. DEPLOYMENT REPORT
+====================================
+
+After completion:
+- push to GitHub
+- deploy to Vercel
+- confirm production READY
+- confirm production HTTP 200
+- confirm Neon/database migration status
+- report commit ID
+- list files changed
+- list features completed
+- list anything intentionally postponed
