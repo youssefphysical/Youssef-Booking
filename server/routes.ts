@@ -2183,6 +2183,111 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(events);
   });
 
+  // P4f: Today Hero summary — next session, supplements-today count,
+  // water target, current weekly-active streak, goal progress. Self-
+  // scoped only; never trust client-supplied userId.
+  app.get("/api/me/today", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch { return fallback; }
+    };
+
+    const nowIso = new Date().toISOString();
+    const todayIso = nowIso.slice(0, 10);
+
+    const [bookings, clientSupps, activePlan, checkins, bodyMetrics] = await Promise.all([
+      safe(() => storage.getBookings({ userId: me.id }), [] as any[]),
+      safe(() => storage.listClientSupplements(me.id, { activeOnly: true }), [] as any[]),
+      safe(() => storage.getActiveNutritionPlanForUser(me.id), undefined as any),
+      safe(() => storage.listWeeklyCheckins(me.id, { limit: 60 }), [] as any[]),
+      safe(() => storage.listBodyMetrics(me.id, { limit: 200 }), [] as any[]),
+    ]);
+
+    // Next session: earliest upcoming/confirmed booking strictly after now.
+    let nextSession: { id: number; date: string; sessionType: string | null } | null = null;
+    {
+      const upcoming = (bookings as any[])
+        .filter((b) => (b.status === "upcoming" || b.status === "confirmed"))
+        .map((b) => ({
+          id: b.id,
+          date: b.date instanceof Date ? b.date.toISOString() : String(b.date ?? ""),
+          sessionType: b.sessionType ? String(b.sessionType) : null,
+        }))
+        .filter((b) => b.date && b.date > nowIso)
+        .sort((a, b) => (a.date < b.date ? -1 : 1));
+      nextSession = upcoming[0] ?? null;
+    }
+
+    // Supplements applicable today: active client supplements whose
+    // start/end window covers today (nullable = open-ended).
+    const supplementsToday = (clientSupps as any[]).filter((s) => {
+      if (s.status && s.status !== "active") return false;
+      if (s.startDate && String(s.startDate) > todayIso) return false;
+      if (s.endDate && String(s.endDate) < todayIso) return false;
+      return true;
+    }).length;
+
+    const waterTargetMl: number | null = activePlan?.waterTargetMl ?? null;
+
+    // Streak: consecutive ISO weeks (Mon-anchored) ending at the current
+    // week, where the user logged ≥1 check-in OR ≥1 completed booking.
+    const mondayOf = (d: Date): string => {
+      const x = new Date(d);
+      x.setUTCHours(0, 0, 0, 0);
+      const day = x.getUTCDay(); // 0=Sun..6=Sat
+      const offset = day === 0 ? -6 : 1 - day;
+      x.setUTCDate(x.getUTCDate() + offset);
+      return x.toISOString().slice(0, 10);
+    };
+    const activeWeeks = new Set<string>();
+    for (const c of checkins as any[]) {
+      const ws = c.weekStart ? String(c.weekStart) : null;
+      if (ws) activeWeeks.add(mondayOf(new Date(ws)));
+    }
+    for (const b of bookings as any[]) {
+      if (b.status !== "completed") continue;
+      const d = b.date instanceof Date ? b.date : new Date(String(b.date));
+      if (!isNaN(d.getTime())) activeWeeks.add(mondayOf(d));
+    }
+    let streakWeeks = 0;
+    {
+      const cursor = new Date();
+      while (true) {
+        const wk = mondayOf(cursor);
+        if (activeWeeks.has(wk)) {
+          streakWeeks += 1;
+          cursor.setUTCDate(cursor.getUTCDate() - 7);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Goal progress: earliest vs latest body-metric weight.
+    const sortedMetrics = (bodyMetrics as any[])
+      .filter((m) => m.weight != null && m.recordedOn)
+      .sort((a, b) => (String(a.recordedOn) < String(b.recordedOn) ? -1 : 1));
+    const weightStartKg = sortedMetrics[0]?.weight ?? null;
+    const weightLatestKg = sortedMetrics[sortedMetrics.length - 1]?.weight ?? null;
+    const deltaKg =
+      weightStartKg != null && weightLatestKg != null
+        ? Number((weightLatestKg - weightStartKg).toFixed(1))
+        : null;
+
+    res.json({
+      nextSession,
+      supplementsToday,
+      waterTargetMl,
+      streakWeeks,
+      goal: {
+        primary: me.primaryGoal ?? null,
+        weightStartKg,
+        weightLatestKg,
+        deltaKg,
+      },
+    });
+  });
+
   // P4e: Activity feed (self-scoped — never trust client-supplied userId).
   app.get("/api/me/activity", requireAuth, async (req, res) => {
     const me = req.user as User;

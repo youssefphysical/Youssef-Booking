@@ -45,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { TodayHero } from "@/components/TodayHero";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,6 +168,7 @@ export default function ClientDashboard() {
         </div>
       </div>
 
+      <TodayHero name={user.fullName} />
       <MembershipBlock user={user} />
       <BookingEligibilityBanner userId={user.id} user={user} />
 
