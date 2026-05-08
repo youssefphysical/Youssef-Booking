@@ -1647,3 +1647,173 @@ export const bulkManualBookingSchema = z.object({
   adminNotes: z.string().nullable().optional(),
 });
 export type BulkManualBooking = z.infer<typeof bulkManualBookingSchema>;
+
+// =============================
+// NUTRITION OS — PHASE 2: FOOD LIBRARY
+// =============================
+// Centralised food / supplement catalogue used by the meal builder
+// (Phase 3) and per-client nutrition assignments (Phase 4+).
+//
+// Design notes:
+// - All macros stored per *serving* (not per 100g) so the trainer can
+//   work in human units (1 scoop, 1 piece, 100g, 250ml, …). The meal
+//   builder multiplies by quantity client-side.
+// - `created_by_user_id` is intentionally an int with NO foreign-key
+//   constraint so deleting a trainer never cascades and orphans the
+//   catalogue. Indexed for future per-trainer scoping.
+// - Phase 3's `meal_items` will SNAPSHOT food fields (name, macros,
+//   serving) at the moment a food is added to a meal, mirroring the
+//   package-template → packages pattern. Therefore deleting / editing
+//   a food here is safe and does not mutate historical meals.
+// - Numeric columns use `doublePrecision` (not integer) because real
+//   nutrition data has fractional grams (e.g. 0.6 g sodium, 23.4 g
+//   protein). Money in the rest of the app uses int because cents
+//   drift matters; macros do not.
+export const foods = pgTable("foods", {
+  id: serial("id").primaryKey(),
+  // Display name (English / primary). Required.
+  name: text("name").notNull(),
+  // Optional secondary name (e.g. Arabic) — future search field.
+  nameAr: text("name_ar"),
+  // FOOD_CATEGORIES — soft-typed at DB level so adding a category
+  // never requires a migration.
+  category: text("category").notNull().default("other"),
+  // Brand / source (e.g. "Optimum Nutrition", "Almarai"). Optional.
+  brand: text("brand"),
+  // Reference serving the macros refer to.
+  servingSize: doublePrecision("serving_size").notNull().default(100),
+  // FOOD_SERVING_UNITS
+  servingUnit: text("serving_unit").notNull().default("g"),
+  // Per-serving macros (not per-100g).
+  kcal: doublePrecision("kcal").notNull().default(0),
+  proteinG: doublePrecision("protein_g").notNull().default(0),
+  carbsG: doublePrecision("carbs_g").notNull().default(0),
+  fatsG: doublePrecision("fats_g").notNull().default(0),
+  // Optional micros / fibre — used in detailed coaching.
+  fiberG: doublePrecision("fiber_g"),
+  sugarG: doublePrecision("sugar_g"),
+  sodiumMg: doublePrecision("sodium_mg"),
+  // Coaching metadata — used by the meal builder hints.
+  // FOOD_DIGESTION_SPEEDS: 'fast' | 'medium' | 'slow'
+  digestionSpeed: text("digestion_speed"),
+  // FOOD_TIMINGS
+  bestTiming: text("best_timing"),
+  notes: text("notes"),
+  // Soft archive — keep the row so historical meal snapshots referring
+  // to it by id (if any) still resolve. Hidden from picker when false.
+  isActive: boolean("is_active").notNull().default(true),
+  // Differentiates supplements from whole foods in the picker UI.
+  isSupplement: boolean("is_supplement").notNull().default(false),
+  // Author. Nullable, no FK — deleting the user must not break catalog.
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const FOOD_CATEGORIES = [
+  "protein",
+  "carbs",
+  "fats",
+  "vegetables",
+  "fruits",
+  "dairy",
+  "grains",
+  "nuts_seeds",
+  "drinks",
+  "condiments",
+  "supplements",
+  "other",
+] as const;
+
+export const FOOD_SERVING_UNITS = [
+  "g",
+  "ml",
+  "piece",
+  "scoop",
+  "cup",
+  "tbsp",
+  "tsp",
+  "slice",
+] as const;
+
+export const FOOD_DIGESTION_SPEEDS = ["fast", "medium", "slow"] as const;
+
+export const FOOD_TIMINGS = [
+  "pre_workout",
+  "post_workout",
+  "morning",
+  "afternoon",
+  "evening",
+  "anytime",
+] as const;
+
+// English fallback labels — i18n layer translates these per locale.
+export const FOOD_CATEGORY_LABELS_EN: Record<string, string> = {
+  protein: "Protein",
+  carbs: "Carbs",
+  fats: "Fats",
+  vegetables: "Vegetables",
+  fruits: "Fruits",
+  dairy: "Dairy",
+  grains: "Grains",
+  nuts_seeds: "Nuts & Seeds",
+  drinks: "Drinks",
+  condiments: "Condiments",
+  supplements: "Supplements",
+  other: "Other",
+};
+
+export const FOOD_SERVING_UNIT_LABELS_EN: Record<string, string> = {
+  g: "g",
+  ml: "ml",
+  piece: "piece",
+  scoop: "scoop",
+  cup: "cup",
+  tbsp: "tbsp",
+  tsp: "tsp",
+  slice: "slice",
+};
+
+export const FOOD_DIGESTION_SPEED_LABELS_EN: Record<string, string> = {
+  fast: "Fast",
+  medium: "Medium",
+  slow: "Slow",
+};
+
+export const FOOD_TIMING_LABELS_EN: Record<string, string> = {
+  pre_workout: "Pre-workout",
+  post_workout: "Post-workout",
+  morning: "Morning",
+  afternoon: "Afternoon",
+  evening: "Evening",
+  anytime: "Anytime",
+};
+
+export const insertFoodSchema = createInsertSchema(foods)
+  .omit({ id: true, createdAt: true, updatedAt: true, createdByUserId: true })
+  .extend({
+    name: z.string().min(1, "Name is required").max(160),
+    nameAr: z.string().max(160).nullish(),
+    category: z.enum(FOOD_CATEGORIES),
+    brand: z.string().max(120).nullish(),
+    servingSize: z.number().min(0.01, "Serving size must be > 0").max(10000),
+    servingUnit: z.enum(FOOD_SERVING_UNITS),
+    kcal: z.number().min(0).max(10000),
+    proteinG: z.number().min(0).max(1000),
+    carbsG: z.number().min(0).max(1000),
+    fatsG: z.number().min(0).max(1000),
+    fiberG: z.number().min(0).max(500).nullish(),
+    sugarG: z.number().min(0).max(1000).nullish(),
+    sodiumMg: z.number().min(0).max(50000).nullish(),
+    digestionSpeed: z.enum(FOOD_DIGESTION_SPEEDS).nullish(),
+    bestTiming: z.enum(FOOD_TIMINGS).nullish(),
+    notes: z.string().max(500).nullish(),
+    isActive: z.boolean().optional(),
+    isSupplement: z.boolean().optional(),
+  });
+
+export const updateFoodSchema = insertFoodSchema.partial();
+
+export type Food = typeof foods.$inferSelect;
+export type InsertFood = z.infer<typeof insertFoodSchema>;
+export type UpdateFood = z.infer<typeof updateFoodSchema>;

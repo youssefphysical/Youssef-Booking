@@ -15,6 +15,10 @@ import {
   renewalRequests,
   extensionRequests,
   packageSessionHistory,
+  foods,
+  type Food,
+  type InsertFood,
+  type UpdateFood,
   type User,
   type InsertUser,
   type UpdateProfile,
@@ -52,7 +56,7 @@ import {
   type PackageSessionHistory,
   type InsertPackageSessionHistory,
 } from "@shared/schema";
-import { eq, and, gte, gt, desc, asc, isNull, inArray } from "drizzle-orm";
+import { eq, and, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -166,6 +170,25 @@ export interface IStorage {
 
   // Attendance helper
   incrementUserNoShow(userId: number): Promise<void>;
+
+  // ===== Nutrition OS — Phase 2: Food Library =====
+  // Searchable + paginated catalogue. Designed for thousands of rows
+  // (server-side filter + offset/limit). `created_by_user_id` is set by
+  // the route handler from the authenticated admin and is intentionally
+  // not part of the insert payload.
+  getFoods(filters?: {
+    search?: string;
+    category?: string;
+    isSupplement?: boolean;
+    activeOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ items: Food[]; total: number }>;
+  getFood(id: number): Promise<Food | undefined>;
+  createFood(food: InsertFood, createdByUserId: number | null): Promise<Food>;
+  updateFood(id: number, updates: UpdateFood): Promise<Food>;
+  deleteFood(id: number): Promise<void>;
+  duplicateFood(id: number, createdByUserId: number | null): Promise<Food | undefined>;
 
   // Package session-history audit log
   getPackageSessionHistory(filters?: {
@@ -571,6 +594,90 @@ export class DatabaseStorage implements IStorage {
 
   async deletePackageTemplate(id: number) {
     await db.delete(packageTemplates).where(eq(packageTemplates.id, id));
+  }
+
+  // ===== Foods (Nutrition OS — Phase 2) =====
+  async getFoods(filters?: {
+    search?: string;
+    category?: string;
+    isSupplement?: boolean;
+    activeOnly?: boolean;
+    limit?: number;
+    offset?: number;
+  }) {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const offset = Math.max(filters?.offset ?? 0, 0);
+    const conditions = [] as any[];
+    if (filters?.search && filters.search.trim().length > 0) {
+      // ILIKE uses the `foods_name_lower_idx` index for prefix scans.
+      const term = `%${filters.search.trim()}%`;
+      conditions.push(ilike(foods.name, term));
+    }
+    if (filters?.category) {
+      conditions.push(eq(foods.category, filters.category));
+    }
+    if (typeof filters?.isSupplement === "boolean") {
+      conditions.push(eq(foods.isSupplement, filters.isSupplement));
+    }
+    if (filters?.activeOnly) {
+      conditions.push(eq(foods.isActive, true));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const itemsQuery = whereClause
+      ? db.select().from(foods).where(whereClause)
+      : db.select().from(foods);
+    const items = await itemsQuery
+      .orderBy(asc(foods.name), asc(foods.id))
+      .limit(limit)
+      .offset(offset);
+
+    const totalQuery = whereClause
+      ? db.select({ count: sql<number>`count(*)::int` }).from(foods).where(whereClause)
+      : db.select({ count: sql<number>`count(*)::int` }).from(foods);
+    const [{ count }] = await totalQuery;
+    return { items, total: Number(count) || 0 };
+  }
+
+  async getFood(id: number) {
+    const [f] = await db.select().from(foods).where(eq(foods.id, id));
+    return f;
+  }
+
+  async createFood(food: InsertFood, createdByUserId: number | null) {
+    const [created] = await db
+      .insert(foods)
+      .values({ ...food, createdByUserId: createdByUserId ?? null })
+      .returning();
+    return created;
+  }
+
+  async updateFood(id: number, updates: UpdateFood) {
+    const [updated] = await db
+      .update(foods)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(foods.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteFood(id: number) {
+    await db.delete(foods).where(eq(foods.id, id));
+  }
+
+  async duplicateFood(id: number, createdByUserId: number | null) {
+    const [src] = await db.select().from(foods).where(eq(foods.id, id));
+    if (!src) return undefined;
+    const { id: _id, createdAt: _ca, updatedAt: _ua, createdByUserId: _cu, ...rest } = src as any;
+    const [dup] = await db
+      .insert(foods)
+      .values({
+        ...rest,
+        name: `${src.name} (copy)`,
+        createdByUserId: createdByUserId ?? null,
+      })
+      .returning();
+    return dup;
   }
 
   // ===== InBody =====

@@ -8,6 +8,7 @@ import {
   Package as PackageIcon,
   PackagePlus,
   Calculator,
+  Apple,
   Settings as SettingsIcon,
   ShieldCheck,
   LogOut,
@@ -155,7 +156,8 @@ export function Navigation() {
               </p>
               <SidebarLink href="/admin/packages" icon={<PackageIcon size={18} />} label={t("nav.packages")} active={location === "/admin/packages"} onClick={() => setOpen(false)} />
               <SidebarLink href="/admin/package-builder" icon={<PackagePlus size={18} />} label={t("nav.packageBuilder")} active={location.startsWith("/admin/package-builder")} onClick={() => setOpen(false)} />
-              <SidebarLink href="/admin/nutrition/macro-calculator" icon={<Calculator size={18} />} label={t("nav.macroCalculator", "Macro Calculator")} active={location.startsWith("/admin/nutrition")} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/nutrition/macro-calculator" icon={<Calculator size={18} />} label={t("nav.macroCalculator", "Macro Calculator")} active={location === "/admin/nutrition/macro-calculator"} onClick={() => setOpen(false)} />
+              <SidebarLink href="/admin/nutrition/foods" icon={<Apple size={18} />} label={t("nav.foodLibrary", "Food Library")} active={location.startsWith("/admin/nutrition/foods")} onClick={() => setOpen(false)} />
             </div>
             <div className="space-y-1">
               <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70" data-testid="text-section-system">
