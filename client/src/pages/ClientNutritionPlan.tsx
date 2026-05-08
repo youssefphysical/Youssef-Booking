@@ -9,6 +9,7 @@ import {
   ChefHat,
   Info,
   Share2,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +86,21 @@ export default function ClientNutritionPlan() {
               {plan?.name ?? t("client.nutrition.title", "My Nutrition Plan")}
             </h1>
           </div>
+          {plan && plan.days.length > 0 && (
+            <Link href="/print/nutrition-plan/me">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                data-testid="button-export-my-plan-pdf"
+              >
+                <FileDown size={14} aria-hidden="true" />
+                <span className="hidden sm:inline">
+                  {t("client.nutrition.exportPdf", "Export PDF")}
+                </span>
+              </Button>
+            </Link>
+          )}
           {plan && plan.days.length > 0 && (
             <Button
               variant="outline"

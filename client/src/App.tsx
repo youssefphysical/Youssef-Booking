@@ -36,6 +36,7 @@ import AdminMealLibrary from "@/pages/AdminMealLibrary";
 import AdminMealBuilder from "@/pages/AdminMealBuilder";
 import AdminNutritionPlans from "@/pages/AdminNutritionPlans";
 import AdminNutritionPlanBuilder from "@/pages/AdminNutritionPlanBuilder";
+import NutritionPlanPdf from "@/pages/NutritionPlanPdf";
 import ClientNutritionPlan from "@/pages/ClientNutritionPlan";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminStaffPage from "@/pages/AdminStaffPage";
@@ -158,6 +159,9 @@ function Router() {
         </Route>
         <Route path="/admin/nutrition/plans/:id">
           <ProtectedRoute component={AdminNutritionPlanBuilder} adminOnly />
+        </Route>
+        <Route path="/print/nutrition-plan/:id">
+          <ProtectedRoute component={NutritionPlanPdf} />
         </Route>
         <Route path="/admin/settings">
           <ProtectedRoute component={AdminSettings} adminOnly />

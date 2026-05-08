@@ -1380,6 +1380,341 @@
 .hero-scroll-cue-label {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 }
+
+/* =================================================================
+ * Premium PDF document styles (used by /print/* routes)
+ *
+ * Strategy: render a faithful A4 page on screen, then strip the
+ * surrounding chrome on @media print so the printed output matches
+ * the on-screen preview pixel-for-pixel. Black ink on cream paper
+ * with a single accent blue — looks deliberate and luxury, not like
+ * a browser print dialog.
+ * ================================================================= */
+
+.pdf-doc-root {
+  /* Force LTR for the printable surface even in RTL UIs — financial
+     and macro tables read better LTR regardless of UI language. */
+  direction: ltr;
+  text-align: left;
+}
+
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 14mm 16mm 18mm 16mm;
+  background: #ffffff;
+  color: #0a0a0a;
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+  font-size: 10.5pt;
+  line-height: 1.45;
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.pdf-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16mm;
+  padding-bottom: 6mm;
+}
+.pdf-header-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pdf-header-coach {
+  font-family: var(--font-display, "Plus Jakarta Sans", sans-serif);
+  font-weight: 800;
+  font-size: 11pt;
+  letter-spacing: 0.18em;
+  color: #0a0a0a;
+  margin: 0;
+}
+.pdf-header-tagline {
+  font-size: 8pt;
+  letter-spacing: 0.28em;
+  color: #4f6d8a;
+  margin: 0;
+}
+.pdf-header-doctype {
+  text-align: right;
+  max-width: 60%;
+}
+.pdf-kicker {
+  font-size: 8pt;
+  letter-spacing: 0.32em;
+  color: #1e3a8a;
+  font-weight: 600;
+  margin: 0 0 2px 0;
+}
+.pdf-title {
+  font-family: var(--font-display, "Plus Jakarta Sans", sans-serif);
+  font-size: 22pt;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin: 0;
+  color: #0a0a0a;
+}
+.pdf-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 9.5pt;
+  color: #555;
+}
+
+.pdf-divider {
+  height: 1.5pt;
+  background: linear-gradient(90deg, #0a0a0a 0%, #1e3a8a 50%, #0a0a0a 100%);
+  margin: 4mm 0 7mm 0;
+}
+
+.pdf-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4mm;
+  margin-bottom: 6mm;
+}
+.pdf-summary-cell {
+  border: 0.7pt solid #d1d9e6;
+  border-left: 2.5pt solid #1e3a8a;
+  padding: 3mm 4mm;
+  background: #f7f9fc;
+  border-radius: 1.5mm;
+}
+.pdf-cell-label {
+  font-size: 7.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #6a7a8c;
+  margin: 0 0 1mm 0;
+  font-weight: 600;
+}
+.pdf-cell-value {
+  font-family: var(--font-display, "Plus Jakarta Sans", sans-serif);
+  font-size: 12pt;
+  font-weight: 700;
+  color: #0a0a0a;
+  margin: 0;
+}
+
+.pdf-callout {
+  border: 0.7pt solid #d4dcec;
+  background: #f0f4ff;
+  border-radius: 2mm;
+  padding: 4mm 5mm;
+  margin-bottom: 6mm;
+  page-break-inside: avoid;
+}
+.pdf-callout-label {
+  font-size: 7.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+  font-weight: 700;
+  margin: 0 0 2mm 0;
+}
+.pdf-callout-body {
+  font-size: 10pt;
+  color: #0a0a0a;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.pdf-day {
+  margin-top: 5mm;
+  padding-top: 5mm;
+  border-top: 0.7pt solid #e3e8f1;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.pdf-day:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.pdf-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8mm;
+  margin-bottom: 3mm;
+}
+.pdf-day-kicker {
+  font-size: 7.5pt;
+  letter-spacing: 0.32em;
+  color: #1e3a8a;
+  font-weight: 700;
+  margin: 0;
+}
+.pdf-day-title {
+  font-family: var(--font-display, "Plus Jakarta Sans", sans-serif);
+  font-size: 15pt;
+  font-weight: 700;
+  margin: 1mm 0 0 0;
+  color: #0a0a0a;
+}
+.pdf-targets {
+  display: flex;
+  gap: 4mm;
+  flex-wrap: wrap;
+  font-size: 9pt;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+.pdf-target strong {
+  color: #0a0a0a;
+  font-weight: 700;
+}
+
+.pdf-meal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin-top: 1mm;
+}
+.pdf-meal-table thead th {
+  text-align: left;
+  font-size: 7.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6a7a8c;
+  font-weight: 600;
+  padding: 2mm 2mm;
+  border-bottom: 0.7pt solid #d1d9e6;
+}
+.pdf-th-num,
+.pdf-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pdf-th-qty {
+  text-align: right;
+}
+.pdf-meal-row td {
+  background: #f3f6fc;
+  padding: 2.5mm 2mm;
+  border-top: 0.7pt solid #d1d9e6;
+  font-weight: 600;
+}
+.pdf-meal-row .pdf-meal-name {
+  display: table-cell;
+}
+.pdf-meal-cat {
+  display: inline-block;
+  font-size: 7pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+  margin-right: 3mm;
+  font-weight: 700;
+}
+.pdf-meal-title {
+  font-family: var(--font-display, "Plus Jakarta Sans", sans-serif);
+  font-weight: 700;
+  font-size: 10.5pt;
+  color: #0a0a0a;
+}
+.pdf-meal-total {
+  font-weight: 700;
+  color: #0a0a0a;
+}
+.pdf-item-row td {
+  padding: 1.5mm 2mm;
+  border-top: 0.4pt solid #e9ecf3;
+  color: #2a2a2a;
+}
+.pdf-item-name {
+  padding-left: 6mm !important;
+}
+.pdf-item-qty {
+  text-align: right;
+  color: #6a7a8c;
+  font-size: 9pt;
+}
+.pdf-totals-row td {
+  padding: 2.5mm 2mm;
+  border-top: 1pt solid #0a0a0a;
+  font-weight: 700;
+  background: #fafbfd;
+}
+.pdf-day-notes {
+  margin-top: 3mm;
+  padding: 3mm 4mm;
+  font-size: 9pt;
+  background: #fafbfd;
+  border-left: 2pt solid #1e3a8a;
+  white-space: pre-line;
+  color: #2a2a2a;
+}
+.pdf-empty {
+  font-size: 9.5pt;
+  color: #888;
+  font-style: italic;
+  padding: 4mm 0;
+}
+
+.pdf-footer {
+  position: absolute;
+  bottom: 8mm;
+  left: 16mm;
+  right: 16mm;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8a96a8;
+  border-top: 0.4pt solid #e3e8f1;
+  padding-top: 3mm;
+}
+.pdf-footer-dot {
+  opacity: 0.5;
+}
+
+.pdf-print-only { display: none; }
+
+/* Native print: hide all chrome, render only the document. */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  html, body {
+    background: #ffffff !important;
+    margin: 0;
+    padding: 0;
+  }
+  .pdf-screen-only { display: none !important; }
+  .pdf-print-only { display: revert; }
+  .pdf-doc-root { background: #ffffff !important; }
+  .pdf-page-wrap {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .pdf-page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 14mm 16mm 18mm 16mm;
+    box-shadow: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+  .pdf-day {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .pdf-meal-row,
+  .pdf-totals-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Hide any non-PDF UI that might leak in (sidebars, toasts, etc.) */
+  body > *:not(#root) { display: none !important; }
+}
 .hero-scroll-cue svg {
   animation: heroScrollBounce 1.9s ease-in-out infinite;
 }
