@@ -530,6 +530,21 @@ async function dispatchBookingChangeNotification(opts: {
   }
 }
 
+// P4d: centralized booking-response sanitizer. Strips admin-private
+// coach fields (privateCoachNotes) from any booking payload returned
+// to a non-admin user. Apply to every endpoint that returns booking
+// objects (list, create, patch, cancel, same-day-adjust). Admin
+// responses are returned unchanged.
+function sanitizeBookingForUser<T extends { privateCoachNotes?: any }>(
+  me: { role?: string } | undefined,
+  booking: T,
+): T {
+  if (!booking) return booking;
+  if (me?.role === "admin") return booking;
+  const { privateCoachNotes, ...rest } = booking as any;
+  return rest as T;
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   setupAuth(app);
 
@@ -742,14 +757,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (from) filters.from = from;
 
     const list = await storage.getBookings(filters);
-    // P4d: strip the admin-private coach fields from non-admin responses.
-    const stripPrivate = (b: any) => {
-      if (me.role === "admin") return b;
-      const { privateCoachNotes, ...rest } = b;
-      return rest;
-    };
-
-    if (!includeUser) return res.json(list.map(stripPrivate));
+    if (!includeUser) return res.json(list.map((b) => sanitizeBookingForUser(me, b)));
 
     const userIds = Array.from(new Set(list.map((b) => b.userId)));
     const usersById: Record<number, ReturnType<typeof sanitizeUser>> = {};
@@ -757,7 +765,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const u = await storage.getUser(uid);
       if (u) usersById[uid] = sanitizeUser(u);
     }
-    res.json(list.map((b) => stripPrivate({ ...b, user: usersById[b.userId] || null })));
+    res.json(list.map((b) => sanitizeBookingForUser(me, { ...b, user: usersById[b.userId] || null })));
   });
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
@@ -988,7 +996,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[booking] consent log failed:", e);
     }
 
-    res.status(201).json(booking);
+    res.status(201).json(sanitizeBookingForUser(me, booking));
   });
 
   // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============
@@ -1164,7 +1172,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
     });
 
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   // Same-Day Adjustment: shift a session to a different time the SAME day.
@@ -1278,7 +1286,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   // Admin: clear protected (legacy: emergency) cancel usage so the client can use it again
@@ -1439,7 +1447,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ) {
       void recomputeVipTier(booking.userId);
     }
-    res.json(updated);
+    res.json(sanitizeBookingForUser(me, updated));
   });
 
   app.delete("/api/bookings/:id", requireAdmin, async (req, res) => {
