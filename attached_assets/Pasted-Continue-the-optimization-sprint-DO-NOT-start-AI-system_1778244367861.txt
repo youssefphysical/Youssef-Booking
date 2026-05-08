@@ -1,0 +1,153 @@
+Continue the optimization sprint.
+
+DO NOT start AI systems yet.
+
+We are now entering:
+FINAL PRODUCTION HARDENING PHASE.
+
+==================================================
+PRIORITY NOW
+==================================================
+
+The platform must feel:
+- effortless
+- smooth
+- premium
+- stable
+- fast
+- scalable
+- easy to manage during real gym operations
+
+Focus on refinement and reliability over adding complexity.
+
+==================================================
+CONTINUE PERFORMANCE PASS
+==================================================
+
+Proceed with the remaining SAFE optimizations first:
+
+1. Image optimization pipeline
+2. Responsive image delivery
+3. Transformation gallery optimization
+4. Avatar/media compression
+5. Font loading optimization
+6. Route-level lazy loading refinement
+7. Bundle splitting refinement
+8. Skeleton timing polish
+9. Layout stability polish
+10. Mobile smoothness optimization
+
+Avoid risky architectural rewrites.
+
+==================================================
+DO NOT IMPLEMENT YET
+==================================================
+
+- AI systems
+- service workers
+- aggressive caching layers
+- offline mode
+- complex background jobs
+- speculative prefetch systems
+
+Only implement production-safe optimizations.
+
+==================================================
+FINAL UX HARDENING
+==================================================
+
+Audit every major flow:
+
+CLIENT FLOW:
+- registration
+- login
+- booking
+- cancellation
+- reschedule
+- profile
+- nutrition
+- supplements
+- transformations
+
+ADMIN FLOW:
+- dashboard overview
+- client management
+- booking management
+- nutrition editing
+- supplements editing
+- payments
+- notes
+- metrics
+- uploads
+- search
+
+Goal:
+zero confusion, minimal clicks, high readability.
+
+==================================================
+REAL-WORLD MOBILE TESTING
+==================================================
+
+Simulate:
+- weak internet
+- hot devices
+- small Android phones
+- Samsung Internet
+- mobile keyboard usage
+- long admin sessions
+- fast navigation between pages
+
+Fix:
+- jank
+- lag
+- touch frustrations
+- accidental taps
+- overflow
+- clipping
+- sticky issues
+- scroll issues
+
+==================================================
+VISUAL POLISH
+==================================================
+
+Make the UI feel:
+- lighter
+- cleaner
+- calmer
+- more readable
+- more premium
+
+Reduce:
+- visual noise
+- unnecessary borders
+- overcrowding
+- competing highlights
+
+Improve:
+- spacing rhythm
+- typography hierarchy
+- card readability
+- dashboard scanning speed
+
+==================================================
+FINAL GOAL
+==================================================
+
+The dashboard should feel:
+“luxury fitness SaaS”
+not “complex admin software”.
+
+==================================================
+DEPLOYMENT FLOW
+==================================================
+
+Continue safe batches:
+optimize → typecheck → architect review → push → deploy → verify
+
+At the end provide:
+- final performance summary
+- mobile UX summary
+- remaining bottlenecks
+- production readiness report
+- launch readiness assessment
