@@ -1,5 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useParams, Link } from "wouter";
+import { useBodyMetrics } from "@/hooks/use-body-metrics";
+import { useWeeklyCheckins } from "@/hooks/use-weekly-checkins";
+import {
+  AdminCard,
+  AdminSectionTitle,
+  AdminEmptyState,
+} from "@/components/admin/primitives";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +29,16 @@ import {
   Loader2,
   Save,
   Upload,
+  ChevronRight,
+  CalendarDays,
+  Camera,
+  Scale,
+  ClipboardList,
+  Ruler,
+  Flame,
+  Pill,
+  Apple,
+  AlertCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useBookings } from "@/hooks/use-bookings";
@@ -135,6 +152,243 @@ import {
 import { RotateCcw, AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/i18n";
 
+// =====================================================
+// UX5 — Premium client profile (fitness operating system)
+// Sticky header anchors WHO. Reordered tabs for daily flow.
+// Overview becomes a command center, not a settings page.
+// =====================================================
+
+const CLIENT_TABS: Array<{ value: string; labelKey: string; fallback: string; icon: React.ReactNode }> = [
+  { value: "overview", labelKey: "admin.tabs.overview", fallback: "Overview", icon: <Activity size={13} /> },
+  { value: "bookings", labelKey: "admin.clientDetail.tabSessions", fallback: "Sessions", icon: <Calendar size={13} /> },
+  { value: "nutrition", labelKey: "admin.tabs.nutrition", fallback: "Nutrition", icon: <Apple size={13} /> },
+  { value: "supplements", labelKey: "admin.tabs.supplements", fallback: "Supplements", icon: <Pill size={13} /> },
+  { value: "progress", labelKey: "admin.clientDetail.tabProgress", fallback: "Progress", icon: <Camera size={13} /> },
+  { value: "body", labelKey: "admin.clientDetail.tabBody", fallback: "Body Metrics", icon: <Scale size={13} /> },
+  { value: "checkins", labelKey: "admin.clientDetail.tabCheckins", fallback: "Check-ins", icon: <ClipboardList size={13} /> },
+  { value: "notes", labelKey: "admin.clientDetail.tabNotes", fallback: "Notes", icon: <FileText size={13} /> },
+  { value: "documents", labelKey: "admin.clientDetail.tabDocuments", fallback: "Documents", icon: <FileCheck2 size={13} /> },
+  { value: "packages", labelKey: "admin.clientDetail.tabPackage", fallback: "Payments", icon: <Wallet size={13} /> },
+  { value: "inbody", labelKey: "admin.clientDetail.tabHealth", fallback: "Health", icon: <HeartPulse size={13} /> },
+  { value: "activity", labelKey: "admin.tabs.activity", fallback: "Activity", icon: <Activity size={13} /> },
+  { value: "alerts", labelKey: "admin.clientDetail.tabAlerts", fallback: "Alerts", icon: <Bell size={13} /> },
+];
+
+function activePackageOf(packages: Package[]): Package | undefined {
+  return packages.find(
+    (p) => (p.status === "active" || p.status === "expiring_soon") && !p.frozen,
+  ) ?? packages.find((p) => p.isActive);
+}
+
+function packageRemainingSessions(p: Package | undefined): number | null {
+  if (!p) return null;
+  return Math.max(0, (p.totalSessions ?? 0) - (p.usedSessions ?? 0));
+}
+
+function ClientHeader({
+  client,
+  whatsappNumber,
+  activePkg,
+  remaining,
+  onJump,
+}: {
+  client: UserResponse;
+  whatsappNumber: string | undefined;
+  activePkg: Package | undefined;
+  remaining: number | null;
+  onJump: (tab: string) => void;
+}) {
+  const { t } = useTranslation();
+  const goalLabel =
+    PRIMARY_GOAL_OPTIONS.find((g) => g.value === client.primaryGoal)?.label ||
+    client.fitnessGoal ||
+    "—";
+  const tier = normaliseTier(client.vipTier);
+  const tierLabel = VIP_TIER_LABELS?.[tier] ?? tier;
+
+  return (
+    <div className="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-2 pb-3 mb-3 sm:mb-4 bg-gradient-to-b from-[rgba(5,10,20,0.96)] via-[rgba(5,10,20,0.92)] to-transparent backdrop-blur-md">
+      <Link
+        href="/admin/clients"
+        data-testid="link-back-clients"
+        className="text-[11px] text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-2 rtl:[&_svg]:rotate-180"
+      >
+        <ArrowLeft size={12} /> {t("admin.clientDetail.back")}
+      </Link>
+
+      <AdminCard padded={false} className="overflow-hidden">
+        <div className="p-3 sm:p-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <UserAvatar
+              src={client.profilePictureUrl}
+              name={client.fullName}
+              size={56}
+              testId="img-client-detail-avatar"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1
+                  className="text-[18px] sm:text-2xl font-display font-bold leading-tight truncate"
+                  data-testid="text-client-name"
+                >
+                  {client.fullName}
+                </h1>
+                {client.isVerified && <VerifiedBadge size="sm" testId="badge-client-detail-verified" />}
+                <ClientStatusBadge status={(client.clientStatus ?? "incomplete") as ClientStatus} />
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] sm:text-[11px] text-muted-foreground mt-1.5">
+                {client.email && (
+                  <span className="inline-flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
+                    <Mail size={10} /> {client.email}
+                  </span>
+                )}
+                {client.phone && (
+                  <span className="inline-flex items-center gap-1">
+                    <Phone size={10} /> {client.phone}
+                  </span>
+                )}
+                {client.area && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={10} /> {client.area}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Primary action: WhatsApp */}
+            {client.phone && (
+              <a
+                href={whatsappUrl(whatsappNumber || client.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-whatsapp"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-xs font-semibold whitespace-nowrap shrink-0"
+              >
+                <SiWhatsapp size={13} /> WhatsApp
+              </a>
+            )}
+          </div>
+
+          {/* Vital chips — goal · package · sessions · tier */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 sm:mt-4">
+            <HeaderChip
+              icon={<Target size={12} />}
+              label={t("admin.clientDetail.headerGoal", "Goal")}
+              value={goalLabel}
+              testId="header-chip-goal"
+            />
+            <HeaderChip
+              icon={<PackageIcon size={12} />}
+              label={t("admin.clientDetail.headerPackage", "Package")}
+              value={activePkg?.name || activePkg?.type || t("admin.clientDetail.headerNoPackage", "No active")}
+              testId="header-chip-package"
+              tone={activePkg ? "default" : "muted"}
+            />
+            <HeaderChip
+              icon={<Flame size={12} />}
+              label={t("admin.clientDetail.headerRemaining", "Sessions left")}
+              value={remaining == null ? "—" : String(remaining)}
+              testId="header-chip-remaining"
+              tone={remaining != null && remaining <= 2 ? "danger" : remaining != null && remaining <= 5 ? "warning" : "default"}
+            />
+            <HeaderChip
+              icon={<BadgeCheck size={12} />}
+              label={t("admin.clientDetail.headerTier", "Tier")}
+              value={tierLabel}
+              testId="header-chip-tier"
+            />
+          </div>
+
+          {/* Quick actions row */}
+          <div className="flex gap-1.5 sm:gap-2 mt-3 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch] -mx-1 px-1">
+            {client.phone && (
+              <a
+                href={whatsappUrl(whatsappNumber || client.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="button-whatsapp-mobile"
+                className="sm:hidden inline-flex items-center gap-1 px-3 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] text-[11px] font-semibold whitespace-nowrap shrink-0"
+              >
+                <SiWhatsapp size={11} /> WhatsApp
+              </a>
+            )}
+            <QuickActionPill icon={<Plus size={11} />} label={t("admin.clientDetail.qaBooking", "Booking")} onClick={() => onJump("bookings")} testId="qa-jump-bookings" />
+            <QuickActionPill icon={<Wallet size={11} />} label={t("admin.clientDetail.qaPackage", "Package")} onClick={() => onJump("packages")} testId="qa-jump-packages" />
+            <QuickActionPill icon={<Apple size={11} />} label={t("admin.clientDetail.qaNutrition", "Nutrition")} onClick={() => onJump("nutrition")} testId="qa-jump-nutrition" />
+            <QuickActionPill icon={<Pill size={11} />} label={t("admin.clientDetail.qaSupp", "Supps")} onClick={() => onJump("supplements")} testId="qa-jump-supplements" />
+            <QuickActionPill icon={<Camera size={11} />} label={t("admin.clientDetail.qaPhoto", "Photo")} onClick={() => onJump("progress")} testId="qa-jump-progress" />
+            <QuickActionPill icon={<Scale size={11} />} label={t("admin.clientDetail.qaMetric", "Metric")} onClick={() => onJump("body")} testId="qa-jump-body" />
+            <QuickActionPill icon={<FileText size={11} />} label={t("admin.clientDetail.qaNote", "Note")} onClick={() => onJump("notes")} testId="qa-jump-notes" />
+          </div>
+        </div>
+
+        <div className="border-t border-white/5 px-3 sm:px-5 py-2.5">
+          <ClientStatusControl client={client} />
+        </div>
+      </AdminCard>
+    </div>
+  );
+}
+
+function HeaderChip({
+  icon,
+  label,
+  value,
+  testId,
+  tone = "default",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  testId: string;
+  tone?: "default" | "muted" | "warning" | "danger";
+}) {
+  const valueClass =
+    tone === "danger"
+      ? "text-red-300"
+      : tone === "warning"
+        ? "text-amber-300"
+        : tone === "muted"
+          ? "text-muted-foreground/80"
+          : "text-foreground";
+  return (
+    <div
+      className="rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2 min-w-0"
+      data-testid={testId}
+    >
+      <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-wider font-semibold text-muted-foreground">
+        <span className="text-primary/80">{icon}</span>
+        <span className="truncate">{label}</span>
+      </div>
+      <p className={`text-[12.5px] sm:text-sm font-semibold leading-tight mt-0.5 truncate ${valueClass}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuickActionPill({
+  icon,
+  label,
+  onClick,
+  testId,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className="inline-flex items-center gap-1 px-2.5 h-8 rounded-lg bg-white/[0.04] border border-white/8 text-[11px] text-foreground/90 hover:bg-white/[0.08] active:bg-white/[0.12] font-medium whitespace-nowrap shrink-0 transition-colors"
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
 export default function AdminClientDetail() {
   const { t } = useTranslation();
   const params = useParams<{ id: string }>();
@@ -144,6 +398,11 @@ export default function AdminClientDetail() {
   const client = clients.find((c) => c.id === id);
 
   const { data: settings } = useSettings();
+  const { data: packagesAll = [] } = usePackages({ userId: id });
+  const activePkg = useMemo(() => activePackageOf(packagesAll), [packagesAll]);
+  const remaining = packageRemainingSessions(activePkg);
+
+  const [tab, setTab] = useState<string>("overview");
 
   if (!client) {
     return (
@@ -163,148 +422,339 @@ export default function AdminClientDetail() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-      <Link
-        href="/admin/clients"
-        data-testid="link-back-clients"
-        className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
-      >
-        <ArrowLeft size={14} /> {t("admin.clientDetail.back")}
-      </Link>
+        <ClientHeader
+          client={client}
+          whatsappNumber={settings?.whatsappNumber ?? undefined}
+          activePkg={activePkg}
+          remaining={remaining}
+          onJump={setTab}
+        />
 
-      <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6 flex flex-wrap gap-5 items-start justify-between">
-        <div className="flex items-start gap-4 min-w-0">
-          <UserAvatar
-            src={client.profilePictureUrl}
-            name={client.fullName}
-            size={64}
-            testId="img-client-detail-avatar"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-display font-bold leading-tight" data-testid="text-client-name">
-                {client.fullName}
-              </h1>
-              {client.isVerified && <VerifiedBadge size="md" testId="badge-client-detail-verified" />}
-              <VerifiedToggle clientId={client.id} verifiedOverride={client.verifiedOverride} isVerified={!!client.isVerified} />
-              <ClientStatusBadge status={(client.clientStatus ?? "incomplete") as ClientStatus} />
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-              {client.email && <span className="inline-flex items-center gap-1.5"><Mail size={11} /> {client.email}</span>}
-              {client.phone && <span className="inline-flex items-center gap-1.5"><Phone size={11} /> {client.phone}</span>}
-              {client.area && <span className="inline-flex items-center gap-1.5"><MapPin size={11} /> {client.area}</span>}
-            </div>
-            <div className="mt-3">
-              <ClientStatusControl client={client} />
-            </div>
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
+          {/* Premium horizontal-scroll tab rail */}
+          <div className="rounded-xl sm:rounded-2xl border border-white/5 bg-card/60 p-1 mb-4 sm:mb-6 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
+            <TabsList className="bg-transparent p-0 h-auto flex gap-1 min-w-max">
+              {CLIENT_TABS.map((tabSpec) => (
+                <TabsTrigger
+                  key={tabSpec.value}
+                  value={tabSpec.value}
+                  data-testid={`tab-detail-${tabSpec.value}`}
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] sm:text-xs font-semibold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/20 text-muted-foreground hover:text-foreground"
+                >
+                  {tabSpec.icon}
+                  {t(tabSpec.labelKey, tabSpec.fallback)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
           </div>
-        </div>
-        {client.phone && (
-          <a
-            href={whatsappUrl(settings?.whatsappNumber || client.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="button-whatsapp"
-            className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-sm font-semibold whitespace-nowrap"
-          >
-            <SiWhatsapp size={14} /> WhatsApp
-          </a>
-        )}
-      </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-white/5 mb-6 h-auto flex flex-wrap p-1 gap-1">
-          <TabsTrigger value="overview" data-testid="tab-overview">{t("admin.tabs.overview")}</TabsTrigger>
-          <TabsTrigger value="packages" data-testid="tab-detail-packages">
-            <PackageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabPackage", "Package")}
-          </TabsTrigger>
-          <TabsTrigger value="bookings" data-testid="tab-detail-bookings">
-            <Calendar size={13} className="mr-1.5" /> {t("admin.clientDetail.tabSessions", "Sessions")}
-          </TabsTrigger>
-          <TabsTrigger value="inbody" data-testid="tab-detail-inbody">
-            <HeartPulse size={13} className="mr-1.5" /> {t("admin.clientDetail.tabHealth", "Health & Goals")}
-          </TabsTrigger>
-          <TabsTrigger value="progress" data-testid="tab-detail-progress">
-            <ImageIcon size={13} className="mr-1.5" /> {t("admin.clientDetail.tabProgress", "Progress")}
-          </TabsTrigger>
-          <TabsTrigger value="body" data-testid="tab-detail-body">
-            {t("admin.clientDetail.tabBody", "Body Metrics")}
-          </TabsTrigger>
-          <TabsTrigger value="checkins" data-testid="tab-detail-checkins">
-            {t("admin.clientDetail.tabCheckins", "Check-ins")}
-          </TabsTrigger>
-          <TabsTrigger value="notes" data-testid="tab-detail-notes">
-            <FileText size={13} className="mr-1.5" /> {t("admin.clientDetail.tabNotes", "Notes")}
-          </TabsTrigger>
-          <TabsTrigger value="documents" data-testid="tab-detail-documents">
-            <FileCheck2 size={13} className="mr-1.5" /> {t("admin.clientDetail.tabDocuments", "Documents")}
-          </TabsTrigger>
-          <TabsTrigger value="nutrition" data-testid="tab-detail-nutrition">
-            {t("admin.tabs.nutrition", "Nutrition")}
-          </TabsTrigger>
-          <TabsTrigger value="supplements" data-testid="tab-detail-supplements">
-            {t("admin.tabs.supplements", "Supplements")}
-          </TabsTrigger>
-          <TabsTrigger value="activity" data-testid="tab-detail-activity">
-            {t("admin.tabs.activity", "Activity")}
-          </TabsTrigger>
-          <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
-            <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview"><OverviewTab client={client} /></TabsContent>
-        <TabsContent value="packages">
-          <PackagesPanel client={client} />
-          <div className="mt-6">
-            <SessionHistoryCard userId={client.id} />
-          </div>
-        </TabsContent>
-        <TabsContent value="bookings"><BookingsTab client={client} /></TabsContent>
-        <TabsContent value="inbody">
-          <HealthGoalsPanel client={client} />
-          <div className="mt-6">
-            <InbodyPanel userId={client.id} />
-          </div>
-        </TabsContent>
-        <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
-        <TabsContent value="body"><BodyMetricsPanel userId={client.id} canEdit={true} /></TabsContent>
-        <TabsContent value="checkins"><WeeklyCheckinsPanel userId={client.id} isAdmin={true} /></TabsContent>
-        <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
-        <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
-        <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
-        <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
-        <TabsContent value="activity">
-          <ActivityFeed
-            endpoint={`/api/admin/clients/${client.id}/activity`}
-            title={t("admin.tabs.activity", "Activity")}
-          />
-        </TabsContent>
-        <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
-      </Tabs>
+          <TabsContent value="overview">
+            <OverviewTab client={client} activePkg={activePkg} remaining={remaining} onJump={setTab} />
+          </TabsContent>
+          <TabsContent value="packages">
+            <PackagesPanel client={client} />
+            <div className="mt-6">
+              <SessionHistoryCard userId={client.id} />
+            </div>
+          </TabsContent>
+          <TabsContent value="bookings"><BookingsTab client={client} /></TabsContent>
+          <TabsContent value="inbody">
+            <HealthGoalsPanel client={client} />
+            <div className="mt-6">
+              <InbodyPanel userId={client.id} />
+            </div>
+          </TabsContent>
+          <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
+          <TabsContent value="body"><BodyMetricsPanel userId={client.id} canEdit={true} /></TabsContent>
+          <TabsContent value="checkins"><WeeklyCheckinsPanel userId={client.id} isAdmin={true} /></TabsContent>
+          <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
+          <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
+          <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
+          <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
+          <TabsContent value="activity">
+            <ActivityFeed
+              endpoint={`/api/admin/clients/${client.id}/activity`}
+              title={t("admin.tabs.activity", "Activity")}
+            />
+          </TabsContent>
+          <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
+        </Tabs>
       </div>
     </div>
   );
 }
 
-function OverviewTab({ client }: { client: UserResponse }) {
+function OverviewTab({
+  client,
+  activePkg,
+  remaining,
+  onJump,
+}: {
+  client: UserResponse;
+  activePkg: Package | undefined;
+  remaining: number | null;
+  onJump: (tab: string) => void;
+}) {
+  const { t } = useTranslation();
+  const today = todayIso();
+  const { data: upcomingBookings = [] } = useBookings({ userId: client.id, from: today });
+  const upcoming = (upcomingBookings as any[])
+    .filter((b) => ["upcoming", "confirmed"].includes(b.status))
+    .slice(0, 3);
+  const { data: bodyMetrics = [] } = useBodyMetrics(client.id);
+  const latestMetric = bodyMetrics[0]; // hooks return newest-first
+  const prevMetric = bodyMetrics[1];
+  const weightDelta =
+    latestMetric?.weight != null && prevMetric?.weight != null
+      ? latestMetric.weight - prevMetric.weight
+      : null;
+  const { data: checkins = [] } = useWeeklyCheckins(client.id);
+  const latestCheckin = checkins[0];
+
+  const totalSessions = activePkg ? (activePkg.totalSessions ?? 0) : 0;
+  const usedSessions = activePkg ? (activePkg.usedSessions ?? 0) : 0;
+  const usagePct = totalSessions > 0 ? Math.min(100, Math.round((usedSessions / totalSessions) * 100)) : 0;
+  const expiryStr = activePkg?.expiryDate ? format(new Date(activePkg.expiryDate), "MMM d, yyyy") : "—";
+
   const goalLabel =
     PRIMARY_GOAL_OPTIONS.find((g) => g.value === client.primaryGoal)?.label ||
     client.fitnessGoal ||
     "—";
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Command center grid: 4 mini cards */}
       <div className="grid sm:grid-cols-2 gap-3">
-        <InfoCard icon={<Target size={13} />} label="Primary Goal" value={goalLabel} />
-        <InfoCard icon={<MapPin size={13} />} label="Area" value={client.area || "—"} />
-        <InfoCard
-          icon={<Calendar size={13} />}
-          label="Member Since"
-          value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}
-        />
-        <InfoCard icon={<Notebook size={13} />} label="Notes" value={client.notes || "—"} className="sm:col-span-2" />
+        {/* Upcoming sessions */}
+        <AdminCard testId="overview-upcoming">
+          <AdminSectionTitle
+            title={t("admin.clientDetail.upcomingSessions", "Upcoming sessions")}
+            cta={{ href: "#", label: t("admin.clientDetail.manage", "Manage"), testId: "overview-upcoming-cta" }}
+          />
+          {upcoming.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => onJump("bookings")}
+              className="w-full text-start"
+              data-testid="overview-upcoming-empty"
+            >
+              <AdminEmptyState
+                icon={<Calendar size={18} />}
+                title={t("admin.clientDetail.noUpcoming", "No sessions scheduled")}
+                body={t("admin.clientDetail.bookOneHint", "Book a session for this client.")}
+              />
+            </button>
+          ) : (
+            <ul className="space-y-1.5">
+              {upcoming.map((b: any) => (
+                <li
+                  key={b.id}
+                  className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-white/[0.03] border border-white/5"
+                  data-testid={`overview-upcoming-${b.id}`}
+                >
+                  <span className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary shrink-0">
+                    <span className="text-[8px] uppercase font-bold leading-none tracking-wide">
+                      {format(new Date(b.date), "MMM")}
+                    </span>
+                    <span className="text-[13px] font-display font-bold leading-none mt-0.5">
+                      {format(new Date(b.date), "d")}
+                    </span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-medium leading-tight truncate">
+                      {formatTime12(b.timeSlot)}
+                    </p>
+                    <p className="text-[10.5px] text-muted-foreground truncate mt-0.5">
+                      {translateStatus(b.status, t)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </AdminCard>
+
+        {/* Package usage */}
+        <AdminCard testId="overview-package">
+          <AdminSectionTitle
+            title={t("admin.clientDetail.activePackage", "Active package")}
+            cta={{ href: "#", label: t("admin.clientDetail.edit", "Edit"), testId: "overview-pkg-cta" }}
+          />
+          {!activePkg ? (
+            <button
+              type="button"
+              onClick={() => onJump("packages")}
+              className="w-full text-start"
+              data-testid="overview-pkg-empty"
+            >
+              <AdminEmptyState
+                icon={<PackageIcon size={18} />}
+                title={t("admin.clientDetail.noActivePkg", "No active package")}
+                body={t("admin.clientDetail.assignPkgHint", "Assign a package to start tracking sessions.")}
+              />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onJump("packages")}
+              className="w-full text-start"
+              data-testid="overview-pkg-card"
+            >
+              <p className="font-display font-bold text-base leading-tight truncate">
+                {activePkg.name || activePkg.type}
+              </p>
+              <div className="flex items-baseline gap-2 mt-1.5">
+                <span className="font-display font-bold text-2xl tabular-nums">
+                  {remaining ?? 0}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  / {totalSessions} {t("admin.clientDetail.sessionsLeft", "sessions left")}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-700"
+                  style={{ width: `${usagePct}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-2 text-[10.5px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays size={11} /> {t("admin.clientDetail.expires", "Expires")}: {expiryStr}
+                </span>
+                {activePkg.frozen && (
+                  <span className="inline-flex items-center gap-1 text-sky-300">
+                    <Snowflake size={11} /> {t("admin.clientDetail.frozen", "Frozen")}
+                  </span>
+                )}
+              </div>
+            </button>
+          )}
+        </AdminCard>
+
+        {/* Latest body metric */}
+        <AdminCard testId="overview-body">
+          <AdminSectionTitle
+            title={t("admin.clientDetail.latestBody", "Latest body metric")}
+            cta={{ href: "#", label: t("admin.clientDetail.add", "Add"), testId: "overview-body-cta" }}
+          />
+          {!latestMetric ? (
+            <button type="button" onClick={() => onJump("body")} className="w-full text-start" data-testid="overview-body-empty">
+              <AdminEmptyState
+                icon={<Scale size={18} />}
+                title={t("admin.clientDetail.noBody", "No body metrics yet")}
+                body={t("admin.clientDetail.addBodyHint", "Log weight & body fat to start tracking.")}
+              />
+            </button>
+          ) : (
+            <button type="button" onClick={() => onJump("body")} className="w-full text-start" data-testid="overview-body-card">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display font-bold text-2xl tabular-nums">
+                  {latestMetric.weight ?? "—"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">kg</span>
+                {weightDelta != null && weightDelta !== 0 && (
+                  <span
+                    className={`text-[11px] font-semibold tabular-nums ${
+                      weightDelta < 0 ? "text-emerald-300" : "text-amber-300"
+                    }`}
+                  >
+                    {weightDelta > 0 ? "+" : ""}
+                    {weightDelta.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-[11px] text-muted-foreground">
+                {latestMetric.bodyFat != null && (
+                  <span className="inline-flex items-center gap-1">
+                    <Flame size={10} /> {latestMetric.bodyFat}% bf
+                  </span>
+                )}
+                {latestMetric.waist != null && (
+                  <span className="inline-flex items-center gap-1">
+                    <Ruler size={10} /> {latestMetric.waist} cm waist
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays size={10} />{" "}
+                  {latestMetric.recordedOn ? format(new Date(latestMetric.recordedOn), "MMM d") : ""}
+                </span>
+              </div>
+            </button>
+          )}
+        </AdminCard>
+
+        {/* Latest weekly check-in */}
+        <AdminCard testId="overview-checkin">
+          <AdminSectionTitle
+            title={t("admin.clientDetail.latestCheckin", "Latest check-in")}
+            cta={{ href: "#", label: t("admin.clientDetail.view", "View"), testId: "overview-checkin-cta" }}
+          />
+          {!latestCheckin ? (
+            <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-empty">
+              <AdminEmptyState
+                icon={<ClipboardList size={18} />}
+                title={t("admin.clientDetail.noCheckin", "No check-ins yet")}
+                body={t("admin.clientDetail.checkinHint", "Weekly check-ins help spot trends early.")}
+              />
+            </button>
+          ) : (
+            <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-card">
+              <p className="text-[11px] text-muted-foreground">
+                {latestCheckin.weekStart
+                  ? `${t("admin.clientDetail.weekOf", "Week of")} ${format(new Date(latestCheckin.weekStart), "MMM d")}`
+                  : ""}
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                <CheckinChip label={t("admin.clientDetail.energy", "Energy")} value={latestCheckin.energy} />
+                <CheckinChip label={t("admin.clientDetail.sleep", "Sleep")} value={latestCheckin.sleepQuality} />
+                <CheckinChip label={t("admin.clientDetail.training", "Training")} value={latestCheckin.trainingAdherence} />
+              </div>
+              {latestCheckin.notes && (
+                <p className="text-[11px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                  "{latestCheckin.notes}"
+                </p>
+              )}
+            </button>
+          )}
+        </AdminCard>
       </div>
+
+      {/* Profile snapshot — secondary info */}
+      <AdminCard testId="overview-snapshot">
+        <AdminSectionTitle title={t("admin.clientDetail.profileSnapshot", "Profile")} />
+        <div className="grid sm:grid-cols-2 gap-3">
+          <InfoCard icon={<Target size={13} />} label={t("admin.clientDetail.primaryGoal", "Primary Goal")} value={goalLabel} />
+          <InfoCard icon={<MapPin size={13} />} label={t("admin.clientDetail.area", "Area")} value={client.area || "—"} />
+          <InfoCard
+            icon={<Calendar size={13} />}
+            label={t("admin.clientDetail.memberSince", "Member Since")}
+            value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}
+          />
+          <InfoCard
+            icon={<Notebook size={13} />}
+            label={t("admin.clientDetail.notesShort", "Notes")}
+            value={client.notes || "—"}
+            className="sm:col-span-2"
+          />
+        </div>
+      </AdminCard>
+
       <ClientPrivilegesCard client={client} />
       <ConsentsCard userId={client.id} />
+    </div>
+  );
+}
+
+function CheckinChip({ label, value }: { label: string; value: number | null | undefined }) {
+  const v = value ?? null;
+  const tone =
+    v == null ? "text-muted-foreground" : v >= 8 ? "text-emerald-300" : v >= 5 ? "text-amber-300" : "text-red-300";
+  return (
+    <div className="rounded-lg bg-white/[0.03] border border-white/5 px-2 py-1.5 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
+      <p className={`font-display font-bold text-base tabular-nums leading-none mt-0.5 ${tone}`}>
+        {v ?? "—"}
+      </p>
     </div>
   );
 }
