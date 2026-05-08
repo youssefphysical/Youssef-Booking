@@ -325,13 +325,27 @@ export function Navigation() {
               <span className="whitespace-nowrap">{t("nav.signIn")}</span>
             </Link>
           )}
+          {/* MOBILE HAMBURGER — visually unified with the sibling Sign In /
+              Sign Out pills (May 2026 polish pass): same h-9, same rounded-xl,
+              same border-white/15 + bg-white/5 glass, same btn-press tap
+              feedback, square aspect (h-9 w-9) so the icon sits perfectly
+              centered. Icon size unchanged at 18. The icon swap (Menu ↔ X)
+              gets a soft 200ms scale+rotate via the inline span so the
+              open/close transition feels premium, not jarring. */}
           <button
-            className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
+            type="button"
+            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border border-white/15 bg-white/5 text-foreground hover:bg-white/10 hover:border-white/25 shrink-0 btn-press"
             onClick={() => setOpen(!open)}
             aria-label={t("nav.toggleMenu")}
+            aria-expanded={open}
             data-testid="button-mobile-menu"
           >
-            {open ? <X size={18} /> : <Menu size={18} />}
+            <span
+              className="inline-flex items-center justify-center transition-transform duration-200 ease-out"
+              style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+            >
+              {open ? <X size={18} strokeWidth={1.75} /> : <Menu size={18} strokeWidth={1.75} />}
+            </span>
           </button>
         </div>
       </div>
