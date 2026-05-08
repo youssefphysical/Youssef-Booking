@@ -3626,15 +3626,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     let recentCheckinCount = 0;
     if (activeClientIds.length > 0) {
       const cutoffStr = new Date(now.getTime() - ms(30)).toISOString().slice(0, 10);
-      const lists = await Promise.all(
-        activeClientIds.map((uid) =>
-          (storage as any).listWeeklyCheckins(uid, { limit: 12 }).catch(() => [] as any[]),
-        ),
-      );
-      for (const lst of lists) {
-        for (const c of lst as any[]) {
-          if (String(c.weekStart) >= cutoffStr) recentCheckinCount++;
-        }
+      // Single bulk count — avoids N+1 across active clients.
+      try {
+        const r = await pool.query(
+          `SELECT COUNT(*)::int AS n FROM weekly_checkins
+           WHERE user_id = ANY($1::int[]) AND week_start >= $2::date`,
+          [activeClientIds, cutoffStr],
+        );
+        recentCheckinCount = Number(r.rows?.[0]?.n ?? 0);
+      } catch {
+        recentCheckinCount = 0;
       }
     }
     // Expected = active clients * 4.3 weeks (≈30d). Cap at 1.
@@ -3667,12 +3668,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         if (p.paymentStatus === "paid") revenueByMonth[idx].paid += price;
       }
     }
+    // Completed-only month buckets, but DOW counts ALL bookings that
+    // actually consumed a slot (any non-cancelled status) so demand
+    // shape is faithful, not skewed by attendance.
+    const NON_CANCELLED = new Set([
+      "upcoming",
+      "confirmed",
+      "completed",
+      "no_show",
+      "late_cancelled",
+    ]);
     for (const b of allBookings) {
-      if (b.status !== "completed") continue;
       const d = new Date(`${String(b.date)}T00:00:00Z`);
-      const idx = monthIdx.get(isoMonth(d));
-      if (idx !== undefined) completedByMonth[idx].count++;
-      bookingsByDow[d.getUTCDay()].count++;
+      if (b.status === "completed") {
+        const idx = monthIdx.get(isoMonth(d));
+        if (idx !== undefined) completedByMonth[idx].count++;
+      }
+      if (NON_CANCELLED.has(b.status)) {
+        bookingsByDow[d.getUTCDay()].count++;
+      }
     }
     for (const c of clients) {
       if (!c.createdAt) continue;
