@@ -3256,7 +3256,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             if (claim.rowCount === 0) return; // already claimed by another worker
 
             const owner = await storage.getUser(b.userId).catch(() => undefined);
-            if (!owner?.email) return;
+            if (!owner) return;
             const ownerLang = (owner as any).preferredLanguage || "en";
             const built = buildSessionReminderEmail({
               kind,
@@ -3269,6 +3269,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 trainingGoalLabel: b.trainingGoal || null,
               },
             });
+            // P5b: Mirror the reminder in-app FIRST — independent of the
+            // email channel. Users without an email address still get
+            // the in-app reminder, and the partial UNIQUE INDEX makes
+            // the insert safe under concurrent cron retries.
+            void notifyUserOnce(
+              b.userId,
+              "session_reminder",
+              `reminder-${b.id}-${kind}`,
+              kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
+              `${b.date} at ${formatTime12Server(b.timeSlot)}`,
+              { link: "/dashboard", meta: { bookingId: b.id, kind } },
+            );
+
+            if (!owner.email) return; // in-app already posted above
             const result = await sendEmail({
               to: owner.email,
               subject: built.subject,
@@ -3280,19 +3294,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               result.sent
                 ? { id: b.id, kind }
                 : { id: b.id, kind, error: result.error || "send returned false" },
-            );
-
-            // P5b: Mirror the reminder in-app. The atomic claim above
-            // already gates duplicate dispatches, but we belt-and-brace
-            // with notifyUserOnce so a manual cron retry can never
-            // double-post the in-app row either.
-            void notifyUserOnce(
-              b.userId,
-              "session_reminder",
-              `reminder-${b.id}-${kind}`,
-              kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
-              `${b.date} at ${formatTime12Server(b.timeSlot)}`,
-              { link: "/dashboard", meta: { bookingId: b.id, kind } },
             );
           } catch (e: any) {
             failed.push({ id: b.id, kind, error: e?.message || "unknown" });

@@ -557,6 +557,16 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS client_notifications_user_unread_idx
       ON client_notifications (user_id, read_at, created_at DESC);
+
+    -- P5b: atomic dedupe. Persisted column + partial unique index lets
+    -- notifyUserOnce use INSERT ... ON CONFLICT DO NOTHING so concurrent
+    -- triggers (cron retries, simultaneous attendance updates, etc.) can
+    -- never double-insert. NULL is allowed for notifications that don't
+    -- need dedupe and the partial WHERE clause keeps those un-constrained.
+    ALTER TABLE client_notifications ADD COLUMN IF NOT EXISTS dedupe_key text;
+    CREATE UNIQUE INDEX IF NOT EXISTS client_notifications_dedupe_uq
+      ON client_notifications (user_id, kind, dedupe_key)
+      WHERE dedupe_key IS NOT NULL;
   `;
 
   try {

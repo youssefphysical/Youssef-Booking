@@ -49,6 +49,7 @@ export async function notifyUser(
       body,
       link: opts.link ?? null,
       meta: (opts.meta as any) ?? null,
+      dedupeKey: (opts.meta as any)?.dedupeKey ?? null,
       channelInApp: channels.inApp ?? true,
       channelPush: channels.push ?? false,
       channelEmail: channels.email ?? false,
@@ -80,17 +81,30 @@ export async function notifyUserOnce(
   body: string,
   opts: NotifyOptions = {},
 ): Promise<ClientNotification | null> {
+  // Atomic dedupe: relies on the partial UNIQUE INDEX on
+  // (user_id, kind, dedupe_key) WHERE dedupe_key IS NOT NULL. Storage
+  // performs INSERT ... ON CONFLICT DO NOTHING, returning the row on
+  // first insert and `null` when a duplicate was suppressed. This makes
+  // concurrent invocations (cron retries, racing triggers) safe.
   try {
-    const existing = await storage.findClientNotificationByDedupeKey(userId, kind, dedupeKey);
-    if (existing) return null;
+    const channels: NotifyChannels = { inApp: true, push: false, email: false, ...opts.channels };
+    const inserted = await storage.createClientNotificationOnce({
+      userId,
+      kind,
+      title,
+      body,
+      link: opts.link ?? null,
+      meta: { ...(opts.meta ?? {}), dedupeKey } as any,
+      dedupeKey,
+      channelInApp: channels.inApp ?? true,
+      channelPush: channels.push ?? false,
+      channelEmail: channels.email ?? false,
+    });
+    return inserted;
   } catch (err) {
-    console.error("[notifyUserOnce] dedupe lookup failed (will skip):", err);
+    console.error("[notifyUserOnce] failed:", err);
     return null;
   }
-  return notifyUser(userId, kind, title, body, {
-    ...opts,
-    meta: { ...(opts.meta ?? {}), dedupeKey },
-  });
 }
 
 /**

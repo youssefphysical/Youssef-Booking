@@ -674,6 +674,11 @@ export const clientNotifications = pgTable("client_notifications", {
   // Optional structured payload — used by triggers to dedupe (e.g.
   // { bookingId: 123 } or { weekStart: "2026-05-04" }).
   meta: jsonb("meta"),
+  // Persisted dedupe key. Mirrors `meta.dedupeKey` and is enforced by a
+  // partial unique index `(user_id, kind, dedupe_key) WHERE dedupe_key
+  // IS NOT NULL`, so concurrent triggers can race INSERTs and only one
+  // wins. NULL for fire-and-forget notifications without a dedupe key.
+  dedupeKey: text("dedupe_key"),
   // Channel state — additive, future dispatchers stamp these.
   channelInApp: boolean("channel_in_app").notNull().default(true),
   channelPush: boolean("channel_push").notNull().default(false),
@@ -693,6 +698,7 @@ export const insertClientNotificationSchema = createInsertSchema(clientNotificat
     body: z.string().min(1).max(2000),
     link: z.string().max(500).nullish(),
     meta: z.any().nullish(),
+    dedupeKey: z.string().max(200).nullish(),
   });
 
 export type ClientNotification = typeof clientNotifications.$inferSelect;

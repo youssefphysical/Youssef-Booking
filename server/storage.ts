@@ -208,6 +208,9 @@ export interface IStorage {
   ): Promise<ClientNotification[]>;
   getClientUnreadNotificationCount(userId: number): Promise<number>;
   createClientNotification(notif: InsertClientNotification): Promise<ClientNotification>;
+  createClientNotificationOnce(
+    notif: InsertClientNotification,
+  ): Promise<ClientNotification | null>;
   findClientNotificationByDedupeKey(
     userId: number,
     kind: string,
@@ -1409,6 +1412,28 @@ export class DatabaseStorage implements IStorage {
   async createClientNotification(notif: InsertClientNotification): Promise<ClientNotification> {
     const [n] = await db.insert(clientNotifications).values(notif).returning();
     return n;
+  }
+
+  // Atomic dedupe variant. Relies on the partial UNIQUE INDEX
+  // `client_notifications_dedupe_uq` on (user_id, kind, dedupe_key)
+  // WHERE dedupe_key IS NOT NULL. On conflict we DO NOTHING and the
+  // INSERT returns no rows, which we surface as `null`. This makes
+  // notifyUserOnce safe under racing cron retries / concurrent triggers.
+  async createClientNotificationOnce(
+    notif: InsertClientNotification,
+  ): Promise<ClientNotification | null> {
+    const rows = await db
+      .insert(clientNotifications)
+      .values(notif)
+      .onConflictDoNothing({
+        target: [
+          clientNotifications.userId,
+          clientNotifications.kind,
+          clientNotifications.dedupeKey,
+        ],
+      })
+      .returning();
+    return rows[0] ?? null;
   }
 
   // Dedupe lookup for notifyUserOnce(): finds a previous notification for
