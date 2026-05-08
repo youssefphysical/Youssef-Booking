@@ -1275,6 +1275,84 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ ok: true });
   });
 
+  // ============== ADMIN GLOBAL SEARCH (Cmd+K palette) ==============
+  // Federated search across clients, bookings, packages, nutrition plans,
+  // and supplement stacks. Read-only, admin-only. Returns at most
+  // `perCategory` rows per group (cap 20). Empty query returns empty groups
+  // (the palette uses recent/featured fallbacks instead).
+  app.get("/api/admin/search", requireAdmin, async (req, res) => {
+    const q = String(req.query.q ?? "").slice(0, 200);
+    const perCatRaw = Number(req.query.limit ?? 5);
+    const perCategory = Number.isFinite(perCatRaw)
+      ? Math.min(Math.max(perCatRaw, 1), 20)
+      : 5;
+    const groups = await storage.searchAdmin(q, perCategory);
+    // Enrich bookings + packages + nutrition plans with the client's name
+    // so the palette can render "Booking · Apr 12 09:00 · Ahmed Hassan"
+    // in a single render pass without per-row roundtrips.
+    const userIds = new Set<number>();
+    for (const b of groups.bookings) userIds.add(b.userId);
+    for (const p of groups.packages) userIds.add(p.userId);
+    for (const n of groups.nutritionPlans) userIds.add(n.userId);
+    for (const u of groups.clients) userIds.add(u.id);
+    const nameMap = new Map<number, string>();
+    if (userIds.size > 0) {
+      const rows = await Promise.all(
+        Array.from(userIds).map(async (id) => {
+          const u = await storage.getUser(id);
+          return u ? ([id, u.fullName] as const) : null;
+        }),
+      );
+      for (const r of rows) if (r) nameMap.set(r[0], r[1]);
+    }
+    const decorate = <T extends { userId: number }>(rows: T[]) =>
+      rows.map((r) => ({ ...r, _userName: nameMap.get(r.userId) ?? null }));
+    res.json({
+      query: q,
+      clients: groups.clients.map((u) => ({
+        id: u.id,
+        fullName: u.fullName,
+        email: u.email,
+        phone: u.phone,
+        clientStatus: (u as any).clientStatus ?? null,
+        vipTier: u.vipTier ?? null,
+      })),
+      bookings: decorate(groups.bookings).map((b) => ({
+        id: b.id,
+        userId: b.userId,
+        userName: b._userName,
+        date: b.date,
+        timeSlot: b.timeSlot,
+        status: b.status,
+        sessionType: b.sessionType,
+      })),
+      packages: decorate(groups.packages).map((p) => ({
+        id: p.id,
+        userId: p.userId,
+        userName: p._userName,
+        name: p.name,
+        type: p.type,
+        totalSessions: p.totalSessions,
+        usedSessions: p.usedSessions,
+        status: (p as any).status ?? null,
+      })),
+      nutritionPlans: decorate(groups.nutritionPlans).map((n) => ({
+        id: n.id,
+        userId: n.userId,
+        userName: n._userName,
+        name: n.name,
+        status: n.status,
+        goal: n.goal,
+      })),
+      supplementStacks: groups.supplementStacks.map((s) => ({
+        id: s.id,
+        name: s.name,
+        goal: s.goal,
+        active: s.active,
+      })),
+    });
+  });
+
   // Admin-only email diagnostic. Sends a real test email via the configured
   // provider and returns a clean status — never exposes secret values.
   // Use to verify production email delivery without inspecting logs.

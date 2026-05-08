@@ -101,7 +101,7 @@ import {
   type ApplyStackToClientInput,
   type StackItemInput,
 } from "@shared/schema";
-import { eq, and, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
+import { eq, and, or, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -122,6 +122,19 @@ export interface IStorage {
   deleteUser(id: number): Promise<void>;
   getAllClients(): Promise<User[]>;
   getAllAdmins(): Promise<User[]>;
+  /**
+   * Federated admin search across users (clients), bookings, packages,
+   * nutrition plans, and supplement stacks. Used by the Cmd+K palette.
+   * Each category capped at `perCategory` rows. Pattern is wrapped in
+   * `%…%` for ILIKE — caller passes the raw query.
+   */
+  searchAdmin(q: string, perCategory?: number): Promise<{
+    clients: User[];
+    bookings: Booking[];
+    packages: Package[];
+    nutritionPlans: NutritionPlan[];
+    supplementStacks: SupplementStack[];
+  }>;
   /**
    * Batched lookup for the verified-badge flag. Returns a Map keyed by userId
    * so callers can enrich a list of users without N+1 queries.
@@ -423,6 +436,94 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, "client"))
       .orderBy(desc(users.createdAt));
+  }
+
+  async searchAdmin(q: string, perCategory: number = 5) {
+    const trimmed = (q ?? "").trim();
+    if (!trimmed) {
+      return {
+        clients: [],
+        bookings: [],
+        packages: [],
+        nutritionPlans: [],
+        supplementStacks: [],
+      };
+    }
+    const pat = `%${trimmed.replace(/[%_]/g, (m) => `\\${m}`)}%`;
+    const limit = Math.min(Math.max(perCategory, 1), 20);
+
+    const [clientsR, bookingsR, packagesR, npR, ssR] = await Promise.all([
+      db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.role, "client"),
+            or(
+              ilike(users.fullName, pat),
+              ilike(users.email, pat),
+              ilike(users.phone, pat),
+              ilike(users.username, pat),
+            ),
+          ),
+        )
+        .orderBy(desc(users.createdAt))
+        .limit(limit),
+      db
+        .select()
+        .from(bookings)
+        .where(
+          or(
+            sql`${bookings.date}::text ILIKE ${pat}`,
+            ilike(bookings.timeSlot, pat),
+            ilike(bookings.notes, pat),
+            ilike(bookings.adminNotes, pat),
+          ),
+        )
+        .orderBy(desc(bookings.date), desc(bookings.id))
+        .limit(limit),
+      db
+        .select()
+        .from(packages)
+        .where(
+          or(
+            ilike(packages.name, pat),
+            ilike(packages.type, pat),
+            ilike(packages.notes, pat),
+          ),
+        )
+        .orderBy(desc(packages.purchasedAt))
+        .limit(limit),
+      db
+        .select()
+        .from(nutritionPlans)
+        .where(
+          or(
+            ilike(nutritionPlans.name, pat),
+            ilike(nutritionPlans.publicNotes, pat),
+          ),
+        )
+        .orderBy(desc(nutritionPlans.updatedAt))
+        .limit(limit),
+      db
+        .select()
+        .from(supplementStacks)
+        .where(
+          or(
+            ilike(supplementStacks.name, pat),
+            ilike(supplementStacks.description, pat),
+          ),
+        )
+        .orderBy(desc(supplementStacks.updatedAt))
+        .limit(limit),
+    ]);
+    return {
+      clients: clientsR,
+      bookings: bookingsR,
+      packages: packagesR,
+      nutritionPlans: npR,
+      supplementStacks: ssR,
+    };
   }
 
   async getAllAdmins() {

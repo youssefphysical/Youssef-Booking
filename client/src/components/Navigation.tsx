@@ -17,6 +17,7 @@ import {
   LogIn,
   Menu,
   X,
+  Search,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { CommandPalette, useCommandPaletteShortcut } from "@/components/admin/CommandPalette";
 import { useTranslation } from "@/i18n";
 
 export function Navigation() {
@@ -35,6 +37,13 @@ export function Navigation() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // Cmd/Ctrl+K opens the admin palette globally — only wired when the
+  // current user is an admin. The hook itself is a no-op when the
+  // setter never fires, but gating keeps the listener off the public
+  // app entirely.
+  const isAdminUser = user?.role === "admin";
+  useCommandPaletteShortcut(isAdminUser ? setPaletteOpen : () => {});
 
   const requestLogout = useCallback(() => {
     // Always close the mobile drawer if it was open, then surface the
@@ -137,12 +146,30 @@ export function Navigation() {
             open ? "flex translate-x-0" : "hidden md:flex md:translate-x-0 -translate-x-full",
           )}
         >
-          <Link href="/" className="mb-8 px-1 block min-w-0" data-testid="link-home">
+          <Link href="/" className="mb-4 px-1 block min-w-0" data-testid="link-home">
             <h1 className="text-lg font-bold font-display text-gradient-blue truncate leading-tight px-0.5 py-0.5">{t("brand.trainerName", "Youssef Ahmed")}</h1>
             <p className="text-[10px] text-muted-foreground mt-1 tracking-widest uppercase leading-snug line-clamp-2">
               {t("nav.adminTagline")}
             </p>
           </Link>
+
+          {/* CMD+K SEARCH TRIGGER — visible affordance for the global palette.
+              Mirrors the Linear/Stripe/Raycast pattern: a button that looks
+              like a search input, with the keyboard shortcut on the right. */}
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            data-testid="button-open-command-palette"
+            className="mb-4 flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-sm text-muted-foreground hover:border-white/20 hover:bg-white/[0.06] transition-colors"
+          >
+            <Search size={14} className="opacity-60" />
+            <span className="flex-1 truncate text-xs">
+              {t("nav.searchPlaceholder", "Search or jump to…")}
+            </span>
+            <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              ⌘K
+            </kbd>
+          </button>
 
           <div className="flex-1 space-y-4">
             <div className="space-y-1">
@@ -199,6 +226,7 @@ export function Navigation() {
           onConfirm={confirmLogout}
           isPending={logoutMutation.isPending}
         />
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </>
     );
   }
