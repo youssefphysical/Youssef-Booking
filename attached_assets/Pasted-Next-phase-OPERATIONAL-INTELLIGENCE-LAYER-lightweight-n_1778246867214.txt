@@ -1,0 +1,177 @@
+Next phase:
+
+OPERATIONAL INTELLIGENCE LAYER
+(lightweight, non-AI-complexity)
+
+DO NOT build:
+- chatbots
+- AI generation
+- LLM integrations
+- autonomous systems
+
+Goal:
+make the platform operationally smarter and easier to manage during real gym work.
+
+==================================================
+MAIN OBJECTIVE
+==================================================
+
+Reduce mental load for the trainer/admin.
+
+The dashboard should proactively surface:
+- important actions
+- risks
+- trends
+- reminders
+- operational insights
+
+without overwhelming the UI.
+
+==================================================
+BUILD LIGHTWEIGHT INTELLIGENCE
+==================================================
+
+Create a smart operational layer with:
+
+1. Action Center
+2. Smart alerts
+3. Health indicators
+4. Progress insights
+5. Priority summaries
+6. Timeline intelligence
+7. Attention-needed surfaces
+
+==================================================
+ACTION CENTER
+==================================================
+
+Add a unified admin overview panel showing things like:
+
+- clients low on sessions
+- packages expiring soon
+- unpaid balances
+- inactive clients
+- clients missing check-ins
+- clients with declining progress
+- clients without recent body metrics
+- upcoming busy booking periods
+- overdue nutrition updates
+- supplement plans needing review
+
+Prioritize by urgency.
+
+==================================================
+SMART STATUS SYSTEM
+==================================================
+
+Introduce operational statuses such as:
+
+- Healthy
+- Needs Attention
+- Urgent
+- Inactive
+- At Risk
+- Progress Stalled
+- Payment Pending
+- Package Expiring
+
+Use subtle premium visual indicators.
+Avoid noisy red-heavy UI.
+
+==================================================
+CLIENT HEALTH SCORING
+==================================================
+
+Create lightweight scoring logic based on:
+- attendance consistency
+- missed sessions
+- check-ins
+- body metric trends
+- plan adherence
+- inactivity duration
+
+This is NOT medical scoring.
+Only operational coaching insights.
+
+==================================================
+TIMELINE INTELLIGENCE
+==================================================
+
+Improve client timelines with:
+- milestone highlights
+- streaks
+- missed-week detection
+- progress snapshots
+- package lifecycle events
+- nutrition/supplement changes
+- transformation milestones
+
+==================================================
+DASHBOARD SUMMARIES
+==================================================
+
+Add concise summary cards such as:
+- Today's sessions
+- Weekly attendance
+- Active nutrition plans
+- Active supplement stacks
+- Pending payments
+- Expiring packages
+- Clients needing follow-up
+
+Must remain:
+clean, calm, readable.
+
+==================================================
+UX RULES
+==================================================
+
+Do NOT:
+- clutter the dashboard
+- overload with charts
+- add noisy widgets
+- create alert fatigue
+
+Everything should feel:
+minimal, premium, operationally useful.
+
+==================================================
+PERFORMANCE RULES
+==================================================
+
+Maintain:
+- fast rendering
+- smooth scrolling
+- mobile responsiveness
+- low cognitive load
+- stable layouts
+
+Avoid expensive live computations.
+
+==================================================
+SAFETY
+==================================================
+
+Do NOT break:
+- auth
+- bookings
+- nutrition
+- supplements
+- metrics
+- uploads
+- translations
+- existing schemas unnecessarily
+
+==================================================
+DELIVERY FLOW
+==================================================
+
+Implement safely in deployable batches:
+design → typecheck → architect review → push → deploy → verify
+
+At the end provide:
+- operational intelligence summary
+- trainer workflow improvements
+- mental-load reduction summary
+- admin efficiency gains
+- remaining weak operational areas

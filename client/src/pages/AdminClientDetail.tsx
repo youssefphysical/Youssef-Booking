@@ -101,6 +101,7 @@ import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
 import BeforeAfterCompare from "@/components/BeforeAfterCompare";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { HealthBadge } from "@/components/HealthBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
@@ -235,6 +236,7 @@ function ClientHeader({
                 </h1>
                 {client.isVerified && <VerifiedBadge size="sm" testId="badge-client-detail-verified" />}
                 <ClientStatusBadge status={(client.clientStatus ?? "incomplete") as ClientStatus} />
+                <HealthBadge health={client.health} size="sm" />
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] sm:text-[11px] text-muted-foreground mt-1.5">
                 {client.email && (

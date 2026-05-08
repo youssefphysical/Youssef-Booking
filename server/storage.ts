@@ -142,6 +142,28 @@ export interface IStorage {
   getVerificationFlagsForUsers(
     userIds: number[],
   ): Promise<Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>>;
+  /**
+   * Batched health-signal lookup. Single-query-per-signal aggregation
+   * (max date, count last 30d, active-package flags) so the admin client
+   * list stays O(1) in DB queries regardless of N. Returned signals are
+   * fed into `computeClientHealth(s)` to derive the per-client badge.
+   */
+  getHealthSignalsForUsers(
+    userIds: number[],
+  ): Promise<
+    Map<
+      number,
+      {
+        lastCompletedDate: string | null;
+        lastCheckinWeek: string | null;
+        lastBodyMetricDate: string | null;
+        noShows30d: number;
+        completed30d: number;
+        hasActivePackage: boolean;
+        activePackageFrozen: boolean;
+      }
+    >
+  >;
 
   // Bookings
   getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
@@ -1707,6 +1729,112 @@ export class DatabaseStorage implements IStorage {
 
     return out;
   }
+  async getHealthSignalsForUsers(userIds: number[]) {
+    type Row = {
+      lastCompletedDate: string | null;
+      lastCheckinWeek: string | null;
+      lastBodyMetricDate: string | null;
+      noShows30d: number;
+      completed30d: number;
+      hasActivePackage: boolean;
+      activePackageFrozen: boolean;
+    };
+    const out = new Map<number, Row>();
+    if (userIds.length === 0) return out;
+    for (const id of userIds) {
+      out.set(id, {
+        lastCompletedDate: null,
+        lastCheckinWeek: null,
+        lastBodyMetricDate: null,
+        noShows30d: 0,
+        completed30d: 0,
+        hasActivePackage: false,
+        activePackageFrozen: false,
+      });
+    }
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyAgoIso = thirtyDaysAgo.toISOString().slice(0, 10);
+
+    const lastCompletedRows = await db
+      .select({
+        userId: bookings.userId,
+        lastDate: sql<string>`max(${bookings.date})`,
+      })
+      .from(bookings)
+      .where(and(inArray(bookings.userId, userIds), eq(bookings.status, "completed")))
+      .groupBy(bookings.userId);
+    for (const r of lastCompletedRows) {
+      const v = out.get(r.userId);
+      if (v) v.lastCompletedDate = r.lastDate;
+    }
+
+    const counts30dRows = await db
+      .select({
+        userId: bookings.userId,
+        status: bookings.status,
+        n: sql<number>`count(*)::int`,
+      })
+      .from(bookings)
+      .where(
+        and(
+          inArray(bookings.userId, userIds),
+          gte(bookings.date, thirtyAgoIso),
+          inArray(bookings.status, ["completed", "no_show"]),
+        ),
+      )
+      .groupBy(bookings.userId, bookings.status);
+    for (const r of counts30dRows) {
+      const v = out.get(r.userId);
+      if (!v) continue;
+      if (r.status === "completed") v.completed30d = r.n;
+      else if (r.status === "no_show") v.noShows30d = r.n;
+    }
+
+    const checkinRows = await db
+      .select({
+        userId: weeklyCheckins.userId,
+        lastWeek: sql<string>`max(${weeklyCheckins.weekStart})`,
+      })
+      .from(weeklyCheckins)
+      .where(inArray(weeklyCheckins.userId, userIds))
+      .groupBy(weeklyCheckins.userId);
+    for (const r of checkinRows) {
+      const v = out.get(r.userId);
+      if (v) v.lastCheckinWeek = r.lastWeek;
+    }
+
+    const metricRows = await db
+      .select({
+        userId: bodyMetrics.userId,
+        lastDate: sql<string>`max(${bodyMetrics.recordedOn})`,
+      })
+      .from(bodyMetrics)
+      .where(inArray(bodyMetrics.userId, userIds))
+      .groupBy(bodyMetrics.userId);
+    for (const r of metricRows) {
+      const v = out.get(r.userId);
+      if (v) v.lastBodyMetricDate = r.lastDate;
+    }
+
+    const pkgRows = await db
+      .select({
+        userId: packages.userId,
+        frozen: packages.frozen,
+      })
+      .from(packages)
+      .where(and(inArray(packages.userId, userIds), eq(packages.isActive, true)));
+    for (const r of pkgRows) {
+      const v = out.get(r.userId);
+      if (!v) continue;
+      v.hasActivePackage = true;
+      if (r.frozen) v.activePackageFrozen = true;
+    }
+
+    return out;
+  }
+
   // ===== SUPPLEMENT LIBRARY =====
   async listSupplements(opts?: { activeOnly?: boolean; category?: string }): Promise<Supplement[]> {
     const conds: any[] = [];

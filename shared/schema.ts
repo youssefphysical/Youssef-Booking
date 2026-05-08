@@ -1154,8 +1154,25 @@ export type User = typeof users.$inferSelect;
 // UserResponse is the public-safe shape served by the API. We strip `password`
 // and optionally augment with derived flags like `isVerified` (computed from
 // profile completion + InBody/completed-session signals).
+export const CLIENT_HEALTH_STATUSES = [
+  "healthy",
+  "watch",
+  "at_risk",
+  "inactive",
+  "new",
+  "frozen",
+  "ended",
+] as const;
+export type ClientHealthStatus = (typeof CLIENT_HEALTH_STATUSES)[number];
+export type ClientHealth = {
+  status: ClientHealthStatus;
+  score: number;
+  signals: string[];
+};
+
 export type UserResponse = Omit<User, "password"> & {
   isVerified?: boolean;
+  health?: ClientHealth;
 };
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;

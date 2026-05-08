@@ -810,9 +810,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ============== USERS ==============
   app.get("/api/users", requireAdmin, async (_req, res) => {
     const clients = await storage.getAllClients();
-    // Batched enrichment — two grouped queries instead of 2*N per-user
-    // fetches. Scales gracefully as bookings/inbody history grows.
-    const enriched = await sanitizeAndEnrichMany(clients);
+    // Batched enrichment — grouped queries instead of N per-user
+    // fetches. `withHealth` adds the operational client-health badge
+    // (admin-only surface) computed from booking / check-in / body
+    // metric / package signals via storage.getHealthSignalsForUsers.
+    const enriched = await sanitizeAndEnrichMany(clients, { withHealth: true });
     res.json(enriched);
   });
 
@@ -824,7 +826,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const user = await storage.getUser(id);
     if (!user) return res.status(404).json({ message: "User not found" });
-    const enriched = await sanitizeAndEnrich(user);
+    // Health badge is admin-only — never surfaced to the user themself.
+    const enriched = await sanitizeAndEnrich(user, { withHealth: me.role === "admin" });
     res.json(enriched);
   });
 

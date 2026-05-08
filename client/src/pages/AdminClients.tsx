@@ -45,6 +45,7 @@ import {
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge, TierBadge } from "@/components/VerifiedBadge";
+import { HealthBadge } from "@/components/HealthBadge";
 import { useTranslation } from "@/i18n";
 
 type Row = {
@@ -421,6 +422,7 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
               {client.fullName}
             </Link>
             {client.isVerified && <VerifiedBadge size="xs" testId={`badge-verified-${client.id}`} />}
+            <HealthBadge health={client.health} size="xs" showLabel={false} />
           </div>
           {client.area && (
             <p className="text-[10px] text-muted-foreground truncate inline-flex items-center gap-1">
@@ -524,6 +526,7 @@ function MobileCard({ row }: { row: Row }) {
             </p>
             {client.isVerified && <VerifiedBadge size="xs" />}
             {isElite && <TierBadge tier={tier} size="xs" />}
+            <HealthBadge health={client.health} size="xs" />
           </div>
           {client.email && (
             <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1.5 mt-1">

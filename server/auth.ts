@@ -5,6 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
+import { computeClientHealth, type HealthSignals } from "./services/clientHealth";
 import {
   User,
   insertClientSchema,
@@ -134,10 +135,59 @@ async function computeIsVerified(user: User): Promise<boolean> {
   }
 }
 
-async function sanitizeAndEnrich(user: User) {
+function daysBetween(fromIso: string | Date | null, toDate: Date): number {
+  if (!fromIso) return Infinity;
+  const from = typeof fromIso === "string" ? new Date(fromIso) : fromIso;
+  if (isNaN(from.getTime())) return Infinity;
+  return Math.max(0, Math.floor((toDate.getTime() - from.getTime()) / 86_400_000));
+}
+
+function toHealthInput(
+  user: User,
+  s: {
+    lastCompletedDate: string | null;
+    lastCheckinWeek: string | null;
+    lastBodyMetricDate: string | null;
+    noShows30d: number;
+    completed30d: number;
+    hasActivePackage: boolean;
+    activePackageFrozen: boolean;
+  },
+): HealthSignals {
+  const now = new Date();
+  const lc = s.lastCompletedDate ? daysBetween(s.lastCompletedDate, now) : null;
+  const ck = s.lastCheckinWeek ? daysBetween(s.lastCheckinWeek, now) : null;
+  const bm = s.lastBodyMetricDate ? daysBetween(s.lastBodyMetricDate, now) : null;
+  const joined = user.createdAt ? daysBetween(user.createdAt as any, now) : 9999;
+  return {
+    daysSinceLastCompleted: lc === Infinity ? null : lc,
+    daysSinceLastCheckin: ck === Infinity ? null : ck,
+    daysSinceLastBodyMetric: bm === Infinity ? null : bm,
+    noShows30d: s.noShows30d,
+    completed30d: s.completed30d,
+    hasActivePackage: s.hasActivePackage,
+    activePackageFrozen: s.activePackageFrozen,
+    daysSinceJoined: joined,
+    clientStatus: user.clientStatus ?? null,
+  };
+}
+
+async function sanitizeAndEnrich(user: User, opts: { withHealth?: boolean } = {}) {
   const base = sanitizeUser(user);
   const isVerified = await computeIsVerified(user);
-  return { ...base, isVerified };
+  if (!opts.withHealth || user.role !== "client") {
+    return { ...base, isVerified };
+  }
+  try {
+    const signals = await storage.getHealthSignalsForUsers([user.id]);
+    const s = signals.get(user.id);
+    if (!s) return { ...base, isVerified };
+    const health = computeClientHealth(toHealthInput(user, s));
+    return { ...base, isVerified, health };
+  } catch (e) {
+    console.warn("[auth] single-user health compute failed:", e);
+    return { ...base, isVerified };
+  }
 }
 
 /**
@@ -145,7 +195,10 @@ async function sanitizeAndEnrich(user: User) {
  * grouped query per signal (instead of 2*N per-user fetches). Used by
  * /api/users to keep the admin client list O(1) in queries.
  */
-async function sanitizeAndEnrichMany(usersList: User[]) {
+async function sanitizeAndEnrichMany(
+  usersList: User[],
+  opts: { withHealth?: boolean } = {},
+) {
   if (usersList.length === 0) return [];
   const clientIds = usersList
     .filter((u) => u.role === "client" && u.profilePictureUrl)
@@ -158,6 +211,15 @@ async function sanitizeAndEnrichMany(usersList: User[]) {
         })
       : new Map<number, { hasInbody: boolean; hasCompletedSession: boolean }>();
 
+  const allClientIds = usersList.filter((u) => u.role === "client").map((u) => u.id);
+  const healthSignals =
+    opts.withHealth && allClientIds.length > 0
+      ? await storage.getHealthSignalsForUsers(allClientIds).catch((e) => {
+          console.warn("[auth] batched health compute failed:", e);
+          return new Map();
+        })
+      : null;
+
   return usersList.map((u) => {
     const base = sanitizeUser(u);
     let isVerified = false;
@@ -167,6 +229,13 @@ async function sanitizeAndEnrichMany(usersList: User[]) {
       else if (u.profilePictureUrl) {
         const f = flags.get(u.id);
         isVerified = !!(f && (f.hasInbody || f.hasCompletedSession));
+      }
+    }
+    if (healthSignals && u.role === "client") {
+      const s = healthSignals.get(u.id);
+      if (s) {
+        const health = computeClientHealth(toHealthInput(u, s));
+        return { ...base, isVerified, health };
       }
     }
     return { ...base, isVerified };
