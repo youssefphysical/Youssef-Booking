@@ -18,6 +18,8 @@ import {
   updatePackageSchema,
   insertPackageTemplateSchema,
   updatePackageTemplateSchema,
+  insertFoodSchema,
+  updateFoodSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2003,6 +2005,92 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // here NEVER affects the historical record on any client.
     await storage.deletePackageTemplate(id);
     res.sendStatus(204);
+  });
+
+  // ============== FOODS (Nutrition OS — Phase 2) ==============
+  // Admin-only catalogue. List supports server-side search + pagination
+  // for scalability (designed for thousands of rows). Per-client read
+  // access (Phase 4 nutrition assignments) will route through a
+  // different endpoint that enforces snapshot data, so /api/foods stays
+  // strictly admin.
+  app.get("/api/foods", requireAdmin, async (req, res) => {
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const category = typeof req.query.category === "string" && req.query.category
+      ? req.query.category
+      : undefined;
+    const supplementParam = req.query.supplement;
+    const isSupplement =
+      supplementParam === "true" ? true : supplementParam === "false" ? false : undefined;
+    const activeOnly = req.query.activeOnly === "true";
+    const limit = req.query.limit ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200) : 50;
+    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
+    const result = await storage.getFoods({
+      search,
+      category,
+      isSupplement,
+      activeOnly,
+      limit,
+      offset,
+    });
+    res.json(result);
+  });
+
+  app.get("/api/foods/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const food = await storage.getFood(id);
+    if (!food) return res.status(404).json({ message: "Food not found" });
+    res.json(food);
+  });
+
+  app.post("/api/foods", requireAdmin, async (req, res) => {
+    const parsed = insertFoodSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid food",
+        errors: parsed.error.errors,
+      });
+    }
+    const me = req.user as User;
+    const created = await storage.createFood(parsed.data, me.id);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/foods/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateFoodSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid update",
+        errors: parsed.error.errors,
+      });
+    }
+    const existing = await storage.getFood(id);
+    if (!existing) return res.status(404).json({ message: "Food not found" });
+    const updated = await storage.updateFood(id, parsed.data);
+    res.json(updated);
+  });
+
+  app.delete("/api/foods/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const existing = await storage.getFood(id);
+    if (!existing) return res.status(404).json({ message: "Food not found" });
+    // Phase 3 meal_items will snapshot food fields, so deleting here
+    // does not affect historical meals. Until Phase 3 ships, hard delete
+    // is safe (no other table references foods.id yet).
+    await storage.deleteFood(id);
+    res.sendStatus(204);
+  });
+
+  app.post("/api/foods/:id/duplicate", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const me = req.user as User;
+    const dup = await storage.duplicateFood(id, me.id);
+    if (!dup) return res.status(404).json({ message: "Food not found" });
+    res.status(201).json(dup);
   });
 
   // ============== INBODY ==============

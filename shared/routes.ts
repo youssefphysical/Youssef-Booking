@@ -13,6 +13,8 @@ import {
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
+  insertFoodSchema,
+  updateFoodSchema,
   REGISTRATION_CONSENT_ITEMS,
 } from "./schema";
 
@@ -168,6 +170,25 @@ export const api = {
     delete: { method: "DELETE" as const, path: "/api/package-templates/:id" },
   },
 
+  foods: {
+    // ?search=&category=&supplement=true|false&activeOnly=true&limit=50&offset=0
+    // Returns { items: Food[], total: number }
+    list: { method: "GET" as const, path: "/api/foods" },
+    get: { method: "GET" as const, path: "/api/foods/:id" },
+    create: {
+      method: "POST" as const,
+      path: "/api/foods",
+      input: insertFoodSchema,
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/foods/:id",
+      input: updateFoodSchema,
+    },
+    delete: { method: "DELETE" as const, path: "/api/foods/:id" },
+    duplicate: { method: "POST" as const, path: "/api/foods/:id/duplicate" },
+  },
+
   inbody: {
     list: { method: "GET" as const, path: "/api/inbody" }, // ?userId=
     get: { method: "GET" as const, path: "/api/inbody/:id" },
@@ -242,3 +263,5 @@ export type UpdatePackageTemplateInput = z.infer<typeof api.packageTemplates.upd
 export type CreateInbodyInput = z.infer<typeof api.inbody.create.input>;
 export type UpdateInbodyInput = z.infer<typeof api.inbody.update.input>;
 export type CreateProgressInput = z.infer<typeof api.progress.create.input>;
+export type CreateFoodInput = z.infer<typeof api.foods.create.input>;
+export type UpdateFoodInput = z.infer<typeof api.foods.update.input>;

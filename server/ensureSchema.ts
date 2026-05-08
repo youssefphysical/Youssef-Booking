@@ -228,6 +228,48 @@ async function run(): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS bookings_date_status_idx
       ON bookings(date, status);
+
+    -- May 2026 Nutrition OS — Phase 2: Food Library catalogue.
+    -- Additive only. Per-serving macros (not per-100g) so the meal builder
+    -- can multiply by quantity client-side without unit conversion.
+    -- created_by_user_id is intentionally NOT a foreign key so deleting a
+    -- trainer never orphans / cascades the catalogue.
+    CREATE TABLE IF NOT EXISTS foods (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      name_ar text,
+      category text NOT NULL DEFAULT 'other',
+      brand text,
+      serving_size double precision NOT NULL DEFAULT 100,
+      serving_unit text NOT NULL DEFAULT 'g',
+      kcal double precision NOT NULL DEFAULT 0,
+      protein_g double precision NOT NULL DEFAULT 0,
+      carbs_g double precision NOT NULL DEFAULT 0,
+      fats_g double precision NOT NULL DEFAULT 0,
+      fiber_g double precision,
+      sugar_g double precision,
+      sodium_mg double precision,
+      digestion_speed text,
+      best_timing text,
+      notes text,
+      is_active boolean NOT NULL DEFAULT true,
+      is_supplement boolean NOT NULL DEFAULT false,
+      created_by_user_id integer,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+
+    -- Search & filter indexes (designed for thousands of rows).
+    CREATE INDEX IF NOT EXISTS foods_name_lower_idx
+      ON foods (lower(name));
+    CREATE INDEX IF NOT EXISTS foods_category_idx
+      ON foods (category);
+    CREATE INDEX IF NOT EXISTS foods_active_idx
+      ON foods (is_active);
+    CREATE INDEX IF NOT EXISTS foods_supplement_idx
+      ON foods (is_supplement);
+    CREATE INDEX IF NOT EXISTS foods_created_by_idx
+      ON foods (created_by_user_id);
   `;
 
   try {
