@@ -1,0 +1,128 @@
+We are now entering:
+
+SOFT-LAUNCH & REAL-WORLD VALIDATION PHASE
+
+Feature freeze for now.
+
+DO NOT introduce:
+- AI systems
+- large architectural rewrites
+- new ecosystems
+- experimental infrastructure
+
+Current priority:
+real-world usability, stability, and operational comfort.
+
+==================================================
+PHASE GOALS
+==================================================
+
+1. Validate real gym/day-to-day usage
+2. Detect friction during fast admin workflows
+3. Detect confusing UX moments
+4. Detect slow-feeling interactions
+5. Detect mobile pain points
+6. Detect visual overload
+7. Ensure long-session dashboard comfort
+8. Ensure platform reliability under repeated usage
+
+==================================================
+REAL USAGE TESTING
+==================================================
+
+Simulate realistic daily trainer/admin behavior:
+
+- rapid booking edits
+- client check-ins
+- nutrition editing
+- supplements editing
+- photo uploads
+- progress tracking
+- package adjustments
+- session management
+- fast switching between tabs/pages
+- mobile-only operation
+- long admin sessions
+
+Focus on:
+speed, clarity, comfort, and confidence.
+
+==================================================
+FRICTION AUDIT
+==================================================
+
+Find and reduce:
+- unnecessary clicks
+- repetitive actions
+- hidden actions
+- unclear labels
+- crowded screens
+- visual fatigue
+- inconsistent spacing
+- awkward scrolling
+- confusing navigation paths
+
+Goal:
+every common action should feel obvious and fast.
+
+==================================================
+MOBILE-FIRST VALIDATION
+==================================================
+
+Deeply validate:
+- Android Chrome
+- Samsung Internet
+- iPhone Safari
+- small-screen devices
+- low-memory devices
+
+Fix:
+- keyboard overlap
+- sticky issues
+- tap frustrations
+- lag
+- delayed rendering
+- accidental taps
+- viewport jumps
+- drawer usability
+
+==================================================
+PERFORMANCE VALIDATION
+==================================================
+
+Verify:
+- stable FPS feeling
+- smooth scrolling
+- consistent route transitions
+- stable rendering during uploads
+- responsive charts/tables
+- no UI freezes during fast usage
+
+==================================================
+VISUAL COMFORT
+==================================================
+
+Continue refining:
+- spacing rhythm
+- typography hierarchy
+- dashboard readability
+- scan speed
+- visual calmness
+- premium feel
+
+The dashboard should feel:
+fast, calm, elegant, and operationally effortless.
+
+==================================================
+DELIVERABLES
+==================================================
+
+At the end provide:
+
+1. Soft-launch readiness report
+2. Real-world friction report
+3. Remaining weak points
+4. Recommended fixes before public scale
+5. Mobile comfort summary
+6. Operational comfort assessment
+7. Final production confidence score
