@@ -1,0 +1,549 @@
+MASTER PROMPT — COACH-CURATED NUTRITION + SUPPLEMENT PROTOCOL PACKAGES
+
+Project:
+Youssef Ahmed Personal Training Platform
+
+Mission:
+Build a premium “Coach-Curated Protocol” system for Nutrition + Supplements.
+
+IMPORTANT CONCEPT:
+This is NOT an online supplement store.
+This is NOT e-commerce.
+This is NOT “show all products and let clients compare prices.”
+
+This is a premium coaching protocol system.
+
+The client should see:
+- package/system name
+- goal
+- benefits
+- who it is for
+- what areas it supports
+- coaching philosophy
+- request access CTA
+
+But the client should NOT see:
+- exact product names
+- brands
+- sourcing details
+- full supplement stack
+- dosages
+- timing protocol
+
+until Coach Youssef approves/activates the protocol for that client.
+
+The value is:
+Coach Youssef’s knowledge, sourcing logic, quality filtering, personalization, and coaching system — not a public product catalog.
+
+==================================================
+CORE POSITIONING
+==================================================
+
+Rename the client-facing concept from “Supplement Packages” to:
+
+Coach-Curated Protocols
+
+Alternative labels:
+- Performance Systems
+- Transformation Protocols
+- Nutrition & Performance Systems
+
+Preferred public wording:
+“Coach-Curated Protocols”
+
+Tone:
+- premium
+- private
+- selective
+- intelligent
+- professional
+- concierge-style
+- not salesy
+- not medical
+- not cheap marketplace
+
+Avoid:
+- “buy supplements”
+- “shop products”
+- “best seller”
+- “cheap”
+- “medical cure”
+- “guaranteed results”
+
+Use:
+- support
+- optimize
+- recovery
+- performance
+- consistency
+- body composition
+- training output
+- lifestyle alignment
+- premium sourcing standards
+
+==================================================
+PUBLIC / CLIENT-FACING PACKAGES
+==================================================
+
+Create 3 main protocol tiers:
+
+1. FOUNDATION PROTOCOL
+Subtitle:
+Essential Health & Recovery Support
+
+Client-facing description:
+A focused starting system designed to support daily recovery, hydration, nutrient consistency, sleep quality, and training readiness.
+
+Ideal for:
+- beginners
+- clients starting their first transformation
+- clients with inconsistent nutrition
+- clients who need the basics first
+- clients who want a simple, structured foundation
+
+Includes conceptually:
+- essential daily nutrition support
+- hydration and electrolyte guidance
+- recovery support
+- protein consistency strategy
+- sleep and wellness support
+
+Do NOT reveal exact supplement products publicly.
+
+CTA:
+Request Foundation Protocol
+
+==================================================
+
+2. PERFORMANCE PROTOCOL
+Subtitle:
+Advanced Body Transformation Support
+
+Client-facing description:
+A more advanced system designed for clients training consistently and aiming to improve body composition, recovery, training performance, digestion, and consistency.
+
+Ideal for:
+- fat loss clients
+- muscle gain clients
+- recomposition clients
+- active gym clients
+- clients who need more structured support
+
+Includes conceptually:
+- advanced recovery support
+- performance nutrition strategy
+- digestion and absorption support
+- training output support
+- structured supplement timing
+
+Do NOT reveal exact supplement products publicly.
+
+CTA:
+Request Performance Protocol
+
+==================================================
+
+3. ELITE PROTOCOL
+Subtitle:
+Concierge-Level Performance Optimization
+
+Client-facing description:
+A fully personalized high-touch protocol built around body composition, lifestyle, recovery, training intensity, nutrition patterns, and long-term transformation goals.
+
+Ideal for:
+- premium clients
+- busy professionals
+- advanced transformation clients
+- high-performance lifestyles
+- clients needing deeper personalization
+
+Includes conceptually:
+- personalized nutrition strategy
+- advanced recovery optimization
+- premium sourcing logic
+- lifestyle-specific support
+- ongoing protocol refinement
+- priority coach review
+
+Do NOT reveal exact supplement products publicly.
+
+CTA:
+Request Elite Protocol
+
+==================================================
+COACH QUALITY PHILOSOPHY
+==================================================
+
+Add a premium educational section explaining Coach Youssef’s logic.
+
+Title:
+Why Coach-Curated?
+
+Content should explain:
+- products are not selected randomly
+- quality matters more than marketing
+- sourcing matters
+- purity matters
+- bioavailability matters
+- manufacturing standards matter
+- climate/lifestyle matters
+- the client’s goal and body composition matter
+
+Example language:
+“I do not choose protocols based on hype. I look at ingredient quality, sourcing integrity, absorption, testing standards, and whether it makes sense for your body, lifestyle, and training goal.”
+
+Important:
+Keep this educational, not medical.
+No disease-treatment claims.
+
+==================================================
+REQUEST ACCESS FLOW
+==================================================
+
+Each protocol tier should have a request CTA.
+
+When client clicks:
+“Request Foundation Protocol”
+“Request Performance Protocol”
+“Request Elite Protocol”
+
+Open a premium request form.
+
+Fields:
+- goal
+- current training frequency
+- current nutrition consistency
+- sleep quality
+- digestion issues
+- energy level
+- stress level
+- current supplements, if any
+- allergies or sensitivities
+- budget comfort level
+- notes for Coach Youssef
+
+Submit behavior:
+- create protocol request record
+- notify admin
+- show client confirmation message
+- client sees request status:
+  Pending Review
+
+Admin receives:
+- dashboard notification
+- client name
+- selected protocol tier
+- submitted answers
+- quick action to review
+
+==================================================
+LOCKED / UNLOCKED EXPERIENCE
+==================================================
+
+Before approval:
+Client sees:
+- protocol tier overview
+- benefits
+- philosophy
+- request status
+- “Coach review pending”
+
+Client does NOT see:
+- exact products
+- supplement names
+- brands
+- dosages
+- timings
+- internal sourcing notes
+
+After admin approval/activation:
+Client sees:
+“Your Active Protocol”
+
+Now show:
+- supplement items
+- dosage
+- timing
+- instructions
+- coach notes
+- schedule
+- duration
+- review date
+
+==================================================
+ADMIN PROTOCOL BUILDER
+==================================================
+
+Admin should be able to create internal protocol templates.
+
+Template fields:
+- protocol name
+- tier
+  Foundation / Performance / Elite / Custom
+- internal description
+- public description
+- ideal-for notes
+- hidden product list
+- supplement items
+- dosages
+- timing
+- frequency
+- duration
+- private sourcing notes
+- client-facing coach notes
+- quality logic
+- review interval
+- active/inactive
+
+Supplement item internal fields:
+- product/supplement name
+- brand optional
+- country/source optional
+- quality reason
+- dosage
+- timing
+- with meal / empty stomach
+- training day / rest day logic
+- warnings/notes
+- replacement alternatives
+
+IMPORTANT:
+Admin can see everything.
+Client only sees full details after activation.
+
+==================================================
+QUALITY / SOURCING LOGIC
+==================================================
+
+Inside admin only, support fields like:
+- source region
+- country
+- extraction quality
+- third-party tested
+- heavy metals tested
+- wild-caught
+- grass-fed
+- organic
+- non-GMO
+- clinical dosage
+- bioavailability
+- purity score
+- absorption notes
+- avoided fillers
+- coach quality note
+
+This supports Youssef’s real philosophy:
+Choosing products based on source, environment, natural quality, specialist companies, and ingredient integrity.
+
+Do not over-medicalize.
+Keep it as quality evaluation, not treatment.
+
+==================================================
+CLIENT PROTOCOL VIEW
+==================================================
+
+Client view after activation should be very simple.
+
+Show:
+- active protocol name
+- goal
+- daily schedule
+- morning
+- pre-workout
+- post-workout
+- evening/night
+- notes
+- review date
+- WhatsApp contact CTA
+
+Use clean cards:
+- Morning Support
+- Training Support
+- Recovery Support
+- Night Support
+
+Avoid overwhelming tables.
+
+==================================================
+NUTRITION + SUPPLEMENT CONNECTION
+==================================================
+
+Connect protocols to nutrition plans.
+
+If client has active nutrition plan:
+show:
+- “This protocol supports your current nutrition goal”
+- goal alignment
+- hydration notes
+- recovery notes
+
+Example:
+Fat Loss:
+- supports recovery
+- helps consistency
+- hydration/electrolyte strategy
+
+Muscle Gain:
+- supports protein consistency
+- training performance
+- recovery
+
+Recomposition:
+- supports recovery + consistency + digestion
+
+Do not make medical claims.
+
+==================================================
+PAYMENT / MANUAL APPROVAL MODEL
+==================================================
+
+Do NOT build payment gateway now.
+
+Use manual payment / coach approval model.
+
+Flow:
+1. Client requests protocol.
+2. Admin reviews.
+3. Admin contacts client manually.
+4. Client pays externally/manual.
+5. Admin marks request:
+   Pending Payment / Paid / Activated / Rejected
+6. Once activated, client sees full protocol.
+
+Admin statuses:
+- Pending Review
+- Approved
+- Pending Payment
+- Paid
+- Activated
+- Rejected
+- Archived
+
+Client sees friendly statuses:
+- Request received
+- Under coach review
+- Payment pending
+- Active
+- Not approved
+
+==================================================
+WHATSAPP INTEGRATION
+==================================================
+
+Add WhatsApp actions:
+
+For client:
+“Ask Coach About This Protocol”
+
+For admin:
+“Message Client About Protocol”
+
+Important:
+Client WhatsApp button should open Coach Youssef contact.
+Admin WhatsApp button should open the CLIENT phone number.
+
+Do not mix them.
+
+==================================================
+EMAIL / NOTIFICATION INTEGRATION
+==================================================
+
+Add notifications:
+- client submitted protocol request
+- admin approved request
+- payment pending
+- protocol activated
+- review date approaching
+
+Use existing notifications system if available.
+
+Email optional if safe.
+Do not break email system.
+
+==================================================
+UI DESIGN REQUIREMENTS
+==================================================
+
+Design style:
+- premium
+- calm
+- luxury dark
+- black/blue
+- minimal
+- concierge-like
+- not ecommerce
+- not cluttered
+
+Avoid:
+- product grid marketplace
+- “add to cart”
+- price comparison
+- too many product cards
+- medical clinic feeling
+
+Use:
+- elegant protocol cards
+- subtle tier labels
+- clean CTA
+- soft gradients
+- controlled glow
+- strong spacing
+- simple explanations
+- mobile-first layout
+
+==================================================
+PUBLIC SECTION COPY STYLE
+==================================================
+
+Use copy like:
+
+“Every protocol is reviewed before activation.”
+
+“Your plan is built around your body, goal, training intensity, and lifestyle.”
+
+“Exact product details are shared only after coach review and activation.”
+
+“Quality, sourcing, absorption, and suitability matter more than marketing hype.”
+
+==================================================
+LEGAL / SAFETY DISCLAIMER
+==================================================
+
+Add subtle disclaimer:
+
+“Supplement guidance is educational and performance-support focused. It does not replace medical advice. Clients with medical conditions, medications, pregnancy, or health concerns should consult a qualified healthcare professional.”
+
+Keep it elegant, not scary.
+
+==================================================
+I18N / RTL
+==================================================
+
+All visible text must support the existing i18n system.
+
+Languages:
+English
+Arabic
+Persian/Farsi
+Urdu
+French
+German
+Russian
+Turkish
+Spanish
+Italian
+Portuguese
+Chinese
+Hindi
+
+RTL:
+Arabic
+Persian/Farsi
+Urdu
+
+No hardcoded visible strings.
+No raw translation keys.
+
+==================================================
+DATABASE / ARCHITECTURE
+==================================================
