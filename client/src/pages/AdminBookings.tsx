@@ -380,7 +380,7 @@ export default function AdminBookings() {
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />
+              <div key={i} className="h-20 rounded-2xl admin-shimmer" />
             ))}
           </div>
         ) : grouped.length === 0 ? (

@@ -237,6 +237,39 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Premium shimmer skeleton — used by AdminSkeleton primitive.
+   Subtle diagonal sweep instead of harsh pulse. Honours
+   prefers-reduced-motion globally (block at bottom of file). */
+.admin-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: hsl(0 0% 100% / 0.04);
+  border: 1px solid hsl(0 0% 100% / 0.05);
+  isolation: isolate;
+}
+.admin-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    hsl(205 92% 62% / 0.06) 45%,
+    hsl(0 0% 100% / 0.05) 50%,
+    hsl(205 92% 62% / 0.06) 55%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  animation: adminShimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes adminShimmer {
+  to { background-position: -120% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-shimmer::after { animation: none; opacity: 0.4; }
+}
+
 /* ===== TRON-inspired neon-tech system =====
    Additive utilities. None of these change layout — they only paint
    subtle cyan accents (grid, vignette, beam, glow) on top of existing

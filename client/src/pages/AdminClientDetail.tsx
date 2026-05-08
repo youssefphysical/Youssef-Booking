@@ -2838,7 +2838,7 @@ function Skeleton() {
   return (
     <div className="space-y-2">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
+        <div key={i} className="h-14 rounded-xl admin-shimmer" />
       ))}
     </div>
   );

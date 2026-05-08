@@ -113,7 +113,7 @@ export default function AdminAnalytics() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.6)] h-[110px] sm:h-[120px] animate-pulse"
+                className="rounded-2xl admin-shimmer h-[110px] sm:h-[120px]"
                 data-testid={`analytics-skeleton-${i}`}
               />
             ))}

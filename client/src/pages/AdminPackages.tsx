@@ -27,6 +27,7 @@ import {
   AdminCard,
   AdminStatCard,
   AdminEmptyState,
+  AdminSkeleton,
 } from "@/components/admin/primitives";
 
 export default function AdminPackages() {
@@ -167,7 +168,7 @@ export default function AdminPackages() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-28 rounded-2xl bg-white/5 animate-pulse" />
+              <AdminSkeleton key={i} className="h-28" rounded="2xl" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
