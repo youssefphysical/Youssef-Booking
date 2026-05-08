@@ -2192,8 +2192,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       try { return await fn(); } catch { return fallback; }
     };
 
-    const nowIso = new Date().toISOString();
-    const todayIso = nowIso.slice(0, 10);
+    const nowMs = Date.now();
+    const todayIso = new Date().toISOString().slice(0, 10);
 
     const [bookings, clientSupps, activePlan, checkins, bodyMetrics] = await Promise.all([
       safe(() => storage.getBookings({ userId: me.id }), [] as any[]),
@@ -2204,18 +2204,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ]);
 
     // Next session: earliest upcoming/confirmed booking strictly after now.
+    // Bookings store `date` (YYYY-MM-DD) and `timeSlot` ("HH:MM") separately,
+    // so we combine them into a real epoch before comparing — otherwise we
+    // would miss same-day future slots and misorder slots within a day.
     let nextSession: { id: number; date: string; sessionType: string | null } | null = null;
     {
       const upcoming = (bookings as any[])
-        .filter((b) => (b.status === "upcoming" || b.status === "confirmed"))
-        .map((b) => ({
-          id: b.id,
-          date: b.date instanceof Date ? b.date.toISOString() : String(b.date ?? ""),
-          sessionType: b.sessionType ? String(b.sessionType) : null,
-        }))
-        .filter((b) => b.date && b.date > nowIso)
-        .sort((a, b) => (a.date < b.date ? -1 : 1));
-      nextSession = upcoming[0] ?? null;
+        .filter((b) => b.status === "upcoming" || b.status === "confirmed")
+        .map((b) => {
+          const dateStr = b.date instanceof Date
+            ? b.date.toISOString().slice(0, 10)
+            : String(b.date ?? "").slice(0, 10);
+          const timeStr = String(b.timeSlot ?? "00:00");
+          const iso = dateStr ? `${dateStr}T${timeStr.length === 5 ? timeStr : "00:00"}:00` : "";
+          const epoch = iso ? new Date(iso).getTime() : NaN;
+          return {
+            id: b.id,
+            date: iso,
+            epoch,
+            sessionType: b.sessionType ? String(b.sessionType) : null,
+          };
+        })
+        .filter((b) => Number.isFinite(b.epoch) && b.epoch > nowMs)
+        .sort((a, b) => a.epoch - b.epoch);
+      const first = upcoming[0];
+      nextSession = first ? { id: first.id, date: first.date, sessionType: first.sessionType } : null;
     }
 
     // Supplements applicable today: active client supplements whose
