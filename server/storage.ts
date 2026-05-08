@@ -2102,6 +2102,16 @@ export class DatabaseStorage implements IStorage {
           active: data.active ?? true,
           sortOrder: data.sortOrder ?? 0,
           createdByUserId: createdByUserId ?? null,
+          // Coach-Curated Protocol public-surface fields (Phase A).
+          // All optional + safe defaults so old admin clients sending
+          // the legacy payload still work unchanged.
+          tier: (data as any).tier ?? "custom",
+          publicTitle: (data as any).publicTitle ?? null,
+          publicSubtitle: (data as any).publicSubtitle ?? null,
+          publicDescription: (data as any).publicDescription ?? null,
+          idealFor: (data as any).idealFor ?? [],
+          philosophy: (data as any).philosophy ?? null,
+          isPublic: (data as any).isPublic ?? false,
         })
         .returning();
       const items = await tx
@@ -2130,7 +2140,12 @@ export class DatabaseStorage implements IStorage {
   async updateSupplementStack(id: number, data: UpdateSupplementStack): Promise<SupplementStackFull | undefined> {
     return db.transaction(async (tx) => {
       const patch: any = { updatedAt: new Date() };
-      for (const k of ["name", "goal", "description", "notes", "active", "sortOrder"] as const) {
+      for (const k of [
+        "name", "goal", "description", "notes", "active", "sortOrder",
+        // Coach-Curated Protocol public-surface fields (Phase A).
+        "tier", "publicTitle", "publicSubtitle", "publicDescription",
+        "idealFor", "philosophy", "isPublic",
+      ] as const) {
         if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
       }
       const [stack] = await tx.update(supplementStacks).set(patch).where(eq(supplementStacks.id, id)).returning();

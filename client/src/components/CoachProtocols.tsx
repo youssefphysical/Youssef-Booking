@@ -178,17 +178,43 @@ function ProtocolCard({ p, mode }: { p: PublicProtocol; mode: Mode }) {
   const visual = TIER_VISUAL[p.tier] ?? TIER_VISUAL.custom;
   const Icon = visual.Icon;
 
+  // i18n strategy:
+  //   - Admin-authored row (p.id != null): render the admin's copy verbatim,
+  //     so the coach has full editorial control regardless of locale.
+  //   - Default-fallback row (p.id == null): route every string through t()
+  //     with English as fallback, so non-EN locales render localized copy
+  //     instead of leaking the English defaults from the server.
+  const isAuthored = p.id != null;
+  const tk = (suffix: string, fallback: string) =>
+    isAuthored ? fallback : t(`protocols.tier.${p.tier}.${suffix}`, fallback);
+
+  const title = tk("title", p.title);
+  const subtitle = tk("subtitle", p.subtitle);
+  const description = tk("description", p.description);
+  const idealForLocalized = isAuthored
+    ? p.idealFor
+    : p.idealFor.map((line, i) => t(`protocols.tier.${p.tier}.idealFor.${i}`, line));
+  // Short tier label used inside the CTA. Localized for the canonical 3
+  // tiers; otherwise we strip a trailing " Protocol" suffix from title.
+  const tierShort = tk("short", p.title.replace(/\s*Protocol\s*$/i, "").trim() || p.title);
+
   const requestUrl = useMemo(() => {
-    const tierLabel = p.title.replace(/\s*Protocol\s*$/i, "").trim() || p.title;
     const msg = buildProtocolRequestWhatsApp({
-      tierLabel,
+      tierLabel: tierShort,
       lang,
       clientName: user?.fullName,
     });
     return whatsappUrl(settings?.whatsappNumber, msg);
-  }, [p.title, lang, user?.fullName, settings?.whatsappNumber]);
+  }, [tierShort, lang, user?.fullName, settings?.whatsappNumber]);
 
   const isCompact = mode === "dashboard";
+
+  // RTL/grammar-safe CTA — single template string with a {{tier}} slot.
+  // Translators control word order per language.
+  const ctaLabel = t("protocols.requestCtaTpl", "Request {{tier}} Protocol").replace(
+    "{{tier}}",
+    tierShort,
+  );
 
   return (
     <article
@@ -212,20 +238,20 @@ function ProtocolCard({ p, mode }: { p: PublicProtocol; mode: Mode }) {
       </div>
 
       <h3 className={`font-display font-semibold leading-tight tracking-tight ${isCompact ? "text-base" : "text-lg sm:text-xl"}`}>
-        {p.title}
+        {title}
       </h3>
       <p className={`text-white/55 mt-1 leading-snug ${isCompact ? "text-xs" : "text-[13px]"}`}>
-        {p.subtitle}
+        {subtitle}
       </p>
 
       <p className={`text-white/65 mt-3 leading-relaxed ${isCompact ? "text-[12.5px]" : "text-[13.5px]"}`}>
-        {p.description}
+        {description}
       </p>
 
-      {p.idealFor.length > 0 && (
+      {idealForLocalized.length > 0 && (
         <ul className={`mt-4 space-y-1.5 ${isCompact ? "text-[12px]" : "text-[12.5px]"} text-white/55`}>
-          {p.idealFor.slice(0, 3).map((line) => (
-            <li key={line} className="flex items-start gap-2 leading-snug">
+          {idealForLocalized.slice(0, 3).map((line, i) => (
+            <li key={`${i}-${line}`} className="flex items-start gap-2 leading-snug">
               <Check size={12} className="text-primary/70 shrink-0 mt-0.5" />
               <span>{line}</span>
             </li>
@@ -245,7 +271,7 @@ function ProtocolCard({ p, mode }: { p: PublicProtocol; mode: Mode }) {
           data-testid={`link-request-${p.tier}`}
         >
           <SiWhatsapp size={14} />
-          {t("protocols.requestCta", "Request") + " " + p.title.replace(/\s*Protocol\s*$/i, "").trim() + " " + t("protocols.protocolWord", "Protocol")}
+          {ctaLabel}
         </a>
         <p className="text-[10.5px] text-white/40 mt-2 text-center leading-relaxed">
           {t("protocols.reviewNote", "Every protocol is reviewed before activation.")}
