@@ -998,12 +998,19 @@ export class DatabaseStorage implements IStorage {
   /**
    * Insert the full days → meals → items tree for a plan, snapshotting
    * everything and recomputing per-meal cached totals via shared math.
+   * MUST be called inside a `db.transaction` (or be the only write in
+   * its caller) so a mid-tree failure rolls back cleanly. Accepts a
+   * tx handle so callers can compose atomic create/update flows.
    */
-  private async insertPlanTree(planId: number, days: PlanDayInput[]) {
+  private async insertPlanTree(
+    tx: typeof db,
+    planId: number,
+    days: PlanDayInput[],
+  ) {
     const { computeMealTotals } = await import("@shared/nutrition");
     for (let dIdx = 0; dIdx < days.length; dIdx++) {
       const d = days[dIdx];
-      const [insertedDay] = await db
+      const [insertedDay] = await tx
         .insert(nutritionPlanDays)
         .values({
           planId,
@@ -1031,7 +1038,7 @@ export class DatabaseStorage implements IStorage {
             sodiumMg: i.sodiumMg,
           })),
         );
-        const [insertedMeal] = await db
+        const [insertedMeal] = await tx
           .insert(nutritionPlanMeals)
           .values({
             planDayId: insertedDay.id,
@@ -1047,7 +1054,7 @@ export class DatabaseStorage implements IStorage {
           })
           .returning();
         if (m.items.length > 0) {
-          await db.insert(nutritionPlanMealItems).values(
+          await tx.insert(nutritionPlanMealItems).values(
             m.items.map((it, iIdx) => ({
               planMealId: insertedMeal.id,
               sourceFoodId: it.sourceFoodId ?? null,
@@ -1076,29 +1083,34 @@ export class DatabaseStorage implements IStorage {
     days: PlanDayInput[],
     createdByUserId: number | null,
   ): Promise<NutritionPlanFull> {
-    // If creating an active plan, archive any other actives for this
-    // client so the "current active plan" lookup stays unambiguous.
-    if ((plan.status ?? "draft") === "active") {
-      await db
-        .update(nutritionPlans)
-        .set({ status: "archived", updatedAt: new Date() })
-        .where(
-          and(
-            eq(nutritionPlans.userId, plan.userId),
-            eq(nutritionPlans.status, "active"),
-          ),
-        );
-    }
-    const [created] = await db
-      .insert(nutritionPlans)
-      .values({
-        ...plan,
-        status: plan.status ?? "draft",
-        createdByUserId: createdByUserId ?? null,
-      })
-      .returning();
-    await this.insertPlanTree(created.id, days);
-    const full = await this.getNutritionPlan(created.id);
+    // Wrap the entire create flow (archive-others + insert plan +
+    // insert tree) in one transaction so a partial failure rolls back
+    // cleanly — no orphaned plan rows, no archived-but-unreplaced
+    // previous active.
+    const newId = await db.transaction(async (tx) => {
+      if ((plan.status ?? "draft") === "active") {
+        await tx
+          .update(nutritionPlans)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(
+            and(
+              eq(nutritionPlans.userId, plan.userId),
+              eq(nutritionPlans.status, "active"),
+            ),
+          );
+      }
+      const [created] = await tx
+        .insert(nutritionPlans)
+        .values({
+          ...plan,
+          status: plan.status ?? "draft",
+          createdByUserId: createdByUserId ?? null,
+        })
+        .returning();
+      await this.insertPlanTree(tx as any, created.id, days);
+      return created.id;
+    });
+    const full = await this.getNutritionPlan(newId);
     return full!;
   }
 
@@ -1109,28 +1121,34 @@ export class DatabaseStorage implements IStorage {
   ): Promise<NutritionPlanFull | undefined> {
     const [existing] = await db.select().from(nutritionPlans).where(eq(nutritionPlans.id, id));
     if (!existing) return undefined;
-    // Promote-to-active: archive any other actives for this client.
-    if (updates.status === "active" && existing.status !== "active") {
-      await db
-        .update(nutritionPlans)
-        .set({ status: "archived", updatedAt: new Date() })
-        .where(
-          and(
-            eq(nutritionPlans.userId, existing.userId),
-            eq(nutritionPlans.status, "active"),
-          ),
-        );
-    }
-    const patch: Record<string, unknown> = { ...updates, updatedAt: new Date() };
-    if (Object.keys(patch).length > 1) {
-      await db.update(nutritionPlans).set(patch).where(eq(nutritionPlans.id, id));
-    }
-    if (days) {
-      // Atomic replace of the day/meal/item tree. ON DELETE CASCADE on
-      // plan_id walks the whole tree down — single delete here.
-      await db.delete(nutritionPlanDays).where(eq(nutritionPlanDays.planId, id));
-      await this.insertPlanTree(id, days);
-    }
+    // Wrap the whole update — promote-to-active archival, header
+    // patch, and the days-tree replace — in one transaction. Without
+    // this, a mid-tree failure would leave the plan with its old
+    // header but ZERO days (cascade-delete already ran), permanently
+    // wiping the trainer's work.
+    await db.transaction(async (tx) => {
+      if (updates.status === "active" && existing.status !== "active") {
+        await tx
+          .update(nutritionPlans)
+          .set({ status: "archived", updatedAt: new Date() })
+          .where(
+            and(
+              eq(nutritionPlans.userId, existing.userId),
+              eq(nutritionPlans.status, "active"),
+            ),
+          );
+      }
+      const patch: Record<string, unknown> = { ...updates, updatedAt: new Date() };
+      if (Object.keys(patch).length > 1) {
+        await tx.update(nutritionPlans).set(patch).where(eq(nutritionPlans.id, id));
+      }
+      if (days) {
+        // Atomic replace of the day/meal/item tree. ON DELETE CASCADE on
+        // plan_id walks the whole tree down — single delete here.
+        await tx.delete(nutritionPlanDays).where(eq(nutritionPlanDays.planId, id));
+        await this.insertPlanTree(tx as any, id, days);
+      }
+    });
     return this.getNutritionPlan(id);
   }
 
