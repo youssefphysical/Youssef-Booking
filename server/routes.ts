@@ -2834,10 +2834,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const type =
         ["before", "current", "after"].includes(req.body.type) ? req.body.type : "current";
+      const viewAngle =
+        ["front", "side", "back"].includes(req.body.viewAngle) ? req.body.viewAngle : "front";
       const created = await storage.createProgressPhoto({
         userId: targetUserId,
         photoUrl,
         type,
+        viewAngle,
         notes: req.body.notes || null,
       });
 

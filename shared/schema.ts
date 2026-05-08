@@ -356,14 +356,19 @@ export const inbodyRecords = pgTable("inbody_records", {
 // PROGRESS PHOTOS
 // =============================
 // type: 'before' | 'current' | 'after'
+// viewAngle: 'front' | 'side' | 'back' (P4c — comparison slider pairing)
 export const progressPhotos = pgTable("progress_photos", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   photoUrl: text("photo_url").notNull(),
   type: text("type").notNull().default("current"),
+  viewAngle: text("view_angle").notNull().default("front"),
   notes: text("notes"),
   recordedAt: timestamp("recorded_at").defaultNow(),
 });
+
+export const PROGRESS_VIEW_ANGLES = ["front", "side", "back"] as const;
+export type ProgressViewAngle = (typeof PROGRESS_VIEW_ANGLES)[number];
 
 // =============================
 // CONSENT RECORDS (legal/audit)
@@ -1023,6 +1028,7 @@ export const insertProgressPhotoSchema = createInsertSchema(progressPhotos)
   .extend({
     photoUrl: z.string().min(1),
     type: z.enum(["before", "current", "after"]).optional(),
+    viewAngle: z.enum(PROGRESS_VIEW_ANGLES).optional(),
     notes: z.string().nullable().optional(),
   });
 

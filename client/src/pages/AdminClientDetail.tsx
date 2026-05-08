@@ -80,6 +80,7 @@ import { ClientNutritionTab } from "@/components/ClientNutritionTab";
 import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
 import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import BeforeAfterCompare from "@/components/BeforeAfterCompare";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -2110,6 +2111,8 @@ function ProgressPanel({ userId }: { userId: number }) {
   const upload = useUploadProgressPhoto();
   const del = useDeleteProgressPhoto();
   const [cropperOpen, setCropperOpen] = useState(false);
+  const [uploadAngle, setUploadAngle] = useState<"front" | "side" | "back">("front");
+  const [view, setView] = useState<"compare" | "gallery">("compare");
 
   const list = (photos as ProgressPhoto[]).sort(
     (a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime(),
@@ -2126,7 +2129,7 @@ function ProgressPanel({ userId }: { userId: number }) {
   async function handleCropped(dataUrl: string) {
     try {
       const file = dataUrlToFile(dataUrl, `progress-${Date.now()}.webp`);
-      await upload.mutateAsync({ file, userId, type: "current" });
+      await upload.mutateAsync({ file, userId, type: "current", viewAngle: uploadAngle });
       setCropperOpen(false);
     } catch {
       // useUploadProgressPhoto already surfaces a toast on error.
@@ -2135,22 +2138,38 @@ function ProgressPanel({ userId }: { userId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="text-sm font-semibold">{t("admin.clientDetail.progressTitle")}</h3>
-        <Button
-          size="sm"
-          className="rounded-xl"
-          onClick={() => setCropperOpen(true)}
-          disabled={upload.isPending}
-          data-testid="button-admin-upload-photo"
-        >
-          {upload.isPending ? (
-            <Loader2 size={13} className="animate-spin mr-1.5" />
-          ) : (
-            <Upload size={13} className="mr-1.5" />
-          )}
-          {t("admin.clientDetail.addPhoto")}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+            {(["front", "side", "back"] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => setUploadAngle(a)}
+                className={`px-2 py-1 text-[10px] uppercase tracking-wider rounded-md capitalize ${
+                  uploadAngle === a ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+                }`}
+                data-testid={`button-admin-upload-angle-${a}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <Button
+            size="sm"
+            className="rounded-xl"
+            onClick={() => setCropperOpen(true)}
+            disabled={upload.isPending}
+            data-testid="button-admin-upload-photo"
+          >
+            {upload.isPending ? (
+              <Loader2 size={13} className="animate-spin mr-1.5" />
+            ) : (
+              <Upload size={13} className="mr-1.5" />
+            )}
+            {t("admin.clientDetail.addPhoto")}
+          </Button>
+        </div>
         <ImageCropper
           open={cropperOpen}
           onOpenChange={setCropperOpen}
@@ -2163,16 +2182,35 @@ function ProgressPanel({ userId }: { userId: number }) {
         />
       </div>
 
+      <div className="inline-flex rounded-lg bg-white/5 p-1">
+        <button
+          onClick={() => setView("compare")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "compare" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-admin-view-compare"
+        >
+          Compare
+        </button>
+        <button
+          onClick={() => setView("gallery")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "gallery" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-admin-view-gallery"
+        >
+          Gallery
+        </button>
+      </div>
+
       {list.length === 0 ? (
         <EmptyBox text={t("admin.clientDetail.noProgressPhotos")} />
+      ) : view === "compare" ? (
+        <BeforeAfterCompare photos={list} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {list.map((p) => (
             <div key={p.id} className="relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-white/5 group" data-testid={`admin-photo-${p.id}`}>
-              <img src={p.photoUrl} alt="Progress" className="w-full h-full object-cover" />
+              <img src={p.photoUrl} alt="Progress" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent text-white">
                 <p className="text-[11px] font-medium">{p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}</p>
-                <p className="text-[9px] uppercase tracking-wider text-primary">{p.type}</p>
+                <p className="text-[9px] uppercase tracking-wider text-primary">{p.type} · {(p as any).viewAngle ?? "front"}</p>
               </div>
               <button
                 onClick={() => del.mutate(p.id)}

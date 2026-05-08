@@ -38,6 +38,7 @@ import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
 import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import BeforeAfterCompare from "@/components/BeforeAfterCompare";
 import { ClipboardCheck } from "lucide-react";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
@@ -1593,6 +1594,8 @@ function ProgressTab({ userId }: { userId: number }) {
   const { data: photos = [], isLoading } = useProgressPhotos({ userId });
   const upload = useUploadProgressPhoto();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadAngle, setUploadAngle] = useState<"front" | "side" | "back">("front");
+  const [view, setView] = useState<"compare" | "gallery">("compare");
 
   const list = photos as ProgressPhoto[];
   const sorted = [...list].sort(
@@ -1601,7 +1604,7 @@ function ProgressTab({ userId }: { userId: number }) {
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) upload.mutate({ file, type: "current" });
+    if (file) upload.mutate({ file, type: "current", viewAngle: uploadAngle });
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -1612,33 +1615,72 @@ function ProgressTab({ userId }: { userId: number }) {
           <h2 className="text-lg font-display font-bold">{t("dashboard.progressTitle")}</h2>
           <p className="text-xs text-muted-foreground">{t("dashboard.progressTrack")}</p>
         </div>
-        <Button
-          onClick={() => fileRef.current?.click()}
-          className="rounded-xl"
-          disabled={upload.isPending}
-          data-testid="button-upload-progress"
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Angle selector for the upload */}
+          <div className="flex items-center gap-1 rounded-lg bg-white/5 p-1">
+            {(["front", "side", "back"] as const).map((a) => (
+              <button
+                key={a}
+                onClick={() => setUploadAngle(a)}
+                className={`px-2.5 py-1 text-[11px] uppercase tracking-wider rounded-md capitalize ${
+                  uploadAngle === a ? "bg-white/15 text-white" : "text-white/50 hover:text-white"
+                }`}
+                data-testid={`button-upload-angle-${a}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <Button
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl"
+            disabled={upload.isPending}
+            data-testid="button-upload-progress"
+          >
+            {upload.isPending ? (
+              <Loader2 size={14} className="animate-spin mr-1.5" />
+            ) : (
+              <Upload size={14} className="mr-1.5" />
+            )}
+            {t("dashboard.addPhoto")}
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onFile}
+          />
+        </div>
+      </div>
+
+      {/* View toggle */}
+      <div className="inline-flex rounded-lg bg-white/5 p-1">
+        <button
+          onClick={() => setView("compare")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "compare" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-view-compare"
         >
-          {upload.isPending ? (
-            <Loader2 size={14} className="animate-spin mr-1.5" />
-          ) : (
-            <Upload size={14} className="mr-1.5" />
-          )}
-          {t("dashboard.addPhoto")}
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onFile}
-        />
+          Compare
+        </button>
+        <button
+          onClick={() => setView("gallery")}
+          className={`px-3 py-1.5 text-xs rounded-md ${view === "gallery" ? "bg-white/15 text-white" : "text-white/50"}`}
+          data-testid="button-view-gallery"
+        >
+          Gallery
+        </button>
       </div>
 
       {isLoading && <SkeletonCards />}
 
       {!isLoading && sorted.length === 0 && <EmptyState title={t("dashboard.progressEmpty")} />}
 
-      {sorted.length > 0 && (
+      {!isLoading && sorted.length > 0 && view === "compare" && (
+        <BeforeAfterCompare photos={sorted} />
+      )}
+
+      {!isLoading && sorted.length > 0 && view === "gallery" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {sorted.map((p) => (
             <motion.div
@@ -1651,13 +1693,17 @@ function ProgressTab({ userId }: { userId: number }) {
               <img
                 src={p.photoUrl}
                 alt="Progress"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                 <p className="text-xs text-white font-medium">
                   {p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-primary">{p.type}</p>
+                <p className="text-[10px] uppercase tracking-wider text-primary">
+                  {p.type} · {(p as any).viewAngle ?? "front"}
+                </p>
               </div>
             </motion.div>
           ))}

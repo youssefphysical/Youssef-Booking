@@ -24,11 +24,12 @@ export function useUploadProgressPhoto() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (vars: { file: File; userId?: number; type?: "before" | "current" | "after"; notes?: string }) => {
+    mutationFn: async (vars: { file: File; userId?: number; type?: "before" | "current" | "after"; viewAngle?: "front" | "side" | "back"; notes?: string }) => {
       const fd = new FormData();
       fd.append("file", vars.file);
       if (vars.userId) fd.append("userId", String(vars.userId));
       if (vars.type) fd.append("type", vars.type);
+      if (vars.viewAngle) fd.append("viewAngle", vars.viewAngle);
       if (vars.notes) fd.append("notes", vars.notes);
       const res = await fetch(api.progress.upload.path, {
         method: "POST",

@@ -517,6 +517,12 @@ async function run(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS weekly_checkins_user_week_uniq ON weekly_checkins (user_id, week_start);
     CREATE INDEX IF NOT EXISTS weekly_checkins_user_idx ON weekly_checkins (user_id);
     CREATE INDEX IF NOT EXISTS weekly_checkins_pending_idx ON weekly_checkins (coach_response) WHERE coach_response IS NULL;
+
+    -- P4c Progress Photos: view-angle column (front/side/back) for
+    -- before/after comparison pairing. Backfill existing rows to 'front'
+    -- since that's the most common transformation shot angle.
+    ALTER TABLE progress_photos ADD COLUMN IF NOT EXISTS view_angle text NOT NULL DEFAULT 'front';
+    CREATE INDEX IF NOT EXISTS progress_photos_user_angle_idx ON progress_photos (user_id, view_angle, recorded_at DESC);
   `;
 
   try {
