@@ -2,16 +2,36 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { ClientNotification } from "@shared/schema";
 
-const LIST_KEY = ["/api/me/notifications"] as const;
+// =============================
+// P5a — Client notifications hooks
+// =============================
+// Query keys are SEGMENTED arrays so prefix invalidation
+// (`['/api/me/notifications']`) matches every list variant. The list
+// queries provide their own queryFn because the default fetcher would
+// otherwise join the params object into the URL path.
+
+const LIST_PREFIX = "/api/me/notifications";
 const COUNT_KEY = ["/api/me/notifications/unread-count"] as const;
 
-export function useNotifications(opts?: { unreadOnly?: boolean; limit?: number }) {
-  const params = new URLSearchParams();
-  if (opts?.unreadOnly) params.set("unreadOnly", "true");
-  if (opts?.limit) params.set("limit", String(opts.limit));
-  const qs = params.toString();
-  const url = qs ? `/api/me/notifications?${qs}` : "/api/me/notifications";
-  return useQuery<ClientNotification[]>({ queryKey: [url] });
+type ListParams = { unreadOnly?: boolean; limit?: number };
+
+function buildListUrl(params: ListParams) {
+  const qs = new URLSearchParams();
+  if (params.unreadOnly) qs.set("unreadOnly", "true");
+  if (params.limit) qs.set("limit", String(params.limit));
+  const s = qs.toString();
+  return s ? `${LIST_PREFIX}?${s}` : LIST_PREFIX;
+}
+
+export function useNotifications(params: ListParams = {}) {
+  return useQuery<ClientNotification[]>({
+    queryKey: [LIST_PREFIX, params],
+    queryFn: async () => {
+      const r = await fetch(buildListUrl(params), { credentials: "include" });
+      if (!r.ok) throw new Error(`Failed to load notifications (${r.status})`);
+      return r.json();
+    },
+  });
 }
 
 export function useUnreadNotificationCount() {
@@ -22,9 +42,9 @@ export function useUnreadNotificationCount() {
 }
 
 function invalidate() {
-  queryClient.invalidateQueries({ queryKey: LIST_KEY });
+  // Prefix match — covers every variant of useNotifications regardless of params.
+  queryClient.invalidateQueries({ queryKey: [LIST_PREFIX] });
   queryClient.invalidateQueries({ queryKey: COUNT_KEY });
-  queryClient.invalidateQueries({ queryKey: ["/api/me/notifications?unreadOnly=true"] });
 }
 
 export function useMarkNotificationRead() {
@@ -32,7 +52,20 @@ export function useMarkNotificationRead() {
     mutationFn: async (id: number) => {
       await apiRequest("POST", `/api/me/notifications/${id}/read`);
     },
-    onSuccess: invalidate,
+    // Optimistic clear so the unread dot disappears immediately even
+    // before the refetch lands.
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [LIST_PREFIX] });
+      const now = new Date().toISOString();
+      queryClient.setQueriesData<ClientNotification[]>({ queryKey: [LIST_PREFIX] }, (old) =>
+        old?.map((n) => (n.id === id && !n.readAt ? { ...n, readAt: now as any } : n)) ?? old,
+      );
+      const prevCount = queryClient.getQueryData<{ count: number }>(COUNT_KEY);
+      if (prevCount && prevCount.count > 0) {
+        queryClient.setQueryData(COUNT_KEY, { count: prevCount.count - 1 });
+      }
+    },
+    onSettled: invalidate,
   });
 }
 
@@ -41,6 +74,14 @@ export function useMarkAllNotificationsRead() {
     mutationFn: async () => {
       await apiRequest("POST", "/api/me/notifications/read-all");
     },
-    onSuccess: invalidate,
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: [LIST_PREFIX] });
+      const now = new Date().toISOString();
+      queryClient.setQueriesData<ClientNotification[]>({ queryKey: [LIST_PREFIX] }, (old) =>
+        old?.map((n) => (n.readAt ? n : { ...n, readAt: now as any })) ?? old,
+      );
+      queryClient.setQueryData(COUNT_KEY, { count: 0 });
+    },
+    onSettled: invalidate,
   });
 }
