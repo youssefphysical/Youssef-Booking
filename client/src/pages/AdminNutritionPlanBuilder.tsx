@@ -16,6 +16,7 @@ import {
   Droplets,
   Lock,
   Eye,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ import {
 } from "@shared/schema";
 import { computeMealTotals } from "@shared/nutrition";
 import { api } from "@shared/routes";
+import { buildNutritionPlanWhatsApp, whatsappUrl } from "@/lib/whatsapp";
 
 // ===== Helpers =====
 function blankItem(food: Food): PlanMealItemInput {
@@ -162,7 +164,7 @@ function dayTotals(d: PlanDayInput): DayTotals {
 }
 
 export default function AdminNutritionPlanBuilder() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { id: rawId } = useParams<{ id?: string }>();
   const isNew = !rawId || rawId === "new";
   const planId = isNew ? null : Number(rawId);
@@ -449,6 +451,27 @@ export default function AdminNutritionPlanBuilder() {
                 : name || t("admin.planBuilder.titleEdit", "Edit Plan")}
             </h1>
           </div>
+          {!isNew && existing && existing.days.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const client = clients.find((c) => c.id === existing.userId);
+                const msg = buildNutritionPlanWhatsApp(existing, {
+                  lang,
+                  clientName: client?.fullName ?? null,
+                  dayIndex: activeDayIdx,
+                });
+                window.open(whatsappUrl(client?.phone ?? null, msg), "_blank", "noopener,noreferrer");
+              }}
+              className="gap-2"
+              data-testid="button-share-plan-whatsapp"
+            >
+              <Share2 size={16} aria-hidden="true" />
+              <span className="hidden sm:inline">
+                {t("admin.planBuilder.shareWa", "Share to WhatsApp")}
+              </span>
+            </Button>
+          )}
           <Button
             onClick={onSave}
             disabled={saving}

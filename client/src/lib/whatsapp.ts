@@ -143,6 +143,262 @@ function pickPhrasebook(lang?: string | null): Phrasebook {
   return PHRASES[code] ?? PHRASES.en;
 }
 
+// =============================
+// Nutrition Plan share builder
+// =============================
+//
+// Builds a premium, mobile-readable WhatsApp summary of a full nutrition
+// plan (single day-type) that the trainer or the client can paste into
+// the chat. Translated headers/labels for the 7 main languages; food
+// names and the trainer's free-text notes are passed through verbatim.
+//
+// Uses simple ASCII separators (━━━) instead of complex markdown so the
+// message renders identically on iOS / Android / Desktop WhatsApp and
+// stays clean even after WhatsApp's internal whitespace collapse.
+
+import type { NutritionPlanFull, NutritionPlanDayWithMeals } from "@shared/schema";
+import { NUTRITION_PLAN_GOAL_LABELS_EN, NUTRITION_PLAN_DAY_TYPE_LABELS_EN } from "@shared/schema";
+
+type NutritionPhrasebook = {
+  header: string;
+  goal: string;
+  day: string;
+  calories: string;
+  protein: string;
+  carbs: string;
+  fats: string;
+  meal: string;
+  water: string;
+  coachNotes: string;
+  closing: string;
+  signature: string;
+  forClient: (name: string) => string;
+};
+
+const NUTRITION_PHRASES: Record<string, NutritionPhrasebook> = {
+  en: {
+    header: "YOUR NUTRITION PLAN",
+    goal: "Goal",
+    day: "Day",
+    calories: "Calories",
+    protein: "Protein",
+    carbs: "Carbs",
+    fats: "Fats",
+    meal: "MEAL",
+    water: "Water Target",
+    coachNotes: "Coach Notes",
+    closing: "Stay consistent — small daily wins compound.",
+    signature: "— Coach Youssef",
+    forClient: (n) => `For ${n}`,
+  },
+  ar: {
+    header: "خطتك الغذائية",
+    goal: "الهدف",
+    day: "اليوم",
+    calories: "السعرات",
+    protein: "بروتين",
+    carbs: "كربوهيدرات",
+    fats: "دهون",
+    meal: "وجبة",
+    water: "هدف الماء",
+    coachNotes: "ملاحظات الكوتش",
+    closing: "استمر — الانتصارات اليومية الصغيرة تتراكم.",
+    signature: "— كوتش يوسف",
+    forClient: (n) => `لـ ${n}`,
+  },
+  fa: {
+    header: "برنامه غذایی شما",
+    goal: "هدف",
+    day: "روز",
+    calories: "کالری",
+    protein: "پروتئین",
+    carbs: "کربوهیدرات",
+    fats: "چربی",
+    meal: "وعده",
+    water: "هدف آب",
+    coachNotes: "یادداشت مربی",
+    closing: "ادامه بده — موفقیت‌های کوچک روزانه جمع می‌شوند.",
+    signature: "— مربی یوسف",
+    forClient: (n) => `برای ${n}`,
+  },
+  ur: {
+    header: "آپ کا نیوٹریشن پلان",
+    goal: "ہدف",
+    day: "دن",
+    calories: "کیلوریز",
+    protein: "پروٹین",
+    carbs: "کاربز",
+    fats: "چکنائی",
+    meal: "میل",
+    water: "پانی کا ہدف",
+    coachNotes: "کوچ کے نوٹس",
+    closing: "ثابت قدم رہیں — روزانہ کی چھوٹی کامیابیاں بڑی بنتی ہیں۔",
+    signature: "— کوچ یوسف",
+    forClient: (n) => `${n} کے لیے`,
+  },
+  de: {
+    header: "DEIN ERNÄHRUNGSPLAN",
+    goal: "Ziel",
+    day: "Tag",
+    calories: "Kalorien",
+    protein: "Eiweiß",
+    carbs: "Kohlenhydrate",
+    fats: "Fette",
+    meal: "MAHLZEIT",
+    water: "Wasser-Ziel",
+    coachNotes: "Coach-Notizen",
+    closing: "Bleib dran — kleine tägliche Siege summieren sich.",
+    signature: "— Coach Youssef",
+    forClient: (n) => `Für ${n}`,
+  },
+  fr: {
+    header: "VOTRE PLAN NUTRITION",
+    goal: "Objectif",
+    day: "Jour",
+    calories: "Calories",
+    protein: "Protéines",
+    carbs: "Glucides",
+    fats: "Lipides",
+    meal: "REPAS",
+    water: "Objectif d'eau",
+    coachNotes: "Notes du Coach",
+    closing: "Reste constant — les petites victoires quotidiennes s'accumulent.",
+    signature: "— Coach Youssef",
+    forClient: (n) => `Pour ${n}`,
+  },
+  ru: {
+    header: "ВАШ ПЛАН ПИТАНИЯ",
+    goal: "Цель",
+    day: "День",
+    calories: "Калории",
+    protein: "Белки",
+    carbs: "Углеводы",
+    fats: "Жиры",
+    meal: "ПРИЁМ ПИЩИ",
+    water: "Цель по воде",
+    coachNotes: "Заметки тренера",
+    closing: "Продолжай — маленькие ежедневные победы складываются.",
+    signature: "— Тренер Юссеф",
+    forClient: (n) => `Для ${n}`,
+  },
+};
+
+function pickNutritionPhrasebook(lang?: string | null): NutritionPhrasebook {
+  const code = (lang || "en").slice(0, 2).toLowerCase();
+  return NUTRITION_PHRASES[code] ?? NUTRITION_PHRASES.en;
+}
+
+const SEP = "━━━━━━━━━━━━━━━";
+
+export interface BuildNutritionPlanWhatsAppOptions {
+  /** UI language code, e.g. "en", "ar". */
+  lang?: string | null;
+  /** Optional client display name (greets the recipient). */
+  clientName?: string | null;
+  /** Which day to include. Defaults to the first day in the plan. */
+  dayIndex?: number;
+}
+
+function fmtNum(n: number): string {
+  return Number.isFinite(n) ? Math.round(n).toString() : "0";
+}
+
+function dayTotalsFromMeals(day: NutritionPlanDayWithMeals) {
+  return day.meals.reduce(
+    (acc, m) => ({
+      kcal: acc.kcal + m.totalKcal,
+      protein: acc.protein + m.totalProteinG,
+      carbs: acc.carbs + m.totalCarbsG,
+      fats: acc.fats + m.totalFatsG,
+    }),
+    { kcal: 0, protein: 0, carbs: 0, fats: 0 },
+  );
+}
+
+/**
+ * Build a premium WhatsApp message summarizing a single day of a
+ * nutrition plan. We deliberately summarize ONE day at a time (not the
+ * whole plan) because:
+ *  - WhatsApp truncates long messages
+ *  - Clients usually want to see today's plan, not all variants
+ *  - Multiple day-types can be sent as separate messages if needed
+ *
+ * Privacy: trainer's `privateNotes` are NEVER included. Only
+ * `publicNotes` (intentionally shared with the client) and the day's
+ * own `notes` are emitted.
+ */
+export function buildNutritionPlanWhatsApp(
+  plan: NutritionPlanFull,
+  opts: BuildNutritionPlanWhatsAppOptions = {},
+): string {
+  const p = pickNutritionPhrasebook(opts.lang);
+  const idx = Math.max(0, Math.min(opts.dayIndex ?? 0, plan.days.length - 1));
+  const day = plan.days[idx];
+  const lines: string[] = [];
+
+  lines.push(SEP);
+  lines.push(`🍽  ${p.header}`);
+  lines.push(SEP);
+
+  const name = (opts.clientName || "").trim();
+  if (name) lines.push(p.forClient(name));
+  lines.push(`${p.goal}: ${(NUTRITION_PLAN_GOAL_LABELS_EN as any)[plan.goal] ?? plan.goal}`);
+
+  if (day) {
+    const dayLabel = day.label?.trim() ||
+      ((NUTRITION_PLAN_DAY_TYPE_LABELS_EN as any)[day.dayType] ?? day.dayType);
+    lines.push(`${p.day}: ${dayLabel}`);
+    lines.push("");
+
+    // Day-level macro targets
+    lines.push(`${p.calories}: ${fmtNum(day.targetKcal)} kcal`);
+    lines.push(`${p.protein}: ${fmtNum(day.targetProteinG)}g`);
+    lines.push(`${p.carbs}: ${fmtNum(day.targetCarbsG)}g`);
+    lines.push(`${p.fats}: ${fmtNum(day.targetFatsG)}g`);
+
+    // Per-meal breakdown
+    day.meals.forEach((m, i) => {
+      lines.push("");
+      lines.push(`${p.meal} ${i + 1} — ${m.name}`);
+      m.items.forEach((it) => {
+        const qty = (it.servingSize * it.quantity).toFixed(0);
+        lines.push(`• ${it.name} (${qty}${it.servingUnit})`);
+      });
+      lines.push(`   ${fmtNum(m.totalKcal)} kcal`);
+    });
+
+    // Day total recap
+    const t = dayTotalsFromMeals(day);
+    lines.push("");
+    lines.push(
+      `Σ  ${fmtNum(t.kcal)} kcal · P ${fmtNum(t.protein)}g · C ${fmtNum(t.carbs)}g · F ${fmtNum(t.fats)}g`,
+    );
+
+    if (day.notes && day.notes.trim()) {
+      lines.push("");
+      lines.push(day.notes.trim());
+    }
+  }
+
+  if (plan.waterTargetMl && plan.waterTargetMl > 0) {
+    lines.push("");
+    lines.push(`💧 ${p.water}: ${(plan.waterTargetMl / 1000).toFixed(1)}L`);
+  }
+
+  if (plan.publicNotes && plan.publicNotes.trim()) {
+    lines.push("");
+    lines.push(`📝 ${p.coachNotes}`);
+    lines.push(plan.publicNotes.trim());
+  }
+
+  lines.push("");
+  lines.push(p.closing);
+  lines.push(p.signature);
+  lines.push(SEP);
+
+  return lines.join("\n");
+}
+
 export function buildWhatsappMessage(kind: WhatsAppKind, ctx: WhatsAppContext = {}): string {
   const p = pickPhrasebook(ctx.lang);
   const name = (ctx.clientName || "").trim();

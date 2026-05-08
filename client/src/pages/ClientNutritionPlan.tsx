@@ -8,12 +8,16 @@ import {
   Calendar,
   ChefHat,
   Info,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMyActiveNutritionPlan } from "@/hooks/use-nutrition-plans";
+import { useSettings } from "@/hooks/use-settings";
+import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
+import { buildNutritionPlanWhatsApp, whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 import {
   NUTRITION_PLAN_GOAL_LABELS_EN,
   NUTRITION_PLAN_DAY_TYPE_LABELS_EN,
@@ -33,8 +37,10 @@ function dayTotals(meals: { totalKcal: number; totalProteinG: number; totalCarbs
 }
 
 export default function ClientNutritionPlan() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { data: plan, isLoading, isError } = useMyActiveNutritionPlan();
+  const { data: settings } = useSettings();
+  const { user } = useAuth();
   const [activeIdx, setActiveIdx] = useState(0);
 
   const goalLabel = (k: string) =>
@@ -79,6 +85,31 @@ export default function ClientNutritionPlan() {
               {plan?.name ?? t("client.nutrition.title", "My Nutrition Plan")}
             </h1>
           </div>
+          {plan && plan.days.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const msg = buildNutritionPlanWhatsApp(plan, {
+                  lang,
+                  clientName: user?.fullName ?? null,
+                  dayIndex: activeIdx,
+                });
+                window.open(
+                  whatsappUrl(settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER, msg),
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+              className="gap-2"
+              data-testid="button-share-my-plan-whatsapp"
+            >
+              <Share2 size={14} aria-hidden="true" />
+              <span className="hidden sm:inline">
+                {t("client.nutrition.shareWa", "Share to WhatsApp")}
+              </span>
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
