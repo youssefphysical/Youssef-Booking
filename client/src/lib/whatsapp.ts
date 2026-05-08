@@ -399,6 +399,184 @@ export function buildNutritionPlanWhatsApp(
   return lines.join("\n");
 }
 
+// =============================
+// Supplements share builder (Phase 3)
+// =============================
+//
+// Builds a WhatsApp summary of a client's supplement protocol for a
+// given day-mode (training / rest). Same brand voice + ASCII separators
+// as the nutrition share so messages feel like a single product.
+
+import type { ClientSupplement } from "@shared/schema";
+import { SUPPLEMENT_TIMING_LABELS_EN, SUPPLEMENT_TIMING_ORDER } from "@shared/schema";
+
+type SupplementsPhrasebook = {
+  header: string;
+  trainingDay: string;
+  restDay: string;
+  forClient: (n: string) => string;
+  totalLabel: (n: number) => string;
+  warnings: string;
+  closing: string;
+  signature: string;
+};
+
+const SUPP_PHRASES: Record<string, SupplementsPhrasebook> = {
+  en: {
+    header: "YOUR SUPPLEMENT PROTOCOL",
+    trainingDay: "Training Day",
+    restDay: "Rest Day",
+    forClient: (n) => `For ${n}`,
+    totalLabel: (n) => `${n} supplement${n === 1 ? "" : "s"}`,
+    warnings: "Warnings",
+    closing: "Stay consistent — supplements work when sleep, food, and training do.",
+    signature: "— Coach Youssef",
+  },
+  ar: {
+    header: "بروتوكول المكملات الخاص بك",
+    trainingDay: "يوم تدريب",
+    restDay: "يوم راحة",
+    forClient: (n) => `لـ ${n}`,
+    totalLabel: (n) => `${n} مكمل`,
+    warnings: "تحذيرات",
+    closing: "استمر — المكملات تعمل عندما يعمل النوم والطعام والتدريب.",
+    signature: "— كوتش يوسف",
+  },
+  fa: {
+    header: "پروتکل مکمل‌های شما",
+    trainingDay: "روز تمرین",
+    restDay: "روز استراحت",
+    forClient: (n) => `برای ${n}`,
+    totalLabel: (n) => `${n} مکمل`,
+    warnings: "هشدارها",
+    closing: "ادامه بده — مکمل‌ها زمانی کار می‌کنند که خواب، غذا و تمرین درست باشد.",
+    signature: "— مربی یوسف",
+  },
+  ur: {
+    header: "آپ کا سپلیمنٹ پروٹوکول",
+    trainingDay: "ٹریننگ دن",
+    restDay: "آرام کا دن",
+    forClient: (n) => `${n} کے لیے`,
+    totalLabel: (n) => `${n} سپلیمنٹس`,
+    warnings: "تنبیہات",
+    closing: "ثابت قدم رہیں — سپلیمنٹس تب کام کرتے ہیں جب نیند، خوراک اور ٹریننگ درست ہو۔",
+    signature: "— کوچ یوسف",
+  },
+  de: {
+    header: "DEIN SUPPLEMENT-PROTOKOLL",
+    trainingDay: "Trainingstag",
+    restDay: "Ruhetag",
+    forClient: (n) => `Für ${n}`,
+    totalLabel: (n) => `${n} Supplement${n === 1 ? "" : "e"}`,
+    warnings: "Hinweise",
+    closing: "Bleib dran — Supplements wirken, wenn Schlaf, Ernährung und Training stimmen.",
+    signature: "— Coach Youssef",
+  },
+  fr: {
+    header: "VOTRE PROTOCOLE DE COMPLÉMENTS",
+    trainingDay: "Jour d'entraînement",
+    restDay: "Jour de repos",
+    forClient: (n) => `Pour ${n}`,
+    totalLabel: (n) => `${n} complément${n === 1 ? "" : "s"}`,
+    warnings: "Avertissements",
+    closing: "Reste constant — les compléments fonctionnent quand le sommeil, l'alimentation et l'entraînement sont au point.",
+    signature: "— Coach Youssef",
+  },
+  ru: {
+    header: "ВАШ ПРОТОКОЛ ДОБАВОК",
+    trainingDay: "Тренировочный день",
+    restDay: "День отдыха",
+    forClient: (n) => `Для ${n}`,
+    totalLabel: (n) => `${n} добавок`,
+    warnings: "Предупреждения",
+    closing: "Продолжай — добавки работают, когда сон, питание и тренировки в порядке.",
+    signature: "— Тренер Юссеф",
+  },
+};
+
+function pickSuppPhrasebook(lang?: string | null): SupplementsPhrasebook {
+  const code = (lang || "en").slice(0, 2).toLowerCase();
+  return SUPP_PHRASES[code] ?? SUPP_PHRASES.en;
+}
+
+export interface BuildSupplementsWhatsAppOptions {
+  lang?: string | null;
+  clientName?: string | null;
+  /** Which day-context to summarise. Defaults to "training". */
+  mode?: "training" | "rest";
+}
+
+export function buildSupplementsWhatsApp(
+  items: ClientSupplement[],
+  opts: BuildSupplementsWhatsAppOptions = {},
+): string {
+  const p = pickSuppPhrasebook(opts.lang);
+  const mode = opts.mode ?? "training";
+
+  // Filter to today's day-mode + active only.
+  const todays = items
+    .filter((i) => i.status === "active")
+    .filter((i) => {
+      if (mode === "training" && i.restDayOnly) return false;
+      if (mode === "rest" && i.trainingDayOnly) return false;
+      return true;
+    });
+
+  // Group by canonical timing order.
+  const grouped = new Map<string, ClientSupplement[]>();
+  for (const it of todays) {
+    const slots = it.timings.length > 0 ? it.timings : ["anytime"];
+    for (const slot of slots) {
+      const arr = grouped.get(slot) ?? [];
+      arr.push(it);
+      grouped.set(slot, arr);
+    }
+  }
+  const orderedSlots = Array.from(grouped.keys()).sort(
+    (a, b) =>
+      ((SUPPLEMENT_TIMING_ORDER as Record<string, number>)[a] ?? 99) -
+      ((SUPPLEMENT_TIMING_ORDER as Record<string, number>)[b] ?? 99),
+  );
+
+  const lines: string[] = [];
+  lines.push(SEP);
+  lines.push(`💊  ${p.header}`);
+  lines.push(SEP);
+
+  const name = (opts.clientName || "").trim();
+  if (name) lines.push(p.forClient(name));
+  lines.push(`${mode === "training" ? p.trainingDay : p.restDay} · ${p.totalLabel(todays.length)}`);
+  lines.push("");
+
+  for (const slot of orderedSlots) {
+    const slotLabel =
+      (SUPPLEMENT_TIMING_LABELS_EN as Record<string, string>)[slot] ?? slot;
+    lines.push(`▸ ${slotLabel.toUpperCase()}`);
+    for (const it of grouped.get(slot)!) {
+      const brand = it.brand ? ` (${it.brand})` : "";
+      lines.push(`  • ${it.name}${brand} — ${it.dosage}${it.unit}`);
+      if (it.notes && it.notes.trim()) lines.push(`     ↳ ${it.notes.trim()}`);
+    }
+    lines.push("");
+  }
+
+  // Aggregate warnings — they're important enough to surface at the bottom.
+  const warned = items.filter((i) => i.warnings && i.warnings.trim());
+  if (warned.length > 0) {
+    lines.push(`⚠️  ${p.warnings}`);
+    for (const w of warned) {
+      lines.push(`  • ${w.name}: ${w.warnings!.trim()}`);
+    }
+    lines.push("");
+  }
+
+  lines.push(p.closing);
+  lines.push(p.signature);
+  lines.push(SEP);
+
+  return lines.join("\n");
+}
+
 export function buildWhatsappMessage(kind: WhatsAppKind, ctx: WhatsAppContext = {}): string {
   const p = pickPhrasebook(ctx.lang);
   const name = (ctx.clientName || "").trim();

@@ -24,6 +24,13 @@ import {
   updateMealSchema,
   insertNutritionPlanSchema,
   updateNutritionPlanSchema,
+  insertSupplementSchema,
+  updateSupplementSchema,
+  insertSupplementStackSchema,
+  updateSupplementStackSchema,
+  insertClientSupplementSchema,
+  updateClientSupplementSchema,
+  applyStackToClientSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2281,6 +2288,132 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const dup = await storage.duplicateNutritionPlan(id, me.id);
     if (!dup) return res.status(404).json({ message: "Plan not found" });
     res.status(201).json(dup);
+  });
+
+  // ============== SUPPLEMENTS (Phase 3) ==============
+  // Library — admin-curated catalogue. Supplements assigned to clients
+  // are SNAPSHOTS, so deleting/editing a library row is always safe.
+  app.get("/api/supplements", requireAdmin, async (req, res) => {
+    const activeOnly = req.query.activeOnly === "true";
+    const category = typeof req.query.category === "string" ? req.query.category : undefined;
+    const list = await storage.listSupplements({ activeOnly, category });
+    res.json(list);
+  });
+  app.get("/api/supplements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const row = await storage.getSupplement(id);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.post("/api/supplements", requireAdmin, async (req, res) => {
+    const parsed = insertSupplementSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const me = req.user as User;
+    const row = await storage.createSupplement(parsed.data, me.id);
+    res.status(201).json(row);
+  });
+  app.patch("/api/supplements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateSupplementSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const row = await storage.updateSupplement(id, parsed.data);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.delete("/api/supplements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteSupplement(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  });
+
+  // Stacks — reusable templates of supplements with snapshotted items.
+  app.get("/api/supplement-stacks", requireAdmin, async (req, res) => {
+    const activeOnly = req.query.activeOnly === "true";
+    const list = await storage.listSupplementStacks({ activeOnly });
+    res.json(list);
+  });
+  app.get("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const row = await storage.getSupplementStack(id);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.post("/api/supplement-stacks", requireAdmin, async (req, res) => {
+    const parsed = insertSupplementStackSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const me = req.user as User;
+    const row = await storage.createSupplementStack(parsed.data, me.id);
+    res.status(201).json(row);
+  });
+  app.patch("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateSupplementStackSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const row = await storage.updateSupplementStack(id, parsed.data);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.delete("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteSupplementStack(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  });
+
+  // Per-client assignments. Clients can only ever read their OWN list
+  // via /me. Admin can read by ?userId= and write to any user.
+  app.get("/api/client-supplements/me", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const list = await storage.listClientSupplements(me.id, { activeOnly: true });
+    // Strip warnings? No — clients NEED to see warnings. They are the audience.
+    res.json(list);
+  });
+  app.get("/api/client-supplements", requireAdmin, async (req, res) => {
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    if (!userId || !Number.isFinite(userId)) return res.status(400).json({ message: "userId required" });
+    const list = await storage.listClientSupplements(userId);
+    res.json(list);
+  });
+  app.post("/api/client-supplements", requireAdmin, async (req, res) => {
+    const parsed = insertClientSupplementSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const me = req.user as User;
+    const row = await storage.createClientSupplement(parsed.data, me.id);
+    res.status(201).json(row);
+  });
+  app.patch("/api/client-supplements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateClientSupplementSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const row = await storage.updateClientSupplement(id, parsed.data);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  });
+  app.delete("/api/client-supplements/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteClientSupplement(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  });
+  app.post("/api/client-supplements/apply-stack", requireAdmin, async (req, res) => {
+    const parsed = applyStackToClientSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    const me = req.user as User;
+    try {
+      const rows = await storage.applyStackToClient(parsed.data, me.id);
+      res.status(201).json(rows);
+    } catch (err: any) {
+      res.status(400).json({ message: err?.message || "Failed to apply stack" });
+    }
   });
 
   // ============== INBODY ==============

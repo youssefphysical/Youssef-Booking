@@ -387,6 +387,87 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS nutrition_plan_meal_items_meal_idx ON nutrition_plan_meal_items (plan_meal_id);
     CREATE INDEX IF NOT EXISTS nutrition_plan_meal_items_source_idx ON nutrition_plan_meal_items (source_food_id);
+
+    -- Supplement system (Phase 3, May 2026)
+    CREATE TABLE IF NOT EXISTS supplements (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      name_ar text,
+      brand text,
+      category text NOT NULL DEFAULT 'other',
+      default_dosage double precision NOT NULL DEFAULT 1,
+      default_unit text NOT NULL DEFAULT 'capsule',
+      default_timings text[] NOT NULL DEFAULT ARRAY[]::text[],
+      default_training_day_only boolean NOT NULL DEFAULT false,
+      default_rest_day_only boolean NOT NULL DEFAULT false,
+      notes text,
+      warnings text,
+      is_prescription boolean NOT NULL DEFAULT false,
+      active boolean NOT NULL DEFAULT true,
+      created_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS supplements_active_idx ON supplements (active);
+    CREATE INDEX IF NOT EXISTS supplements_category_idx ON supplements (category);
+
+    CREATE TABLE IF NOT EXISTS supplement_stacks (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      goal text NOT NULL DEFAULT 'custom',
+      description text,
+      notes text,
+      active boolean NOT NULL DEFAULT true,
+      sort_order integer NOT NULL DEFAULT 0,
+      created_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS supplement_stacks_active_idx ON supplement_stacks (active);
+
+    CREATE TABLE IF NOT EXISTS supplement_stack_items (
+      id serial PRIMARY KEY,
+      stack_id integer NOT NULL REFERENCES supplement_stacks(id) ON DELETE CASCADE,
+      source_supplement_id integer,
+      name text NOT NULL,
+      brand text,
+      category text NOT NULL DEFAULT 'other',
+      dosage double precision NOT NULL DEFAULT 1,
+      unit text NOT NULL DEFAULT 'capsule',
+      timings text[] NOT NULL DEFAULT ARRAY[]::text[],
+      training_day_only boolean NOT NULL DEFAULT false,
+      rest_day_only boolean NOT NULL DEFAULT false,
+      notes text,
+      warnings text,
+      sort_order integer NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS supplement_stack_items_stack_idx ON supplement_stack_items (stack_id);
+
+    CREATE TABLE IF NOT EXISTS client_supplements (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source_supplement_id integer,
+      source_stack_id integer,
+      name text NOT NULL,
+      brand text,
+      category text NOT NULL DEFAULT 'other',
+      dosage double precision NOT NULL DEFAULT 1,
+      unit text NOT NULL DEFAULT 'capsule',
+      timings text[] NOT NULL DEFAULT ARRAY[]::text[],
+      training_day_only boolean NOT NULL DEFAULT false,
+      rest_day_only boolean NOT NULL DEFAULT false,
+      notes text,
+      warnings text,
+      status text NOT NULL DEFAULT 'active',
+      start_date date,
+      end_date date,
+      sort_order integer NOT NULL DEFAULT 0,
+      assigned_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS client_supplements_user_idx ON client_supplements (user_id);
+    CREATE INDEX IF NOT EXISTS client_supplements_user_status_idx ON client_supplements (user_id, status);
   `;
 
   try {

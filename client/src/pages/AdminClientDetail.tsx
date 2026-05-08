@@ -77,6 +77,7 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ClientNutritionTab } from "@/components/ClientNutritionTab";
+import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
@@ -229,6 +230,9 @@ export default function AdminClientDetail() {
           <TabsTrigger value="nutrition" data-testid="tab-detail-nutrition">
             {t("admin.tabs.nutrition", "Nutrition")}
           </TabsTrigger>
+          <TabsTrigger value="supplements" data-testid="tab-detail-supplements">
+            {t("admin.tabs.supplements", "Supplements")}
+          </TabsTrigger>
           <TabsTrigger value="alerts" data-testid="tab-detail-alerts">
             <Bell size={13} className="mr-1.5" /> {t("admin.clientDetail.tabAlerts", "Alerts")}
           </TabsTrigger>
@@ -252,6 +256,7 @@ export default function AdminClientDetail() {
         <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
         <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
         <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
+        <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
         <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
       </Tabs>
       </div>
