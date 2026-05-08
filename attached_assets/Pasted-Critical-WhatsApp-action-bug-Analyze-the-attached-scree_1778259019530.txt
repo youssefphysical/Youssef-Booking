@@ -1,0 +1,104 @@
+Critical WhatsApp action bug.
+
+Analyze the attached screenshot and current WhatsApp button behavior carefully.
+
+CURRENT WRONG BEHAVIOR:
+When pressing the WhatsApp button inside a client profile/card,
+the app opens MY OWN WhatsApp/contact instead of opening a conversation with the CLIENT.
+
+This is incorrect UX and operationally dangerous.
+
+EXPECTED BEHAVIOR:
+The WhatsApp action must always:
+- open WhatsApp chat with THAT specific client
+- use the client’s saved phone number dynamically
+- format UAE/international numbers correctly
+- work on Android + iPhone + WhatsApp Web
+
+Examples:
+Client phone:
++201205619605
+
+Should open:
+https://wa.me/201205619605
+
+NOT the trainer/admin number.
+
+REQUIRED FIXES:
+
+1. Audit all WhatsApp buttons globally
+Check:
+- client cards
+- client detail page
+- sessions
+- bookings
+- quick actions
+- nutrition share
+- supplement share
+- anywhere WhatsApp appears
+
+2. Split behavior properly
+There are TWO different WhatsApp use-cases:
+
+A) CONTACT CLIENT
+→ opens the client’s WhatsApp directly
+
+B) SHARE PLAN TO CLIENT
+→ opens WhatsApp share composer with generated message
+
+These must NEVER use the same handler incorrectly.
+
+3. Create proper WhatsApp utility layer
+Need centralized helpers:
+- normalizePhoneNumber()
+- buildWhatsAppClientLink()
+- buildWhatsAppShareText()
+
+Avoid duplicated logic.
+
+4. Normalize phone formatting
+Support:
++971...
+00971...
+971...
+05...
++20...
+
+Need safe normalization before generating wa.me URLs.
+
+5. Fallback handling
+If client has no phone:
+- disable button gracefully
+OR
+- show toast:
+“Client phone number missing”
+
+Never open trainer/admin WhatsApp as fallback.
+
+6. Mobile UX
+WhatsApp CTA must:
+- feel instant
+- reliable
+- predictable
+- no incorrect redirects
+
+7. Architect review required
+This is a critical operational action.
+Need:
+- route verification
+- handler verification
+- real-device testing
+- no regressions
+
+MANDATORY:
+Test on:
+- Android Chrome
+- Samsung device viewport
+- WhatsApp installed
+- WhatsApp Web fallback
+
+Then:
+- typecheck
+- architect review
+- deploy
+- screenshot/video verification

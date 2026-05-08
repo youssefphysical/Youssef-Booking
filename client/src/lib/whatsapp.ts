@@ -3,8 +3,77 @@
 // freshly-deployed environment still works.
 export const DEFAULT_WHATSAPP_NUMBER = "971505394754";
 
+/**
+ * Default country code used when a phone number is given in bare local
+ * format (e.g. "0501234567"). The coach is based in Dubai, so UAE (971)
+ * is the safest default. Numbers given with a leading "+" or "00" are
+ * trusted as already international.
+ */
+const DEFAULT_COUNTRY_CODE = "971";
+
+/**
+ * Normalize a phone number to a wa.me-compatible international digit
+ * string. Handles:
+ *   - "+971501234567"   → "971501234567"
+ *   - "00971501234567"  → "971501234567"
+ *   - "971501234567"    → "971501234567"
+ *   - "0501234567"      → "971501234567"  (UAE local → +971)
+ *   - "+201205619605"   → "201205619605"
+ *   - " (050) 123-4567" → "971501234567"
+ *
+ * Returns null when the input is missing, empty, or yields a length
+ * outside the ITU E.164 valid range (7–15 digits). Callers MUST handle
+ * the null case (disable the button or show a "phone missing" toast)
+ * — this helper deliberately does NOT fall back to any default number,
+ * to avoid silently routing client-contact actions to the trainer.
+ */
+export function normalizePhoneNumber(
+  input: string | null | undefined,
+  defaultCountry: string = DEFAULT_COUNTRY_CODE,
+): string | null {
+  if (!input) return null;
+  const raw = String(input).trim();
+  if (!raw) return null;
+  const hasPlus = raw.startsWith("+");
+  let digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  // International "00" prefix → drop, treat as if "+" was used.
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  // Bare leading "0" without "+" → assume local national format → swap
+  // for the default country code.
+  else if (!hasPlus && digits.startsWith("0")) {
+    digits = defaultCountry + digits.slice(1);
+  }
+  if (digits.length < 7 || digits.length > 15) return null;
+  return digits;
+}
+
+/**
+ * Trainer-direction WhatsApp URL (client → coach, public site CTAs,
+ * dashboard help, etc). Falls back to the configured default trainer
+ * number when no explicit number is provided. NEVER use this for
+ * admin → client actions — use {@link whatsappClientUrl} instead.
+ */
 export function whatsappUrl(number?: string | null, message?: string): string {
-  const n = (number || DEFAULT_WHATSAPP_NUMBER).replace(/[^\d]/g, "");
+  const n = normalizePhoneNumber(number) || DEFAULT_WHATSAPP_NUMBER;
+  const base = `https://wa.me/${n}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+/**
+ * Client-direction WhatsApp URL (admin → specific client). Returns null
+ * when the client has no phone or the number is unparseable, so the
+ * caller can disable the button or surface a "phone missing" toast.
+ * Critically, this NEVER falls back to the trainer's default number,
+ * which would otherwise silently open the trainer's own chat instead
+ * of the client's — a long-standing bug we explicitly want to prevent.
+ */
+export function whatsappClientUrl(
+  clientPhone: string | null | undefined,
+  message?: string,
+): string | null {
+  const n = normalizePhoneNumber(clientPhone);
+  if (!n) return null;
   const base = `https://wa.me/${n}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }

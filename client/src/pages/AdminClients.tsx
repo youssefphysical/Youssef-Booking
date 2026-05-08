@@ -33,8 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { whatsappUrl } from "@/lib/whatsapp";
-import { useSettings } from "@/hooks/use-settings";
+import { whatsappClientUrl } from "@/lib/whatsapp";
 import {
   PACKAGE_DEFINITIONS,
   VIP_TIER_LABELS,
@@ -393,7 +392,6 @@ function SortHeader({
 function ClientRow({ row, index }: { row: Row; index: number }) {
   const { t } = useTranslation();
   const { client, activePkg, remaining, packageLabel } = row;
-  const { data: settings } = useSettings();
   const tier = normaliseTier(client.vipTier);
   const isElite = tier === "elite" || tier === "pro_elite" || tier === "diamond_elite";
 
@@ -486,18 +484,22 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
         >
           <ExternalLink size={12} />
         </Link>
-        {client.phone && (
-          <a
-            href={whatsappUrl(settings?.whatsappNumber || client.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid={`button-whatsapp-${client.id}`}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
-            title={t("admin.clients.whatsapp")}
-          >
-            <SiWhatsapp size={12} />
-          </a>
-        )}
+        {(() => {
+          const url = whatsappClientUrl(client.phone);
+          if (!url) return null;
+          return (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid={`button-whatsapp-${client.id}`}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
+              title={t("admin.clients.whatsapp")}
+            >
+              <SiWhatsapp size={12} />
+            </a>
+          );
+        })()}
       </div>
     </motion.div>
   );
@@ -506,7 +508,6 @@ function ClientRow({ row, index }: { row: Row; index: number }) {
 function MobileCard({ row }: { row: Row }) {
   const { t } = useTranslation();
   const { client, activePkg, remaining, packageLabel } = row;
-  const { data: settings } = useSettings();
   const tier = normaliseTier(client.vipTier);
   const isElite = tier === "elite" || tier === "pro_elite" || tier === "diamond_elite";
 
@@ -565,16 +566,21 @@ function MobileCard({ row }: { row: Row }) {
         >
           {t("admin.clients.openProfile")} <ExternalLink size={11} />
         </Link>
-        {client.phone && (
-          <a
-            href={whatsappUrl(settings?.whatsappNumber || client.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
-          >
-            <SiWhatsapp size={14} />
-          </a>
-        )}
+        {(() => {
+          const url = whatsappClientUrl(client.phone);
+          if (!url) return null;
+          return (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid={`button-whatsapp-mobile-${client.id}`}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 btn-soft"
+            >
+              <SiWhatsapp size={14} />
+            </a>
+          );
+        })()}
       </div>
     </motion.div>
   );

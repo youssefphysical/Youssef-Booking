@@ -92,7 +92,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { motion } from "framer-motion";
-import { whatsappUrl } from "@/lib/whatsapp";
+import { whatsappClientUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ClientNutritionTab } from "@/components/ClientNutritionTab";
@@ -257,18 +257,22 @@ function ClientHeader({
                 )}
               </div>
             </div>
-            {/* Primary action: WhatsApp */}
-            {client.phone && (
-              <a
-                href={whatsappUrl(whatsappNumber || client.phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-whatsapp"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-xs font-semibold whitespace-nowrap shrink-0"
-              >
-                <SiWhatsapp size={13} /> WhatsApp
-              </a>
-            )}
+            {/* Primary action: WhatsApp THIS client (never trainer) */}
+            {(() => {
+              const url = whatsappClientUrl(client.phone);
+              if (!url) return null;
+              return (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-whatsapp"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 h-9 rounded-xl bg-[#25D366]/15 text-[#25D366] hover:bg-[#25D366]/25 text-xs font-semibold whitespace-nowrap shrink-0"
+                >
+                  <SiWhatsapp size={13} /> WhatsApp
+                </a>
+              );
+            })()}
           </div>
 
           {/* Vital chips — goal · package · sessions · tier */}
@@ -303,17 +307,21 @@ function ClientHeader({
 
           {/* Quick actions row */}
           <div className="flex gap-1.5 sm:gap-2 mt-3 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch] -mx-1 px-1">
-            {client.phone && (
-              <a
-                href={whatsappUrl(whatsappNumber || client.phone)}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="button-whatsapp-mobile"
-                className="sm:hidden inline-flex items-center gap-1 px-3 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] text-[11px] font-semibold whitespace-nowrap shrink-0"
-              >
-                <SiWhatsapp size={11} /> WhatsApp
-              </a>
-            )}
+            {(() => {
+              const url = whatsappClientUrl(client.phone);
+              if (!url) return null;
+              return (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-whatsapp-mobile"
+                  className="sm:hidden inline-flex items-center gap-1 px-3 h-8 rounded-lg bg-[#25D366]/15 text-[#25D366] text-[11px] font-semibold whitespace-nowrap shrink-0"
+                >
+                  <SiWhatsapp size={11} /> WhatsApp
+                </a>
+              );
+            })()}
             <QuickActionPill icon={<Calendar size={11} />} label={t("admin.clientDetail.qaSessions", "Sessions")} onClick={() => onJump("bookings")} testId="qa-jump-bookings" />
             <QuickActionPill icon={<Wallet size={11} />} label={t("admin.clientDetail.qaPayments", "Payments")} onClick={() => onJump("packages")} testId="qa-jump-packages" />
             <QuickActionPill icon={<Apple size={11} />} label={t("admin.clientDetail.qaNutrition", "Nutrition")} onClick={() => onJump("nutrition")} testId="qa-jump-nutrition" />

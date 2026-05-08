@@ -69,7 +69,7 @@ import {
 } from "@shared/schema";
 import { computeMealTotals } from "@shared/nutrition";
 import { api } from "@shared/routes";
-import { buildNutritionPlanWhatsApp, whatsappUrl } from "@/lib/whatsapp";
+import { buildNutritionPlanWhatsApp, whatsappClientUrl } from "@/lib/whatsapp";
 
 // ===== Helpers =====
 function blankItem(food: Food): PlanMealItemInput {
@@ -475,7 +475,19 @@ export default function AdminNutritionPlanBuilder() {
                     clientName: client?.fullName ?? null,
                     dayIndex: activeDayIdx,
                   });
-                  window.open(whatsappUrl(client?.phone ?? null, msg), "_blank", "noopener,noreferrer");
+                  const url = whatsappClientUrl(client?.phone, msg);
+                  if (!url) {
+                    toast({
+                      title: t("admin.planBuilder.waNoPhoneTitle", "Client phone missing"),
+                      description: t(
+                        "admin.planBuilder.waNoPhoneBody",
+                        "Add a phone number to this client before sharing the plan via WhatsApp.",
+                      ),
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  window.open(url, "_blank", "noopener,noreferrer");
                 }}
                 className="gap-2"
                 data-testid="button-share-plan-whatsapp"
