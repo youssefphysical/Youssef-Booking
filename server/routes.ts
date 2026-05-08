@@ -33,6 +33,8 @@ import {
   applyStackToClientSchema,
   insertBodyMetricSchema,
   updateBodyMetricSchema,
+  insertWeeklyCheckinSchema,
+  updateWeeklyCheckinSchema,
   insertInbodySchema,
   updateInbodySchema,
   insertProgressPhotoSchema,
@@ -2465,6 +2467,75 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
     const ok = await storage.deleteBodyMetric(id);
+    if (!ok) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  });
+
+  // ============== WEEKLY CHECK-INS (P4b) ==============
+  // Clients submit + edit their own. Admin reads any, responds with
+  // `coachResponse`, and can mutate/delete. The owner can edit fields
+  // EXCEPT `coachResponse` (silently stripped on non-admin PATCH).
+  app.get("/api/weekly-checkins/me", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const list = await storage.listWeeklyCheckins(me.id);
+    res.json(list);
+  });
+  app.get("/api/weekly-checkins/pending", requireAdmin, async (_req, res) => {
+    const list = await storage.listPendingWeeklyCheckins();
+    res.json(list);
+  });
+  app.get("/api/weekly-checkins", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
+    const userId = me.role === "admin" ? userIdQuery : me.id;
+    if (!userId || !Number.isFinite(userId)) {
+      return res.status(400).json({ message: "userId required" });
+    }
+    const list = await storage.listWeeklyCheckins(userId);
+    res.json(list);
+  });
+  app.post("/api/weekly-checkins", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    // Non-admins can ONLY create rows for themselves; userId in payload
+    // is forced to me.id. Admin may target any client.
+    const body = me.role === "admin"
+      ? req.body
+      : { ...req.body, userId: me.id };
+    const parsed = insertWeeklyCheckinSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    // Enforce one row per (user, week): if a row exists, return 409 so
+    // the client can fall back to PATCH.
+    const existing = await storage.getWeeklyCheckinByWeek(parsed.data.userId, parsed.data.weekStart);
+    if (existing) {
+      return res.status(409).json({ message: "Check-in already exists for this week", id: existing.id });
+    }
+    const row = await storage.createWeeklyCheckin(parsed.data);
+    res.status(201).json(row);
+  });
+  app.patch("/api/weekly-checkins/:id", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const existing = await storage.getWeeklyCheckin(id);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+    if (me.role !== "admin" && existing.userId !== me.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    // Strip admin-only fields from non-admin patches.
+    const body = me.role === "admin" ? req.body : { ...req.body, coachResponse: undefined };
+    const parsed = updateWeeklyCheckinSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    const row = await storage.updateWeeklyCheckin(id, parsed.data, me.role === "admin" ? me.id : null);
+    res.json(row);
+  });
+  app.delete("/api/weekly-checkins/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const ok = await storage.deleteWeeklyCheckin(id);
     if (!ok) return res.status(404).json({ message: "Not found" });
     res.json({ ok: true });
   });

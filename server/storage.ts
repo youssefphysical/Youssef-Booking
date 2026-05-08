@@ -27,6 +27,10 @@ import {
   supplementStackItems,
   clientSupplements,
   bodyMetrics,
+  weeklyCheckins,
+  type WeeklyCheckin,
+  type InsertWeeklyCheckin,
+  type UpdateWeeklyCheckin,
   type BodyMetric,
   type InsertBodyMetric,
   type UpdateBodyMetric,
@@ -1799,6 +1803,117 @@ declare module "./storage" {
 ): Promise<boolean> {
   const r = await db.delete(bodyMetrics).where(eq(bodyMetrics.id, id)).returning({ id: bodyMetrics.id });
   return r.length > 0;
+};
+
+// =====================================================================
+// P4b — WEEKLY CHECK-INS
+// Same prototype-mount pattern as body metrics. Storage layer is dumb;
+// adherence/streak math lives in the UI to keep this surface trivially
+// cacheable + testable.
+// =====================================================================
+declare module "./storage" {
+  interface DatabaseStorage {
+    listWeeklyCheckins(userId: number, opts?: { limit?: number }): Promise<WeeklyCheckin[]>;
+    getWeeklyCheckin(id: number): Promise<WeeklyCheckin | undefined>;
+    getWeeklyCheckinByWeek(userId: number, weekStart: string): Promise<WeeklyCheckin | undefined>;
+    createWeeklyCheckin(input: InsertWeeklyCheckin): Promise<WeeklyCheckin>;
+    updateWeeklyCheckin(
+      id: number,
+      patch: UpdateWeeklyCheckin,
+      adminCoachUserId?: number | null,
+    ): Promise<WeeklyCheckin | undefined>;
+    deleteWeeklyCheckin(id: number): Promise<boolean>;
+    listPendingWeeklyCheckins(): Promise<WeeklyCheckin[]>;
+  }
+}
+
+(DatabaseStorage.prototype as any).listWeeklyCheckins = async function (
+  userId: number,
+  opts?: { limit?: number },
+): Promise<WeeklyCheckin[]> {
+  const q = db
+    .select()
+    .from(weeklyCheckins)
+    .where(eq(weeklyCheckins.userId, userId))
+    .orderBy(desc(weeklyCheckins.weekStart), desc(weeklyCheckins.id));
+  return opts?.limit ? q.limit(opts.limit) : q;
+};
+(DatabaseStorage.prototype as any).getWeeklyCheckin = async function (id: number) {
+  const [row] = await db.select().from(weeklyCheckins).where(eq(weeklyCheckins.id, id));
+  return row;
+};
+(DatabaseStorage.prototype as any).getWeeklyCheckinByWeek = async function (
+  userId: number,
+  weekStart: string,
+) {
+  const [row] = await db
+    .select()
+    .from(weeklyCheckins)
+    .where(and(eq(weeklyCheckins.userId, userId), eq(weeklyCheckins.weekStart, weekStart)));
+  return row;
+};
+(DatabaseStorage.prototype as any).createWeeklyCheckin = async function (
+  input: InsertWeeklyCheckin,
+): Promise<WeeklyCheckin> {
+  const [row] = await db
+    .insert(weeklyCheckins)
+    .values({
+      userId: input.userId,
+      weekStart: input.weekStart,
+      weight: input.weight ?? null,
+      sleepQuality: input.sleepQuality ?? null,
+      energy: input.energy ?? null,
+      stress: input.stress ?? null,
+      hunger: input.hunger ?? null,
+      digestion: input.digestion ?? null,
+      mood: input.mood ?? null,
+      cardioAdherence: input.cardioAdherence ?? null,
+      trainingAdherence: input.trainingAdherence ?? null,
+      waterLitres: input.waterLitres ?? null,
+      notes: input.notes ?? null,
+    })
+    .returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).updateWeeklyCheckin = async function (
+  id: number,
+  patch: UpdateWeeklyCheckin,
+  adminCoachUserId?: number | null,
+): Promise<WeeklyCheckin | undefined> {
+  const update: any = { updatedAt: new Date() };
+  for (const k of [
+    "weight", "sleepQuality", "energy", "stress", "hunger", "digestion",
+    "mood", "cardioAdherence", "trainingAdherence", "waterLitres", "notes",
+  ] as const) {
+    if ((patch as any)[k] !== undefined) update[k] = (patch as any)[k];
+  }
+  // coachResponse is admin-only at the route layer. When provided, also
+  // stamp the responder + timestamp so the UI can render attribution.
+  if ((patch as any).coachResponse !== undefined) {
+    update.coachResponse = (patch as any).coachResponse;
+    update.coachRespondedAt = (patch as any).coachResponse ? new Date() : null;
+    update.coachRespondedByUserId = (patch as any).coachResponse ? (adminCoachUserId ?? null) : null;
+  }
+  const [row] = await db
+    .update(weeklyCheckins)
+    .set(update)
+    .where(eq(weeklyCheckins.id, id))
+    .returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).deleteWeeklyCheckin = async function (id: number) {
+  const r = await db
+    .delete(weeklyCheckins)
+    .where(eq(weeklyCheckins.id, id))
+    .returning({ id: weeklyCheckins.id });
+  return r.length > 0;
+};
+(DatabaseStorage.prototype as any).listPendingWeeklyCheckins = async function () {
+  return db
+    .select()
+    .from(weeklyCheckins)
+    .where(sql`${weeklyCheckins.coachResponse} IS NULL`)
+    .orderBy(desc(weeklyCheckins.weekStart), desc(weeklyCheckins.id));
 };
 
 export const storage = new DatabaseStorage();

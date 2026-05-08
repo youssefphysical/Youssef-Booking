@@ -491,6 +491,32 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS body_metrics_user_idx ON body_metrics (user_id);
     CREATE INDEX IF NOT EXISTS body_metrics_user_date_idx ON body_metrics (user_id, recorded_on DESC);
+
+    -- P4b Weekly Check-ins
+    CREATE TABLE IF NOT EXISTS weekly_checkins (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week_start date NOT NULL,
+      weight double precision,
+      sleep_quality integer,
+      energy integer,
+      stress integer,
+      hunger integer,
+      digestion integer,
+      mood integer,
+      cardio_adherence integer,
+      training_adherence integer,
+      water_litres double precision,
+      notes text,
+      coach_response text,
+      coach_responded_at timestamp,
+      coach_responded_by_user_id integer,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS weekly_checkins_user_week_uniq ON weekly_checkins (user_id, week_start);
+    CREATE INDEX IF NOT EXISTS weekly_checkins_user_idx ON weekly_checkins (user_id);
+    CREATE INDEX IF NOT EXISTS weekly_checkins_pending_idx ON weekly_checkins (coach_response) WHERE coach_response IS NULL;
   `;
 
   try {

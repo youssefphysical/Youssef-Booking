@@ -37,6 +37,8 @@ import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
 import BodyMetricsPanel from "@/components/BodyMetricsPanel";
+import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import { ClipboardCheck } from "lucide-react";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,7 +169,7 @@ export default function ClientDashboard() {
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-4xl bg-white/5 mb-6 h-auto sm:h-11 gap-1 p-1">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 w-full max-w-5xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
           </TabsTrigger>
@@ -179,6 +181,9 @@ export default function ClientDashboard() {
           </TabsTrigger>
           <TabsTrigger value="body" data-testid="tab-body">
             <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.tabBody", "Body")}
+          </TabsTrigger>
+          <TabsTrigger value="checkins" data-testid="tab-checkins">
+            <ClipboardCheck size={14} className="mr-1.5" /> {t("dashboard.tabCheckins", "Check-ins")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
             <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
@@ -192,6 +197,7 @@ export default function ClientDashboard() {
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
         <TabsContent value="supplements"><SupplementsTab /></TabsContent>
         <TabsContent value="body"><BodyMetricsPanel userId={user.id} canEdit={false} /></TabsContent>
+        <TabsContent value="checkins"><WeeklyCheckinsPanel /></TabsContent>
         <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
       </Tabs>

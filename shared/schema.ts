@@ -8,6 +8,7 @@ import {
   date,
   boolean,
   jsonb,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -2611,6 +2612,101 @@ export const BODY_METRIC_FIELDS = [
   "waist", "hips", "thighs", "calves",
 ] as const;
 export type BodyMetricField = (typeof BODY_METRIC_FIELDS)[number];
+
+// =============================
+// WEEKLY CHECK-INS (P4b — Adherence + Retention)
+// =============================
+// One row per (userId, weekStart). `weekStart` is the Monday of the
+// reporting week (date, not timestamp). Numeric self-reported scales
+// are 1..10 (sleep/energy/stress/hunger/digestion/mood). Adherence
+// percentages are 0..100. The client owns submission + editing of
+// their row; admin can read every row and append `coachResponse`.
+export const weeklyCheckins = pgTable("weekly_checkins", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  weekStart: date("week_start").notNull(),
+  weight: doublePrecision("weight"),                    // kg, optional
+  sleepQuality: integer("sleep_quality"),               // 1..10
+  energy: integer("energy"),                            // 1..10
+  stress: integer("stress"),                            // 1..10 (high = bad)
+  hunger: integer("hunger"),                            // 1..10
+  digestion: integer("digestion"),                      // 1..10
+  mood: integer("mood"),                                // 1..10
+  cardioAdherence: integer("cardio_adherence"),         // 0..100 %
+  trainingAdherence: integer("training_adherence"),     // 0..100 %
+  waterLitres: doublePrecision("water_litres"),         // litres/day avg
+  notes: text("notes"),                                 // client-authored
+  coachResponse: text("coach_response"),                // admin-authored
+  coachRespondedAt: timestamp("coach_responded_at"),
+  coachRespondedByUserId: integer("coach_responded_by_user_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => ({
+  userWeekUnique: uniqueIndex("weekly_checkins_user_week_uniq").on(t.userId, t.weekStart),
+}));
+
+const scale1to10 = z.number().int().min(1).max(10).nullish();
+const pct0to100 = z.number().int().min(0).max(100).nullish();
+
+export const insertWeeklyCheckinSchema = createInsertSchema(weeklyCheckins)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+    coachResponse: true,
+    coachRespondedAt: true,
+    coachRespondedByUserId: true,
+  })
+  .extend({
+    userId: z.number().int().positive(),
+    weekStart: z.string().min(1, "Week start is required"),
+    weight: z.number().positive().max(500).nullish(),
+    sleepQuality: scale1to10,
+    energy: scale1to10,
+    stress: scale1to10,
+    hunger: scale1to10,
+    digestion: scale1to10,
+    mood: scale1to10,
+    cardioAdherence: pct0to100,
+    trainingAdherence: pct0to100,
+    waterLitres: z.number().min(0).max(20).nullish(),
+    notes: z.string().max(4000).nullish(),
+  });
+
+export const updateWeeklyCheckinSchema = createInsertSchema(weeklyCheckins)
+  .omit({
+    id: true,
+    userId: true,
+    weekStart: true,
+    createdAt: true,
+    updatedAt: true,
+    coachRespondedAt: true,
+    coachRespondedByUserId: true,
+  })
+  .extend({
+    weight: z.number().positive().max(500).nullish(),
+    sleepQuality: scale1to10,
+    energy: scale1to10,
+    stress: scale1to10,
+    hunger: scale1to10,
+    digestion: scale1to10,
+    mood: scale1to10,
+    cardioAdherence: pct0to100,
+    trainingAdherence: pct0to100,
+    waterLitres: z.number().min(0).max(20).nullish(),
+    notes: z.string().max(4000).nullish(),
+    coachResponse: z.string().max(4000).nullish(),
+  })
+  .partial();
+
+export type WeeklyCheckin = typeof weeklyCheckins.$inferSelect;
+export type InsertWeeklyCheckin = z.infer<typeof insertWeeklyCheckinSchema>;
+export type UpdateWeeklyCheckin = z.infer<typeof updateWeeklyCheckinSchema>;
+
+export const WEEKLY_CHECKIN_SCALE_FIELDS = [
+  "sleepQuality", "energy", "stress", "hunger", "digestion", "mood",
+] as const;
+export type WeeklyCheckinScaleField = (typeof WEEKLY_CHECKIN_SCALE_FIELDS)[number];
 
 // Apply-stack body: snapshot all items of a stack onto a client.
 export const applyStackToClientSchema = z.object({
