@@ -1,0 +1,130 @@
+The UI is improving, but the mobile layout system is still not production-premium yet.
+
+Current problem is NOT colors or components anymore.
+The real issue now is:
+mobile composition + viewport rhythm + safe-area architecture.
+
+Analyze the latest screenshot carefully.
+
+VISIBLE PROBLEMS STILL PRESENT:
+
+1. Excess dead space at the top
+The page still starts too low visually.
+The header/title area floats in empty space instead of anchoring the page.
+
+Need:
+- tighter safe-area calculation
+- better hero/title anchoring
+- improved first-content positioning
+- more intentional vertical rhythm
+
+2. Bottom dock overlaps content
+The bottom navigation still visually eats the final content.
+
+Example:
+“InBody scans and progress…” text is partially hidden behind the dock.
+
+Need:
+- proper bottom safe padding
+- scroll-end breathing room
+- dock-aware content container
+- dynamic mobile inset handling
+
+3. Dashboard still feels like stacked boxes
+It does not yet feel like a refined operational SaaS interface.
+
+Need:
+- stronger layout composition
+- grouped visual hierarchy
+- better section flow
+- smarter spacing rhythm
+- less “template dashboard” feeling
+
+4. Tabs area still awkward
+The Overview / Clients / Bookings row feels cramped and visually disconnected.
+
+Need:
+- better spacing
+- better active-state balance
+- horizontal rhythm cleanup
+- improved touch spacing
+- more premium segmentation feel
+
+5. Metrics section lacks hierarchy
+All cards visually compete equally.
+
+Need:
+- primary vs secondary emphasis
+- calmer composition
+- less visual noise
+- better scan priority
+
+6. Vertical rhythm inconsistency
+Some areas too compressed.
+Others too empty.
+
+Need:
+- unified spacing scale
+- intentional section pacing
+- consistent mobile rhythm
+
+7. Footer/content ending broken
+Pages need proper bottom completion spacing above dock.
+
+Every admin page should end gracefully with:
+- safe breathing room
+- no hidden content
+- no clipped text
+- no overlap with bottom nav
+
+8. Mobile-first composition pass required
+This should feel:
+- elegant
+- operational
+- premium
+- effortless
+- calm
+- fast to scan
+
+NOT:
+- crowded
+- stretched
+- generic
+- template-like
+
+IMPORTANT:
+Do NOT just patch margins manually.
+
+Need a SYSTEMATIC mobile layout pass:
+- admin shell
+- page container
+- safe-area handling
+- dock spacing
+- section spacing
+- viewport height behavior
+- scroll completion spacing
+- mobile content max-width rhythm
+
+TARGET FEEL:
+Stripe mobile dashboard
+Linear mobile UI
+Modern premium fitness SaaS
+Notion Calendar mobile polish
+
+MANDATORY:
+- real-device testing
+- scroll testing
+- thumb-zone testing
+- end-of-page testing
+- Samsung S25 Ultra viewport validation
+
+Need:
+1. Root-cause audit
+2. Layout-system fixes
+3. Production polish
+4. Typecheck
+5. Architect review
+6. Deploy
+7. Screenshot verification
+
+This phase is about achieving a truly premium operational mobile feel.

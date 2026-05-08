@@ -538,18 +538,13 @@ function DockButton({ item, location }: { item: DockItem; location: string }) {
 }
 
 /**
- * A spacer block to add bottom padding to admin pages so content
- * isn't hidden behind the fixed bottom dock on mobile. Mount once
- * inside the admin layout (or end of the sidebar component).
+ * @deprecated As of May 2026 mobile layout system pass: `.admin-shell`
+ * itself now reserves dock + safe-area space via CSS calc(), so no
+ * spacer is needed. Kept as a no-op for back-compat with existing
+ * mount sites; safe to remove once Navigation.tsx no longer renders it.
  */
 export function AdminMobileBottomSpacer() {
-  return (
-    <div
-      aria-hidden
-      className="md:hidden h-14"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    />
-  );
+  return null;
 }
 
 // Touch-and-go: re-export for legacy single-import sites

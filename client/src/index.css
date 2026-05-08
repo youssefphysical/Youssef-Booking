@@ -1140,20 +1140,49 @@
    - card    : .admin-card is the canonical section style — every
                settings/dashboard/list panel uses it for visual parity.
    ===================================================================== */
+/* ---------------------------------------------------------------------
+   ADMIN MOBILE LAYOUT SYSTEM (May 2026 mobile composition pass)
+
+   Single source of truth for safe-area + chrome dimensions so every
+   admin page is automatically dock-aware and notch-aware. No page
+   needs its own bottom spacer — .admin-shell reserves the room.
+
+   Layers, top to bottom on mobile:
+     [ safe-area-inset-top  ]
+     [ fixed top bar h-16 (64px) ]   ← --admin-top-h
+     [ scrollable .admin-shell  ]
+     [ fixed dock h-14 (56px)   ]   ← --admin-dock-h
+     [ safe-area-inset-bottom   ]
+
+   .admin-shell padding-top  = top-bar + safe-top + small breath
+   .admin-shell padding-bottom = dock + safe-bottom + breath
+   --------------------------------------------------------------------- */
+:root {
+  --admin-top-h: 4rem;       /* 64px — public top bar h-16 */
+  --admin-dock-h: 3.5rem;    /* 56px — admin mobile bottom dock h-14 */
+  --admin-pad-x-mobile: 0.875rem;
+  --admin-section-gap-mobile: 0.875rem;  /* 14px between top-level sections */
+  --admin-section-gap-tablet: 1.25rem;   /* 20px from sm+ */
+}
+
 .admin-shell {
-  min-height: 100vh;
-  padding-top: 4rem;        /* clears mobile top bar (tightened May 2026) */
-  /* breathing room above footer + iOS home indicator / device chrome */
-  padding-bottom: max(2.25rem, env(safe-area-inset-bottom) + 1rem);
-  /* hard guard: never let a child force the page wider than the viewport.
-     This kills the iOS Safari sideways-scroll that long form rows or
-     unconstrained tables can introduce. */
+  min-height: 100dvh;        /* dynamic viewport: avoids iOS URL-bar jank */
+  /* TOP — clear top bar AND notch / dynamic island */
+  padding-top: calc(var(--admin-top-h) + env(safe-area-inset-top) + 0.25rem);
+  /* BOTTOM — guarantees dock + iOS home indicator never overlap content,
+     plus 1.25rem breathing room. This replaces the old AdminMobileBottomSpacer
+     pattern: every admin page is automatically safe. */
+  padding-bottom: calc(var(--admin-dock-h) + env(safe-area-inset-bottom) + 1.25rem);
   overflow-x: hidden;
   width: 100%;
 }
 @media (min-width: 768px) {
   .admin-shell {
+    /* Desktop has no top bar (sidebar is the chrome) and no bottom dock,
+       so we collapse the mobile reservations and just give comfortable
+       breathing room. */
     padding-top: 1.5rem;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom) + 1rem);
     margin-left: 16rem;     /* offset for fixed admin sidebar */
     width: auto;            /* let it fill the rest of the viewport */
   }
@@ -1210,13 +1239,15 @@
   }
 }
 
-/* Standard vertical stack between top-level cards on a page (24px). */
+/* Standard vertical stack between top-level cards on a page.
+   Mobile is intentionally tighter (14px) for premium SaaS density;
+   tablet+ relaxes to 20px. Use on <div class="admin-container admin-stack">. */
 .admin-stack > * + * {
-  margin-top: 1.5rem;
+  margin-top: var(--admin-section-gap-mobile);
 }
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .admin-stack > * + * {
-    margin-top: 2rem;                     /* 32px on tablet+ */
+    margin-top: var(--admin-section-gap-tablet);
   }
 }
 

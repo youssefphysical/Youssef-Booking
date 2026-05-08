@@ -67,8 +67,8 @@ export function AdminTabs() {
   const [location] = useLocation();
   const { t } = useTranslation();
   return (
-    <div className="rounded-xl sm:rounded-2xl border border-white/5 bg-card/60 p-1 mb-4 sm:mb-6 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
-      <div className="flex gap-1 min-w-max">
+    <div className="rounded-2xl border border-white/[0.06] bg-card/40 p-1 mb-3 sm:mb-5 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]">
+      <div className="flex gap-0.5 min-w-max">
         {ADMIN_TABS.map((tab) => {
           const active = tab.matches(location);
           const label = t(tab.labelKey, tab.fallback);
@@ -79,10 +79,10 @@ export function AdminTabs() {
               data-testid={`admintab-${tab.fallback.toLowerCase()}`}
               title={tab.hintKey ? t(tab.hintKey, tab.hintFallback) : undefined}
               className={cn(
-                "inline-flex items-center gap-1.5 h-9 sm:h-9 min-w-[84px] justify-center px-3 rounded-lg text-[12.5px] sm:text-xs font-semibold transition-colors whitespace-nowrap",
+                "inline-flex items-center gap-1.5 h-9 justify-center px-3.5 rounded-xl text-[12px] sm:text-[12.5px] font-semibold transition-all whitespace-nowrap",
                 active
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/5",
+                  ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                  : "text-muted-foreground/80 hover:text-foreground hover:bg-white/[0.04]",
               )}
             >
               {tab.icon}
