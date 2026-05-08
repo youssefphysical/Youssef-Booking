@@ -81,8 +81,18 @@
     @apply border-border;
   }
   html {
-    scroll-behavior: smooth;
+    /* PERF v9.4 (May 2026 mobile-Android scroll pass): scroll-behavior
+       gated to (hover:hover) so it only applies on devices with a real
+       pointer (desktops/laptops). On touch devices it can interfere
+       with the browser's native momentum scroll handoff. The smooth
+       scrollIntoView() callers (hero scroll cue, "view results" jump)
+       are all desktop-only buttons (display:none on mobile), so this
+       is a pure win — touch users get true native momentum, desktop
+       users keep the smooth anchor jumps. */
     -webkit-text-size-adjust: 100%;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    html { scroll-behavior: smooth; }
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground;
@@ -105,6 +115,18 @@
        browsers that support it, while preventing the hero from
        layout-shifting on rubber-band overscroll. */
     overscroll-behavior: contain;
+    /* PERF v9.4 (May 2026): touch-action: pan-y tells the browser the
+       page only supports vertical panning, so it can dispatch scroll
+       events IMMEDIATELY on touchstart instead of waiting ~100-300ms
+       to see if the user is doing a pinch-zoom or double-tap-zoom.
+       This is THE classic Android Chrome / Samsung Internet "first
+       scroll feels delayed" fix — the browser was always silky, it
+       just had to wait for gesture disambiguation. We use pan-y
+       (not none) so vertical scroll AND browser pull-to-refresh both
+       still work; it only blocks pinch-zoom and double-tap-zoom,
+       which the page doesn't support anyway (responsive layout +
+       user-scalable=no in viewport meta). */
+    touch-action: pan-y;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -526,6 +548,12 @@
   isolation: isolate;
   contain: layout paint style;
   transform: translateZ(0);
+  /* PERF v9.4 (May 2026): explicit touch-action on the hero. Belt-and-
+     braces with the body-level pan-y rule above — guarantees the hero
+     dispatches touch-scroll events with zero gesture-detection delay
+     even if some downstream component tries to set touch-action on a
+     descendant. */
+  touch-action: pan-y;
 }
 
 /* HERO VISUAL POLISH SET (v8.7, May-2026).
@@ -681,13 +709,17 @@
      Admin per-image brightness/contrast still multiply onto this
      baseline via the inline `sharpStyle` in HeroSlider.tsx. */
   filter: brightness(1.05) contrast(1.08) saturate(1.05);
-  will-change: transform;
-  /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
-     but guarantees Chromium/WebKit rasterise the bitmap on its own
-     compositor layer up-front — eliminates the first-frame "soft
-     then snap-sharp" judder some mid-range phones used to show on
-     slide-change. Pairs with backface-visibility:hidden below. */
-  transform: translateZ(0);
+  /* PERF v9.4 (May 2026): will-change: transform REMOVED. Each .hero-
+     slide-layer parent already declares will-change: opacity + a
+     compositor layer, so the inner <img> doesn't need its OWN GPU
+     layer on top. With N slides the previous setup allocated 2N
+     compositor layers (one per parent + one per image) — heavy
+     mobile GPU memory pressure on phones with 4-6 slides. Now it's N
+     layers (parent only). The image still inherits the parent's
+     hardware compositing because of the parent's translateZ(0).
+     translateZ(0) here is also dropped for the same reason — the
+     parent already promotes the subtree. backface-visibility:hidden
+     stays (cheap, kills sub-pixel rounding artifacts during fade). */
   /* Browser-default downscaling produces the best perceptual quality
      for photographic content (uses high-quality bicubic on Chromium /
      WebKit). Forcing pixelated/crisp-edges would shred the cinematic
@@ -1129,6 +1161,24 @@
       #071827 62%,
       #03070d 100%
     );
+}
+
+/* PERF v9.4 (May 2026 mobile scroll pass): paint-isolation utility
+   for homepage sections below the hero. content-visibility: auto
+   tells the browser "skip rendering work for this element when it's
+   off-screen" — when sections scroll into view they paint just-in-
+   time, when they scroll out they're skipped again. Massive scroll
+   smoothness win on long pages because the compositor only has to
+   manage the in-viewport sections instead of the full document.
+   contain-intrinsic-size reserves the right amount of layout space
+   so there's NO CLS as sections enter/leave the viewport. The min/
+   max-width:100% pattern preserves the natural section width while
+   giving the browser a height hint to use until the real content
+   paints (1200px is generous — covers tall sections without over-
+   reserving). */
+.homepage-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 1200px;
 }
 
 /* =====================================================================

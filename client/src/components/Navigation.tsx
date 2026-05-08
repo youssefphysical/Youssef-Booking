@@ -189,7 +189,7 @@ export function Navigation() {
   // ============= PUBLIC TOP NAV =============
   return (
     <header
-      className="fixed top-0 inset-x-0 z-[100] bg-background/95 md:bg-background/90 lg:bg-background/80 lg:backdrop-blur-md border-b border-white/5"
+      className="fixed top-0 inset-x-0 z-[100] bg-background md:bg-background/92 lg:bg-background/82 lg:backdrop-blur-md border-b border-white/5"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
