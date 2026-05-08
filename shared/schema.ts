@@ -9,6 +9,7 @@ import {
   boolean,
   jsonb,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -661,34 +662,52 @@ export const NOTIFICATION_KINDS = [
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
-export const clientNotifications = pgTable("client_notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull().default("system"),
-  title: text("title").notNull(),
-  body: text("body").notNull(),
-  // Optional deep-link target inside the app (e.g. "/dashboard?tab=activity").
-  link: text("link"),
-  // Optional structured payload — used by triggers to dedupe (e.g.
-  // { bookingId: 123 } or { weekStart: "2026-05-04" }).
-  meta: jsonb("meta"),
-  // Persisted dedupe key. Mirrors `meta.dedupeKey` and is enforced by a
-  // partial unique index `(user_id, kind, dedupe_key) WHERE dedupe_key
-  // IS NOT NULL`, so concurrent triggers can race INSERTs and only one
-  // wins. NULL for fire-and-forget notifications without a dedupe key.
-  dedupeKey: text("dedupe_key"),
-  // Channel state — additive, future dispatchers stamp these.
-  channelInApp: boolean("channel_in_app").notNull().default(true),
-  channelPush: boolean("channel_push").notNull().default(false),
-  channelEmail: boolean("channel_email").notNull().default(false),
-  pushSentAt: timestamp("push_sent_at"),
-  emailSentAt: timestamp("email_sent_at"),
-  // null = unread, set on first read.
-  readAt: timestamp("read_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const clientNotifications = pgTable(
+  "client_notifications",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().default("system"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // Optional deep-link target inside the app (e.g. "/dashboard?tab=activity").
+    link: text("link"),
+    // Optional structured payload — used by triggers to dedupe (e.g.
+    // { bookingId: 123 } or { weekStart: "2026-05-04" }).
+    meta: jsonb("meta"),
+    // Persisted dedupe key. Mirrors `meta.dedupeKey` and is enforced by a
+    // partial unique index `(user_id, kind, dedupe_key) WHERE dedupe_key
+    // IS NOT NULL`, so concurrent triggers can race INSERTs and only one
+    // wins. NULL for fire-and-forget notifications without a dedupe key.
+    dedupeKey: text("dedupe_key"),
+    // Channel state — additive, future dispatchers stamp these.
+    channelInApp: boolean("channel_in_app").notNull().default(true),
+    channelPush: boolean("channel_push").notNull().default(false),
+    channelEmail: boolean("channel_email").notNull().default(false),
+    pushSentAt: timestamp("push_sent_at"),
+    emailSentAt: timestamp("email_sent_at"),
+    // null = unread, set on first read.
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    // Mirrors ensureSchema's `client_notifications_user_unread_idx` so
+    // unread-count queries hit a covering index.
+    userUnreadIdx: index("client_notifications_user_unread_idx").on(
+      t.userId,
+      t.readAt,
+      t.createdAt,
+    ),
+    // Partial unique index for atomic dedupe via notifyUserOnce(). The
+    // WHERE predicate keeps the constraint scoped to keyed notifications
+    // only, so plain notifyUser() rows (dedupeKey=NULL) remain unique-free.
+    dedupeUq: uniqueIndex("client_notifications_dedupe_uq")
+      .on(t.userId, t.kind, t.dedupeKey)
+      .where(sql`${t.dedupeKey} IS NOT NULL`),
+  }),
+);
 
 export const insertClientNotificationSchema = createInsertSchema(clientNotifications)
   .omit({ id: true, createdAt: true, readAt: true, pushSentAt: true, emailSentAt: true })

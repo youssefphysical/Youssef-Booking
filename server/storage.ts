@@ -1416,24 +1416,47 @@ export class DatabaseStorage implements IStorage {
 
   // Atomic dedupe variant. Relies on the partial UNIQUE INDEX
   // `client_notifications_dedupe_uq` on (user_id, kind, dedupe_key)
-  // WHERE dedupe_key IS NOT NULL. On conflict we DO NOTHING and the
-  // INSERT returns no rows, which we surface as `null`. This makes
-  // notifyUserOnce safe under racing cron retries / concurrent triggers.
+  // WHERE dedupe_key IS NOT NULL. NOTE: Postgres requires the partial
+  // index predicate (`WHERE dedupe_key IS NOT NULL`) to be repeated in
+  // the ON CONFLICT clause for the arbiter to be matched — Drizzle's
+  // `onConflictDoNothing({target:[...]})` omits it, so we drop down to
+  // raw SQL via the pg pool. Returning rows means the row was newly
+  // inserted; an empty result means a duplicate was atomically
+  // suppressed. Safe under racing cron retries / concurrent triggers.
   async createClientNotificationOnce(
     notif: InsertClientNotification,
   ): Promise<ClientNotification | null> {
-    const rows = await db
-      .insert(clientNotifications)
-      .values(notif)
-      .onConflictDoNothing({
-        target: [
-          clientNotifications.userId,
-          clientNotifications.kind,
-          clientNotifications.dedupeKey,
-        ],
-      })
-      .returning();
-    return rows[0] ?? null;
+    const result = await pool.query(
+      `INSERT INTO client_notifications
+         (user_id, kind, title, body, link, meta, dedupe_key,
+          channel_in_app, channel_push, channel_email)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10)
+       ON CONFLICT (user_id, kind, dedupe_key)
+         WHERE dedupe_key IS NOT NULL
+         DO NOTHING
+       RETURNING id, user_id   AS "userId",
+                 kind, title, body, link, meta, dedupe_key AS "dedupeKey",
+                 channel_in_app  AS "channelInApp",
+                 channel_push    AS "channelPush",
+                 channel_email   AS "channelEmail",
+                 push_sent_at    AS "pushSentAt",
+                 email_sent_at   AS "emailSentAt",
+                 read_at         AS "readAt",
+                 created_at      AS "createdAt"`,
+      [
+        notif.userId,
+        notif.kind,
+        notif.title,
+        notif.body,
+        notif.link ?? null,
+        notif.meta == null ? null : JSON.stringify(notif.meta),
+        notif.dedupeKey ?? null,
+        notif.channelInApp ?? true,
+        notif.channelPush ?? false,
+        notif.channelEmail ?? false,
+      ],
+    );
+    return (result.rows[0] as ClientNotification) ?? null;
   }
 
   // Dedupe lookup for notifyUserOnce(): finds a previous notification for
