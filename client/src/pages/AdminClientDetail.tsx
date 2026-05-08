@@ -311,13 +311,13 @@ function ClientHeader({
                 <SiWhatsapp size={11} /> WhatsApp
               </a>
             )}
-            <QuickActionPill icon={<Plus size={11} />} label={t("admin.clientDetail.qaBooking", "Booking")} onClick={() => onJump("bookings")} testId="qa-jump-bookings" />
-            <QuickActionPill icon={<Wallet size={11} />} label={t("admin.clientDetail.qaPackage", "Package")} onClick={() => onJump("packages")} testId="qa-jump-packages" />
+            <QuickActionPill icon={<Calendar size={11} />} label={t("admin.clientDetail.qaSessions", "Sessions")} onClick={() => onJump("bookings")} testId="qa-jump-bookings" />
+            <QuickActionPill icon={<Wallet size={11} />} label={t("admin.clientDetail.qaPayments", "Payments")} onClick={() => onJump("packages")} testId="qa-jump-packages" />
             <QuickActionPill icon={<Apple size={11} />} label={t("admin.clientDetail.qaNutrition", "Nutrition")} onClick={() => onJump("nutrition")} testId="qa-jump-nutrition" />
-            <QuickActionPill icon={<Pill size={11} />} label={t("admin.clientDetail.qaSupp", "Supps")} onClick={() => onJump("supplements")} testId="qa-jump-supplements" />
-            <QuickActionPill icon={<Camera size={11} />} label={t("admin.clientDetail.qaPhoto", "Photo")} onClick={() => onJump("progress")} testId="qa-jump-progress" />
-            <QuickActionPill icon={<Scale size={11} />} label={t("admin.clientDetail.qaMetric", "Metric")} onClick={() => onJump("body")} testId="qa-jump-body" />
-            <QuickActionPill icon={<FileText size={11} />} label={t("admin.clientDetail.qaNote", "Note")} onClick={() => onJump("notes")} testId="qa-jump-notes" />
+            <QuickActionPill icon={<Pill size={11} />} label={t("admin.clientDetail.qaSupplements", "Supplements")} onClick={() => onJump("supplements")} testId="qa-jump-supplements" />
+            <QuickActionPill icon={<Camera size={11} />} label={t("admin.clientDetail.qaPhotos", "Photos")} onClick={() => onJump("progress")} testId="qa-jump-progress" />
+            <QuickActionPill icon={<Scale size={11} />} label={t("admin.clientDetail.qaMetrics", "Metrics")} onClick={() => onJump("body")} testId="qa-jump-body" />
+            <QuickActionPill icon={<FileText size={11} />} label={t("admin.clientDetail.qaNotes", "Notes")} onClick={() => onJump("notes")} testId="qa-jump-notes" />
           </div>
         </div>
 
@@ -527,10 +527,7 @@ function OverviewTab({
       <div className="grid sm:grid-cols-2 gap-3">
         {/* Upcoming sessions */}
         <AdminCard testId="overview-upcoming">
-          <AdminSectionTitle
-            title={t("admin.clientDetail.upcomingSessions", "Upcoming sessions")}
-            cta={{ href: "#", label: t("admin.clientDetail.manage", "Manage"), testId: "overview-upcoming-cta" }}
-          />
+          <AdminSectionTitle title={t("admin.clientDetail.upcomingSessions", "Upcoming sessions")} />
           {upcoming.length === 0 ? (
             <button
               type="button"
@@ -576,10 +573,7 @@ function OverviewTab({
 
         {/* Package usage */}
         <AdminCard testId="overview-package">
-          <AdminSectionTitle
-            title={t("admin.clientDetail.activePackage", "Active package")}
-            cta={{ href: "#", label: t("admin.clientDetail.edit", "Edit"), testId: "overview-pkg-cta" }}
-          />
+          <AdminSectionTitle title={t("admin.clientDetail.activePackage", "Active package")} />
           {!activePkg ? (
             <button
               type="button"
@@ -633,10 +627,7 @@ function OverviewTab({
 
         {/* Latest body metric */}
         <AdminCard testId="overview-body">
-          <AdminSectionTitle
-            title={t("admin.clientDetail.latestBody", "Latest body metric")}
-            cta={{ href: "#", label: t("admin.clientDetail.add", "Add"), testId: "overview-body-cta" }}
-          />
+          <AdminSectionTitle title={t("admin.clientDetail.latestBody", "Latest body metric")} />
           {!latestMetric ? (
             <button type="button" onClick={() => onJump("body")} className="w-full text-start" data-testid="overview-body-empty">
               <AdminEmptyState
@@ -685,10 +676,7 @@ function OverviewTab({
 
         {/* Latest weekly check-in */}
         <AdminCard testId="overview-checkin">
-          <AdminSectionTitle
-            title={t("admin.clientDetail.latestCheckin", "Latest check-in")}
-            cta={{ href: "#", label: t("admin.clientDetail.view", "View"), testId: "overview-checkin-cta" }}
-          />
+          <AdminSectionTitle title={t("admin.clientDetail.latestCheckin", "Latest check-in")} />
           {!latestCheckin ? (
             <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-empty">
               <AdminEmptyState
@@ -705,9 +693,9 @@ function OverviewTab({
                   : ""}
               </p>
               <div className="grid grid-cols-3 gap-2 mt-2">
-                <CheckinChip label={t("admin.clientDetail.energy", "Energy")} value={latestCheckin.energy} />
-                <CheckinChip label={t("admin.clientDetail.sleep", "Sleep")} value={latestCheckin.sleepQuality} />
-                <CheckinChip label={t("admin.clientDetail.training", "Training")} value={latestCheckin.trainingAdherence} />
+                <CheckinChip label={t("admin.clientDetail.energy", "Energy")} value={latestCheckin.energy} max={10} />
+                <CheckinChip label={t("admin.clientDetail.sleep", "Sleep")} value={latestCheckin.sleepQuality} max={10} />
+                <CheckinChip label={t("admin.clientDetail.training", "Training")} value={latestCheckin.trainingAdherence} max={100} suffix="%" />
               </div>
               {latestCheckin.notes && (
                 <p className="text-[11px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
@@ -745,15 +733,33 @@ function OverviewTab({
   );
 }
 
-function CheckinChip({ label, value }: { label: string; value: number | null | undefined }) {
+function CheckinChip({
+  label,
+  value,
+  max = 10,
+  suffix,
+}: {
+  label: string;
+  value: number | null | undefined;
+  max?: number;
+  suffix?: string;
+}) {
   const v = value ?? null;
+  // Scale-aware thresholds: ≥80% of max = good, ≥50% = warn, else bad.
+  const ratio = v == null ? null : v / max;
   const tone =
-    v == null ? "text-muted-foreground" : v >= 8 ? "text-emerald-300" : v >= 5 ? "text-amber-300" : "text-red-300";
+    ratio == null
+      ? "text-muted-foreground"
+      : ratio >= 0.8
+        ? "text-emerald-300"
+        : ratio >= 0.5
+          ? "text-amber-300"
+          : "text-red-300";
   return (
     <div className="rounded-lg bg-white/[0.03] border border-white/5 px-2 py-1.5 text-center">
       <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</p>
       <p className={`font-display font-bold text-base tabular-nums leading-none mt-0.5 ${tone}`}>
-        {v ?? "—"}
+        {v == null ? "—" : `${v}${suffix ?? ""}`}
       </p>
     </div>
   );
