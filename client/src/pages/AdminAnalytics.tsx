@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import {
   Users,
   TrendingUp,
@@ -32,93 +31,22 @@ import { AdminTabs } from "@/pages/AdminDashboard";
 import type { AdminAnalytics } from "@shared/schema";
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
+import {
+  AdminCard,
+  AdminPageHeader,
+  AdminSectionTitle,
+  AdminStatCard,
+} from "@/components/admin/primitives";
 
 const ANALYTICS_PATH = "/api/admin/analytics";
 const FMT_INT = new Intl.NumberFormat("en-US");
 const FMT_EGP = new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 });
 const DOW_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function useCountUp(target: number, duration = 800) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    const from = 0;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      // easeOutCubic
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(from + (target - from) * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
-
 function shortMonth(ym: string) {
   // ym = "YYYY-MM"
   const [y, m] = ym.split("-").map(Number);
   return new Date(y, (m ?? 1) - 1, 1).toLocaleDateString("en-US", { month: "short" });
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-  tone = "info",
-  testId,
-  isPercent = false,
-  isCurrency = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  sub?: string;
-  tone?: "info" | "success" | "warning" | "danger" | "schedule" | "default";
-  testId: string;
-  isPercent?: boolean;
-  isCurrency?: boolean;
-}) {
-  const animated = useCountUp(value);
-  const display = isPercent
-    ? `${(animated * 100).toFixed(0)}%`
-    : isCurrency
-      ? FMT_EGP.format(Math.round(animated))
-      : FMT_INT.format(Math.round(animated));
-  const TONE: Record<string, string> = {
-    info: "bg-sky-500/15 text-sky-300",
-    success: "bg-emerald-500/15 text-emerald-300",
-    warning: "bg-amber-500/15 text-amber-300",
-    danger: "bg-red-500/15 text-red-300",
-    schedule: "bg-cyan-500/15 text-cyan-300",
-    default: "bg-primary/15 text-primary",
-  };
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3 sm:p-5 min-h-[100px] sm:min-h-[120px] flex flex-col justify-between shadow-sm shadow-black/20"
-      data-testid={testId}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className={cn("w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0", TONE[tone])}>
-          {icon}
-        </div>
-        <p className="text-[20px] sm:text-[26px] font-display font-bold leading-none tracking-tight tabular-nums text-end">
-          {display}
-        </p>
-      </div>
-      <div>
-        <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 leading-snug font-medium uppercase tracking-wide">
-          {label}
-        </p>
-        {sub ? <p className="text-[10.5px] text-muted-foreground/70 mt-0.5 leading-snug">{sub}</p> : null}
-      </div>
-    </motion.div>
-  );
 }
 
 function ChartCard({
@@ -133,16 +61,13 @@ function ChartCard({
   testId: string;
 }) {
   return (
-    <div
-      className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
-      data-testid={testId}
-    >
+    <AdminCard testId={testId}>
       <div className="mb-3 sm:mb-4">
         <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">{title}</h3>
         {subtitle ? <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p> : null}
       </div>
       <div className="h-[220px] sm:h-[260px]">{children}</div>
-    </div>
+    </AdminCard>
   );
 }
 
@@ -189,17 +114,12 @@ export default function AdminAnalytics() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-        <div className="mb-4 sm:mb-5">
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary mb-1 sm:mb-1.5">
-            {t("admin.tabs.analytics", "Analytics")}
-          </p>
-          <h1 className="text-[22px] sm:text-3xl font-display font-bold leading-tight" data-testid="text-analytics-title">
-            {t("admin.analytics.title", "Business Analytics")}
-          </h1>
-          <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-0.5 sm:mt-1">
-            {t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow={t("admin.tabs.analytics", "Analytics")}
+          title={t("admin.analytics.title", "Business Analytics")}
+          subtitle={t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
+          testId="text-analytics-title"
+        />
 
         <AdminTabs />
 
@@ -223,71 +143,79 @@ export default function AdminAnalytics() {
           <>
             {/* Top KPI grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-3 sm:mb-4">
-              <StatCard
+              <AdminStatCard
                 icon={<Users size={18} />}
                 label={t("admin.analytics.activeClients", "Active clients")}
                 value={data.clients.active}
                 sub={`${data.clients.new30d} ${t("admin.analytics.new30d", "new in 30d")}`}
                 tone="info"
                 testId="kpi-active-clients"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<Wallet size={18} />}
                 label={t("admin.analytics.revenuePaid30d", "Revenue (30d)")}
                 value={data.revenue.paid30d}
                 sub={`${FMT_EGP.format(data.revenue.outstanding)} ${t("admin.analytics.outstanding", "outstanding")}`}
                 tone="success"
-                isCurrency
+                format="currencyEGP"
                 testId="kpi-revenue-30d"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<CalendarCheck size={18} />}
                 label={t("admin.analytics.completed30d", "Sessions (30d)")}
                 value={data.sessions.completed30d}
                 sub={`${data.sessions.completed90d} ${t("admin.analytics.in90d", "in 90d")}`}
                 tone="schedule"
                 testId="kpi-completed-30d"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<TrendingUp size={18} />}
                 label={t("admin.analytics.attendance30d", "Attendance rate")}
                 value={data.sessions.attendanceRate30d}
                 sub={`${(data.sessions.noShowRate30d * 100).toFixed(0)}% ${t("admin.analytics.noShows", "no-shows")}`}
                 tone={data.sessions.attendanceRate30d >= 0.8 ? "success" : "warning"}
-                isPercent
+                format="percent"
                 testId="kpi-attendance"
+                animate
               />
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
-              <StatCard
+              <AdminStatCard
                 icon={<AlertTriangle size={18} />}
                 label={t("admin.analytics.expiringSoon", "Expiring soon")}
                 value={data.packages.expiringSoon}
                 tone="warning"
                 testId="kpi-expiring"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<Snowflake size={18} />}
                 label={t("admin.analytics.frozenPkgs", "Frozen packages")}
                 value={data.packages.frozen}
                 tone="info"
                 testId="kpi-frozen"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<Repeat size={18} />}
                 label={t("admin.analytics.repeatClients", "Repeat clients")}
                 value={data.retention.multiPackageClients}
                 sub={t("admin.analytics.multiPkgHint", "≥2 packages")}
                 tone="success"
                 testId="kpi-repeat"
+                animate
               />
-              <StatCard
+              <AdminStatCard
                 icon={<RefreshCw size={18} />}
                 label={t("admin.analytics.renewals30d", "Renewals (30d)")}
                 value={data.packages.renewals30d}
                 tone="default"
                 testId="kpi-renewals"
+                animate
               />
             </div>
 
@@ -425,18 +353,11 @@ export default function AdminAnalytics() {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <div
-                className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
-                data-testid="card-churn"
-              >
-                <div className="mb-3 sm:mb-4">
-                  <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">
-                    {t("admin.analytics.churn", "Churn signals")}
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {t("admin.analytics.churnSub", "Active clients with no recent booking")}
-                  </p>
-                </div>
+              <AdminCard testId="card-churn">
+                <AdminSectionTitle title={t("admin.analytics.churn", "Churn signals")} />
+                <p className="text-[11px] text-muted-foreground -mt-2 mb-3">
+                  {t("admin.analytics.churnSub", "Active clients with no recent booking")}
+                </p>
                 <div className="space-y-2.5">
                   {[
                     { label: "30d", value: data.retention.churn30d, tone: "text-amber-300" },
@@ -457,20 +378,13 @@ export default function AdminAnalytics() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </AdminCard>
 
-              <div
-                className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
-                data-testid="card-adherence"
-              >
-                <div className="mb-3 sm:mb-4">
-                  <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">
-                    {t("admin.analytics.adherence", "Weekly check-in adherence")}
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {t("admin.analytics.adherenceSub", "Active clients, last 30 days")}
-                  </p>
-                </div>
+              <AdminCard testId="card-adherence">
+                <AdminSectionTitle title={t("admin.analytics.adherence", "Weekly check-in adherence")} />
+                <p className="text-[11px] text-muted-foreground -mt-2 mb-3">
+                  {t("admin.analytics.adherenceSub", "Active clients, last 30 days")}
+                </p>
                 <div className="flex flex-col items-center justify-center py-6">
                   <div className="relative w-32 h-32">
                     <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
@@ -511,7 +425,7 @@ export default function AdminAnalytics() {
                     )}
                   </div>
                 </div>
-              </div>
+              </AdminCard>
             </div>
 
             <p className="text-[10.5px] text-muted-foreground/60 mt-4 text-end">
