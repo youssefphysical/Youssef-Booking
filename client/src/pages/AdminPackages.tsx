@@ -2,7 +2,14 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { Search, Package as PackageIcon, ExternalLink, Users } from "lucide-react";
+import {
+  Search,
+  Package as PackageIcon,
+  ExternalLink,
+  Users,
+  Sparkles,
+  CheckCircle2,
+} from "lucide-react";
 import { usePackages } from "@/hooks/use-packages";
 import { useClients } from "@/hooks/use-clients";
 import { Input } from "@/components/ui/input";
@@ -15,6 +22,12 @@ import {
 } from "@/components/ui/select";
 import { PACKAGE_DEFINITIONS, type PackageWithUser, type UserResponse } from "@shared/schema";
 import { useTranslation } from "@/i18n";
+import {
+  AdminPageHeader,
+  AdminCard,
+  AdminStatCard,
+  AdminEmptyState,
+} from "@/components/admin/primitives";
 
 export default function AdminPackages() {
   const { t } = useTranslation();
@@ -48,142 +61,222 @@ export default function AdminPackages() {
   }, [list, q, filter, clientById]);
 
   const totalActive = list.filter((p) => p.isActive).length;
+  const totalClosed = list.filter((p) => !p.isActive).length;
   const totalRemaining = list
     .filter((p) => p.isActive)
     .reduce((sum, p) => sum + (p.totalSessions - p.usedSessions), 0);
+  const totalDelivered = list.reduce((sum, p) => sum + p.usedSessions, 0);
+
+  const hasActiveFilters = !!q || filter !== "active";
+  const clearAll = () => {
+    setQ("");
+    setFilter("active");
+  };
 
   return (
     <div className="admin-shell">
-      <div className="admin-container">
-      <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">
-          {t("admin.packagesPage.kicker")}
-        </p>
-        <h1 className="text-3xl font-display font-bold" data-testid="text-packages-title">
-          {t("admin.packagesPage.title")}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t("admin.packagesPage.summary")
+      <div className="admin-container space-y-5">
+        <AdminPageHeader
+          eyebrow={t("admin.packagesPage.kicker")}
+          title={t("admin.packagesPage.title")}
+          subtitle={t("admin.packagesPage.summary")
             .replace("{active}", String(totalActive))
             .replace("{remaining}", String(totalRemaining))}
-        </p>
-      </div>
+          testId="text-packages-title"
+        />
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[240px] max-w-md">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("admin.packagesPage.searchPh")}
-            className="pl-9 bg-white/5 border-white/10"
-            data-testid="input-search-packages"
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <AdminStatCard
+            icon={<PackageIcon size={16} />}
+            label={t("admin.packagesPage.statActive", "Active")}
+            value={totalActive}
+            tone="info"
+            animate
+            testId="stat-pkgs-active"
+          />
+          <AdminStatCard
+            icon={<Sparkles size={16} />}
+            label={t("admin.packagesPage.statRemaining", "Sessions left")}
+            value={totalRemaining}
+            tone="schedule"
+            animate
+            testId="stat-pkgs-remaining"
+          />
+          <AdminStatCard
+            icon={<CheckCircle2 size={16} />}
+            label={t("admin.packagesPage.statDelivered", "Sessions delivered")}
+            value={totalDelivered}
+            tone="success"
+            animate
+            testId="stat-pkgs-delivered"
+          />
+          <AdminStatCard
+            icon={<PackageIcon size={16} />}
+            label={t("admin.packagesPage.statClosed", "Closed")}
+            value={totalClosed}
+            tone="muted"
+            animate
+            testId="stat-pkgs-closed"
           />
         </div>
-        <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-          <SelectTrigger className="bg-white/5 border-white/10 w-40" data-testid="select-package-filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">{t("admin.packagesPage.activeOnly")}</SelectItem>
-            <SelectItem value="closed">{t("admin.packagesPage.closedOnly")}</SelectItem>
-            <SelectItem value="all">{t("admin.packagesPage.allFilter")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-2xl bg-white/5 animate-pulse" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-          <PackageIcon className="mx-auto text-muted-foreground/40 mb-3" size={32} />
-          {q
-            ? t("admin.packagesPage.noMatch")
-            : t("admin.packagesPage.noneYet")}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filtered.map((p, i) => {
-            const owner = p.user || clientById.get(p.userId);
-            const partner = p.partnerUserId ? clientById.get(p.partnerUserId) : null;
-            const def = PACKAGE_DEFINITIONS[p.type];
-            const remaining = p.totalSessions - p.usedSessions;
-            const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
-            // Prefer snapshot fields captured at assignment time.
-            const bonus = (p as any).bonusSessions ?? def?.bonusSessions ?? 0;
-            const base =
-              (p as any).paidSessions ?? ((def?.sessions ?? p.totalSessions) - bonus);
-            const displayLabel = (p as any).name || def?.label || p.type;
-
-            return (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.02, 0.2) }}
-                className={`rounded-2xl border p-5 card-lift ${p.isActive ? "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent" : "border-white/5 bg-card/60 opacity-70"}`}
-                data-testid={`packages-row-${p.id}`}
+        <AdminCard padded={false} className="p-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search
+                size={14}
+                className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground/70"
+              />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t("admin.packagesPage.searchPh")}
+                className="ps-9 h-9 bg-white/5 border-white/10"
+                data-testid="input-search-packages"
+              />
+            </div>
+            <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+              <SelectTrigger
+                className="w-[150px] h-9 bg-white/5 border-white/10 text-xs"
+                data-testid="select-package-filter"
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/admin/clients/${p.userId}`}
-                      data-testid={`link-package-client-${p.id}`}
-                      className="font-semibold hover:text-primary inline-flex items-center gap-1.5"
-                    >
-                      {owner?.fullName || t("admin.packagesPage.unknown")}
-                      <ExternalLink size={11} />
-                    </Link>
-                    <p className="text-xs text-muted-foreground mt-0.5">{owner?.email}</p>
-                    {def?.isDuo && partner && (
-                      <p className="text-xs text-amber-300/80 mt-1 inline-flex items-center gap-1.5">
-                        <Users size={11} /> {t("admin.packagesPage.partner")}: {partner.fullName}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary whitespace-nowrap">
-                    {displayLabel}
-                  </span>
-                </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">{t("admin.packagesPage.activeOnly")}</SelectItem>
+                <SelectItem value="closed">{t("admin.packagesPage.closedOnly")}</SelectItem>
+                <SelectItem value="all">{t("admin.packagesPage.allFilter")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearAll}
+                className="h-9 px-3 text-xs text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/5 transition-colors"
+                data-testid="button-clear-pkg-filters"
+              >
+                {t("admin.bookings.clear", "Clear")}
+              </button>
+            )}
+            <span className="ms-auto text-[11px] sm:text-xs text-muted-foreground tabular-nums">
+              {filtered.length} / {list.length}
+            </span>
+          </div>
+        </AdminCard>
 
-                <div className="grid grid-cols-4 gap-2 mb-3">
-                  <PackageStat label={t("admin.packagesPage.statBase")} value={base} />
-                  <PackageStat label={t("admin.packagesPage.statBonus")} value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
-                  <PackageStat label={t("admin.packagesPage.statTotal")} value={p.totalSessions} accent="text-primary" />
-                  <PackageStat label={t("admin.packagesPage.statLeft")} value={remaining} accent="text-emerald-300" />
-                </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-28 rounded-2xl bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <AdminEmptyState
+            icon={<PackageIcon size={28} />}
+            title={
+              hasActiveFilters
+                ? t("admin.packagesPage.noMatch")
+                : t("admin.packagesPage.noneYet")
+            }
+            body={
+              hasActiveFilters
+                ? t(
+                    "admin.packagesPage.noMatchHint",
+                    "Try clearing filters or switching to All.",
+                  )
+                : undefined
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filtered.map((p, i) => {
+              const owner = p.user || clientById.get(p.userId);
+              const partner = p.partnerUserId ? clientById.get(p.partnerUserId) : null;
+              const def = PACKAGE_DEFINITIONS[p.type];
+              const remaining = p.totalSessions - p.usedSessions;
+              const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
+              const bonus = (p as any).bonusSessions ?? def?.bonusSessions ?? 0;
+              const base =
+                (p as any).paidSessions ?? ((def?.sessions ?? p.totalSessions) - bonus);
+              const displayLabel = (p as any).name || def?.label || p.type;
 
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
-                  <span>
-                    {t("admin.packagesPage.usedOf")
-                      .replace("{used}", String(p.usedSessions))
-                      .replace("{total}", String(p.totalSessions))}
-                  </span>
-                  <span>
-                    {p.purchasedAt &&
-                      t("admin.packagesPage.startedOn").replace(
-                        "{date}",
-                        format(new Date(p.purchasedAt), "MMM d, yyyy"),
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.02, 0.2) }}
+                  className={`rounded-2xl border p-5 card-lift ${p.isActive ? "border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent" : "border-white/5 bg-card/60 opacity-70"}`}
+                  data-testid={`packages-row-${p.id}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/clients/${p.userId}`}
+                        data-testid={`link-package-client-${p.id}`}
+                        className="font-semibold hover:text-primary inline-flex items-center gap-1.5"
+                      >
+                        {owner?.fullName || t("admin.packagesPage.unknown")}
+                        <ExternalLink size={11} />
+                      </Link>
+                      <p className="text-xs text-muted-foreground mt-0.5">{owner?.email}</p>
+                      {def?.isDuo && partner && (
+                        <p className="text-xs text-amber-300/80 mt-1 inline-flex items-center gap-1.5">
+                          <Users size={11} /> {t("admin.packagesPage.partner")}: {partner.fullName}
+                        </p>
                       )}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
-                  />
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-md bg-primary/10 border border-primary/20 text-primary whitespace-nowrap">
+                      {displayLabel}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    <PackageStat label={t("admin.packagesPage.statBase")} value={base} />
+                    <PackageStat
+                      label={t("admin.packagesPage.statBonus")}
+                      value={bonus}
+                      accent={bonus > 0 ? "text-amber-300" : undefined}
+                    />
+                    <PackageStat
+                      label={t("admin.packagesPage.statTotal")}
+                      value={p.totalSessions}
+                      accent="text-primary"
+                    />
+                    <PackageStat
+                      label={t("admin.packagesPage.statLeft")}
+                      value={remaining}
+                      accent="text-emerald-300"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                    <span>
+                      {t("admin.packagesPage.usedOf")
+                        .replace("{used}", String(p.usedSessions))
+                        .replace("{total}", String(p.totalSessions))}
+                    </span>
+                    <span>
+                      {p.purchasedAt &&
+                        t("admin.packagesPage.startedOn").replace(
+                          "{date}",
+                          format(new Date(p.purchasedAt), "MMM d, yyyy"),
+                        )}
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
