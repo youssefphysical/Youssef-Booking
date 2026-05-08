@@ -143,7 +143,7 @@ export function NotificationsBell({ className }: { className?: string }) {
           {count > 0 && (
             <span
               data-testid="badge-notifications-unread"
-              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500 text-[10px] font-bold text-white flex items-center justify-center border-2 border-background"
+              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center border-2 border-background"
             >
               {count > 99 ? "99+" : count}
             </span>

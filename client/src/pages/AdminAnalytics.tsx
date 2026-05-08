@@ -50,18 +50,34 @@ function shortMonth(ym: string) {
   return new Date(y, (m ?? 1) - 1, 1).toLocaleDateString("en-US", { month: "short" });
 }
 
-const PIE_COLORS = ["hsl(var(--primary))", "#f59e0b", "#ef4444", "#38bdf8"];
+/**
+ * Calm, theme-aligned chart palette. Primary = brand cyan (HSL token,
+ * follows theme). Secondary roles use calm tints that read well on the
+ * dark luxury background — slightly desaturated vs raw Tailwind defaults
+ * so they don't shout against the rest of the surface.
+ */
+const CHART_COLOR = {
+  primary: "hsl(var(--primary))",       // brand cyan — main metric
+  comparison: "rgba(255,255,255,0.45)", // calm white — secondary line
+  success: "#34d399",                   // emerald-400 — signups / growth
+  warning: "#fbbf24",                   // amber-400 — caution
+  danger: "#f87171",                    // rose-400 — churn / loss
+} as const;
+const PIE_COLORS = [CHART_COLOR.primary, CHART_COLOR.warning, CHART_COLOR.danger, CHART_COLOR.comparison];
 
 export default function AdminAnalytics() {
   const { t } = useTranslation();
   const { data, isLoading, error } = useQuery<AdminAnalytics>({
     queryKey: [ANALYTICS_PATH],
+    // Analytics endpoint is heavy (snapshot + 12-month trends). 60s stale time
+    // matches AdminDashboard's revenue30d query so they share cache and we
+    // don't refetch on every tab switch.
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch(ANALYTICS_PATH, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
     },
-    staleTime: 60_000,
   });
 
   const revenueData = useMemo(
@@ -220,7 +236,7 @@ export default function AdminAnalytics() {
                       formatter={(v: any) => FMT_AED.format(Number(v))}
                     />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="total" name="Assigned" stroke="#38bdf8" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="total" name="Assigned" stroke={CHART_COLOR.comparison} strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="paid" name="Paid" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -267,7 +283,7 @@ export default function AdminAnalytics() {
                         fontSize: 12,
                       }}
                     />
-                    <Line type="monotone" dataKey="count" name="Signups" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+                    <Line type="monotone" dataKey="count" name="Signups" stroke={CHART_COLOR.success} strokeWidth={2.5} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </AdminChartCard>
@@ -290,7 +306,7 @@ export default function AdminAnalytics() {
                         fontSize: 12,
                       }}
                     />
-                    <Bar dataKey="count" name="Sessions" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" name="Sessions" fill={CHART_COLOR.comparison} radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </AdminChartCard>

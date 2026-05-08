@@ -246,7 +246,7 @@ function HeroImagesSection() {
             >
               <img
                 src={img.imageDataUrl}
-                alt=""
+                alt={`Hero slide ${i + 1}${img.isActive === false ? " (inactive)" : ""}`}
                 className="w-full h-full object-cover"
               />
               {/* Inactive overlay so admin sees what visitors won't. */}
@@ -519,7 +519,7 @@ function HeroSlideEditor({
           >
             <img
               src={slide.imageDataUrl}
-              alt=""
+              alt="Hero tuning preview"
               className="absolute inset-0 w-full h-full object-cover"
               style={previewSharpStyle}
             />

@@ -1,0 +1,121 @@
+I want a COMPLETE production-grade audit and stabilization pass for the entire platform.
+
+This is NOT a feature sprint.
+
+Your job is to deeply inspect, test, optimize, and stabilize EVERYTHING across:
+
+- frontend
+- backend
+- database
+- admin dashboard
+- client dashboard
+- mobile UX
+- uploads
+- InBody system
+- booking flows
+- packages
+- sessions
+- analytics
+- translations
+- auth
+- responsiveness
+- performance
+- accessibility
+- navigation
+- animations
+- skeletons
+- API behavior
+- edge cases
+- error handling
+- loading states
+- consistency
+- spacing
+- typography
+- overflow
+- text truncation
+- cards
+- tables
+- bottom navigation
+- sticky headers
+- command palette
+- client profiles
+- WhatsApp actions
+- package/session logic
+- charts
+- OCR/InBody extraction flows
+- role protection
+- admin permissions
+- caching
+- deployment integrity
+
+Goals:
+
+- make the platform feel premium, smooth, cohesive, stable, fast, and production-ready
+- eliminate UI inconsistencies
+- eliminate mobile layout problems
+- eliminate dead spacing
+- eliminate clipping/truncation issues
+- eliminate overflow problems
+- eliminate broken states
+- eliminate confusing UX
+- eliminate unstable logic
+- eliminate hidden bugs
+- eliminate visual imbalance
+
+IMPORTANT:
+Do NOT just say “PASS”.
+
+Actually inspect:
+
+- every route
+- every admin page
+- every mobile screen
+- every form
+- every API interaction
+- every upload flow
+- every booking flow
+- every package/session flow
+- every client management flow
+
+Specific issues already observed:
+
+- top spacing inconsistency on mobile
+- bottom dock rhythm problems
+- text clipping/truncation
+- inconsistent card sizing
+- WhatsApp button opening wrong number
+- admin visual hierarchy issues
+- dashboard rhythm imbalance
+- inconsistent spacing between sections
+- occasional poor mobile composition
+- stat cards needing better proportional scaling
+- some text visibility problems
+
+Rules:
+
+- Fix issues immediately when found.
+- Commit in clean phases.
+- Run typecheck/build after every major fix batch.
+- Run architect review after every major phase.
+- Preserve all existing logic/features unless a fix is required.
+- Do not introduce regressions.
+- Keep the luxury dark premium aesthetic.
+- Maintain mobile-first responsiveness.
+- Ensure Arabic RTL remains correct.
+- Ensure AED is used everywhere instead of EGP.
+
+At the end:
+Produce a FINAL production readiness report with:
+
+- fixed issues
+- remaining risks
+- recommended future improvements
+- performance status
+- mobile UX status
+- dashboard UX status
+- database integrity status
+- deployment status
+- overall production readiness score
+
+Do not stop at “mostly good”.
+Keep iterating until the platform is genuinely polished and production-grade.
