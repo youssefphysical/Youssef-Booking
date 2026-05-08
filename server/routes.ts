@@ -78,6 +78,7 @@ import {
   type Booking,
   type AdminPermissionKey,
   type ClientStatus,
+  type AdminAnalytics,
 } from "@shared/schema";
 import {
   sendEmail,
@@ -97,6 +98,7 @@ import {
 } from "./email-templates";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
+import { notifyUser, notifyUserOnce } from "./services/notifications";
 import { optimizeImageFile } from "./image-utils";
 
 function currentMonthKey(d: Date = new Date()): string {
@@ -161,6 +163,79 @@ function requirePermission(key: AdminPermissionKey) {
 
 function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00`);
+}
+
+// Mon-anchored ISO week start (UTC YYYY-MM-DD). Mirrors the streak logic
+// used by /api/me/today so missed-checkin nudges line up with the streak.
+function mondayOfUtc(d: Date): string {
+  const x = new Date(d);
+  x.setUTCHours(0, 0, 0, 0);
+  const day = x.getUTCDay(); // 0=Sun..6=Sat
+  const offset = day === 0 ? -6 : 1 - day;
+  x.setUTCDate(x.getUTCDate() + offset);
+  return x.toISOString().slice(0, 10);
+}
+
+// =============================
+// P5b — Cron-driven trigger passes
+// =============================
+// Both helpers are idempotent: notifyUserOnce keys ensure the same
+// (user, kind, window) never fires twice across cron invocations.
+// Both swallow per-row errors so one bad record doesn't poison the pass.
+
+const EXPIRY_WINDOWS_DAYS = [7, 3, 1] as const;
+
+async function runPackageExpiryNotifications(): Promise<void> {
+  // Pull only active packages — expired/completed/frozen don't need
+  // expiry warnings. activeOnly=true filters to status='active' in storage.
+  const pkgs = await storage.getPackages({ activeOnly: true });
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  for (const p of pkgs) {
+    if (!p.expiryDate) continue;
+    const expiry = new Date(`${String(p.expiryDate)}T00:00:00Z`);
+    if (isNaN(expiry.getTime())) continue;
+    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
+    // Match the closest window the package falls into. Each window only
+    // fires once per (package, window) thanks to the dedupeKey.
+    const window = EXPIRY_WINDOWS_DAYS.find((w) => daysLeft === w);
+    if (window === undefined) continue;
+    const label = window === 1 ? "tomorrow" : `in ${window} days`;
+    void notifyUserOnce(
+      p.userId,
+      "package_expiring",
+      `pkg-${p.id}-d${window}`,
+      "Your package is expiring",
+      `Your ${p.type} package expires ${label} (${p.expiryDate}). Tap to renew.`,
+      { link: "/dashboard", meta: { packageId: p.id, daysLeft: window } },
+    );
+  }
+}
+
+async function runMissedCheckinNotifications(): Promise<void> {
+  // Only nudge from Tuesday onward — Mondays are too early to call a
+  // check-in "missed". UTC day: 0=Sun..6=Sat, Tue=2.
+  const now = new Date();
+  if (now.getUTCDay() < 2 && now.getUTCDay() !== 0) return; // skip Mon (day=1)
+  const weekStart = mondayOfUtc(now);
+  const clients = await storage.getAllClients();
+  for (const u of clients) {
+    if ((u as any).clientStatus !== "active") continue;
+    try {
+      const existing = await storage.getWeeklyCheckinByWeek(u.id, weekStart);
+      if (existing) continue;
+      void notifyUserOnce(
+        u.id,
+        "missed_checkin",
+        `checkin-${weekStart}`,
+        "Weekly check-in pending",
+        "Two minutes — log how this week's training, sleep, and nutrition went so we can adjust.",
+        { link: "/dashboard", meta: { weekStart } },
+      );
+    } catch {
+      /* per-row best-effort */
+    }
+  }
 }
 
 // Clients must book at least 3 hours before the session starts so the trainer
@@ -370,6 +445,16 @@ async function dispatchBookingNotifications(args: {
   } catch (e) {
     console.warn("[notif] createAdminNotification failed:", e);
   }
+
+  // ---- 1b. P5b: Client-facing in-app booking confirmation ----
+  // One-shot, no dedupe needed — booking creation is inherently single-fire.
+  void notifyUser(
+    targetUserId,
+    "system",
+    "Session booked",
+    `${booking.date} at ${time12} — ${sessionFocusLabel}`,
+    { link: "/dashboard", meta: { bookingId: booking.id } },
+  );
 
   const bookingDetails: BookingDetails = {
     clientName,
@@ -1336,6 +1421,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
     });
 
+    // P5b: When an admin cancels someone else's session, the client needs
+    // to be told. (Self-cancellations are user-initiated and don't need
+    // a self-notification.) dedupeKey by booking-id keeps it idempotent
+    // even if the admin re-cancels an already-cancelled booking.
+    if (me.role === "admin" && booking.userId !== me.id) {
+      const time12 = formatTime12Server(booking.timeSlot);
+      void notifyUserOnce(
+        booking.userId,
+        "system",
+        `booking-cancelled-${booking.id}`,
+        "Session cancelled",
+        `Your session on ${booking.date} at ${time12} was cancelled. Tap to rebook.`,
+        { link: "/book", meta: { bookingId: booking.id } },
+      );
+    }
+
     res.json(sanitizeBookingForUser(me, updated));
   });
 
@@ -1578,16 +1679,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
 
     // If date or time changed, email the trainer (best-effort).
-    if (
-      (updateFields.date && updateFields.date !== booking.date) ||
-      (updateFields.timeSlot && updateFields.timeSlot !== booking.timeSlot)
-    ) {
+    const dateChanged = !!(updateFields.date && updateFields.date !== booking.date);
+    const timeChanged = !!(updateFields.timeSlot && updateFields.timeSlot !== booking.timeSlot);
+    if (dateChanged || timeChanged) {
       void dispatchBookingChangeNotification({
         kind: "reschedule",
         booking: { ...booking, ...updateFields } as Booking,
         fromDate,
         fromTime12,
       });
+
+      // P5b: When an admin reschedules a client's session, notify the
+      // client of the new slot. Skip when the user reschedules their own
+      // (they already see the new time in the UI). Dedupe key combines
+      // booking + new slot so re-running the same change is a no-op,
+      // but a second reschedule to a different slot does notify.
+      if (me.role === "admin" && booking.userId !== me.id) {
+        const newDate = updateFields.date ?? booking.date;
+        const newSlot = updateFields.timeSlot ?? booking.timeSlot;
+        const newTime12 = formatTime12Server(newSlot);
+        void notifyUserOnce(
+          booking.userId,
+          "system",
+          `booking-reschedule-${booking.id}-${newDate}-${newSlot}`,
+          "Session rescheduled",
+          `Your session moved from ${fromDate} ${fromTime12} → ${newDate} ${newTime12}.`,
+          { link: "/dashboard", meta: { bookingId: booking.id } },
+        );
+      }
     }
 
     // Package deduction logic on status transition
@@ -2307,6 +2426,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 200);
     const events = await buildActivityFeed(me.id, limit);
     res.json(events);
+  });
+
+  // P5a: Client-facing notifications. All routes are self-scoped — the
+  // server reads userId from the session, never from the request body
+  // or query, so a client can only ever see/mutate its own rows.
+  app.get("/api/me/notifications", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const unreadOnly = req.query.unreadOnly === "true";
+    const limitRaw = Number(req.query.limit ?? 50);
+    const limit = Number.isFinite(limitRaw) ? limitRaw : 50;
+    const list = await storage.getClientNotifications(me.id, { unreadOnly, limit });
+    res.json(list);
+  });
+
+  app.get("/api/me/notifications/unread-count", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const count = await storage.getClientUnreadNotificationCount(me.id);
+    res.json({ count });
+  });
+
+  app.post("/api/me/notifications/:id/read", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const updated = await storage.markClientNotificationRead(id, me.id);
+    if (!updated) {
+      // Either not found, not owned, or already read — all map to 204
+      // so clients can call this idempotently without surfacing errors.
+      return res.status(204).end();
+    }
+    res.json(updated);
+  });
+
+  app.post("/api/me/notifications/read-all", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    await storage.markAllClientNotificationsRead(me.id);
+    res.json({ ok: true });
   });
 
   app.get("/api/admin/clients/:id/session-history", requireAdmin, async (req, res) => {
@@ -3101,7 +3257,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             if (claim.rowCount === 0) return; // already claimed by another worker
 
             const owner = await storage.getUser(b.userId).catch(() => undefined);
-            if (!owner?.email) return;
+            if (!owner) return;
             const ownerLang = (owner as any).preferredLanguage || "en";
             const built = buildSessionReminderEmail({
               kind,
@@ -3114,6 +3270,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 trainingGoalLabel: b.trainingGoal || null,
               },
             });
+            // P5b: Mirror the reminder in-app FIRST — independent of the
+            // email channel. Users without an email address still get
+            // the in-app reminder, and the partial UNIQUE INDEX makes
+            // the insert safe under concurrent cron retries.
+            void notifyUserOnce(
+              b.userId,
+              "session_reminder",
+              `reminder-${b.id}-${kind}`,
+              kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
+              `${b.date} at ${formatTime12Server(b.timeSlot)}`,
+              { link: "/dashboard", meta: { bookingId: b.id, kind } },
+            );
+
+            if (!owner.email) return; // in-app already posted above
             const result = await sendEmail({
               to: owner.email,
               subject: built.subject,
@@ -3133,6 +3303,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
         if (want24 && !bAny.reminder24hSentAt) await dispatch("24h");
         if (want1 && !bAny.reminder1hSentAt) await dispatch("1h");
+      }
+
+      // P5b: Package-expiry warnings. For every active package whose
+      // expiry falls within 7d / 3d / 1d of today, fire one in-app
+      // notification per (package, window). dedupeKey ensures the same
+      // window never re-fires across cron invocations.
+      // Missed-weekly-check-in: from Tuesday onward, any active client
+      // who hasn't logged a check-in for the current Mon-anchored week
+      // gets a single nudge.
+      try {
+        await runPackageExpiryNotifications();
+      } catch (e) {
+        console.warn("[cron/reminders] expiry pass failed:", e);
+      }
+      try {
+        await runMissedCheckinNotifications();
+      } catch (e) {
+        console.warn("[cron/reminders] checkin pass failed:", e);
       }
 
       res.json({ ok: true, scanned: all.length, sent, failed });
@@ -3317,6 +3505,223 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       pendingExtensions: pendingExtensionsList.length,
       lowSessionClients: lowSessionUserIds.size,
     });
+  });
+
+  // ============================================================
+  // P5c — Premium Analytics
+  // ============================================================
+  // One endpoint, one round-trip. Computes snapshot KPIs + 12-month
+  // trend buckets server-side so the AnalyticsTab renders instantly.
+  // All computation is in-memory over already-fetched lists; no extra
+  // SQL beyond what /api/dashboard/stats already does. Admin-gated.
+  app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const ms = (days: number) => days * 86_400_000;
+    const isoMonth = (d: Date) => d.toISOString().slice(0, 7); // YYYY-MM
+
+    const [clients, allBookings, allPackagesActive, allPackagesAll, renewals30] =
+      await Promise.all([
+        storage.getAllClients(),
+        storage.getBookings(),
+        storage.getPackages({ activeOnly: true }),
+        storage.getPackages(),
+        storage.getRenewalRequests({ limit: 5000 }).catch(() => []),
+      ]);
+
+    // ----- CLIENTS -----
+    const clientsTotal = clients.length;
+    const clientsActive = clients.filter((c) => (c as any).clientStatus === "active").length;
+    const clientsFrozen = clients.filter((c) => (c as any).clientStatus === "frozen").length;
+    const clientsNew30 = clients.filter((c) => {
+      const ca = c.createdAt ? new Date(c.createdAt).getTime() : 0;
+      return ca >= now.getTime() - ms(30);
+    }).length;
+
+    // ----- SESSIONS -----
+    const cutoff30 = new Date(now.getTime() - ms(30));
+    const cutoff90 = new Date(now.getTime() - ms(90));
+    const next7 = new Date(now.getTime() + ms(7));
+    let completed30 = 0, completed90 = 0, upcomingNext7 = 0;
+    // Attendance math (30d window): only bookings whose date has passed
+    // count as "scheduled" — future sessions are still in flight.
+    let scheduled30 = 0, completed30Past = 0, noShow30 = 0;
+    for (const b of allBookings) {
+      const dStr = String(b.date);
+      const d = new Date(`${dStr}T00:00:00Z`);
+      const t = d.getTime();
+      if (b.status === "completed") {
+        if (t >= cutoff30.getTime()) completed30++;
+        if (t >= cutoff90.getTime()) completed90++;
+      }
+      if (["upcoming", "confirmed"].includes(b.status) && dStr >= todayStr && t <= next7.getTime()) {
+        upcomingNext7++;
+      }
+      if (t >= cutoff30.getTime() && t < now.getTime()) {
+        if (["completed", "no_show", "late_cancelled"].includes(b.status)) {
+          scheduled30++;
+          if (b.status === "completed") completed30Past++;
+          if (b.status === "no_show") noShow30++;
+        }
+      }
+    }
+    const attendanceRate30 = scheduled30 ? completed30Past / scheduled30 : 0;
+    const noShowRate30 = scheduled30 ? noShow30 / scheduled30 : 0;
+
+    // ----- PACKAGES -----
+    let pkgActive = 0, pkgExpiring = 0, pkgExpired = 0, pkgFrozen = 0;
+    for (const p of allPackagesActive) {
+      if ((p as any).frozen) pkgFrozen++;
+      const s = computePackageStatus(p as any);
+      if (s === "active") pkgActive++;
+      if (s === "expiring_soon") pkgExpiring++;
+      if (s === "expired") pkgExpired++;
+    }
+    const renewals30d = renewals30.filter((r: any) => {
+      const t = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+      return t >= now.getTime() - ms(30);
+    }).length;
+
+    // ----- REVENUE -----
+    let revenueTotal = 0, revenuePaid30 = 0, revenueOutstanding = 0;
+    for (const p of allPackagesAll as any[]) {
+      const price = Number(p.totalPrice ?? 0);
+      revenueTotal += price;
+      const paidAt = p.paymentApprovedAt ? new Date(p.paymentApprovedAt).getTime() : 0;
+      if (p.paymentStatus === "paid" && paidAt >= now.getTime() - ms(30)) {
+        revenuePaid30 += price;
+      }
+      if (p.paymentStatus !== "paid" && p.paymentStatus !== "free") {
+        revenueOutstanding += price;
+      }
+    }
+
+    // ----- RETENTION / CHURN -----
+    const pkgsByUser = new Map<number, number>();
+    for (const p of allPackagesAll) {
+      pkgsByUser.set(p.userId, (pkgsByUser.get(p.userId) ?? 0) + 1);
+    }
+    const multiPackageClients = Array.from(pkgsByUser.values()).filter((n) => n >= 2).length;
+
+    const lastBookingByUser = new Map<number, number>();
+    for (const b of allBookings) {
+      const t = new Date(`${String(b.date)}T00:00:00Z`).getTime();
+      const cur = lastBookingByUser.get(b.userId) ?? 0;
+      if (t > cur) lastBookingByUser.set(b.userId, t);
+    }
+    const churn = (days: number) =>
+      clients.filter((c) => {
+        if ((c as any).clientStatus !== "active") return false;
+        const last = lastBookingByUser.get(c.id) ?? 0;
+        return last < now.getTime() - ms(days);
+      }).length;
+
+    // ----- ADHERENCE -----
+    // Pull weekly check-ins for active clients in last 30d. We do this
+    // sequentially-bounded with Promise.all to keep the round-trip count
+    // low without exhausting the connection pool.
+    const activeClientIds = clients
+      .filter((c) => (c as any).clientStatus === "active")
+      .map((c) => c.id);
+    let recentCheckinCount = 0;
+    if (activeClientIds.length > 0) {
+      const cutoffStr = new Date(now.getTime() - ms(30)).toISOString().slice(0, 10);
+      // Single bulk count — avoids N+1 across active clients.
+      try {
+        const r = await pool.query(
+          `SELECT COUNT(*)::int AS n FROM weekly_checkins
+           WHERE user_id = ANY($1::int[]) AND week_start >= $2::date`,
+          [activeClientIds, cutoffStr],
+        );
+        recentCheckinCount = Number(r.rows?.[0]?.n ?? 0);
+      } catch {
+        recentCheckinCount = 0;
+      }
+    }
+    // Expected = active clients * 4.3 weeks (≈30d). Cap at 1.
+    const expectedCheckins = activeClientIds.length * 4.3;
+    const checkinRate30 = expectedCheckins > 0
+      ? Math.min(1, recentCheckinCount / expectedCheckins)
+      : 0;
+
+    // ----- TRENDS (last 12 months, oldest first) -----
+    const monthsBack: string[] = [];
+    {
+      const cur = new Date(now.getFullYear(), now.getMonth(), 1);
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(cur.getFullYear(), cur.getMonth() - i, 1);
+        monthsBack.push(isoMonth(d));
+      }
+    }
+    const revenueByMonth = monthsBack.map((m) => ({ month: m, paid: 0, total: 0 }));
+    const completedByMonth = monthsBack.map((m) => ({ month: m, count: 0 }));
+    const signupsByMonth = monthsBack.map((m) => ({ month: m, count: 0 }));
+    const bookingsByDow = Array.from({ length: 7 }, (_, dow) => ({ dow, count: 0 }));
+
+    const monthIdx = new Map(monthsBack.map((m, i) => [m, i]));
+    for (const p of allPackagesAll as any[]) {
+      const m = isoMonth(new Date(p.purchasedAt ?? p.adminApprovedAt ?? Date.now()));
+      const idx = monthIdx.get(m);
+      if (idx !== undefined) {
+        const price = Number(p.totalPrice ?? 0);
+        revenueByMonth[idx].total += price;
+        if (p.paymentStatus === "paid") revenueByMonth[idx].paid += price;
+      }
+    }
+    // Completed-only month buckets, but DOW counts ALL bookings that
+    // actually consumed a slot (any non-cancelled status) so demand
+    // shape is faithful, not skewed by attendance.
+    const NON_CANCELLED = new Set([
+      "upcoming",
+      "confirmed",
+      "completed",
+      "no_show",
+      "late_cancelled",
+    ]);
+    for (const b of allBookings) {
+      const d = new Date(`${String(b.date)}T00:00:00Z`);
+      if (b.status === "completed") {
+        const idx = monthIdx.get(isoMonth(d));
+        if (idx !== undefined) completedByMonth[idx].count++;
+      }
+      if (NON_CANCELLED.has(b.status)) {
+        bookingsByDow[d.getUTCDay()].count++;
+      }
+    }
+    for (const c of clients) {
+      if (!c.createdAt) continue;
+      const idx = monthIdx.get(isoMonth(new Date(c.createdAt)));
+      if (idx !== undefined) signupsByMonth[idx].count++;
+    }
+
+    const payload: AdminAnalytics = {
+      generatedAt: now.toISOString(),
+      clients: { total: clientsTotal, active: clientsActive, frozen: clientsFrozen, new30d: clientsNew30 },
+      sessions: {
+        completed30d: completed30,
+        completed90d: completed90,
+        upcomingNext7d: upcomingNext7,
+        attendanceRate30d: attendanceRate30,
+        noShowRate30d: noShowRate30,
+      },
+      packages: {
+        active: pkgActive,
+        expiringSoon: pkgExpiring,
+        expired: pkgExpired,
+        frozen: pkgFrozen,
+        renewals30d,
+      },
+      revenue: { total: revenueTotal, paid30d: revenuePaid30, outstanding: revenueOutstanding },
+      retention: {
+        multiPackageClients,
+        churn30d: churn(30),
+        churn60d: churn(60),
+        churn90d: churn(90),
+      },
+      adherence: { weeklyCheckinRate30d: checkinRate30 },
+      trends: { revenueByMonth, completedByMonth, signupsByMonth, bookingsByDow },
+    };
+    res.json(payload);
   });
 
   // ============== RENEWAL REQUESTS ==============
@@ -3572,6 +3977,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // No-show counter on the user
     if (parsed.data.attendance === "no_show" && previousStatus !== "no_show") {
       try { await storage.incrementUserNoShow(booking.userId); } catch {}
+    }
+
+    // P5b: Milestone notification on the 5th / 10th / 25th / 50th / 100th
+    // completed session. Fired only on the transition INTO `completed`
+    // so toggling attendance back-and-forth never re-fires (a) because
+    // the count only matches at the boundary, and (b) because dedupeKey
+    // pins each milestone to its threshold.
+    if (newStatus === "completed" && previousStatus !== "completed") {
+      try {
+        const all = await storage.getBookings({ userId: booking.userId });
+        const completedCount = all.filter((b) => b.status === "completed").length;
+        const MILESTONES = [5, 10, 25, 50, 100, 200, 365, 500];
+        if (MILESTONES.includes(completedCount)) {
+          void notifyUserOnce(
+            booking.userId,
+            "milestone",
+            `sessions-completed-${completedCount}`,
+            `${completedCount} sessions completed`,
+            completedCount === 5
+              ? "Five sessions in. Keep showing up — the work is starting to compound."
+              : `That's ${completedCount} sessions logged. Real progress, built one rep at a time.`,
+            { link: "/dashboard" },
+          );
+        }
+      } catch (e) {
+        console.warn("[milestone] check failed:", e);
+      }
     }
 
     res.json(updated);

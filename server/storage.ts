@@ -12,6 +12,7 @@ import {
   heroImages,
   transformations,
   adminNotifications,
+  clientNotifications,
   renewalRequests,
   extensionRequests,
   packageSessionHistory,
@@ -78,6 +79,8 @@ import {
   type UpdateTransformation,
   type AdminNotification,
   type InsertAdminNotification,
+  type ClientNotification,
+  type InsertClientNotification,
   type RenewalRequest,
   type InsertRenewalRequest,
   type ExtensionRequest,
@@ -197,6 +200,24 @@ export interface IStorage {
   createAdminNotification(notif: InsertAdminNotification): Promise<AdminNotification>;
   markAdminNotificationRead(id: number): Promise<AdminNotification | undefined>;
   markAllAdminNotificationsRead(): Promise<void>;
+
+  // Client-facing notifications (P5a)
+  getClientNotifications(
+    userId: number,
+    filters?: { unreadOnly?: boolean; limit?: number },
+  ): Promise<ClientNotification[]>;
+  getClientUnreadNotificationCount(userId: number): Promise<number>;
+  createClientNotification(notif: InsertClientNotification): Promise<ClientNotification>;
+  createClientNotificationOnce(
+    notif: InsertClientNotification,
+  ): Promise<ClientNotification | null>;
+  findClientNotificationByDedupeKey(
+    userId: number,
+    kind: string,
+    dedupeKey: string,
+  ): Promise<ClientNotification | undefined>;
+  markClientNotificationRead(id: number, userId: number): Promise<ClientNotification | undefined>;
+  markAllClientNotificationsRead(userId: number): Promise<void>;
 
   // Renewal requests
   getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<RenewalRequest[]>;
@@ -1360,6 +1381,133 @@ export class DatabaseStorage implements IStorage {
 
   async markAllAdminNotificationsRead() {
     await db.update(adminNotifications).set({ isRead: true }).where(eq(adminNotifications.isRead, false));
+  }
+
+  // ===== Client-facing notifications (P5a) =====
+  async getClientNotifications(
+    userId: number,
+    filters?: { unreadOnly?: boolean; limit?: number },
+  ): Promise<ClientNotification[]> {
+    const limit = Math.min(Math.max(filters?.limit ?? 50, 1), 200);
+    const conds: any[] = [eq(clientNotifications.userId, userId)];
+    if (filters?.unreadOnly) conds.push(sql`${clientNotifications.readAt} IS NULL`);
+    return db
+      .select()
+      .from(clientNotifications)
+      .where(and(...conds))
+      .orderBy(desc(clientNotifications.createdAt))
+      .limit(limit);
+  }
+
+  async getClientUnreadNotificationCount(userId: number): Promise<number> {
+    const rows = await db
+      .select({ id: clientNotifications.id })
+      .from(clientNotifications)
+      .where(
+        and(eq(clientNotifications.userId, userId), sql`${clientNotifications.readAt} IS NULL`),
+      );
+    return rows.length;
+  }
+
+  async createClientNotification(notif: InsertClientNotification): Promise<ClientNotification> {
+    const [n] = await db.insert(clientNotifications).values(notif).returning();
+    return n;
+  }
+
+  // Atomic dedupe variant. Relies on the partial UNIQUE INDEX
+  // `client_notifications_dedupe_uq` on (user_id, kind, dedupe_key)
+  // WHERE dedupe_key IS NOT NULL. NOTE: Postgres requires the partial
+  // index predicate (`WHERE dedupe_key IS NOT NULL`) to be repeated in
+  // the ON CONFLICT clause for the arbiter to be matched — Drizzle's
+  // `onConflictDoNothing({target:[...]})` omits it, so we drop down to
+  // raw SQL via the pg pool. Returning rows means the row was newly
+  // inserted; an empty result means a duplicate was atomically
+  // suppressed. Safe under racing cron retries / concurrent triggers.
+  async createClientNotificationOnce(
+    notif: InsertClientNotification,
+  ): Promise<ClientNotification | null> {
+    const result = await pool.query(
+      `INSERT INTO client_notifications
+         (user_id, kind, title, body, link, meta, dedupe_key,
+          channel_in_app, channel_push, channel_email)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10)
+       ON CONFLICT (user_id, kind, dedupe_key)
+         WHERE dedupe_key IS NOT NULL
+         DO NOTHING
+       RETURNING id, user_id   AS "userId",
+                 kind, title, body, link, meta, dedupe_key AS "dedupeKey",
+                 channel_in_app  AS "channelInApp",
+                 channel_push    AS "channelPush",
+                 channel_email   AS "channelEmail",
+                 push_sent_at    AS "pushSentAt",
+                 email_sent_at   AS "emailSentAt",
+                 read_at         AS "readAt",
+                 created_at      AS "createdAt"`,
+      [
+        notif.userId,
+        notif.kind,
+        notif.title,
+        notif.body,
+        notif.link ?? null,
+        notif.meta == null ? null : JSON.stringify(notif.meta),
+        notif.dedupeKey ?? null,
+        notif.channelInApp ?? true,
+        notif.channelPush ?? false,
+        notif.channelEmail ?? false,
+      ],
+    );
+    return (result.rows[0] as ClientNotification) ?? null;
+  }
+
+  // Dedupe lookup for notifyUserOnce(): finds a previous notification for
+  // the same (userId, kind, meta.dedupeKey). Returns the most recent match
+  // or undefined. Used by triggers that may be re-invoked (cron passes,
+  // attendance toggles) so we never spam the same alert twice.
+  async findClientNotificationByDedupeKey(
+    userId: number,
+    kind: string,
+    dedupeKey: string,
+  ): Promise<ClientNotification | undefined> {
+    const rows = await db
+      .select()
+      .from(clientNotifications)
+      .where(
+        and(
+          eq(clientNotifications.userId, userId),
+          eq(clientNotifications.kind, kind),
+          sql`${clientNotifications.meta} ->> 'dedupeKey' = ${dedupeKey}`,
+        ),
+      )
+      .orderBy(desc(clientNotifications.createdAt))
+      .limit(1);
+    return rows[0];
+  }
+
+  async markClientNotificationRead(
+    id: number,
+    userId: number,
+  ): Promise<ClientNotification | undefined> {
+    const [n] = await db
+      .update(clientNotifications)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(clientNotifications.id, id),
+          eq(clientNotifications.userId, userId),
+          sql`${clientNotifications.readAt} IS NULL`,
+        ),
+      )
+      .returning();
+    return n;
+  }
+
+  async markAllClientNotificationsRead(userId: number): Promise<void> {
+    await db
+      .update(clientNotifications)
+      .set({ readAt: new Date() })
+      .where(
+        and(eq(clientNotifications.userId, userId), sql`${clientNotifications.readAt} IS NULL`),
+      );
   }
 
   // ===== Renewal requests =====

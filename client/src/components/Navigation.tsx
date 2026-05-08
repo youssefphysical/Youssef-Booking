@@ -26,6 +26,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import { useTranslation } from "@/i18n";
 
 export function Navigation() {
@@ -243,6 +244,7 @@ export function Navigation() {
             already z-[100] and the hero overlay layers all sit at the
             default z=0 inside their own .hero-isolate stacking context. */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-[110]">
+          {isConfirmedUser && user?.role === "client" && <NotificationsBell />}
           <LanguageSelector />
           {/* DESKTOP AUTH AREA — STRICT mutually-exclusive conditional.
               =====================================================

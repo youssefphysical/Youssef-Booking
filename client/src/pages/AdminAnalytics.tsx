@@ -1,0 +1,525 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  Users,
+  TrendingUp,
+  CalendarCheck,
+  Wallet,
+  Activity,
+  AlertTriangle,
+  Snowflake,
+  RefreshCw,
+  CheckCircle2,
+  Repeat,
+} from "lucide-react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import { AdminTabs } from "@/pages/AdminDashboard";
+import type { AdminAnalytics } from "@shared/schema";
+import { useTranslation } from "@/i18n";
+import { cn } from "@/lib/utils";
+
+const ANALYTICS_PATH = "/api/admin/analytics";
+const FMT_INT = new Intl.NumberFormat("en-US");
+const FMT_EGP = new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 });
+const DOW_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function useCountUp(target: number, duration = 800) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / duration);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(from + (target - from) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+}
+
+function shortMonth(ym: string) {
+  // ym = "YYYY-MM"
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, 1).toLocaleDateString("en-US", { month: "short" });
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  sub,
+  tone = "info",
+  testId,
+  isPercent = false,
+  isCurrency = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  sub?: string;
+  tone?: "info" | "success" | "warning" | "danger" | "schedule" | "default";
+  testId: string;
+  isPercent?: boolean;
+  isCurrency?: boolean;
+}) {
+  const animated = useCountUp(value);
+  const display = isPercent
+    ? `${(animated * 100).toFixed(0)}%`
+    : isCurrency
+      ? FMT_EGP.format(Math.round(animated))
+      : FMT_INT.format(Math.round(animated));
+  const TONE: Record<string, string> = {
+    info: "bg-sky-500/15 text-sky-300",
+    success: "bg-emerald-500/15 text-emerald-300",
+    warning: "bg-amber-500/15 text-amber-300",
+    danger: "bg-red-500/15 text-red-300",
+    schedule: "bg-cyan-500/15 text-cyan-300",
+    default: "bg-primary/15 text-primary",
+  };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3 sm:p-5 min-h-[100px] sm:min-h-[120px] flex flex-col justify-between shadow-sm shadow-black/20"
+      data-testid={testId}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className={cn("w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0", TONE[tone])}>
+          {icon}
+        </div>
+        <p className="text-[20px] sm:text-[26px] font-display font-bold leading-none tracking-tight tabular-nums text-end">
+          {display}
+        </p>
+      </div>
+      <div>
+        <p className="text-[11px] sm:text-xs text-muted-foreground mt-2 leading-snug font-medium uppercase tracking-wide">
+          {label}
+        </p>
+        {sub ? <p className="text-[10.5px] text-muted-foreground/70 mt-0.5 leading-snug">{sub}</p> : null}
+      </div>
+    </motion.div>
+  );
+}
+
+function ChartCard({
+  title,
+  subtitle,
+  children,
+  testId,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  testId: string;
+}) {
+  return (
+    <div
+      className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
+      data-testid={testId}
+    >
+      <div className="mb-3 sm:mb-4">
+        <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">{title}</h3>
+        {subtitle ? <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p> : null}
+      </div>
+      <div className="h-[220px] sm:h-[260px]">{children}</div>
+    </div>
+  );
+}
+
+const PIE_COLORS = ["hsl(var(--primary))", "#f59e0b", "#ef4444", "#38bdf8"];
+
+export default function AdminAnalytics() {
+  const { t } = useTranslation();
+  const { data, isLoading, error } = useQuery<AdminAnalytics>({
+    queryKey: [ANALYTICS_PATH],
+    queryFn: async () => {
+      const res = await fetch(ANALYTICS_PATH, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load analytics");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const revenueData = useMemo(
+    () => (data?.trends.revenueByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data],
+  );
+  const completedData = useMemo(
+    () => (data?.trends.completedByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data],
+  );
+  const signupsData = useMemo(
+    () => (data?.trends.signupsByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data],
+  );
+  const dowData = useMemo(
+    () => (data?.trends.bookingsByDow ?? []).map((r) => ({ ...r, label: DOW_LABEL[r.dow] ?? "" })),
+    [data],
+  );
+  const pkgPie = useMemo(() => {
+    if (!data) return [] as Array<{ name: string; value: number }>;
+    return [
+      { name: t("admin.analytics.pkgActive", "Active"), value: data.packages.active },
+      { name: t("admin.analytics.pkgExpiring", "Expiring"), value: data.packages.expiringSoon },
+      { name: t("admin.analytics.pkgExpired", "Expired"), value: data.packages.expired },
+      { name: t("admin.analytics.pkgFrozen", "Frozen"), value: data.packages.frozen },
+    ];
+  }, [data, t]);
+
+  return (
+    <div className="admin-shell">
+      <div className="admin-container">
+        <div className="mb-4 sm:mb-5">
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-primary mb-1 sm:mb-1.5">
+            {t("admin.tabs.analytics", "Analytics")}
+          </p>
+          <h1 className="text-[22px] sm:text-3xl font-display font-bold leading-tight" data-testid="text-analytics-title">
+            {t("admin.analytics.title", "Business Analytics")}
+          </h1>
+          <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-0.5 sm:mt-1">
+            {t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
+          </p>
+        </div>
+
+        <AdminTabs />
+
+        {error ? (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-300" data-testid="analytics-error">
+            {t("admin.analytics.error", "Could not load analytics. Please refresh the page.")}
+          </div>
+        ) : null}
+
+        {isLoading || !data ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/8 bg-[rgba(8,15,28,0.6)] h-[110px] sm:h-[120px] animate-pulse"
+                data-testid={`analytics-skeleton-${i}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Top KPI grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-3 sm:mb-4">
+              <StatCard
+                icon={<Users size={18} />}
+                label={t("admin.analytics.activeClients", "Active clients")}
+                value={data.clients.active}
+                sub={`${data.clients.new30d} ${t("admin.analytics.new30d", "new in 30d")}`}
+                tone="info"
+                testId="kpi-active-clients"
+              />
+              <StatCard
+                icon={<Wallet size={18} />}
+                label={t("admin.analytics.revenuePaid30d", "Revenue (30d)")}
+                value={data.revenue.paid30d}
+                sub={`${FMT_EGP.format(data.revenue.outstanding)} ${t("admin.analytics.outstanding", "outstanding")}`}
+                tone="success"
+                isCurrency
+                testId="kpi-revenue-30d"
+              />
+              <StatCard
+                icon={<CalendarCheck size={18} />}
+                label={t("admin.analytics.completed30d", "Sessions (30d)")}
+                value={data.sessions.completed30d}
+                sub={`${data.sessions.completed90d} ${t("admin.analytics.in90d", "in 90d")}`}
+                tone="schedule"
+                testId="kpi-completed-30d"
+              />
+              <StatCard
+                icon={<TrendingUp size={18} />}
+                label={t("admin.analytics.attendance30d", "Attendance rate")}
+                value={data.sessions.attendanceRate30d}
+                sub={`${(data.sessions.noShowRate30d * 100).toFixed(0)}% ${t("admin.analytics.noShows", "no-shows")}`}
+                tone={data.sessions.attendanceRate30d >= 0.8 ? "success" : "warning"}
+                isPercent
+                testId="kpi-attendance"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
+              <StatCard
+                icon={<AlertTriangle size={18} />}
+                label={t("admin.analytics.expiringSoon", "Expiring soon")}
+                value={data.packages.expiringSoon}
+                tone="warning"
+                testId="kpi-expiring"
+              />
+              <StatCard
+                icon={<Snowflake size={18} />}
+                label={t("admin.analytics.frozenPkgs", "Frozen packages")}
+                value={data.packages.frozen}
+                tone="info"
+                testId="kpi-frozen"
+              />
+              <StatCard
+                icon={<Repeat size={18} />}
+                label={t("admin.analytics.repeatClients", "Repeat clients")}
+                value={data.retention.multiPackageClients}
+                sub={t("admin.analytics.multiPkgHint", "≥2 packages")}
+                tone="success"
+                testId="kpi-repeat"
+              />
+              <StatCard
+                icon={<RefreshCw size={18} />}
+                label={t("admin.analytics.renewals30d", "Renewals (30d)")}
+                value={data.packages.renewals30d}
+                tone="default"
+                testId="kpi-renewals"
+              />
+            </div>
+
+            {/* Charts */}
+            <div className="grid lg:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
+              <ChartCard
+                title={t("admin.analytics.revenueTrend", "Revenue (12 months)")}
+                subtitle={t("admin.analytics.revenueTrendSub", "Paid vs total assigned")}
+                testId="chart-revenue"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={revenueData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "rgba(8,15,28,0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                      formatter={(v: any) => FMT_EGP.format(Number(v))}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Line type="monotone" dataKey="total" name="Assigned" stroke="#38bdf8" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="paid" name="Paid" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard
+                title={t("admin.analytics.completedTrend", "Completed sessions")}
+                subtitle={t("admin.analytics.completedTrendSub", "Last 12 months")}
+                testId="chart-completed"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={completedData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "rgba(8,15,28,0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Bar dataKey="count" name="Sessions" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard
+                title={t("admin.analytics.signupsTrend", "New clients")}
+                subtitle={t("admin.analytics.signupsTrendSub", "Signups per month")}
+                testId="chart-signups"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={signupsData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "rgba(8,15,28,0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Line type="monotone" dataKey="count" name="Signups" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard
+                title={t("admin.analytics.dowLoad", "Demand by weekday")}
+                subtitle={t("admin.analytics.dowLoadSub", "All non-cancelled sessions by weekday")}
+                testId="chart-dow"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dowData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
+                    <Tooltip
+                      contentStyle={{
+                        background: "rgba(8,15,28,0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Bar dataKey="count" name="Sessions" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+
+            {/* Bottom: package mix + churn + adherence */}
+            <div className="grid lg:grid-cols-3 gap-3 sm:gap-5">
+              <ChartCard
+                title={t("admin.analytics.pkgMix", "Package mix")}
+                subtitle={t("admin.analytics.pkgMixSub", "Currently active packages")}
+                testId="chart-pkgmix"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pkgPie}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="55%"
+                      outerRadius="85%"
+                      paddingAngle={2}
+                      stroke="rgba(8,15,28,0.9)"
+                      strokeWidth={3}
+                    >
+                      {pkgPie.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: "rgba(8,15,28,0.95)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <div
+                className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
+                data-testid="card-churn"
+              >
+                <div className="mb-3 sm:mb-4">
+                  <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">
+                    {t("admin.analytics.churn", "Churn signals")}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {t("admin.analytics.churnSub", "Active clients with no recent booking")}
+                  </p>
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: "30d", value: data.retention.churn30d, tone: "text-amber-300" },
+                    { label: "60d", value: data.retention.churn60d, tone: "text-orange-300" },
+                    { label: "90d", value: data.retention.churn90d, tone: "text-red-300" },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-center justify-between rounded-xl bg-white/[0.04] border border-white/5 px-3 py-2.5"
+                      data-testid={`churn-${row.label}`}
+                    >
+                      <span className="text-[12.5px] text-muted-foreground uppercase tracking-wide font-semibold">
+                        {row.label}
+                      </span>
+                      <span className={cn("font-display font-bold text-xl tabular-nums", row.tone)}>
+                        {FMT_INT.format(row.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl sm:rounded-3xl border border-white/8 bg-[rgba(8,15,28,0.82)] p-3.5 sm:p-5 shadow-sm shadow-black/20"
+                data-testid="card-adherence"
+              >
+                <div className="mb-3 sm:mb-4">
+                  <h3 className="font-display font-bold text-[14.5px] sm:text-base leading-tight">
+                    {t("admin.analytics.adherence", "Weekly check-in adherence")}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {t("admin.analytics.adherenceSub", "Active clients, last 30 days")}
+                  </p>
+                </div>
+                <div className="flex flex-col items-center justify-center py-6">
+                  <div className="relative w-32 h-32">
+                    <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                      <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+                      <circle
+                        cx="60"
+                        cy="60"
+                        r="52"
+                        fill="none"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="10"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 52}`}
+                        strokeDashoffset={`${2 * Math.PI * 52 * (1 - data.adherence.weeklyCheckinRate30d)}`}
+                        style={{ transition: "stroke-dashoffset 800ms ease-out" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-display font-bold text-2xl tabular-nums" data-testid="adherence-percent">
+                        {(data.adherence.weeklyCheckinRate30d * 100).toFixed(0)}%
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+                        {t("admin.analytics.adherenceLabel", "On-track")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-4 text-[11.5px] text-muted-foreground">
+                    {data.adherence.weeklyCheckinRate30d >= 0.6 ? (
+                      <>
+                        <CheckCircle2 size={13} className="text-emerald-400" />
+                        <span>{t("admin.analytics.adherenceGood", "Strong engagement")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Activity size={13} className="text-amber-400" />
+                        <span>{t("admin.analytics.adherenceLow", "Room to grow")}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[10.5px] text-muted-foreground/60 mt-4 text-end">
+              {t("admin.analytics.generatedAt", "Generated")}: {new Date(data.generatedAt).toLocaleString()}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

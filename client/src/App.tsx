@@ -25,6 +25,7 @@ import MedicalDisclaimer from "@/pages/MedicalDisclaimer";
 import CookiePolicy from "@/pages/CookiePolicy";
 import HowItWorks from "@/pages/HowItWorks";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminBookings from "@/pages/AdminBookings";
 import AdminClients from "@/pages/AdminClients";
 import AdminClientDetail from "@/pages/AdminClientDetail";
@@ -133,6 +134,9 @@ function Router() {
         {/* Admin */}
         <Route path="/admin">
           <ProtectedRoute component={AdminDashboard} adminOnly />
+        </Route>
+        <Route path="/admin/analytics">
+          <ProtectedRoute component={AdminAnalytics} adminOnly />
         </Route>
         <Route path="/admin/bookings">
           <ProtectedRoute component={AdminBookings} adminOnly />

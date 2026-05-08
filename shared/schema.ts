@@ -9,6 +9,7 @@ import {
   boolean,
   jsonb,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -641,6 +642,87 @@ export const updateBookingSchema = z.object({
 // ADMIN NOTIFICATIONS (in-app trainer inbox)
 // =============================
 // kind: 'booking_new' | 'booking_cancelled' | 'booking_rescheduled' | 'system'
+// =============================
+// CLIENT-FACING NOTIFICATIONS (P5a)
+// =============================
+// Distinct from `admin_notifications` (which is the trainer inbox).
+// One row per delivery target. Channel-ready architecture: in-app is
+// active today, push + email are wired through the same row so future
+// dispatchers can fan out without schema churn.
+export const NOTIFICATION_KINDS = [
+  "session_reminder",
+  "package_expiring",
+  "missed_checkin",
+  "nutrition_update",
+  "supplement_reminder",
+  "coach_message",
+  "payment_reminder",
+  "milestone",
+  "system",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+export const clientNotifications = pgTable(
+  "client_notifications",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull().default("system"),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    // Optional deep-link target inside the app (e.g. "/dashboard?tab=activity").
+    link: text("link"),
+    // Optional structured payload — used by triggers to dedupe (e.g.
+    // { bookingId: 123 } or { weekStart: "2026-05-04" }).
+    meta: jsonb("meta"),
+    // Persisted dedupe key. Mirrors `meta.dedupeKey` and is enforced by a
+    // partial unique index `(user_id, kind, dedupe_key) WHERE dedupe_key
+    // IS NOT NULL`, so concurrent triggers can race INSERTs and only one
+    // wins. NULL for fire-and-forget notifications without a dedupe key.
+    dedupeKey: text("dedupe_key"),
+    // Channel state — additive, future dispatchers stamp these.
+    channelInApp: boolean("channel_in_app").notNull().default(true),
+    channelPush: boolean("channel_push").notNull().default(false),
+    channelEmail: boolean("channel_email").notNull().default(false),
+    pushSentAt: timestamp("push_sent_at"),
+    emailSentAt: timestamp("email_sent_at"),
+    // null = unread, set on first read.
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    // Mirrors ensureSchema's `client_notifications_user_unread_idx` so
+    // unread-count queries hit a covering index.
+    userUnreadIdx: index("client_notifications_user_unread_idx").on(
+      t.userId,
+      t.readAt,
+      t.createdAt,
+    ),
+    // Partial unique index for atomic dedupe via notifyUserOnce(). The
+    // WHERE predicate keeps the constraint scoped to keyed notifications
+    // only, so plain notifyUser() rows (dedupeKey=NULL) remain unique-free.
+    dedupeUq: uniqueIndex("client_notifications_dedupe_uq")
+      .on(t.userId, t.kind, t.dedupeKey)
+      .where(sql`${t.dedupeKey} IS NOT NULL`),
+  }),
+);
+
+export const insertClientNotificationSchema = createInsertSchema(clientNotifications)
+  .omit({ id: true, createdAt: true, readAt: true, pushSentAt: true, emailSentAt: true })
+  .extend({
+    kind: z.enum(NOTIFICATION_KINDS),
+    title: z.string().min(1).max(200),
+    body: z.string().min(1).max(2000),
+    link: z.string().max(500).nullish(),
+    meta: z.any().nullish(),
+    dedupeKey: z.string().max(200).nullish(),
+  });
+
+export type ClientNotification = typeof clientNotifications.$inferSelect;
+export type InsertClientNotification = z.infer<typeof insertClientNotificationSchema>;
+
 export const adminNotifications = pgTable("admin_notifications", {
   id: serial("id").primaryKey(),
   kind: text("kind").notNull().default("system"),
@@ -1192,6 +1274,55 @@ export type DashboardStats = {
   pendingRenewals: number;
   pendingExtensions: number;
   lowSessionClients: number;
+};
+
+// =============================
+// P5c — Premium Analytics (admin)
+// =============================
+// Snapshot KPIs + 12-month trend buckets in one response so the
+// AnalyticsTab can render instantly without staggered fetches.
+export type AdminAnalytics = {
+  generatedAt: string; // ISO
+  clients: {
+    total: number;        // role='client'
+    active: number;       // clientStatus='active'
+    frozen: number;       // clientStatus='frozen'
+    new30d: number;       // signups in last 30 days
+  };
+  sessions: {
+    completed30d: number;
+    completed90d: number;
+    upcomingNext7d: number;
+    attendanceRate30d: number; // completed / (completed + no_show + late_cancelled), 0..1
+    noShowRate30d: number;     // no_show / scheduled-in-window, 0..1
+  };
+  packages: {
+    active: number;
+    expiringSoon: number;
+    expired: number;
+    frozen: number;
+    renewals30d: number; // renewal_requests created last 30 days
+  };
+  revenue: {
+    total: number;        // sum totalPrice across all packages
+    paid30d: number;      // sum totalPrice where paymentApprovedAt in last 30d
+    outstanding: number;  // sum totalPrice where paymentStatus != 'paid' && != 'free'
+  };
+  retention: {
+    multiPackageClients: number; // clients with ≥2 packages
+    churn30d: number;            // active clients with 0 bookings in last 30d
+    churn60d: number;
+    churn90d: number;
+  };
+  adherence: {
+    weeklyCheckinRate30d: number; // checkins / (active clients * weeks-in-window), 0..1
+  };
+  trends: {
+    revenueByMonth: Array<{ month: string; paid: number; total: number }>;
+    completedByMonth: Array<{ month: string; count: number }>;
+    signupsByMonth: Array<{ month: string; count: number }>;
+    bookingsByDow: Array<{ dow: number; count: number }>;
+  };
 };
 
 // Admin attendance marker payload
