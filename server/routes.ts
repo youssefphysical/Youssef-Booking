@@ -1870,7 +1870,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   const HOMEPAGE_SECTION_KEYS = new Set(["hero", "philosophy", "final_cta"]);
 
   app.put("/api/admin/homepage-content/:key", requireAdmin, async (req, res) => {
-    const { key } = req.params;
+    // Express types `req.params[name]` as `string | string[]` because the
+    // route pattern syntax can produce repeated params; for `:key` it is
+    // always a single string but tsc can't narrow that, so coerce.
+    const key = String(req.params.key);
     if (!HOMEPAGE_SECTION_KEYS.has(key)) {
       return res.status(404).json({ message: "Unknown homepage section key" });
     }
