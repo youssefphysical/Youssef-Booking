@@ -419,6 +419,74 @@
   color: hsl(var(--warm-accent));
 }
 
+/* ============================================================
+   CINEMATIC HERO PRIMITIVES (May-2026 luxury rebuild pass)
+   ============================================================
+   Two utilities introduced for the "film-credit eyebrow + Tron
+   horizon energy line" hero language. Replaces the previous
+   rounded-pill SaaS badge with editorial typographic treatments.
+   ============================================================ */
+
+/* Cinematic eyebrow leading rule — thin amber gradient hairline
+   sitting before the eyebrow text. Replaces the rounded-pill badge
+   border. The amber rule reads as a Tron energy line catching the
+   start of the credit, not as a UI chrome border. */
+.hero-eyebrow-rule {
+  display: inline-block;
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 184, 0, 0.55) 60%,
+    hsl(var(--warm-accent)) 100%);
+  box-shadow: 0 0 8px rgba(255, 184, 0, 0.34);
+  flex-shrink: 0;
+  /* RTL: gradient direction is symmetric-relative-to-amber-end so
+     the bright edge always sits adjacent to the eyebrow text. */
+}
+@media (min-width: 640px) {
+  .hero-eyebrow-rule { width: 40px; }
+}
+html[dir="rtl"] .hero-eyebrow-rule {
+  background: linear-gradient(270deg,
+    transparent 0%,
+    rgba(255, 184, 0, 0.55) 60%,
+    hsl(var(--warm-accent)) 100%);
+}
+
+/* Tron horizon energy line — full-width 1px hairline used as a
+   cinematic section separator. Cyan→amber→cyan gradient with a
+   soft outer bloom. Marks the transition out of the hero into the
+   first content section like a Tron grid horizon. Use sparingly:
+   max one per page (the hero/content boundary). */
+.hero-horizon {
+  position: relative;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(125, 249, 255, 0.18) 18%,
+    rgba(125, 249, 255, 0.34) 35%,
+    rgba(255, 184, 0, 0.34) 50%,
+    rgba(125, 249, 255, 0.34) 65%,
+    rgba(125, 249, 255, 0.18) 82%,
+    transparent 100%);
+}
+.hero-horizon::after {
+  /* Soft outer bloom — cyan dominant, amber centre kiss */
+  content: "";
+  position: absolute;
+  inset: -3px 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(125, 249, 255, 0.10) 35%,
+    rgba(255, 184, 0, 0.16) 50%,
+    rgba(125, 249, 255, 0.10) 65%,
+    transparent 100%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
 /* Reduced-motion: kill transitions on amber utilities that animate.
    Visual halos remain visible — only the transition is suppressed. */
 @media (prefers-reduced-motion: reduce) {
@@ -1252,7 +1320,15 @@
    stack is replaced with a single continuous curve, eliminating
    step-jumps when the user resizes. */
 .hero-headline-fluid {
-  font-size: clamp(2.25rem, 7.5vw, 5.5rem);
+  /* EDITORIAL CINEMATIC SCALE (May-2026 luxury rebuild pass).
+     Pushed the floor up (2.25 → 2.5rem) so the headline reads as
+     "film title card" not "landing page header" on small phones.
+     Ceiling moderately bumped (5.5 → 6rem = 96px) so long-language
+     translations still fit within the reserved min-h via the
+     anywhere/hyphens safety net below. Tighter tracking pulls the
+     glyphs closer (already -0.015em on the JSX class). */
+  font-size: clamp(2.5rem, 8.5vw, 6rem);
+  letter-spacing: -0.025em;
   /* Long compound words in DE/RU/TR can otherwise overflow the
      reserved hero copy box on narrow phones — `anywhere` only
      activates when no normal break opportunity exists, so English
@@ -1262,18 +1338,17 @@
   hyphens: auto;
 }
 
-/* DESKTOP-ONLY responsive tightening (May-2026 hero overlap fix).
-   On real laptops (1366x768 / 1440x900) the previous clamp upper of
-   5.5rem produced 88px headlines that, in long-language translations
-   (DE/RU/HI/AR/TR/ZH), wrapped to 4+ lines and pushed the CTA row
-   past the reserved min-h zone — colliding with the slider dots and
-   the bottom-blend gradient. The new desktop curve caps at 4.75rem
-   (76px) so even 4-line translations stay within the lg/xl reserved
-   min-h boxes (268-296px). Mobile/tablet curve is UNCHANGED. */
+/* DESKTOP curve — May-2026 luxury rebuild: editorial bump while
+   respecting min-h reservations. Floor 2.625 → 2.875rem (46px) so
+   tablet headlines feel weightier; ceiling 4.75 → 5.5rem (88px) so
+   English on 1440 reads as cinematic title-card. Long-language
+   translations (DE/RU/AR/ZH) still safe via anywhere/hyphens above
+   and the lg/xl 268-296px min-h buffer in the JSX. */
 @media (min-width: 768px) {
   .hero-headline-fluid {
-    font-size: clamp(2.625rem, 5vw, 4.75rem);
-    line-height: 1.1;
+    font-size: clamp(2.875rem, 5.5vw, 5.5rem);
+    letter-spacing: -0.028em;
+    line-height: 1.05;
   }
 }
 

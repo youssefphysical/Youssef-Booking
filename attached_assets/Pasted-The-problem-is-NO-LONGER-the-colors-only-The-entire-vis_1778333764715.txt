@@ -1,0 +1,145 @@
+The problem is NO LONGER the colors only.
+
+The entire visual composition still feels like:
+a modern SaaS/mobile dashboard.
+
+That is the core issue.
+
+Even after the palette changes:
+the homepage structure still reads as:
+“fitness startup UI”.
+
+We must now change the VISUAL LANGUAGE itself.
+
+STOP designing the homepage as:
+
+- stacked SaaS cards
+- boxed mobile widgets
+- dashboard sections
+- repeated rounded rectangles
+- evenly spaced app blocks
+
+The current layout is:
+too flat,
+too vertical,
+too component-based,
+too generic.
+
+NEW DESIGN DIRECTION:
+
+The homepage must feel like:
+a cinematic Tron Legacy interface experience.
+
+This means:
+
+1. LESS BOXES
+   Reduce visible card containers significantly.
+
+Many sections should blend directly into the AMOLED black background instead of looking like isolated cards.
+
+2. MORE CINEMATIC COMPOSITION
+   Use:
+
+- layered depth
+- glow separation
+- asymmetric spacing
+- atmospheric transitions
+- oversized typography
+- cinematic negative space
+- floating content composition
+
+3. BLACK VOID DOMINANCE
+   Large portions of the screen should intentionally remain dark.
+
+Do NOT fill every area with blue surfaces or bordered containers.
+
+4. HERO SECTION REBUILD
+   The hero should feel:
+
+- immersive
+- dramatic
+- cinematic
+- contrast-heavy
+
+NOT:
+like a normal landing page header.
+
+The image should blend into darkness naturally.
+Allow the black background to consume edges of the composition.
+
+5. REMOVE “APP UI” FEELING
+   Right now the homepage feels:
+
+- too informational
+- too dashboard-like
+- too segmented
+
+Reduce:
+
+- repetitive cards
+- repeated outlines
+- repeated pills
+- excessive borders
+
+6. TRON ENERGY LINES
+   Introduce subtle cinematic energy-line design language inspired by Tron Legacy:
+
+- thin glowing separators
+- ambient horizon lines
+- directional light streaks
+- subtle edge glows
+- energy pathways
+
+Very subtle.
+Very premium.
+Never gaming UI.
+
+7. TYPOGRAPHY
+   Current typography hierarchy is too small and safe.
+
+Make sections feel:
+editorial,
+cinematic,
+luxury,
+premium.
+
+Use:
+
+- larger headings
+- stronger contrast
+- cleaner spacing
+- less clutter
+- more breathing room
+
+8. MOBILE EXPERIENCE
+   Mobile should feel like:
+   a futuristic cinematic interface,
+   NOT:
+   a stacked card app.
+
+The user should emotionally feel:
+
+- immersion
+- atmosphere
+- premium depth
+- futuristic luxury
+
+9. IMPORTANT:
+   Keep:
+
+- readability
+- smooth scrolling
+- performance
+- accessibility
+
+But visually:
+move AWAY from SaaS.
+Move INTO cinematic sci-fi luxury.
+
+10. FINAL TARGET EMOTION:
+    When someone opens the homepage,
+    it should feel like:
+    “a premium futuristic experience”
+
+NOT:
+“a fitness booking template”.

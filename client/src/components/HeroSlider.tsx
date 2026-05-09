@@ -355,6 +355,20 @@ export function HeroSlider() {
       <div className="hero-overlay" aria-hidden="true" data-testid="hero-overlay" />
       <div className="hero-bottom-blend" aria-hidden="true" data-testid="hero-bottom-blend" />
 
+      {/* TRON HORIZON ENERGY LINE — May-2026 luxury rebuild pass.
+          Sits at the very bottom of the hero wrapper (above the
+          z-10 copy layer would obscure CTAs, so this is z-[5]
+          between the bottom-blend and the copy). Marks the hero/
+          content boundary as a cinematic Tron grid horizon —
+          cyan→amber→cyan hairline with soft bloom. Replaces the
+          previous "section-card-on-card" SaaS feel with one
+          continuous luxury horizon. */}
+      <div
+        className="hero-horizon absolute inset-x-0 bottom-0 z-[5]"
+        aria-hidden="true"
+        data-testid="hero-horizon"
+      />
+
       {/* OVERLAY COPY — v8 simple stable fade.
           ====================================================================
           Layout strategy:
@@ -431,9 +445,17 @@ export function HeroSlider() {
                   className="absolute inset-0"
                 >
                   {badge && (
+                    /* CINEMATIC EYEBROW (May-2026 luxury rebuild pass).
+                       Replaces the previous rounded-full pill badge — the
+                       pill was the most "SaaS-app" element in the hero.
+                       New treatment: an editorial eyebrow with a thin
+                       AMBER leading rule (Tron energy hairline) + ultra-
+                       wide tracking. Reads as a luxury film-credit, not
+                       a dashboard widget. No box, no border, no fill —
+                       the void around it provides the frame. */
                     <span
                       className={cn(
-                        "tron-eyebrow tron-pulse inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/40 bg-black/45 text-[10px] mb-6 ltr:mb-4",
+                        "hero-eyebrow inline-flex items-center gap-3 mb-7 ltr:mb-6 text-[10px] sm:text-[11px] tracking-[0.32em] uppercase text-white/70",
                         !reduced && "hero-fade",
                       )}
                       style={
@@ -446,8 +468,8 @@ export function HeroSlider() {
                       }
                       data-testid="text-hero-badge"
                     >
-                      <span className="amber-dot" aria-hidden="true" />
-                      {badge}
+                      <span className="hero-eyebrow-rule" aria-hidden="true" />
+                      <span>{badge}</span>
                     </span>
                   )}
                   {/* HEADLINE — v8.1 jitter-free mask reveal.
@@ -573,12 +595,18 @@ export function HeroSlider() {
                 <Eye size={18} />
                 {t("hero.cinematic.viewResults")}
               </button>
+              {/* WhatsApp CTA — May-2026 luxury rebuild: stripped the
+                  heavy double-shadow ring (it read as gaming UI). The
+                  green inherent to WhatsApp's brand colour already
+                  carries enough visual weight against the black void.
+                  Hover keeps a subtle 1px lift via btn-press inside
+                  the WhatsAppButton primitive. */}
               <WhatsAppButton
                 label={t("hero.cinematic.whatsapp")}
                 message={t("hero.cinematic.whatsappMsg")}
                 size="md"
                 testId="button-hero-whatsapp"
-                className="w-full sm:w-auto shadow-[0_0_0_1px_hsl(195_100%_60%/0.18),0_8px_24px_-6px_hsl(195_100%_60%/0.30)] hover:shadow-[0_0_0_1px_hsl(195_100%_70%/0.30),0_10px_28px_-6px_hsl(195_100%_60%/0.45)]"
+                className="w-full sm:w-auto"
               />
             </div>
 
