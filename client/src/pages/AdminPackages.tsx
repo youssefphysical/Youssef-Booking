@@ -29,6 +29,7 @@ import {
   AdminEmptyState,
   AdminSkeleton,
 } from "@/components/admin/primitives";
+import { AdminTabs } from "./AdminDashboard";
 
 export default function AdminPackages() {
   const { t } = useTranslation();
@@ -77,6 +78,7 @@ export default function AdminPackages() {
   return (
     <div className="admin-shell">
       <div className="admin-container space-y-5">
+        <AdminTabs />
         <AdminPageHeader
           eyebrow={t("admin.packagesPage.kicker")}
           title={t("admin.packagesPage.title")}

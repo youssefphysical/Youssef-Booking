@@ -500,10 +500,20 @@ function DockButton({ item, location }: { item: DockItem; location: string }) {
   const inner = (
     <div
       className={cn(
-        "flex h-full w-full flex-col items-center justify-center gap-0.5 transition-colors",
+        "relative flex h-full w-full flex-col items-center justify-center gap-0.5 transition-colors",
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
+      {/* Active accent — 2px primary cap on the top edge of the dock
+          slot. GPU-safe (no transform, no animation), high-contrast on
+          AMOLED black, instantly tells the eye where you are without
+          shouting. */}
+      {active && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-4 top-0 h-[2px] rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.6)]"
+        />
+      )}
       <span
         className={cn(
           "flex h-6 w-6 items-center justify-center rounded-lg transition-colors",

@@ -1727,6 +1727,38 @@ html[dir="rtl"] .hero-eyebrow-rule {
   height: 0;
 }
 
+/* Sticky AdminTabs row.
+   --------------------------------------------------------------------
+   Native CSS sticky — no JS, no transform, no layout shift, no flicker.
+   Sits at the very top of the viewport once the user scrolls past it.
+   Mobile: clears the notch / dynamic island via safe-area-inset-top
+   (admin pages have NO fixed top bar so we anchor to the viewport edge
+   directly, plus a 0.5rem breath). Desktop: sidebar is the chrome, so
+   we just give a small comfortable offset.
+   Backdrop-blur is intentionally moderate (8px) to stay smooth on
+   Samsung Internet / lower-end Android. Background is bg-card/80 so
+   content visibly fades through but never bleeds into the labels.
+   isolation:isolate guarantees the blur layer never escapes its
+   stacking context. */
+.admin-tabs-sticky {
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  z-index: 30;
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(8px) saturate(140%);
+}
+@media (min-width: 768px) {
+  .admin-tabs-sticky {
+    top: 0.75rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-tabs-scroll {
+    scroll-behavior: auto;
+  }
+}
+
 /* Canonical card style. Use on EVERY section panel for visual parity. */
 .admin-card {
   border-radius: 1.5rem;                 /* matches rounded-3xl */

@@ -22,6 +22,7 @@ import {
   AdminEmptyState,
   AdminSkeletonStack,
 } from "@/components/admin/primitives";
+import { AdminTabs } from "./AdminDashboard";
 import { cn } from "@/lib/utils";
 import { useClients } from "@/hooks/use-clients";
 import { usePackages } from "@/hooks/use-packages";
@@ -165,6 +166,7 @@ export default function AdminClients() {
   return (
     <div className="admin-shell">
       <div className="admin-container space-y-5">
+        <AdminTabs />
         <AdminPageHeader
           eyebrow={t("admin.clients.kicker")}
           title={t("admin.clientsTitle")}
