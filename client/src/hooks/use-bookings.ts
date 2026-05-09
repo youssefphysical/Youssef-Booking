@@ -19,6 +19,22 @@ export function useBookings(opts?: { userId?: number; includeUser?: boolean; fro
       if (!res.ok) throw new Error("Failed to fetch bookings");
       return res.json();
     },
+    // Mobile sleep/wake + tab-switch safety. The global default in
+    // queryClient.ts is `refetchOnWindowFocus: false` (intentional, to
+    // avoid hammering the API everywhere), but bookings are the one
+    // surface where stale state is dangerous: a phone that's been
+    // locked for 10 minutes can come back showing a slot that just
+    // got taken or just slipped into the past. Opting in here only
+    // affects the booking list and dashboard upcoming-list — not a
+    // sweeping default flip.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    // Re-fetch every 60s while the tab is visible so a user sitting
+    // on the booking page for several minutes sees other clients'
+    // bookings appear without manual refresh. TanStack Query auto-
+    // pauses this when the tab is backgrounded.
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 }
 

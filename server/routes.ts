@@ -1285,20 +1285,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    const booking = await storage.createBooking({
-      userId: targetUserId,
-      packageId: packageId ?? null,
-      date: parsed.data.date,
-      timeSlot: parsed.data.timeSlot,
-      sessionType,
-      paymentStatus: paymentStatus as any,
-      workoutCategory: (parsed.data.workoutCategory ?? null) as any,
-      notes: parsed.data.notes ?? null,
-      adminNotes: null,
-      clientNotes: parsed.data.clientNotes ?? null,
-      sessionFocus: parsed.data.sessionFocus ?? null,
-      trainingGoal: parsed.data.trainingGoal ?? null,
-    });
+    // Race-safe insert. The pre-check above (`getBookingByDateAndSlot`)
+    // closes the common case, but two simultaneous POSTs can both pass
+    // it and only the partial UNIQUE INDEX on bookings(date,time_slot)
+    // catches the race. `storage.createBooking` re-throws Postgres 23505
+    // as a tagged `SLOT_TAKEN` error with `status: 409` — surface it as
+    // a clean 409 with the friendly message instead of leaking a 500.
+    let booking;
+    try {
+      booking = await storage.createBooking({
+        userId: targetUserId,
+        packageId: packageId ?? null,
+        date: parsed.data.date,
+        timeSlot: parsed.data.timeSlot,
+        sessionType,
+        paymentStatus: paymentStatus as any,
+        workoutCategory: (parsed.data.workoutCategory ?? null) as any,
+        notes: parsed.data.notes ?? null,
+        adminNotes: null,
+        clientNotes: parsed.data.clientNotes ?? null,
+        sessionFocus: parsed.data.sessionFocus ?? null,
+        trainingGoal: parsed.data.trainingGoal ?? null,
+      });
+    } catch (err: any) {
+      if (err?.code === "SLOT_TAKEN") {
+        return res.status(409).json({ message: err.message, code: "slot_taken" });
+      }
+      throw err;
+    }
 
     // ---- Admin notification + emails (best-effort, never blocks booking) ----
     // Reads `lang` from request body for client-facing email localization.
