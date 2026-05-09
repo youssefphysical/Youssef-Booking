@@ -242,7 +242,12 @@
    with pale-cyan hairline. Reads like dark glass holding a faint cyan
    reflection. Per LOCKED spec — no saturated blue. */
 .navy-panel {
-  background: linear-gradient(160deg, hsl(197 45% 11%), hsl(197 50% 14%));
+  /* May-2026 amber rebalance: surface gradient now NEUTRAL near-black
+     (220° hue, 14% sat) instead of teal (197°/50% sat). Border keeps
+     a faint cyan tint so the panel still reads as "dark glass holding
+     a cyan reflection" — but the surface itself is true black, not
+     blue. Atmosphere supplies the color, not the surface. */
+  background: linear-gradient(160deg, hsl(220 14% 6%), hsl(220 14% 9%));
   border: 1px solid rgba(125, 249, 255, 0.14);
 }
 
@@ -300,27 +305,32 @@
   flex-shrink: 0;
 }
 
-/* Subtle warm edge glow under a CTA — appears ONLY on hover so the
-   button cools to cyan at rest and "ignites" warm on intent. Layered
-   under the existing .blue-glow so cyan stays dominant; amber is the
-   intent signal. ALL amber alphas capped at 0.28 strong / 0.16 haze
-   per locked spec. focus-visible ring uses solid amber color (not
-   alpha) so the a11y indicator stays readable at the alpha ceiling. */
+/* Warm edge glow on a CTA — May-2026 amber rebalance pass, glow is
+   now ALWAYS visible at rest (not hover-only) so amber becomes part
+   of the page's identity layer instead of a hidden surprise. Layered
+   so cyan stays primary identity; amber is the energy signal. Alphas
+   per locked spec: 0.18 haze / 0.24 mid / 0.34 strong. focus-visible
+   uses solid amber outline (color, not alpha) for WCAG-compliant
+   a11y independent of the alpha ceiling. */
 .amber-edge-glow {
+  /* REST state — warm halo always visible. Capped 0.18 haze. */
+  box-shadow:
+    0 0 0 1px hsl(var(--warm-accent) / 0.18),
+    0 6px 18px -8px rgba(255, 184, 0, 0.18);
   transition: box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .amber-edge-glow:hover {
   box-shadow:
-    0 0 0 1px hsl(var(--warm-accent) / 0.28),
-    0 8px 22px -10px rgba(255, 184, 0, 0.28),
-    0 0 24px -6px rgba(255, 196, 0, 0.16);
+    0 0 0 1px hsl(var(--warm-accent) / 0.34),
+    0 10px 26px -10px rgba(255, 184, 0, 0.34),
+    0 0 28px -6px rgba(255, 196, 0, 0.24);
 }
 .amber-edge-glow:focus-visible {
   outline: 2px solid hsl(var(--warm-accent));
   outline-offset: 2px;
   box-shadow:
-    0 0 0 1px hsl(var(--warm-accent) / 0.28),
-    0 0 24px -6px rgba(255, 196, 0, 0.16);
+    0 0 0 1px hsl(var(--warm-accent) / 0.34),
+    0 0 28px -6px rgba(255, 196, 0, 0.24);
 }
 
 /* Stat accent — places a thin amber underline under a number so the
@@ -342,8 +352,72 @@
   box-shadow: 0 0 8px rgba(255, 184, 0, 0.28);
 }
 
-/* Reduced-motion: keep the visual but kill any future transitions
-   that get added on these utilities. */
+/* ============================================================
+   AMBER UTILITY EXPANSION (May-2026 rebalance pass — v2)
+   ============================================================
+   Six additional utilities so amber can carry its 8% identity
+   share across more surfaces without ad-hoc rgba() calls. All
+   alphas capped at 0.18 haze / 0.24 mid / 0.34 strong per spec.
+   ============================================================ */
+
+/* Atmospheric amber halo — counterpart to .tron-glow (cyan). Use on
+   featured CTAs, premium badges, "most-popular" markers, hero stats.
+   Mirrors .tron-glow geometry but in amber. */
+.amber-glow {
+  box-shadow:
+    0 0 24px rgba(255, 184, 0, 0.24),
+    0 0 48px rgba(255, 138, 0, 0.18);
+}
+
+/* Soft amber tint background — for hover surfaces, premium chips,
+   selected states. Capped 0.10 fill + 0.18 border. NEVER use as a
+   large/full-page background — chips, pills, small panels only. */
+.amber-bg-soft {
+  background-color: rgba(255, 184, 0, 0.08);
+  border: 1px solid rgba(255, 184, 0, 0.18);
+}
+
+/* Amber section divider — thin gradient hairline that fades through
+   amber center. Use for premium section separators between blocks.
+   RTL-safe (symmetric gradient). */
+.amber-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 184, 0, 0.18) 30%,
+    rgba(255, 196, 0, 0.34) 50%,
+    rgba(255, 184, 0, 0.18) 70%,
+    transparent 100%);
+}
+
+/* Amber-glowing icon — color shift + soft drop-shadow. Use on
+   premium icons (featured stars, energy markers, hot indicators,
+   active timeline nodes). Inherits color so works on lucide SVGs. */
+.amber-icon-glow {
+  color: hsl(var(--warm-accent));
+  filter: drop-shadow(0 0 6px rgba(255, 184, 0, 0.34));
+}
+
+/* Premium amber outline — for "featured" / "most-popular" cards.
+   1px amber border + faint inner amber tint + outer amber bloom.
+   Pairs naturally with .tron-card on a single highlight tile. */
+.amber-outline {
+  border: 1px solid rgba(255, 184, 0, 0.34);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 184, 0, 0.10),
+    0 0 28px -8px rgba(255, 184, 0, 0.24);
+}
+
+/* Amber text accent — direct color for inline highlights, key
+   numbers, premium typography moments. Lightweight alternative to
+   the gradient .text-gradient-gold when you want a flat amber word
+   inside a sentence. */
+.amber-text {
+  color: hsl(var(--warm-accent));
+}
+
+/* Reduced-motion: kill transitions on amber utilities that animate.
+   Visual halos remain visible — only the transition is suppressed. */
 @media (prefers-reduced-motion: reduce) {
   .amber-edge-glow { transition: none; }
 }
@@ -489,18 +563,24 @@
    flat tile. Outer halo is wider+softer for atmospheric bloom rather
    than sharp neon outline. */
 .tron-card {
+  /* May-2026 amber rebalance: surface is now NEUTRAL near-black glass
+     (220° hue, 14% sat) instead of teal. The amber identity layer is
+     introduced via a warm bottom-rim highlight — Tron Legacy "amber
+     light catching the underside of black glass". Top rim stays cool
+     cyan so cyan↔amber duality reads on every panel. All alphas
+     within locked 0.18/0.24/0.34 ceiling. */
   background:
-    linear-gradient(165deg, hsl(197 49% 12% / 0.92), hsl(220 30% 4% / 0.94));
-  border: 1px solid hsl(183 100% 74% / 0.18);
+    linear-gradient(165deg, hsl(220 14% 8% / 0.94), hsl(220 30% 4% / 0.96));
+  border: 1px solid hsl(183 100% 74% / 0.16);
   box-shadow:
-    /* Top edge — light catches the upper rim of the glass */
+    /* Top edge — cool cyan light catches the upper rim */
     inset 0 1px 0 hsl(183 100% 74% / 0.14),
-    /* Bottom edge — faint reflected light along the lower rim */
-    inset 0 -1px 0 hsl(183 100% 74% / 0.06),
+    /* Bottom edge — WARM AMBER reflection along lower rim */
+    inset 0 -1px 0 rgba(255, 184, 0, 0.12),
     /* Crisp shadow line under the panel for separation */
     0 1px 0 hsl(0 0% 0% / 0.5),
-    /* Wide soft cyan bloom underneath — atmospheric haze, not glow */
-    0 20px 48px -22px hsl(183 100% 74% / 0.20);
+    /* Wide soft cyan bloom underneath — atmospheric haze */
+    0 20px 48px -22px hsl(183 100% 74% / 0.18);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: border-color 320ms ease, box-shadow 320ms ease,
@@ -508,14 +588,16 @@
 }
 .tron-card:hover {
   transform: translateY(-2px);
-  border-color: hsl(183 100% 74% / 0.38);
+  border-color: hsl(183 100% 74% / 0.34);
   box-shadow:
     inset 0 1px 0 hsl(183 100% 74% / 0.22),
-    inset 0 -1px 0 hsl(183 100% 74% / 0.10),
+    /* Amber bottom rim brightens on hover (0.12 → 0.20) */
+    inset 0 -1px 0 rgba(255, 184, 0, 0.20),
     0 1px 0 hsl(0 0% 0% / 0.5),
-    /* Bloom expands wider+softer on hover — the panel "lifts into the
-       light" rather than snapping a hard glow. */
-    0 28px 64px -24px hsl(183 100% 74% / 0.34);
+    /* Cyan bloom expands AND amber under-bloom appears — the panel
+       "lifts into the light" with both energies visible. */
+    0 28px 64px -24px hsl(183 100% 74% / 0.30),
+    0 16px 32px -18px rgba(255, 184, 0, 0.18);
 }
 
 /* Hard cyan outline + glow — for key callouts (e.g. "AFTER" badge). */
@@ -1575,11 +1657,16 @@
   .hero-trust-strip { font-size: 11px; gap: 0.65rem 0.85rem; margin-top: 1.5rem; }
 }
 .hero-trust-dot {
+  /* May-2026 amber rebalance: trust-strip separator dots swapped from
+     cyan to amber. Sits below the hero CTAs above-the-fold so the
+     warm energy reads on first paint without competing with the cyan
+     headline + cyan CTA glow. Capped 0.55/0.34 — same intensity as
+     the previous cyan dots so layout/weight unchanged. */
   width: 3px;
   height: 3px;
   border-radius: 9999px;
-  background: hsl(183 100% 50% / 0.55);
-  box-shadow: 0 0 6px hsl(183 100% 50% / 0.35);
+  background: hsl(var(--warm-accent) / 0.55);
+  box-shadow: 0 0 6px rgba(255, 184, 0, 0.34);
 }
 @keyframes heroTrustFade {
   to { opacity: 1; }
@@ -2285,13 +2372,27 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  /* May-2026 amber rebalance: cyan glow REDUCED (top-left only),
+     AMBER atmospheric reflection added (bottom-right) so the page
+     reads as cinematic Tron-Legacy energy rather than a blue site.
+     All alphas at the 0.18 haze ceiling so the void stays dominant
+     and amber/cyan act as light sources, not paint fills. */
   background:
-    radial-gradient(ellipse 70% 50% at 18% 8%,
-      rgba(125, 249, 255, 0.07) 0%,
+    /* Cool cyan light from upper-left — primary identity */
+    radial-gradient(ellipse 65% 45% at 16% 8%,
+      rgba(125, 249, 255, 0.06) 0%,
       transparent 60%),
-    radial-gradient(ellipse 60% 50% at 88% 90%,
-      rgba(111, 234, 255, 0.05) 0%,
+    /* WARM amber light from lower-right — May-2026 identity layer.
+       Capped 0.07 (just under the 0.08 floor for atmosphere) so it
+       reads as warm reflection without tinting the page orange. */
+    radial-gradient(ellipse 55% 45% at 88% 88%,
+      rgba(255, 184, 0, 0.07) 0%,
       transparent 65%),
+    /* Whisper of cyan secondary from middle-left for depth */
+    radial-gradient(ellipse 35% 28% at 0% 58%,
+      rgba(125, 249, 255, 0.025) 0%,
+      transparent 70%),
+    /* Black vignette — pulls the corners toward true void */
     radial-gradient(ellipse 100% 100% at 50% 50%,
       transparent 55%,
       rgba(0, 0, 0, 0.45) 100%);
