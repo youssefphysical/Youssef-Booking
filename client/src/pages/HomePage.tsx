@@ -287,7 +287,7 @@ export default function HomePage() {
       </section>
 
       {/* ABOUT */}
-      <section className="max-w-4xl mx-auto px-5 py-20" id="about">
+      <section className="max-w-4xl mx-auto px-5 py-14 md:py-20" id="about">
         <SectionHeader
           eyebrow={t("section.about.eyebrow")}
           title={t("section.about.title")}
@@ -311,7 +311,7 @@ export default function HomePage() {
           the nav and the bottom CTA below). i18n uses the t(key,
           fallback) signature so adding new keys does not require
           touching the auto-generated translations.ts file. */}
-      <section className="max-w-6xl mx-auto px-5 pt-4 pb-12" id="how-it-works-teaser">
+      <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="how-it-works-teaser">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { n: "01", k: "choose", title: "Choose your goal", body: "Fat loss, muscle gain, or body recomposition — pick the outcome that matters to you." },
@@ -353,7 +353,7 @@ export default function HomePage() {
       </section>
 
       {/* COACHING SPECIALTIES */}
-      <section className="max-w-6xl mx-auto px-5 py-12" id="specialties">
+      <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="specialties">
         <SectionHeader
           eyebrow={t("section.specialties.eyebrow")}
           title={t("section.specialties.title")}
@@ -381,7 +381,7 @@ export default function HomePage() {
       </section>
 
       {/* CERTIFICATIONS */}
-      <section className="max-w-5xl mx-auto px-5 py-20" id="certifications">
+      <section className="max-w-5xl mx-auto px-5 py-14 md:py-20" id="certifications">
         <SectionHeader
           eyebrow={t("section.certs.eyebrow")}
           title={t("section.certs.title")}
@@ -425,7 +425,7 @@ export default function HomePage() {
       <Transformations />
 
       {/* WHY TRAIN WITH YOUSSEF — premium conversion section */}
-      <section className="max-w-6xl mx-auto px-5 py-20" id="why">
+      <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="why">
         <SectionHeader
           eyebrow={t("section.why.eyebrow")}
           title={t("section.why.title")}
@@ -462,7 +462,7 @@ export default function HomePage() {
       </section>
 
       {/* BOOK & CONTACT CTA */}
-      <section className="max-w-5xl mx-auto px-5 py-20" id="contact">
+      <section className="max-w-5xl mx-auto px-5 py-14 md:py-20" id="contact">
         <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-12 relative overflow-hidden">
           {/* Subtle TRON layers — grid wash, blue corner glow, top neon beam. */}
           <div className="absolute inset-0 tron-grid-fine opacity-30 pointer-events-none" aria-hidden="true" />
@@ -518,7 +518,7 @@ function PublicPackages() {
   if (!templates || templates.length === 0) return null;
 
   return (
-    <section className="max-w-6xl mx-auto px-5 py-20" id="packages">
+    <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="packages">
       <SectionHeader
         eyebrow={t("home.packages.eyebrow")}
         title={t("home.packages.title")}

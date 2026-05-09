@@ -162,13 +162,27 @@
   h2 { letter-spacing: -0.025em; }
   p { line-height: 1.65; }
 
-  /* Premium focus ring — visible but soft */
+  /* Premium focus ring — visible but soft. Polish v3 (May-2026): the
+     hard `border-radius: var(--radius)` override was REMOVED because
+     it clipped round buttons (rounded-full pills, h-12 rounded-xl
+     CTAs) into a lower 0.75rem radius on focus, breaking the visual
+     shape. Element's own border-radius now wins, focus ring follows
+     naturally. */
   :focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary) / 0.55);
-    border-radius: var(--radius);
     transition: box-shadow 180ms ease;
   }
+
+  /* Anchor scroll-margin — when the user clicks a #section nav link
+     (#about, #packages, #contact, #specialties, #certifications, #why,
+     #how-it-works-teaser), the fixed top bar (h-16 = 64px + iOS notch
+     safe-area-inset-top) was hiding the section's eyebrow/title
+     underneath. 5.5rem base + env(safe-area-inset-top) clears the
+     nav AND iOS dynamic island / notch. Scoped to `section[id]` so
+     unrelated [id] elements (form fields, modals, headings inside
+     cards) aren't given a scroll offset. Polish v3 mobile-UX pass. */
+  section[id] { scroll-margin-top: calc(5.5rem + env(safe-area-inset-top, 0px)); }
 
   /* Smooth interactive defaults */
   button, a, [role="button"] {
@@ -423,9 +437,15 @@
    featured CTAs, premium badges, "most-popular" markers, hero stats.
    Mirrors .tron-glow geometry but in amber. */
 .amber-glow {
+  /* Polish v3 (May-2026): alphas calmed (0.24/0.18 → 0.18/0.12) so
+     amber halos read at the SAME visual magnitude as .tron-glow's
+     cyan (0.14/0.10). Previously amber was ~70% louder than cyan,
+     which made "Most Popular" pills feel hot rather than premium.
+     Now both halos sit at the same atmospheric weight; amber stays
+     identifiable via warm hue, not by being louder. */
   box-shadow:
-    0 0 24px rgba(255, 184, 0, 0.24),
-    0 0 48px rgba(255, 138, 0, 0.18);
+    0 0 24px rgba(255, 184, 0, 0.18),
+    0 0 48px rgba(255, 138, 0, 0.12);
 }
 
 /* Soft amber tint background — for hover surfaces, premium chips,
