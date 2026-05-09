@@ -1,0 +1,830 @@
+MASTER PROMPT — PREMIUM HOMEPAGE REBUILD + ADMIN-CONTROLLED MARKETING CONTENT
+
+Project:
+Youssef Ahmed Personal Training Platform
+
+Goal:
+Implement the new premium desktop + mobile homepage marketing direction in the real app.
+
+This is NOT a random redesign.
+This is a conversion-focused, premium marketing homepage rebuild based on the latest visual direction.
+
+The homepage must sell the service better:
+
+- stronger first impression
+- stronger coach authority
+- stronger transformation proof
+- clearer journey
+- clearer protocols
+- better CTA flow
+- more emotional storytelling
+- more premium/luxury feel
+- fully mobile responsive
+- all major images controllable from admin
+
+IMPORTANT:
+Do not break existing:
+
+- auth
+- dashboard
+- booking
+- admin routes
+- nutrition
+- supplements
+- protocols
+- notifications
+- i18n/RTL
+- Vercel/Neon setup
+- mobile navbar
+- existing protected routes
+
+This is a public marketing homepage + admin content management upgrade.
+
+==================================================
+MAIN DESIGN TARGET
+
+Create a premium dark luxury landing page similar to the visual direction we discussed:
+
+Style:
+
+- dark luxury fitness aesthetic
+- black / deep navy base
+- electric blue accents
+- green WhatsApp accents only for WhatsApp CTAs
+- glassmorphism cards
+- soft blur image backgrounds
+- controlled glow, not excessive
+- high contrast CTAs
+- modern premium typography
+- strong spacing rhythm
+- cinematic coach imagery
+- fully responsive desktop and mobile
+
+The site should feel:
+
+- premium
+- trustworthy
+- coach-led
+- transformation-focused
+- Dubai luxury coaching
+- private performance system
+
+NOT:
+
+- generic template
+- supplement store
+- cheap gym landing page
+- crypto dashboard
+- gaming UI
+- cluttered SaaS page
+
+==================================================
+IMPORTANT CREDENTIALS — DO NOT MISS
+
+Coach credential language must include the following accurately:
+
+Youssef Ahmed
+Personal Training, Dubai
+
+Credentials:
+
+- EREPS EQF Graduate Exercise Professional
+- EQF Level 6
+- European Qualifications Framework
+- REPs UAE
+- Bachelor’s Degree in Physical Education
+- Certified Personal Trainer
+- Physical Education Teacher background
+
+Use credential wording carefully.
+
+Preferred credential display:
+“EREPS EQF Graduate Exercise Professional — EQF Level 6”
+“European Qualifications Framework”
+“REPs UAE Certified”
+“Bachelor’s Degree in Physical Education”
+
+Do NOT write incorrect certificate levels.
+Do NOT invent certifications.
+Do NOT remove these credentials.
+
+==================================================
+PAGE STORY FLOW
+
+Rebuild/reorganize the homepage into a stronger marketing story:
+
+1. Hero Section
+2. Trust / credential strip
+3. Coach philosophy section
+4. Transformations / real results
+5. How it works
+6. Coach-Curated Protocols teaser
+7. What you get / coaching system
+8. Testimonials / client love
+9. Credentials you can trust
+10. Final CTA
+11. Premium footer
+
+The page should feel like a guided sales journey, not a random stack of cards.
+
+==================================================
+
+1. HERO SECTION
+   ==================================================
+
+Hero must be the strongest part of the page.
+
+Desktop:
+
+- Left side: strong headline, copy, CTAs, trust chips
+- Right side: coach image
+- Background: cinematic gym photo or coach image with subtle blur/dark overlay
+- Use the image as background/hero visual with professional soft blur and crop, similar to the reference: image visible in one focused area, surrounding area softly blurred/darkened
+
+Mobile:
+
+- Image becomes top visual / background
+- Text overlays or sits below with clean contrast
+- Keep CTA visible above the fold
+- No text clipping
+- No overflow
+- No heavy scroll jank
+
+Hero copy direction:
+
+Eyebrow:
+PREMIUM COACHING. REAL RESULTS.
+
+Main headline:
+Built for Real Transformation.
+
+Supporting copy:
+Elite coaching, structured training, and science-backed protocols — designed around your body, your lifestyle, and your goals.
+
+Primary CTA:
+Book Your Session
+
+Secondary CTA:
+Message Coach on WhatsApp
+
+Trust chips:
+
+- Certified Coach
+- Dubai Based
+- Premium Support
+- Results Focused
+
+Credential chip should include:
+EREPS EQF Level 6
+
+Hero must feel personal and coach-led.
+Avoid generic stock feel.
+
+==================================================
+2. IMAGE BACKGROUND STYLE
+
+Very important image direction:
+
+Use images like the reference:
+
+- coach image used as cinematic background/foreground
+- image cropped intentionally
+- background behind image softly blurred
+- dark overlay for readability
+- subject should remain sharp
+- surrounding area can be blurred/glass-like
+- no harsh cutouts
+- no cheap AI look
+- no random image stretching
+- no bad face distortion
+- no pixelation
+
+Image behavior:
+
+- object-fit: cover
+- object-position controllable
+- overlay intensity controllable
+- blur intensity controllable
+- mobile crop controllable
+- desktop crop controllable
+
+Admin must be able to change these images from control panel.
+
+==================================================
+3. ADMIN CONTROL PANEL FOR HOMEPAGE IMAGES
+
+Build admin controls so I can manage homepage visuals without code.
+
+Admin should control images for:
+
+- Hero section background/coach image
+- Philosophy section image
+- CTA section image
+- Transformation cards/images
+- Testimonials avatars/photos if used
+- Protocol section visual if used
+- Footer/brand visual if used
+
+Admin image controls should support:
+
+- upload/change image
+- remove image
+- preview image
+- alt text
+- section assignment
+- desktop object-position
+- mobile object-position
+- overlay opacity
+- blur intensity where relevant
+- active/inactive state
+- fallback image
+
+Admin route suggestion:
+Admin → Settings → Homepage Content
+or
+Admin → Marketing → Homepage
+
+Do not expose this to clients.
+
+Only admin/super_admin can edit.
+
+Images should be optimized:
+
+- responsive sizes
+- lazy load below fold
+- priority load hero only
+- avoid huge images causing scroll jank
+- safe fallback if image missing
+
+==================================================
+4. HOMEPAGE CONTENT MANAGEMENT
+
+Admin should also be able to edit main homepage text/content:
+
+Sections:
+
+- hero eyebrow
+- hero headline
+- hero subheadline
+- CTA labels
+- WhatsApp CTA
+- philosophy heading/copy
+- transformation section heading/copy
+- protocol section heading/copy
+- final CTA text
+- footer short copy
+
+Keep safe defaults if admin content is empty.
+
+Do NOT make admin editing too complicated.
+Simple forms are enough.
+
+==================================================
+5. COACH PHILOSOPHY SECTION
+
+Create a cinematic coach philosophy section.
+
+Title:
+I don’t believe in random plans.
+
+Copy direction:
+I believe in precision.
+Every body is different. Every goal is unique.
+That’s why I use premium protocols, real data, and a system that adapts to you — not the other way around.
+
+Support points:
+
+- Quality First
+- Personalized
+- Consistent
+- Accountability
+
+Include a coach image with professional dark/blue treatment.
+
+This section should build authority and trust.
+
+==================================================
+6. TRANSFORMATIONS SECTION
+
+Make transformations much more sales-focused.
+
+Desktop:
+
+- 3 featured transformation cards
+- before/after images
+- result badge
+- weeks
+- short quote
+- metrics like weight/body fat/confidence
+
+Mobile:
+
+- carousel or stacked cards
+- easy to swipe/scroll
+- no tiny unreadable text
+
+Example card:
+Ahmed M.
+12 Weeks
+-14kg
+-7% Body Fat
+“Best decision I’ve made for myself.”
+
+Add CTA:
+View more results
+
+Admin should be able to manage transformation content/images if possible, or integrate with existing transformation system.
+
+This section must feel like proof, not decoration.
+
+==================================================
+7. HOW IT WORKS SECTION
+
+Add clear 5-step journey:
+
+1. Apply
+   Tell me about your goals and lifestyle.
+
+2. Book Session
+   We schedule your assessment.
+
+3. Assessment
+   InBody scan, evaluation, and goal setting.
+
+4. Your Plan
+   Training, nutrition, and protocols built for you.
+
+5. Transform
+   Track progress. Stay consistent. Win.
+
+Design:
+
+- desktop horizontal timeline
+- mobile vertical timeline
+- simple icons
+- clear steps
+- premium spacing
+
+==================================================
+8. COACH-CURATED PROTOCOLS SECTION
+
+Show homepage teaser for protocols.
+
+Important:
+This is NOT a supplement store.
+
+Use 3 tiers:
+
+- Essentials Protocol
+- Performance Protocol
+- Concierge Protocol
+
+No product names.
+No brands.
+No dosages.
+No exact stack details.
+
+Show high-level benefits only.
+
+Essentials Protocol:
+Foundation for daily health and performance.
+
+- Daily recovery support
+- Energy, focus & stress balance
+- Digestive & gut health
+- Personalized for your lifestyle
+
+Performance Protocol:
+For those who train hard and want more.
+
+- Advanced performance support
+- Muscle growth & recovery
+- Hormonal & sleep support
+- Higher training volume support
+
+Concierge Protocol:
+Elite-level protocol. Nothing left to chance.
+
+- Fully customized stack
+- Premium global brands
+- Advanced biomarkers support
+- Direct coach monitoring
+
+CTA:
+Request Review
+
+Also add:
+How Protocols Work
+
+Use WhatsApp request CTA where appropriate.
+
+==================================================
+9. WHAT YOU GET SECTION
+
+Add section:
+A Complete Coaching System
+
+Cards:
+
+- Structured Training
+  Programs designed for your level and goals.
+
+- Nutrition Guidance
+  Flexible nutrition plans that fit your life.
+
+- Coach-Curated Protocols
+  Supplements selected for your body.
+
+- Real Data Tracking
+  InBody, progress photos, and performance tracking.
+
+- Direct Coach Access
+  I’m with you every step of the way.
+
+Keep this section clean, not too many cards per screen.
+
+==================================================
+10. TESTIMONIALS SECTION
+
+Add/upgrade testimonials.
+
+Section:
+Words from Real Clients
+
+Cards:
+
+- quote
+- client name
+- timeframe
+- star rating if appropriate
+
+Example:
+“Youssef changed the way I train, eat, and think. Best decision I’ve made.”
+Khaled A.
+16 Weeks
+
+CTA:
+View more reviews
+
+Admin should be able to edit testimonials eventually, but do not overbuild if risky.
+
+==================================================
+11. CREDENTIALS SECTION
+
+Add premium credibility section.
+
+Title:
+Credentials You Can Trust
+
+Include:
+
+- EREPS EQF Graduate Exercise Professional
+- EQF Level 6
+- European Qualifications Framework
+- REPs UAE Certified
+- Bachelor’s Degree in Physical Education
+- Certified Personal Trainer
+- Physical Education Teacher background
+
+Make it clean and authoritative.
+
+No incorrect wording.
+No invented certificates.
+
+==================================================
+12. FINAL CTA SECTION
+
+Create a strong final conversion block.
+
+Headline:
+Ready to become your best?
+
+Copy:
+Spots are limited to ensure every client gets the attention they deserve.
+
+Buttons:
+
+- Book Your Session
+- Message Coach on WhatsApp
+
+Use coach image background with dark blur overlay.
+
+It should feel like the reference:
+image is part of the card/background, softly blurred around edges, subject visible, premium and calm.
+
+==================================================
+13. FOOTER
+
+Footer should be cleaner and more premium.
+
+Include:
+Youssef Ahmed
+Personal Training, Dubai
+Premium coaching. Real results. Built around you.
+
+Quick Links:
+
+- About
+- Coaching
+- Protocols
+- Transformations
+- FAQ
+
+Support:
+
+- Contact
+- How It Works
+- Privacy Policy
+- Terms & Conditions
+
+Location:
+Dubai, UAE
+In-person & Online Coaching
+
+Social buttons:
+
+- WhatsApp
+- Instagram
+- optional LinkedIn
+
+Keep footer elegant and not crowded.
+
+==================================================
+14. MOBILE DESIGN REQUIREMENTS
+
+Mobile version must be excellent.
+
+Use the mobile visual direction:
+
+- strong hero
+- stacked sections
+- short sections
+- clear CTA buttons
+- transformation carousel
+- protocol cards stacked
+- journey vertical timeline
+- testimonials stacked
+- credentials compact
+- final CTA
+- premium footer
+
+Mobile priorities:
+
+- no overflow
+- no clipped text
+- no tiny text
+- no huge empty gaps
+- no excessive long cards
+- no horizontal scroll
+- thumb-friendly buttons
+- smooth scrolling
+- fast loading
+- correct safe-area padding
+
+Test widths:
+
+- 360px
+- 390px
+- 412px
+- Samsung S25 Ultra viewport
+
+==================================================
+15. DESKTOP DESIGN REQUIREMENTS
+
+Desktop must look like a premium landing page.
+
+Use:
+
+- balanced grid
+- cinematic hero
+- image + text composition
+- strong horizontal spacing
+- transformation cards
+- protocols in 3 columns
+- trust strips
+- footer columns
+
+Do not make desktop look like stretched mobile.
+
+==================================================
+16. NAVBAR
+
+Navbar should include:
+
+- Youssef Ahmed logo/name
+- About
+- Coaching
+- Protocols
+- Transformations
+- How It Works
+- FAQ
+- Language switcher
+- Sign in / Sign out depending auth state
+- Request Protocol / WhatsApp CTA if space allows
+- mobile hamburger
+
+Logged in/out navbar must not overflow.
+Hamburger must never clip.
+Use previous responsive rules.
+
+==================================================
+17. CONTENT TONE
+
+Tone:
+premium, confident, human, simple.
+
+Avoid:
+
+- long paragraphs
+- fake hype
+- aggressive sales
+- medical claims
+- cheap fitness slogans
+
+Use:
+
+- real transformation
+- precision coaching
+- coach-curated
+- built around your body
+- no guesswork
+- structured support
+- Dubai premium coaching
+
+==================================================
+18. I18N / RTL
+
+All visible text must use existing i18n system.
+
+No hardcoded client-facing strings.
+
+Support current languages.
+Arabic/Persian/Urdu must remain RTL-safe.
+
+CTA positions and icon direction must work in RTL.
+
+No raw translation keys visible.
+
+==================================================
+19. PERFORMANCE REQUIREMENTS
+
+Important because homepage has many images.
+
+- hero image priority only
+- below-fold images lazy-loaded
+- responsive image sizes
+- avoid huge uncompressed images
+- avoid heavy blur during scroll
+- avoid scroll jank
+- avoid transition-all
+- animations should be transform/opacity only
+- no unnecessary scroll listeners
+- maintain smooth Android Chrome experience
+
+Smoothness is more important than excessive effects.
+
+==================================================
+20. ACCESSIBILITY / SEO
+
+Add:
+
+- proper headings hierarchy
+- alt text
+- accessible button labels
+- semantic sections
+- metadata if existing system supports it
+- good contrast
+- keyboard accessible nav/menu
+
+==================================================
+21. IMPLEMENTATION STRATEGY
+
+Do this safely in phases, not one chaotic rewrite.
+
+Suggested order:
+
+Phase 1:
+
+- homepage section structure
+- hero rebuild
+- philosophy
+- transformations
+- protocols teaser
+- final CTA
+
+Phase 2:
+
+- mobile responsive polish
+- desktop polish
+- footer
+- navbar checks
+
+Phase 3:
+
+- admin control panel for homepage images/content
+- image upload/change/preview
+- admin-only permissions
+
+Phase 4:
+
+- i18n/RTL
+- performance optimization
+- QA
+
+If admin control is too large, create the schema and basic editor first, then improve later.
+Do not block homepage rebuild on overbuilding admin CMS.
+
+==================================================
+22. ADMIN CONTENT STORAGE
+
+If needed, create safe DB storage for homepage content.
+
+Possible table:
+homepage_sections
+or
+marketing_content
+
+Fields:
+
+- sectionKey
+- title
+- subtitle
+- body
+- imageUrl
+- imageAlt
+- desktopObjectPosition
+- mobileObjectPosition
+- overlayOpacity
+- blurIntensity
+- isActive
+- updatedAt
+
+Keep it simple and maintainable.
+
+Do not break existing settings/admin systems.
+
+==================================================
+23. WHATSAPP
+
+All WhatsApp CTAs from public homepage should open Coach Youssef’s WhatsApp number.
+
+Admin-side WhatsApp to client must still open client number.
+
+Do not mix these flows.
+
+==================================================
+24. FINAL QA CHECKLIST
+
+Before final report:
+
+Verify:
+
+- homepage loads correctly logged out
+- homepage loads correctly logged in
+- desktop layout looks premium
+- mobile layout looks premium
+- no text clipping
+- no horizontal overflow
+- hero image crop looks good
+- CTA buttons work
+- WhatsApp opens correct coach number
+- booking CTA works
+- protocols request CTA works
+- transformations display correctly
+- footer links work
+- navbar does not overflow
+- hamburger does not clip
+- admin-only image controls protected
+- admin can change homepage images
+- fallback images work
+- Arabic RTL does not break
+- English default works
+- typecheck clean
+- build clean
+- Vercel deploy ready
+- no auth/dashboard regressions
+
+==================================================
+FINAL REPORT REQUIRED
+
+After implementation, report:
+
+- what changed
+- sections rebuilt
+- admin controls added
+- images controllable from admin
+- files changed
+- DB/schema changes
+- i18n keys added
+- mobile QA result
+- desktop QA result
+- performance notes
+- protected route checks
+- GitHub commit ID
+- Vercel deployment status
+- remaining recommendations
+
+Remember:
+This homepage must sell the coaching service better.
+It must feel premium, personal, coach-led, and conversion-focused.
+Do not forget EREPS EQF Graduate Exercise Professional — EQF Level 6.

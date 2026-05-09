@@ -1,0 +1,799 @@
+MASTER PROMPT — PREMIUM TRON LEGACY HOMEPAGE REBUILD + ADMIN VISUAL CMS + CONVERSION OPTIMIZATION
+
+Project:
+Youssef Ahmed Personal Training Platform
+
+IMPORTANT:
+This is NOT a random redesign.
+This is a premium conversion-focused marketing rebuild for the public homepage while preserving the existing system architecture.
+
+The goal is:
+
+- stronger luxury branding
+- stronger conversion
+- stronger trust
+- stronger authority
+- calmer premium UI
+- smoother mobile experience
+- premium Tron Legacy-inspired visual identity
+- admin-controlled homepage visuals/content
+- coach-led storytelling
+- higher-quality marketing presentation
+
+DO NOT BREAK:
+
+- authentication
+- registration
+- dashboard
+- booking system
+- admin roles
+- protocols system
+- supplements system
+- nutrition system
+- notifications
+- packages
+- session logic
+- multilingual/i18n
+- RTL support
+- Vercel deployment
+- Neon DB
+- protected routes
+
+==================================================
+CORE DESIGN PHILOSOPHY
+
+Keep and evolve the current Tron Legacy-inspired visual identity.
+
+The site should feel:
+
+- futuristic
+- elegant
+- premium
+- calm
+- luxurious
+- conversion-focused
+- readable
+- coach-led
+- emotionally controlled
+
+NOT:
+
+- gaming UI
+- crypto dashboard
+- flashy neon mess
+- overloaded glassmorphism
+- generic gym template
+- cheap fitness landing page
+
+The current blue/dark identity is GOOD.
+Refine it instead of replacing it.
+
+==================================================
+TRON LEGACY THEME DIRECTION
+
+Preserve:
+
+- deep black backgrounds
+- dark navy surfaces
+- electric blue highlights
+- subtle cyan accents
+- glassmorphism
+- premium futuristic identity
+
+But evolve it into:
+
+- softer on the eyes
+- more premium
+- more breathable
+- cleaner hierarchy
+- calmer lighting
+- more elegant spacing
+
+Reduce:
+
+- aggressive glow
+- harsh neon borders
+- visual fatigue
+- over-animation
+- excessive gradients
+- too many bright elements
+
+Use effects carefully:
+
+- soft ambient glow
+- subtle glass cards
+- premium blur
+- cinematic overlays
+- smooth transform/opacity animations only
+
+No:
+
+- bounce spam
+- floating neon particles everywhere
+- GPU-heavy blur animations
+- transition-all
+- laggy motion
+- excessive parallax
+
+Smoothness > flashy effects.
+
+==================================================
+VISUAL REFERENCE SYSTEM
+
+I will provide visual reference images.
+
+Use them as:
+
+- style direction
+- spacing direction
+- hero composition direction
+- background image treatment direction
+- mobile layout direction
+- CTA hierarchy direction
+
+Do NOT clone/copy them 1:1.
+
+Adapt them into:
+
+- the existing app structure
+- the current design language
+- the current blue Tron-inspired brand system
+
+The references should influence:
+
+- image treatment
+- blur treatment
+- hero layout
+- card rhythm
+- CTA hierarchy
+- visual calmness
+- section structure
+
+==================================================
+MAIN OBJECTIVE
+
+The homepage should market/sell the coaching system better.
+
+The user should instantly understand:
+
+- who the coach is
+- why he is premium
+- why the system is different
+- what results people get
+- how the process works
+- how to start
+- why it feels trustworthy
+
+The homepage should feel:
+
+- premium
+- intentional
+- structured
+- emotional
+- luxurious
+- coach-led
+
+==================================================
+IMPORTANT CREDENTIALS
+
+Use these EXACTLY and correctly:
+
+Youssef Ahmed
+Personal Training, Dubai
+
+Credentials:
+
+- EREPS EQF Graduate Exercise Professional
+- EQF Level 6
+- European Qualifications Framework
+- REPs UAE Certified
+- Bachelor’s Degree in Physical Education
+- Certified Personal Trainer
+- Physical Education Teacher background
+
+NEVER:
+
+- invent certifications
+- remove credentials
+- write incorrect levels
+- fake European titles
+
+Preferred formatting:
+“EREPS EQF Graduate Exercise Professional — EQF Level 6”
+“European Qualifications Framework”
+
+==================================================
+PAGE STRUCTURE
+
+Rebuild/reorganize homepage flow into this premium marketing journey:
+
+1. Hero Section
+2. Trust/Credibility Strip
+3. Coach Philosophy
+4. Transformations / Social Proof
+5. How It Works
+6. Coach-Curated Protocols
+7. Full Coaching System
+8. Testimonials
+9. Credentials Section
+10. Final CTA
+11. Premium Footer
+
+Every section should have:
+
+- breathing room
+- clean spacing
+- visual hierarchy
+- emotional clarity
+
+==================================================
+
+1. HERO SECTION
+   ==================================================
+
+This is the most important section.
+
+DESKTOP:
+
+- split layout
+- left: headline + copy + CTAs
+- right: cinematic coach visual
+- premium dark image treatment
+- controlled blur/glow
+- image partially integrated into background
+
+MOBILE:
+
+- image-first premium composition
+- readable overlay
+- CTA visible above fold
+- no clipping
+- no overflow
+- no giant empty spacing
+
+Use cinematic image treatment like the provided reference:
+
+- coach image integrated into layout
+- surrounding area softly blurred/darkened
+- subject stays sharp
+- premium calm blur
+- not a cheap overlay
+
+Hero copy direction:
+
+Eyebrow:
+PREMIUM COACHING • REAL RESULTS
+
+Headline:
+Built for Real Transformation.
+
+Supporting copy:
+Elite coaching, structured training, and science-backed protocols — designed around your body, your lifestyle, and your goals.
+
+Primary CTA:
+Book Your Session
+
+Secondary CTA:
+Message Coach on WhatsApp
+
+Trust chips:
+
+- Certified Coach
+- Dubai Based
+- Premium Support
+- Results Focused
+- EREPS EQF Level 6
+
+Hero should instantly feel:
+premium + trustworthy + emotionally controlled.
+
+==================================================
+2. IMAGE SYSTEM + BLUR STYLE
+
+IMPORTANT:
+The image treatment style from the provided reference images is critical.
+
+Use:
+
+- cinematic image crops
+- soft edge blur
+- dark overlays
+- controlled depth
+- integrated background feeling
+
+Avoid:
+
+- harsh cutouts
+- obvious AI look
+- stretched images
+- random blur blobs
+- cheap neon effects
+
+Image requirements:
+
+- object-fit: cover
+- responsive crop
+- mobile crop control
+- desktop crop control
+- overlay opacity control
+- blur intensity control
+
+==================================================
+3. ADMIN-CONTROLLED HOMEPAGE CMS
+
+Create admin controls for homepage visuals/content.
+
+Admin must control:
+
+- hero image
+- CTA image
+- philosophy image
+- transformation images
+- testimonial images
+- protocol section visuals
+- section headlines
+- section copy
+- CTA labels
+
+Admin controls:
+
+- upload image
+- preview image
+- remove image
+- alt text
+- desktop crop/object-position
+- mobile crop/object-position
+- overlay opacity
+- blur intensity
+- active/inactive toggle
+
+Route suggestion:
+Admin → Marketing → Homepage
+
+Only:
+admin / super_admin
+
+Do NOT expose to clients.
+
+==================================================
+4. TRUST STRIP
+
+Immediately under hero.
+
+Use premium trust chips:
+
+- Dubai-Based Coaching
+- EREPS EQF Level 6
+- REPs UAE Certified
+- Real Client Transformations
+- Personalized Coaching
+- Premium Support
+
+Desktop:
+horizontal strip
+
+Mobile:
+stacked chips or scrollable chips
+
+==================================================
+5. COACH PHILOSOPHY SECTION
+
+Purpose:
+build trust + emotional authority.
+
+Title:
+I don’t believe in random plans.
+
+Copy direction:
+Every body is different.
+Every goal is unique.
+That’s why I use premium protocols, structured training, and real progress tracking — built around YOU.
+
+Sub-points:
+
+- Precision
+- Personalization
+- Accountability
+- Long-Term Results
+
+Add premium image treatment.
+
+==================================================
+6. TRANSFORMATIONS SECTION
+
+This section must SELL.
+
+Desktop:
+
+- premium before/after cards
+- 3-column layout
+- emotional proof
+- metrics
+- timeline
+- quote
+
+Mobile:
+
+- swipe carousel
+- stacked premium cards
+
+Card example:
+Ahmed M.
+12 Weeks
+-14kg
+-7% Body Fat
+
+“Best decision I made for myself.”
+
+CTA:
+View More Results
+
+Make this section emotional and premium.
+
+==================================================
+7. HOW IT WORKS
+
+Clear process.
+
+5-step flow:
+
+1. Apply
+2. Assessment
+3. Plan Creation
+4. Coaching System
+5. Transformation
+
+Desktop:
+horizontal premium timeline
+
+Mobile:
+vertical timeline
+
+Simple.
+Clear.
+Luxury feel.
+
+==================================================
+8. COACH-CURATED PROTOCOLS
+
+This is NOT a supplement store.
+
+This is:
+premium coach-curated systems.
+
+3 tiers:
+
+1. Essentials Protocol
+   Foundation support.
+
+2. Performance Protocol
+   Advanced performance + recovery.
+
+3. Concierge Protocol
+   Elite fully personalized protocol.
+
+IMPORTANT:
+Do NOT reveal:
+
+- product names
+- exact supplements
+- brands
+- dosages
+
+Only explain:
+
+- outcomes
+- philosophy
+- support categories
+
+Use:
+premium locked-card feeling.
+
+CTA:
+Request Review
+
+Also include:
+“How Protocols Work”
+
+==================================================
+9. COMPLETE COACHING SYSTEM
+
+Section title:
+A Complete Coaching System
+
+Cards:
+
+- Structured Training
+- Nutrition Guidance
+- Coach-Curated Protocols
+- Progress Tracking
+- Direct Coach Access
+
+Keep cards:
+
+- calm
+- premium
+- breathable
+- not overcrowded
+
+==================================================
+10. TESTIMONIALS
+
+Premium testimonial cards.
+
+Include:
+
+- quote
+- client name
+- timeframe
+- optional star rating
+
+Example:
+“Youssef completely changed my relationship with training.”
+— Khaled A.
+
+Keep:
+authentic + premium.
+
+==================================================
+11. CREDENTIALS SECTION
+
+Title:
+Credentials You Can Trust
+
+Include:
+
+- EREPS EQF Graduate Exercise Professional
+- EQF Level 6
+- European Qualifications Framework
+- REPs UAE Certified
+- Bachelor’s Degree in Physical Education
+- Certified Personal Trainer
+- Physical Education Teacher background
+
+This section should feel:
+clean + authoritative.
+
+==================================================
+12. FINAL CTA
+
+Strong emotional close.
+
+Headline:
+Ready to become your best?
+
+Supporting copy:
+Spots are intentionally limited so every client receives proper attention and support.
+
+Buttons:
+
+- Book Your Session
+- Message Coach on WhatsApp
+
+Use cinematic image treatment:
+
+- dark overlay
+- integrated image
+- soft blur
+- premium composition
+
+==================================================
+13. FOOTER
+
+Luxury minimal footer.
+
+Include:
+Youssef Ahmed
+Personal Training, Dubai
+
+Quick links:
+
+- About
+- Coaching
+- Protocols
+- Transformations
+- FAQ
+
+Support:
+
+- Privacy Policy
+- Terms
+- Contact
+- Cancellation Policy
+
+Socials:
+
+- WhatsApp
+- Instagram
+- LinkedIn optional
+
+==================================================
+14. MOBILE EXPERIENCE
+
+MOBILE IS PRIORITY.
+
+Requirements:
+
+- ultra smooth
+- readable
+- thumb-friendly
+- no clutter
+- no overflow
+- no clipping
+- no giant sections
+- no excessive scrolling fatigue
+
+Test widths:
+
+- 360
+- 390
+- 412
+- Samsung S25 Ultra
+
+Optimize:
+
+- CTA visibility
+- card stacking
+- typography
+- spacing rhythm
+
+==================================================
+15. DESKTOP EXPERIENCE
+
+Desktop should feel:
+premium + cinematic + structured.
+
+Use:
+
+- grids
+- image/text balance
+- controlled whitespace
+- elegant spacing
+
+Avoid:
+
+- stretched mobile design
+- giant empty areas
+- oversized blur effects
+
+==================================================
+16. NAVBAR
+
+Keep navbar premium and balanced.
+
+Include:
+
+- logo/name
+- About
+- Coaching
+- Protocols
+- Results
+- FAQ
+- language switcher
+- auth controls
+- hamburger menu
+
+Logged-in/out states must stay visually consistent.
+
+No clipping.
+No overflow.
+No broken spacing.
+
+==================================================
+17. PERFORMANCE RULES
+
+Very important.
+
+Performance > effects.
+
+Requirements:
+
+- lazy-load below fold
+- optimize images
+- avoid expensive scroll effects
+- avoid heavy blur on scroll
+- no infinite GPU-heavy animations
+- transform/opacity animations only
+- smooth Android Chrome scrolling
+- fast first paint
+
+==================================================
+18. ACCESSIBILITY + SEO
+
+Add:
+
+- semantic headings
+- alt text
+- accessible labels
+- good contrast
+- metadata if supported
+
+==================================================
+19. I18N + RTL
+
+All text:
+use translation system.
+
+No hardcoded client-facing strings.
+
+RTL-safe:
+
+- Arabic
+- Persian
+- Urdu
+
+==================================================
+20. IMPLEMENTATION STRATEGY
+
+Implement safely in phases.
+
+PHASE 1:
+
+- homepage rebuild
+- hero
+- philosophy
+- transformations
+- protocols
+- final CTA
+
+PHASE 2:
+
+- mobile polish
+- desktop polish
+- footer
+- navbar refinement
+
+PHASE 3:
+
+- admin homepage CMS
+- image controls
+- content controls
+
+PHASE 4:
+
+- i18n/RTL
+- performance optimization
+- QA
+
+==================================================
+21. QA CHECKLIST
+
+Before final report verify:
+
+- desktop premium
+- mobile premium
+- smooth scrolling
+- no clipping
+- no overflow
+- hero image looks cinematic
+- CTA hierarchy strong
+- protocols feel premium
+- footer polished
+- navbar stable
+- hamburger stable
+- admin image controls work
+- Vercel build clean
+- auth untouched
+- dashboard untouched
+- i18n works
+- RTL works
+
+==================================================
+22. FINAL REPORT
+
+After implementation report:
+
+- sections rebuilt
+- admin controls added
+- files changed
+- DB changes
+- mobile QA
+- desktop QA
+- performance improvements
+- remaining recommendations
+- GitHub commit
+- Vercel deployment status
+
+FINAL TARGET:
+A premium futuristic Tron Legacy-inspired coaching platform that feels:
+luxury, calm, cinematic, trustworthy, modern, emotionally controlled, and conversion-focused.
