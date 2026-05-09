@@ -11,104 +11,82 @@ import {
 import { useTranslation } from "@/i18n";
 
 /**
- * "Credentials You Can Trust" — Cinematic Refinement Pass (May-2026).
- *
- * Switched from a 2-col card grid to an editorial single-column list
- * with cyan hairline separators. Reads like the masthead of a luxury
- * magazine — quiet, authoritative — and contrasts with the dark-card
- * sections (Hero / Philosophy) without re-using the editorial-numbered
- * pattern from CompleteSystem.
- *
- * Items remain hardcoded per the master prompt (never invent / never
- * remove / never wrong level).
- *
- * Other refinements:
- *   • Section py-16 → py-14 on mobile.
- *   • Larger title (text-3xl → md:text-5xl) with tighter tracking.
- *   • Subtitle adds a single calm line of context.
+ * "Credentials You Can Trust" — clean authority section. Hardcoded
+ * because these are facts about the coach, NOT marketing copy. Per
+ * the master prompt: never invent / never remove / never wrong level.
  */
 export function Credentials() {
   const { t } = useTranslation();
   const items = [
     {
-      icon: <Globe size={20} />,
+      icon: <Globe size={18} />,
       name: t("creds.ereps.name", "EREPS EQF Graduate Exercise Professional"),
       org: t("creds.ereps.org", "European Qualifications Framework — EQF Level 6"),
     },
     {
-      icon: <Award size={20} />,
+      icon: <Award size={18} />,
       name: t("creds.reps.name", "REPs UAE Certified Personal Trainer"),
       org: t("creds.reps.org", "Register of Exercise Professionals UAE"),
     },
     {
-      icon: <GraduationCap size={20} />,
+      icon: <GraduationCap size={18} />,
       name: t("creds.bsc.name", "Bachelor's Degree in Physical Education"),
       org: t("creds.bsc.org", "Academic foundation in movement science"),
     },
     {
-      icon: <ShieldCheck size={20} />,
+      icon: <ShieldCheck size={18} />,
       name: t("creds.cpt.name", "Certified Personal Trainer"),
       org: t("creds.cpt.org", "Internationally recognized certification"),
     },
     {
-      icon: <Heart size={20} />,
+      icon: <Heart size={18} />,
       name: t("creds.first.name", "First Aid & CPR Certified"),
       org: t("creds.first.org", "Safety-first session standards"),
     },
     {
-      icon: <Briefcase size={20} />,
+      icon: <Briefcase size={18} />,
       name: t("creds.teacher.name", "Physical Education Teacher Background"),
       org: t("creds.teacher.org", "Years of structured coaching experience"),
     },
     {
-      icon: <Trophy size={20} />,
+      icon: <Trophy size={18} />,
       name: t("creds.exp.name", "5+ Years Coaching Experience"),
       org: t("creds.exp.org", "Premium personal training in Dubai"),
     },
   ];
 
   return (
-    <section className="relative py-14 md:py-24" id="credentials" data-testid="credentials-section">
-      <div className="relative max-w-3xl mx-auto px-5">
-        <div className="text-center mb-10 md:mb-14">
-          <p className="tron-eyebrow text-[11px] mb-3">
+    <section className="py-16 md:py-24" id="credentials" data-testid="credentials-section">
+      <div className="max-w-5xl mx-auto px-5">
+        <div className="text-center mb-10">
+          <p className="tron-eyebrow text-[11px] text-primary/90 mb-3">
             {t("creds.eyebrow", "COACH YOUSSEF")}
           </p>
-          <h2 className="font-display font-bold text-3xl md:text-5xl tracking-[-0.02em] leading-[1.05]">
+          <h2 className="font-display font-bold text-3xl md:text-4xl">
             {t("creds.title", "Credentials You Can Trust")}
           </h2>
-          <p className="mt-4 text-sm md:text-base text-muted-foreground/85 leading-relaxed max-w-xl mx-auto">
-            {t(
-              "creds.subtitle",
-              "Verified qualifications. Documented experience. Quiet authority.",
-            )}
-          </p>
         </div>
-        <ul className="divide-y divide-white/5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {items.map((it, i) => (
-            <motion.li
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ delay: i * 0.04, duration: 0.45 }}
-              className="flex items-start gap-4 md:gap-5 py-5"
+              transition={{ delay: i * 0.04 }}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex items-start gap-3"
               data-testid={`cred-${i}`}
             >
-              <span className="w-11 h-11 rounded-xl bg-primary/[0.08] border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shrink-0">
                 {it.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-display font-bold text-base md:text-lg leading-snug text-foreground/95">
-                  {it.name}
-                </h3>
-                <p className="text-xs md:text-sm text-primary/75 mt-1 tracking-wide">
-                  {it.org}
-                </p>
               </div>
-            </motion.li>
+              <div className="min-w-0">
+                <h3 className="font-display font-bold text-sm leading-snug">{it.name}</h3>
+                <p className="text-xs text-primary/80 mt-0.5">{it.org}</p>
+              </div>
+            </motion.div>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );

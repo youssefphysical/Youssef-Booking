@@ -192,10 +192,6 @@
   @apply bg-muted rounded-full hover:bg-muted-foreground/50 transition-colors;
 }
 
-/* Hide scrollbars (used by mobile snap carousels — Transformations, Hero trust pills) */
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-
 /* Glassmorphism Utilities */
 .glass-panel {
   @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl;

@@ -67,22 +67,14 @@ export function Transformations() {
   const hasMore = data.length > preview.length;
 
   return (
-    <section className="relative py-14 md:py-24" id="transformations">
-      {/* Cinematic Refinement Pass (May-2026): soft ambient cyan glow
-          makes Transformations the visual centerpiece — emotional proof
-          engine at the heart of the homepage. */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.10),transparent_60%)]"
-        aria-hidden
-      />
-      <div className="relative max-w-6xl mx-auto px-5">
-      <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
+    <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
+      <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <p className="tron-eyebrow text-xs mb-3">
+          <p className="tron-eyebrow text-xs mb-2">
             {t("section.transformations.eyebrow")}
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-3xl md:text-5xl font-display font-bold tracking-[-0.02em] leading-[1.05]">
+            <h2 className="text-3xl md:text-4xl font-display font-bold">
               {t("section.transformations.title")}
             </h2>
             {data.length >= 2 && (
@@ -108,12 +100,7 @@ export function Transformations() {
         </Link>
       </div>
 
-      {/* MOBILE: full-bleed snap-scroll carousel — each card occupies
-          ~88vw so one transformation dominates the viewport at a time
-          (peek of next card hints at swipeability). Reads as cinematic
-          proof reel rather than a stacked grid.
-          DESKTOP: 2/3-col grid as before. */}
-      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-4 md:pb-0 scrollbar-hide">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {preview.map((row, i) => {
           const name = row.displayName?.trim() || t("transformations.anonymous");
           return (
@@ -123,7 +110,7 @@ export function Transformations() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="tron-card rounded-3xl overflow-hidden snap-center shrink-0 w-[88vw] sm:w-[420px] md:w-auto md:shrink"
+              className="tron-card rounded-3xl overflow-hidden"
               data-testid={`transformation-card-${row.id}`}
             >
               {/* Before / After split — thin cyan separator between halves
@@ -202,7 +189,6 @@ export function Transformations() {
           </Link>
         </div>
       )}
-      </div>
     </section>
   );
 }

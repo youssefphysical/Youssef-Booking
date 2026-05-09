@@ -117,7 +117,7 @@ export function CoachProtocols({ mode }: Props) {
     <section
       id="protocols"
       aria-label={t("protocols.homeLabel", "Coach-Curated Protocols")}
-      className="homepage-section max-w-6xl mx-auto px-5 py-14 md:py-24"
+      className="homepage-section max-w-6xl mx-auto px-5 py-20"
       data-testid="section-coach-protocols-home"
     >
       <header className="text-center mb-10">
