@@ -73,6 +73,10 @@
      accents only (badges, tiny dot indicators). Not main UI. */
   --warm-accent: 41 100% 50%;
 
+  /* Tertiary text: #6F7F95 — lowest-priority copy (timestamps, captions,
+     deeply-muted metadata). Sits one tier below --muted-foreground. */
+  --tertiary-foreground: 213 14% 51%;
+
   --radius: 0.75rem;
 }
 
@@ -97,6 +101,8 @@
   --border: 215 20% 88%;
   --input: 215 20% 88%;
   --ring: 205 92% 50%;
+  --warm-accent: 41 100% 45%;
+  --tertiary-foreground: 213 14% 42%;
 }
 
 @layer base {
@@ -222,8 +228,13 @@
 }
 
 /* Tiny premium amber accent — for badges, dot indicators, etc. ONLY. */
-.warm-accent { color: #FFB000; }
-.warm-accent-bg { background-color: #FFB000; color: hsl(218 50% 4%); }
+.warm-accent { color: hsl(var(--warm-accent)); }
+.warm-accent-bg { background-color: hsl(var(--warm-accent)); color: hsl(218 50% 4%); }
+
+/* Tertiary text — lowest-priority copy (timestamps, captions, deeply
+   muted metadata). Sits one tier below text-muted-foreground. */
+.text-tertiary,
+.text-tertiary-foreground { color: hsl(var(--tertiary-foreground)); }
 
 /* ===== Premium polish utilities ===== */
 
@@ -360,7 +371,7 @@
   box-shadow:
     inset 0 1px 0 hsl(189 100% 60% / 0.12),
     0 1px 0 hsl(0 0% 0% / 0.4),
-    0 14px 32px -18px hsl(195 100% 50% / 0.22);
+    0 14px 32px -18px hsl(189 100% 50% / 0.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: border-color 280ms ease, box-shadow 280ms ease,
@@ -413,10 +424,10 @@
      alpha 0.85 → 0.60; outer 100 → 70, alpha 0.45 → 0.30) — still
      visibly "powers up" but doesn't bloom into the surrounding UI. */
   box-shadow:
-    0 0 0 1px hsl(195 100% 85% / 0.55),
+    0 0 0 1px hsl(189 100% 80% / 0.55),
     0 0 40px -2px hsl(189 100% 50% / 0.60),
     0 0 70px -8px hsl(189 100% 48% / 0.30),
-    inset 0 1px 0 hsl(195 100% 95% / 0.55);
+    inset 0 1px 0 hsl(189 100% 90% / 0.55);
 }
 
 /* Glass outline button — pairs with .tron-cta as the secondary action.
@@ -440,7 +451,7 @@
 
 /* Eyebrow / section label with cyan tint + soft text glow. */
 .tron-eyebrow {
-  color: hsl(195 100% 72%);
+  color: hsl(189 100% 65%);
   letter-spacing: 0.28em;
   text-transform: uppercase;
   text-shadow: 0 0 14px hsl(189 100% 50% / 0.35);
@@ -486,7 +497,7 @@
   background: radial-gradient(
     ellipse 60% 55% at 50% 46%,
     hsl(189 100% 55% / 0.18) 0%,
-    hsl(200 100% 50% / 0.08) 38%,
+    hsl(200 100% 48% / 0.08) 38%,
     transparent 72%
   );
 }
@@ -499,7 +510,7 @@
     112deg,
     transparent 30%,
     hsl(189 100% 60% / 0.06) 47%,
-    hsl(195 100% 78% / 0.12) 52%,
+    hsl(189 100% 72% / 0.12) 52%,
     hsl(189 100% 60% / 0.06) 57%,
     transparent 72%
   );
@@ -526,9 +537,9 @@
   }
   50% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 82% / 0.45),
+      0 0 0 1px hsl(189 100% 78% / 0.45),
       0 0 30px -2px hsl(189 100% 50% / 0.55),
-      inset 0 1px 0 hsl(195 100% 95% / 0.55);
+      inset 0 1px 0 hsl(189 100% 90% / 0.55);
   }
 }
 /* Same desktop-only gate as .tron-pulse — keeps mobile scroll silky. */
