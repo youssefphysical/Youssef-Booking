@@ -1,0 +1,107 @@
+FINAL STABILIZATION + REAL USER SIMULATION PASS
+
+We are entering production-ready territory.
+
+DO NOT redesign.
+DO NOT add large features.
+DO NOT touch stable visual systems unless required.
+
+Goal:
+stress-test the platform like a real trainer + real clients using it daily.
+
+Run a REAL-WORLD USABILITY + STABILITY PASS.
+
+Test flows carefully on mobile and desktop:
+
+CLIENT FLOWS
+
+- registration
+- login/logout
+- forgot password
+- booking a session
+- booking rejection
+- 6-hour rule
+- emergency cancel
+- reschedule
+- package display
+- remaining sessions
+- expired package behavior
+- dashboard navigation
+- mobile scrolling
+- toast behavior
+- loading states
+
+ADMIN FLOWS
+
+- admin login
+- dashboard navigation
+- sticky tabs
+- client search/filter
+- booking management
+- reschedule session
+- mark complete
+- add sessions
+- assign package
+- expiry date handling
+- mobile usability
+- long list scrolling
+- back navigation
+- bottom nav safety
+
+BOOKING SAFETY VALIDATION
+Verify again:
+
+- expired slots disappear correctly
+- passed sessions auto-complete correctly
+- sessions deduct only once
+- duplicate requests blocked
+- unauthorized booking blocked
+- timezone remains Dubai (+04)
+- session history accurate
+- no stale "taken" state remains after completion
+
+UI / UX VALIDATION
+Check for:
+
+- overlapping UI
+- clipped buttons
+- unreadable AMOLED contrast
+- broken RTL
+- sticky header issues
+- bottom-nav overlap
+- horizontal overflow
+- animation lag
+- loading flicker
+- toast stacking issues
+- z-index conflicts
+- keyboard overlap on Android
+
+PERFORMANCE
+Keep:
+
+- GPU-safe animations only
+- smooth mobile scrolling
+- no unnecessary rerenders
+- no polling abuse
+- no large bundle additions
+
+FINAL CLEANUP
+
+- remove dead styles
+- remove duplicated utilities
+- remove temporary debug logs
+- keep comments clean
+- preserve readability
+
+Then generate:
+
+1. FINAL production-readiness report
+2. Remaining weak points (if any)
+3. Recommended future upgrades (ONLY future ideas, not implementation now)
+
+Priority:
+stability,
+clarity,
+performance,
+real-world usability,
+production confidence.
