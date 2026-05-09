@@ -101,7 +101,7 @@ import {
   type ApplyStackToClientInput,
   type StackItemInput,
 } from "@shared/schema";
-import { eq, and, or, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
+import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -611,8 +611,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBooking(booking: InsertBooking) {
-    const [b] = await db.insert(bookings).values(booking).returning();
-    return b;
+    try {
+      const [b] = await db.insert(bookings).values(booking).returning();
+      return b;
+    } catch (err: any) {
+      // Postgres 23505 = unique_violation. Fired by the partial unique
+      // index uniq_booking_active_slot when two clients race for the
+      // same slot. Re-throw a tagged error so the route translates it
+      // into the user-facing 409 message without leaking SQL details.
+      if (err?.code === "23505" && /uniq_booking_active_slot/.test(String(err?.constraint || err?.detail || ""))) {
+        const e: any = new Error("This slot was just booked. Please choose another time.");
+        e.code = "SLOT_TAKEN";
+        e.status = 409;
+        throw e;
+      }
+      throw err;
+    }
   }
 
   async updateBooking(id: number, updates: Partial<Booking>) {
@@ -625,10 +639,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBookingByDateAndSlot(date: string, timeSlot: string) {
+    // Filter cancelled-state rows so the slot precheck matches the partial
+    // UNIQUE INDEX (`uniq_booking_active_slot`). Without this, a freshly
+    // cancelled slot is reported as "already booked" even though the DB
+    // would happily accept a re-book — the friendly precheck would fire
+    // before the index ever got asked.
     const [b] = await db
       .select()
       .from(bookings)
-      .where(and(eq(bookings.date, date), eq(bookings.timeSlot, timeSlot)));
+      .where(
+        and(
+          eq(bookings.date, date),
+          eq(bookings.timeSlot, timeSlot),
+          notInArray(bookings.status, [
+            "cancelled",
+            "free_cancelled",
+            "late_cancelled",
+            "emergency_cancelled",
+          ]),
+        ),
+      );
     return b;
   }
 

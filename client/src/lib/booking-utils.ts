@@ -6,10 +6,10 @@ export const ALL_TIME_SLOTS = [
   "18:00", "19:00", "20:00", "21:00", "22:00",
 ];
 
-// Clients must book at least 3 hours before the session starts so the trainer
-// has time to prepare and travel. (Cancellations still use the 6-hour cutoff
-// from settings.cancellationCutoffHours — unrelated to advance booking.)
-export const MIN_ADVANCE_HOURS = 3;
+// Clients must book at least 6 hours before the session starts so the trainer
+// has time to prepare and travel. Mirrors server `MIN_ADVANCE_BOOKING_HOURS`
+// in server/routes.ts — keep the two in sync.
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 
 export function formatStatus(status: string): string {
@@ -58,8 +58,16 @@ export function statusColor(status: string): string {
   }
 }
 
+// Anchor every session date/time to Asia/Dubai (UTC+4, no DST). Without
+// this explicit offset, `new Date("YYYY-MM-DDTHH:MM:00")` is parsed as
+// the BROWSER'S local time, which silently disagrees with the server's
+// Dubai-anchored truth for any visitor outside the UAE — taken/free
+// slot computations would shift by hours. Mirrors `DUBAI_TZ_OFFSET` in
+// server/routes.ts.
+const DUBAI_TZ_OFFSET = "+04:00";
+
 export function buildSessionDate(date: string, timeSlot: string): Date {
-  return new Date(`${date}T${timeSlot}:00`);
+  return new Date(`${date}T${timeSlot}:00${DUBAI_TZ_OFFSET}`);
 }
 
 export function hoursUntil(date: string, timeSlot: string): number {

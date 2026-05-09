@@ -57,7 +57,26 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS cancelled_at timestamp,
       ADD COLUMN IF NOT EXISTS attendance_marked_by_user_id integer,
       ADD COLUMN IF NOT EXISTS attendance_marked_at timestamp,
-      ADD COLUMN IF NOT EXISTS attendance_reason text;
+      ADD COLUMN IF NOT EXISTS attendance_reason text,
+      -- May 2026 booking-safety hardening (durations + lifecycle stamps +
+      -- deduction idempotency anchor). All NULL-safe / DEFAULT 60 for
+      -- duration so legacy rows are correct without backfill.
+      ADD COLUMN IF NOT EXISTS duration_minutes integer NOT NULL DEFAULT 60,
+      ADD COLUMN IF NOT EXISTS completed_at timestamp,
+      ADD COLUMN IF NOT EXISTS auto_completed_at timestamp,
+      ADD COLUMN IF NOT EXISTS package_session_deducted_at timestamp;
+
+    -- Partial UNIQUE INDEX: at most one ACTIVE booking per (date, slot).
+    -- Cancelled variants are excluded so a cancelled slot is freed for
+    -- re-booking. Backs up the application-level "Slot already booked"
+    -- check with a database-level race guarantee — under concurrent
+    -- inserts, exactly one wins; the other gets PG error 23505 which
+    -- the storage layer translates into a friendly 409.
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_booking_active_slot
+      ON bookings (date, time_slot)
+      WHERE status NOT IN (
+        'cancelled', 'free_cancelled', 'late_cancelled', 'emergency_cancelled'
+      );
 
     CREATE TABLE IF NOT EXISTS renewal_requests (
       id serial PRIMARY KEY,

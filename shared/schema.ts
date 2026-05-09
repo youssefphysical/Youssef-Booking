@@ -241,6 +241,25 @@ export const bookings = pgTable("bookings", {
   reminder24hSentAt: timestamp("reminder_24h_sent_at"),
   reminder1hSentAt: timestamp("reminder_1h_sent_at"),
   attendanceReason: text("attendance_reason"),
+  // ─── Booking-safety hardening (May 2026) ───────────────────────────
+  // durationMinutes: how long the session runs from `timeSlot`. Drives
+  //   the auto-complete cron's "now > endTime" check. Default 60 so
+  //   legacy rows behave correctly without backfill. Admin-mutable.
+  // completedAt / autoCompletedAt: stamped exactly once when a booking
+  //   transitions into the `completed` state. autoCompletedAt is set
+  //   only by the cron — distinguishes admin-marked vs auto-marked
+  //   sessions in the audit trail. completedAt is the universal
+  //   "completed when?" anchor regardless of source.
+  // packageSessionDeductedAt: idempotency anchor for package-credit
+  //   consumption. Stamped the first time a deduction (incrementPackage
+  //   Usage) runs against this booking, cleared on refund. Every
+  //   deducting code path must check IS NULL before incrementing and
+  //   IS NOT NULL before decrementing. Prevents double-deduction across
+  //   admin attendance toggles + auto-complete races.
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  completedAt: timestamp("completed_at"),
+  autoCompletedAt: timestamp("auto_completed_at"),
+  packageSessionDeductedAt: timestamp("package_session_deducted_at"),
   // P4d Per-Session Coach Notes (admin-logged after each session).
   // 1-10 scales for energy/performance/sleep/adherence; freeform for
   // cardio + pain/injury + notes. clientVisibleCoachNotes surfaces to

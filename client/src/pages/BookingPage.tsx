@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
@@ -62,8 +62,18 @@ type TrainingGoal = (typeof BOOKING_TRAINING_GOALS)[number];
 
 export default function BookingPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [, navigate] = useLocation();
+
+  // Booking-safety (May 2026): anonymous visitors must authenticate before
+  // they can see the slot picker — server already enforces requireAuth on
+  // POST /api/bookings, this just gives a graceful UX (no flash of the
+  // booking form, deep-link back to /book after sign-in).
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      navigate("/auth?redirect=/book");
+    }
+  }, [isAuthLoading, user, navigate]);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [notes, setNotes] = useState("");

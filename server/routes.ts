@@ -99,6 +99,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
+import { runAutoCompleteBookings } from "./services/autoCompleteBookings";
 import { computeClientIntelligence } from "./services/clientIntelligence";
 import { optimizeImageFile } from "./image-utils";
 
@@ -110,9 +111,18 @@ function currentMonthKey(d: Date = new Date()): string {
 
 // Auth/role guards — return both `error` (machine-readable) and `message`
 // (human-readable) for backwards compatibility with existing clients.
+// Friendly 401 for booking-adjacent routes. Mirrors the user-facing
+// message from the May 2026 booking-safety brief so anonymous POSTs to
+// /api/bookings get an actionable hint instead of a generic "Auth required".
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated() || !req.user) {
-    return res.status(401).json({ error: "Unauthorized", message: "Unauthorized" });
+    // Booking-friendly copy per May 2026 brief — generic "Unauthorized"
+    // confused users hitting POST /api/bookings without a session. The
+    // `error` field stays machine-readable for clients that branch on it.
+    return res.status(401).json({
+      error: "Unauthorized",
+      message: "Please sign in or create an account before booking your session.",
+    });
   }
   next();
 }
@@ -162,8 +172,31 @@ function requirePermission(key: AdminPermissionKey) {
   };
 }
 
+// Anchor every session date/time to Asia/Dubai (UTC+4, no DST). Without
+// this explicit offset, `new Date("YYYY-MM-DDTHH:MM:00")` is parsed as
+// the SERVER'S local time — fine on a Dubai-region box, catastrophic on
+// Vercel (which runs in UTC). A booking at "14:00" would compute an
+// endTime 4 hours ahead, breaking auto-completion + reminders + lead-time
+// checks. Dubai stays on UTC+4 year-round so a string offset is sufficient
+// (no Intl/date-fns-tz dep needed).
+const DUBAI_TZ_OFFSET = "+04:00";
+
 function buildSessionDate(date: string, timeSlot: string): Date {
-  return new Date(`${date}T${timeSlot}:00`);
+  return new Date(`${date}T${timeSlot}:00${DUBAI_TZ_OFFSET}`);
+}
+
+// Compute when a session is over (UTC instant) given its date, slot, and
+// duration. Used by the auto-complete cron to decide if a booking has
+// expired. Falls back to 60 min for legacy rows where durationMinutes
+// is somehow missing — should not happen post-ensureSchema but defensive.
+function buildSessionEndDate(
+  date: string,
+  timeSlot: string,
+  durationMinutes: number | null | undefined,
+): Date {
+  const start = buildSessionDate(date, timeSlot);
+  const mins = typeof durationMinutes === "number" && durationMinutes > 0 ? durationMinutes : 60;
+  return new Date(start.getTime() + mins * 60_000);
 }
 
 // Mon-anchored ISO week start (UTC YYYY-MM-DD). Mirrors the streak logic
@@ -239,10 +272,21 @@ async function runMissedCheckinNotifications(): Promise<void> {
   }
 }
 
-// Clients must book at least 3 hours before the session starts so the trainer
+// Clients must book at least 6 hours before the session starts so the trainer
 // has time to prepare and travel to the location. Admins bypass this rule.
-// The 6-hour cutoff still applies to *cancellations* (settings.cancellation_cutoff_hours).
-const MIN_ADVANCE_BOOKING_MS = 3 * 60 * 60 * 1000;
+// The same 6-hour cutoff applies to *cancellations* (settings.cancellation_cutoff_hours).
+const MIN_ADVANCE_BOOKING_HOURS = 6;
+const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
+
+// Single source of truth for "this status consumes a session credit". Used
+// by every booking-mutation path (PATCH /:id, /:id/cancel, /:id/attendance,
+// admin manual create, auto-complete cron) so a transition like
+// `no_show → cancelled` decrements consistently regardless of which route
+// drove it. Architect-flagged P1: previously PATCH /:id used a 2-element
+// list and attendance used a 3-element list, so generic-PATCH transitions
+// touching `no_show` could leak credits.
+const CONSUMING_STATUSES = ["completed", "late_cancelled", "no_show"] as const;
+const CANCELLED_STATUSES = ["cancelled", "free_cancelled", "late_cancelled", "emergency_cancelled"] as const;
 const ALLOWED_BOOKING_HOURS = new Set([
   "06:00","07:00","08:00","09:00","10:00","11:00",
   "12:00","13:00","14:00","15:00","16:00","17:00",
@@ -1054,7 +1098,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       sessionAt.getTime() - Date.now() < MIN_ADVANCE_BOOKING_MS
     ) {
       return res.status(400).json({
-        message: "Bookings must be made at least 3 hours in advance.",
+        message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} hours in advance.`,
       });
     }
 
@@ -1488,9 +1532,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     // Only late_cancelled deducts; protected/free/cancelled do not.
-    if (newStatus === "late_cancelled" && booking.packageId) {
+    // Idempotency: only increment if `package_session_deducted_at` is NULL,
+    // then stamp it. Prevents double-deduction if a race or retry hits the
+    // same row, and also defends against the auto-complete cron racing an
+    // admin late-cancel on the same booking.
+    if (newStatus === "late_cancelled" && booking.packageId && !(booking as any).packageSessionDeductedAt) {
       try {
         await storage.incrementPackageUsage(booking.packageId);
+        await pool.query(`UPDATE bookings SET package_session_deducted_at = now() WHERE id = $1`, [booking.id]);
       } catch {
         /* ignore */
       }
@@ -1791,17 +1840,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    // Package deduction logic on status transition
-    const consumingStates = ["completed", "late_cancelled"];
-    const wasConsuming = consumingStates.includes(previousStatus);
-    const isConsuming = consumingStates.includes(newStatus);
-    if (booking.packageId && !wasConsuming && isConsuming) {
+    // Package deduction logic on status transition. Idempotency anchored
+    // on bookings.package_session_deducted_at: only increment when NULL
+    // (stamp on success), only decrement when NOT NULL (clear on success).
+    // This makes admin status-toggling, the auto-complete cron, and the
+    // cancel route mutually safe — none of them can double-deduct.
+    // Uses the unified CONSUMING_STATUSES so generic PATCH and the
+    // dedicated /attendance route agree on whether `no_show` consumes.
+    const wasConsuming = (CONSUMING_STATUSES as readonly string[]).includes(previousStatus);
+    const isConsuming = (CONSUMING_STATUSES as readonly string[]).includes(newStatus);
+    const alreadyDeducted = !!(booking as any).packageSessionDeductedAt;
+    if (booking.packageId && !wasConsuming && isConsuming && !alreadyDeducted) {
       try {
         await storage.incrementPackageUsage(booking.packageId);
+        await pool.query(`UPDATE bookings SET package_session_deducted_at = now() WHERE id = $1`, [booking.id]);
       } catch {}
-    } else if (booking.packageId && wasConsuming && !isConsuming) {
+    } else if (booking.packageId && wasConsuming && !isConsuming && alreadyDeducted) {
       try {
         await storage.decrementPackageUsage(booking.packageId);
+        await pool.query(`UPDATE bookings SET package_session_deducted_at = NULL WHERE id = $1`, [booking.id]);
       } catch {}
     }
     // Recompute the client's VIP tier whenever a session is marked completed
@@ -3436,11 +3493,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } catch (e) {
         console.warn("[cron/reminders] checkin pass failed:", e);
       }
+      // May 2026 booking-safety: auto-complete expired sessions in the
+      // same cron tick so a single external scheduler covers reminders +
+      // expiry + auto-completion. Best-effort — never poisons the
+      // reminder response.
+      let autoCompleteSummary: any = null;
+      try {
+        autoCompleteSummary = await runAutoCompleteBookings();
+      } catch (e) {
+        console.warn("[cron/reminders] auto-complete pass failed:", e);
+      }
 
-      res.json({ ok: true, scanned: all.length, sent, failed });
+      res.json({ ok: true, scanned: all.length, sent, failed, autoComplete: autoCompleteSummary });
     } catch (e: any) {
       console.error("[cron/reminders] failed", e);
       res.status(500).json({ ok: false, error: e?.message || "unknown", sent, failed });
+    }
+  });
+
+  // Standalone auto-complete trigger. Same auth pattern as /api/cron/reminders
+  // (Bearer CRON_SECRET in production, open in dev). Useful when an admin
+  // wants to force a sweep without waiting for the next reminder tick, and
+  // gives the test/QA flow a dedicated URL.
+  app.all("/api/cron/auto-complete", async (req, res) => {
+    const secret = process.env.CRON_SECRET;
+    if (process.env.NODE_ENV === "production" && secret) {
+      const auth = req.get("authorization") || "";
+      if (auth !== `Bearer ${secret}`) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+    }
+    try {
+      const summary = await runAutoCompleteBookings();
+      res.json({ ok: true, ...summary });
+    } catch (e: any) {
+      console.error("[cron/auto-complete] failed", e);
+      res.status(500).json({ ok: false, error: e?.message || "unknown" });
     }
   });
 
@@ -4049,8 +4137,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid attendance" });
     }
     const previousStatus = booking.status;
-    const consumingStates = ["completed", "late_cancelled", "no_show"];
-    const wasConsuming = consumingStates.includes(previousStatus);
+    const consumingStates = CONSUMING_STATUSES;
+    const wasConsuming = (consumingStates as readonly string[]).includes(previousStatus);
 
     let newStatus: string = previousStatus;
     let consumesSession = false;
@@ -4075,13 +4163,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       attendanceReason: parsed.data.reason ?? null,
     } as any);
 
-    // Package usage reconciliation
+    // Package usage reconciliation. Idempotency anchored on
+    // bookings.package_session_deducted_at — see PATCH /api/bookings/:id
+    // for the same pattern. Belt-and-braces against auto-complete cron
+    // racing an admin attendance toggle on the same booking.
     if (booking.packageId) {
+      const alreadyDeducted = !!(booking as any).packageSessionDeductedAt;
       try {
-        if (!wasConsuming && consumesSession) {
+        if (!wasConsuming && consumesSession && !alreadyDeducted) {
           await storage.incrementPackageUsage(booking.packageId);
-        } else if (wasConsuming && !consumesSession) {
+          await pool.query(`UPDATE bookings SET package_session_deducted_at = now() WHERE id = $1`, [booking.id]);
+        } else if (wasConsuming && !consumesSession && alreadyDeducted) {
           await storage.decrementPackageUsage(booking.packageId);
+          await pool.query(`UPDATE bookings SET package_session_deducted_at = NULL WHERE id = $1`, [booking.id]);
         }
       } catch (e) {
         console.warn("[attendance] package reconciliation failed:", e);
@@ -4435,8 +4529,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       const data = parsed.data;
       const finalStatus = data.status ?? "completed";
-      const consumingStates = ["completed", "late_cancelled"];
-      const willConsume = !!data.packageId && consumingStates.includes(finalStatus);
+      const willConsume = !!data.packageId && (CONSUMING_STATUSES as readonly string[]).includes(finalStatus);
       const guard = await validateManualBookingTarget(
         userId,
         data.packageId ?? null,
@@ -4467,12 +4560,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         isManualHistorical: data.isManualHistorical ?? true,
       } as any);
       // Consume a session credit (atomic SQL increment, capped at totalSessions).
+      // Stamp packageSessionDeductedAt so subsequent PATCH/attendance toggles
+      // know the credit was already drawn — same idempotency anchor used by
+      // PATCH /:id, /:id/cancel, /:id/attendance and the auto-complete cron.
       if (willConsume) {
+        let incremented = false;
         try {
           await storage.incrementPackageUsage(data.packageId!);
+          incremented = true;
+          await pool.query(`UPDATE bookings SET package_session_deducted_at = now() WHERE id = $1`, [created.id]);
         } catch (e) {
           console.error("[manual-booking] increment package usage failed:", e);
           // Roll the booking back so balance stays consistent with bookings.
+          // Compensate the package counter if the increment had already
+          // landed before the stamp query failed — otherwise the booking
+          // disappears but the credit stays consumed.
+          if (incremented) {
+            await storage.decrementPackageUsage(data.packageId!).catch(() => {});
+          }
           await storage.deleteBooking(created.id).catch(() => {});
           return res
             .status(500)
@@ -4496,8 +4601,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       const data = parsed.data;
       const finalStatus = data.status ?? "completed";
-      const consumingStates = ["completed", "late_cancelled"];
-      const willConsume = !!data.packageId && consumingStates.includes(finalStatus);
+      const willConsume = !!data.packageId && (CONSUMING_STATUSES as readonly string[]).includes(finalStatus);
       const guard = await validateManualBookingTarget(
         userId,
         data.packageId ?? null,
@@ -4532,12 +4636,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         } as any);
         created.push(booking);
       }
-      // Atomic single increment for the whole batch.
+      // Atomic single increment for the whole batch + bulk stamp the
+      // idempotency anchor on every created row so future PATCH/attendance
+      // toggles know the credit was already drawn.
       if (willConsume) {
+        let incremented = false;
         try {
           await storage.incrementPackageUsage(data.packageId!, data.count);
+          incremented = true;
+          await pool.query(
+            `UPDATE bookings SET package_session_deducted_at = now() WHERE id = ANY($1::int[])`,
+            [created.map((b) => b.id)],
+          );
         } catch (e) {
           console.error("[manual-booking-bulk] increment package usage failed:", e);
+          // Same compensation pattern as the single-create path — if the
+          // bulk increment landed but the stamp UPDATE failed, decrement
+          // the package by the same count before deleting the bookings so
+          // no credit is leaked.
+          if (incremented) {
+            for (let n = 0; n < data.count; n++) {
+              await storage.decrementPackageUsage(data.packageId!).catch(() => {});
+            }
+          }
           await Promise.all(created.map((b) => storage.deleteBooking(b.id).catch(() => {})));
           return res
             .status(500)
