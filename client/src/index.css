@@ -102,7 +102,10 @@
   --card-foreground: 222 45% 6%;
   --popover: 0 0% 100%;
   --popover-foreground: 222 45% 6%;
-  --primary: 205 92% 50%;
+  /* Light-mode primary on the LOCKED 183° axis (same hue as dark mode's
+     #7DF9FF, just darker L for accessibility on white). Identity lock:
+     no 205° hue anywhere in the codebase. */
+  --primary: 183 90% 38%;
   --primary-foreground: 0 0% 100%;
   --secondary: 215 25% 96%;
   --secondary-foreground: 222 45% 6%;
@@ -114,7 +117,7 @@
   --destructive-foreground: 0 0% 98%;
   --border: 215 20% 88%;
   --input: 215 20% 88%;
-  --ring: 205 92% 50%;
+  --ring: 183 90% 38%;
   --warm-accent: 41 100% 45%;
   --tertiary-foreground: 213 14% 42%;
 }
@@ -848,7 +851,7 @@
 
    Color tone override: spec gave rgba(6,18,34) but the next
    section's actual computed top color (HSL 222 45% 4% background
-   tinted by HSL 205 92% 62% primary at 10% alpha) composites to
+   tinted by the locked 183° cyan primary at 10% alpha) composites to
    rgb(12,24,38). User spec explicitly authorised using the
    computed color over the spec literal — so the gradient uses
    rgba(12,24,38) at every stop for a pixel-exact seam match.
@@ -877,7 +880,7 @@
      = section color at 0.6 alpha at 50%, terminal = SOLID section
      color at 100%. Using rgb(12,24,38) — the next section's exact
      composited top edge color (HSL 222 45% 4% bg tinted by HSL
-     205 92% 62% primary at 10% alpha = rgb(12,24,38)). */
+     183° cyan primary at 10% alpha — pure black-glass tint). */
   /* v8.8 (May-2026): blend terminal updated from rgb(12,24,38) to
      #03070d to match the new .homepage-shell linear-gradient's
      darkest stop. The hero now sits on top of the page-level shell
