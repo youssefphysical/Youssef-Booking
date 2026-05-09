@@ -189,20 +189,16 @@ export function Navigation() {
   // ============= PUBLIC TOP NAV =============
   return (
     <header
-      className="fixed top-0 inset-x-0 z-[100] bg-background md:bg-background/92 lg:bg-background/82 lg:backdrop-blur-md border-b border-white/5"
+      className="fixed top-0 inset-x-0 z-[100] bg-background/95 md:bg-background/75 md:backdrop-blur-lg border-b border-white/5"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="max-w-6xl mx-auto px-3 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
-        {/* Brand link — `min-w-0` + `truncate` allow the brand text to
-            shrink/ellipsize before the action cluster on the right ever
-            gets clipped. The action cluster is `shrink-0` so the
-            hamburger always stays inside the viewport, even on 360px. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"
-          className="font-display font-bold text-base sm:text-lg min-w-0 flex-1"
+          className="font-display font-bold text-base sm:text-lg shrink-0 min-w-0"
           data-testid="link-brand"
         >
-          <span className="text-gradient-blue block truncate">
+          <span className="text-gradient-blue whitespace-nowrap">
             <span className="hidden sm:inline">{t("nav.brand")}</span>
             <span className="sm:hidden">{t("brand.trainerName", "Youssef Ahmed")}</span>
           </span>
@@ -230,7 +226,7 @@ export function Navigation() {
             never be obscured. This is belt-and-braces: the header is
             already z-[100] and the hero overlay layers all sit at the
             default z=0 inside their own .hero-isolate stacking context. */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0 relative z-[110]">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-[110]">
           {isConfirmedUser && user?.role === "client" && <NotificationsBell />}
           <LanguageSelector />
           {/* DESKTOP AUTH AREA — STRICT mutually-exclusive conditional.
@@ -252,7 +248,7 @@ export function Navigation() {
                 <Link
                   href="/profile"
                   data-testid="link-nav-profile-avatar"
-                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25 btn-press"
+                  className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 h-9 rounded-full border border-white/10 hover:bg-white/5 hover:border-white/20 btn-soft"
                   title={t("nav.profileTitle")}
                 >
                   <UserAvatar
@@ -271,7 +267,7 @@ export function Navigation() {
               <button
                 onClick={requestLogout}
                 data-testid="button-logout"
-                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25 whitespace-nowrap btn-press"
+                className="hidden sm:inline-flex items-center gap-2 text-sm px-4 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 whitespace-nowrap btn-soft"
               >
                 <LogOut size={14} className="shrink-0" />
                 <span className="whitespace-nowrap">{t("nav.signOut")}</span>
@@ -298,71 +294,44 @@ export function Navigation() {
               opening the drawer. Mutually exclusive with the
               authenticated branch via `isConfirmedUser`. */}
           {isConfirmedUser ? (
-            /* MOBILE SIGN OUT — adaptive width.
-               =================================
-               On the smallest mobile widths (<400px: iPhone SE / small
-               Androids) the cluster bell+lang+pill+hamburger overflows
-               and clips the hamburger. We collapse to an icon-only
-               square (h-9 w-9, matches hamburger geometry exactly) and
-               progressively reveal the label at ≥400px via the
-               arbitrary `min-[400px]:` breakpoint. `aria-label` keeps
-               a11y intact when the visible label is hidden. */
             <button
               type="button"
               onClick={requestLogout}
               data-testid="button-mobile-signout-pill"
-              aria-label={t("nav.signOut")}
-              title={t("nav.signOut")}
               style={{
                 position: "relative",
                 zIndex: 9999,
                 opacity: 1,
                 pointerEvents: "auto",
               }}
-              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm h-9 w-9 min-[400px]:w-auto min-[400px]:px-3 rounded-xl border border-white/15 bg-white/5 text-foreground font-semibold hover:bg-white/10 hover:border-white/25 whitespace-nowrap shrink-0 btn-press"
+              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl border border-white/15 bg-white/5 text-foreground font-semibold hover:bg-white/10 hover:border-white/25 whitespace-nowrap shrink-0 btn-press"
             >
               <LogOut size={14} className="shrink-0" />
-              <span className="hidden min-[400px]:inline whitespace-nowrap">{t("nav.signOut")}</span>
+              <span className="whitespace-nowrap">{t("nav.signOut")}</span>
             </button>
           ) : (
             <Link
               href="/auth"
               data-testid="link-signin"
-              aria-label={t("nav.signIn")}
-              title={t("nav.signIn")}
               style={{
                 position: "relative",
                 zIndex: 9999,
                 opacity: 1,
                 pointerEvents: "auto",
               }}
-              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm h-9 w-9 min-[400px]:w-auto min-[400px]:px-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
             >
               <LogIn size={14} className="shrink-0" />
-              <span className="hidden min-[400px]:inline whitespace-nowrap">{t("nav.signIn")}</span>
+              <span className="whitespace-nowrap">{t("nav.signIn")}</span>
             </Link>
           )}
-          {/* MOBILE HAMBURGER — visually unified with the sibling Sign In /
-              Sign Out pills (May 2026 polish pass): same h-9, same rounded-xl,
-              same border-white/15 + bg-white/5 glass, same btn-press tap
-              feedback, square aspect (h-9 w-9) so the icon sits perfectly
-              centered. Icon size unchanged at 18. The icon swap (Menu ↔ X)
-              gets a soft 200ms scale+rotate via the inline span so the
-              open/close transition feels premium, not jarring. */}
           <button
-            type="button"
-            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-xl border border-white/15 bg-white/5 text-foreground hover:bg-white/10 hover:border-white/25 shrink-0 btn-press"
+            className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
             aria-label={t("nav.toggleMenu")}
-            aria-expanded={open}
             data-testid="button-mobile-menu"
           >
-            <span
-              className="inline-flex items-center justify-center transition-transform duration-200 ease-out"
-              style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
-            >
-              {open ? <X size={18} strokeWidth={1.75} /> : <Menu size={18} strokeWidth={1.75} />}
-            </span>
+            {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>

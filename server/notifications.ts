@@ -41,25 +41,15 @@ export async function sendWelcomeNotifications({
       lang: lang || "en",
       websiteUrl: publicWebsiteUrl(),
     });
-    const result = await sendEmail({
+    await sendEmail({
       to: email,
       subject: built.subject,
       text: built.text,
       html: built.html,
       replyTo: trainerEmail(),
     });
-    // LOUD diagnostic — previously the SendResult was discarded so a
-    // "domain not verified" 403 from Resend was invisible at this layer
-    // (sendEmail logged it, but with no client-context). Now every welcome
-    // attempt prints its outcome with the recipient address — makes the
-    // "admin email arrives, client email doesn't" debug a 1-grep job.
-    if (result.sent) {
-      console.log(`[notifications] WELCOME OK → ${email} (provider=${result.provider} id=${result.id ?? "?"})`);
-    } else {
-      console.warn(`[notifications] WELCOME FAILED → ${email} reason=${result.error ?? "unknown"} provider=${result.provider ?? "n/a"}`);
-    }
   } catch (e) {
-    console.warn("[notifications] welcome email threw:", e);
+    console.warn("[notifications] welcome email failed:", e);
   }
 
   // SMS / WhatsApp — only sends if a provider is configured. Stubbed.

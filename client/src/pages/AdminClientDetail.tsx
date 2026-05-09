@@ -1778,7 +1778,7 @@ function BookingsList({ userId }: { userId: number }) {
   const [coachOpen, setCoachOpen] = useState<any>(null);
 
   if (isLoading) return <Skeleton />;
-  if (list.length === 0) return <EmptyBox text={t("admin.clientDetail.noBookingsYet", "No bookings yet")} />;
+  if (list.length === 0) return <EmptyBox text="No bookings yet" />;
 
   const hasCoachNotes = (b: any) =>
     b.sessionEnergy != null ||
@@ -2205,7 +2205,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
       </div>
 
       {list.length === 0 ? (
-        <EmptyBox text={t("admin.clientDetail.noPackagesAssigned", "No packages assigned")} />
+        <EmptyBox text="No packages assigned" />
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {list.map((p) => {
@@ -2507,7 +2507,7 @@ function InbodyPanel({ userId }: { userId: number }) {
       </div>
 
       {list.length === 0 ? (
-        <EmptyBox text={t("admin.clientDetail.noInbodyScans", "No InBody scans")} />
+        <EmptyBox text="No InBody scans" />
       ) : (
         <div className="space-y-3">
           {list.map((r) => (

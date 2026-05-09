@@ -425,18 +425,6 @@ async function run(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS supplement_stacks_active_idx ON supplement_stacks (active);
 
-    -- Coach-Curated Protocol public surface (Phase A, May 2026). All
-    -- additive — existing rows default to tier='custom', is_public=false
-    -- so nothing changes for stacks created before this migration.
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS tier text NOT NULL DEFAULT 'custom';
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_title text;
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_subtitle text;
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS public_description text;
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS ideal_for text[] NOT NULL DEFAULT ARRAY[]::text[];
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS philosophy text;
-    ALTER TABLE supplement_stacks ADD COLUMN IF NOT EXISTS is_public boolean NOT NULL DEFAULT false;
-    CREATE INDEX IF NOT EXISTS supplement_stacks_public_idx ON supplement_stacks (is_public) WHERE is_public = true;
-
     CREATE TABLE IF NOT EXISTS supplement_stack_items (
       id serial PRIMARY KEY,
       stack_id integer NOT NULL REFERENCES supplement_stacks(id) ON DELETE CASCADE,
@@ -579,69 +567,6 @@ async function run(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS client_notifications_dedupe_uq
       ON client_notifications (user_id, kind, dedupe_key)
       WHERE dedupe_key IS NOT NULL;
-
-    -- May 2026 Tron homepage rebuild: admin-editable marketing CMS.
-    -- One row per named homepage section ("hero", "philosophy",
-    -- "final_cta", future keys). All columns nullable / defaulted so
-    -- a freshly-inserted blank row is safe — frontend falls back to
-    -- premium default copy when a key is missing/inactive.
-    CREATE TABLE IF NOT EXISTS homepage_sections (
-      key text PRIMARY KEY,
-      eyebrow text,
-      title text,
-      subtitle text,
-      body text,
-      image_data_url text,
-      image_alt text,
-      object_position_desktop text DEFAULT 'center center',
-      object_position_mobile text DEFAULT 'center center',
-      overlay_opacity integer DEFAULT 45,
-      blur_intensity integer DEFAULT 0,
-      cta_primary_label text,
-      cta_primary_href text,
-      cta_secondary_label text,
-      cta_secondary_href text,
-      is_active boolean NOT NULL DEFAULT true,
-      sort_order integer NOT NULL DEFAULT 0,
-      updated_at timestamp DEFAULT now()
-    );
-    -- Seed canonical keys so the admin CMS shows them out of the box.
-    -- ON CONFLICT DO NOTHING keeps any prior admin edits intact.
-    INSERT INTO homepage_sections (key, sort_order) VALUES
-      ('hero', 0),
-      ('philosophy', 1),
-      ('final_cta', 2)
-    ON CONFLICT (key) DO NOTHING;
-
-    -- May 2026 media architecture: proper responsive media pipeline.
-    -- One row = one fully-optimised photo (master 1920 WebP + 10
-    -- responsive variants + LQIP). Variants are served as cacheable
-    -- binaries via /api/media/:id/v/:bp/:fmt/:w; the JSON manifest
-    -- only carries metadata so payloads stay small.
-    CREATE TABLE IF NOT EXISTS media_assets (
-      id serial PRIMARY KEY,
-      original_width integer NOT NULL,
-      original_height integer NOT NULL,
-      original_mime text,
-      focal_x integer NOT NULL DEFAULT 50,
-      focal_y integer NOT NULL DEFAULT 50,
-      desktop_aspect text NOT NULL DEFAULT '16/9',
-      mobile_aspect text NOT NULL DEFAULT '4/5',
-      master text NOT NULL,
-      variants jsonb NOT NULL,
-      lqip text NOT NULL,
-      alt_text text,
-      priority boolean NOT NULL DEFAULT false,
-      is_active boolean NOT NULL DEFAULT true,
-      created_at timestamp DEFAULT now(),
-      updated_at timestamp DEFAULT now()
-    );
-
-    -- Bind a media_assets row to a homepage section. Nullable so the
-    -- legacy image_data_url path keeps rendering until admin
-    -- re-uploads through the new optimised pipeline.
-    ALTER TABLE homepage_sections
-      ADD COLUMN IF NOT EXISTS media_asset_id integer REFERENCES media_assets(id) ON DELETE SET NULL;
   `;
 
   try {

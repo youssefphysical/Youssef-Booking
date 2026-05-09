@@ -46,7 +46,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TodayHero } from "@/components/TodayHero";
-import { GettingStartedChecklist } from "@/components/GettingStartedChecklist";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,53 +132,47 @@ export default function ClientDashboard() {
   if (!user) return null;
 
   return (
-    <div className="max-w-5xl mx-auto px-5 sm:px-6 pt-20 sm:pt-24 pb-20">
-      {/* Header — softened on mobile: avatar stays 64 (recognition), but
-          the H1 drops one step (text-2xl → text-3xl at sm) and the eyebrow
-          tracking is tighter so the greeting feels less admin-panel-like
-          and more like a luxury coaching app. */}
-      <div className="flex items-center justify-between mb-4 sm:mb-5 gap-3 sm:gap-4 flex-wrap">
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+    <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+        <div className="flex items-start gap-4 min-w-0">
           <Link href="/profile" data-testid="link-dashboard-avatar" className="shrink-0">
             <UserAvatar
               src={user.profilePictureUrl}
               name={user.fullName}
-              size={56}
+              size={64}
               testId="img-dashboard-avatar"
             />
           </Link>
           <div className="min-w-0">
-            <p className="text-[10.5px] uppercase tracking-[0.22em] text-primary/85 mb-1">{t("dashboard.eyebrow")}</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("dashboard.eyebrow")}</p>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-[22px] sm:text-3xl font-display font-semibold leading-tight tracking-tight" data-testid="text-greeting">
+              <h1 className="text-3xl font-display font-bold leading-tight" data-testid="text-greeting">
                 {t("dashboard.greeting").replace("{name}", user.fullName.split(" ")[0])}
               </h1>
               {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
-              <VipBadge tier={user.vipTier ?? "foundation"} />
             </div>
-            <p className="text-muted-foreground text-[12.5px] sm:text-sm mt-1 line-clamp-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {t("dashboard.subtitle")}
             </p>
+            <div className="mt-3">
+              <VipBadge tier={user.vipTier ?? "foundation"} />
+            </div>
           </div>
         </div>
-        <Link href="/book" data-testid="link-new-booking" className="shrink-0">
-          <Button className="h-9 rounded-xl text-sm font-medium">
-            <Plus size={15} className="mr-1.5" /> {t("dashboard.newBooking")}
-          </Button>
-        </Link>
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/book" data-testid="link-new-booking">
+            <Button className="h-11 rounded-xl">
+              <Plus size={16} className="mr-1.5" /> {t("dashboard.newBooking")}
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Unified rhythm — all top-level dashboard sections share the same
-          vertical gap so the page reads as one calm column instead of a
-          stack of cards with random spacing. Individual sections must NOT
-          carry their own outer mb-* (they delegate to this parent). */}
-      <div className="space-y-4 sm:space-y-5">
-        <TodayHero name={user.fullName} />
-        <GettingStartedChecklist />
-        <MembershipBlock user={user} />
-        <BookingEligibilityBanner userId={user.id} user={user} />
+      <TodayHero name={user.fullName} />
+      <MembershipBlock user={user} />
+      <BookingEligibilityBanner userId={user.id} user={user} />
 
-        <Tabs defaultValue="bookings" className="w-full">
+      <Tabs defaultValue="bookings" className="w-full">
         <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
@@ -217,8 +210,7 @@ export default function ClientDashboard() {
         <TabsContent value="activity">
           <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
         </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
     </div>
   );
 }
@@ -288,7 +280,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 
   return (
     <div
-      className="rounded-2xl border border-white/[0.07] bg-card/40 p-4 sm:p-5"
+      className="rounded-3xl border border-white/10 bg-card/40 p-5 mb-6"
       data-testid="block-membership"
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -326,11 +318,11 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         <div
-          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"
+          className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3"
           data-testid="block-protected-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-amber-200/80 inline-flex items-center gap-1.5">
-            <Shield size={11} className="text-amber-300/80" /> {t("dashboard.protectedCancellations")}
+            <Shield size={11} /> {t("dashboard.protectedCancellations")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
             {protQuota === 0 ? (
@@ -344,11 +336,11 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           </p>
         </div>
         <div
-          className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3"
+          className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-3"
           data-testid="block-sameday-remaining"
         >
           <p className="text-[10px] uppercase tracking-wider text-blue-200/80 inline-flex items-center gap-1.5">
-            <Clock size={11} className="text-blue-300/80" /> {t("dashboard.sameDayAdjustments")}
+            <Clock size={11} /> {t("dashboard.sameDayAdjustments")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
             {adjQuota === 0 ? (
@@ -1755,9 +1747,9 @@ function Section({
   empty?: React.ReactNode;
 }) {
   return (
-    <section className="mb-8 sm:mb-10">
-      <div className="flex items-baseline gap-3 mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-lg font-display font-bold">{title}</h2>
+    <section className="mb-10">
+      <div className="flex items-baseline gap-3 mb-4">
+        <h2 className="text-lg font-display font-bold">{title}</h2>
         <span className="text-xs text-muted-foreground">{count}</span>
       </div>
       {count === 0 ? empty : <div className="grid gap-3">{children}</div>}
@@ -1767,7 +1759,7 @@ function Section({
 
 function EmptyState({ title, cta }: { title: string; cta?: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 sm:p-10 text-center">
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
       <Calendar className="mx-auto text-muted-foreground/40 mb-3" size={28} />
       <p className="text-sm text-muted-foreground">{title}</p>
       {cta}
@@ -1798,7 +1790,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
   if (verdict.ok) return null;
   return (
     <div
-      className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-start gap-3"
+      className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3"
       data-testid="banner-dashboard-eligibility"
     >
       <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />

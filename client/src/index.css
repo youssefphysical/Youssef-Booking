@@ -81,18 +81,8 @@
     @apply border-border;
   }
   html {
-    /* PERF v9.4 (May 2026 mobile-Android scroll pass): scroll-behavior
-       gated to (hover:hover) so it only applies on devices with a real
-       pointer (desktops/laptops). On touch devices it can interfere
-       with the browser's native momentum scroll handoff. The smooth
-       scrollIntoView() callers (hero scroll cue, "view results" jump)
-       are all desktop-only buttons (display:none on mobile), so this
-       is a pure win — touch users get true native momentum, desktop
-       users keep the smooth anchor jumps. */
+    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    html { scroll-behavior: smooth; }
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground;
@@ -115,18 +105,6 @@
        browsers that support it, while preventing the hero from
        layout-shifting on rubber-band overscroll. */
     overscroll-behavior: contain;
-    /* PERF v9.4 (May 2026): touch-action: pan-y tells the browser the
-       page only supports vertical panning, so it can dispatch scroll
-       events IMMEDIATELY on touchstart instead of waiting ~100-300ms
-       to see if the user is doing a pinch-zoom or double-tap-zoom.
-       This is THE classic Android Chrome / Samsung Internet "first
-       scroll feels delayed" fix — the browser was always silky, it
-       just had to wait for gesture disambiguation. We use pan-y
-       (not none) so vertical scroll AND browser pull-to-refresh both
-       still work; it only blocks pinch-zoom and double-tap-zoom,
-       which the page doesn't support anyway (responsive layout +
-       user-scalable=no in viewport meta). */
-    touch-action: pan-y;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
@@ -345,27 +323,16 @@
 /* Dark glass panel with a hairline cyan border + faint inner highlight. */
 .tron-card {
   background:
-    linear-gradient(165deg, hsl(220 35% 8% / 0.96), hsl(222 45% 5% / 0.97));
+    linear-gradient(165deg, hsl(220 35% 8% / 0.92), hsl(222 45% 5% / 0.94));
   border: 1px solid hsl(195 90% 55% / 0.18);
   box-shadow:
     inset 0 1px 0 hsl(195 100% 70% / 0.12),
     0 1px 0 hsl(0 0% 0% / 0.4),
     0 14px 32px -18px hsl(195 100% 50% / 0.22);
-  /* PERF v9.3 (May 2026 scroll-smoothness pass): backdrop-filter
-     dropped on mobile and softened on desktop. backdrop-filter on a
-     card above an animated/scrolling background (homepage hero
-     section) forces a per-frame re-rasterisation of everything behind
-     it — measurable scroll jank on Android Chrome / Samsung Internet.
-     Bumped fill alpha 0.92→0.96 / 0.94→0.97 so the card still reads
-     as a soft glass plate without the GPU cost. */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: border-color 280ms ease, box-shadow 280ms ease,
               transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-@media (min-width: 1024px) {
-  .tron-card {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
 }
 .tron-card:hover {
   transform: translateY(-2px);
@@ -548,12 +515,6 @@
   isolation: isolate;
   contain: layout paint style;
   transform: translateZ(0);
-  /* PERF v9.4 (May 2026): explicit touch-action on the hero. Belt-and-
-     braces with the body-level pan-y rule above — guarantees the hero
-     dispatches touch-scroll events with zero gesture-detection delay
-     even if some downstream component tries to set touch-action on a
-     descendant. */
-  touch-action: pan-y;
 }
 
 /* HERO VISUAL POLISH SET (v8.7, May-2026).
@@ -709,17 +670,13 @@
      Admin per-image brightness/contrast still multiply onto this
      baseline via the inline `sharpStyle` in HeroSlider.tsx. */
   filter: brightness(1.05) contrast(1.08) saturate(1.05);
-  /* PERF v9.4 (May 2026): will-change: transform REMOVED. Each .hero-
-     slide-layer parent already declares will-change: opacity + a
-     compositor layer, so the inner <img> doesn't need its OWN GPU
-     layer on top. With N slides the previous setup allocated 2N
-     compositor layers (one per parent + one per image) — heavy
-     mobile GPU memory pressure on phones with 4-6 slides. Now it's N
-     layers (parent only). The image still inherits the parent's
-     hardware compositing because of the parent's translateZ(0).
-     translateZ(0) here is also dropped for the same reason — the
-     parent already promotes the subtree. backface-visibility:hidden
-     stays (cheap, kills sub-pixel rounding artifacts during fade). */
+  will-change: transform;
+  /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
+     but guarantees Chromium/WebKit rasterise the bitmap on its own
+     compositor layer up-front — eliminates the first-frame "soft
+     then snap-sharp" judder some mid-range phones used to show on
+     slide-change. Pairs with backface-visibility:hidden below. */
+  transform: translateZ(0);
   /* Browser-default downscaling produces the best perceptual quality
      for photographic content (uses high-quality bicubic on Chromium /
      WebKit). Forcing pixelated/crisp-edges would shred the cinematic
@@ -1163,24 +1120,6 @@
     );
 }
 
-/* PERF v9.4 (May 2026 mobile scroll pass): paint-isolation utility
-   for homepage sections below the hero. content-visibility: auto
-   tells the browser "skip rendering work for this element when it's
-   off-screen" — when sections scroll into view they paint just-in-
-   time, when they scroll out they're skipped again. Massive scroll
-   smoothness win on long pages because the compositor only has to
-   manage the in-viewport sections instead of the full document.
-   contain-intrinsic-size reserves the right amount of layout space
-   so there's NO CLS as sections enter/leave the viewport. The min/
-   max-width:100% pattern preserves the natural section width while
-   giving the browser a height hint to use until the real content
-   paints (1200px is generous — covers tall sections without over-
-   reserving). */
-.homepage-section {
-  content-visibility: auto;
-  contain-intrinsic-size: 1px 1200px;
-}
-
 /* =====================================================================
    ADMIN PANEL — premium SaaS layout system (May 2026 QA pass)
    ---------------------------------------------------------------------
@@ -1424,29 +1363,18 @@
 }
 
 /* (3) A24-style film grain — the single detail that makes hero photos
-   read as "cinema still" rather than "stock photo".
-   PERF v9.3 (May 2026 scroll-smoothness pass):
-   - REMOVED mix-blend-mode: soft-light. Same root-cause as the earlier
-     fix to .tron-spotlight / .tron-shaft: blend modes force a full
-     repaint of the hero stacking context on every scroll frame
-     (catastrophic on Android Chrome / Samsung Internet). Now uses
-     plain alpha compositing (opacity bumped 0.045 → 0.07 to keep the
-     visible grain density similar without the blend boost).
-   - HIDDEN on mobile (display:none below md). The grain is barely
-     perceptible at phone sizes anyway and removing it eliminates one
-     per-scroll-frame compositor layer on the lowest-end hardware. */
+   read as "cinema still" rather than "stock photo". 4% opacity, soft
+   light blend. Inline SVG noise (no extra HTTP request). Sits below
+   the copy overlay so text remains pixel-sharp. */
 .hero-grain {
-  display: none;
   position: absolute;
   inset: 0;
   z-index: 4;
   pointer-events: none;
-  opacity: 0.07;
+  opacity: 0.045;
+  mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 200px 200px;
-}
-@media (min-width: 768px) {
-  .hero-grain { display: block; }
 }
 
 /* (4) Trust micro-strip — sits under the CTAs inside the copy block.

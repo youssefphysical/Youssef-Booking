@@ -135,15 +135,15 @@ export function NotificationsBell({ className }: { className?: string }) {
           aria-label="Notifications"
           data-testid="button-notifications-bell"
           className={cn(
-            "relative inline-flex items-center justify-center h-9 w-9 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25 transition-colors btn-press",
+            "relative inline-flex items-center justify-center h-9 w-9 rounded-full border border-white/10 hover:bg-white/5 hover:border-white/20 transition-colors btn-soft",
             className,
           )}
         >
-          <Bell size={18} strokeWidth={1.75} className="text-white/85" />
+          <Bell size={16} className="text-white/80" />
           {count > 0 && (
             <span
               data-testid="badge-notifications-unread"
-              className="absolute -top-1 -end-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center border-2 border-background"
+              className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center border-2 border-background"
             >
               {count > 99 ? "99+" : count}
             </span>

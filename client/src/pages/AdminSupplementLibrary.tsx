@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useTranslation } from "@/i18n";
 import { ArrowLeft, Plus, Pill, Trash2, Edit3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +43,6 @@ import {
 // Admin-curated supplement library. Editing or deleting a row here is
 // always safe — every assignment / stack carries its own snapshot.
 export default function AdminSupplementLibrary() {
-  const { t } = useTranslation();
   const { data: items = [], isLoading } = useSupplements();
   const create = useCreateSupplement();
   const update = useUpdateSupplement();
@@ -86,37 +84,37 @@ export default function AdminSupplementLibrary() {
           className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
           data-testid="link-back-admin"
         >
-          <ArrowLeft size={14} /> {t("admin.backToAdmin", "Back to Admin")}
+          <ArrowLeft size={14} /> Back to Admin
         </Link>
 
         <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.supplementLibrary.eyebrow", "Catalogue")}</p>
-            <h1 className="text-3xl font-display font-bold leading-tight">{t("admin.supplementLibrary.title", "Supplement Library")}</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Catalogue</p>
+            <h1 className="text-3xl font-display font-bold leading-tight">Supplement Library</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {t("admin.supplementLibrary.subtitle", "Curate the supplements you prescribe. Edits never affect existing client protocols.")}
+              Curate the supplements you prescribe. Edits never affect existing client protocols.
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/supplement-stacks">
-              <Button variant="outline" data-testid="link-stacks">{t("admin.supplementLibrary.stacksLink", "Stacks →")}</Button>
+              <Button variant="outline" data-testid="link-stacks">Stacks →</Button>
             </Link>
             <Button onClick={startNew} data-testid="button-new-supplement">
-              <Plus size={16} className="mr-1.5" /> {t("common.new", "New")}
+              <Plus size={16} className="mr-1.5" /> New
             </Button>
           </div>
         </div>
 
         {isLoading ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-            {t("common.loading", "Loading…")}
+            Loading…
           </div>
         ) : items.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center">
             <Pill className="mx-auto mb-3 text-muted-foreground" size={32} />
-            <p className="text-muted-foreground mb-4">{t("admin.supplementLibrary.emptyText", "No supplements in the library yet.")}</p>
+            <p className="text-muted-foreground mb-4">No supplements in the library yet.</p>
             <Button onClick={startNew} data-testid="button-new-supplement-empty">
-              <Plus size={16} className="mr-1.5" /> {t("admin.supplementLibrary.addFirst", "Add your first")}
+              <Plus size={16} className="mr-1.5" /> Add your first
             </Button>
           </div>
         ) : (
@@ -145,7 +143,6 @@ export default function AdminSupplementLibrary() {
 }
 
 function SupplementCard({ item, onEdit, onDelete }: { item: Supplement; onEdit: () => void; onDelete: () => void }) {
-  const { t } = useTranslation();
   return (
     <div
       className="rounded-2xl border border-white/5 bg-card/60 p-4 flex flex-col gap-2"
@@ -168,7 +165,7 @@ function SupplementCard({ item, onEdit, onDelete }: { item: Supplement; onEdit: 
       </p>
       {(item.defaultTrainingDayOnly || item.defaultRestDayOnly) && (
         <Badge variant="outline" className="self-start text-[10px]">
-          {item.defaultTrainingDayOnly ? t("admin.supplementLibrary.trainingDaysOnly", "Training days only") : t("admin.supplementLibrary.restDaysOnly", "Rest days only")}
+          {item.defaultTrainingDayOnly ? "Training days only" : "Rest days only"}
         </Badge>
       )}
       {item.warnings && (
@@ -179,7 +176,7 @@ function SupplementCard({ item, onEdit, onDelete }: { item: Supplement; onEdit: 
       )}
       <div className="flex gap-2 mt-auto pt-2">
         <Button size="sm" variant="outline" className="flex-1" onClick={onEdit} data-testid={`button-edit-supplement-${item.id}`}>
-          <Edit3 size={12} className="mr-1.5" /> {t("common.edit", "Edit")}
+          <Edit3 size={12} className="mr-1.5" /> Edit
         </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -189,13 +186,13 @@ function SupplementCard({ item, onEdit, onDelete }: { item: Supplement; onEdit: 
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{t("admin.supplementLibrary.deleteTitle", "Delete")} "{item.name}"?</AlertDialogTitle>
+              <AlertDialogTitle>Delete "{item.name}"?</AlertDialogTitle>
               <AlertDialogDescription>
-                {t("admin.supplementLibrary.deleteDesc", "Removes from the library. Existing client assignments are unaffected (they snapshot the data).")}
+                Removes from the library. Existing client assignments are unaffected (they snapshot the data).
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={onDelete} data-testid={`button-confirm-delete-${item.id}`}>Delete</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -218,7 +215,6 @@ function SupplementDialog({
   onSave: (form: SupplementFormValue, isPrescription: boolean, active: boolean, nameAr: string) => Promise<void> | void;
   saving: boolean;
 }) {
-  const { t } = useTranslation();
   const [form, setForm] = useState<SupplementFormValue>(emptySupplementForm());
   const [isPrescription, setIsPrescription] = useState(false);
   const [active, setActive] = useState(true);
@@ -244,30 +240,30 @@ function SupplementDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-supplement">
         <DialogHeader>
-          <DialogTitle>{initial ? `${t("common.edit", "Edit")} ${initial.name}` : t("admin.supplementLibrary.newSupplement", "New Supplement")}</DialogTitle>
+          <DialogTitle>{initial ? `Edit ${initial.name}` : "New Supplement"}</DialogTitle>
         </DialogHeader>
 
         <SupplementFormFields value={form} onChange={setForm} testIdPrefix="lib" />
 
         <div className="grid sm:grid-cols-2 gap-3 pt-2 border-t border-white/5">
           <label className="flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5 text-sm">
-            <span>{t("admin.supplementLibrary.prescriptionRequired", "Prescription required")}</span>
+            <span>Prescription required</span>
             <Switch checked={isPrescription} onCheckedChange={setIsPrescription} data-testid="switch-prescription" />
           </label>
           <label className="flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5 text-sm">
-            <span>{t("admin.supplementLibrary.activeInLibrary", "Active in library")}</span>
+            <span>Active in library</span>
             <Switch checked={active} onCheckedChange={setActive} data-testid="switch-active" />
           </label>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} data-testid="button-cancel">{t("common.cancel", "Cancel")}</Button>
+          <Button variant="outline" onClick={onClose} data-testid="button-cancel">Cancel</Button>
           <Button
             onClick={() => onSave(form, isPrescription, active, nameAr)}
             disabled={saving || !form.name.trim()}
             data-testid="button-save"
           >
-            {saving ? t("common.saving", "Saving…") : initial ? t("common.saveChanges", "Save changes") : t("admin.supplementLibrary.addToLibrary", "Add to library")}
+            {saving ? "Saving…" : initial ? "Save changes" : "Add to library"}
           </Button>
         </DialogFooter>
       </DialogContent>

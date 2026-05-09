@@ -1,22 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { format, formatDistanceToNow, isToday, isTomorrow } from "date-fns";
 import {
-  ArrowRight,
   CalendarClock,
   Droplets,
   Flame,
-  Info,
   Pill,
   Target,
   Trophy,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export type TodaySummary = {
   nextSession: {
@@ -44,80 +35,47 @@ const GOAL_LABELS: Record<string, string> = {
   rehabilitation: "Rehabilitation",
 };
 
-function formatNextSession(iso: string): { primary: string; sub: string | null } {
+function formatNextSession(iso: string): string {
   try {
     const d = new Date(iso);
-    if (isToday(d)) return { primary: `Today · ${format(d, "p")}`, sub: null };
-    if (isTomorrow(d)) return { primary: `Tomorrow · ${format(d, "p")}`, sub: null };
-    return {
-      primary: format(d, "EEE p"),
-      sub: formatDistanceToNow(d, { addSuffix: true }),
-    };
+    if (isToday(d)) return `Today · ${format(d, "p")}`;
+    if (isTomorrow(d)) return `Tomorrow · ${format(d, "p")}`;
+    return `${formatDistanceToNow(d, { addSuffix: true })} · ${format(d, "EEE p")}`;
   } catch {
-    return { primary: iso, sub: null };
+    return iso;
   }
 }
 
-/* MiniChip — secondary, intentionally calmer than the primary card.
-   Same recipe as the unified glass system used across the dashboard
-   (border-white/10, bg-white/[0.03], rounded-2xl) so chips read as
-   members of the same family, not competing surfaces. */
-function MiniChip({
+function Stat({
   icon: Icon,
   label,
   value,
   sub,
-  helper,
-  isEmpty = false,
+  tone = "text-white",
   testId,
 }: {
   icon: typeof Trophy;
   label: string;
   value: string;
   sub?: string | null;
-  helper?: string;
-  isEmpty?: boolean;
+  tone?: string;
   testId: string;
 }) {
   return (
     <div
-      className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 sm:p-3.5"
+      className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition"
       data-testid={testId}
     >
-      <div className="inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest text-white/55">
-        <Icon size={11} className="text-white/50" />
-        <span className="truncate">{label}</span>
-        {helper ? (
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={`About ${label}`}
-                  className="-m-1 p-1 text-white/35 hover:text-white/70 transition-colors"
-                  data-testid={`${testId}-info`}
-                >
-                  <Info size={10} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[220px] text-xs leading-snug normal-case tracking-normal">
-                {helper}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : null}
+      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 ring-1 ring-white/10">
+        <Icon size={16} className={tone} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] uppercase tracking-widest text-white/50">{label}</p>
+        <p className={`mt-0.5 truncate text-lg font-semibold ${tone}`} data-testid={`${testId}-value`}>
+          {value}
+        </p>
+        {sub ? <p className="text-xs text-white/55">{sub}</p> : null}
       </div>
-      <p
-        className={`mt-1 truncate text-base sm:text-[17px] font-semibold ${
-          isEmpty ? "text-white/40" : "text-white"
-        }`}
-        data-testid={`${testId}-value`}
-      >
-        {value}
-      </p>
-      {sub ? (
-        <p className="mt-0.5 text-[11.5px] text-white/55 line-clamp-1">{sub}</p>
-      ) : null}
     </div>
   );
 }
@@ -128,21 +86,20 @@ export function TodayHero({ name }: { name?: string | null }) {
   if (isLoading || !data) {
     return (
       <div
-        className="rounded-2xl bg-card/30 p-4 sm:p-5"
+        className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-6"
         data-testid="today-hero-loading"
       >
         <div className="h-5 w-40 animate-pulse rounded bg-white/10" />
-        <div className="mt-4 h-24 animate-pulse rounded-2xl bg-white/5" />
-        <div className="mt-3 grid grid-cols-3 gap-2.5">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-white/5" />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white/5" />
           ))}
         </div>
       </div>
     );
   }
 
-  const goalLabel = data.goal.primary ? (GOAL_LABELS[data.goal.primary] ?? data.goal.primary) : null;
+  const goalLabel = data.goal.primary ? (GOAL_LABELS[data.goal.primary] ?? data.goal.primary) : "Set your goal";
   const goalSub =
     data.goal.deltaKg != null
       ? `${data.goal.deltaKg > 0 ? "+" : ""}${data.goal.deltaKg.toFixed(1)} kg since start`
@@ -150,163 +107,85 @@ export function TodayHero({ name }: { name?: string | null }) {
         ? `${data.goal.weightLatestKg.toFixed(1)} kg latest`
         : null;
 
-  /* Premium empty-state copy (May 2026 polish):
-     replaces cold system phrases ("No plan yet", "Nothing booked",
-     "No active supplements") with supportive coaching language. */
-  const session = data.nextSession ? formatNextSession(data.nextSession.date) : null;
-  const sessionPrimary = session?.primary ?? "Your next session starts your momentum";
-  const sessionSub = session
-    ? (session.sub ?? data.nextSession?.sessionType ?? null)
-    : null;
+  const waterValue = data.waterTargetMl ? `${(data.waterTargetMl / 1000).toFixed(1)} L` : "—";
+  const waterSub = data.waterTargetMl ? "Daily target" : "No plan yet";
 
-  const hasWater = !!data.waterTargetMl;
-  const waterValue = hasWater ? `${(data.waterTargetMl! / 1000).toFixed(1)} L` : "—";
-  const waterSub = hasWater ? "Daily target" : "Activates with your plan";
+  const streakValue = data.streakWeeks > 0 ? `${data.streakWeeks} wk` : "—";
+  const streakSub = data.streakWeeks > 0 ? "Consecutive active weeks" : "Start a streak this week";
 
-  const hasStreak = data.streakWeeks > 0;
-  const streakValue = hasStreak ? `${data.streakWeeks} wk` : "—";
-  const streakSub = hasStreak ? "Active weeks in a row" : "Begins with your first week";
+  const sessionValue = data.nextSession ? formatNextSession(data.nextSession.date) : "Nothing booked";
+  const sessionSub = data.nextSession?.sessionType ?? "Book your next session";
 
-  const hasSupps = data.supplementsToday > 0;
-  const suppValue = hasSupps ? `${data.supplementsToday}` : "—";
-  const suppSub = hasSupps ? "Active today" : "Your supplement plan will appear here";
+  const suppValue = `${data.supplementsToday}`;
+  const suppSub = data.supplementsToday === 0 ? "No active supplements" : "Active today";
 
   return (
     <section
-      className="overflow-hidden rounded-2xl bg-card/30 p-4 sm:p-5"
+      className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-950/40 via-black/30 to-indigo-950/40 p-5 sm:p-6"
       data-testid="today-hero"
     >
-      {/* Header — eyebrow + greeting + (optional) goal sub-line.
-          Goal moved out of its own card and folded into the header so
-          the eye lands on the greeting first, then absorbs the goal as
-          context, then reaches the primary card. */}
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-white/50">
-            Today
-            <TooltipProvider delayDuration={200}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="What is this?"
-                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-white/35 hover:text-white/70 transition-colors"
-                    data-testid="today-info-tooltip"
-                  >
-                    <Info size={11} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                  Your daily snapshot — next session, current goal, and a few signals to keep momentum.
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </p>
-          <h2 className="mt-0.5 text-lg sm:text-[22px] font-medium text-white/95 leading-tight tracking-tight">
+      <header className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-widest text-white/50">Today</p>
+          <h2 className="text-xl font-semibold text-white sm:text-2xl">
             {name ? `Hey ${name.split(" ")[0]},` : "Welcome back,"}{" "}
-            <span className="text-white/65 font-normal">here's your snapshot</span>
+            <span className="text-white/70">here's your snapshot</span>
           </h2>
-          {goalLabel ? (
-            <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12.5px] sm:text-sm text-white/60">
-              <Target size={12} className="text-white/45" />
-              <span>
-                Working on <span className="text-white/80">{goalLabel}</span>
-                {goalSub ? <span className="text-white/45"> · {goalSub}</span> : null}
-              </span>
-            </p>
-          ) : null}
         </div>
         {data.streakWeeks >= 4 ? (
           <span
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-amber-400/20 bg-amber-500/[0.07] px-2.5 py-1 text-[11px] font-medium text-amber-200/90"
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200"
             data-testid="badge-streak-flame"
           >
-            <Flame size={11} /> {data.streakWeeks}-wk
+            <Flame size={12} /> {data.streakWeeks}-week streak
           </span>
         ) : null}
       </header>
 
-      {/* PRIMARY card — Next Session.
-          One large card carries the most actionable information.
-          Layout: icon block + label/value/sub on the left, CTA pill on
-          the right (or full-width below on mobile). The CTA is sized
-          and toned to feel integrated, not dominant: h-9, single soft
-          shadow, no aggressive double-glow. */}
-      <div
-        className="mt-4 sm:mt-5 rounded-2xl border border-white/[0.09] bg-white/[0.025] p-4 sm:p-5"
-        data-testid="primary-next-session"
-      >
-        <div className="flex items-start gap-3 sm:gap-4">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.04] ring-1 ring-white/10">
-            <CalendarClock size={18} className="text-primary/90" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10.5px] uppercase tracking-widest text-white/50">
-              Next session
-            </p>
-            <p
-              className={`mt-0.5 leading-tight ${
-                data.nextSession
-                  ? "text-xl sm:text-2xl font-semibold text-white truncate"
-                  : "text-base sm:text-lg font-medium text-white/75 line-clamp-2"
-              }`}
-              data-testid="primary-next-session-value"
-            >
-              {sessionPrimary}
-            </p>
-            {sessionSub ? (
-              <p className="mt-0.5 text-[12.5px] sm:text-sm text-white/55 truncate">
-                {sessionSub}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        {!data.nextSession ? (
-          <Link
-            href="/book"
-            data-testid="link-today-hero-book"
-            className="mt-3.5 sm:mt-4 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary/95 px-4 h-9 text-sm font-medium text-primary-foreground hover:bg-primary transition-colors"
-          >
-            Book your first session
-            <ArrowRight size={14} className="rtl:rotate-180" />
-          </Link>
-        ) : null}
-      </div>
-
-      {/* SECONDARY chips — quieter, equal weight, scannable.
-          Three chips replace the original four-card grid so the page
-          breathes and the primary card retains hierarchy. Each chip is
-          a calm glass tile with a single muted icon — no per-chip
-          accent colors competing for attention. */}
-      <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-2.5">
-        <MiniChip
-          icon={Trophy}
-          label="Consistency"
-          value={streakValue}
-          sub={streakSub}
-          helper="Small consistent actions create long-term results. Each active week builds momentum."
-          isEmpty={!hasStreak}
-          testId="stat-streak"
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          icon={CalendarClock}
+          label="Next session"
+          value={sessionValue}
+          sub={sessionSub}
+          tone="text-sky-200"
+          testId="stat-next-session"
         />
-        <MiniChip
+        <Stat
           icon={Pill}
           label="Supplements"
           value={suppValue}
           sub={suppSub}
-          helper="Your coach-prescribed supplement protocol for today. Tap the Supplements tab for full guidance."
-          isEmpty={!hasSupps}
+          tone="text-emerald-200"
           testId="stat-supplements-today"
         />
-        <MiniChip
+        <Stat
           icon={Droplets}
-          label="Hydration"
+          label="Water target"
           value={waterValue}
           sub={waterSub}
-          helper="Better hydration improves recovery, energy, and training performance."
-          isEmpty={!hasWater}
+          tone="text-cyan-200"
           testId="stat-water-target"
         />
+        <Stat
+          icon={Trophy}
+          label="Streak"
+          value={streakValue}
+          sub={streakSub}
+          tone="text-amber-200"
+          testId="stat-streak"
+        />
+      </div>
+
+      <div
+        className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+        data-testid="goal-progress-badge"
+      >
+        <Target size={14} className="text-fuchsia-300" />
+        <p className="text-sm text-white">
+          <span className="text-white/60">Goal:</span> {goalLabel}
+        </p>
+        {goalSub ? <p className="ms-auto text-xs text-white/55">{goalSub}</p> : null}
       </div>
     </section>
   );

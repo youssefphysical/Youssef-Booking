@@ -927,7 +927,7 @@ function PackagePicker({
         className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-muted-foreground"
         data-testid="text-no-packages"
       >
-        {t("auth.noPackagesYet", "No packages available right now — you can choose one later from your profile.")}
+        {t("auth.noPackagesYet", "No packages available right now — you can pick one later from your dashboard.")}
       </div>
     );
   }

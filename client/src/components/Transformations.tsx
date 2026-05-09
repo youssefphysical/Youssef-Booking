@@ -73,19 +73,9 @@ export function Transformations() {
           <p className="tron-eyebrow text-xs mb-2">
             {t("section.transformations.eyebrow")}
           </p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-3xl md:text-4xl font-display font-bold">
-              {t("section.transformations.title")}
-            </h2>
-            {data.length >= 2 && (
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary"
-                data-testid="badge-transformation-count"
-              >
-                {data.length}+ {t("transformations.countLabel", "verified results")}
-              </span>
-            )}
-          </div>
+          <h2 className="text-3xl md:text-4xl font-display font-bold">
+            {t("section.transformations.title")}
+          </h2>
           <p className="text-muted-foreground mt-2">
             {t("section.transformations.subtitle")}
           </p>

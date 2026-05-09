@@ -100,11 +100,6 @@ import {
   type UpdateClientSupplement,
   type ApplyStackToClientInput,
   type StackItemInput,
-  homepageSections,
-  type HomepageSection,
-  type UpsertHomepageSection,
-  mediaAssets,
-  type MediaAsset,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -2010,60 +2005,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ===== SUPPLEMENT STACKS =====
-
-  // Coach-Curated Protocols — public surface (Phase A, May 2026).
-  // Returns ONLY the sanitized PublicProtocol shape. Never reads or
-  // returns supplement_stack_items, internal `notes`, or `description`,
-  // so this method cannot leak product details even if the route layer
-  // forgets to whitelist fields. Falls back to DEFAULT_COACH_PROTOCOLS
-  // (3 hard-coded tier descriptors) when no rows are publicly flagged
-  // yet, so the homepage and dashboard locked-state always render.
-  async listPublicProtocols(): Promise<import("@shared/schema").PublicProtocol[]> {
-    const rows = await db
-      .select({
-        id: supplementStacks.id,
-        tier: supplementStacks.tier,
-        publicTitle: supplementStacks.publicTitle,
-        publicSubtitle: supplementStacks.publicSubtitle,
-        publicDescription: supplementStacks.publicDescription,
-        idealFor: supplementStacks.idealFor,
-        philosophy: supplementStacks.philosophy,
-        sortOrder: supplementStacks.sortOrder,
-      })
-      .from(supplementStacks)
-      .where(and(eq(supplementStacks.active, true), eq(supplementStacks.isPublic, true)))
-      .orderBy(asc(supplementStacks.sortOrder), asc(supplementStacks.publicTitle));
-
-    if (rows.length === 0) {
-      // Mutable copy so the caller can sort/filter without mutating the
-      // shared frozen default.
-      const { DEFAULT_COACH_PROTOCOLS } = await import("@shared/schema");
-      return DEFAULT_COACH_PROTOCOLS.map((p) => ({ ...p, idealFor: [...p.idealFor] }));
-    }
-
-    // Resolve display copy with sensible defaults so a half-configured
-    // row (admin only set publicTitle, forgot subtitle) still renders.
-    const { DEFAULT_COACH_PROTOCOLS } = await import("@shared/schema");
-    const defaultsByTier = new Map(DEFAULT_COACH_PROTOCOLS.map((d) => [d.tier, d] as const));
-    return rows.map((r) => {
-      const tier = (r.tier as import("@shared/schema").ProtocolTier) ?? "custom";
-      const fallback = defaultsByTier.get(tier);
-      return {
-        id: r.id,
-        tier,
-        title: r.publicTitle?.trim() || fallback?.title || "Coach Protocol",
-        subtitle: r.publicSubtitle?.trim() || fallback?.subtitle || "Coach-Curated Protocol",
-        description:
-          r.publicDescription?.trim() ||
-          fallback?.description ||
-          "A coach-curated protocol tailored to your goals.",
-        idealFor: r.idealFor?.length ? r.idealFor : (fallback?.idealFor ? [...fallback.idealFor] : []),
-        philosophy: r.philosophy?.trim() || null,
-        sortOrder: r.sortOrder ?? fallback?.sortOrder ?? 0,
-      };
-    });
-  }
-
   async listSupplementStacks(opts?: { activeOnly?: boolean }): Promise<SupplementStackFull[]> {
     const conds: any[] = [];
     if (opts?.activeOnly) conds.push(eq(supplementStacks.active, true));
@@ -2107,16 +2048,6 @@ export class DatabaseStorage implements IStorage {
           active: data.active ?? true,
           sortOrder: data.sortOrder ?? 0,
           createdByUserId: createdByUserId ?? null,
-          // Coach-Curated Protocol public-surface fields (Phase A).
-          // All optional + safe defaults so old admin clients sending
-          // the legacy payload still work unchanged.
-          tier: (data as any).tier ?? "custom",
-          publicTitle: (data as any).publicTitle ?? null,
-          publicSubtitle: (data as any).publicSubtitle ?? null,
-          publicDescription: (data as any).publicDescription ?? null,
-          idealFor: (data as any).idealFor ?? [],
-          philosophy: (data as any).philosophy ?? null,
-          isPublic: (data as any).isPublic ?? false,
         })
         .returning();
       const items = await tx
@@ -2145,12 +2076,7 @@ export class DatabaseStorage implements IStorage {
   async updateSupplementStack(id: number, data: UpdateSupplementStack): Promise<SupplementStackFull | undefined> {
     return db.transaction(async (tx) => {
       const patch: any = { updatedAt: new Date() };
-      for (const k of [
-        "name", "goal", "description", "notes", "active", "sortOrder",
-        // Coach-Curated Protocol public-surface fields (Phase A).
-        "tier", "publicTitle", "publicSubtitle", "publicDescription",
-        "idealFor", "philosophy", "isPublic",
-      ] as const) {
+      for (const k of ["name", "goal", "description", "notes", "active", "sortOrder"] as const) {
         if ((data as any)[k] !== undefined) patch[k] = (data as any)[k];
       }
       const [stack] = await tx.update(supplementStacks).set(patch).where(eq(supplementStacks.id, id)).returning();
@@ -2480,93 +2406,6 @@ declare module "./storage" {
     .from(weeklyCheckins)
     .where(sql`${weeklyCheckins.coachResponse} IS NULL`)
     .orderBy(desc(weeklyCheckins.weekStart), desc(weeklyCheckins.id));
-};
-
-// ============================================================
-// HOMEPAGE SECTIONS — admin marketing CMS (Tron rebuild, May-2026)
-// Attached via prototype to avoid editing the IStorage interface
-// for an admin-only feature. Matches the existing pattern used by
-// listPendingWeeklyCheckins above.
-// ============================================================
-(DatabaseStorage.prototype as any).listHomepageSections = async function (
-  opts: { activeOnly?: boolean } = {},
-): Promise<HomepageSection[]> {
-  const q = opts.activeOnly
-    ? db.select().from(homepageSections).where(eq(homepageSections.isActive, true))
-    : db.select().from(homepageSections);
-  return q.orderBy(asc(homepageSections.sortOrder));
-};
-(DatabaseStorage.prototype as any).getHomepageSection = async function (
-  key: string,
-): Promise<HomepageSection | undefined> {
-  const [row] = await db
-    .select()
-    .from(homepageSections)
-    .where(eq(homepageSections.key, key));
-  return row;
-};
-(DatabaseStorage.prototype as any).upsertHomepageSection = async function (
-  data: UpsertHomepageSection,
-): Promise<HomepageSection> {
-  const { key, ...rest } = data;
-  const clean: Record<string, unknown> = { updatedAt: new Date() };
-  for (const [k, v] of Object.entries(rest)) {
-    if (v !== undefined) clean[k] = v;
-  }
-  const existing = await (this as any).getHomepageSection(key);
-  if (existing) {
-    const [u] = await db
-      .update(homepageSections)
-      .set(clean as any)
-      .where(eq(homepageSections.key, key))
-      .returning();
-    return u;
-  }
-  const [c] = await db
-    .insert(homepageSections)
-    .values({ key, ...clean } as any)
-    .returning();
-  return c;
-};
-
-// ============================================================
-// MEDIA ASSETS — responsive media pipeline (May-2026 architecture)
-// ============================================================
-(DatabaseStorage.prototype as any).createMediaAsset = async function (
-  row: Omit<MediaAsset, "id" | "createdAt" | "updatedAt">,
-): Promise<MediaAsset> {
-  const [created] = await db
-    .insert(mediaAssets)
-    .values({ ...row, updatedAt: new Date() } as any)
-    .returning();
-  return created;
-};
-(DatabaseStorage.prototype as any).getMediaAsset = async function (
-  id: number,
-): Promise<MediaAsset | undefined> {
-  const [row] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id));
-  return row;
-};
-(DatabaseStorage.prototype as any).listMediaAssets = async function (): Promise<MediaAsset[]> {
-  return db.select().from(mediaAssets).orderBy(desc(mediaAssets.id));
-};
-(DatabaseStorage.prototype as any).updateMediaAsset = async function (
-  id: number,
-  updates: Partial<MediaAsset>,
-): Promise<MediaAsset | undefined> {
-  const clean: Record<string, unknown> = { updatedAt: new Date() };
-  for (const [k, v] of Object.entries(updates)) {
-    if (v !== undefined) clean[k] = v;
-  }
-  const [row] = await db
-    .update(mediaAssets)
-    .set(clean as any)
-    .where(eq(mediaAssets.id, id))
-    .returning();
-  return row;
-};
-(DatabaseStorage.prototype as any).deleteMediaAsset = async function (id: number): Promise<void> {
-  await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
 };
 
 export const storage = new DatabaseStorage();

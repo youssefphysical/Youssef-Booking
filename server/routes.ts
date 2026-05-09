@@ -7,7 +7,6 @@ import multer from "multer";
 import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
 import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
-import { processNewUpload, reprocessFromMaster } from "./services/mediaProcessor";
 import { pool } from "./db";
 import {
   insertBookingSchema,
@@ -43,9 +42,6 @@ import {
   updateHeroImageSchema,
   insertTransformationSchema,
   updateTransformationSchema,
-  upsertHomepageSectionSchema,
-  insertMediaAssetSchema,
-  updateMediaAssetSchema,
   protectedCancellationQuota,
   sameDayAdjustQuota,
   tierFromFrequency,
@@ -1265,40 +1261,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(list);
   });
 
-  // EMAIL DIAGNOSTICS — admin-only. Returns Resend config status and (optionally)
-  // sends a test welcome email to ?to=<address>, returning the LITERAL Resend
-  // status + error so we can diagnose deliverability without needing Vercel
-  // log access. Most common cause of "admin gets it, client doesn't":
-  // Resend free-tier sandbox mode where the sender domain isn't verified, so
-  // sends are restricted to the account-owner email — Resend returns 403
-  // with a "You can only send testing emails to your own email address" body.
-  app.get("/api/admin/email-diagnostics", requireAdmin, async (req, res) => {
-    const config = emailConfigStatus();
-    const to = (req.query.to as string | undefined)?.trim();
-    let testSend: any = null;
-    if (to) {
-      // Build the same template a real signup would send so we test the
-      // exact production code path, not a synthetic minimal payload.
-      const built = (await import("./email-templates")).buildWelcomeEmail({
-        clientName: "Email Diagnostics Test",
-        lang: "en",
-        websiteUrl:
-          process.env.PUBLIC_APP_URL ||
-          (process.env.NODE_ENV === "production"
-            ? "https://youssef-booking.vercel.app"
-            : `http://localhost:${process.env.PORT || 5000}`),
-      });
-      const result = await sendEmail({
-        to,
-        subject: `[DIAGNOSTIC] ${built.subject}`,
-        text: built.text,
-        html: built.html,
-      });
-      testSend = { to, ...result };
-    }
-    res.json({ config, testSend, trainerEmail: process.env.TRAINER_EMAIL || null });
-  });
-
   app.get("/api/admin/notifications/unread-count", requireAdmin, async (_req, res) => {
     const count = await storage.getAdminUnreadCount();
     res.json({ count });
@@ -2176,268 +2138,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.sendStatus(204);
   });
 
-  // ============== HOMEPAGE CONTENT (admin marketing CMS) ==============
-  // Public endpoint — returns a key→section map of ACTIVE rows so the
-  // homepage can render with a single fetch and zero loading flicker
-  // (premium-default copy is rendered immediately on missing keys).
-  app.get("/api/homepage-content", async (_req, res) => {
-    const list = await (storage as any).listHomepageSections({ activeOnly: true });
-    // Resolve mediaAssetId → public manifest (no variants/master in
-    // payload — clients fetch binaries via /api/media/:id/v/...).
-    const ids: number[] = Array.from(
-      new Set(list.map((s: any) => s.mediaAssetId).filter((v: any) => typeof v === "number")),
-    );
-    const assetsById: Record<number, any> = {};
-    for (const id of ids) {
-      const a = await (storage as any).getMediaAsset(id);
-      if (a && a.isActive) assetsById[id] = mediaAssetManifest(a);
-    }
-    const map: Record<string, any> = {};
-    for (const s of list) {
-      map[s.key] = {
-        ...s,
-        mediaAsset: s.mediaAssetId ? assetsById[s.mediaAssetId] || null : null,
-      };
-    }
-    res.json(map);
-  });
-
-  // Admin: list ALL rows (incl. inactive) + embed bound asset.
-  app.get("/api/admin/homepage-content", requireAdmin, async (_req, res) => {
-    const list = await (storage as any).listHomepageSections({ activeOnly: false });
-    const ids: number[] = Array.from(
-      new Set(list.map((s: any) => s.mediaAssetId).filter((v: any) => typeof v === "number")),
-    );
-    const assetsById: Record<number, any> = {};
-    for (const id of ids) {
-      const a = await (storage as any).getMediaAsset(id);
-      if (a) assetsById[id] = stripMediaBinaries(a);
-    }
-    res.json(
-      list.map((s: any) => ({
-        ...s,
-        mediaAsset: s.mediaAssetId ? assetsById[s.mediaAssetId] || null : null,
-      })),
-    );
-  });
-
-  // Admin: upsert one row by key. Legacy `imageDataUrl` (single base64
-  // webp) still re-encodes through sharp for backward compat — new
-  // uploads should go through /api/admin/media-assets and bind via
-  // `mediaAssetId` for the full responsive pipeline.
-  app.put("/api/admin/homepage-content/:key", requireAdmin, async (req, res) => {
-    const parsed = upsertHomepageSectionSchema.safeParse({
-      ...req.body,
-      key: req.params.key,
-    });
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid input",
-      });
-    }
-    const data: any = { ...parsed.data };
-    if (typeof data.imageDataUrl === "string" && data.imageDataUrl.startsWith("data:")) {
-      const processed = await processAdminImageDataUrl(data.imageDataUrl, {
-        width: 1920,
-        fit: "inside",
-        quality: 85,
-      });
-      if (!processed.ok) {
-        return res.status(processed.status).json({ message: processed.message });
-      }
-      data.imageDataUrl = processed.dataUrl;
-    }
-    const saved = await (storage as any).upsertHomepageSection(data);
-    res.json(saved);
-  });
-
-  // ============================================================
-  // MEDIA ASSETS — responsive media pipeline (May-2026 architecture)
-  //
-  // Variants are NEVER returned in JSON — they're served as cacheable
-  // binaries via /api/media/:id/v/:bp/:fmt/:w. JSON responses carry
-  // only metadata + LQIP so the homepage payload stays small even
-  // when a section has 10 variants behind it.
-  // ============================================================
-  const VARIANT_BP = new Set(["d", "m"]);
-  const VARIANT_FMT = new Set(["a", "w"]);
-  const VARIANT_W = new Set(["480", "768", "1280", "1920"]);
-
-  // Admin: list all assets (no master/variants in payload).
-  app.get("/api/admin/media-assets", requireAdmin, async (_req, res) => {
-    const list = await (storage as any).listMediaAssets();
-    res.json(list.map(stripMediaBinaries));
-  });
-
-  // Admin: single asset (no master/variants in payload).
-  app.get("/api/admin/media-assets/:id", requireAdmin, async (req, res) => {
-    const a = await (storage as any).getMediaAsset(Number(req.params.id));
-    if (!a) return res.status(404).json({ message: "Not found" });
-    res.json(stripMediaBinaries(a));
-  });
-
-  // Admin: create — process the upload through the full pipeline.
-  // Returns ONLY the metadata envelope (id, lqip, focal, aspects,
-  // dims, alt, priority, isActive, updatedAt). The 10 binary variants
-  // and master live in the DB and are served via /api/media/:id/...
-  app.post("/api/admin/media-assets", requireAdmin, async (req, res) => {
-    const parsed = insertMediaAssetSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ message: parsed.error.errors[0]?.message || "Invalid input" });
-    }
-    const focalX = parsed.data.focalX ?? 50;
-    const focalY = parsed.data.focalY ?? 50;
-    const desktopAspect = parsed.data.desktopAspect ?? "16/9";
-    const mobileAspect = parsed.data.mobileAspect ?? "4/5";
-    const result = await processNewUpload(parsed.data.imageDataUrl, {
-      focalX,
-      focalY,
-      desktopAspect,
-      mobileAspect,
-    });
-    if (!result.ok) {
-      return res.status(result.status).json({ message: result.message });
-    }
-    const created = await (storage as any).createMediaAsset({
-      originalWidth: result.data.originalWidth,
-      originalHeight: result.data.originalHeight,
-      originalMime: result.data.originalMime,
-      focalX,
-      focalY,
-      desktopAspect,
-      mobileAspect,
-      master: result.data.master,
-      variants: result.data.variants,
-      lqip: result.data.lqip,
-      altText: parsed.data.altText ?? null,
-      priority: parsed.data.priority ?? false,
-      isActive: parsed.data.isActive ?? true,
-    });
-    res.status(201).json(stripMediaBinaries(created));
-  });
-
-  // Admin: patch metadata. If focal point or either aspect ratio
-  // changed, re-derive ALL variants from the master (so the focal
-  // crop matches the new settings) — the master itself never changes.
-  app.patch("/api/admin/media-assets/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    const existing = await (storage as any).getMediaAsset(id);
-    if (!existing) return res.status(404).json({ message: "Not found" });
-    const parsed = updateMediaAssetSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ message: parsed.error.errors[0]?.message || "Invalid input" });
-    }
-    const next = parsed.data;
-    const focalChanged =
-      (next.focalX !== undefined && next.focalX !== existing.focalX) ||
-      (next.focalY !== undefined && next.focalY !== existing.focalY) ||
-      (next.desktopAspect !== undefined && next.desktopAspect !== existing.desktopAspect) ||
-      (next.mobileAspect !== undefined && next.mobileAspect !== existing.mobileAspect);
-    const updates: Record<string, unknown> = { ...next };
-    if (focalChanged) {
-      const re = await reprocessFromMaster(existing.master, {
-        focalX: next.focalX ?? existing.focalX,
-        focalY: next.focalY ?? existing.focalY,
-        desktopAspect: next.desktopAspect ?? existing.desktopAspect,
-        mobileAspect: next.mobileAspect ?? existing.mobileAspect,
-      });
-      if (!re.ok) return res.status(re.status).json({ message: re.message });
-      updates.variants = re.variants;
-      updates.lqip = re.lqip;
-    }
-    const updated = await (storage as any).updateMediaAsset(id, updates);
-    res.json(stripMediaBinaries(updated));
-  });
-
-  // Admin: delete. Bound homepage_sections rows have ON DELETE SET
-  // NULL, so deletion is safe — the section just falls back to its
-  // legacy imageDataUrl (or placeholder) until a new asset is bound.
-  app.delete("/api/admin/media-assets/:id", requireAdmin, async (req, res) => {
-    await (storage as any).deleteMediaAsset(Number(req.params.id));
-    res.sendStatus(204);
-  });
-
-  // Public: serve a single variant binary. URLs include `?v={updatedAt}`
-  // as a cache buster, so once a variant has been generated it can be
-  // marked immutable for a year — re-cropping changes the version and
-  // the browser refetches automatically.
-  //
-  // SECURITY: assets with `isActive=false` are NEVER served on this
-  // public route — even if an admin has uploaded a draft and bound it
-  // to a section, an inactive asset 404s here so guessing IDs can't
-  // reveal unpublished imagery. Admin previews go through the master
-  // endpoint below (which requires admin auth).
-  app.get("/api/media/:id/v/:bp/:fmt/:w", async (req, res) => {
-    const { bp, fmt, w } = req.params;
-    if (!VARIANT_BP.has(bp) || !VARIANT_FMT.has(fmt) || !VARIANT_W.has(w)) {
-      return res.status(400).end();
-    }
-    const a = await (storage as any).getMediaAsset(Number(req.params.id));
-    if (!a || !a.isActive) return res.status(404).end();
-    const v = a.variants?.[bp]?.[fmt]?.[w];
-    if (!v) return res.status(404).end();
-    const buf = Buffer.from(v, "base64");
-    res.setHeader("Content-Type", fmt === "a" ? "image/avif" : "image/webp");
-    res.setHeader("Content-Length", String(buf.byteLength));
-    res.setHeader(
-      "Cache-Control",
-      req.query.v ? "public, max-age=31536000, immutable" : "public, max-age=86400",
-    );
-    res.send(buf);
-  });
-
-  // Admin: serve the master (1920 webp@q92). Used ONLY by the admin
-  // focal-point picker — the public site never needs the master, so
-  // we gate this behind admin auth to prevent any enumeration of the
-  // higher-resolution source bytes for inactive/draft assets.
-  app.get("/api/media/:id/master", requireAdmin, async (req, res) => {
-    const a = await (storage as any).getMediaAsset(Number(req.params.id));
-    if (!a) return res.status(404).end();
-    const buf = Buffer.from(a.master, "base64");
-    res.setHeader("Content-Type", "image/webp");
-    res.setHeader("Content-Length", String(buf.byteLength));
-    // Admin-only — never cached by intermediaries; admin browser
-    // can still cache for the session via the version query param.
-    res.setHeader(
-      "Cache-Control",
-      req.query.v ? "private, max-age=86400" : "private, no-cache",
-    );
-    res.send(buf);
-  });
-
-  // Strip the heavy `master` + `variants` blobs from any asset row
-  // before returning it as JSON — those payloads can be megabytes
-  // each and the client never needs them in JSON form (binaries are
-  // served via the dedicated /api/media/:id/... endpoints).
-  function stripMediaBinaries(a: any) {
-    if (!a) return a;
-    const { master, variants, ...rest } = a;
-    return rest;
-  }
-
-  // Public manifest shape — what /api/homepage-content embeds when a
-  // section binds an asset. Mirrors `MediaAssetManifest` in
-  // shared/schema.ts so the frontend type stays in sync.
-  function mediaAssetManifest(a: any) {
-    return {
-      id: a.id,
-      lqip: a.lqip,
-      altText: a.altText,
-      focalX: a.focalX,
-      focalY: a.focalY,
-      desktopAspect: a.desktopAspect,
-      mobileAspect: a.mobileAspect,
-      originalWidth: a.originalWidth,
-      originalHeight: a.originalHeight,
-      priority: a.priority,
-      version: a.updatedAt ? new Date(a.updatedAt).getTime() : 0,
-    };
-  }
-
   // ============== BLOCKED SLOTS / HOLIDAYS ==============
   app.get("/api/blocked-slots", async (_req, res) => {
     const list = await storage.getBlockedSlots();
@@ -3248,16 +2948,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const ok = await storage.deleteSupplement(id);
     if (!ok) return res.status(404).json({ message: "Not found" });
     res.json({ ok: true });
-  });
-
-  // ============== COACH-CURATED PROTOCOLS — public surface ==============
-  // Returns the sanitized PublicProtocol[] only. No auth required (homepage
-  // teaser uses it). Storage layer enforces the field whitelist; route
-  // adds an HTTP cache hint since this changes at most a few times/year.
-  app.get("/api/protocols/public", async (_req, res) => {
-    const list = await storage.listPublicProtocols();
-    res.set("Cache-Control", "public, max-age=60, s-maxage=300");
-    res.json(list);
   });
 
   // Stacks — reusable templates of supplements with snapshotted items.

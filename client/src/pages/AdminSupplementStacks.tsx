@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { useTranslation } from "@/i18n";
 import { ArrowLeft, Plus, Layers, Trash2, Edit3, GripVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +62,6 @@ const STACK_GOALS = [
 ];
 
 export default function AdminSupplementStacks() {
-  const { t } = useTranslation();
   const { data: stacks = [], isLoading } = useSupplementStacks();
   const remove = useDeleteSupplementStack();
   const [editing, setEditing] = useState<SupplementStackFull | "new" | null>(null);
@@ -76,37 +74,37 @@ export default function AdminSupplementStacks() {
           className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5 mb-4"
           data-testid="link-back-admin"
         >
-          <ArrowLeft size={14} /> {t("admin.backToAdmin", "Back to Admin")}
+          <ArrowLeft size={14} /> Back to Admin
         </Link>
 
         <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.supplementStacks.eyebrow", "Templates")}</p>
-            <h1 className="text-3xl font-display font-bold leading-tight">{t("admin.supplementStacks.title", "Supplement Stacks")}</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">Templates</p>
+            <h1 className="text-3xl font-display font-bold leading-tight">Supplement Stacks</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {t("admin.supplementStacks.subtitle", "Build reusable protocols you can apply to a client in one tap.")}
+              Build reusable protocols you can apply to a client in one tap.
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin/supplements">
-              <Button variant="outline" data-testid="link-library">{t("admin.supplementStacks.libraryLink", "Library →")}</Button>
+              <Button variant="outline" data-testid="link-library">Library →</Button>
             </Link>
             <Button onClick={() => setEditing("new")} data-testid="button-new-stack">
-              <Plus size={16} className="mr-1.5" /> {t("admin.supplementStacks.newStack", "New stack")}
+              <Plus size={16} className="mr-1.5" /> New stack
             </Button>
           </div>
         </div>
 
         {isLoading ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center text-muted-foreground">
-            {t("common.loading", "Loading…")}
+            Loading…
           </div>
         ) : stacks.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-white/10 p-12 text-center">
             <Layers className="mx-auto mb-3 text-muted-foreground" size={32} />
-            <p className="text-muted-foreground mb-4">{t("admin.supplementStacks.emptyText", "No stacks yet — group supplements into reusable protocols.")}</p>
+            <p className="text-muted-foreground mb-4">No stacks yet — group supplements into reusable protocols.</p>
             <Button onClick={() => setEditing("new")} data-testid="button-new-stack-empty">
-              <Plus size={16} className="mr-1.5" /> {t("admin.supplementStacks.buildFirst", "Build your first stack")}
+              <Plus size={16} className="mr-1.5" /> Build your first stack
             </Button>
           </div>
         ) : (
@@ -133,7 +131,6 @@ export default function AdminSupplementStacks() {
 }
 
 function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; onEdit: () => void; onDelete: () => void }) {
-  const { t } = useTranslation();
   return (
     <div className="rounded-2xl border border-white/5 bg-card/60 p-5" data-testid={`card-stack-${stack.id}`}>
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -143,7 +140,7 @@ function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; on
             <Badge variant="outline" className="text-[10px]">
               {STACK_GOALS.find((g) => g.value === stack.goal)?.label || stack.goal}
             </Badge>
-            <Badge variant="outline" className="text-[10px]">{stack.items.length} {t("common.items", "items")}</Badge>
+            <Badge variant="outline" className="text-[10px]">{stack.items.length} items</Badge>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -158,14 +155,14 @@ function StackCard({ stack, onEdit, onDelete }: { stack: SupplementStackFull; on
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t("admin.supplementStacks.deleteStack", "Delete stack")} "{stack.name}"?</AlertDialogTitle>
+                <AlertDialogTitle>Delete stack "{stack.name}"?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {t("admin.supplementStacks.deleteDesc", "Existing client assignments are unaffected (they snapshot the data).")}
+                  Existing client assignments are unaffected (they snapshot the data).
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t("common.cancel", "Cancel")}</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete} data-testid={`button-confirm-delete-stack-${stack.id}`}>{t("common.delete", "Delete")}</AlertDialogAction>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onDelete} data-testid={`button-confirm-delete-stack-${stack.id}`}>Delete</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -200,7 +197,6 @@ function StackDialog({
   initial: SupplementStackFull | null;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
   const create = useCreateSupplementStack();
   const update = useUpdateSupplementStack();
   const { data: library = [] } = useSupplements({ activeOnly: true, enabled: open });
@@ -365,7 +361,7 @@ function StackDialog({
               ))}
               {items.length === 0 && (
                 <li className="text-xs text-muted-foreground text-center py-6">
-                  {t("admin.supplementStacks.noItemsYet", "No items yet. Add from library or blank.")}
+                  No items yet. Add from library or blank.
                 </li>
               )}
             </ul>
