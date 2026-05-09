@@ -39,6 +39,8 @@ import {
   updateInbodySchema,
   insertProgressPhotoSchema,
   insertHeroImageSchema,
+  insertHomepageSectionSchema,
+  type HomepageSection,
   updateHeroImageSchema,
   insertTransformationSchema,
   updateTransformationSchema,
@@ -1834,6 +1836,61 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const updated = await storage.updateSettings(parsed.data);
     res.json(updated);
+  });
+
+  // ============== HOMEPAGE SECTIONS (cinematic CMS, May-2026) ==============
+  // Public route returns a key→section map (easier frontend lookup than an
+  // array). Admin route returns the raw array so the CMS list UI can render
+  // inactive sections too. PUT is the single write path — `key` is the only
+  // valid identifier (seeded by ensureSchema; not user-creatable).
+
+  app.get("/api/homepage-content", async (_req, res) => {
+    try {
+      const sections = await storage.getHomepageSections({ activeOnly: true });
+      const map: Record<string, HomepageSection> = {};
+      for (const s of sections) map[s.key] = s;
+      res.json(map);
+    } catch (err) {
+      console.error("[homepage-content] GET failed:", err);
+      // Return empty map so the frontend's static fallbacks kick in
+      // gracefully instead of the section disappearing entirely.
+      res.json({});
+    }
+  });
+
+  app.get("/api/admin/homepage-content", requireAdmin, async (_req, res) => {
+    const sections = await storage.getHomepageSections();
+    res.json(sections);
+  });
+
+  // Stable allowlist — matches the seed in ensureSchema. Prevents an admin
+  // from accidentally creating an unused/typo'd section key that the
+  // frontend would never read. Add new keys to BOTH this Set AND the seed
+  // INSERT in ensureSchema.ts when introducing a new CMS-driven section.
+  const HOMEPAGE_SECTION_KEYS = new Set(["hero", "philosophy", "final_cta"]);
+
+  app.put("/api/admin/homepage-content/:key", requireAdmin, async (req, res) => {
+    const { key } = req.params;
+    if (!HOMEPAGE_SECTION_KEYS.has(key)) {
+      return res.status(404).json({ message: "Unknown homepage section key" });
+    }
+    const parsed = insertHomepageSectionSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid section data",
+        errors: parsed.error.flatten(),
+      });
+    }
+    // Strip a client-supplied `key` to prevent a sneaky body that would
+    // otherwise update a different section than the URL parameter implies.
+    const { key: _ignoredClientKey, ...rest } = parsed.data;
+    try {
+      const updated = await storage.upsertHomepageSection(key, rest);
+      res.json(updated);
+    } catch (err) {
+      console.error(`[homepage-content] PUT ${key} failed:`, err);
+      res.status(500).json({ message: "Failed to update section" });
+    }
   });
 
   // ============== HERO IMAGES (homepage slider) ==============

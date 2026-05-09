@@ -411,6 +411,62 @@ export const consentRecords = pgTable("consent_records", {
 });
 
 // =============================
+// HOMEPAGE SECTIONS (CMS-driven cinematic copy + imagery, May-2026)
+// =============================
+// Phase 1 + Phase 3 master prompt: lets the trainer manage hero, philosophy,
+// and final-CTA cinematic content (eyebrow / title / subtitle / body / image
+// / CTAs) from /admin/marketing/homepage WITHOUT a redeploy. Image stored as
+// a base64 data URL (same rationale as users.profile_picture_url and
+// hero_images.image_data_url — Vercel read-only filesystem). Server pipes
+// uploads through sharp before save (~150-300KB ceiling). Per-section render
+// tuning (object-position, overlay opacity, blur intensity) sits next to the
+// content so admins can fine-tune the cinematic feel without touching code.
+//
+// Composite key strategy: `key` is the section identifier (e.g. "hero",
+// "philosophy", "final_cta") and is the primary key. New sections are added
+// by seeding new rows in ensureSchema; the frontend looks them up by key
+// with a safe fallback to inline static strings so the homepage NEVER
+// breaks if a row is missing or empty.
+export const homepageSections = pgTable("homepage_sections", {
+  key: text("key").primaryKey(),
+  // Editorial copy (all nullable — frontend has static fallbacks).
+  eyebrow: text("eyebrow"),
+  title: text("title"),
+  subtitle: text("subtitle"),
+  body: text("body"),
+  // Image (base64 data URL, image/webp). Null = render no image / pure void.
+  imageDataUrl: text("image_data_url"),
+  imageAlt: text("image_alt"),
+  // Render tuning. object-position values are CSS shorthand strings like
+  // "center 30%" or "right top". Defaults match the existing prod DB
+  // ("center center" — explicit two-value form). Both axes nullable.
+  objectPositionDesktop: text("object_position_desktop").default("center center"),
+  objectPositionMobile: text("object_position_mobile").default("center center"),
+  // Overlay opacity is stored as an INTEGER PERCENT 0-100 (matches the
+  // existing prod DB shape — earlier session schema). 45 = balanced
+  // (image visible, copy readable). Frontend divides by 100 at render.
+  overlayOpacity: integer("overlay_opacity").default(45),
+  // Subtle background blur in px (0 = sharp). Integer to match prod DB.
+  blurIntensity: integer("blur_intensity").default(0),
+  // Up to two CTAs per section. Column names are `*_href` to match the
+  // existing prod DB (NOT `*_url` — preserved for migration safety so
+  // ensureSchema doesn't have to drop/rename live columns). Both
+  // nullable — section renders without CTAs when both labels are empty.
+  ctaPrimaryLabel: text("cta_primary_label"),
+  ctaPrimaryHref: text("cta_primary_href"),
+  ctaSecondaryLabel: text("cta_secondary_label"),
+  ctaSecondaryHref: text("cta_secondary_href"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Orphan column from an earlier session schema attempt — kept here so
+  // Drizzle's introspection matches the live DB exactly (avoids interactive
+  // db:push prompts). Unused by the application; future cleanup migration
+  // can drop it once we confirm no references exist anywhere.
+  mediaAssetId: integer("media_asset_id"),
+});
+
+// =============================
 // RELATIONS
 // =============================
 export const usersRelations = relations(users, ({ many }) => ({
@@ -461,6 +517,13 @@ export const insertClientSchema = createInsertSchema(users)
   });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+
+// Homepage section CMS — admin upserts use this. `updatedAt` is
+// auto-stamped by the storage layer so we omit it from the input.
+export const insertHomepageSectionSchema = createInsertSchema(homepageSections)
+  .omit({ updatedAt: true });
+export type InsertHomepageSection = z.infer<typeof insertHomepageSectionSchema>;
+export type HomepageSection = typeof homepageSections.$inferSelect;
 
 export const updateProfileSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, role: true, username: true })
