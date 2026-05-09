@@ -56,7 +56,6 @@ const AdminSupplementLibrary = lazy(() => import("@/pages/AdminSupplementLibrary
 const AdminSupplementStacks = lazy(() => import("@/pages/AdminSupplementStacks"));
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
-const AdminMarketingHomepage = lazy(() => import("@/pages/AdminMarketingHomepage"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 
 function ProtectedRoute({
@@ -201,9 +200,6 @@ function Router() {
           </Route>
           <Route path="/admin/staff">
             <ProtectedRoute component={AdminStaffPage} superAdminOnly />
-          </Route>
-          <Route path="/admin/marketing/homepage">
-            <ProtectedRoute component={AdminMarketingHomepage} adminOnly />
           </Route>
 
           <Route component={NotFound} />

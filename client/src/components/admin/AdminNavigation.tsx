@@ -14,7 +14,6 @@ import {
   BarChart3,
   ShieldCheck,
   Settings as SettingsIcon,
-  Image as ImageIcon,
   Plus,
   MoreHorizontal,
   ChevronDown,
@@ -154,18 +153,6 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.packageBuilder", "Package Builder"),
           icon: <PackagePlus size={18} />,
           isActive: (loc) => loc.startsWith("/admin/package-builder"),
-        },
-      ],
-    },
-    {
-      id: "marketing",
-      label: t("nav.section.marketing", "Marketing"),
-      items: [
-        {
-          href: "/admin/marketing/homepage",
-          label: t("nav.homepageContent", "Homepage Content"),
-          icon: <ImageIcon size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/marketing"),
         },
       ],
     },

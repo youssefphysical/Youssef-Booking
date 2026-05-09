@@ -74,9 +74,6 @@ import {
   type HeroImage,
   type InsertHeroImage,
   type UpdateHeroImage,
-  homepageSections,
-  type HomepageSection,
-  type InsertHomepageSection,
   type Transformation,
   type InsertTransformation,
   type UpdateTransformation,
@@ -379,16 +376,6 @@ export interface IStorage {
     limit?: number;
   }): Promise<PackageSessionHistory[]>;
   createPackageSessionHistory(entry: InsertPackageSessionHistory): Promise<PackageSessionHistory>;
-
-  // ============================================================
-  // HOMEPAGE SECTIONS — CMS-driven cinematic copy + imagery.
-  // Public route hits getHomepageSections({activeOnly:true});
-  // admin route hits getHomepageSections() (all). upsert is the
-  // single write path — keys are stable identifiers, not auto-IDs.
-  // ============================================================
-  getHomepageSections(opts?: { activeOnly?: boolean }): Promise<HomepageSection[]>;
-  getHomepageSection(key: string): Promise<HomepageSection | undefined>;
-  upsertHomepageSection(key: string, data: Partial<InsertHomepageSection>): Promise<HomepageSection>;
 
   sessionStore: session.Store;
 }
@@ -720,49 +707,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteHeroImage(id: number) {
     await db.delete(heroImages).where(eq(heroImages.id, id));
-  }
-
-  // ===========================================================
-  // Homepage Sections (CMS-driven cinematic copy + imagery)
-  // ===========================================================
-  // Three thin helpers — all admin writes go through upsertHomepageSection
-  // by key (no createSection / no deleteSection routes exposed; the seed in
-  // ensureSchema is the single source of valid keys, the admin only edits
-  // existing rows). activeOnly variant powers the public homepage; the
-  // unfiltered variant powers the admin CMS list.
-  async getHomepageSections(opts: { activeOnly?: boolean } = {}) {
-    const q = opts.activeOnly
-      ? db.select().from(homepageSections).where(eq(homepageSections.isActive, true))
-      : db.select().from(homepageSections);
-    return q.orderBy(asc(homepageSections.sortOrder), asc(homepageSections.key));
-  }
-
-  async getHomepageSection(key: string) {
-    const [row] = await db
-      .select()
-      .from(homepageSections)
-      .where(eq(homepageSections.key, key));
-    return row;
-  }
-
-  async upsertHomepageSection(key: string, data: Partial<InsertHomepageSection>) {
-    // Strip undefined so partial updates don't NULL out untouched columns.
-    const clean: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(data)) {
-      if (v !== undefined) clean[k] = v;
-    }
-    // Always stamp updatedAt on writes — Postgres DEFAULT now() only fires
-    // on initial INSERT, not on the ON CONFLICT UPDATE path.
-    clean.updatedAt = new Date();
-    const [row] = await db
-      .insert(homepageSections)
-      .values({ key, ...clean } as InsertHomepageSection)
-      .onConflictDoUpdate({
-        target: homepageSections.key,
-        set: clean,
-      })
-      .returning();
-    return row;
   }
 
   // ===== Transformations =====

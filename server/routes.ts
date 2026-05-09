@@ -39,8 +39,6 @@ import {
   updateInbodySchema,
   insertProgressPhotoSchema,
   insertHeroImageSchema,
-  insertHomepageSectionSchema,
-  type HomepageSection,
   updateHeroImageSchema,
   insertTransformationSchema,
   updateTransformationSchema,
@@ -1836,106 +1834,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const updated = await storage.updateSettings(parsed.data);
     res.json(updated);
-  });
-
-  // ============== HOMEPAGE SECTIONS (cinematic CMS, May-2026) ==============
-  // Public route returns a key→section map (easier frontend lookup than an
-  // array). Admin route returns the raw array so the CMS list UI can render
-  // inactive sections too. PUT is the single write path — `key` is the only
-  // valid identifier (seeded by ensureSchema; not user-creatable).
-
-  app.get("/api/homepage-content", async (_req, res) => {
-    try {
-      const sections = await storage.getHomepageSections({ activeOnly: true });
-      const map: Record<string, HomepageSection> = {};
-      for (const s of sections) map[s.key] = s;
-      res.json(map);
-    } catch (err) {
-      console.error("[homepage-content] GET failed:", err);
-      // Return empty map so the frontend's static fallbacks kick in
-      // gracefully instead of the section disappearing entirely.
-      res.json({});
-    }
-  });
-
-  app.get("/api/admin/homepage-content", requireAdmin, async (_req, res) => {
-    const sections = await storage.getHomepageSections();
-    res.json(sections);
-  });
-
-  // Stable allowlist — matches the seed in ensureSchema. Prevents an admin
-  // from accidentally creating an unused/typo'd section key that the
-  // frontend would never read. Add new keys to BOTH this Set AND the seed
-  // INSERT in ensureSchema.ts when introducing a new CMS-driven section.
-  const HOMEPAGE_SECTION_KEYS = new Set(["hero", "philosophy", "final_cta"]);
-
-  app.put("/api/admin/homepage-content/:key", requireAdmin, async (req, res) => {
-    // Express types `req.params[name]` as `string | string[]` because the
-    // route pattern syntax can produce repeated params; for `:key` it is
-    // always a single string but tsc can't narrow that, so coerce.
-    const key = String(req.params.key);
-    if (!HOMEPAGE_SECTION_KEYS.has(key)) {
-      return res.status(404).json({ message: "Unknown homepage section key" });
-    }
-    const parsed = insertHomepageSectionSchema.partial().safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid section data",
-        errors: parsed.error.flatten(),
-      });
-    }
-    // Strip a client-supplied `key` to prevent a sneaky body that would
-    // otherwise update a different section than the URL parameter implies.
-    const { key: _ignoredClientKey, ...rest } = parsed.data;
-
-    // Server-side image hardening (P1 from architect review, May 2026).
-    //
-    // The admin CMS sends `imageDataUrl` as a base64 data URL produced
-    // client-side by FileReader. Without server-side guardrails an admin
-    // (or a token-leak attacker) could push an arbitrary 10 MB blob into
-    // the homepage_sections table — Express's global JSON limit is 10 MB,
-    // not the 5 MB the CMS UI claims. That bloats the DB row, slows the
-    // public /api/homepage-content payload, and tanks LCP for every
-    // visitor.
-    //
-    // Resolution: when imageDataUrl is a NEW upload (data:image/... base64
-    // prefix), funnel it through the shared processAdminImageDataUrl
-    // sharp pipeline used by hero-image and profile-photo routes. This
-    // (a) enforces a strict JPEG/PNG/WebP MIME allowlist, (b) caps
-    // decoded bytes at 6 MB (slightly above the UI's 5 MB so a 5 MB JPEG
-    // doesn't false-reject after base64 inflation), (c) re-encodes to a
-    // 1920-wide WebP @ q88 — guarantees the persisted blob is small
-    // (typically <300 KB) regardless of what the admin uploaded.
-    //
-    // imageDataUrl === null is a legitimate "remove image" signal — pass
-    // through untouched. imageDataUrl === undefined means the client
-    // didn't touch it — pass through untouched (storage strips undefined
-    // before UPDATE). Only data:image/* triggers the pipeline.
-    if (typeof rest.imageDataUrl === "string" && rest.imageDataUrl.startsWith("data:image/")) {
-      const processed = await processAdminImageDataUrl(rest.imageDataUrl, {
-        width: 1920,
-        height: 1080,
-        fit: "cover",
-        quality: 88,
-        allowedMime: new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]),
-        maxDataUrlBytes: 8 * 1024 * 1024, // base64 of a ~6 MB binary
-        maxDecodedBytes: 6 * 1024 * 1024,
-        typeErrorMessage: "Image must be JPEG, PNG, or WebP",
-        sizeErrorMessage: "Image is too large — keep it under 5 MB",
-      });
-      if (!processed.ok) {
-        return res.status(processed.status).json({ message: processed.message });
-      }
-      rest.imageDataUrl = processed.dataUrl;
-    }
-
-    try {
-      const updated = await storage.upsertHomepageSection(key, rest);
-      res.json(updated);
-    } catch (err) {
-      console.error(`[homepage-content] PUT ${key} failed:`, err);
-      res.status(500).json({ message: "Failed to update section" });
-    }
   });
 
   // ============== HERO IMAGES (homepage slider) ==============
