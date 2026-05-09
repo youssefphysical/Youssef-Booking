@@ -124,8 +124,12 @@ function Router() {
       {!isPrintRoute && <CookieBanner />}
       {isAdminRoute && (
         <div
-          className="admin-container pt-3"
-          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+          className="admin-container"
+          // Match the mobile sticky offset (.admin-tabs-sticky uses
+          // top: safe-area + 0.5rem). Aligning the initial padding
+          // with the sticky offset means there's no visible jump
+          // when the user scrolls past the tabs and they "stick".
+          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
         >
           <AdminTabs />
         </div>
