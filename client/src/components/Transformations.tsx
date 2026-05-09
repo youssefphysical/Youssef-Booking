@@ -108,7 +108,12 @@ export function Transformations() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* MOBILE: full-bleed snap-scroll carousel — each card occupies
+          ~88vw so one transformation dominates the viewport at a time
+          (peek of next card hints at swipeability). Reads as cinematic
+          proof reel rather than a stacked grid.
+          DESKTOP: 2/3-col grid as before. */}
+      <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-5 flex md:block gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-4 md:pb-0 scrollbar-hide">
         {preview.map((row, i) => {
           const name = row.displayName?.trim() || t("transformations.anonymous");
           return (
@@ -118,7 +123,7 @@ export function Transformations() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
-              className="tron-card rounded-3xl overflow-hidden"
+              className="tron-card rounded-3xl overflow-hidden snap-center shrink-0 w-[88vw] sm:w-[420px] md:w-auto md:shrink"
               data-testid={`transformation-card-${row.id}`}
             >
               {/* Before / After split — thin cyan separator between halves

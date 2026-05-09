@@ -88,17 +88,17 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="order-1 md:order-2 md:col-span-5 relative"
         >
-          {/* Wider, softer cyan halo behind the frame */}
+          {/* Wider, softer cyan halo — bleeds further beyond the frame so
+              the subject feels integrated with the atmosphere, not boxed. */}
           <div
-            className="absolute -inset-8 -z-10 bg-[radial-gradient(circle_at_60%_40%,rgba(56,189,248,0.22),transparent_70%)] blur-3xl"
+            className="absolute -inset-12 md:-inset-10 -z-10 bg-[radial-gradient(circle_at_60%_40%,rgba(56,189,248,0.32),transparent_72%)] blur-3xl"
             aria-hidden
           />
+          {/* Mobile: borderless / smaller radius — image dissolves into the
+              page instead of reading as a card.
+              Desktop: composed 28px cinematic frame stays for split layout. */}
           <div
-            className="relative aspect-[4/5] md:aspect-[3/4] rounded-[28px] overflow-hidden border border-white/[0.06] bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810]"
-            style={{
-              boxShadow:
-                "0 0 0 1px rgba(56,189,248,0.14) inset, 0 40px 100px -28px rgba(0,0,0,0.7), 0 0 60px -20px rgba(56,189,248,0.18)",
-            }}
+            className="relative aspect-[4/5] md:aspect-[3/4] rounded-2xl md:rounded-[28px] overflow-hidden border-0 md:border md:border-white/[0.06] bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810] shadow-none md:shadow-[0_0_0_1px_rgba(56,189,248,0.14)_inset,_0_40px_100px_-28px_rgba(0,0,0,0.7),_0_0_80px_-20px_rgba(56,189,248,0.20)]"
           >
             {section?.mediaAsset ? (
               // May-2026 responsive media pipeline. SmartImage fills the
@@ -234,13 +234,30 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
             )}
           </p>
 
-          {/* Trust chips — softer borders to match the refined frame */}
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {/* Trust signals.
+              MOBILE: borderless cyan-dot pills in a single horizontal scroll
+              row — feels editorial / luxury campaign, not dashboard 2x2.
+              DESKTOP: 2x2 chip grid as before — denser composition. */}
+          <div className="mt-7 md:hidden -mx-5 px-5 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-5 items-center whitespace-nowrap pb-1">
+              {trustChips.map((c, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-[11.5px] text-foreground/85 shrink-0"
+                  data-testid={`hero-chip-${i}`}
+                >
+                  <span className="text-primary/90">{c.icon}</span>
+                  <span className="font-semibold tracking-wide">{c.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-8 hidden md:grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {trustChips.map((c, i) => (
               <div
                 key={i}
                 className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 hover:border-primary/25 transition-colors"
-                data-testid={`hero-chip-${i}`}
+                data-testid={`hero-chip-desktop-${i}`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] text-primary/90 font-semibold">
                   {c.icon}

@@ -1,0 +1,465 @@
+You are NOT rebuilding the homepage again.
+
+You are performing a PREMIUM CINEMATIC MOBILE REFINEMENT PASS.
+
+IMPORTANT:
+The current homepage became TOO segmented, too “dashboard-like”, and lost the emotional premium luxury feeling from the original direction.
+
+The issue is NOT functionality.
+The issue is EMOTIONAL DESIGN DIRECTION.
+
+The current mobile homepage feels:
+- too many boxed sections
+- too much equal visual weight
+- too “UI-heavy”
+- too information-first
+- not enough cinematic storytelling
+- not enough luxury silence
+- not enough visual hierarchy
+- not enough emotional flow
+
+We must return to:
+TRON LEGACY × LUXURY FITNESS EDITORIAL × CINEMATIC PREMIUM COACHING
+
+WITHOUT losing:
+- current CMS
+- current architecture
+- current routing
+- current functionality
+- current bindings
+- current translations
+- current admin control
+- current performance
+
+====================================================
+GOAL
+====================================================
+
+Make the mobile homepage feel:
+- more premium
+- more emotional
+- more cinematic
+- more luxurious
+- more immersive
+- less boxed
+- less “template”
+- less “dashboard”
+- more elite coaching brand
+
+This is a VISUAL + LAYOUT + SPACING + HIERARCHY refinement.
+NOT a rebuild.
+
+====================================================
+CRITICAL DESIGN DIRECTION
+====================================================
+
+The homepage should feel like:
+- a luxury fitness campaign
+- a premium Netflix-style experience
+- high-end editorial storytelling
+- calm power
+- selective coaching
+- emotional progression
+- cinematic atmosphere
+
+NOT:
+❌ SaaS dashboard
+❌ boxed admin UI
+❌ equal stacked cards
+❌ generic fitness website
+❌ bright noisy landing page
+
+====================================================
+MOBILE EXPERIENCE TARGET
+====================================================
+
+The MOBILE homepage is the priority.
+
+The page must feel:
+- immersive
+- premium
+- cinematic
+- thumb-natural
+- emotionally guided
+
+The user should SCROLL THROUGH A STORY.
+
+NOT scroll through random boxes.
+
+====================================================
+VISUAL HIERARCHY FIX
+====================================================
+
+Current issue:
+Every section has the same visual weight.
+
+Fix this.
+
+Create:
+- moments of silence
+- dramatic sections
+- calm breathing space
+- larger hero moments
+- asymmetric rhythm
+- visual pacing
+
+The page should FLOW emotionally.
+
+====================================================
+HERO SECTION — COMPLETE CINEMATIC REFINEMENT
+====================================================
+
+The hero is the MOST IMPORTANT section.
+
+CURRENT PROBLEM:
+It feels like:
+- a normal card
+- too contained
+- too safe
+- not immersive enough
+
+====================================================
+NEW HERO DIRECTION
+====================================================
+
+Build a CINEMATIC SPLIT HERO.
+
+MOBILE LAYOUT:
+- portrait image occupies 55–65vh
+- image integrated into background
+- NOT a floating card
+- image edges softly fade into atmosphere
+- dark blur around image
+- subtle cyan glow
+- premium vignette
+- layered atmospheric depth
+
+The image should feel:
+- part of the world
+- not inserted on top
+
+====================================================
+IMAGE TREATMENT
+====================================================
+
+The coach image must:
+- blend naturally into background
+- use soft radial blur around edges
+- subtle depth fog
+- cinematic lighting
+- very soft grain
+- low-opacity glow reflections
+- luxury dark contrast
+
+NO:
+❌ hard card borders
+❌ floating image boxes
+❌ sharp image clipping
+❌ glowing gamer effects
+❌ excessive neon
+
+Think:
+TRON LEGACY atmosphere with APPLE luxury restraint.
+
+====================================================
+TYPOGRAPHY
+====================================================
+
+Current typography feels too UI-heavy.
+
+Refine typography to feel:
+- editorial
+- cinematic
+- premium
+- selective
+
+Headlines:
+- larger
+- cleaner
+- tighter hierarchy
+- stronger spacing rhythm
+
+Body text:
+- shorter
+- calmer
+- more readable
+- less dense
+
+====================================================
+REMOVE VISUAL NOISE
+====================================================
+
+Reduce:
+- borders
+- repeated outlines
+- stacked card feeling
+- excessive separators
+- over-boxing
+
+The homepage currently has TOO MANY rectangles.
+
+Some sections should become:
+- borderless
+- atmospheric
+- floating in space
+- softly separated through spacing only
+
+====================================================
+SECTION REFINEMENT
+====================================================
+
+====================================================
+1. HERO
+====================================================
+
+Keep:
+- headline
+- CTA
+- premium coaching messaging
+
+BUT:
+- make it more cinematic
+- more immersive
+- stronger visual impact
+- cleaner spacing
+
+The hero should instantly say:
+“THIS IS ELITE COACHING.”
+
+====================================================
+2. PHILOSOPHY
+====================================================
+
+Turn into:
+EDITORIAL QUOTE SECTION.
+
+Style:
+- larger quote typography
+- more whitespace
+- subtle cyan quote mark
+- emotional pacing
+- image integration
+- calm luxury feel
+
+It should feel:
+personal and intelligent.
+
+====================================================
+3. HOW IT WORKS
+====================================================
+
+Current issue:
+Too boxed.
+
+Fix:
+- vertical cinematic timeline
+- softer dividers
+- connected glowing line
+- less borders
+- more breathing room
+
+Should feel:
+guided and effortless.
+
+====================================================
+4. TRANSFORMATIONS
+====================================================
+
+VERY IMPORTANT.
+
+Current transformation section is TOO SMALL and weak emotionally.
+
+Make transformations:
+- larger
+- more dominant
+- more emotional
+- swipeable cinematic cards
+
+Each transformation should feel:
+REAL.
+POWERFUL.
+PREMIUM.
+
+Add:
+- stronger before/after emphasis
+- cleaner metrics hierarchy
+- dramatic image framing
+- luxury shadows
+- subtle depth
+
+====================================================
+5. PROTOCOLS
+====================================================
+
+Protocols should feel:
+high-end and selective.
+
+NOT generic supplement packages.
+
+Current issue:
+too card-heavy.
+
+Refine:
+- fewer borders
+- cleaner spacing
+- more premium typography
+- darker luxury surfaces
+- subtle glow accents only
+
+Each protocol should feel:
+like a private system.
+
+====================================================
+6. FINAL CTA
+====================================================
+
+Make this section emotionally powerful.
+
+It should feel:
+exclusive.
+calm.
+premium.
+
+NOT:
+salesy.
+
+Use:
+- atmospheric background
+- soft vignette
+- larger typography
+- emotional spacing
+- cinematic image layering
+
+====================================================
+MOTION SYSTEM
+====================================================
+
+Use ONLY:
+- soft fade
+- subtle parallax
+- slow glow pulse
+- cinematic reveal
+- smooth opacity transitions
+
+NO:
+❌ bounce
+❌ scale pop
+❌ flashy animations
+❌ gaming motion
+❌ aggressive hover
+
+Motion must feel:
+luxury and calm.
+
+====================================================
+COLOR SYSTEM
+====================================================
+
+Keep:
+TRON LEGACY dark blue identity.
+
+But refine:
+- softer gradients
+- deeper blacks
+- cleaner glow control
+- more atmospheric lighting
+- better contrast hierarchy
+
+Avoid:
+❌ oversaturated neon
+❌ excessive cyan everywhere
+❌ gamer RGB feeling
+
+Think:
+premium sci-fi luxury.
+
+====================================================
+IMPORTANT UX RULES
+====================================================
+
+The homepage must:
+- guide the eye naturally
+- feel effortless
+- feel expensive
+- feel emotionally designed
+
+NOT:
+- overbuilt
+- overboxed
+- overloaded
+- overly technical
+
+====================================================
+DO NOT BREAK
+====================================================
+
+DO NOT TOUCH:
+- CMS bindings
+- admin controls
+- routes
+- APIs
+- translation system
+- image upload logic
+- storage system
+- responsiveness architecture
+- auth
+- backend
+- protocol logic
+
+This is a FRONTEND CINEMATIC REFINEMENT PASS ONLY.
+
+====================================================
+ADMIN CONTROL
+====================================================
+
+Keep all current admin-controlled content:
+- hero images
+- transformation images
+- texts
+- protocols
+- articles
+
+NO hardcoded content.
+
+====================================================
+PERFORMANCE
+====================================================
+
+Must remain:
+- mobile optimized
+- smooth on mid-range Android devices
+- lightweight
+- clean rendering
+- low repaint cost
+
+Avoid heavy filters everywhere.
+
+====================================================
+FINAL FEELING
+====================================================
+
+The homepage should feel like:
+“an elite private coaching brand”
+
+NOT:
+“a fitness dashboard”
+
+The user should feel:
+- trust
+- emotion
+- ambition
+- exclusivity
+- cinematic motivation
+- calm confidence
+
+Before pushing:
+review the ENTIRE mobile homepage as one emotional journey.
+Not section-by-section.
+
+The homepage must feel:
+COHESIVE.
+CINEMATIC.
+PREMIUM.
+LUXURIOUS.
+EMOTIONAL.
+HIGH-END.

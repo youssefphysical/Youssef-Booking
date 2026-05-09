@@ -37,9 +37,49 @@ export function HowItWorks() {
           )}
         </p>
 
-        <div className="relative mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-4">
-          {/* Cinematic cyan beam connecting the timeline (desktop) */}
-          <div className="hidden md:block absolute left-[10%] right-[10%] top-7 tron-beam opacity-70" aria-hidden />
+        {/* MOBILE — vertical cinematic timeline.
+            A glowing cyan rail runs down the start-edge, connecting the
+            five step circles. Reads as guided + effortless instead of a
+            stack of disconnected cards. */}
+        <div className="md:hidden mt-10 max-w-sm mx-auto relative text-start">
+          <div
+            className="absolute top-7 bottom-7 start-7 w-px bg-gradient-to-b from-primary/0 via-primary/45 to-primary/0"
+            aria-hidden
+          />
+          <div
+            className="absolute top-7 bottom-7 start-[27px] w-[3px] bg-primary/20 blur-[3px]"
+            aria-hidden
+          />
+          <ol className="space-y-7">
+            {steps.map((s, i) => (
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, x: -8 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ delay: i * 0.06 }}
+                className="flex gap-5 items-start"
+                data-testid={`how-step-${i}`}
+              >
+                <div className="relative z-10 w-14 h-14 rounded-full bg-[#0a0f1a] border border-primary/35 flex items-center justify-center text-primary shadow-[0_0_22px_-6px_rgba(56,189,248,0.6)] shrink-0">
+                  {s.icon}
+                </div>
+                <div className="flex-1 pt-1">
+                  <p className="text-[11px] uppercase tracking-[0.25em] text-primary/85 font-semibold">
+                    {s.n}. {s.title}
+                  </p>
+                  <p className="mt-1.5 text-sm text-muted-foreground/85 leading-relaxed">
+                    {s.body}
+                  </p>
+                </div>
+              </motion.li>
+            ))}
+          </ol>
+        </div>
+
+        {/* DESKTOP — horizontal cinematic timeline */}
+        <div className="relative mt-16 hidden md:grid grid-cols-5 gap-4">
+          <div className="absolute left-[10%] right-[10%] top-7 tron-beam opacity-70" aria-hidden />
           {steps.map((s, i) => (
             <motion.div
               key={i}
@@ -48,7 +88,7 @@ export function HowItWorks() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: i * 0.06 }}
               className="relative flex flex-col items-center text-center"
-              data-testid={`how-step-${i}`}
+              data-testid={`how-step-desktop-${i}`}
             >
               <div className="relative z-10 w-14 h-14 rounded-full bg-[#0a0f1a] border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_20px_-6px_rgba(56,189,248,0.5)]">
                 {s.icon}

@@ -56,11 +56,7 @@ export function FinalCTA({ section }: { section?: HomepageSectionContent | null 
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden rounded-[32px] border border-white/[0.06] bg-gradient-to-br from-[#0a0f1a] to-[#050810] min-h-[380px] md:min-h-[460px]"
-          style={{
-            boxShadow:
-              "0 0 0 1px rgba(56,189,248,0.12) inset, 0 40px 100px -28px rgba(0,0,0,0.7), 0 0 80px -28px rgba(56,189,248,0.18)",
-          }}
+          className="relative overflow-hidden rounded-2xl md:rounded-[32px] border-0 md:border md:border-white/[0.06] bg-gradient-to-br from-[#0a0f1a] to-[#050810] min-h-[420px] md:min-h-[460px] shadow-none md:shadow-[0_0_0_1px_rgba(56,189,248,0.12)_inset,_0_40px_100px_-28px_rgba(0,0,0,0.7),_0_0_80px_-28px_rgba(56,189,248,0.18)]"
         >
           {section?.mediaAsset ? (
             // May-2026 responsive pipeline. Background image of the
