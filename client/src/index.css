@@ -378,7 +378,7 @@
 .tron-card {
   background:
     linear-gradient(165deg, hsl(213 60% 7% / 0.92), hsl(218 50% 3% / 0.94));
-  border: 1px solid hsl(189 95% 48% / 0.18);
+  border: 1px solid hsl(183 100% 74% / 0.18);
   box-shadow:
     inset 0 1px 0 hsl(183 100% 60% / 0.12),
     0 1px 0 hsl(0 0% 0% / 0.4),
@@ -448,7 +448,7 @@
    forcing a per-frame re-rasterisation of everything behind it. */
 .tron-glass-btn {
   background: hsl(220 55% 7% / 0.78);
-  border: 1px solid hsl(189 95% 48% / 0.4);
+  border: 1px solid hsl(183 100% 74% / 0.4);
   color: hsl(0 0% 98%);
   box-shadow: inset 0 1px 0 hsl(183 100% 60% / 0.1);
 }
@@ -508,7 +508,7 @@
   background: radial-gradient(
     ellipse 60% 55% at 50% 46%,
     hsl(183 100% 55% / 0.18) 0%,
-    hsl(200 100% 48% / 0.08) 38%,
+    hsl(183 100% 74% / 0.06) 38%,
     transparent 72%
   );
 }
