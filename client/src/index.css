@@ -104,7 +104,7 @@
   --popover-foreground: 222 45% 6%;
   /* Light-mode primary on the LOCKED 183° axis (same hue as dark mode's
      #7DF9FF, just darker L for accessibility on white). Identity lock:
-     no 205° hue anywhere in the codebase. */
+     no off-axis cyan hue tokens anywhere in the theme. */
   --primary: 183 90% 38%;
   --primary-foreground: 0 0% 100%;
   --secondary: 215 25% 96%;
