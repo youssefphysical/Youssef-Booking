@@ -216,19 +216,65 @@
   @apply bg-muted rounded-full hover:bg-muted-foreground/50 transition-colors;
 }
 
-/* Glassmorphism Utilities — Tron Legacy refinement (May-2026):
-   thinner hairline border (white/[0.06]) + softer 14px blur + a deeper
-   ambient shadow with the faintest cyan undertone. Reads as cinematic
-   dark glass holding ambient light, not a frosted card. */
+/* Glassmorphism Utilities — Tron Legacy refinement (May-2026 polish v2):
+   ultra-thin hairline border (white/[0.05]) + 16px blur with subtle
+   saturation lift + layered shadow stack (inset highlight, deep ambient
+   drop, faint cyan halo). Reads as cinematic dark glass holding
+   ambient light. Polish v2 deepens the drop shadow for stronger
+   section-vs-card separation without adding a hard border. */
 .glass-panel {
   background-color: hsl(var(--card) / 0.55);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.03) inset,
-    0 18px 48px -24px rgba(0, 0, 0, 0.7),
-    0 0 60px -30px rgba(125, 249, 255, 0.08);
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 64px -28px rgba(0, 0, 0, 0.78),
+    0 0 80px -36px rgba(125, 249, 255, 0.10);
+}
+
+/* Amber active/selected — premium warm tint for active tabs, selected
+   cards, "current step" markers. Keeps amber in the 8% identity layer
+   per the locked spec (capped 0.10 fill / 0.30 border / 0.22 glow). */
+.amber-active {
+  background-color: rgba(255, 184, 0, 0.08);
+  border-color: rgba(255, 184, 0, 0.30);
+  box-shadow:
+    0 0 0 1px rgba(255, 184, 0, 0.18) inset,
+    0 8px 28px -12px rgba(255, 184, 0, 0.22);
+}
+
+/* Soft section fade-edge — adds a gentle gradient fade at the top
+   of a section so transitions between blocks read as cinematic
+   atmospheric shifts rather than hard-stopped bands. Pair on
+   sections that follow a feature/hero block. Pointer-events none. */
+.section-fade-edge {
+  position: relative;
+}
+.section-fade-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 6rem;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    transparent 100%);
+  z-index: 0;
+}
+.section-fade-edge > * { position: relative; z-index: 1; }
+
+/* Mobile body readability lift (May-2026 polish v2) — minimum 15px
+   body text on mobile for contrast/readability per the brief. The
+   muted-foreground tier gets a small lightness lift on small screens
+   so secondary copy never falls below WCAG AA on AMOLED black. */
+@media (max-width: 640px) {
+  body { font-size: 15px; line-height: 1.6; }
+  /* Dark-mode-scoped muted lift: brighter secondary copy on AMOLED
+     black for WCAG-AA. Light mode is intentionally untouched so light
+     gray on white doesn't drop below contrast threshold. */
+  :root:not(.light) .text-muted-foreground { color: hsl(215 18% 78%); }
 }
 
 /* Atmospheric Tron cyan glow per LOCKED spec — pale cyan dual-stop, NO

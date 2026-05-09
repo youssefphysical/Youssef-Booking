@@ -524,13 +524,19 @@ function PublicPackages() {
         title={t("home.packages.title")}
         subtitle={t("home.packages.subtitle")}
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
         {templates.map((tpl, i) => {
           const message = t("home.packages.whatsappMsg").replace("{name}", tpl.name);
           const hasBonus = tpl.bonusSessions > 0;
           // Display: prefer paidSessions+bonusSessions when set; fall back to
           // totalSessions if only that is configured (legacy templates).
           const paid = tpl.paidSessions || (hasBonus ? Math.max(tpl.totalSessions - tpl.bonusSessions, 0) : tpl.totalSessions);
+          // POLISH PASS v2 (May 2026): mark the middle card as the
+          // "recommended" tier — premium amber edge glow + small
+          // "Most Popular" pill anchored top-end. Heuristic only
+          // (no schema flag), purely visual highlight per the brief
+          // "highlight the recommended package elegantly".
+          const isRecommended = templates.length >= 2 && i === Math.floor(templates.length / 2);
           return (
             <motion.div
               key={tpl.id}
@@ -538,9 +544,20 @@ function PublicPackages() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ delay: Math.min(i * 0.05, 0.3) }}
-              className="tron-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col h-full min-w-0"
+              className={`tron-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col h-full min-w-0 card-lift relative ${
+                isRecommended ? "amber-edge-glow lg:-translate-y-1" : ""
+              }`}
               data-testid={`public-package-${tpl.id}`}
             >
+              {isRecommended && (
+                <span
+                  className="absolute -top-2.5 end-4 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.16em] font-bold warm-accent-bg amber-glow"
+                  data-testid={`badge-recommended-${tpl.id}`}
+                >
+                  <Sparkles size={10} />
+                  {t("home.packages.recommended", "Most Popular")}
+                </span>
+              )}
               {/* Eyebrow + name */}
               <div className="min-w-0">
                 <p className="tron-eyebrow text-[10px] mb-1.5 truncate">
