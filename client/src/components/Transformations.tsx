@@ -113,7 +113,7 @@ export function Transformations() {
           (peek of next card hints at swipeability). Reads as cinematic
           proof reel rather than a stacked grid.
           DESKTOP: 2/3-col grid as before. */}
-      <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-5 flex md:block gap-4 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-4 md:pb-0 scrollbar-hide">
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-4 md:pb-0 scrollbar-hide">
         {preview.map((row, i) => {
           const name = row.displayName?.trim() || t("transformations.anonymous");
           return (

@@ -98,7 +98,7 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
               page instead of reading as a card.
               Desktop: composed 28px cinematic frame stays for split layout. */}
           <div
-            className="relative aspect-[4/5] md:aspect-[3/4] rounded-2xl md:rounded-[28px] overflow-hidden border-0 md:border md:border-white/[0.06] bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810] shadow-none md:shadow-[0_0_0_1px_rgba(56,189,248,0.14)_inset,_0_40px_100px_-28px_rgba(0,0,0,0.7),_0_0_80px_-20px_rgba(56,189,248,0.20)]"
+            className="relative aspect-[4/5] md:aspect-[3/4] rounded-xl md:rounded-[28px] overflow-hidden border-0 md:border md:border-white/[0.06] bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810] shadow-none md:shadow-[0_0_0_1px_rgba(56,189,248,0.14)_inset,_0_40px_100px_-28px_rgba(0,0,0,0.7),_0_0_80px_-20px_rgba(56,189,248,0.20)]"
           >
             {section?.mediaAsset ? (
               // May-2026 responsive media pipeline. SmartImage fills the
