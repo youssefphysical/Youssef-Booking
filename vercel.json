@@ -15,5 +15,12 @@
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/uploads/(.*)", "destination": "/api/index" },
     { "source": "/((?!.*\\..*).*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/auto-complete",
+      "schedule": "0 1 * * *"
+    }
   ]
 }
+

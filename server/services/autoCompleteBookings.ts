@@ -70,6 +70,12 @@ export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
   // Dubai-anchored helper as buildSessionDate in routes.ts.
   const candidates = await storage.getBookings({});
   const now = Date.now();
+  const debug = process.env.AUTO_COMPLETE_DEBUG === "1";
+  // Compact diagnostic: log the active-state rows we considered + why we
+  // skipped each. Always logged on first 25 candidates so production
+  // logs always show the decision path without needing to flip an env
+  // var. Format is one line per row, JSON-parsable.
+  let inspectedCount = 0;
 
   for (const b of candidates) {
     if (!["upcoming", "confirmed"].includes(b.status)) continue;
@@ -77,7 +83,22 @@ export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
     // added would be `undefined` here. Treat as "needs check".
     if ((b as any).completedAt) continue;
     const endAt = buildSessionEndDate(b.date, b.timeSlot, (b as any).durationMinutes ?? 60).getTime();
-    if (endAt > now) continue;
+    const expired = endAt <= now;
+
+    if (inspectedCount < 25 || debug) {
+      console.log("[auto-complete:inspect]", JSON.stringify({
+        id: b.id, date: b.date, timeSlot: b.timeSlot,
+        status: b.status,
+        durationMin: (b as any).durationMinutes ?? 60,
+        endAtIso: new Date(endAt).toISOString(),
+        nowIso: new Date(now).toISOString(),
+        expired,
+        action: expired ? "claim" : "skip:future",
+      }));
+      inspectedCount++;
+    }
+
+    if (!expired) continue;
 
     result.scanned++;
 

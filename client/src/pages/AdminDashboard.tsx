@@ -1,5 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Wrench } from "lucide-react";
 import {
   Users,
   CalendarCheck,
@@ -371,6 +375,7 @@ export default function AdminDashboard() {
             <p className="text-[11px] text-muted-foreground mt-3 sm:mt-4 leading-relaxed">
               {t("admin.dashboard.qaHint")}
             </p>
+            <RepairExpiredSessions />
           </AdminCard>
         </div>
       </div>
@@ -405,5 +410,49 @@ function QuickAction({
       <span className="flex-1 truncate">{label}</span>
       {external ? <ExternalLink size={13} className="shrink-0 opacity-60" /> : <ChevronRight size={14} className="shrink-0 opacity-60 rtl:rotate-180" />}
     </Link>
+  );
+}
+
+// May 2026 production-fix UI: lets the admin force-run the auto-complete
+// pass from the dashboard. Useful when a session today is stuck in
+// "Upcoming" past its end time (e.g. external scheduler hadn't fired yet).
+// Backend route: POST /api/admin/bookings/auto-complete-now (requireAdmin).
+function RepairExpiredSessions() {
+  const { toast } = useToast();
+  const m = useMutation({
+    mutationFn: async () => {
+      const r = await apiRequest("POST", "/api/admin/bookings/auto-complete-now");
+      return (await r.json()) as { ok: boolean; completed: number; deducted: number; notified: number; errors: any[] };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Repair complete",
+        description: `${data.completed} session${data.completed === 1 ? "" : "s"} completed, ${data.deducted} package credit${data.deducted === 1 ? "" : "s"} deducted.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard-stats"] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Repair failed", description: e?.message || "Unknown error", variant: "destructive" });
+    },
+  });
+  return (
+    <div className="mt-3 pt-3 border-t border-white/[0.06]">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full h-9 text-xs gap-2"
+        onClick={() => m.mutate()}
+        disabled={m.isPending}
+        data-testid="button-repair-expired-sessions"
+      >
+        <Wrench size={13} />
+        {m.isPending ? "Repairing…" : "Repair expired sessions now"}
+      </Button>
+      <p className="text-[10.5px] text-muted-foreground mt-2 leading-relaxed">
+        Force-completes any past sessions still showing as Upcoming and deducts the package credit once.
+      </p>
+    </div>
   );
 }

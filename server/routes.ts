@@ -1039,11 +1039,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ============== BOOKINGS ==============
+  // ---- Self-healing auto-complete on read (May 2026 production fix) ----
+  // The auto-complete cron lives at /api/cron/reminders + /api/cron/auto-complete
+  // and works correctly, but Vercel Hobby plans cap crons at once-per-day so
+  // the user has historically had to wire an external scheduler (GitHub
+  // Actions, cron-job.org). When that scheduler isn't set up — or quietly
+  // fails — expired sessions sit in "Upcoming" indefinitely.
+  //
+  // This is a backstop: every time anyone loads the bookings list (admin
+  // dashboard, client dashboard, both pull from `GET /api/bookings`), we
+  // run the auto-complete pass IF the in-memory throttle has elapsed
+  // (default 60s). The pass itself is atomic + idempotent, so calling it
+  // 1000x/min is safe — but throttling avoids the obvious cost.
+  let lastAutoCompleteRunAt = 0;
+  const AUTO_COMPLETE_THROTTLE_MS = 60_000;
+  const triggerAutoCompleteBackstop = () => {
+    const now = Date.now();
+    if (now - lastAutoCompleteRunAt < AUTO_COMPLETE_THROTTLE_MS) return;
+    lastAutoCompleteRunAt = now;
+    // Fire and forget. The route doesn't await — clients see fresh data
+    // because the very next /api/bookings request (after this one returns)
+    // will reflect the completed state. For the *current* request we'll
+    // still see the row as "upcoming" if this is the first hit, but the
+    // race is at most ~1s and the user will see it cleared on next refresh.
+    runAutoCompleteBookings()
+      .then((summary) => {
+        if (summary.completed > 0 || summary.errors.length > 0) {
+          console.log("[auto-complete:backstop]", JSON.stringify(summary));
+        }
+      })
+      .catch((e) => console.warn("[auto-complete:backstop] failed:", e?.message || e));
+  };
+
   app.get("/api/bookings", requireAuth, async (req, res) => {
     const me = req.user as User;
     const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
     const from = typeof req.query.from === "string" ? req.query.from : undefined;
     const includeUser = req.query.includeUser === "true";
+
+    // Backstop: kick the auto-complete pass before reading. Throttled +
+    // fire-and-forget so the response time is unaffected.
+    triggerAutoCompleteBackstop();
 
     const filters: { userId?: number; from?: string } = {};
     if (me.role !== "admin") {
@@ -3508,6 +3544,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (e: any) {
       console.error("[cron/reminders] failed", e);
       res.status(500).json({ ok: false, error: e?.message || "unknown", sent, failed });
+    }
+  });
+
+  // Admin-callable manual repair (May 2026 production fix). Lets the
+  // admin force-run an auto-complete sweep from the dashboard without
+  // needing to know CRON_SECRET. Authenticated via session (requireAdmin),
+  // not the cron bearer-token pattern. Returns the same summary so the
+  // UI can show "X sessions completed, Y package credits deducted".
+  app.post("/api/admin/bookings/auto-complete-now", requireAdmin, async (_req, res) => {
+    try {
+      const summary = await runAutoCompleteBookings();
+      console.log("[auto-complete:admin-manual]", JSON.stringify(summary));
+      res.json({ ok: true, ...summary });
+    } catch (e: any) {
+      console.error("[auto-complete:admin-manual] failed", e);
+      res.status(500).json({ ok: false, error: e?.message || "unknown" });
     }
   });
 
