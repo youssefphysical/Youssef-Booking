@@ -1,0 +1,177 @@
+Lock this as the FINAL visual identity system for the entire website.
+
+The attached reference images define the exact cinematic atmosphere we want:
+
+- deep AMOLED black environments
+- cyan energy lighting
+- amber/orange energy contrast
+- glossy black futuristic surfaces
+- cinematic glow reflections
+- premium sci-fi luxury feeling
+
+CRITICAL FIX:
+The current website still contains dark-blue section backgrounds similar to:
+#00152A / #001B33 / navy SaaS gradients
+
+REMOVE that atmosphere completely.
+
+That blue background style is officially deprecated.
+
+Replace ALL major page backgrounds with TRUE AMOLED black layers:
+
+- #050505
+- #07090D
+- #0A0A0A
+- #0D0D0D
+
+The page should feel:
+like a powered-off OLED display with energy light emitted into darkness.
+
+NOT:
+a dark-blue website.
+
+OFFICIAL COLOR SYSTEM:
+
+PRIMARY VOID BLACK:
+
+- #050505
+- #07090D
+
+SECONDARY BLACK GLASS:
+
+- #0D0D0D
+- #111111
+
+PRIMARY CYAN LIGHT:
+
+- #7DF9FF
+
+SECONDARY CYAN:
+
+- #8BE9FD
+- #6FE7FF
+
+TRON AMBER ENERGY:
+
+- #FFB800
+- #FFC400
+- #FFAA00
+- #FF8A00
+
+VISUAL BALANCE:
+
+- 72% AMOLED black
+- 16% cyan
+- 10% amber/orange
+- 2% neutral glass
+
+DESIGN LANGUAGE:
+The entire UI should feel:
+
+- cinematic
+- futuristic
+- premium
+- luxury sci-fi
+- Tron Legacy inspired
+- calm and expensive
+- glowing black-glass interface
+
+NOT:
+
+- SaaS dashboard
+- startup landing page
+- gaming RGB UI
+- neon cyberpunk overload
+
+VERY IMPORTANT:
+Cyan is the LIGHT SOURCE.
+Black is the ENVIRONMENT.
+Amber is the ENERGY ACCENT.
+
+This means:
+
+- cyan should glow INTO darkness
+- amber should create premium energy contrast
+- black must dominate the composition
+
+Do NOT tint entire sections blue anymore.
+
+CARD SYSTEM:
+Convert cards into:
+
+- black glass surfaces
+- subtle transparency
+- faint cyan reflections
+- selective amber highlights
+- cinematic edge lighting
+- soft bloom
+- layered depth
+
+Avoid:
+
+- flat blue cards
+- thick borders
+- generic dashboard boxes
+
+AMBER USAGE MUST INCREASE:
+The orange/amber from Tron Legacy is currently too weak.
+
+Increase amber visibility significantly in:
+
+- CTA hover states
+- active buttons
+- premium badges
+- focused pills
+- selected tabs
+- icon highlights
+- progress indicators
+- timeline connectors
+- section dividers
+- glow reflections
+- premium typography accents
+- hover lighting
+- image overlay edges
+- transformation highlights
+
+The amber should feel:
+alive,
+energetic,
+luxurious,
+and cinematic.
+
+BACKGROUND ATMOSPHERE:
+The website must visually resemble:
+
+- black futuristic void
+- energy reflections
+- cinematic darkness
+- holographic light emissions
+- glowing Tron energy systems
+
+Reduce blue fog/haze overlays heavily.
+
+Typography and readability must remain:
+
+- ultra clean
+- high contrast
+- elegant
+- easy on the eyes
+
+ANIMATION RULES:
+
+- smooth and subtle only
+- soft glow pulses
+- cinematic fade transitions
+- floating light reflections
+- no flashy RGB animations
+- no aggressive motion
+
+FINAL EXPERIENCE GOAL:
+When opening the mobile homepage, the emotional impression should instantly be:
+
+“high-end Tron Legacy cinematic interface”
+
+NOT:
+“blue fitness SaaS website”.
+
+Audit every section manually and rebalance all remaining blue-heavy surfaces into AMOLED black cinematic layers.

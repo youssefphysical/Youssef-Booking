@@ -437,9 +437,9 @@
 }
 .card-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px -12px hsl(205 92% 62% / 0.18),
+  box-shadow: 0 12px 32px -12px hsl(183 100% 74% / 0.18),
               0 6px 18px -8px hsl(0 0% 0% / 0.5);
-  border-color: hsl(205 92% 62% / 0.22);
+  border-color: hsl(183 100% 74% / 0.22);
 }
 
 /* Press feedback on primary buttons */
@@ -450,7 +450,7 @@
 }
 .btn-press:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 22px -8px hsl(205 92% 62% / 0.55);
+  box-shadow: 0 8px 22px -8px hsl(183 100% 74% / 0.55);
 }
 .btn-press:active {
   transform: translateY(0) scale(0.98);
@@ -492,9 +492,9 @@
   background: linear-gradient(
     100deg,
     transparent 20%,
-    hsl(205 92% 62% / 0.06) 45%,
+    hsl(183 100% 74% / 0.06) 45%,
     hsl(0 0% 100% / 0.05) 50%,
-    hsl(205 92% 62% / 0.06) 55%,
+    hsl(183 100% 74% / 0.06) 55%,
     transparent 80%
   );
   background-size: 220% 100%;
@@ -2097,7 +2097,7 @@
   --shadow-card-hover:
     0 1px 0 hsl(183 100% 60% / 0.08) inset,
     0 2px 4px hsl(0 0% 0% / 0.5),
-    0 16px 36px -18px hsl(205 92% 62% / 0.28),
+    0 16px 36px -18px hsl(183 100% 74% / 0.28),
     0 8px 18px -10px hsl(0 0% 0% / 0.55);
   --shadow-popover:
     0 1px 0 hsl(0 0% 100% / 0.04) inset,
@@ -2132,7 +2132,7 @@
    class; pages decide which cards earn the lift. */
 .shadcn-card.lift-hover:hover {
   transform: translateY(-2px);
-  border-color: hsl(205 92% 62% / 0.28);
+  border-color: hsl(183 100% 74% / 0.28);
   box-shadow: var(--shadow-card-hover);
 }
 
@@ -2170,9 +2170,9 @@
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(205 92% 62% / 0.06) 35%,
-    hsl(205 92% 62% / 0.10) 50%,
-    hsl(205 92% 62% / 0.06) 65%,
+    hsl(183 100% 74% / 0.06) 35%,
+    hsl(183 100% 74% / 0.10) 50%,
+    hsl(183 100% 74% / 0.06) 65%,
     transparent 100%
   );
   background-size: 220% 100%;
@@ -2184,11 +2184,11 @@
    Adds a faint cyan glow to the thumb on hover so scrolling a long
    admin table feels intentional, not utilitarian. */
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(205 92% 62% / 0.55);
-  box-shadow: 0 0 8px -1px hsl(205 92% 62% / 0.35);
+  background: hsl(183 100% 74% / 0.55);
+  box-shadow: 0 0 8px -1px hsl(183 100% 74% / 0.35);
 }
 * { scrollbar-color: hsl(var(--muted)) transparent; }
-*:hover { scrollbar-color: hsl(205 92% 62% / 0.55) transparent; }
+*:hover { scrollbar-color: hsl(183 100% 74% / 0.55) transparent; }
 
 /* ----- Premium hairline divider utility --------------------------
    For section breaks. Single 1px line with center brightness, fades
@@ -2356,7 +2356,7 @@ h1.text-balance, h2.text-balance, h3.text-balance { text-wrap: balance; }
    grey/blue flash. Buttons and links inherit. Pure visual polish. */
 @media (max-width: 767px) {
   body {
-    -webkit-tap-highlight-color: hsl(205 92% 62% / 0.18);
+    -webkit-tap-highlight-color: hsl(183 100% 74% / 0.18);
   }
 }
 
