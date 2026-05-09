@@ -42,6 +42,7 @@ import {
   updateHeroImageSchema,
   insertTransformationSchema,
   updateTransformationSchema,
+  upsertHomepageSectionSchema,
   protectedCancellationQuota,
   sameDayAdjustQuota,
   tierFromFrequency,
@@ -2170,6 +2171,51 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
     await storage.deleteTransformation(id);
     res.sendStatus(204);
+  });
+
+  // ============== HOMEPAGE CONTENT (admin marketing CMS) ==============
+  // Public endpoint — returns a key→section map of ACTIVE rows so the
+  // homepage can render with a single fetch and zero loading flicker
+  // (premium-default copy is rendered immediately on missing keys).
+  app.get("/api/homepage-content", async (_req, res) => {
+    const list = await (storage as any).listHomepageSections({ activeOnly: true });
+    const map: Record<string, any> = {};
+    for (const s of list) map[s.key] = s;
+    res.json(map);
+  });
+
+  // Admin: list ALL rows (incl. inactive) so the CMS can manage them.
+  app.get("/api/admin/homepage-content", requireAdmin, async (_req, res) => {
+    const list = await (storage as any).listHomepageSections({ activeOnly: false });
+    res.json(list);
+  });
+
+  // Admin: upsert one row by key. Image (if a fresh data: URL) is piped
+  // through sharp at 1920px, mirroring the hero/transformation pattern.
+  app.put("/api/admin/homepage-content/:key", requireAdmin, async (req, res) => {
+    const parsed = upsertHomepageSectionSchema.safeParse({
+      ...req.body,
+      key: req.params.key,
+    });
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: parsed.error.errors[0]?.message || "Invalid input",
+      });
+    }
+    const data: any = { ...parsed.data };
+    if (typeof data.imageDataUrl === "string" && data.imageDataUrl.startsWith("data:")) {
+      const processed = await processAdminImageDataUrl(data.imageDataUrl, {
+        width: 1920,
+        fit: "inside",
+        quality: 85,
+      });
+      if (!processed.ok) {
+        return res.status(processed.status).json({ message: processed.message });
+      }
+      data.imageDataUrl = processed.dataUrl;
+    }
+    const saved = await (storage as any).upsertHomepageSection(data);
+    res.json(saved);
   });
 
   // ============== BLOCKED SLOTS / HOLIDAYS ==============

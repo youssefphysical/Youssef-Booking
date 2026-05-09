@@ -3075,3 +3075,59 @@ export const applyStackToClientSchema = z.object({
   startDate: z.string().nullish(),
 });
 export type ApplyStackToClientInput = z.infer<typeof applyStackToClientSchema>;
+
+// =============================================================
+// HOMEPAGE SECTIONS — admin-editable marketing CMS (Tron rebuild
+// Phase 3, May-2026). One row per named section ("hero",
+// "philosophy", "final_cta", optional future keys). Frontend
+// fetches the public map at /api/homepage-content; if a key is
+// missing or inactive, the component falls back to its built-in
+// premium default copy so the site is never broken.
+// All fields nullable so a freshly-seeded row renders the
+// fallback. Image stored base64 (Vercel-safe, same pattern as
+// hero_images / transformations).
+// =============================================================
+export const homepageSections = pgTable("homepage_sections", {
+  key: text("key").primaryKey(),
+  eyebrow: text("eyebrow"),
+  title: text("title"),
+  subtitle: text("subtitle"),
+  body: text("body"),
+  imageDataUrl: text("image_data_url"),
+  imageAlt: text("image_alt"),
+  // CSS object-position values e.g. "center center", "50% 30%".
+  objectPositionDesktop: text("object_position_desktop").default("center center"),
+  objectPositionMobile: text("object_position_mobile").default("center center"),
+  overlayOpacity: integer("overlay_opacity").default(45), // 0..100
+  blurIntensity: integer("blur_intensity").default(0),    // 0..20 (px)
+  ctaPrimaryLabel: text("cta_primary_label"),
+  ctaPrimaryHref: text("cta_primary_href"),
+  ctaSecondaryLabel: text("cta_secondary_label"),
+  ctaSecondaryHref: text("cta_secondary_href"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const upsertHomepageSectionSchema = z.object({
+  key: z.string().min(1).max(60),
+  eyebrow: z.string().max(120).nullish(),
+  title: z.string().max(200).nullish(),
+  subtitle: z.string().max(300).nullish(),
+  body: z.string().max(2000).nullish(),
+  imageDataUrl: z.string().nullish(),
+  imageAlt: z.string().max(200).nullish(),
+  objectPositionDesktop: z.string().max(40).nullish(),
+  objectPositionMobile: z.string().max(40).nullish(),
+  overlayOpacity: z.number().int().min(0).max(100).nullish(),
+  blurIntensity: z.number().int().min(0).max(20).nullish(),
+  ctaPrimaryLabel: z.string().max(80).nullish(),
+  ctaPrimaryHref: z.string().max(300).nullish(),
+  ctaSecondaryLabel: z.string().max(80).nullish(),
+  ctaSecondaryHref: z.string().max(300).nullish(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(999).optional(),
+});
+
+export type HomepageSection = typeof homepageSections.$inferSelect;
+export type UpsertHomepageSection = z.infer<typeof upsertHomepageSectionSchema>;

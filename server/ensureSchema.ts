@@ -579,6 +579,39 @@ async function run(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS client_notifications_dedupe_uq
       ON client_notifications (user_id, kind, dedupe_key)
       WHERE dedupe_key IS NOT NULL;
+
+    -- May 2026 Tron homepage rebuild: admin-editable marketing CMS.
+    -- One row per named homepage section ("hero", "philosophy",
+    -- "final_cta", future keys). All columns nullable / defaulted so
+    -- a freshly-inserted blank row is safe — frontend falls back to
+    -- premium default copy when a key is missing/inactive.
+    CREATE TABLE IF NOT EXISTS homepage_sections (
+      key text PRIMARY KEY,
+      eyebrow text,
+      title text,
+      subtitle text,
+      body text,
+      image_data_url text,
+      image_alt text,
+      object_position_desktop text DEFAULT 'center center',
+      object_position_mobile text DEFAULT 'center center',
+      overlay_opacity integer DEFAULT 45,
+      blur_intensity integer DEFAULT 0,
+      cta_primary_label text,
+      cta_primary_href text,
+      cta_secondary_label text,
+      cta_secondary_href text,
+      is_active boolean NOT NULL DEFAULT true,
+      sort_order integer NOT NULL DEFAULT 0,
+      updated_at timestamp DEFAULT now()
+    );
+    -- Seed canonical keys so the admin CMS shows them out of the box.
+    -- ON CONFLICT DO NOTHING keeps any prior admin edits intact.
+    INSERT INTO homepage_sections (key, sort_order) VALUES
+      ('hero', 0),
+      ('philosophy', 1),
+      ('final_cta', 2)
+    ON CONFLICT (key) DO NOTHING;
   `;
 
   try {

@@ -20,6 +20,7 @@ import {
   Search,
   Home,
   LogOut,
+  Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -135,6 +136,18 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.supplementStacks", "Supplement Stacks"),
           icon: <Pill size={18} />,
           isActive: (loc) => loc.startsWith("/admin/supplement"),
+        },
+      ],
+    },
+    {
+      id: "marketing",
+      label: t("nav.section.marketing", "Marketing"),
+      items: [
+        {
+          href: "/admin/marketing/homepage",
+          label: t("nav.marketingHomepage", "Homepage CMS"),
+          icon: <ImageIcon size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/marketing"),
         },
       ],
     },

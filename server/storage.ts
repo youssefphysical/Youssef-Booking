@@ -100,6 +100,9 @@ import {
   type UpdateClientSupplement,
   type ApplyStackToClientInput,
   type StackItemInput,
+  homepageSections,
+  type HomepageSection,
+  type UpsertHomepageSection,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -2475,6 +2478,53 @@ declare module "./storage" {
     .from(weeklyCheckins)
     .where(sql`${weeklyCheckins.coachResponse} IS NULL`)
     .orderBy(desc(weeklyCheckins.weekStart), desc(weeklyCheckins.id));
+};
+
+// ============================================================
+// HOMEPAGE SECTIONS — admin marketing CMS (Tron rebuild, May-2026)
+// Attached via prototype to avoid editing the IStorage interface
+// for an admin-only feature. Matches the existing pattern used by
+// listPendingWeeklyCheckins above.
+// ============================================================
+(DatabaseStorage.prototype as any).listHomepageSections = async function (
+  opts: { activeOnly?: boolean } = {},
+): Promise<HomepageSection[]> {
+  const q = opts.activeOnly
+    ? db.select().from(homepageSections).where(eq(homepageSections.isActive, true))
+    : db.select().from(homepageSections);
+  return q.orderBy(asc(homepageSections.sortOrder));
+};
+(DatabaseStorage.prototype as any).getHomepageSection = async function (
+  key: string,
+): Promise<HomepageSection | undefined> {
+  const [row] = await db
+    .select()
+    .from(homepageSections)
+    .where(eq(homepageSections.key, key));
+  return row;
+};
+(DatabaseStorage.prototype as any).upsertHomepageSection = async function (
+  data: UpsertHomepageSection,
+): Promise<HomepageSection> {
+  const { key, ...rest } = data;
+  const clean: Record<string, unknown> = { updatedAt: new Date() };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  const existing = await (this as any).getHomepageSection(key);
+  if (existing) {
+    const [u] = await db
+      .update(homepageSections)
+      .set(clean as any)
+      .where(eq(homepageSections.key, key))
+      .returning();
+    return u;
+  }
+  const [c] = await db
+    .insert(homepageSections)
+    .values({ key, ...clean } as any)
+    .returning();
+  return c;
 };
 
 export const storage = new DatabaseStorage();
