@@ -705,6 +705,19 @@ function BookingRow({
                     {t("admin.bookings.emergency")}
                   </span>
                 )}
+                {/* Auto-complete provenance pill — only renders when the
+                    auto-complete cron transitioned the row (vs. an admin
+                    manually flipping status to completed). Tooltip carries
+                    completedAt + deduction timestamp for audit. */}
+                {(b as any).autoCompletedAt && (
+                  <span
+                    className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                    title={`Auto-completed ${new Date((b as any).autoCompletedAt).toLocaleString()}${(b as any).packageSessionDeductedAt ? ` · package deducted ${new Date((b as any).packageSessionDeductedAt).toLocaleString()}` : " · no package deduction"}`}
+                    data-testid={`auto-completed-badge-${b.id}`}
+                  >
+                    Auto
+                  </span>
+                )}
               </div>
               {b.notes && (
                 <p className="text-[11px] text-muted-foreground/70 mt-1.5 line-clamp-2">

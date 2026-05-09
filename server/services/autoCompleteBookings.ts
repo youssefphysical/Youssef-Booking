@@ -51,6 +51,22 @@ export interface AutoCompleteResult {
   errors: Array<{ id: number; error: string }>;
 }
 
+// In-memory tracking of the last auto-complete pass. Surfaces via
+// GET /api/admin/auto-complete-status so the admin UI can show "last
+// run X seconds ago" under the Repair button. Resets on every server
+// boot — that's fine because Vercel cold-starts already make this a
+// per-instance signal, and the GH Actions cron + on-read backstop
+// guarantee the pass runs frequently regardless.
+export interface LastAutoCompleteRun {
+  at: number;                      // ms epoch
+  source: "cron" | "backstop" | "admin-manual";
+  result: AutoCompleteResult;
+}
+let lastRun: LastAutoCompleteRun | null = null;
+export function getLastAutoCompleteRun(): LastAutoCompleteRun | null {
+  return lastRun;
+}
+
 const DUBAI_TZ_OFFSET = "+04:00";
 
 function buildSessionEndDate(date: string, timeSlot: string, durationMinutes: number | null | undefined): Date {
@@ -59,7 +75,9 @@ function buildSessionEndDate(date: string, timeSlot: string, durationMinutes: nu
   return new Date(start.getTime() + mins * 60_000);
 }
 
-export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
+export async function runAutoCompleteBookings(
+  source: LastAutoCompleteRun["source"] = "cron",
+): Promise<AutoCompleteResult> {
   const result: AutoCompleteResult = {
     scanned: 0, completed: 0, deducted: 0, notified: 0, errors: [],
   };
@@ -71,11 +89,11 @@ export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
   const candidates = await storage.getBookings({});
   const now = Date.now();
   const debug = process.env.AUTO_COMPLETE_DEBUG === "1";
-  // Compact diagnostic: log the active-state rows we considered + why we
-  // skipped each. Always logged on first 25 candidates so production
-  // logs always show the decision path without needing to flip an env
-  // var. Format is one line per row, JSON-parsable.
+  // Compact diagnostic: log the first 5 inspected rows on every pass so
+  // production retains some signal without spamming logs. Set
+  // AUTO_COMPLETE_DEBUG=1 to emit every row. Format is JSON-parseable.
   let inspectedCount = 0;
+  const INSPECT_LOG_LIMIT = 5;
 
   for (const b of candidates) {
     if (!["upcoming", "confirmed"].includes(b.status)) continue;
@@ -85,7 +103,7 @@ export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
     const endAt = buildSessionEndDate(b.date, b.timeSlot, (b as any).durationMinutes ?? 60).getTime();
     const expired = endAt <= now;
 
-    if (inspectedCount < 25 || debug) {
+    if (inspectedCount < INSPECT_LOG_LIMIT || debug) {
       console.log("[auto-complete:inspect]", JSON.stringify({
         id: b.id, date: b.date, timeSlot: b.timeSlot,
         status: b.status,
@@ -166,6 +184,13 @@ export async function runAutoCompleteBookings(): Promise<AutoCompleteResult> {
       result.errors.push({ id: b.id, error: e?.message || "unknown" });
     }
   }
+
+  // Per-pass summary line. Always emitted — single line, JSON-parseable,
+  // safe in production. Lets us answer "is the cron running?" by grep.
+  console.log("[auto-complete:summary]", JSON.stringify({ source, ...result }));
+
+  // Stamp the in-memory tracker for /api/admin/auto-complete-status.
+  lastRun = { at: Date.now(), source, result };
 
   return result;
 }

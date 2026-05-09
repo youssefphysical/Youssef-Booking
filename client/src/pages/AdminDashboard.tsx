@@ -419,6 +419,17 @@ function QuickAction({
 // Backend route: POST /api/admin/bookings/auto-complete-now (requireAdmin).
 function RepairExpiredSessions() {
   const { toast } = useToast();
+  // Pings the in-memory tracker. Polled every 30s while the dashboard is
+  // mounted so the admin can see when the cron last fired and from where
+  // (GitHub Actions cron / on-read backstop / manual). Cheap (in-memory),
+  // and refetchOnWindowFocus catches the case where the admin returns to
+  // the tab after a long idle.
+  const status = useQuery<{ lastRun: { at: number; source: string; result: { completed: number; deducted: number; scanned: number } } | null }>({
+    queryKey: ["/api/admin/auto-complete-status"],
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
   const m = useMutation({
     mutationFn: async () => {
       const r = await apiRequest("POST", "/api/admin/bookings/auto-complete-now");
@@ -431,11 +442,32 @@ function RepairExpiredSessions() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auto-complete-status"] });
     },
     onError: (e: any) => {
       toast({ title: "Repair failed", description: e?.message || "Unknown error", variant: "destructive" });
     },
   });
+
+  // Friendly "X ago" formatting. Avoids pulling in date-fns/formatDistance
+  // for one line. Capped at hours — anything older almost certainly means
+  // the cron is broken and the user should look at it.
+  const lastRunLabel = (() => {
+    const at = status.data?.lastRun?.at;
+    if (!at) return "never (waiting for first run)";
+    const ms = Date.now() - at;
+    if (ms < 60_000) return `${Math.round(ms / 1000)}s ago`;
+    if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m ago`;
+    return `${Math.round(ms / 3_600_000)}h ago`;
+  })();
+  const sourceLabel = (() => {
+    const s = status.data?.lastRun?.source;
+    if (s === "cron") return "scheduled cron";
+    if (s === "backstop") return "on-read backstop";
+    if (s === "admin-manual") return "manual repair";
+    return null;
+  })();
+
   return (
     <div className="mt-3 pt-3 border-t border-white/[0.06]">
       <Button
@@ -452,6 +484,14 @@ function RepairExpiredSessions() {
       </Button>
       <p className="text-[10.5px] text-muted-foreground mt-2 leading-relaxed">
         Force-completes any past sessions still showing as Upcoming and deducts the package credit once.
+      </p>
+      <p
+        className="text-[10.5px] text-muted-foreground/70 mt-1.5 leading-relaxed tabular-nums"
+        data-testid="text-auto-complete-last-run"
+      >
+        Last auto-complete: {lastRunLabel}
+        {sourceLabel ? ` · ${sourceLabel}` : ""}
+        {status.data?.lastRun ? ` · ${status.data.lastRun.result.completed} completed` : ""}
       </p>
     </div>
   );

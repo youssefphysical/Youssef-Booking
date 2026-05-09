@@ -99,7 +99,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
-import { runAutoCompleteBookings } from "./services/autoCompleteBookings";
+import { runAutoCompleteBookings, getLastAutoCompleteRun } from "./services/autoCompleteBookings";
 import { computeClientIntelligence } from "./services/clientIntelligence";
 import { optimizeImageFile } from "./image-utils";
 
@@ -1062,7 +1062,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // will reflect the completed state. For the *current* request we'll
     // still see the row as "upcoming" if this is the first hit, but the
     // race is at most ~1s and the user will see it cleared on next refresh.
-    runAutoCompleteBookings()
+    runAutoCompleteBookings("backstop")
       .then((summary) => {
         if (summary.completed > 0 || summary.errors.length > 0) {
           console.log("[auto-complete:backstop]", JSON.stringify(summary));
@@ -1126,8 +1126,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         message: "Sessions can only be booked between 06:00 AM and 10:00 PM.",
       });
     }
-    if (me.role !== "admin" && sessionAt.getTime() < Date.now()) {
-      return res.status(400).json({ message: "Cannot book a session in the past" });
+    // Past-slot guard. Server-authoritative — protects against stale
+    // browser tabs where the slot was selectable on page load but has
+    // since slipped into the past, and any client bypassing the UI
+    // (curl/Postman). Friendly message matches the user-spec wording.
+    if (me.role !== "admin" && sessionAt.getTime() <= Date.now()) {
+      return res.status(400).json({
+        message: "This time is no longer available. Please choose a future slot.",
+        code: "slot_in_past",
+      });
     }
     if (
       me.role !== "admin" &&
@@ -1135,6 +1142,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ) {
       return res.status(400).json({
         message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} hours in advance.`,
+        code: "lead_time_too_short",
       });
     }
 
@@ -3535,7 +3543,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // reminder response.
       let autoCompleteSummary: any = null;
       try {
-        autoCompleteSummary = await runAutoCompleteBookings();
+        autoCompleteSummary = await runAutoCompleteBookings("cron");
       } catch (e) {
         console.warn("[cron/reminders] auto-complete pass failed:", e);
       }
@@ -3554,13 +3562,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // UI can show "X sessions completed, Y package credits deducted".
   app.post("/api/admin/bookings/auto-complete-now", requireAdmin, async (_req, res) => {
     try {
-      const summary = await runAutoCompleteBookings();
-      console.log("[auto-complete:admin-manual]", JSON.stringify(summary));
+      const summary = await runAutoCompleteBookings("admin-manual");
       res.json({ ok: true, ...summary });
     } catch (e: any) {
       console.error("[auto-complete:admin-manual] failed", e);
       res.status(500).json({ ok: false, error: e?.message || "unknown" });
     }
+  });
+
+  // Tiny status endpoint for the admin dashboard's "Repair expired sessions"
+  // panel. Returns the last in-memory pass summary + source so the UI can
+  // show "Last run: 4m ago via GitHub Actions cron · 3 completed". Reads
+  // are cheap (in-memory) — safe to poll.
+  app.get("/api/admin/auto-complete-status", requireAdmin, (_req, res) => {
+    res.json({ lastRun: getLastAutoCompleteRun() });
   });
 
   // Standalone auto-complete trigger. Same auth pattern as /api/cron/reminders
@@ -3576,7 +3591,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
     try {
-      const summary = await runAutoCompleteBookings();
+      const summary = await runAutoCompleteBookings("cron");
       res.json({ ok: true, ...summary });
     } catch (e: any) {
       console.error("[cron/auto-complete] failed", e);
