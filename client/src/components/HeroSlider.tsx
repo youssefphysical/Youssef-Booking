@@ -446,7 +446,7 @@ export function HeroSlider() {
                       }
                       data-testid="text-hero-badge"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      <span className="amber-dot" aria-hidden="true" />
                       {badge}
                     </span>
                   )}

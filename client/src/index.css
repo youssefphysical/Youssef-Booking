@@ -238,9 +238,104 @@
   border: 1px solid rgba(125, 249, 255, 0.14);
 }
 
-/* Tiny premium amber accent — for badges, dot indicators, etc. ONLY. */
+/* ============================================================
+   AMBER ACCENT SYSTEM (May-2026 balance pass)
+   ============================================================
+   Tron Legacy isn't only cyan — it has a controlled contrast
+   between cold cyan light and warm amber/orange energy. Per the
+   locked spec, amber is the 2% accent in the 82/12/4/2 ratio
+   (black / cyan / dark glass / amber). Cyan = identity, calm
+   technology. Amber = energy, focus, premium contrast, attention.
+
+   PRIMARY    --warm-accent → #FFB800 (kept name for backcompat)
+   BRIGHT     --amber-bright   → #FFC400 (focus, hover apex)
+   DEEP       --amber-deep     → #FF8A00 (deeper warmth, halos)
+   SOFT HAZE  16% alpha overlay
+   STRONG GLOW 28% alpha cap
+
+   USE for: tiny dividers, selected/featured badges, "most-popular"
+   labels, small icon highlights, tiny progress markers, subtle
+   CTA edge glow, hover/focus warmth, small stat accents, rare
+   atmospheric reflections, small separator dots.
+
+   DO NOT USE for: full backgrounds, large cards, body text, the
+   navbar surface, whole sections, large primary buttons, footer.
+   ============================================================ */
 .warm-accent { color: hsl(var(--warm-accent)); }
 .warm-accent-bg { background-color: hsl(var(--warm-accent)); color: hsl(218 50% 4%); }
+
+/* Tiny solid amber circle — use as a separator dot or status marker.
+   4px diameter so it reads as a precise "Tron light trail point",
+   never as a button or large element. */
+.amber-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background-color: hsl(var(--warm-accent));
+  box-shadow: 0 0 6px hsl(var(--warm-accent) / 0.55);
+  flex-shrink: 0;
+}
+
+/* Vertical 2px amber bar — use as a leading mark before eyebrow text
+   ("STEP 01", "PROTOCOL", "FEATURED"). Reads like a Tron light strip
+   running down the side of the label. */
+.amber-mark {
+  display: inline-block;
+  width: 2px;
+  height: 10px;
+  background: linear-gradient(180deg, #FFC400, #FFB800 55%, #FF8A00);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255, 184, 0, 0.45);
+  vertical-align: -1px;
+  margin-inline-end: 8px;
+  flex-shrink: 0;
+}
+
+/* Subtle warm edge glow under a CTA — appears ONLY on hover so the
+   button cools to cyan at rest and "ignites" warm on intent. Layered
+   under the existing .blue-glow so cyan stays dominant; amber is the
+   intent signal. Capped at 0.28 alpha per spec. */
+.amber-edge-glow {
+  transition: box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.amber-edge-glow:hover {
+  box-shadow:
+    0 0 0 1px hsl(var(--warm-accent) / 0.35),
+    0 8px 22px -10px rgba(255, 184, 0, 0.28),
+    0 0 24px -6px rgba(255, 196, 0, 0.18);
+}
+.amber-edge-glow:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--warm-accent) / 0.55),
+    0 0 24px -6px rgba(255, 196, 0, 0.22);
+}
+
+/* Stat accent — places a thin amber underline under a number so the
+   "key value" gets warm contrast against an otherwise cyan/white stat
+   block. Use sparingly: one per card max. */
+.amber-stat-accent {
+  position: relative;
+  display: inline-block;
+}
+.amber-stat-accent::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -4px;
+  width: 28px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #FFC400, #FFB800 55%, transparent);
+  box-shadow: 0 0 8px rgba(255, 184, 0, 0.45);
+}
+
+/* Reduced-motion: keep the visual but kill any future transitions
+   that get added on these utilities. */
+@media (prefers-reduced-motion: reduce) {
+  .amber-edge-glow { transition: none; }
+}
 
 /* Tertiary text — lowest-priority copy (timestamps, captions, deeply
    muted metadata). Sits one tier below text-muted-foreground. */

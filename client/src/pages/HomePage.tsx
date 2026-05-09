@@ -194,7 +194,7 @@ export default function HomePage() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">
               <MapPin size={12} className="text-primary" />
               <span>{t("hero.location")}</span>
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+              <span className="amber-dot" aria-hidden="true" />
               <span>{t("hero.tagline")}</span>
             </div>
             <h1
@@ -221,7 +221,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
+                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow amber-edge-glow whitespace-nowrap btn-press">
                   <Calendar size={18} />
                   {t("hero.bookSession")}
                 </button>
@@ -327,7 +327,8 @@ export default function HomePage() {
               className="rounded-2xl border border-white/5 bg-card/60 p-5 card-lift text-start"
               data-testid={`step-card-${s.k}`}
             >
-              <div className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-semibold mb-5">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-primary/80 font-semibold mb-5 inline-flex items-center">
+                <span className="amber-mark" aria-hidden="true" />
                 {t(`steps.${s.k}.n`, s.n)} · {t(`steps.${s.k}.eyebrow`, "Step")}
               </div>
               <h3 className="font-display font-bold text-base mb-2">
@@ -591,7 +592,9 @@ function PublicPackages() {
               {/* Price */}
               <div className="mb-3">
                 <p className="text-[26px] sm:text-3xl font-display font-bold tabular-nums text-primary leading-none">
-                  {tpl.totalPrice.toLocaleString()}{" "}
+                  <span className="amber-stat-accent">
+                    {tpl.totalPrice.toLocaleString()}
+                  </span>{" "}
                   <span className="text-sm font-normal text-muted-foreground">
                     {t("common.aed")}
                   </span>
