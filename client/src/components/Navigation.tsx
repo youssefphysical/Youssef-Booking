@@ -198,7 +198,19 @@ export function Navigation() {
       className="fixed top-0 inset-x-0 z-[100] bg-background/95 md:bg-background/75 md:backdrop-blur-lg border-b border-white/5"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-3">
+      {/* Inner navbar row — uses logical inline padding (ps/pe) with
+          max(rem, env(safe-area-inset-*)) so:
+          • Both ends always get a comfortable visual breathing margin
+            (was px-4 = 16px → ps/pe = 20px mobile, 24px desktop), which
+            keeps the hamburger from visually touching the right edge
+            on narrow Samsung / Android devices.
+          • Landscape iPhone (where the notch parks the safe-area inset
+            on left or right) gets EXTRA padding on whichever side has
+            the inset — the max() ensures we never go below our base.
+          • Logical properties stay RTL-safe (Arabic flips ps↔pe
+            automatically — the hamburger lands on the visual end on
+            both LTR and RTL). */}
+      <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-16 flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"
           className="font-display font-bold text-base sm:text-lg shrink-0 min-w-0"
