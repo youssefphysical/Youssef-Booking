@@ -20,35 +20,58 @@
      the cascade for the offline / preview case. */
   --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  /* Luxury Black + Navy + Light Blue Theme */
-  --background: 222 45% 4%;       /* Near-black with subtle navy */
-  --foreground: 0 0% 98%;
+  /* ===== Tron Legacy × Luxury Coaching palette (May-2026 refinement) =====
+     Spec source: master prompt 1778324626014. Goal: black-black background,
+     electric cyan details, deep blue premium CTAs, sparing warm-amber
+     accents. Calm futuristic luxury — NOT gaming, NOT crypto, NOT
+     blue-gray SaaS. All values are HSL triplets so the tailwind
+     `hsl(var(--x) / <alpha-value>)` pattern keeps working unchanged. */
 
-  --card: 220 35% 7%;             /* Deep navy card */
-  --card-foreground: 0 0% 98%;
+  /* Background: #03060A — near-true black with the faintest navy bias. */
+  --background: 218 50% 2%;
+  /* Foreground text: #F4F8FF — cool white for premium contrast. */
+  --foreground: 220 100% 98%;
 
-  --popover: 220 35% 7%;
-  --popover-foreground: 0 0% 98%;
+  /* Card surface: #081827 — very dark blue-black, subtly visible. */
+  --card: 213 66% 9%;
+  --card-foreground: 220 100% 98%;
 
-  /* Light Blue Primary - Premium Accent */
-  --primary: 205 92% 62%;         /* Bright sky/light blue */
-  --primary-foreground: 222 45% 6%;
+  --popover: 213 66% 9%;
+  --popover-foreground: 220 100% 98%;
 
-  --secondary: 220 25% 14%;
-  --secondary-foreground: 0 0% 98%;
+  /* Primary: #00D9FF — Tron cyan. Highlights, thin borders, icons,
+     small glows, active states. */
+  --primary: 189 100% 50%;
+  --primary-foreground: 218 50% 4%;
 
-  --muted: 220 22% 13%;
-  --muted-foreground: 215 16% 65%;
+  /* Secondary: #07111C — deeper card tier for nested surfaces. */
+  --secondary: 213 60% 7%;
+  --secondary-foreground: 220 100% 98%;
 
-  --accent: 215 60% 25%;          /* Deep navy accent */
-  --accent-foreground: 0 0% 98%;
+  /* Muted surface tracks the secondary tier; muted-foreground is
+     #A7B4C8 — calm, readable secondary text. */
+  --muted: 213 50% 8%;
+  --muted-foreground: 215 23% 72%;
+
+  /* Accent: #0077FF — deep premium blue. Used for selected states,
+     primary CTAs, focus rings. Distinct from cyan so the eye reads
+     hierarchy: cyan = highlight, blue = action. */
+  --accent: 212 100% 50%;
+  --accent-foreground: 220 100% 98%;
 
   --destructive: 0 70% 45%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 215 30% 16%;
-  --input: 215 30% 16%;
-  --ring: 205 92% 62%;
+  /* Border: dark cyan-tinted hairline. Solid usage renders ~elegant
+     thin line; `border-border/30` etc. shifts toward the spec's
+     translucent cyan border tones. */
+  --border: 200 60% 14%;
+  --input: 200 60% 14%;
+  --ring: 189 100% 50%;
+
+  /* Warm amber accent: #FFB000. Use VERY sparingly — small premium
+     accents only (badges, tiny dot indicators). Not main UI. */
+  --warm-accent: 41 100% 50%;
 
   --radius: 0.75rem;
 }
@@ -175,23 +198,32 @@
   @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl;
 }
 
-/* Light-blue glow (kept .gold-glow class name for backward compatibility) */
+/* Tron cyan glow per spec — 24px cyan + 48px deep-blue secondary halo.
+   Class names .gold-glow / .blue-glow kept for backward compatibility. */
 .gold-glow,
-.blue-glow {
-  box-shadow: 0 0 24px -6px hsl(var(--primary) / 0.45);
+.blue-glow,
+.tron-glow {
+  box-shadow:
+    0 0 24px rgba(0, 217, 255, 0.10),
+    0 0 48px rgba(0, 119, 255, 0.08);
 }
 
-/* Light-blue gradient text (kept .text-gradient-gold class name for backward compatibility) */
+/* Tron gradient text — electric cyan → deep blue. Class name
+   .text-gradient-gold kept for backward compatibility. */
 .text-gradient-gold,
 .text-gradient-blue {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#BAE6FD] via-[#38BDF8] to-[#0EA5E9];
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#19AFFF] via-[#10BFFF] to-[#00D9FF];
 }
 
-/* Subtle navy panel utility */
+/* Subtle blue-black surface — refreshed to spec card tones (#07111C → #0A1B2B). */
 .navy-panel {
-  background: linear-gradient(160deg, hsl(220 35% 9%), hsl(215 50% 12%));
-  border: 1px solid hsl(215 50% 22% / 0.6);
+  background: linear-gradient(160deg, hsl(213 60% 7%), hsl(213 65% 11%));
+  border: 1px solid rgba(0, 217, 255, 0.14);
 }
+
+/* Tiny premium amber accent — for badges, dot indicators, etc. ONLY. */
+.warm-accent { color: #FFB000; }
+.warm-accent-bg { background-color: #FFB000; color: hsl(218 50% 4%); }
 
 /* ===== Premium polish utilities ===== */
 
@@ -284,15 +316,15 @@
 /* Soft 1px cyan grid — meant to be overlaid on dark hero/panel surfaces. */
 .tron-grid {
   background-image:
-    linear-gradient(to right, hsl(195 100% 60% / 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(195 100% 60% / 0.07) 1px, transparent 1px);
+    linear-gradient(to right, hsl(189 100% 50% / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(189 100% 50% / 0.07) 1px, transparent 1px);
   background-size: 56px 56px;
   background-position: -1px -1px;
 }
 .tron-grid-fine {
   background-image:
-    linear-gradient(to right, hsl(195 100% 60% / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(195 100% 60% / 0.05) 1px, transparent 1px);
+    linear-gradient(to right, hsl(189 100% 50% / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(189 100% 50% / 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -301,8 +333,8 @@
   background: radial-gradient(
     ellipse at center,
     transparent 30%,
-    hsl(220 55% 4% / 0.55) 78%,
-    hsl(220 55% 4% / 0.88) 100%
+    hsl(218 50% 2% / 0.55) 78%,
+    hsl(218 50% 2% / 0.88) 100%
   );
 }
 
@@ -312,21 +344,21 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(195 100% 65% / 0) 12%,
-    hsl(195 100% 65% / 0.55) 50%,
-    hsl(195 100% 65% / 0) 88%,
+    hsl(189 100% 55% / 0) 12%,
+    hsl(189 100% 55% / 0.55) 50%,
+    hsl(189 100% 55% / 0) 88%,
     transparent 100%
   );
-  box-shadow: 0 0 14px 1px hsl(195 100% 65% / 0.4);
+  box-shadow: 0 0 14px 1px hsl(189 100% 55% / 0.4);
 }
 
 /* Dark glass panel with a hairline cyan border + faint inner highlight. */
 .tron-card {
   background:
-    linear-gradient(165deg, hsl(220 35% 8% / 0.92), hsl(222 45% 5% / 0.94));
-  border: 1px solid hsl(195 90% 55% / 0.18);
+    linear-gradient(165deg, hsl(213 60% 7% / 0.92), hsl(218 50% 3% / 0.94));
+  border: 1px solid hsl(189 95% 48% / 0.18);
   box-shadow:
-    inset 0 1px 0 hsl(195 100% 70% / 0.12),
+    inset 0 1px 0 hsl(189 100% 60% / 0.12),
     0 1px 0 hsl(0 0% 0% / 0.4),
     0 14px 32px -18px hsl(195 100% 50% / 0.22);
   backdrop-filter: blur(10px);
@@ -336,36 +368,36 @@
 }
 .tron-card:hover {
   transform: translateY(-2px);
-  border-color: hsl(195 95% 60% / 0.42);
+  border-color: hsl(189 100% 52% / 0.42);
   box-shadow:
-    inset 0 1px 0 hsl(195 100% 70% / 0.2),
+    inset 0 1px 0 hsl(189 100% 60% / 0.2),
     0 1px 0 hsl(0 0% 0% / 0.4),
-    0 18px 40px -18px hsl(195 100% 55% / 0.42);
+    0 18px 40px -18px hsl(189 100% 48% / 0.42);
 }
 
 /* Hard cyan outline + glow — for key callouts (e.g. "AFTER" badge). */
 .tron-edge {
   box-shadow:
-    0 0 0 1px hsl(195 100% 60% / 0.55),
-    0 0 18px -2px hsl(195 100% 60% / 0.55);
+    0 0 0 1px hsl(189 100% 50% / 0.55),
+    0 0 18px -2px hsl(189 100% 50% / 0.55);
 }
 
 /* Cinematic primary CTA — gradient fill + persistent neon glow.
    Includes a smooth transition so the hover-glow EXPANDS rather
    than snaps, and a tiny lift on hover for tactile feedback. */
 .tron-cta {
-  background: linear-gradient(135deg, hsl(195 100% 62%), hsl(210 100% 55%));
-  color: hsl(220 60% 6%);
-  border: 1px solid hsl(195 100% 80% / 0.55);
+  background: linear-gradient(135deg, hsl(189 100% 52%), hsl(212 100% 50%));
+  color: hsl(218 50% 4%);
+  border: 1px solid hsl(189 100% 70% / 0.55);
   /* POLISH PASS (May 2026): glow intensity dialled down ~30 %
      (radius 28 → 20, alpha 0.55 → 0.40) so the button reads as
      premium-quiet, not flashy. The "powering-up" feel is preserved
      by the hover-glow expansion below. translateZ(0) forces a GPU
      layer up-front so the hover scale never causes a re-rasterise. */
   box-shadow:
-    0 0 0 1px hsl(195 100% 70% / 0.30),
-    0 0 20px -2px hsl(195 100% 60% / 0.40),
-    inset 0 1px 0 hsl(195 100% 92% / 0.45);
+    0 0 0 1px hsl(189 100% 60% / 0.30),
+    0 0 20px -2px hsl(189 100% 50% / 0.40),
+    inset 0 1px 0 hsl(189 100% 88% / 0.45);
   transform: translateZ(0);
   transition:
     box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -382,8 +414,8 @@
      visibly "powers up" but doesn't bloom into the surrounding UI. */
   box-shadow:
     0 0 0 1px hsl(195 100% 85% / 0.55),
-    0 0 40px -2px hsl(195 100% 60% / 0.60),
-    0 0 70px -8px hsl(195 100% 55% / 0.30),
+    0 0 40px -2px hsl(189 100% 50% / 0.60),
+    0 0 70px -8px hsl(189 100% 48% / 0.30),
     inset 0 1px 0 hsl(195 100% 95% / 0.55);
 }
 
@@ -394,16 +426,16 @@
    forcing a per-frame re-rasterisation of everything behind it. */
 .tron-glass-btn {
   background: hsl(220 55% 7% / 0.78);
-  border: 1px solid hsl(195 90% 55% / 0.4);
+  border: 1px solid hsl(189 95% 48% / 0.4);
   color: hsl(0 0% 98%);
-  box-shadow: inset 0 1px 0 hsl(195 100% 70% / 0.1);
+  box-shadow: inset 0 1px 0 hsl(189 100% 60% / 0.1);
 }
 .tron-glass-btn:hover {
-  border-color: hsl(195 100% 65% / 0.65);
+  border-color: hsl(189 100% 55% / 0.65);
   background: hsl(220 55% 9% / 0.88);
   box-shadow:
-    inset 0 1px 0 hsl(195 100% 70% / 0.14),
-    0 0 22px -4px hsl(195 100% 60% / 0.45);
+    inset 0 1px 0 hsl(189 100% 60% / 0.14),
+    0 0 22px -4px hsl(189 100% 50% / 0.45);
 }
 
 /* Eyebrow / section label with cyan tint + soft text glow. */
@@ -411,7 +443,7 @@
   color: hsl(195 100% 72%);
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  text-shadow: 0 0 14px hsl(195 100% 60% / 0.35);
+  text-shadow: 0 0 14px hsl(189 100% 50% / 0.35);
 }
 
 /* Subtle pulse for accent badges. Disabled by reduced-motion block below.
@@ -421,13 +453,13 @@
 @keyframes tronPulse {
   0%, 100% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 60% / 0.35),
-      0 0 8px -2px hsl(195 100% 60% / 0.30);
+      0 0 0 1px hsl(189 100% 50% / 0.35),
+      0 0 8px -2px hsl(189 100% 50% / 0.30);
   }
   50% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 75% / 0.50),
-      0 0 16px -2px hsl(195 100% 60% / 0.50);
+      0 0 0 1px hsl(189 100% 65% / 0.50),
+      0 0 16px -2px hsl(189 100% 50% / 0.50);
   }
 }
 /* Box-shadow keyframe animations are expensive (they trigger a paint
@@ -453,8 +485,8 @@
 .tron-spotlight {
   background: radial-gradient(
     ellipse 60% 55% at 50% 46%,
-    hsl(195 100% 65% / 0.18) 0%,
-    hsl(200 100% 55% / 0.08) 38%,
+    hsl(189 100% 55% / 0.18) 0%,
+    hsl(200 100% 50% / 0.08) 38%,
     transparent 72%
   );
 }
@@ -466,9 +498,9 @@
   background: linear-gradient(
     112deg,
     transparent 30%,
-    hsl(195 100% 70% / 0.06) 47%,
+    hsl(189 100% 60% / 0.06) 47%,
     hsl(195 100% 78% / 0.12) 52%,
-    hsl(195 100% 70% / 0.06) 57%,
+    hsl(189 100% 60% / 0.06) 57%,
     transparent 72%
   );
 }
@@ -488,14 +520,14 @@
 @keyframes tronCtaBreathe {
   0%, 100% {
     box-shadow:
-      0 0 0 1px hsl(195 100% 70% / 0.30),
-      0 0 20px -2px hsl(195 100% 60% / 0.40),
-      inset 0 1px 0 hsl(195 100% 92% / 0.45);
+      0 0 0 1px hsl(189 100% 60% / 0.30),
+      0 0 20px -2px hsl(189 100% 50% / 0.40),
+      inset 0 1px 0 hsl(189 100% 88% / 0.45);
   }
   50% {
     box-shadow:
       0 0 0 1px hsl(195 100% 82% / 0.45),
-      0 0 30px -2px hsl(195 100% 60% / 0.55),
+      0 0 30px -2px hsl(189 100% 50% / 0.55),
       inset 0 1px 0 hsl(195 100% 95% / 0.55);
   }
 }
@@ -1331,8 +1363,8 @@
   width: 4px;
   height: 4px;
   border-radius: 9999px;
-  background: hsl(195 100% 60%);
-  box-shadow: 0 0 8px hsl(195 100% 60% / 0.55);
+  background: hsl(189 100% 50%);
+  box-shadow: 0 0 8px hsl(189 100% 50% / 0.55);
 }
 @keyframes heroBrandFade {
   to { opacity: 1; }
@@ -1353,8 +1385,8 @@
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    hsl(195 100% 65% / 0.55) 35%,
-    hsl(195 100% 60% / 0.35) 65%,
+    hsl(189 100% 55% / 0.55) 35%,
+    hsl(189 100% 50% / 0.35) 65%,
     transparent 100%
   );
 }
@@ -1403,8 +1435,8 @@
   width: 3px;
   height: 3px;
   border-radius: 9999px;
-  background: hsl(195 100% 60% / 0.55);
-  box-shadow: 0 0 6px hsl(195 100% 60% / 0.35);
+  background: hsl(189 100% 50% / 0.55);
+  box-shadow: 0 0 6px hsl(189 100% 50% / 0.35);
 }
 @keyframes heroTrustFade {
   to { opacity: 1; }
@@ -1443,7 +1475,7 @@
   .hero-scroll-cue { display: inline-flex; }
 }
 .hero-scroll-cue:hover {
-  color: hsl(195 100% 75%);
+  color: hsl(189 100% 65%);
 }
 .hero-scroll-cue-label {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -1833,7 +1865,7 @@
     0 1px 2px hsl(0 0% 0% / 0.4),
     0 8px 24px -16px hsl(0 0% 0% / 0.55);
   --shadow-card-hover:
-    0 1px 0 hsl(195 100% 70% / 0.08) inset,
+    0 1px 0 hsl(189 100% 60% / 0.08) inset,
     0 2px 4px hsl(0 0% 0% / 0.5),
     0 16px 36px -18px hsl(205 92% 62% / 0.28),
     0 8px 18px -10px hsl(0 0% 0% / 0.55);
@@ -2097,3 +2129,28 @@ h1.text-balance, h2.text-balance, h3.text-balance { text-wrap: balance; }
     -webkit-tap-highlight-color: hsl(205 92% 62% / 0.18);
   }
 }
+
+/* ===== Tron atmosphere — global body layer (May-2026 refinement) =====
+   Two very faint cyan/blue radial gradients + a soft vignette, painted
+   ONCE behind the entire site on a single fixed pseudo-element. No
+   animation, no backdrop-filter, no mix-blend-mode → costs ~0 frames
+   on scroll. The gradients are alpha-baked low (≤0.05) so they read
+   as "depth" rather than "neon". Disabled in light mode. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 18% 8%,
+      rgba(0, 217, 255, 0.05) 0%,
+      transparent 60%),
+    radial-gradient(ellipse 60% 50% at 88% 90%,
+      rgba(0, 119, 255, 0.04) 0%,
+      transparent 65%),
+    radial-gradient(ellipse 100% 100% at 50% 50%,
+      transparent 55%,
+      rgba(0, 0, 0, 0.45) 100%);
+}
+.light body::before { display: none; }

@@ -1,0 +1,127 @@
+I want a precise Tron Legacy color refinement pass.
+
+Goal:
+Make the website background truly black and more Tron Legacy-inspired, while keeping it premium, calm, readable, and luxury.
+
+Use the attached Tron Legacy reference image ONLY as color/mood inspiration.
+
+Do NOT copy any logo, character, vehicle, or copyrighted artwork.
+
+COLOR DIRECTION:
+
+1. Main background:
+   Use near-true black:
+
+- #020407
+- #03060A
+- #05070D
+
+The site background should feel black-black, not blue-gray.
+
+2. Surface cards:
+   Use very dark blue-black:
+
+- #07111C
+- #081827
+- #0A1B2B
+
+Cards should be subtly visible, not bright.
+
+3. Primary Tron cyan:
+   Use electric cyan-blue:
+
+- #00D9FF
+- #10BFFF
+- #19AFFF
+
+Use this for:
+
+- highlights
+- thin borders
+- icons
+- small glows
+- active states
+
+4. Secondary deep blue:
+   Use:
+
+- #0077FF
+- #0066CC
+- #0A84FF
+
+Use for:
+
+- main CTA
+- selected states
+- premium blue accents
+
+5. Warm amber accent:
+   Use very sparingly, inspired by Tron Legacy orange/gold light trails:
+
+- #FFB000
+- #FF8A00
+- #FFC857
+
+Only use this for tiny premium accents, not main UI.
+
+6. Text:
+   Main text:
+
+- #F4F8FF
+
+Secondary text:
+
+- #A7B4C8
+
+Muted text:
+
+- #6F7F95
+
+7. Borders:
+   Use subtle cyan/blue borders:
+
+- rgba(0, 217, 255, 0.14)
+- rgba(16, 191, 255, 0.18)
+- rgba(255,255,255,0.08)
+
+Borders must be thin and elegant.
+
+8. Glow:
+   Use controlled Tron glow:
+
+- cyan glow only at low opacity
+- no heavy neon
+- no gaming RGB
+- no excessive glowing cards
+
+Glow examples:
+box-shadow:
+0 0 24px rgba(0, 217, 255, 0.10)
+0 0 48px rgba(0, 119, 255, 0.08)
+
+9. Background atmosphere:
+   Add subtle Tron depth:
+
+- black base
+- very soft cyan radial gradients
+- faint grid/line accents if performance-safe
+- subtle vignette
+- no busy patterns
+- no heavy animation
+
+10. Important:
+    The website should feel:
+    Tron Legacy × luxury fitness × premium coaching.
+
+NOT:
+gaming dashboard,
+crypto UI,
+over-neon,
+or blue-gray SaaS.
+
+Final feel:
+black-black background,
+electric cyan details,
+deep blue premium CTAs,
+tiny warm amber accents,
+calm futuristic luxury.
