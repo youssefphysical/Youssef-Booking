@@ -35,7 +35,10 @@ const CANONICAL_KEYS = [
   { key: "final_cta", label: "Final CTA" },
 ] as const;
 
-const MAX_BYTES = 8 * 1024 * 1024;
+// Cap the client-side selection at 6 MB raw — base64 expands ~1.37x,
+// so the JSON payload stays comfortably under the 10 MB Express body
+// limit (server also re-validates via processAdminImageDataUrl).
+const MAX_BYTES = 6 * 1024 * 1024;
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -178,7 +181,7 @@ function SectionEditor({
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.size > MAX_BYTES) {
-      toast({ variant: "destructive", title: "Image too large", description: "Max 8 MB." });
+      toast({ variant: "destructive", title: "Image too large", description: "Max 6 MB." });
       return;
     }
     try {

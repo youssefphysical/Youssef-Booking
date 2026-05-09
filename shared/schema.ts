@@ -3109,6 +3109,27 @@ export const homepageSections = pgTable("homepage_sections", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// CTA hrefs must be safe to render in <a href>. We allow internal
+// paths ("/book", "#section") and absolute https URLs only — any
+// "javascript:", "data:", or other dangerous scheme is rejected.
+const safeHrefSchema = z
+  .string()
+  .max(300)
+  .refine(
+    (v) => v === "" || /^\/[^\s]*$/.test(v) || /^#[\w-]+$/.test(v) || /^https:\/\/[^\s]+$/i.test(v),
+    { message: "Href must be an internal path (/...), anchor (#...), or https:// URL" },
+  );
+
+// CSS object-position tokens — keywords, percentages, or px values
+// only. Prevents CMS-injected CSS escapes from breaking the page.
+const objectPositionSchema = z
+  .string()
+  .max(40)
+  .refine(
+    (v) => v === "" || /^[\d\s.\-%pxctneorlbig]+$/i.test(v),
+    { message: "Use CSS keywords, %, or px values (e.g. 'center top', '50% 30%')." },
+  );
+
 export const upsertHomepageSectionSchema = z.object({
   key: z.string().min(1).max(60),
   eyebrow: z.string().max(120).nullish(),
@@ -3117,14 +3138,14 @@ export const upsertHomepageSectionSchema = z.object({
   body: z.string().max(2000).nullish(),
   imageDataUrl: z.string().nullish(),
   imageAlt: z.string().max(200).nullish(),
-  objectPositionDesktop: z.string().max(40).nullish(),
-  objectPositionMobile: z.string().max(40).nullish(),
+  objectPositionDesktop: objectPositionSchema.nullish(),
+  objectPositionMobile: objectPositionSchema.nullish(),
   overlayOpacity: z.number().int().min(0).max(100).nullish(),
   blurIntensity: z.number().int().min(0).max(20).nullish(),
   ctaPrimaryLabel: z.string().max(80).nullish(),
-  ctaPrimaryHref: z.string().max(300).nullish(),
+  ctaPrimaryHref: safeHrefSchema.nullish(),
   ctaSecondaryLabel: z.string().max(80).nullish(),
-  ctaSecondaryHref: z.string().max(300).nullish(),
+  ctaSecondaryHref: safeHrefSchema.nullish(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(999).optional(),
 });
