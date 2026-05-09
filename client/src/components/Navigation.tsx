@@ -165,33 +165,11 @@ export function Navigation() {
           />
         </aside>
 
-        {/* MOBILE HOME SHORTCUT — fixed top-right circular icon button.
-            Admin has no fixed top bar, so we anchor to the viewport
-            edge with safe-area-inset-top so the notch / Samsung
-            dynamic-island never overlaps the button. Tron ghost style
-            (primary outline + soft underglow), 36×36 — icon-only so
-            it never occludes the sticky AdminTabs strip beneath it
-            even on 320px viewports. Wouter Link preserves session
-            (client-side nav, no full reload). Hidden on desktop where
-            the sidebar already exposes the same shortcut.
-            Z-INDEX LAYERING (intentional):
-              tabs sticky : 30
-              home pill   : 35  ← above tabs, below backdrop
-              backdrop    : 40  ← dims pill when drawer opens
-              drawer      : 50  ← on top of backdrop
-            No transform animations — interaction feedback is
-            color/border/shadow only so the layout stays GPU-stable
-            and Samsung Internet renders identically to Chrome. */}
-        <Link
-          href="/"
-          data-testid="link-mobile-public-home"
-          aria-label={t("nav.publicSite", "Public site")}
-          title={t("nav.home", "Home")}
-          className="md:hidden fixed end-3 z-[35] inline-flex h-9 w-9 items-center justify-center rounded-full border border-primary/30 bg-card/80 text-primary backdrop-blur-md shadow-[0_0_12px_-4px_hsl(var(--primary)/0.45)] transition-colors hover:border-primary/55 hover:bg-card"
-          style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
-        >
-          <Home size={16} strokeWidth={2.25} />
-        </Link>
+        {/* Mobile Home shortcut was previously a fixed pill here. As of
+            May 2026, "Home" is now the first tab inside the global
+            AdminTabs strip (mounted in App.tsx for every /admin/*
+            route), so the floating pill is no longer needed. Removed
+            to avoid a redundant control crowding the top-right corner. */}
 
         {/* MOBILE BOTTOM DOCK — primary mobile navigation.
             Uses safe-area-inset-bottom so content sits above the home

@@ -27,7 +27,6 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { AdminTabs } from "@/pages/AdminDashboard";
 import type { AdminAnalytics } from "@shared/schema";
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -115,8 +114,6 @@ export default function AdminAnalytics() {
           subtitle={t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
           testId="text-analytics-title"
         />
-
-        <AdminTabs />
 
         {error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-300" data-testid="analytics-error">

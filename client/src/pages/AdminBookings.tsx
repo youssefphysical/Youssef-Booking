@@ -86,7 +86,6 @@ import {
   AdminStatCard,
   AdminEmptyState,
 } from "@/components/admin/primitives";
-import { AdminTabs } from "./AdminDashboard";
 import { cn } from "@/lib/utils";
 
 const STATUSES = [
@@ -224,7 +223,6 @@ export default function AdminBookings() {
   return (
     <div className="admin-shell">
       <div className="admin-container space-y-5">
-        <AdminTabs />
         <AdminPageHeader
           eyebrow={t("admin.bookings.kicker")}
           title={t("admin.bookings.titleAll")}

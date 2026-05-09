@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { I18nProvider } from "@/i18n";
 import { Navigation } from "@/components/Navigation";
 import { Loader } from "@/components/Loader";
+import { AdminTabs } from "@/components/admin/AdminTabs";
 import { isEffectiveSuperAdmin } from "@shared/schema";
 import { trackPageView } from "@/lib/analytics";
 
@@ -107,10 +108,28 @@ function Router() {
   // bleed into the printed PDF.
   const isPrintRoute = pathname.startsWith("/print/");
 
+  // Admin top-tab strip is mounted globally for the entire /admin/*
+  // surface so it stays visible across every section (Overview, Clients,
+  // Bookings, Analytics, Packages, Settings, ClientDetail, Nutrition,
+  // Supplements, Staff, etc.) without each page having to mount it.
+  // /admin-access (hidden admin login) is excluded — the user isn't
+  // authenticated as admin yet on that route.
+  const isAdminRoute =
+    pathname === "/admin" ||
+    (pathname.startsWith("/admin/") && pathname !== "/admin-access");
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
       {!isPrintRoute && <Navigation />}
       {!isPrintRoute && <CookieBanner />}
+      {isAdminRoute && (
+        <div
+          className="admin-container pt-3"
+          style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+        >
+          <AdminTabs />
+        </div>
+      )}
       {/* Suspense fallback for lazy-loaded routes — Loader matches the
           existing app loader so chunk-loading feels native, not jarring. */}
       <Suspense fallback={<Loader />}>

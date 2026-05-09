@@ -1,0 +1,86 @@
+URGENT ADMIN NAVIGATION FIX — KEEP TOP TAB BAR ALWAYS VISIBLE
+
+Current issue:
+The top admin navigation/tab bar disappears when switching between admin sections such as:
+
+- Overview
+- Clients
+- Bookings
+- Analysis
+- Settings / More
+
+This is wrong.
+
+Required behavior:
+The admin top navigation bar must remain visible and stable across ALL admin pages and tabs.
+
+It should NOT disappear, re-render awkwardly, jump, clip, or be hidden when switching sections.
+
+1. Make admin navigation global
+   Move the admin tab/navigation component into the shared AdminLayout / AdminShell so it wraps all admin pages.
+
+It must persist across:
+
+- Overview
+- Clients
+- Bookings
+- Analysis
+- Packages
+- Settings
+- More
+
+2. Add Home tab/shortcut
+   Add a clear Home item inside the same admin navigation.
+
+Home behavior:
+
+- takes admin back to the public homepage
+- preserves admin login/session
+- should be easy to reach on mobile
+- visually consistent with the other admin tabs
+
+Suggested order:
+Home | Overview | Clients | Bookings | Analysis | Packages | Settings
+
+3. Mobile sticky behavior
+   On mobile:
+
+- the admin top navigation should stay sticky under the main header
+- no disappearing on scroll
+- no clipping under browser UI
+- no overlap with content
+- horizontal scroll is allowed if needed
+- active tab must remain visible
+
+4. Active tab state
+   When I tap Clients, Bookings, Analysis, etc:
+
+- the selected tab should clearly show active state
+- the tab bar must remain visible
+- page content changes below it only
+
+5. Do NOT redesign
+   This is a surgical UX/navigation fix only.
+
+Do NOT:
+
+- redesign dashboard
+- change booking logic
+- change package logic
+- change visual identity
+- add heavy animation
+
+6. Test on real mobile viewport
+   Specifically test:
+
+- Overview → Clients
+- Clients → Bookings
+- Bookings → Analysis
+- Analysis → Home
+- scroll down and back up
+- refresh page while inside Clients/Bookings
+- bottom nav should not cover content
+- top nav should not disappear
+
+Goal:
+Admin should feel like one stable mobile app shell, with the navigation always available.

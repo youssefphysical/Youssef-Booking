@@ -8,7 +8,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, Calculator, Beef, Wheat, Droplets, RefreshCw, Flame, Wand2 } from "lucide-react";
 import { useTranslation } from "@/i18n";
-import { AdminTabs } from "@/pages/AdminDashboard";
 
 const KCAL_PER_G_PROTEIN = 4;
 const KCAL_PER_G_CARBS = 4;
@@ -210,7 +209,6 @@ export default function AdminMacroCalculator() {
             <ArrowLeft size={14} /> {t("nutrition.backToAdmin", "Back to Admin")}
           </Link>
         </div>
-        <AdminTabs />
         <div className="flex items-start gap-3 mb-5 sm:mb-7">
           <div className="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary ring-glow-primary">
             <Calculator size={22} />
