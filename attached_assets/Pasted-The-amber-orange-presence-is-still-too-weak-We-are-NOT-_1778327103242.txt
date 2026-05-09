@@ -1,0 +1,133 @@
+The amber/orange presence is still too weak.
+
+We are NOT trying to make a blue website with tiny orange details anymore.
+
+We are aiming for a TRUE Tron Legacy cinematic balance:
+deep AMOLED black world + strong cyan atmosphere + clearly visible amber energy contrast.
+
+CRITICAL CHANGE:
+Remove the current dark-blue background feeling almost completely.
+
+The website background should feel like:
+
+- a powered-off OLED screen
+- ultra deep black
+- cinematic void
+- black glass
+- dark futuristic space
+
+Do NOT use visible navy-blue page backgrounds anymore.
+
+BACKGROUND RULES:
+Replace current blue-heavy backgrounds with:
+
+- #050505
+- #07090D
+- #0A0A0A
+- #0D0D0D
+
+Only subtle cyan/amber atmospheric glows should tint the darkness.
+
+The page should visually feel:
+90% black
+not “dark blue”.
+
+Now increase the Tron Legacy amber presence significantly.
+
+NEW BALANCE:
+
+- 72% AMOLED black
+- 16% cyan
+- 8% amber/orange
+- 4% neutral glass/surfaces
+
+IMPORTANT:
+Amber is now an essential visual identity layer — not a tiny hidden accent.
+
+Use MORE amber/orange in:
+
+- CTA edge glows
+- active buttons
+- selected states
+- premium badges
+- hover states
+- hero highlights
+- icon glows
+- timeline connectors
+- protocol cards
+- premium package outlines
+- subtle section separators
+- stat highlights
+- active indicators
+- floating ambient glows
+- navbar micro-details
+- image overlays
+- transformation highlights
+- progress accents
+- premium typography highlights
+
+Use these Tron Legacy amber tones:
+
+- #FFB800
+- #FFC400
+- #FFAA00
+- #FF8A00
+
+Allowed glow strengths:
+
+- rgba(255,184,0,0.18)
+- rgba(255,184,0,0.24)
+- rgba(255,184,0,0.34)
+
+The cyan should remain the main light source:
+#7DF9FF
+
+BUT the amber must now feel:
+alive,
+energetic,
+cinematic,
+premium,
+and intentionally designed.
+
+VERY IMPORTANT:
+Do NOT create a cyberpunk RGB look.
+Do NOT oversaturate.
+Do NOT make it look like gaming UI.
+
+The feeling should be:
+luxury sci-fi,
+high-end cinematic interface,
+Tron Legacy energy system.
+
+VISUAL REFERENCE FEELING:
+Think:
+
+- black futuristic void
+- cyan light technology
+- amber energy trails
+- glowing reflections on black surfaces
+- subtle cinematic bloom
+- polished premium movie UI
+
+Also:
+reduce blue haze overlays significantly.
+Most current sections still feel too blue.
+
+The black areas must dominate visually so the cyan and amber glows become stronger and more dramatic.
+
+Design target:
+When someone opens the homepage on mobile, it should instantly feel:
+“premium Tron Legacy cinematic experience”
+—not “blue fitness website”.
+
+After changes:
+do a full visual balance pass and ensure:
+
+- black dominance is obvious
+- amber is finally visible enough
+- cyan and amber feel balanced together
+- contrast looks expensive and cinematic
+- readability stays excellent
+- animations stay smooth
+- performance stays optimized
+- no section feels flat or washed blue anymore

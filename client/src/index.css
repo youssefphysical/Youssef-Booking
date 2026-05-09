@@ -35,12 +35,15 @@
   /* Foreground text: #F4F8FF — cool white for premium contrast. */
   --foreground: 220 100% 98%;
 
-  /* Card surface: #10232D — deep cyan-teal, like dark glass holding
-     a faint cyan reflection. Floating dark-glass panel feel. */
-  --card: 197 49% 12%;
+  /* Card surface: #11141A — NEUTRAL near-black with the faintest cool
+     cast. May-2026 amber-rebalance pass: surfaces are pure black glass,
+     NOT teal panels. The cinematic identity comes from atmospheric cyan
+     + amber GLOWS layered over true black, not from colored surfaces.
+     Result: 90% black dominance instead of "dark blue" feeling. */
+  --card: 220 14% 8%;
   --card-foreground: 220 100% 98%;
 
-  --popover: 197 49% 12%;
+  --popover: 220 14% 8%;
   --popover-foreground: 220 100% 98%;
 
   /* Primary: #7DF9FF — pale cinematic Tron cyan. Reads as a LIGHT
@@ -49,34 +52,39 @@
   --primary: 183 100% 74%;
   --primary-foreground: 220 30% 4%;
 
-  /* Secondary: #0F1E26 — even deeper cyan-teal for nested surfaces. */
-  --secondary: 197 45% 11%;
+  /* Secondary: even deeper neutral near-black for nested panels. */
+  --secondary: 220 14% 6%;
   --secondary-foreground: 220 100% 98%;
 
   /* Muted surface tracks the secondary tier; muted-foreground is
-     #A7B4C8 — calm, readable secondary text. */
-  --muted: 200 30% 9%;
-  --muted-foreground: 215 23% 72%;
+     calm, readable secondary text. May-2026: muted now neutral-cool
+     (NOT teal) so disabled/muted surfaces don't read blue. */
+  --muted: 220 14% 9%;
+  --muted-foreground: 215 18% 72%;
 
-  /* Accent: deep cyan-teal surface (no saturated blue per locked spec).
-     Used for hover surfaces, selected states. The cinematic contrast
-     "pop" is delivered by --warm-accent (amber), NOT by a blue tone. */
-  --accent: 197 50% 14%;
+  /* Accent: NEUTRAL near-black (NOT teal). May-2026 amber-rebalance
+     pass — surfaces are pure black glass; the atmosphere supplies all
+     color. Hover/selected states get warmth from amber utilities, not
+     from the surface tone. */
+  --accent: 220 16% 11%;
   --accent-foreground: 183 100% 74%;
 
   --destructive: 0 70% 45%;
   --destructive-foreground: 0 0% 98%;
 
-  /* Border: dark cyan-tinted hairline. Solid usage renders an elegant
-     thin line; `border-border/30` etc. shifts toward the spec's
-     translucent pale-cyan border tones. */
-  --border: 197 50% 14%;
-  --input: 197 50% 14%;
+  /* Border: neutral near-black hairline (NOT teal-tinted). The cinematic
+     identity now comes from atmosphere + amber accents, not surface tone. */
+  --border: 220 14% 14%;
+  --input: 220 14% 14%;
   --ring: 183 100% 74%;
 
-  /* Warm Tron amber: #FFB800. ONLY a contrast accent — sparing use
-     (single highlight per surface max). Per locked spec, amber is the
-     ONLY non-cyan colour permitted. Not for surfaces, not for CTAs. */
+  /* Warm Tron amber: #FFB800. May-2026 rebalance pass — amber is now an
+     ESSENTIAL identity layer (8% of the visual budget) not a hidden
+     accent. Allowed alpha tiers per locked spec: 0.18 haze / 0.24 mid /
+     0.34 strong. Use on CTA edge glows, active/hover states, premium
+     badges, hero highlights, icon glows, timeline connectors, atmospheric
+     reflections, premium outlines. Cyan stays primary identity; amber
+     stays energy/contrast. NEVER as a full background or large fill. */
   --warm-accent: 43 100% 50%;
 
   /* Tertiary text: #6F7F95 — lowest-priority copy (timestamps, captions,
