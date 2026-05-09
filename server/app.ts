@@ -33,7 +33,35 @@ export function log(message: string, source = "express") {
  * websocket bootstrapping (Replit only). When omitted, an internal http
  * server is created that's never bound — adequate for serverless platforms.
  */
+// Boot-time env validation. Logs ONE warning per missing var on cold
+// start so a Vercel redeploy without the right secrets fails loudly in
+// the runtime logs instead of silently breaking automation. Non-fatal —
+// dev/preview deployments still boot. Production is the only env where
+// the cron-related vars are strictly required.
+function validateBootEnv() {
+  const isProd = process.env.NODE_ENV === "production";
+  const required: Array<{ name: string; reason: string; prodOnly?: boolean }> = [
+    { name: "DATABASE_URL", reason: "DB unreachable — every route will 500" },
+    { name: "JWT_SECRET", reason: "session/JWT signing — auth will fail" },
+    { name: "CRON_SECRET", reason: "external cron will be rejected with 401 — auto-complete + reminders won't run", prodOnly: true },
+    { name: "PUBLIC_APP_URL", reason: "GitHub Actions cron has no target URL", prodOnly: true },
+    { name: "RESEND_API_KEY", reason: "password-reset + booking emails will silently no-op", prodOnly: true },
+  ];
+  const missing = required.filter((v) => {
+    if (v.prodOnly && !isProd) return false;
+    return !process.env[v.name];
+  });
+  if (missing.length === 0) {
+    log(`[boot] env OK (NODE_ENV=${process.env.NODE_ENV ?? "unset"})`);
+    return;
+  }
+  for (const v of missing) {
+    console.warn(`[boot:env-missing] ${v.name} — ${v.reason}`);
+  }
+}
+
 export async function createApp(httpServer?: Server): Promise<Express> {
+  validateBootEnv();
   // Self-heal additive schema before any route can call into the DB.
   // Idempotent — runs once per cold start, then never executes DDL again.
   // See server/ensureSchema.ts for the full rationale.

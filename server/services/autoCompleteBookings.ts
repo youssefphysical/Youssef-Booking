@@ -63,8 +63,18 @@ export interface LastAutoCompleteRun {
   result: AutoCompleteResult;
 }
 let lastRun: LastAutoCompleteRun | null = null;
+// Separate tracker for the most recent run whose source was the
+// scheduled `cron` (GH Actions). Backstop/admin-manual runs deliberately
+// do NOT update this — the diagnostics panel needs to know specifically
+// whether the external scheduler is alive, not whether *any* trigger
+// has fired. Without this split, an admin clicking "Repair now" would
+// mask a broken cron.
+let lastCronRunAt: number | null = null;
 export function getLastAutoCompleteRun(): LastAutoCompleteRun | null {
   return lastRun;
+}
+export function getLastCronRunAt(): number | null {
+  return lastCronRunAt;
 }
 
 const DUBAI_TZ_OFFSET = "+04:00";
@@ -190,7 +200,9 @@ export async function runAutoCompleteBookings(
   console.log("[auto-complete:summary]", JSON.stringify({ source, ...result }));
 
   // Stamp the in-memory tracker for /api/admin/auto-complete-status.
-  lastRun = { at: Date.now(), source, result };
+  const at = Date.now();
+  lastRun = { at, source, result };
+  if (source === "cron") lastCronRunAt = at;
 
   return result;
 }

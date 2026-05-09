@@ -424,7 +424,14 @@ function RepairExpiredSessions() {
   // (GitHub Actions cron / on-read backstop / manual). Cheap (in-memory),
   // and refetchOnWindowFocus catches the case where the admin returns to
   // the tab after a long idle.
-  const status = useQuery<{ lastRun: { at: number; source: string; result: { completed: number; deducted: number; scanned: number } } | null }>({
+  const status = useQuery<{
+    lastRun: { at: number; source: string; result: { completed: number; deducted: number; scanned: number } } | null;
+    pendingExpired: number;
+    serverNow: string;
+    dubaiNow: string;
+    cronStale: boolean | null;
+    env: { cronSecretSet: boolean; publicAppUrlSet: boolean; nodeEnv: string | null };
+  }>({
     queryKey: ["/api/admin/auto-complete-status"],
     refetchInterval: 30_000,
     staleTime: 15_000,
@@ -493,6 +500,45 @@ function RepairExpiredSessions() {
         {sourceLabel ? ` · ${sourceLabel}` : ""}
         {status.data?.lastRun ? ` · ${status.data.lastRun.result.completed} completed` : ""}
       </p>
+      {/* Diagnostics row — only renders when there's a real signal to
+          surface (pending sessions, stale cron, or missing env). Stays
+          completely silent in the healthy case so the panel doesn't get
+          noisier than it needs to be. */}
+      {status.data && (
+        (status.data.pendingExpired > 0 ||
+         status.data.cronStale === true ||
+         !status.data.env.cronSecretSet ||
+         !status.data.env.publicAppUrlSet) && (
+          <div className="mt-2 pt-2 border-t border-white/[0.04] space-y-1" data-testid="diagnostics-block">
+            {status.data.pendingExpired > 0 && (
+              <p className="text-[10.5px] text-amber-300/80 leading-relaxed">
+                {status.data.pendingExpired} expired session{status.data.pendingExpired === 1 ? "" : "s"} pending auto-complete.
+              </p>
+            )}
+            {status.data.cronStale === true && (
+              <p className="text-[10.5px] text-rose-300/80 leading-relaxed">
+                Cron looks stale (no scheduled run in 30+ min). Check GitHub Actions.
+              </p>
+            )}
+            {!status.data.env.cronSecretSet && (
+              <p className="text-[10.5px] text-rose-300/80 leading-relaxed">
+                CRON_SECRET not set on server — external cron will be rejected.
+              </p>
+            )}
+            {!status.data.env.publicAppUrlSet && (
+              <p className="text-[10.5px] text-rose-300/80 leading-relaxed">
+                PUBLIC_APP_URL not set on server.
+              </p>
+            )}
+          </div>
+        )
+      )}
+      {/* Always-visible quiet diagnostics line — server vs Dubai time. */}
+      {status.data?.dubaiNow && (
+        <p className="text-[10px] text-muted-foreground/50 mt-1.5 tabular-nums" data-testid="text-dubai-time">
+          Dubai now: {status.data.dubaiNow}
+        </p>
+      )}
     </div>
   );
 }

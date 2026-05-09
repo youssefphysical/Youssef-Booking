@@ -99,7 +99,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
-import { runAutoCompleteBookings, getLastAutoCompleteRun } from "./services/autoCompleteBookings";
+import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
 import { computeClientIntelligence } from "./services/clientIntelligence";
 import { optimizeImageFile } from "./image-utils";
 
@@ -1131,6 +1131,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // since slipped into the past, and any client bypassing the UI
     // (curl/Postman). Friendly message matches the user-spec wording.
     if (me.role !== "admin" && sessionAt.getTime() <= Date.now()) {
+      // Anomaly log: stale browser tab or curl bypass attempt. Single
+      // structured line per event so we can grep frequency without log
+      // volume blowing up.
+      console.warn("[booking:anomaly]", JSON.stringify({
+        kind: "past_slot", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+      }));
       return res.status(400).json({
         message: "This time is no longer available. Please choose a future slot.",
         code: "slot_in_past",
@@ -1140,6 +1146,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       me.role !== "admin" &&
       sessionAt.getTime() - Date.now() < MIN_ADVANCE_BOOKING_MS
     ) {
+      console.warn("[booking:anomaly]", JSON.stringify({
+        kind: "lead_time_too_short", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+      }));
       return res.status(400).json({
         message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} hours in advance.`,
         code: "lead_time_too_short",
@@ -1309,6 +1318,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     } catch (err: any) {
       if (err?.code === "SLOT_TAKEN") {
+        // Race-collision telemetry. If this fires often we know to add
+        // pessimistic locking or move the precheck closer to the insert.
+        console.warn("[booking:anomaly]", JSON.stringify({
+          kind: "slot_race", userId: targetUserId, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+        }));
         return res.status(409).json({ message: err.message, code: "slot_taken" });
       }
       throw err;
@@ -3588,8 +3602,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // panel. Returns the last in-memory pass summary + source so the UI can
   // show "Last run: 4m ago via GitHub Actions cron · 3 completed". Reads
   // are cheap (in-memory) — safe to poll.
-  app.get("/api/admin/auto-complete-status", requireAdmin, (_req, res) => {
-    res.json({ lastRun: getLastAutoCompleteRun() });
+  app.get("/api/admin/auto-complete-status", requireAdmin, async (_req, res) => {
+    const lastRun = getLastAutoCompleteRun();
+    // Server time vs Dubai time — single source of truth for the admin
+    // diagnostics panel so a misconfigured TZ on a Vercel region is
+    // immediately visible. Dubai is UTC+4, no DST.
+    const now = new Date();
+    const dubaiNow = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Dubai",
+      dateStyle: "short",
+      timeStyle: "medium",
+    }).format(now);
+    // Pending count: bookings whose end-time has passed but are still
+    // upcoming/confirmed. This is what the next auto-complete pass will
+    // pick up. Bounded scan via existing storage helper — fine for the
+    // current dataset size; if/when bookings cross 100k we'd push this
+    // into a SQL view with the same end-time math.
+    let pendingExpired = 0;
+    try {
+      const all = await storage.getBookings({});
+      const cutoff = Date.now();
+      for (const b of all) {
+        if (!["upcoming", "confirmed"].includes(b.status)) continue;
+        if ((b as any).completedAt) continue;
+        const dur = (b as any).durationMinutes ?? 60;
+        const endMs = new Date(`${b.date}T${b.timeSlot}:00+04:00`).getTime() + dur * 60_000;
+        if (endMs <= cutoff) pendingExpired++;
+      }
+    } catch (e: any) {
+      console.warn("[diagnostics] pendingExpired query failed:", e?.message || e);
+    }
+    // Cron-stale heuristic tracks the *cron* source specifically (not
+    // backstop or admin-manual triggers — those would mask a broken
+    // scheduler). GH Actions runs every 15 min so >30 min without a
+    // cron-source run is suspicious. `null` means we've never seen
+    // one since this instance booted (cold-start, not necessarily
+    // broken — but worth surfacing).
+    const lastCronAt = getLastCronRunAt();
+    const cronStale = lastCronAt === null ? null : Date.now() - lastCronAt > 30 * 60_000;
+    res.json({
+      lastRun,
+      lastCronRunAt: lastCronAt,
+      pendingExpired,
+      serverNow: now.toISOString(),
+      dubaiNow,
+      cronStale,
+      env: {
+        cronSecretSet: !!process.env.CRON_SECRET,
+        publicAppUrlSet: !!process.env.PUBLIC_APP_URL,
+        nodeEnv: process.env.NODE_ENV ?? null,
+      },
+    });
   });
 
   // Standalone auto-complete trigger. Same auth pattern as /api/cron/reminders
