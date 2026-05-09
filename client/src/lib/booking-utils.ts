@@ -44,17 +44,73 @@ export function translateStatus(
   }
 }
 
+/**
+ * Premium status visual language (May 2026 polish pass).
+ * --------------------------------------------------------------------
+ * One source of truth so admin bookings, client dashboard, session
+ * history, package logs and every booking card read identically.
+ *
+ *   upcoming             → cyan      (Tron primary tone — what's next)
+ *   confirmed            → emerald   (locked in)
+ *   completed            → emerald   (done & counted)
+ *   rescheduled          → indigo    (moved, still alive)
+ *   cancelled / free_…   → muted     (cleanly gone, no penalty)
+ *   emergency_cancelled  → amber     (caution: special treatment)
+ *   no_show / late_…     → soft red  (penalty path)
+ */
 export function statusColor(status: string): string {
   switch (status) {
-    case "upcoming": return "bg-amber-500/15 text-amber-300 border-amber-500/30";
-    case "confirmed": return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-    case "completed": return "bg-blue-500/15 text-blue-300 border-blue-500/30";
+    case "upcoming":
+      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+    case "confirmed":
+      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+    case "completed":
+      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+    case "rescheduled":
+      return "bg-indigo-500/15 text-indigo-300 border-indigo-500/30";
     case "cancelled":
-    case "free_cancelled": return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
-    case "emergency_cancelled": return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "free_cancelled":
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+    case "emergency_cancelled":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "no_show":
-    case "late_cancelled": return "bg-red-500/15 text-red-300 border-red-500/30";
-    default: return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+    case "late_cancelled":
+      return "bg-red-500/15 text-red-300 border-red-500/30";
+    default:
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+  }
+}
+
+/**
+ * Payment status visual language. Kept separate from session status
+ * so a single chip can render either without case-collision.
+ * Covers every payment_status value the booking flow can emit:
+ *   paid                     → emerald  (settled)
+ *   unpaid                   → amber    (owed)
+ *   pending                  → cyan     (awaiting confirmation)
+ *   direct_payment_requested → violet   (out-of-band path requested)
+ *   free                     → muted    (comp / promo, no charge)
+ *   refunded                 → muted
+ *   failed                   → soft red
+ */
+export function paymentColor(payment: string): string {
+  switch (payment) {
+    case "paid":
+      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+    case "unpaid":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "pending":
+      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+    case "direct_payment_requested":
+      return "bg-violet-500/15 text-violet-300 border-violet-500/30";
+    case "free":
+      return "bg-white/5 text-muted-foreground border-white/10";
+    case "refunded":
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
+    case "failed":
+      return "bg-red-500/15 text-red-300 border-red-500/30";
+    default:
+      return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
   }
 }
 

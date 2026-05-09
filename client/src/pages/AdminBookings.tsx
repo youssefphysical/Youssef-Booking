@@ -76,7 +76,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ALL_TIME_SLOTS, translateStatus, statusColor } from "@/lib/booking-utils";
+import { ALL_TIME_SLOTS, translateStatus, statusColor, paymentColor } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import type { BookingWithUser } from "@shared/schema";
 import { useTranslation } from "@/i18n";
@@ -99,13 +99,10 @@ const STATUSES = [
   "emergency_cancelled",
 ];
 
-const PAYMENT_BADGE: Record<string, string> = {
-  paid: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-  unpaid: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  pending: "bg-blue-500/10 text-blue-300 border-blue-500/20",
-  direct_payment_requested: "bg-violet-500/10 text-violet-300 border-violet-500/20",
-  free: "bg-white/5 text-muted-foreground border-white/10",
-};
+// Payment chip colors are now sourced from `paymentColor()` in
+// booking-utils so admin bookings, client dashboard and any future
+// list render an identical visual language. Local PAYMENT_BADGE map
+// removed in the May 2026 polish pass.
 
 // Parse a YYYY-MM-DD booking date as a LOCAL calendar day (avoids the UTC
 // shift that `new Date("2026-05-08")` introduces in negative-UTC zones).
@@ -685,7 +682,7 @@ function BookingRow({
                   {translateStatus(b.status, t)}
                 </span>
                 <span
-                  className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${PAYMENT_BADGE[b.paymentStatus || "unpaid"] || PAYMENT_BADGE.unpaid}`}
+                  className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${paymentColor(b.paymentStatus || "unpaid")}`}
                   data-testid={`payment-badge-${b.id}`}
                 >
                   {PAYMENT_STATUS_LABELS[

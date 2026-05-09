@@ -7,14 +7,33 @@ import { cn } from "@/lib/utils"
 
 const ToastProvider = ToastPrimitives.Provider
 
+/**
+ * Premium glass toast viewport.
+ *
+ * Positioning rules (per May 2026 polish brief):
+ *   • Mobile  — top-center, full-width column, anchored below the
+ *               notch via env(safe-area-inset-top). Centered with
+ *               items-center so toasts read like a banner across the
+ *               width without crowding the home pill in the corner.
+ *   • Desktop — top-right (sm:items-end + sm:right-0 + sm:top-0),
+ *               capped at 420px to match the legacy footprint.
+ *
+ * pointer-events-none on the viewport lets the user keep tapping
+ * underneath even while a toast is mounted; each toast root re-enables
+ * pointer-events-auto. Anchored above admin top bar (z-[100] vs
+ * sticky tabs z-30, drawer z-50, command palette z-50 — Radix portals
+ * to body so portal stacking handles the rest).
+ */
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
+    style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "pointer-events-none fixed inset-x-0 top-0 z-[100] flex max-h-screen flex-col items-center gap-2 px-3",
+      "sm:left-auto sm:right-0 sm:top-0 sm:items-end sm:max-w-[420px] sm:px-4 sm:pt-3",
       className
     )}
     {...props}
@@ -22,14 +41,40 @@ const ToastViewport = React.forwardRef<
 ))
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
+/**
+ * Glass toast variants — calm, premium, AMOLED-friendly.
+ *
+ * All variants share: rounded-2xl, border + soft tinted background,
+ * backdrop-blur-md, soft tonal shadow. Differences are tone only.
+ *   • default     — neutral (bg-card glass)
+ *   • success     — emerald
+ *   • info        — cyan (Tron primary tone)
+ *   • warning     — amber
+ *   • destructive — soft red (kept `destructive group` for legacy
+ *                   .destructive child selectors in ToastClose etc.)
+ *
+ * No transform-based open/close animation — slides in from top-full
+ * on mobile and from right-full on desktop using Radix's swipe vars,
+ * which compile to GPU-friendly translate3d under the hood. compact
+ * padding (p-4 pr-9) so multi-line toasts don't feel oversized.
+ * w-full keeps mobile full-width inside the centered viewport,
+ * sm:w-auto lets desktop toasts size to content within max-w-[420px].
+ */
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  "group pointer-events-auto relative flex w-full sm:w-auto items-start gap-3 overflow-hidden rounded-2xl border p-4 pr-9 backdrop-blur-md transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-right-full",
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
+        default:
+          "border-white/10 bg-card/90 text-foreground shadow-[0_10px_30px_-12px_rgba(0,0,0,0.6)]",
+        success:
+          "border-emerald-500/25 bg-emerald-500/10 text-emerald-50 shadow-[0_10px_30px_-12px_rgba(16,185,129,0.45)]",
+        info:
+          "border-cyan-500/25 bg-cyan-500/10 text-cyan-50 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.45)]",
+        warning:
+          "border-amber-500/25 bg-amber-500/10 text-amber-50 shadow-[0_10px_30px_-12px_rgba(245,158,11,0.45)]",
         destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+          "destructive group border-red-500/30 bg-red-500/10 text-red-50 shadow-[0_10px_30px_-12px_rgba(239,68,68,0.45)]",
       },
     },
     defaultVariants: {

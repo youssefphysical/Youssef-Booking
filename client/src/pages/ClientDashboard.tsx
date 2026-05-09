@@ -1761,19 +1761,27 @@ function Section({
 
 function EmptyState({ title, cta }: { title: string; cta?: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
-      <Calendar className="mx-auto text-muted-foreground/40 mb-3" size={28} />
+    <div className="rounded-2xl border border-white/[0.06] bg-card/40 backdrop-blur-md p-8 sm:p-10 text-center">
+      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20">
+        <Calendar size={20} />
+      </div>
       <p className="text-sm text-muted-foreground">{title}</p>
-      {cta}
+      {cta && <div className="mt-4">{cta}</div>}
     </div>
   );
 }
 
 function SkeletonCards() {
+  // Premium AMOLED skeletons — share the .admin-shimmer utility so
+  // client + admin loading states feel identical. No layout shift:
+  // heights match the resolved card footprint.
   return (
     <div className="grid gap-3">
       {[1, 2].map((i) => (
-        <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />
+        <div
+          key={i}
+          className="h-24 rounded-2xl border border-white/[0.05] bg-card/40 admin-shimmer"
+        />
       ))}
     </div>
   );
