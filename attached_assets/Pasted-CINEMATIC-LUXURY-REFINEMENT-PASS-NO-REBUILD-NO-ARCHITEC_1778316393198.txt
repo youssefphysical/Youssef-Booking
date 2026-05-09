@@ -1,0 +1,390 @@
+CINEMATIC LUXURY REFINEMENT PASS
+(NO REBUILD — NO ARCHITECTURE CHANGES)
+
+IMPORTANT:
+The current homepage architecture is approved.
+DO NOT redesign the structure from scratch.
+DO NOT remove existing systems.
+DO NOT break CMS bindings.
+DO NOT touch routing/backend logic.
+DO NOT remove i18n compatibility.
+DO NOT change the Tron Legacy-inspired identity.
+
+This is a VISUAL + EMOTIONAL refinement pass only.
+
+GOAL:
+Transform the current homepage from:
+“well-designed fitness website”
+into:
+“high-end cinematic coaching brand experience”.
+
+The site should feel:
+- premium
+- calm
+- emotionally persuasive
+- luxurious
+- elite
+- modern
+- trustworthy
+- cinematic
+- effortless
+- easy on the eyes
+
+====================================================
+GLOBAL DESIGN DIRECTION
+====================================================
+
+Keep:
+- dark Tron-inspired atmosphere
+- blue accent identity
+- calm futuristic feel
+- minimal luxury
+- soft glow system
+- clean spacing system
+- mobile-first experience
+
+Avoid:
+- gaming RGB feel
+- over-animation
+- excessive neon
+- loud gradients
+- visual clutter
+- “template” feeling
+- crowded cards
+- too many equal-looking sections
+
+Luxury = restraint.
+
+====================================================
+1. HERO SECTION — COMPLETE CINEMATIC REFINEMENT
+====================================================
+
+Current issue:
+The hero is clean but lacks emotional dominance and cinematic impact.
+
+Rebuild ONLY the visual composition while preserving CMS/image support.
+
+DESKTOP HERO:
+Create a cinematic split-hero layout:
+- left side = emotional copy + CTA
+- right side = cinematic coach image
+
+MOBILE HERO:
+- image becomes vertical cinematic background block
+- content overlays softly on gradient
+- strong focal hierarchy
+- text remains readable at all times
+
+VISUAL REQUIREMENTS:
+- use soft dark blue cinematic overlays
+- subtle blur around image edges
+- preserve sharp focal area on coach face/body
+- use layered depth
+- soft vignette
+- subtle ambient glow
+- no hard borders around hero image
+- image should feel integrated into the page
+
+IMAGE TREATMENT:
+- support desktop crop + mobile crop separately
+- preserve admin CMS controls
+- support focal point positioning
+- use cinematic image ratio
+- avoid generic centered portrait framing
+
+TYPOGRAPHY:
+Hero title must feel emotionally powerful.
+
+Example style:
+“Built Around
+Real Results.”
+
+NOT:
+generic fitness headline.
+
+HEADER STYLE:
+- large
+- cinematic
+- luxury spacing
+- high contrast
+- soft glow only where necessary
+
+SUBTEXT:
+Keep concise.
+Do not overload.
+
+CTA:
+Primary CTA:
+“Book Your Session”
+
+Secondary CTA:
+“Message Coach Youssef”
+
+CTA style:
+- premium
+- calm
+- soft blue glow
+- strong hover/focus
+- mobile-friendly
+- subtle elevation
+
+====================================================
+2. TRANSFORMATIONS SECTION — MAKE IT THE CENTERPIECE
+====================================================
+
+Current issue:
+Transformations feel like a normal section.
+
+This section should become:
+THE emotional proof engine.
+
+DESKTOP:
+- larger cards
+- cinematic before/after presentation
+- more visual dominance
+- staggered layout allowed
+- emotional storytelling feel
+
+MOBILE:
+- swipeable transformation cards
+- stronger image focus
+- less text clutter
+- emotional quote visible quickly
+
+ADD:
+- subtle client quote
+- timeline/progress feel
+- optional InBody stats
+- premium framing
+
+VISUAL STYLE:
+- soft borders
+- subtle blue ambient glow
+- layered shadows
+- high image quality
+- luxury spacing
+
+DO NOT:
+- create loud comparison cards
+- use cheesy transformation effects
+- use aggressive gradients
+
+====================================================
+3. VISUAL RHYTHM SYSTEM
+====================================================
+
+Current issue:
+Too many sections visually feel the same.
+
+Need:
+visual pacing and emotional rhythm.
+
+Implement variation between sections:
+- some borderless
+- some cinematic image-led
+- some lighter-surface
+- some quote-focused
+- some stat-driven
+- some asymmetrical
+- some centered minimal
+
+Goal:
+The eye should feel guided naturally through the homepage.
+
+DO NOT:
+repeat identical dark-card layouts for every section.
+
+====================================================
+4. SECTION HEIGHT OPTIMIZATION
+====================================================
+
+Current issue:
+Homepage feels too long on mobile.
+
+Reduce vertical fatigue by:
+- compressing excessive spacing
+- reducing unnecessary section heights
+- tightening oversized empty gaps
+- improving content density carefully
+
+TARGET:
+Reduce total scroll length by approximately 15–20%
+WITHOUT making sections crowded.
+
+IMPORTANT:
+Keep breathing room.
+Do not compress luxury spacing excessively.
+
+====================================================
+5. TYPOGRAPHY REFINEMENT PASS
+====================================================
+
+Improve typography hierarchy globally.
+
+HEADERS:
+- more cinematic
+- larger
+- cleaner hierarchy
+- stronger contrast
+
+BODY TEXT:
+- easier readability
+- slightly brighter
+- better line-height
+- avoid overly tiny text
+
+SECTION LABELS:
+- elegant tracking
+- subtle uppercase
+- refined opacity
+
+GOAL:
+The page should feel editorial and premium.
+
+====================================================
+6. COACH PRESENCE REFINEMENT
+====================================================
+
+Current issue:
+The site explains features more than identity.
+
+Increase “Coach Youssef” presence subtly across the homepage.
+
+Add:
+- philosophy snippets
+- coaching voice
+- premium guidance tone
+- selective coaching feel
+
+Tone example:
+“I don’t believe in random protocols.
+Everything is selected based on recovery, consistency, bloodwork, and long-term sustainability.”
+
+The homepage should communicate:
+WHY this coach is different.
+
+====================================================
+7. LUXURY PSYCHOLOGY
+====================================================
+
+Introduce subtle exclusivity psychology.
+
+NOT fake countdowns.
+
+Use:
+- limited coaching capacity language
+- selective onboarding feel
+- quality-over-volume tone
+- premium application atmosphere
+
+Examples:
+“Coach Youssef works with a limited number of active clients to maintain coaching quality.”
+
+“Built for long-term results, not quick hype.”
+
+====================================================
+8. FOOTER REFINEMENT
+====================================================
+
+Current footer is too quiet.
+
+Create a stronger final emotional close BEFORE footer links.
+
+Add:
+- cinematic closing CTA
+- emotional final statement
+- premium calm ending
+- luxury spacing
+
+THEN:
+quiet footer links beneath.
+
+====================================================
+9. MOBILE EXPERIENCE PRIORITY
+====================================================
+
+This refinement pass is MOBILE-FIRST.
+
+Requirements:
+- thumb-friendly spacing
+- premium mobile feel
+- elegant scrolling rhythm
+- smooth transitions
+- calm interactions
+- avoid oversized desktop spacing on mobile
+- strong readability in all lighting conditions
+
+====================================================
+10. PERFORMANCE RULES
+====================================================
+
+CRITICAL:
+Do NOT damage performance.
+
+Maintain:
+- lazy loading
+- image optimization
+- AVIF/WebP pipeline
+- blur placeholders
+- responsive variants
+- mobile optimization
+- no heavy animation libraries
+- minimal GPU stress
+
+Luxury = smoothness.
+
+====================================================
+11. MOTION SYSTEM
+====================================================
+
+Use subtle cinematic motion only.
+
+Allowed:
+- soft fade
+- slight parallax
+- ambient movement
+- gentle hover elevation
+- elegant reveal timing
+
+Avoid:
+- bounce animations
+- flashy effects
+- over-scaling
+- fast transitions
+- excessive motion
+
+Animation should feel:
+expensive and calm.
+
+====================================================
+12. FINAL GOAL
+====================================================
+
+The final homepage should feel like:
+- a premium coaching brand
+- a luxury fitness experience
+- a cinematic transformation platform
+- an elite guided system
+
+NOT:
+- a generic PT website
+- a SaaS template
+- a gaming UI
+- an over-designed futuristic concept
+
+IMPORTANT:
+Keep all existing CMS/admin systems working.
+Keep existing architecture intact.
+This is a refinement pass, not a rebuild.
+
+After implementation:
+- test mobile carefully
+- test readability
+- test section rhythm
+- test CTA visibility
+- test image crops
+- test loading performance
+- verify no layout regressions
+- verify all CMS image controls still function
+
+Then push production-ready refinement commits.

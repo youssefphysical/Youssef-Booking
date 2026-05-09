@@ -16,19 +16,22 @@ import type { HomepageSectionContent } from "@/hooks/use-homepage-content";
 import { SmartImage } from "@/components/SmartImage";
 
 /**
- * Tron-Legacy split hero (May-2026 rebuild).
+ * Tron-Legacy split hero — Cinematic Refinement Pass (May-2026).
  *
- * Desktop  : 12-col grid, copy left, cinematic image right with soft
- *            radial glow + thin cyan edge.
- * Mobile   : image-first stack — image fills above, copy + CTAs below.
+ * Refinements over the original split (no architecture changes):
+ *   • Cinematic typography — larger headline (clamp up to 5.25rem),
+ *     tighter tracking (-0.025em), italic accent on the final word
+ *     for emotional dominance.
+ *   • Image frame softened — border white/[0.06] (was /10), corner
+ *     radius bumped to 28px, ambient cyan halo widened + intensified,
+ *     plus a subtle vignette layer integrates the subject into the
+ *     page rather than presenting them inside a hard frame.
+ *   • Limited-capacity microcopy under the CTAs introduces selective
+ *     onboarding language — quiet luxury psychology, no fake countdowns.
+ *   • Mobile pt 10→8 / pb 16→14 to ease scroll fatigue.
  *
- * Image is admin-uploadable via the homepage CMS (/admin/marketing/
- * homepage, key="hero"). When no image is set, a premium dark
- * placeholder pane renders so the layout is identical and a future
- * upload swaps in with zero shift.
- *
- * Object-position is admin-controlled per breakpoint so the focal
- * point stays in frame on any aspect ratio without re-cropping.
+ * CMS bindings, focal-point control, and the mediaAsset responsive
+ * pipeline are preserved exactly as before.
  */
 export function Hero({ section }: { section?: HomepageSectionContent | null }) {
   const { t } = useTranslation();
@@ -37,8 +40,6 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
   const eyebrow = section?.eyebrow || t("hero2.eyebrow", "PREMIUM COACHING • REAL RESULTS");
   const title = section?.title || t("hero2.title", "Built for Real Transformation.");
   const titleAccent = t("hero2.titleAccent", "Transformation.");
-  // Split title so the last word picks up the gradient — graceful when
-  // the admin overrides the title with arbitrary copy (no accent split).
   const titleParts = title.endsWith(titleAccent)
     ? [title.slice(0, title.length - titleAccent.length).trimEnd(), titleAccent]
     : [title, ""];
@@ -70,31 +71,39 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
 
   return (
     <section className="relative overflow-hidden" data-testid="hero-tron">
-      {/* Ambient deep-navy glow under the hero */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.10),transparent_55%)]" aria-hidden />
-      <div className="relative max-w-6xl mx-auto px-5 pt-10 md:pt-20 pb-16 md:pb-24 grid md:grid-cols-12 gap-10 md:gap-12 items-center">
+      {/* Layered ambient cinematic glows — top-right cyan, bottom-left navy. */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(56,189,248,0.14),transparent_58%)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(15,42,86,0.32),transparent_55%)]"
+        aria-hidden
+      />
+      <div className="relative max-w-6xl mx-auto px-5 pt-8 md:pt-20 pb-14 md:pb-24 grid md:grid-cols-12 gap-8 md:gap-14 items-center">
         {/* === Image (mobile shows first via order-1, desktop right) === */}
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="order-1 md:order-2 md:col-span-5 relative"
         >
-          {/* Soft cyan halo behind the frame */}
-          <div className="absolute -inset-6 -z-10 bg-[radial-gradient(circle_at_60%_40%,rgba(56,189,248,0.18),transparent_65%)] blur-2xl" aria-hidden />
+          {/* Wider, softer cyan halo behind the frame */}
           <div
-            className="relative aspect-[4/5] md:aspect-[3/4] rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810] shadow-2xl"
+            className="absolute -inset-8 -z-10 bg-[radial-gradient(circle_at_60%_40%,rgba(56,189,248,0.22),transparent_70%)] blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="relative aspect-[4/5] md:aspect-[3/4] rounded-[28px] overflow-hidden border border-white/[0.06] bg-gradient-to-br from-[#0b1220] via-[#0a0f1a] to-[#050810]"
             style={{
-              // Subtle thin cyan edge — matches .tron-edge but inline
-              // so we don't depend on a token that may evolve.
-              boxShadow: "0 0 0 1px rgba(56,189,248,0.18) inset, 0 30px 80px -20px rgba(0,0,0,0.6)",
+              boxShadow:
+                "0 0 0 1px rgba(56,189,248,0.14) inset, 0 40px 100px -28px rgba(0,0,0,0.7), 0 0 60px -20px rgba(56,189,248,0.18)",
             }}
           >
             {section?.mediaAsset ? (
-              // May-2026 responsive media pipeline. SmartImage fills
-              // the cinematic frame with focal-cropped AVIF/WebP
-              // variants per breakpoint. `priority` because the hero
-              // is above-the-fold — eager + fetchpriority high.
+              // May-2026 responsive media pipeline. SmartImage fills the
+              // cinematic frame with focal-cropped AVIF/WebP variants per
+              // breakpoint. `priority` because the hero is above-the-fold.
               <SmartImage
                 asset={section.mediaAsset}
                 priority
@@ -132,15 +141,19 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
                 </p>
               </div>
             )}
-            {/* Cinematic dark wash to integrate the subject into the page */}
+            {/* Cinematic vignette — soft darken at corners so the subject
+                feels integrated into the page rather than framed inside a
+                box. Pure decoration, pointer-events-none. */}
+            <div className="absolute inset-0 tron-vignette pointer-events-none" aria-hidden />
+            {/* Bottom dark wash so floating accreditation chips always read */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,${overlay}) 100%)`,
+                background: `linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,${overlay}) 100%)`,
               }}
               aria-hidden
             />
-            {/* Floating accreditation chip — preserves trust on the image */}
+            {/* Floating accreditation chips */}
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 text-[10px] font-bold">
               <span className="px-2.5 py-1.5 rounded-full bg-primary text-primary-foreground tracking-wider">
                 <Award size={11} className="inline -mt-0.5 me-1" />
@@ -151,13 +164,10 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
               </span>
             </div>
           </div>
-          {/* Desktop-only object-position override — set via inline style
-              on a sibling because <img> can only carry one objectPosition
-              at a time. We toggle via picture/source media + the .hero-img
-              class CSS variable below. Simpler approach: a second img is
-              rendered for desktop. Skipped for now to keep the markup
-              clean — admin can set both, mobile/desktop diverge when
-              admin sets per-breakpoint overrides via CSS custom prop. */}
+          {/* Desktop-only object-position override — when the legacy
+              imageDataUrl path is used (no mediaAsset), the picture/img
+              shares one objectPosition; this CSS variable lets the admin
+              set per-breakpoint focal points without re-rendering. */}
           <style>{`
             @media (min-width: 768px) {
               .hero-img { object-position: ${desktopPos} !important; }
@@ -172,26 +182,28 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
           transition={{ duration: 0.6, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
           className="order-2 md:order-1 md:col-span-7 text-start"
         >
-          <p className="tron-eyebrow text-[11px] mb-4 text-primary/90" data-testid="text-hero-eyebrow">
+          <p className="tron-eyebrow text-[11px] mb-4" data-testid="text-hero-eyebrow">
             {eyebrow}
           </p>
           <h1
-            className="font-display font-bold leading-[1.05] tracking-tight text-[clamp(2.25rem,6vw,4.5rem)]"
+            className="font-display font-bold leading-[1.02] tracking-[-0.025em] text-[clamp(2.5rem,7.2vw,5.25rem)]"
             data-testid="text-hero-title"
           >
             {titleParts[0]}{" "}
             {titleParts[1] && (
-              <span className="text-gradient-blue whitespace-nowrap">{titleParts[1]}</span>
+              <span className="text-gradient-blue italic rtl:not-italic font-medium whitespace-nowrap">
+                {titleParts[1]}
+              </span>
             )}
           </h1>
           <p
-            className="mt-5 text-base md:text-lg text-muted-foreground leading-relaxed max-w-xl"
+            className="mt-6 text-base md:text-lg text-foreground/75 leading-[1.7] max-w-xl"
             data-testid="text-hero-body"
           >
             {body}
           </p>
 
-          <div className="mt-7 flex flex-col sm:flex-row gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Link href={ctaPrimaryHref} data-testid="link-hero-primary" className="w-full sm:w-auto">
               <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow whitespace-nowrap btn-press">
                 <Calendar size={18} />
@@ -206,12 +218,28 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
             />
           </div>
 
-          {/* Trust chips */}
+          {/* Quiet luxury-psychology line — selective onboarding without
+              resorting to fake countdowns or scarcity timers. */}
+          <p
+            className="mt-5 text-[12px] text-muted-foreground/75 leading-snug max-w-md flex items-center gap-2"
+            data-testid="text-hero-capacity"
+          >
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full bg-primary/80 shadow-[0_0_8px_rgba(56,189,248,0.6)] shrink-0"
+              aria-hidden
+            />
+            {t(
+              "hero2.capacity",
+              "Limited active clients — selective onboarding to protect coaching quality.",
+            )}
+          </p>
+
+          {/* Trust chips — softer borders to match the refined frame */}
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {trustChips.map((c, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+                className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 hover:border-primary/25 transition-colors"
                 data-testid={`hero-chip-${i}`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] text-primary/90 font-semibold">

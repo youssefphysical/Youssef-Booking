@@ -3,9 +3,15 @@ import { UserPlus, Calendar, ClipboardList, Target, TrendingUp } from "lucide-re
 import { useTranslation } from "@/i18n";
 
 /**
- * "Your Journey, Simplified" — 5-step premium timeline. Static (no DB).
- * Desktop: horizontal 5-col grid with thin connecting line.
- * Mobile: vertical stack.
+ * "Your Journey, Simplified" — 5-step premium timeline.
+ *
+ * Cinematic Refinement Pass (May-2026):
+ *   • Section py-16 → py-14 on mobile (scroll-fatigue reduction).
+ *   • Larger, tighter-tracked title for editorial cadence.
+ *   • Connecting gradient line replaced with a softened cyan beam
+ *     (.tron-beam) — sharper at the centre, fading at the edges.
+ *   • Step badges quieter — outer ring + glow halved for "premium-quiet".
+ *   • Calm subtitle line introduces the journey before the steps.
  */
 export function HowItWorks() {
   const { t } = useTranslation();
@@ -18,14 +24,22 @@ export function HowItWorks() {
   ];
 
   return (
-    <section className="py-16 md:py-24" id="how-it-works" data-testid="how-it-works-section">
+    <section className="py-14 md:py-24" id="how-it-works" data-testid="how-it-works-section">
       <div className="max-w-6xl mx-auto px-5 text-center">
-        <p className="tron-eyebrow text-[11px] text-primary/90 mb-3">{t("how.eyebrow", "HOW IT WORKS")}</p>
-        <h2 className="font-display font-bold text-3xl md:text-4xl">{t("how.title", "Your Journey, Simplified.")}</h2>
+        <p className="tron-eyebrow text-[11px] mb-3">{t("how.eyebrow", "HOW IT WORKS")}</p>
+        <h2 className="font-display font-bold text-3xl md:text-5xl tracking-[-0.02em] leading-[1.05]">
+          {t("how.title", "Your Journey, Simplified.")}
+        </h2>
+        <p className="mt-4 text-sm md:text-base text-muted-foreground/85 max-w-xl mx-auto leading-relaxed">
+          {t(
+            "how.subtitle",
+            "From first message to first result — five calm, deliberate steps.",
+          )}
+        </p>
 
-        <div className="relative mt-12 grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-4">
-          {/* Horizontal connecting line on desktop */}
-          <div className="hidden md:block absolute left-[10%] right-[10%] top-7 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" aria-hidden />
+        <div className="relative mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-4">
+          {/* Cinematic cyan beam connecting the timeline (desktop) */}
+          <div className="hidden md:block absolute left-[10%] right-[10%] top-7 tron-beam opacity-70" aria-hidden />
           {steps.map((s, i) => (
             <motion.div
               key={i}
@@ -36,13 +50,13 @@ export function HowItWorks() {
               className="relative flex flex-col items-center text-center"
               data-testid={`how-step-${i}`}
             >
-              <div className="relative z-10 w-14 h-14 rounded-full bg-[#0a0f1a] border border-primary/40 flex items-center justify-center text-primary shadow-[0_0_24px_-4px_rgba(56,189,248,0.45)]">
+              <div className="relative z-10 w-14 h-14 rounded-full bg-[#0a0f1a] border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_20px_-6px_rgba(56,189,248,0.5)]">
                 {s.icon}
               </div>
-              <p className="mt-3 text-[11px] uppercase tracking-[0.25em] text-primary/80 font-semibold">
+              <p className="mt-4 text-[11px] uppercase tracking-[0.25em] text-primary/85 font-semibold">
                 {s.n}. {s.title}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground max-w-[200px] leading-relaxed">
+              <p className="mt-2 text-sm text-muted-foreground/85 max-w-[200px] leading-relaxed">
                 {s.body}
               </p>
             </motion.div>

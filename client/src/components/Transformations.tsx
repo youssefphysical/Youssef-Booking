@@ -67,14 +67,22 @@ export function Transformations() {
   const hasMore = data.length > preview.length;
 
   return (
-    <section className="max-w-6xl mx-auto px-5 py-20" id="transformations">
-      <div className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+    <section className="relative py-14 md:py-24" id="transformations">
+      {/* Cinematic Refinement Pass (May-2026): soft ambient cyan glow
+          makes Transformations the visual centerpiece — emotional proof
+          engine at the heart of the homepage. */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.10),transparent_60%)]"
+        aria-hidden
+      />
+      <div className="relative max-w-6xl mx-auto px-5">
+      <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <p className="tron-eyebrow text-xs mb-2">
+          <p className="tron-eyebrow text-xs mb-3">
             {t("section.transformations.eyebrow")}
           </p>
           <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-3xl md:text-4xl font-display font-bold">
+            <h2 className="text-3xl md:text-5xl font-display font-bold tracking-[-0.02em] leading-[1.05]">
               {t("section.transformations.title")}
             </h2>
             {data.length >= 2 && (
@@ -189,6 +197,7 @@ export function Transformations() {
           </Link>
         </div>
       )}
+      </div>
     </section>
   );
 }

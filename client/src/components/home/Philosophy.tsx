@@ -1,14 +1,25 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Compass, User, Target, ShieldCheck, ImageOff } from "lucide-react";
+import { Compass, User, Target, ShieldCheck, ImageOff, Quote } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import type { HomepageSectionContent } from "@/hooks/use-homepage-content";
 import { SmartImage } from "@/components/SmartImage";
 
 /**
- * "I don't believe in random plans." — coach philosophy section.
- * Builds emotional authority. Image is admin-controlled (key="philosophy");
- * falls back to a dark placeholder pane so the layout never breaks.
+ * "I don't believe in random plans." — Coach philosophy section.
+ *
+ * Cinematic Refinement Pass (May-2026):
+ *   • Title styled as an editorial pull-quote — opening cyan quote
+ *     mark + italic display weight + tighter tracking. Increases
+ *     coach-presence without rewriting copy.
+ *   • Subtle attribution line under the quote ties the voice to the coach.
+ *   • Body text brightened to foreground/75 with a more luxurious
+ *     1.75 line-height for editorial reading rhythm.
+ *   • Point-cards converted to lighter borderless rows with a cyan
+ *     hairline on the start edge — breaks the dark-card sameness
+ *     established by the hero.
+ *   • Mobile py-16 → py-14 to ease scroll fatigue.
+ * CMS bindings, focal-point, and mediaAsset pipeline preserved.
  */
 export function Philosophy({ section }: { section?: HomepageSectionContent | null }) {
   const { t } = useTranslation();
@@ -37,20 +48,31 @@ export function Philosophy({ section }: { section?: HomepageSectionContent | nul
   ];
 
   return (
-    <section className="relative py-16 md:py-24" id="philosophy" data-testid="philosophy-section">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,rgba(30,58,138,0.18),transparent_60%)] pointer-events-none" aria-hidden />
-      <div className="relative max-w-6xl mx-auto px-5 grid md:grid-cols-12 gap-10 md:gap-14 items-center">
+    <section className="relative py-14 md:py-24" id="philosophy" data-testid="philosophy-section">
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_left,rgba(30,58,138,0.20),transparent_60%)] pointer-events-none"
+        aria-hidden
+      />
+      <div className="relative max-w-6xl mx-auto px-5 grid md:grid-cols-12 gap-10 md:gap-16 items-center">
         {/* Image */}
         <motion.div
           initial={{ opacity: 0, x: -16 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="md:col-span-5"
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="md:col-span-5 relative"
         >
+          {/* Soft cyan halo behind the frame */}
           <div
-            className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#0a0f1a] to-[#050810]"
-            style={{ boxShadow: "0 0 0 1px rgba(56,189,248,0.12) inset" }}
+            className="absolute -inset-6 -z-10 bg-[radial-gradient(circle_at_40%_50%,rgba(56,189,248,0.18),transparent_70%)] blur-2xl"
+            aria-hidden
+          />
+          <div
+            className="relative aspect-[4/5] rounded-[28px] overflow-hidden border border-white/[0.06] bg-gradient-to-br from-[#0a0f1a] to-[#050810]"
+            style={{
+              boxShadow:
+                "0 0 0 1px rgba(56,189,248,0.10) inset, 0 30px 80px -24px rgba(0,0,0,0.6)",
+            }}
           >
             {section?.mediaAsset ? (
               // May-2026 responsive pipeline — focal-cropped AVIF/WebP
@@ -83,26 +105,36 @@ export function Philosophy({ section }: { section?: HomepageSectionContent | nul
                 </p>
               </div>
             )}
+            <div className="absolute inset-0 tron-vignette pointer-events-none" aria-hidden />
             <div
               className="absolute inset-0 pointer-events-none"
-              style={{ background: `linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,${overlay}) 100%)` }}
+              style={{
+                background: `linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,${overlay}) 100%)`,
+              }}
               aria-hidden
             />
           </div>
           <style>{`@media (min-width: 768px) { .philosophy-img { object-position: ${desktopPos} !important; } }`}</style>
         </motion.div>
 
-        {/* Copy */}
+        {/* Copy — pull-quote treatment */}
         <div className="md:col-span-7">
-          <p className="tron-eyebrow text-[11px] text-primary/90 mb-3">{eyebrow}</p>
-          <h2 className="font-display font-bold text-3xl md:text-4xl leading-tight" data-testid="text-philosophy-title">
+          <p className="tron-eyebrow text-[11px] mb-4">{eyebrow}</p>
+          <Quote size={28} className="text-primary/45 mb-3 rtl:scale-x-[-1]" aria-hidden />
+          <h2
+            className="font-display font-bold text-[clamp(1.875rem,4.6vw,3.25rem)] leading-[1.1] tracking-[-0.02em] italic rtl:not-italic text-foreground/95"
+            data-testid="text-philosophy-title"
+          >
             {title}
           </h2>
-          <p className="mt-5 text-base text-muted-foreground leading-relaxed max-w-xl whitespace-pre-line">
+          <p className="mt-4 text-[11px] uppercase tracking-[0.28em] text-primary/65">
+            — {t("philosophy.attribution", "Coach Youssef Ahmed")}
+          </p>
+          <p className="mt-7 text-base md:text-lg text-foreground/75 leading-[1.75] max-w-xl whitespace-pre-line">
             {body}
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-3">
+          <div className="mt-9 grid grid-cols-2 gap-x-6 gap-y-5">
             {points.map((p, i) => (
               <motion.div
                 key={i}
@@ -110,14 +142,18 @@ export function Philosophy({ section }: { section?: HomepageSectionContent | nul
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ delay: i * 0.05 }}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                className="flex gap-3 ps-4 border-s border-primary/20"
                 data-testid={`philosophy-point-${i}`}
               >
-                <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary mb-2.5">
-                  {p.icon}
+                <div className="text-primary/90 mt-0.5 shrink-0">{p.icon}</div>
+                <div className="min-w-0">
+                  <h3 className="font-display font-bold text-sm text-foreground/95">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground/85 mt-1 leading-relaxed">
+                    {p.body}
+                  </p>
                 </div>
-                <h3 className="font-display font-bold text-sm">{p.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{p.body}</p>
               </motion.div>
             ))}
           </div>
