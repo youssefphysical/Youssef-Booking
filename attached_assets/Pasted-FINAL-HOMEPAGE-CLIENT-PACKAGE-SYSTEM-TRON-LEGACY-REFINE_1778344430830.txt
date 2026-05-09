@@ -1,0 +1,477 @@
+FINAL HOMEPAGE + CLIENT PACKAGE SYSTEM + TRON LEGACY REFINEMENT
+
+This is the FINAL premium refinement pass for the platform.
+
+The goal is NOT to add random features or over-design the UI.
+
+The goal is:
+
+- cinematic luxury
+- futuristic premium atmosphere
+- elite coaching system feeling
+- calm Tron Legacy energy
+- clean usability
+- strong mobile experience
+- dashboard/homepage visual consistency
+- smooth client journey
+
+IMPORTANT:
+Do NOT turn the website into aggressive cyberpunk/gaming UI.
+Keep it:
+
+- elegant
+- premium
+- restrained
+- cinematic
+- readable
+- luxurious
+
+====================================
+
+1. FINAL DESIGN DIRECTION
+   ====================================
+
+The entire homepage and dashboard ecosystem should feel like:
+
+“Elite Performance Operating System”
+
+NOT:
+
+- generic fitness website
+- neon gaming UI
+- crypto dashboard
+- over-animated cyberpunk
+
+Design language inspiration:
+Tron Legacy
+
+But interpreted as:
+Luxury Coaching Platform.
+
+====================================
+2. COLOR SYSTEM — FINAL LOCK
+
+REMOVE the current dark-blue-heavy background feeling.
+
+The website background must become:
+true AMOLED cinematic black.
+
+Main background:
+
+- #050505
+- #07090D
+- #0A0F14
+
+NO saturated navy blue backgrounds.
+
+The website should feel like:
+a powered-off premium OLED screen with cinematic lighting emerging from darkness.
+
+====================================
+3. TRON LEGACY LIGHTING SYSTEM
+
+Use lighting like Tron Legacy.
+
+Primary energy source:
+pale cinematic cyan
+
+Main cyan:
+#7DF9FF
+
+Secondary cyan:
+#9FE7F5
+
+Deep cyan-teal surfaces:
+#10232D
+
+Warm contrast amber/orange:
+#FFB000
+
+Optional deeper amber:
+#FF8C42
+
+====================================
+4. COLOR RATIO
+
+FINAL COLOR BALANCE:
+
+- 72% AMOLED black / dark surfaces
+- 18% cyan lighting system
+- 10% amber/orange accents
+
+Orange must become MORE visible than before.
+
+Current issue:
+orange is too weak and almost invisible.
+
+Required:
+
+- stronger amber energy accents
+- controlled orange glow
+- cinematic warm reflections
+- subtle orange edge lighting
+- hover highlights
+- active state lighting
+- divider accents
+- premium contrast details
+
+BUT:
+do NOT flood the UI with orange.
+
+Orange should feel:
+valuable and powerful.
+
+Like Tron Legacy energy lines.
+
+====================================
+5. CINEMATIC DEPTH
+
+The site currently feels too flat.
+
+Add:
+
+- atmospheric depth
+- radial gradients
+- cinematic vignette
+- ambient haze
+- glow falloff
+- subtle light diffusion
+- layered backgrounds
+
+Especially:
+
+- Hero section
+- CTA sections
+- Important cards
+- Dashboard overview
+
+Backgrounds should NEVER feel like:
+flat color blocks.
+
+====================================
+6. HERO SECTION — FINAL CINEMATIC VERSION
+
+The Hero must feel:
+premium cinematic poster.
+
+Requirements:
+
+- image blends naturally into darkness
+- cinematic overlay
+- stronger headline hierarchy
+- huge readable typography
+- premium spacing
+- subtle moving atmosphere
+- calm glow breathing
+- cinematic light direction
+
+Primary CTA:
+Start Your Transformation
+
+Secondary CTA:
+Message Coach on WhatsApp
+
+Add:
+
+- soft cyan glow
+- subtle orange highlights
+- light sweep effect occasionally
+- calm hover animations
+
+NO:
+
+- aggressive particles
+- RGB effects
+- gaming neon spam
+
+====================================
+7. HOMEPAGE SECTION REFINEMENT
+
+Every section currently feels too similar.
+
+Create variation:
+
+- some sections immersive
+- some editorial
+- some minimal
+- some cinematic
+- some glass-based
+- some image-driven
+
+Add stronger visual rhythm.
+
+The page should breathe.
+
+Increase:
+
+- spacing
+- section separation
+- padding
+- visual pauses
+
+Reduce:
+
+- crowded text blocks
+- repetitive card feeling
+
+====================================
+8. TYPOGRAPHY SYSTEM
+
+Improve hierarchy dramatically.
+
+Requirements:
+
+- larger headlines
+- calmer body text
+- wider letter spacing
+- stronger visual hierarchy
+- fewer large paragraphs
+- more premium composition
+
+The typography should feel:
+luxury sci-fi editorial.
+
+====================================
+9. GLASSMORPHISM REFINEMENT
+
+Refine all glass surfaces.
+
+Requirements:
+
+- softer blur
+- thinner borders
+- subtle reflections
+- cleaner transparency
+- cinematic shadows
+
+Avoid:
+cheap glass effect.
+
+====================================
+10. MICROINTERACTIONS
+
+Add only subtle premium motion.
+
+Allowed:
+
+- smooth fade-ins
+- glow breathing
+- hover depth
+- cinematic transitions
+- subtle light sweeps
+- soft scroll reveals
+
+Avoid:
+
+- gaming animations
+- flashy movement
+- bouncing
+- RGB flickering
+- exaggerated motion
+
+====================================
+11. MOBILE EXPERIENCE
+
+The mobile UI must feel:
+cleaner and more cinematic.
+
+Improve:
+
+- spacing
+- readability
+- section breathing room
+- CTA visibility
+- visual hierarchy
+
+The mobile version must NOT feel compressed.
+
+====================================
+12. HOMEPAGE + DASHBOARD VISUAL CONSISTENCY
+
+The homepage and dashboard must feel like:
+one unified ecosystem.
+
+Use the SAME:
+
+- color logic
+- glow logic
+- border styles
+- lighting system
+- typography hierarchy
+- spacing system
+- glass system
+
+====================================
+13. CLIENT PACKAGE SYSTEM
+
+Add a professional client package selection system.
+
+Clients can choose:
+
+- 10 Sessions
+- 20 Sessions
+- 25 Sessions
+- 30 Sessions Duo
+
+These should appear beautifully on the homepage and/or booking flow.
+
+Package cards must feel:
+premium
+clean
+luxury
+easy to understand
+
+Each package should display:
+
+- session count
+- package type
+- optional short description
+- optional recommended badge
+- CTA button
+
+====================================
+14. ADMIN PACKAGE MANAGEMENT
+
+Admin/super_admin must fully control packages.
+
+Admin capabilities:
+
+- assign package to client
+- add extra bonus sessions
+- manually increase remaining sessions
+- manually reduce sessions
+- edit package expiration date
+- mark payment status
+- add notes
+- view complete package history
+
+====================================
+15. SESSION TRACKING SYSTEM
+
+Every client must have:
+full session tracking history.
+
+Track:
+
+- booked sessions
+- completed sessions
+- cancelled sessions
+- rescheduled sessions
+- remaining sessions
+- total sessions used
+- package expiration date
+
+Each session record must include:
+
+- session date
+- start time
+- end time
+- booking status
+- package used
+- notes if applicable
+
+Allow:
+
+- past sessions
+- current sessions
+- future sessions
+
+====================================
+16. AUTO SESSION CONSUMPTION
+
+After a valid completed session:
+
+- automatically deduct 1 session
+- update remaining sessions
+- update package progress
+- record completion timestamp
+
+DO NOT:
+
+- double deduct
+- deduct cancelled sessions
+- deduct properly rescheduled sessions
+
+====================================
+17. CLIENT DASHBOARD
+
+Client dashboard should display:
+
+- remaining sessions
+- package progress
+- next session
+- expiration date
+- session history
+- transformation progress
+- protocol recommendations later
+
+Make it feel:
+premium and futuristic.
+
+====================================
+18. FUTURE PROTOCOL SYSTEM PREPARATION
+
+Prepare the design structure for future:
+Supplement Protocol System
+
+Future protocol examples:
+
+- Foundation Protocol
+- Performance Protocol
+- Recovery Protocol
+- Fat Loss Protocol
+- Muscle Gain Protocol
+
+Do NOT fully build advanced protocol AI now.
+Just structure the UI/components cleanly for future expansion.
+
+====================================
+19. PERFORMANCE + CLEANUP
+
+Maintain:
+
+- smooth scrolling
+- mobile performance
+- clean rendering
+- responsive behavior
+- accessibility
+- fast loading
+
+Avoid:
+heavy visual effects that reduce performance.
+
+====================================
+20. FINAL GOAL
+
+The final experience should feel like:
+
+A luxury cinematic futuristic coaching platform inspired by Tron Legacy.
+
+NOT:
+
+- gaming UI
+- crypto app
+- template fitness site
+
+The feeling should be:
+
+- premium
+- calm
+- immersive
+- intelligent
+- futuristic
+- elite
+- cinematic
+
+Prioritize:
+atmosphere
+hierarchy
+depth
+lighting
+spacing
+premium usability
+
+over:
+feature overload or excessive effects.
+
+This should be treated as the final cohesive visual refinement pass for the homepage + dashboard ecosystem.
