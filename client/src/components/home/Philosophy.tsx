@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Compass, User, Target, ShieldCheck, ImageOff } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import type { HomepageSectionContent } from "@/hooks/use-homepage-content";
+import { SmartImage } from "@/components/SmartImage";
 
 /**
  * "I don't believe in random plans." — coach philosophy section.
@@ -51,7 +52,16 @@ export function Philosophy({ section }: { section?: HomepageSectionContent | nul
             className="relative aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#0a0f1a] to-[#050810]"
             style={{ boxShadow: "0 0 0 1px rgba(56,189,248,0.12) inset" }}
           >
-            {hasImage ? (
+            {section?.mediaAsset ? (
+              // May-2026 responsive pipeline — focal-cropped AVIF/WebP
+              // variants per breakpoint, lazy loaded (below-the-fold).
+              <SmartImage
+                asset={section.mediaAsset}
+                fill
+                sizesDesktop="(min-width: 1280px) 480px, (min-width: 768px) 40vw, 100vw"
+                testId="img-philosophy"
+              />
+            ) : hasImage ? (
               <img
                 src={img}
                 alt={section?.imageAlt || t("philosophy.imageAlt", "Coach Youssef Ahmed")}

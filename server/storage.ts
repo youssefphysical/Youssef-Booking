@@ -103,6 +103,8 @@ import {
   homepageSections,
   type HomepageSection,
   type UpsertHomepageSection,
+  mediaAssets,
+  type MediaAsset,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -2525,6 +2527,46 @@ declare module "./storage" {
     .values({ key, ...clean } as any)
     .returning();
   return c;
+};
+
+// ============================================================
+// MEDIA ASSETS — responsive media pipeline (May-2026 architecture)
+// ============================================================
+(DatabaseStorage.prototype as any).createMediaAsset = async function (
+  row: Omit<MediaAsset, "id" | "createdAt" | "updatedAt">,
+): Promise<MediaAsset> {
+  const [created] = await db
+    .insert(mediaAssets)
+    .values({ ...row, updatedAt: new Date() } as any)
+    .returning();
+  return created;
+};
+(DatabaseStorage.prototype as any).getMediaAsset = async function (
+  id: number,
+): Promise<MediaAsset | undefined> {
+  const [row] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id));
+  return row;
+};
+(DatabaseStorage.prototype as any).listMediaAssets = async function (): Promise<MediaAsset[]> {
+  return db.select().from(mediaAssets).orderBy(desc(mediaAssets.id));
+};
+(DatabaseStorage.prototype as any).updateMediaAsset = async function (
+  id: number,
+  updates: Partial<MediaAsset>,
+): Promise<MediaAsset | undefined> {
+  const clean: Record<string, unknown> = { updatedAt: new Date() };
+  for (const [k, v] of Object.entries(updates)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  const [row] = await db
+    .update(mediaAssets)
+    .set(clean as any)
+    .where(eq(mediaAssets.id, id))
+    .returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).deleteMediaAsset = async function (id: number): Promise<void> {
+  await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
 };
 
 export const storage = new DatabaseStorage();

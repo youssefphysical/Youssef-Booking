@@ -612,6 +612,36 @@ async function run(): Promise<void> {
       ('philosophy', 1),
       ('final_cta', 2)
     ON CONFLICT (key) DO NOTHING;
+
+    -- May 2026 media architecture: proper responsive media pipeline.
+    -- One row = one fully-optimised photo (master 1920 WebP + 10
+    -- responsive variants + LQIP). Variants are served as cacheable
+    -- binaries via /api/media/:id/v/:bp/:fmt/:w; the JSON manifest
+    -- only carries metadata so payloads stay small.
+    CREATE TABLE IF NOT EXISTS media_assets (
+      id serial PRIMARY KEY,
+      original_width integer NOT NULL,
+      original_height integer NOT NULL,
+      original_mime text,
+      focal_x integer NOT NULL DEFAULT 50,
+      focal_y integer NOT NULL DEFAULT 50,
+      desktop_aspect text NOT NULL DEFAULT '16/9',
+      mobile_aspect text NOT NULL DEFAULT '4/5',
+      master text NOT NULL,
+      variants jsonb NOT NULL,
+      lqip text NOT NULL,
+      alt_text text,
+      priority boolean NOT NULL DEFAULT false,
+      is_active boolean NOT NULL DEFAULT true,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+
+    -- Bind a media_assets row to a homepage section. Nullable so the
+    -- legacy image_data_url path keeps rendering until admin
+    -- re-uploads through the new optimised pipeline.
+    ALTER TABLE homepage_sections
+      ADD COLUMN IF NOT EXISTS media_asset_id integer REFERENCES media_assets(id) ON DELETE SET NULL;
   `;
 
   try {

@@ -3107,6 +3107,11 @@ export const homepageSections = pgTable("homepage_sections", {
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // May-2026 media architecture: optional pointer to a fully-optimised
+  // media_assets row (responsive variants + LQIP + focal point). When
+  // set, frontend uses <SmartImage>; legacy imageDataUrl is kept for
+  // backward compat and still renders if mediaAssetId is null.
+  mediaAssetId: integer("media_asset_id"),
 });
 
 // CTA hrefs must be safe to render in <a href>. We allow internal
@@ -3148,7 +3153,111 @@ export const upsertHomepageSectionSchema = z.object({
   ctaSecondaryHref: safeHrefSchema.nullish(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(999).optional(),
+  // Optional binding to a media_assets row. When set, the public
+  // hook expands it into the response so SmartImage can render
+  // responsive variants. null clears the binding.
+  mediaAssetId: z.number().int().nullable().optional(),
 });
 
 export type HomepageSection = typeof homepageSections.$inferSelect;
 export type UpsertHomepageSection = z.infer<typeof upsertHomepageSectionSchema>;
+
+// =============================================================
+// MEDIA ASSETS — proper responsive media architecture (May 2026).
+//
+// One row = one fully-optimised photo. Sharp generates 10 binary
+// variants (3 desktop widths × 2 formats + 2 mobile widths × 2
+// formats) plus a 24px blurred LQIP and a 1920px master used to
+// re-derive variants when the admin re-crops.
+//
+//   variants jsonb shape:
+//     { d: { a: { "768": "<base64>", "1280": "...", "1920": "..." },
+//            w: { "768": "...", "1280": "...", "1920": "..." } },
+//       m: { a: { "480": "...", "768": "..." },
+//            w: { "480": "...", "768": "..." } } }
+//
+// Variants are NEVER returned in JSON responses — they're served
+// as cacheable binaries via /api/media/:id/v/:bp/:fmt/:w. The
+// public manifest only carries id + lqip + focal + aspects + dims
+// + alt + priority + version (updatedAt epoch for cache busting).
+// =============================================================
+export const mediaAssets = pgTable("media_assets", {
+  id: serial("id").primaryKey(),
+  // Original geometry — stored so the frontend can set explicit
+  // aspect-ratio / width / height attributes and avoid CLS even
+  // before the LQIP loads.
+  originalWidth: integer("original_width").notNull(),
+  originalHeight: integer("original_height").notNull(),
+  originalMime: text("original_mime"),
+  // Focal point in percent (0..100) — used to crop both desktop
+  // and mobile aspects without losing the subject (face).
+  focalX: integer("focal_x").notNull().default(50),
+  focalY: integer("focal_y").notNull().default(50),
+  // Stored as "W/H" strings (e.g. "16/9", "3/4", "9/16").
+  desktopAspect: text("desktop_aspect").notNull().default("16/9"),
+  mobileAspect: text("mobile_aspect").notNull().default("4/5"),
+  // Source-of-truth 1920px WebP@q92 — every other variant is
+  // re-derived from this on focal/aspect change so we never have
+  // to keep the raw user upload around (saves ~5x storage).
+  master: text("master").notNull(),
+  variants: jsonb("variants").notNull(),
+  lqip: text("lqip").notNull(),
+  altText: text("alt_text"),
+  // When true, the rendered <picture> uses loading="eager" +
+  // fetchpriority="high" — set on above-the-fold hero only.
+  priority: boolean("priority").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Insert/patch schemas — all fields except focal/aspect/master/
+// variants/lqip/dims are user-editable. The processor populates
+// the binary fields server-side; the admin never POSTs them.
+export const insertMediaAssetSchema = z.object({
+  // Raw user upload as a data URL — server validates + processes.
+  imageDataUrl: z.string().min(40),
+  focalX: z.number().int().min(0).max(100).optional(),
+  focalY: z.number().int().min(0).max(100).optional(),
+  desktopAspect: z.string().regex(/^\d{1,2}\/\d{1,2}$/).optional(),
+  mobileAspect: z.string().regex(/^\d{1,2}\/\d{1,2}$/).optional(),
+  altText: z.string().max(200).nullish(),
+  priority: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const updateMediaAssetSchema = z.object({
+  focalX: z.number().int().min(0).max(100).optional(),
+  focalY: z.number().int().min(0).max(100).optional(),
+  desktopAspect: z.string().regex(/^\d{1,2}\/\d{1,2}$/).optional(),
+  mobileAspect: z.string().regex(/^\d{1,2}\/\d{1,2}$/).optional(),
+  altText: z.string().max(200).nullish(),
+  priority: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
+export type UpdateMediaAsset = z.infer<typeof updateMediaAssetSchema>;
+
+// Public-facing summary — no variants/master, only what the
+// homepage needs to render <SmartImage> with no extra fetch.
+export type MediaAssetManifest = {
+  id: number;
+  lqip: string;
+  altText: string | null;
+  focalX: number;
+  focalY: number;
+  desktopAspect: string;
+  mobileAspect: string;
+  originalWidth: number;
+  originalHeight: number;
+  priority: boolean;
+  version: number; // updatedAt epoch ms (cache buster)
+};
+
+// Fixed variant dimensions — kept in shared/ so the SmartImage
+// frontend builds srcset URLs from the same source-of-truth.
+export const MEDIA_DESKTOP_WIDTHS = [768, 1280, 1920] as const;
+export const MEDIA_MOBILE_WIDTHS = [480, 768] as const;
+export const MEDIA_FORMATS = ["a", "w"] as const; // avif, webp

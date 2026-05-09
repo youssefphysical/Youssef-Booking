@@ -5,6 +5,7 @@ import { Calendar, ArrowRight } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import type { HomepageSectionContent } from "@/hooks/use-homepage-content";
+import { SmartImage } from "@/components/SmartImage";
 
 /**
  * Final CTA — "Ready to become your best?" Cinematic image-bg pane
@@ -48,7 +49,17 @@ export function FinalCTA({ section }: { section?: HomepageSectionContent | null 
           className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#0a0f1a] to-[#050810] min-h-[360px] md:min-h-[420px]"
           style={{ boxShadow: "0 0 0 1px rgba(56,189,248,0.15) inset, 0 30px 80px -20px rgba(0,0,0,0.6)" }}
         >
-          {hasImage && (
+          {section?.mediaAsset ? (
+            // May-2026 responsive pipeline. Background image of the
+            // closing CTA — variants are pre-cropped focal-pointed,
+            // so object-position stays centered.
+            <SmartImage
+              asset={section.mediaAsset}
+              fill
+              sizesDesktop="(min-width: 1280px) 1280px, 100vw"
+              testId="img-final-cta"
+            />
+          ) : hasImage ? (
             <img
               src={img}
               alt={section?.imageAlt || t("finalCta.imageAlt", "Coach Youssef Ahmed")}
@@ -59,7 +70,7 @@ export function FinalCTA({ section }: { section?: HomepageSectionContent | null 
               loading="lazy"
               decoding="async"
             />
-          )}
+          ) : null}
           {/* Cinematic overlay */}
           <div
             className="absolute inset-0 pointer-events-none"

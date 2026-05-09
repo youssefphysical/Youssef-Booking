@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "@/i18n";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import type { HomepageSectionContent } from "@/hooks/use-homepage-content";
+import { SmartImage } from "@/components/SmartImage";
 
 /**
  * Tron-Legacy split hero (May-2026 rebuild).
@@ -89,7 +90,19 @@ export function Hero({ section }: { section?: HomepageSectionContent | null }) {
               boxShadow: "0 0 0 1px rgba(56,189,248,0.18) inset, 0 30px 80px -20px rgba(0,0,0,0.6)",
             }}
           >
-            {hasImage ? (
+            {section?.mediaAsset ? (
+              // May-2026 responsive media pipeline. SmartImage fills
+              // the cinematic frame with focal-cropped AVIF/WebP
+              // variants per breakpoint. `priority` because the hero
+              // is above-the-fold — eager + fetchpriority high.
+              <SmartImage
+                asset={section.mediaAsset}
+                priority
+                fill
+                sizesDesktop="(min-width: 1280px) 480px, (min-width: 768px) 40vw, 100vw"
+                testId="img-hero"
+              />
+            ) : hasImage ? (
               <picture>
                 <source media="(min-width: 768px)" srcSet={img} />
                 <img
