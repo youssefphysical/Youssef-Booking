@@ -1887,6 +1887,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Strip a client-supplied `key` to prevent a sneaky body that would
     // otherwise update a different section than the URL parameter implies.
     const { key: _ignoredClientKey, ...rest } = parsed.data;
+
+    // Server-side image hardening (P1 from architect review, May 2026).
+    //
+    // The admin CMS sends `imageDataUrl` as a base64 data URL produced
+    // client-side by FileReader. Without server-side guardrails an admin
+    // (or a token-leak attacker) could push an arbitrary 10 MB blob into
+    // the homepage_sections table — Express's global JSON limit is 10 MB,
+    // not the 5 MB the CMS UI claims. That bloats the DB row, slows the
+    // public /api/homepage-content payload, and tanks LCP for every
+    // visitor.
+    //
+    // Resolution: when imageDataUrl is a NEW upload (data:image/... base64
+    // prefix), funnel it through the shared processAdminImageDataUrl
+    // sharp pipeline used by hero-image and profile-photo routes. This
+    // (a) enforces a strict JPEG/PNG/WebP MIME allowlist, (b) caps
+    // decoded bytes at 6 MB (slightly above the UI's 5 MB so a 5 MB JPEG
+    // doesn't false-reject after base64 inflation), (c) re-encodes to a
+    // 1920-wide WebP @ q88 — guarantees the persisted blob is small
+    // (typically <300 KB) regardless of what the admin uploaded.
+    //
+    // imageDataUrl === null is a legitimate "remove image" signal — pass
+    // through untouched. imageDataUrl === undefined means the client
+    // didn't touch it — pass through untouched (storage strips undefined
+    // before UPDATE). Only data:image/* triggers the pipeline.
+    if (typeof rest.imageDataUrl === "string" && rest.imageDataUrl.startsWith("data:image/")) {
+      const processed = await processAdminImageDataUrl(rest.imageDataUrl, {
+        width: 1920,
+        height: 1080,
+        fit: "cover",
+        quality: 88,
+        allowedMime: new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]),
+        maxDataUrlBytes: 8 * 1024 * 1024, // base64 of a ~6 MB binary
+        maxDecodedBytes: 6 * 1024 * 1024,
+        typeErrorMessage: "Image must be JPEG, PNG, or WebP",
+        sizeErrorMessage: "Image is too large — keep it under 5 MB",
+      });
+      if (!processed.ok) {
+        return res.status(processed.status).json({ message: processed.message });
+      }
+      rest.imageDataUrl = processed.dataUrl;
+    }
+
     try {
       const updated = await storage.upsertHomepageSection(key, rest);
       res.json(updated);

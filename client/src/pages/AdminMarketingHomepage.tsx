@@ -264,10 +264,18 @@ function SectionEditor({
     defaultValues,
   });
 
-  // Reset whenever the underlying section data refetches with new values
-  // (e.g. after a successful save invalidates the query).
+  // Reset ONLY when the underlying section data refetches AND the form
+  // is currently pristine (P2 from architect review, May 2026). Without
+  // the dirty-state guard, a background refetch (window focus, network
+  // reconnect, or a 30-second staleTime tick) would silently wipe an
+  // admin's in-progress edits — a user-trust catastrophe for a CMS.
+  // After a successful save the mutation invalidates the query, but by
+  // that point the form is already pristine again (the save flow doesn't
+  // mark dirty), so the reset still picks up the freshly-saved values.
   useEffect(() => {
-    form.reset(defaultValues);
+    if (!form.formState.isDirty) {
+      form.reset(defaultValues);
+    }
   }, [defaultValues, form]);
 
   const saveMutation = useMutation({
