@@ -1,0 +1,95 @@
+URGENT BOOKING BUG — PAST SESSION STILL UPCOMING / PAST SLOT BOOKABLE
+
+There is a critical booking lifecycle bug.
+
+I opened the admin dashboard and found a session today at 11:00 AM still showing as Upcoming, even though the time has already passed.
+
+This should never happen.
+
+Required fixes:
+
+1. Block past bookings completely
+   Clients must NOT be able to book:
+
+- any date/time in the past
+- any slot where startTime <= current time
+- any slot inside the 6-hour minimum lead time
+
+This must be enforced BOTH:
+
+- in frontend UI
+- in backend booking API/server action
+
+If attempted, return:
+“This time is no longer available. Please choose a future slot.”
+
+2. Auto-complete expired sessions
+   Any session with status upcoming/confirmed where endTime < current time must automatically become completed.
+
+This should happen when:
+
+- admin dashboard loads
+- client dashboard loads
+- booking availability is calculated
+- a scheduled/background cleanup runs if available
+
+3. Remove expired sessions from Upcoming
+   Expired sessions must not appear in Upcoming.
+
+They should move to:
+Completed / Session History
+
+4. Deduct package only once
+   When auto-completing:
+
+- deduct 1 session from the assigned package only if not already deducted
+- set completedAt
+- set packageSessionDeductedAt or equivalent
+- write session history/audit log
+
+Never double deduct.
+
+5. Availability logic
+   Past completed sessions must not block future availability.
+
+Availability should only block:
+
+- future booked sessions
+- current in-progress sessions
+- admin blocked hours
+- off days
+- 6-hour lead-time restricted slots
+
+6. Timezone
+   Use Dubai timezone strictly:
+   Asia/Dubai
+
+The bug may be timezone-related.
+Audit all comparisons between:
+
+- current time
+- booking startTime
+- booking endTime
+- displayed admin time
+
+7. Immediate cleanup
+   Run a one-time cleanup/migration/job now:
+
+- find all sessions where endTime < now and status is upcoming/confirmed
+- mark them completed
+- deduct package once if applicable
+- move them out of Upcoming
+
+8. QA
+   Test:
+
+- cannot book past time today
+- cannot book within 6 hours
+- expired session changes to completed
+- expired session disappears from Upcoming
+- package decrements once
+- admin dashboard counts update correctly
+- same slot on a future day remains available
+- Dubai time displays correctly
+
+This is business-critical. Fix booking lifecycle correctness before any visual work.
