@@ -188,8 +188,8 @@ export default function HomePage() {
           subtle radial accent. Section padding (py-16 md:py-28),
           content layout (grid md:grid-cols-2 gap-12 items-center),
           all cards, all text, all CTAs are UNCHANGED. */}
-      <section className="relative overflow-hidden">
-        <div className="relative max-w-6xl mx-auto px-5 py-16 md:py-28 grid md:grid-cols-2 gap-12 items-center">
+      <section className="relative overflow-hidden cinematic-vignette">
+        <div className="relative max-w-6xl mx-auto px-5 py-20 md:py-32 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-start">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-muted-foreground mb-5">
               <MapPin size={12} className="text-primary" />
@@ -221,7 +221,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
               <Link href="/book" data-testid="link-book-session" className="w-full sm:w-auto">
-                <button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow amber-edge-glow whitespace-nowrap btn-press">
+                <button className="tron-sweep w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow amber-edge-glow whitespace-nowrap btn-press">
                   <Calendar size={18} />
                   {t("hero.bookSession")}
                 </button>

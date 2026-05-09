@@ -216,9 +216,19 @@
   @apply bg-muted rounded-full hover:bg-muted-foreground/50 transition-colors;
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities — Tron Legacy refinement (May-2026):
+   thinner hairline border (white/[0.06]) + softer 14px blur + a deeper
+   ambient shadow with the faintest cyan undertone. Reads as cinematic
+   dark glass holding ambient light, not a frosted card. */
 .glass-panel {
-  @apply bg-card/60 backdrop-blur-md border border-white/5 shadow-xl;
+  background-color: hsl(var(--card) / 0.55);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 18px 48px -24px rgba(0, 0, 0, 0.7),
+    0 0 60px -30px rgba(125, 249, 255, 0.08);
 }
 
 /* Atmospheric Tron cyan glow per LOCKED spec — pale cyan dual-stop, NO
@@ -1444,15 +1454,114 @@ html[dir="rtl"] .hero-eyebrow-rule {
    UNCHANGED — only the section-level background blocks were
    removed. */
 .homepage-shell {
+  /* Tron Legacy refinement (May-2026): dropped the navy-blue mid-stops
+     (#061222/#071827 read as crypto-dashboard blue) for true AMOLED
+     near-black with cinematic depth supplied by THREE atmospheric
+     radial layers — pale cyan top-right, deeper cyan mid-left, and a
+     soft warm amber bottom-center reflection. The base linear is now
+     a pure dark-neutral wash so the radial accents read as cinematic
+     LIGHT emerging from darkness, not as colored bands. */
   background:
-    radial-gradient(circle at 70% 10%, rgba(31, 156, 255, 0.16), transparent 32%),
-    linear-gradient(
-      to bottom,
-      #03070d 0%,
-      #061222 34%,
-      #071827 62%,
-      #03070d 100%
-    );
+    radial-gradient(ellipse 60% 40% at 80% 8%, rgba(125, 249, 255, 0.10), transparent 60%),
+    radial-gradient(ellipse 45% 35% at 12% 55%, rgba(125, 249, 255, 0.05), transparent 65%),
+    radial-gradient(ellipse 70% 30% at 50% 100%, rgba(255, 184, 0, 0.045), transparent 70%),
+    linear-gradient(180deg, #050608 0%, #07090D 40%, #06080B 75%, #050608 100%);
+}
+
+/* Dashboard shell — homepage parity (May-2026 Tron refinement).
+   Same atmospheric system so the visitor → client journey feels like
+   ONE cinematic surface. Slightly different cyan focal point (top-left
+   instead of top-right) so the dashboard reads as its own room
+   without breaking the visual language. */
+.dashboard-shell {
+  background:
+    radial-gradient(ellipse 55% 38% at 18% 6%, rgba(125, 249, 255, 0.09), transparent 60%),
+    radial-gradient(ellipse 50% 30% at 85% 60%, rgba(125, 249, 255, 0.04), transparent 65%),
+    radial-gradient(ellipse 70% 28% at 50% 100%, rgba(255, 184, 0, 0.04), transparent 70%),
+    linear-gradient(180deg, #050608 0%, #07090D 40%, #06080B 75%, #050608 100%);
+}
+
+/* Cinematic vignette — subtle dark frame around any hero/feature
+   section so the content reads as a film still. Apply via a child
+   absolutely-positioned div OR add `.cinematic-vignette` to a section
+   with `position: relative; overflow: hidden`. The ::before injects a
+   radial darkening at the edges; ::after adds a faint cyan rim light
+   from the top — together they create depth without flooding the
+   surface. Pointer-events disabled so the vignette never blocks
+   clicks/hovers. */
+.cinematic-vignette {
+  position: relative;
+  isolation: isolate;
+}
+.cinematic-vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+  z-index: 0;
+}
+.cinematic-vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(125, 249, 255, 0.08), transparent 70%),
+    radial-gradient(ellipse 60% 20% at 50% 100%, rgba(255, 184, 0, 0.06), transparent 75%);
+  z-index: 0;
+}
+.cinematic-vignette > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Tron light sweep — a slow, calm diagonal cyan highlight that
+   passes across an element every 7s. Use sparingly on hero CTAs,
+   featured cards, premium chips. NOT a flashy animation — the
+   highlight is faint (alpha 0.08) and the cubic curve is gentle.
+   Disabled under prefers-reduced-motion. */
+.tron-sweep {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.tron-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(125, 249, 255, 0.10) 48%,
+    rgba(159, 231, 245, 0.14) 50%,
+    rgba(125, 249, 255, 0.10) 52%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  animation: tronSweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.tron-sweep > * { position: relative; z-index: 1; }
+@keyframes tronSweep {
+  0%   { transform: translateX(-120%); }
+  55%  { transform: translateX(120%); }
+  100% { transform: translateX(120%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tron-sweep::after { animation: none; opacity: 0; }
+}
+
+/* Cinematic section padding — gives "feature" sections (hero, CTA,
+   transformations) extra breathing room on mobile so the page no
+   longer feels compressed. Pairs with section-rhythm-tight for
+   dense list/spec sections to create visual variation. */
+.section-cinematic { padding-top: 4rem; padding-bottom: 4rem; }
+.section-rhythm-tight { padding-top: 2.25rem; padding-bottom: 2.25rem; }
+@media (min-width: 768px) {
+  .section-cinematic { padding-top: 7rem; padding-bottom: 7rem; }
+  .section-rhythm-tight { padding-top: 3rem; padding-bottom: 3rem; }
 }
 
 /* =====================================================================

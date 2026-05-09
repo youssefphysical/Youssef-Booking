@@ -132,7 +132,8 @@ export default function ClientDashboard() {
   if (!user) return null;
 
   return (
-    <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
+    <div className="dashboard-shell min-h-screen">
+      <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div className="flex items-start gap-4 min-w-0">
           <Link href="/profile" data-testid="link-dashboard-avatar" className="shrink-0">
@@ -211,6 +212,7 @@ export default function ClientDashboard() {
           <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
