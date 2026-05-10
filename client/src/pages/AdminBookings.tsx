@@ -49,6 +49,11 @@ import {
   WORKOUT_CATEGORY_LABELS,
   SESSION_TYPE_LABELS,
 } from "@shared/schema";
+
+// Session types exposed in the admin bookings filter. `manual_historical`
+// is intentionally omitted — it's an internal back-fill type, not something
+// Youssef needs to slice the live schedule by.
+const SESSION_TYPE_FILTER_OPTIONS = ["package", "single", "trial", "duo"] as const;
 import {
   Dialog,
   DialogContent,
@@ -130,6 +135,23 @@ export default function AdminBookings() {
   const [dateFilter, setDateFilter] = useState<string>("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [workoutFilter, setWorkoutFilter] = useState<string>("all");
+  // Session-type filter (All / Package / Single / Trial / Duo) — persisted in
+  // the URL so it survives navigation within the admin shell. Only the
+  // visible options are accepted; `manual_historical` is intentionally
+  // excluded from the UI and the URL allow-list.
+  const [sessionTypeFilter, setSessionTypeFilterState] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    const v = new URLSearchParams(window.location.search).get("sessionType");
+    return v && (SESSION_TYPE_FILTER_OPTIONS as readonly string[]).includes(v) ? v : "all";
+  });
+  const setSessionTypeFilter = (v: string) => {
+    setSessionTypeFilterState(v);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (v === "all") url.searchParams.delete("sessionType");
+    else url.searchParams.set("sessionType", v);
+    window.history.replaceState(window.history.state, "", url.toString());
+  };
   const [search, setSearch] = useState<string>("");
   const [weekAnchor, setWeekAnchor] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
 
@@ -175,16 +197,18 @@ export default function AdminBookings() {
     const map = new Map<string, number>();
     for (const b of bookings) {
       if (!NON_CANCELLED_STATUSES.has(b.status)) continue;
+      if (sessionTypeFilter !== "all" && b.sessionType !== sessionTypeFilter) continue;
       map.set(b.date, (map.get(b.date) || 0) + 1);
     }
     return map;
-  }, [bookings]);
+  }, [bookings, sessionTypeFilter]);
 
   // ---------- Filtering ----------
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return bookings.filter((b) => {
       if (filter !== "all" && b.status !== filter) return false;
+      if (sessionTypeFilter !== "all" && b.sessionType !== sessionTypeFilter) return false;
       if (dateFilter && b.date !== dateFilter) return false;
       if (paymentFilter !== "all" && (b.paymentStatus || "unpaid") !== paymentFilter) return false;
       if (workoutFilter !== "all") {
@@ -199,7 +223,7 @@ export default function AdminBookings() {
       }
       return true;
     });
-  }, [bookings, filter, dateFilter, paymentFilter, workoutFilter, search]);
+  }, [bookings, filter, sessionTypeFilter, dateFilter, paymentFilter, workoutFilter, search]);
 
   // Group filtered list by date (chronological asc) for sticky day headers.
   const grouped = useMemo(() => {
@@ -218,10 +242,16 @@ export default function AdminBookings() {
   }, [filtered]);
 
   const hasActiveFilters =
-    filter !== "all" || !!dateFilter || paymentFilter !== "all" || workoutFilter !== "all" || !!search;
+    filter !== "all" ||
+    sessionTypeFilter !== "all" ||
+    !!dateFilter ||
+    paymentFilter !== "all" ||
+    workoutFilter !== "all" ||
+    !!search;
 
   const clearAll = () => {
     setFilter("all");
+    setSessionTypeFilter("all");
     setDateFilter("");
     setPaymentFilter("all");
     setWorkoutFilter("all");
@@ -327,6 +357,28 @@ export default function AdminBookings() {
                 {STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {translateStatus(s, t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sessionTypeFilter} onValueChange={setSessionTypeFilter}>
+              <SelectTrigger
+                className="w-[150px] bg-white/5 border-white/10 h-9 text-xs"
+                data-testid="select-session-type-filter"
+              >
+                <SelectValue placeholder={t("admin.bookings.filterSessionType", "Session type")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" data-testid="option-session-type-all">
+                  {t("admin.bookings.allSessionTypes", "All session types")}
+                </SelectItem>
+                {SESSION_TYPE_FILTER_OPTIONS.map((k) => (
+                  <SelectItem
+                    key={k}
+                    value={k}
+                    data-testid={`option-session-type-${k}`}
+                  >
+                    {SESSION_TYPE_LABELS[k]}
                   </SelectItem>
                 ))}
               </SelectContent>
