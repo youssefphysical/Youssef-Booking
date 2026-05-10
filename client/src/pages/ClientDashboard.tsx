@@ -429,11 +429,13 @@ function BookingsTab({ userId }: { userId: number }) {
               booking={b}
               cutoff={cutoff}
               allBookings={bookings as Booking[]}
-              // Task #3: read-only when this account is the linked Duo
-              // partner rather than the booking owner. The server enforces
-              // this with a 403, but gating in the UI keeps the partner
-              // from ever seeing cancel/adjust controls.
-              canCancel={b.userId === userId}
+              // Task #6: both the booking owner AND the linked Duo
+              // partner can cancel/reschedule. Server-side ownership
+              // checks (cancel / same-day-adjust / PATCH) accept either.
+              canCancel={
+                b.userId === userId ||
+                (b as any).linkedPartnerUserId === userId
+              }
             />
           ))
         )}
@@ -563,10 +565,10 @@ function BookingCard({
                 <Clock size={10} /> {t("dashboard.chipAdjusted")}
               </span>
             )}
-            {/* Task #3: this account is the linked Duo partner, not the
-                booking owner. Read-only — the cancel/adjust controls are
-                already gated by the server's owner check (PATCH/cancel
-                return 403 unless me.id === booking.userId). */}
+            {/* Task #6: this account is the linked Duo partner, not the
+                booking owner. Partners CAN now cancel/adjust (server
+                accepts either userId or linkedPartnerUserId); this chip
+                just signals which side of the duo this card represents. */}
             {user && (booking as any).linkedPartnerUserId === user.id &&
               booking.userId !== user.id && (
                 <span

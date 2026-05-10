@@ -1794,7 +1794,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const id = Number(req.params.id);
     const booking = await storage.getBooking(id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    if (me.role !== "admin" && booking.userId !== me.id) {
+    // Task #6: Either the booking owner OR the linked Duo partner can
+    // cancel. Both are first-class participants in the session.
+    const isOwner = booking.userId === me.id;
+    const isPartner =
+      typeof (booking as any).linkedPartnerUserId === "number" &&
+      (booking as any).linkedPartnerUserId === me.id;
+    if (me.role !== "admin" && !isOwner && !isPartner) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -1819,13 +1825,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Plenty of notice — free cancel
       newStatus = "free_cancelled";
     } else if (useProtectedCancel) {
-      const owner = await storage.getUser(booking.userId);
+      // Task #6: attribute quota usage to the ACTING user (owner or
+      // partner), not always the booking owner.
+      const actor = await storage.getUser(me.id);
       const monthKey = currentMonthKey();
       const usedThisMonth =
-        owner?.protectedCancelMonth === monthKey
-          ? (owner.protectedCancelCount ?? 0)
+        actor?.protectedCancelMonth === monthKey
+          ? (actor.protectedCancelCount ?? 0)
           : 0;
-      const quota = protectedCancellationQuota(owner?.vipTier);
+      const quota = protectedCancellationQuota(actor?.vipTier);
       if (usedThisMonth >= quota) {
         return res.status(400).json({
           message: `You have used all ${quota} Protected Cancellation${
@@ -1850,13 +1858,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
     if (usedProtected) {
       try {
-        const owner = await storage.getUser(booking.userId);
+        // Task #6: attribute the quota burn to the acting user (owner or
+        // partner), so each member of the duo has their own monthly count.
+        const actor = await storage.getUser(me.id);
         const monthKey = currentMonthKey();
-        const sameMonth = owner?.protectedCancelMonth === monthKey;
-        await storage.updateUser(booking.userId, {
+        const sameMonth = actor?.protectedCancelMonth === monthKey;
+        await storage.updateUser(me.id, {
           protectedCancelMonth: monthKey,
           protectedCancelCount: sameMonth
-            ? (owner?.protectedCancelCount ?? 0) + 1
+            ? (actor?.protectedCancelCount ?? 0) + 1
             : 1,
           // Keep legacy column populated so older admin tooling keeps working
           emergencyCancelLastMonth: monthKey,
@@ -1888,20 +1898,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
     });
 
-    // P5b: When an admin cancels someone else's session, the client needs
-    // to be told. (Self-cancellations are user-initiated and don't need
-    // a self-notification.) dedupeKey by booking-id keeps it idempotent
-    // even if the admin re-cancels an already-cancelled booking.
-    if (me.role === "admin" && booking.userId !== me.id) {
+    // P5b / Task #6: Anyone who didn't initiate this cancellation needs
+    // to know. That includes the booking owner (when an admin or the
+    // partner cancels) AND the linked Duo partner (when an admin or the
+    // owner cancels). Self-cancellations are skipped — the actor sees
+    // the result in the UI. dedupeKey is recipient-scoped so re-cancels
+    // are idempotent for each recipient independently.
+    {
       const time12 = formatTime12Server(booking.timeSlot);
-      void notifyUserOnce(
-        booking.userId,
-        "system",
-        `booking-cancelled-${booking.id}`,
-        "Session cancelled",
-        `Your session on ${booking.date} at ${time12} was cancelled. Tap to rebook.`,
-        { link: "/book", meta: { bookingId: booking.id } },
-      );
+      const linkedPartnerId =
+        typeof (booking as any).linkedPartnerUserId === "number"
+          ? ((booking as any).linkedPartnerUserId as number)
+          : null;
+      const recipients = new Set<number>();
+      if (booking.userId !== me.id) recipients.add(booking.userId);
+      if (linkedPartnerId && linkedPartnerId !== me.id) recipients.add(linkedPartnerId);
+      for (const uid of Array.from(recipients)) {
+        void notifyUserOnce(
+          uid,
+          "system",
+          `booking-cancelled-${booking.id}-${uid}`,
+          "Session cancelled",
+          `Your session on ${booking.date} at ${time12} was cancelled. Tap to rebook.`,
+          { link: "/book", meta: { bookingId: booking.id } },
+        );
+      }
     }
 
     res.json(sanitizeBookingForUser(me, updated));
@@ -1919,7 +1940,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const booking = await storage.getBooking(id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
-    if (me.role !== "admin" && booking.userId !== me.id) {
+    // Task #6: owner OR linked Duo partner may same-day-adjust.
+    const isOwner = booking.userId === me.id;
+    const isPartner =
+      typeof (booking as any).linkedPartnerUserId === "number" &&
+      (booking as any).linkedPartnerUserId === me.id;
+    if (me.role !== "admin" && !isOwner && !isPartner) {
       return res.status(403).json({ message: "Forbidden" });
     }
     if (
@@ -1957,13 +1983,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     }
 
-    // Quota check (skip for admin)
+    // Quota check (skip for admin). Task #6: attribute the quota to the
+    // ACTING user (owner or partner), not always the booking owner.
     if (me.role !== "admin") {
-      const owner = await storage.getUser(booking.userId);
+      const actor = await storage.getUser(me.id);
       const monthKey = currentMonthKey();
       const usedThisMonth =
-        owner?.sameDayAdjustMonth === monthKey ? (owner.sameDayAdjustCount ?? 0) : 0;
-      const quota = sameDayAdjustQuota(owner?.vipTier);
+        actor?.sameDayAdjustMonth === monthKey ? (actor.sameDayAdjustCount ?? 0) : 0;
+      const quota = sameDayAdjustQuota(actor?.vipTier);
       if (quota === 0) {
         return res.status(400).json({
           message:
@@ -2004,17 +2031,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
     if (me.role !== "admin") {
       try {
-        const owner = await storage.getUser(booking.userId);
+        // Task #6: attribute quota burn to the acting user.
+        const actor = await storage.getUser(me.id);
         const monthKey = currentMonthKey();
-        const sameMonth = owner?.sameDayAdjustMonth === monthKey;
-        await storage.updateUser(booking.userId, {
+        const sameMonth = actor?.sameDayAdjustMonth === monthKey;
+        await storage.updateUser(me.id, {
           sameDayAdjustMonth: monthKey,
           sameDayAdjustCount: sameMonth
-            ? (owner?.sameDayAdjustCount ?? 0) + 1
+            ? (actor?.sameDayAdjustCount ?? 0) + 1
             : 1,
         } as any);
       } catch {
         /* ignore */
+      }
+    }
+
+    // Task #6: notify everyone in the duo who didn't initiate the
+    // adjustment. Recipient-scoped dedupe key keyed on the new slot so
+    // re-adjusting to a different time also notifies.
+    {
+      const newTime12 = formatTime12Server(newTimeSlot);
+      const linkedPartnerId =
+        typeof (booking as any).linkedPartnerUserId === "number"
+          ? ((booking as any).linkedPartnerUserId as number)
+          : null;
+      const recipients = new Set<number>();
+      if (booking.userId !== me.id) recipients.add(booking.userId);
+      if (linkedPartnerId && linkedPartnerId !== me.id) recipients.add(linkedPartnerId);
+      for (const uid of Array.from(recipients)) {
+        void notifyUserOnce(
+          uid,
+          "system",
+          `booking-adjust-${booking.id}-${newTimeSlot}-${uid}`,
+          "Session time changed",
+          `Your session moved to ${newTime12} on ${booking.date}.`,
+          { link: "/dashboard", meta: { bookingId: booking.id } },
+        );
       }
     }
 
@@ -2064,7 +2116,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     if (me.role !== "admin") {
-      if (booking.userId !== me.id) return res.status(403).json({ message: "Forbidden" });
+      // Task #6: owner OR linked Duo partner may PATCH (reschedule/notes).
+      const isOwner = booking.userId === me.id;
+      const isPartner =
+        typeof (booking as any).linkedPartnerUserId === "number" &&
+        (booking as any).linkedPartnerUserId === me.id;
+      if (!isOwner && !isPartner) return res.status(403).json({ message: "Forbidden" });
       if (parsed.data.status) return res.status(403).json({ message: "Cannot change status" });
       if (parsed.data.paymentStatus)
         return res.status(403).json({ message: "Cannot change payment status" });
@@ -2156,19 +2213,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         fromTime12,
       });
 
-      // P5b: When an admin reschedules a client's session, notify the
-      // client of the new slot. Skip when the user reschedules their own
-      // (they already see the new time in the UI). Dedupe key combines
-      // booking + new slot so re-running the same change is a no-op,
-      // but a second reschedule to a different slot does notify.
-      if (me.role === "admin" && booking.userId !== me.id) {
-        const newDate = updateFields.date ?? booking.date;
-        const newSlot = updateFields.timeSlot ?? booking.timeSlot;
-        const newTime12 = formatTime12Server(newSlot);
+      // P5b / Task #6: Notify everyone affected by a reschedule that
+      // didn't initiate it themselves. That includes the booking owner
+      // (when admin/partner reschedules) and the linked Duo partner
+      // (when admin/owner reschedules). Self-actors see the change in
+      // the UI immediately. Dedupe key combines booking + new slot +
+      // recipient so a second reschedule to a different slot fires
+      // again, while replays of the same change are no-ops.
+      const newDate = updateFields.date ?? booking.date;
+      const newSlot = updateFields.timeSlot ?? booking.timeSlot;
+      const newTime12 = formatTime12Server(newSlot);
+      const linkedPartnerId =
+        typeof (booking as any).linkedPartnerUserId === "number"
+          ? ((booking as any).linkedPartnerUserId as number)
+          : null;
+      const recipients = new Set<number>();
+      if (booking.userId !== me.id) recipients.add(booking.userId);
+      if (linkedPartnerId && linkedPartnerId !== me.id) recipients.add(linkedPartnerId);
+      for (const uid of Array.from(recipients)) {
         void notifyUserOnce(
-          booking.userId,
+          uid,
           "system",
-          `booking-reschedule-${booking.id}-${newDate}-${newSlot}`,
+          `booking-reschedule-${booking.id}-${newDate}-${newSlot}-${uid}`,
           "Session rescheduled",
           `Your session moved from ${fromDate} ${fromTime12} → ${newDate} ${newTime12}.`,
           { link: "/dashboard", meta: { bookingId: booking.id } },
