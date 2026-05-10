@@ -1,0 +1,82 @@
+MOBILE HERO SCROLL JANK — VIDEO-BASED FIX
+
+I tested the homepage on real mobile and the Hero section is still not smooth when scrolling.
+
+Visible issues from the video:
+
+- scrolling becomes heavy around the Hero area
+- hero image/overlay feels like it repaints while scrolling
+- there is a visible cyan edge/vertical artifact on the right side
+- likely horizontal overflow or an off-screen animated layer
+- slider/hero layers may still be rendered too heavily on mobile
+
+Apply a stricter mobile-only fix.
+
+1. Fix horizontal overflow
+   Audit the Hero and all homepage wrappers for:
+
+- width: 100vw usage
+- translateX layers
+- off-screen carousel slides
+- absolute overlays wider than container
+- animated pseudo-elements escaping viewport
+
+Required:
+
+- no horizontal overflow
+- body/html overflow-x hidden only if safe
+- all hero layers max-width: 100%
+- no cyan artifact visible on the right edge
+
+2. Disable mobile hero carousel rendering heaviness
+   On mobile:
+
+- render only the active hero slide if possible
+- do not keep multiple full-size images stacked
+- disable autoplay on mobile
+- no crossfade between large images while scrolling
+- hidden slides must not repaint
+
+3. Make mobile hero static
+   For mobile only:
+
+- static hero image
+- simple gradient overlay only
+- no animated sweep
+- no blur overlay
+- no backdrop-filter
+- no mix-blend-mode
+- no filter on image
+- no parallax
+- no transform animation on the image container
+
+4. Reduce hero image cost
+
+- serve a true mobile-sized hero image
+- avoid loading desktop-size hero image on mobile
+- preload only the first hero image
+- lazy-load all other hero media
+- preserve aspect ratio to avoid layout shift
+
+5. Isolate hero paint safely
+
+- isolate the hero section painting if possible
+- avoid huge fixed-position overlays
+- avoid sticky/fixed animated elements inside hero
+- do not use contain: paint if it breaks sticky nav
+
+6. Verification
+   Test on real mobile:
+
+- scroll slowly through hero
+- fast swipe through hero
+- scroll back to top
+- no jank
+- no cyan right-edge artifact
+- no horizontal movement
+- no visual regression except reduced mobile effects
+
+Priority:
+mobile smoothness first.
+Desktop can keep richer effects.
+Mobile hero must be lightweight, static, and stable.
