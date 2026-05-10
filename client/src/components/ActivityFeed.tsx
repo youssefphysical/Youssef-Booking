@@ -62,14 +62,21 @@ export function ActivityFeed({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-white/60" data-testid="activity-loading">
-        <LineChartIcon className="mr-2 inline" size={16} /> Loading activity…
+      <div
+        className="rounded-2xl border border-white/[0.08] bg-card/40 p-6 text-muted-foreground flex items-center gap-2"
+        data-testid="activity-loading"
+      >
+        <LineChartIcon size={16} className="text-primary animate-pulse" />
+        Loading activity…
       </div>
     );
   }
   if (isError) {
     return (
-      <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-200" data-testid="activity-error">
+      <div
+        className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-200"
+        data-testid="activity-error"
+      >
         Failed to load activity.
       </div>
     );
@@ -77,16 +84,37 @@ export function ActivityFeed({
   const events = data ?? [];
   if (!events.length) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/60" data-testid="activity-empty">
-        {emptyLabel}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/40 p-10 text-center"
+        data-testid="activity-empty"
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
+          }}
+        />
+        <div className="mx-auto mb-3 inline-flex size-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.06] text-primary">
+          <ActivityIcon size={20} />
+        </div>
+        <p className="text-sm text-muted-foreground">{emptyLabel}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-3" data-testid="activity-feed">
-      <h3 className="text-sm font-medium uppercase tracking-wider text-white/50">{title}</h3>
-      <ol className="relative ml-3 border-l border-white/10 pl-5">
+      <h3 className="tron-eyebrow text-[10px] font-semibold">{title}</h3>
+      {/* Cyan timeline rail — mirrors the supplement-tab pattern so
+          "session history" reads as part of the same HUD language. */}
+      <ol
+        className="relative ms-3 ps-5"
+        style={{
+          borderInlineStart: "1px solid hsl(183 100% 70% / 0.18)",
+        }}
+      >
         {events.map((e) => {
           const meta = KIND_META[e.kind] ?? KIND_META.session_booked;
           const Icon = meta.Icon;
@@ -103,22 +131,27 @@ export function ActivityFeed({
               className="relative mb-5 last:mb-0"
               data-testid={`activity-event-${e.id}`}
             >
+              {/* Node — kind-specific tint preserved for scanability;
+                  ring is the only colored surface, the disc itself is
+                  AMOLED black so the rail stays visually quiet. */}
               <span
-                className={`absolute -left-[34px] top-1 grid h-7 w-7 place-items-center rounded-full bg-black ring-2 ${meta.ring}`}
+                className={`absolute -left-[34px] rtl:-right-[34px] rtl:left-auto top-1 grid h-7 w-7 place-items-center rounded-full bg-background ring-2 ${meta.ring}`}
                 aria-hidden
               >
                 <Icon size={14} className={meta.tone} />
               </span>
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 hover:bg-white/[0.06] transition">
-                <p className="text-sm font-medium text-white" data-testid={`activity-title-${e.id}`}>
+              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06] hover:border-primary/15">
+                <p className="text-sm font-medium" data-testid={`activity-title-${e.id}`}>
                   {e.title}
                 </p>
                 {e.subtitle ? (
-                  <p className="mt-0.5 text-xs text-white/60" data-testid={`activity-subtitle-${e.id}`}>
+                  <p className="mt-0.5 text-xs text-muted-foreground" data-testid={`activity-subtitle-${e.id}`}>
                     {e.subtitle}
                   </p>
                 ) : null}
-                <p className="mt-1 text-[11px] uppercase tracking-wider text-white/40">{when}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground/70 tabular-nums">
+                  {when}
+                </p>
               </div>
             </li>
           );

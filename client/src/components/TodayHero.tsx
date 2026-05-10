@@ -51,30 +51,35 @@ function Stat({
   label,
   value,
   sub,
-  tone = "text-white",
+  tone = "text-foreground",
   testId,
 }: {
   icon: typeof Trophy;
   label: string;
   value: string;
   sub?: string | null;
-  tone?: string;
+  /** Restricted to two cool tones so the snapshot reads as one
+   *  unified HUD instead of a rainbow of pastels. */
+  tone?: "text-foreground" | "text-primary";
   testId: string;
 }) {
   return (
     <div
-      className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:bg-white/[0.07] transition"
+      className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.06] hover:border-primary/20"
       data-testid={testId}
     >
-      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 ring-1 ring-white/10">
-        <Icon size={16} className={tone} />
+      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-primary/[0.08] ring-1 ring-primary/25 text-primary">
+        <Icon size={16} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] uppercase tracking-widest text-white/50">{label}</p>
-        <p className={`mt-0.5 truncate text-lg font-semibold ${tone}`} data-testid={`${testId}-value`}>
+        <p className="tron-eyebrow text-[10px] font-semibold">{label}</p>
+        <p
+          className={`mt-0.5 truncate text-lg font-display font-semibold tabular-nums ${tone}`}
+          data-testid={`${testId}-value`}
+        >
           {value}
         </p>
-        {sub ? <p className="text-xs text-white/55">{sub}</p> : null}
+        {sub ? <p className="text-xs text-muted-foreground/85 mt-0.5">{sub}</p> : null}
       </div>
     </div>
   );
@@ -86,13 +91,21 @@ export function TodayHero({ name }: { name?: string | null }) {
   if (isLoading || !data) {
     return (
       <div
-        className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.02] p-6"
+        className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-6"
         data-testid="today-hero-loading"
       >
-        <div className="h-5 w-40 animate-pulse rounded bg-white/10" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-6 top-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
+          }}
+        />
+        <div className="h-5 w-40 admin-shimmer rounded" />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-2xl bg-white/5" />
+            <div key={i} className="h-20 admin-shimmer rounded-2xl" />
           ))}
         </div>
       </div>
@@ -121,17 +134,37 @@ export function TodayHero({ name }: { name?: string | null }) {
 
   return (
     <section
-      className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-sky-950/40 via-black/30 to-indigo-950/40 p-5 sm:p-6"
+      className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-5 sm:p-6"
       data-testid="today-hero"
     >
-      <header className="flex items-end justify-between gap-3">
+      {/* Cyan top hairline — consistent HUD signature across the app */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.45), transparent)",
+        }}
+      />
+      {/* Soft cyan corner halo — restrained, AMOLED-friendly */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-50"
+        style={{
+          background:
+            "radial-gradient(circle, hsl(183 100% 55% / 0.12), transparent 70%)",
+        }}
+      />
+
+      <header className="relative flex items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] uppercase tracking-widest text-white/50">Today</p>
-          <h2 className="text-xl font-semibold text-white sm:text-2xl">
+          <p className="tron-eyebrow text-[10px] font-semibold">Today</p>
+          <h2 className="mt-1 text-xl font-display font-bold sm:text-2xl">
             {name ? `Hey ${name.split(" ")[0]},` : "Welcome back,"}{" "}
-            <span className="text-white/70">here's your snapshot</span>
+            <span className="text-muted-foreground">here's your snapshot</span>
           </h2>
         </div>
+        {/* Streak chip stays amber — semantic (achievement / heat metaphor) */}
         {data.streakWeeks >= 4 ? (
           <span
             className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200"
@@ -142,13 +175,13 @@ export function TodayHero({ name }: { name?: string | null }) {
         ) : null}
       </header>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
           icon={CalendarClock}
           label="Next session"
           value={sessionValue}
           sub={sessionSub}
-          tone="text-sky-200"
+          tone="text-primary"
           testId="stat-next-session"
         />
         <Stat
@@ -156,7 +189,6 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Supplements"
           value={suppValue}
           sub={suppSub}
-          tone="text-emerald-200"
           testId="stat-supplements-today"
         />
         <Stat
@@ -164,7 +196,6 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Water target"
           value={waterValue}
           sub={waterSub}
-          tone="text-cyan-200"
           testId="stat-water-target"
         />
         <Stat
@@ -172,20 +203,22 @@ export function TodayHero({ name }: { name?: string | null }) {
           label="Streak"
           value={streakValue}
           sub={streakSub}
-          tone="text-amber-200"
           testId="stat-streak"
         />
       </div>
 
       <div
-        className="mt-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3"
+        className="relative mt-4 flex items-center gap-2 rounded-2xl border border-primary/15 bg-primary/[0.04] p-3"
         data-testid="goal-progress-badge"
       >
-        <Target size={14} className="text-fuchsia-300" />
-        <p className="text-sm text-white">
-          <span className="text-white/60">Goal:</span> {goalLabel}
+        <Target size={14} className="text-primary shrink-0" />
+        <p className="text-sm">
+          <span className="text-muted-foreground">Goal:</span>{" "}
+          <span className="font-medium">{goalLabel}</span>
         </p>
-        {goalSub ? <p className="ms-auto text-xs text-white/55">{goalSub}</p> : null}
+        {goalSub ? (
+          <p className="ms-auto text-xs text-muted-foreground tabular-nums">{goalSub}</p>
+        ) : null}
       </div>
     </section>
   );

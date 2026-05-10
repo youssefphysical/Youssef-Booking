@@ -920,12 +920,24 @@ function PackagesTab({ userId }: { userId: number }) {
                 key={p.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`rounded-2xl border p-5 ${
+                className={`relative overflow-hidden rounded-2xl border p-5 ${
                   p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"
                 }`}
                 data-testid={`package-card-${p.id}`}
               >
-                <div className="flex items-start justify-between gap-3 mb-3">
+                {/* Cyan top hairline — only on active packages, signals
+                    "this is your live program" without being loud. */}
+                {p.isActive && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-5 top-0 h-px"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.45), transparent)",
+                    }}
+                  />
+                )}
+                <div className="relative flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate">
                       {(p as any).name || def?.label || `${p.type} Package`}
@@ -964,10 +976,18 @@ function PackagesTab({ userId }: { userId: number }) {
                     )}
                   </div>
                 </div>
-                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                {/* Progress bar — cyan track with a soft glow at the
+                    leading edge. Reads as a HUD meter, not a generic
+                    bar. Glow is gated to active packages only. */}
+                <div className="relative h-1.5 bg-white/5 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all"
-                    style={{ width: `${pct}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all"
+                    style={{
+                      width: `${pct}%`,
+                      boxShadow: p.isActive
+                        ? "0 0 8px hsl(183 100% 60% / 0.5)"
+                        : undefined,
+                    }}
                   />
                 </div>
                 <div className="text-xs text-muted-foreground mt-3 space-y-1">
