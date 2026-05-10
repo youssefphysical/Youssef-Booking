@@ -50,6 +50,16 @@ import {
 
 type T = (key: string, fallback?: string) => string;
 
+/**
+ * Shared primary-CTA chrome — one HUD signature across every auth surface
+ * (client login, register step 1+2, admin login, forgot-password dialog).
+ * Tight cyan glow, lifts on hover, never glows when disabled. Pair with
+ * sizing/shape utilities (e.g. `w-full h-12 rounded-xl font-bold`) at the
+ * call site so each CTA can keep its own footprint.
+ */
+const PRIMARY_CTA_CLASS =
+  "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow disabled:shadow-none";
+
 const makeClientLoginSchema = (t: T) =>
   z.object({
     email: z.string().email(t("auth.errors.emailInvalid")),
@@ -294,7 +304,7 @@ function ClientLoginForm() {
           <Button
             type="submit"
             data-testid="button-submit-login"
-            className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+            className={`w-full h-12 rounded-xl font-bold ${PRIMARY_CTA_CLASS}`}
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
@@ -392,7 +402,7 @@ function ForgotPasswordDialog({
                 type="submit"
                 disabled={pending}
                 data-testid="button-submit-forgot"
-                className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+                className={`rounded-xl ${PRIMARY_CTA_CLASS}`}
               >
                 {pending && <Loader2 className="animate-spin mr-2" size={14} />}
                 {t("auth.sendInstructions")}
@@ -408,7 +418,11 @@ function ForgotPasswordDialog({
               {t("auth.resetSent")}
             </div>
             <DialogFooter>
-              <Button onClick={close} className="rounded-xl" data-testid="button-forgot-done">
+              <Button
+                onClick={close}
+                className={`rounded-xl ${PRIMARY_CTA_CLASS}`}
+                data-testid="button-forgot-done"
+              >
                 {t("auth.done")}
               </Button>
             </DialogFooter>
@@ -483,7 +497,7 @@ function AdminLoginForm() {
         <Button
           type="submit"
           data-testid="button-submit-admin-login"
-          className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+          className={`w-full h-12 rounded-xl font-bold ${PRIMARY_CTA_CLASS}`}
           disabled={loginMutation.isPending}
         >
           {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
@@ -766,7 +780,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               type="button"
               onClick={handleNext}
               data-testid="button-next-step"
-              className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow"
+              className={`w-full h-12 rounded-xl font-bold ${PRIMARY_CTA_CLASS}`}
             >
               {t("auth.continue")} <ArrowRight size={16} className="ml-2" />
             </Button>
@@ -920,7 +934,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               <Button
                 type="submit"
                 data-testid="button-submit-register"
-                className="flex-1 h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow disabled:shadow-none"
+                className={`flex-1 h-12 rounded-xl font-bold ${PRIMARY_CTA_CLASS}`}
                 disabled={isPending || !allConsentsAccepted}
               >
                 {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
