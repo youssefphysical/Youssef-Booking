@@ -1,0 +1,244 @@
+BOOKING SYSTEM FINAL LOGIC + CALENDAR VISUAL FIX
+
+We need one focused booking pass.
+
+Do NOT redesign the whole website.
+Do NOT touch unrelated auth/admin/PWA/dashboard logic.
+Fix only booking UX, date visual states, lead-time rules, cancellation/reschedule logic, and slot release behavior.
+
+==================================================
+
+1. CALENDAR DATE VISUAL FIX
+   ==================================================
+
+Current issue:
+When I tap/select a date number in the calendar, the selected circle is too light and the number becomes hard to read / almost invisible.
+
+Required design:
+
+- Improve selected date visibility.
+- Keep the premium Tron Legacy style.
+- Use strong amber/orange Tron accent for selected date or selected-state highlight.
+- The date number must remain clearly readable.
+- Avoid pale white circles that hide the number.
+- Keep disabled/past dates visually dim but understandable.
+- Keep available future dates clear and clickable.
+
+Suggested style:
+
+- selected date background: deep amber/orange Tron accent
+- selected date text: black or very dark AMOLED
+- selected date border/glow: subtle amber glow
+- available dates: clean white/cyan text
+- disabled/past dates: muted grey
+- today indicator: subtle cyan/amber ring
+
+Goal:
+Calendar must look premium, readable, and consistent with the Tron Legacy design system.
+
+==================================================
+2. SLOT SELECTION UX FIX
+
+Current issue:
+When I tap a time slot, the booking confirmation/details panel sometimes disappears and I need to tap again.
+
+Expected behavior:
+
+- One tap on a valid available slot selects it.
+- The selected slot stays selected.
+- Confirmation/details panel appears immediately.
+- Panel remains visible until:
+  - user selects another slot
+  - user changes date
+  - user cancels selection
+  - booking completes
+- On mobile, auto-scroll gently to the confirmation panel if needed.
+- Do not clear selectedSlot because of re-render, time recalculation, or date refresh.
+
+Audit:
+
+- selectedSlot state
+- selectedDate state
+- conditional rendering
+- stale time calculations
+- mobile scroll behavior
+- any useEffect that resets selected slot unexpectedly
+
+==================================================
+3. BOOKING LEAD TIME RULE — 3 HOURS
+
+The booking lead-time rule must be exactly 3 hours.
+
+Rule:
+
+- Client cannot book any session that starts within the next 3 hours.
+- Any session that starts more than 3 hours from now must be bookable if not already taken/blocked.
+- Do NOT mark the entire day as Too Soon.
+- Only the slots inside the 3-hour window should show Too Soon.
+
+Example:
+If current Dubai time is 5:00 PM:
+
+- 5:00 PM = Too Soon
+- 6:00 PM = Too Soon
+- 7:00 PM = Too Soon
+- 8:00 PM and later = available, unless taken/blocked
+
+Important:
+
+- Use Dubai timezone consistently.
+- Avoid device timezone bugs.
+- Confirm AM/PM parsing is correct.
+- Confirm selected date + slot time creates correct Dubai datetime.
+- Test today, tomorrow, and near-midnight cases.
+
+==================================================
+4. STANDARD CANCELLATION RULE — 6 HOURS
+
+Standard cancellation rule:
+
+- Client cannot cancel normally if the session starts within the next 6 hours.
+- If the session is more than 6 hours away, normal cancellation is allowed.
+- When a normal cancellation succeeds, the slot must immediately become available again for any client.
+
+Verify this is already working.
+Patch only if broken.
+
+==================================================
+5. EMERGENCY CANCEL + RESCHEDULE ELIGIBILITY
+
+Eligibility must depend on client training frequency / package behavior.
+
+Rules:
+A) Clients with only 1 session per week:
+
+- No emergency cancel allowance.
+- No special reschedule allowance.
+- Standard cancellation rule only.
+
+B) Clients training 3 times per week:
+
+- 1 emergency cancel allowance.
+- 1 reschedule allowance.
+
+C) Clients with more than 4 sessions / higher-frequency active package:
+
+- eligible for emergency cancel/reschedule rules according to the same monthly allowance system.
+- Keep allowance controlled and not unlimited.
+
+Important:
+
+- Emergency cancel and reschedule allowances must be limited.
+- They must reset according to the intended monthly allowance logic.
+- Do not allow unlimited emergency cancels or unlimited reschedules.
+
+==================================================
+6. EMERGENCY CANCEL BEHAVIOR
+
+If a client uses emergency cancel:
+
+- The session is cancelled.
+- The client’s allowed emergency cancel count is consumed.
+- The original time slot immediately becomes available to everyone.
+- Any other client can book it.
+- The same client can also rebook it only if still available.
+- Priority is first-come, first-served.
+
+The released slot is not reserved for the cancelling client.
+
+==================================================
+7. SAME-DAY RESCHEDULE RULE
+
+Reschedule rule:
+
+- Reschedule is allowed only on the same day.
+- Reschedule depends on available slots on that same day.
+- The client can move the session only to another available slot that day.
+- The old slot is immediately released once reschedule succeeds.
+- The new slot becomes taken.
+- If there are no available valid same-day slots, reschedule is not possible.
+
+Example:
+If all later slots are already booked, and the last gym slot starts at 10:00 PM and ends at 11:00 PM:
+
+- If no valid available slot exists, the client cannot reschedule.
+- The session remains counted according to the rules.
+- Do not create extra hidden slots beyond business hours.
+
+==================================================
+8. BUSINESS HOURS
+
+Booking hours:
+
+- first slot starts at 6:00 AM
+- last slot starts at 10:00 PM
+- last session ends at 11:00 PM
+- no booking after 10:00 PM start time
+
+All slot availability, reschedule, and cancellation logic must respect these hours.
+
+==================================================
+9. SLOT RELEASE PRIORITY
+
+Whenever a booking is cancelled, emergency-cancelled, or successfully rescheduled:
+
+- the old slot becomes available immediately.
+- it can be booked by any client.
+- no client owns the released slot until they book it again.
+- first confirmed booking gets the slot.
+
+==================================================
+10. SESSION COUNTING
+
+If the session time passes and the client did not cancel/reschedule according to the allowed rules:
+
+- session should auto-complete / count as used.
+- package session should be deducted once only.
+- avoid double deduction.
+- preserve existing packageSessionDeductedAt / completedAt / autoCompletedAt safety logic.
+
+Do not reimplement this from scratch if already working.
+Only verify and patch actual gaps.
+
+==================================================
+11. FINAL VERIFICATION
+
+Test live behavior for:
+
+- selecting dates
+- selected date readability
+- selecting slots once
+- confirmation panel visibility
+- 3-hour booking lead time
+- 6-hour cancellation lock
+- emergency cancel eligibility
+- reschedule eligibility
+- same-day reschedule only
+- slot release after cancel
+- slot release after emergency cancel
+- slot release after reschedule
+- session auto-complete/counting
+- Dubai timezone
+- AM/PM conversion
+- mobile Chrome
+- Samsung Internet
+- iPhone Safari
+
+After fix:
+
+- typecheck
+- build/check
+- commit
+- push GitHub
+- trigger Vercel deploy
+- verify live production
+- confirm Neon/schema stability if database logic is touched
+
+Final report must include:
+
+- what was changed
+- what was only verified
+- commit hash
+- GitHub push status
+- Vercel deployment status
+- production booking verification result

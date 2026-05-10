@@ -124,7 +124,7 @@ export default function BookingPage() {
         (b) =>
           b.date === dateStr &&
           b.timeSlot === slot &&
-          !["cancelled", "free_cancelled", "late_cancelled"].includes(b.status),
+          !["cancelled", "free_cancelled", "late_cancelled", "emergency_cancelled"].includes(b.status),
       );
       if (taken) {
         map[slot] = "taken";
@@ -322,8 +322,9 @@ export default function BookingPage() {
             disabled={{ before: new Date() }}
             className="p-3"
             modifiersClassNames={{
-              selected: "bg-primary text-primary-foreground font-bold rounded-full",
-              today: "text-primary font-bold",
+              selected:
+                "!bg-amber-400 !text-black font-extrabold rounded-full ring-2 ring-amber-300/60 shadow-[0_0_18px_rgba(251,191,36,0.55)]",
+              today: "text-primary font-bold ring-1 ring-primary/40 rounded-full",
             }}
             styles={{
               head_cell: { color: "hsl(var(--muted-foreground))" },
@@ -349,7 +350,15 @@ export default function BookingPage() {
                   <button
                     key={slot}
                     disabled={!isAvailable}
-                    onClick={() => setSelectedSlot(slot)}
+                    onClick={() => {
+                      setSelectedSlot(slot);
+                      if (typeof window !== "undefined" && window.innerWidth < 768) {
+                        requestAnimationFrame(() => {
+                          const panel = document.getElementById("booking-confirm-panel");
+                          panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        });
+                      }
+                    }}
                     data-testid={`slot-${slot}`}
                     title={state === "tooSoon" ? t("booking.advanceRule") : undefined}
                     className={`relative h-12 rounded-xl text-sm font-semibold transition-all border ${
@@ -396,7 +405,7 @@ export default function BookingPage() {
         )}
 
         {selectedSlot && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <motion.div id="booking-confirm-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 scroll-mt-24">
             {/* ---- SESSION FOCUS PICKER ---- */}
             <div>
               <label className="text-sm font-semibold flex items-center gap-2 mb-2">
