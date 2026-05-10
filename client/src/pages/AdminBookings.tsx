@@ -646,6 +646,15 @@ function BookingRow({
   deleteMutation: ReturnType<typeof useDeleteBooking>;
   t: (k: string, fb?: string) => string;
 }) {
+  const partnerName = b.sessionType === "duo" ? b.partnerFullName : null;
+  const partnerInitials = partnerName
+    ? partnerName
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p: string) => p[0]?.toUpperCase() ?? "")
+        .join("")
+    : "";
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -655,22 +664,46 @@ function BookingRow({
       <AdminCard className="hover:border-white/15 transition-colors" padded={false}>
         <div className="p-3.5 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-            {/* Time tile */}
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary shrink-0">
+            {/* Time tile — duo bookings get a small "2" indicator pinned to
+                the corner with partner initials surfaced via the native
+                tooltip on hover, so admins can scan the day strip and spot
+                duo slots without opening any row. */}
+            <div
+              className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary shrink-0"
+              title={partnerName ? `Duo · + ${partnerName}` : undefined}
+            >
               <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider opacity-80">
                 {formatTime12(b.timeSlot).split(" ")[1] /* AM/PM */}
               </span>
               <span className="text-[15px] sm:text-base font-display font-bold leading-none tabular-nums">
                 {formatTime12(b.timeSlot).split(" ")[0]}
               </span>
+              {partnerName && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-primary text-black text-[9px] font-bold leading-none flex items-center justify-center border border-background shadow-sm shadow-primary/30 tabular-nums"
+                  data-testid={`slot-duo-indicator-${b.id}`}
+                  aria-label={`Duo with ${partnerName}`}
+                >
+                  {partnerInitials || "2"}
+                </span>
+              )}
             </div>
             {/* Identity + badges */}
             <div className="min-w-0 flex-1">
               <p
-                className="font-semibold truncate text-sm sm:text-base"
+                className="font-semibold truncate text-sm sm:text-base flex items-center gap-1.5 flex-wrap"
                 data-testid={`booking-client-${b.id}`}
               >
-                {b.user?.fullName || `User #${b.userId}`}
+                <span className="truncate">{b.user?.fullName || `User #${b.userId}`}</span>
+                {partnerName && (
+                  <span
+                    className="inline-flex items-center text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-primary normal-case tracking-normal"
+                    data-testid={`tag-partner-inline-${b.id}`}
+                    title={`Duo partner: ${partnerName}`}
+                  >
+                    + {partnerName}
+                  </span>
+                )}
               </p>
               <p className="text-[12px] sm:text-xs text-muted-foreground/90 mt-0.5 truncate">
                 {b.user?.email || "—"}
