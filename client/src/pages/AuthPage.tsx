@@ -134,8 +134,27 @@ export default function AuthPage({
           <ArrowLeft size={14} /> {t("auth.backToHome")}
         </Link>
 
-        <div className="bg-card/80 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
-          <div className="text-center mb-6">
+        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
+          {/* Cyan hairline top accent — Tron HUD signature */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-8 top-0 h-px"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.5), transparent)",
+            }}
+          />
+          {/* Soft cyan corner halo */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full opacity-50"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(183 100% 60% / 0.15), transparent 70%)",
+            }}
+          />
+
+          <div className="relative text-center mb-6">
             <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold">
               {t("nav.brand")}
             </p>
@@ -149,13 +168,13 @@ export default function AuthPage({
           </div>
 
           {mode !== "admin-login" && !adminOnly && (
-            <div className="grid grid-cols-2 gap-2 mb-6 p-1 bg-white/5 rounded-xl">
+            <div className="relative grid grid-cols-2 gap-2 mb-6 p-1 bg-background/60 border border-primary/15 rounded-xl backdrop-blur-sm">
               <button
                 onClick={() => setMode("client-login")}
                 data-testid="tab-login"
-                className={`h-10 rounded-lg text-sm font-semibold transition-colors ${
+                className={`h-10 rounded-lg text-sm font-semibold transition-all ${
                   mode === "client-login"
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_18px_-4px_hsl(183_100%_55%_/_0.55)]"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -164,9 +183,9 @@ export default function AuthPage({
               <button
                 onClick={() => setMode("client-register")}
                 data-testid="tab-register"
-                className={`h-10 rounded-lg text-sm font-semibold transition-colors ${
+                className={`h-10 rounded-lg text-sm font-semibold transition-all ${
                   mode === "client-register"
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-[0_0_18px_-4px_hsl(183_100%_55%_/_0.55)]"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
