@@ -1716,8 +1716,22 @@ html[dir="rtl"] .hero-eyebrow-rule {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* v9.4 (May-2026, "kill cyan bleed under hero"): the previous
+     top-anchored cyan radial — radial-gradient(ellipse 80% 30%
+     at 50% 0%, rgba(125,249,255,0.08), …) — was the actual source
+     of the "cyan visible directly under the hero" complaint. The
+     first homepage section after the hero carries
+     .cinematic-vignette, and that section's TOP edge sits inside
+     the 250-400px breathing zone the brief reserves as PURE
+     AMOLED black. A glow anchored at vertical 0% of that section
+     therefore paints cyan exactly where black is required.
+     Removed the top-cyan radial entirely. Only the warm amber
+     bottom radial survives — it lives at vertical 100% of the
+     section (well below the breathing zone) and provides the
+     cinematic warmth deeper down the page. The Tron Legacy cyan
+     atmosphere is reintroduced LOWER, by .homepage-shell's cyan
+     accents at vertical 70-80% of the page. */
   background:
-    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(125, 249, 255, 0.08), transparent 70%),
     radial-gradient(ellipse 60% 20% at 50% 100%, rgba(255, 184, 0, 0.06), transparent 75%);
   z-index: 0;
 }
