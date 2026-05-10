@@ -945,6 +945,13 @@ html[dir="rtl"] .hero-eyebrow-rule {
    buttery smooth on mobile and desktop. */
 .hero-isolate {
   isolation: isolate;
+  /* URGENT MOBILE PERF FIX (May-2026): explicit paint containment so
+     scroll outside the hero NEVER invalidates layers inside it (and
+     vice-versa). `isolation: isolate` already establishes a stacking
+     context; `contain: paint` is the additional hint that lets the
+     compositor cache the hero as one rasterised tile during scroll
+     instead of re-painting decorative layers (overlay, bottom-blend,
+     horizon, side-accent) on every frame. Same look, smoother swipes. */
   contain: layout paint style;
   transform: translateZ(0);
 }
@@ -1090,18 +1097,20 @@ html[dir="rtl"] .hero-eyebrow-rule {
    compositing layer and do NOT cost per-frame work. */
 .hero-img {
   /* CONSISTENCY-PASS (May-2026, post-load clarity fix).
-     The previous filter was contrast(1.12) brightness(1.08)
-     saturate(1.10) hue-rotate(-5deg) — visibly aggressive grading
-     plus a cyan tint. Combined with the twin-image depth-of-field
-     rig (now removed), the image read as "less clear after load".
-     New filter is the user-specified spec exactly:
-       brightness(1.05) contrast(1.08) saturate(1.05)
-     No hue-rotate. No blur. The static <img src="/hero-initial.webp">
-     and the dynamic admin <img> both pick up this same baseline so
-     they look IDENTICAL on screen — hydration is visually a no-op.
-     Admin per-image brightness/contrast still multiply onto this
-     baseline via the inline `sharpStyle` in HeroSlider.tsx. */
-  filter: brightness(1.05) contrast(1.08) saturate(1.05);
+     Filter spec: brightness(1.05) contrast(1.08) saturate(1.05).
+     ----------------------------------------------------------------
+     URGENT MOBILE PERF FIX (May-2026): the cinematic filter chain
+     is now DESKTOP-ONLY. On mobile (Samsung Internet, mid-range
+     Android Chromium) a CSS `filter` on a full-screen <img> that
+     also has a per-frame opacity cross-fade running on top forces
+     the compositor to re-rasterise the bitmap on every paint. The
+     +5%/+8%/+5% grade is barely perceptible on a 6" 400-PPI screen
+     under typical ambient light, while the GPU cost is real and
+     measurable. Desktop keeps the full cinematic grade — the
+     filter chain is re-enabled below in the `(min-width: 768px)`
+     block. Admin per-image brightness/contrast tuning (inline
+     style in HeroSlider.tsx) still applies on mobile when set to
+     non-default values. */
   will-change: transform;
   /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
      but guarantees Chromium/WebKit rasterise the bitmap on its own
@@ -1120,6 +1129,12 @@ html[dir="rtl"] .hero-eyebrow-rule {
      admin tuning changes, and the cross-fade between slides. */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+/* Desktop-only cinematic grade — see rationale on .hero-img above. */
+@media (min-width: 768px) {
+  .hero-img {
+    filter: brightness(1.05) contrast(1.08) saturate(1.05);
+  }
 }
 
 /* Background "out of focus" copy — same image, blurred + cool-graded
@@ -1945,14 +1960,29 @@ html[dir="rtl"] .hero-eyebrow-rule {
    light blend. Inline SVG noise (no extra HTTP request). Sits below
    the copy overlay so text remains pixel-sharp. */
 .hero-grain {
+  /* URGENT MOBILE PERF FIX (May-2026): the A24-style film grain uses
+     `mix-blend-mode: soft-light` over a full-bleed area sitting on top
+     of the hero image. Blend modes force the entire stacking context
+     to re-composite on every scroll frame on mid-range Android — this
+     was the dominant source of the reported swipe-up/down jank around
+     the hero. Desktop-only display: on a 27" 4K monitor the 4.5%
+     grain is part of what makes the photo read as "cinema still"; on
+     a 6" phone screen the same grain is invisible to the eye but the
+     blend-mode cost is huge. Hidden on mobile, identical on desktop. */
+  display: none;
   position: absolute;
   inset: 0;
   z-index: 4;
   pointer-events: none;
   opacity: 0.045;
-  mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 200px 200px;
+}
+@media (min-width: 768px) {
+  .hero-grain {
+    display: block;
+    mix-blend-mode: soft-light;
+  }
 }
 
 /* (4) Trust micro-strip — sits under the CTAs inside the copy block.
