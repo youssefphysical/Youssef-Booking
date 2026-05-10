@@ -1096,22 +1096,20 @@ html[dir="rtl"] .hero-eyebrow-rule {
    (Tron / Blade Runner / Skyfall). Static filters live on the GPU
    compositing layer and do NOT cost per-frame work. */
 .hero-img {
-  /* CONSISTENCY-PASS (May-2026, post-load clarity fix).
-     Filter spec: brightness(1.05) contrast(1.08) saturate(1.05).
-     ----------------------------------------------------------------
-     URGENT MOBILE PERF FIX (May-2026): the cinematic filter chain
-     is now DESKTOP-ONLY. On mobile (Samsung Internet, mid-range
-     Android Chromium) a CSS `filter` on a full-screen <img> that
-     also has a per-frame opacity cross-fade running on top forces
-     the compositor to re-rasterise the bitmap on every paint. The
-     +5%/+8%/+5% grade is barely perceptible on a 6" 400-PPI screen
-     under typical ambient light, while the GPU cost is real and
-     measurable. Desktop keeps the full cinematic grade — the
-     filter chain is re-enabled below in the `(min-width: 768px)`
-     block. Admin per-image brightness/contrast tuning (inline
-     style in HeroSlider.tsx) still applies on mobile when set to
-     non-default values. */
-  will-change: transform;
+  /* HARD MOBILE PERFORMANCE MODE (May-2026):
+     - filter chain (brightness/contrast/saturate): DESKTOP-ONLY (see
+       @media block below). On mobile the image renders at native
+       colors — same photo, zero per-frame compositor cost.
+     - will-change: transform: DESKTOP-ONLY. On mobile we don't have
+       Ken Burns / focal pulse animations, so reserving a separate
+       compositor layer + bitmap backing is wasted GPU memory.
+     - translateZ(0) and backface-visibility: kept everywhere — these
+       are static layer-promotion hints with no per-frame cost; they
+       just place the bitmap on its own GPU surface so the rest of
+       the page can scroll past it without re-rasterising.
+     Admin per-image brightness/contrast (inline style in
+     HeroSlider.tsx) is also gated to desktop in the component
+     itself so the inline filter chain never lands on mobile. */
   /* Forced GPU layer promotion. The Z-translate is a NO-OP visually
      but guarantees Chromium/WebKit rasterise the bitmap on its own
      compositor layer up-front — eliminates the first-frame "soft
@@ -1130,10 +1128,12 @@ html[dir="rtl"] .hero-eyebrow-rule {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-/* Desktop-only cinematic grade — see rationale on .hero-img above. */
+/* Desktop-only cinematic grade + GPU layer reservation — see
+   rationale on .hero-img above. */
 @media (min-width: 768px) {
   .hero-img {
     filter: brightness(1.05) contrast(1.08) saturate(1.05);
+    will-change: transform;
   }
 }
 
@@ -1251,11 +1251,23 @@ html[dir="rtl"] .hero-eyebrow-rule {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity;
+  /* HARD MOBILE PERFORMANCE MODE: opacity transition + will-change:
+     opacity are DESKTOP-ONLY. On mobile the slider is paused (no
+     setInterval, see HeroSlider.tsx) so the transition would never
+     fire anyway, but `will-change: opacity` reserves a compositor
+     layer with a backing bitmap allocation in GPU memory whether
+     or not the property ever changes. Removing it on mobile frees
+     several MB of GPU memory per slide and reduces compositor
+     pressure during scroll. */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
+}
+@media (min-width: 768px) {
+  .hero-slide-layer {
+    transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity;
+  }
 }
 .hero-slide-layer[data-active="true"] {
   opacity: 1;

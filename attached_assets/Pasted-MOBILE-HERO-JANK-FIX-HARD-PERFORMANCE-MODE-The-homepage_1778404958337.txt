@@ -1,0 +1,91 @@
+MOBILE HERO JANK FIX — HARD PERFORMANCE MODE
+
+The homepage still scrolls slowly/janky around the Hero section on mobile.
+
+Previous optimization helped but did not fully solve it.
+
+Now apply a HARD MOBILE PERFORMANCE MODE for the Hero only.
+
+Goal:
+Hero must scroll smoothly on real mobile, even if we slightly reduce visual effects on mobile.
+
+DO NOT redesign.
+DO NOT change layout.
+DO NOT touch booking/admin/PWA logic.
+
+Required mobile-only fixes:
+
+1. Remove expensive hero effects on mobile
+   For mobile viewports:
+
+- disable backdrop-filter on hero overlays
+- disable large blur layers
+- disable filter effects on hero image
+- disable parallax/transform-on-scroll effects
+- disable animated glow/sweep layers
+- disable heavy shadows over the hero
+- disable any infinite animations near hero
+
+Desktop can keep premium effects if performance is fine.
+
+2. Use static lightweight mobile hero
+   On mobile:
+
+- render the hero as a static image + simple gradient overlay only
+- no moving hero layers
+- no animated background elements
+- no slider animation while scrolling
+- no image filters
+
+The visual should remain premium but performance comes first.
+
+3. Pause carousel/slider on mobile
+   If the Hero uses a carousel:
+
+- disable autoplay on mobile
+- only load first visible image immediately
+- lazy-load remaining slides
+- avoid rendering hidden slides if possible
+
+4. Replace heavy overlay with CSS gradient
+   Use a simple linear/radial gradient overlay.
+   No blur.
+   No backdrop-filter.
+   No mix-blend-mode.
+   No animated opacity on large full-width layers.
+
+5. Image optimization
+
+- ensure mobile uses a true mobile-sized image, not desktop resolution
+- set width/height or aspect-ratio to avoid layout shifts
+- use object-fit: cover
+- avoid decoding huge images during scroll
+- preload only the first hero image
+
+6. CSS containment
+   Add safe containment where appropriate:
+
+- contain: layout paint if it does not break sticky/header behavior
+- content-visibility for below-the-fold sections if safe
+- isolate hero painting if possible
+
+7. Verification
+   Test specifically on mobile:
+
+- fast scroll down from hero
+- fast scroll back to top
+- repeated swipe near hero
+- Samsung Internet / Chrome Android
+
+Success criteria:
+
+- no visible scroll lag
+- no freezing
+- no sticky header jank
+- no visual regression beyond reduced effects
+
+Priority:
+smooth scrolling > cinematic effects on mobile.
+
+Keep desktop premium.
+Mobile must be lightweight and smooth.

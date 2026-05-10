@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { Link } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Eye, ChevronDown } from "lucide-react";
@@ -113,16 +113,51 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// HARD MOBILE PERFORMANCE MODE (May-2026).
+// =====================================================================
+// On phone-sized viewports we render the hero as a STATIC single-image
+// composition: no autoplay rotation, no per-slide filter chain, no
+// inactive slide layers in the DOM (so their base64 data URLs are not
+// decoded into memory), no opacity cross-fade transition.
+// Tablet+ (≥768px) keeps the full cinematic slider unchanged.
+//
+// Default value: TRUE on first render. The reasoning is that the
+// initial server bundle has no window so we must guess; assuming
+// mobile means we skip the autoplay-eager path and the effect below
+// upgrades to "false" on the very next frame on desktop. The reverse
+// (default false) would briefly mount inactive layers + start the
+// 8s timer on mobile before correcting — visible jank.
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(true);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia("(max-width: 767px)");
+    const apply = () => setIsMobile(mql.matches);
+    apply();
+    // addEventListener('change') is the modern API, addListener is the
+    // Safari ≤13 fallback. Both kept for cross-browser safety.
+    if (mql.addEventListener) {
+      mql.addEventListener("change", apply);
+      return () => mql.removeEventListener("change", apply);
+    }
+    mql.addListener(apply);
+    return () => mql.removeListener(apply);
+  }, []);
+  return isMobile;
+}
+
 // One stacked slide layer. Memoized so it ONLY re-renders when its
 // own props change. The <img> element is never re-mounted.
 const HeroSlideLayer = memo(function HeroSlideLayer({
   slide,
   isActive,
   isFirst,
+  isMobile,
 }: {
   slide: HeroImage;
   isActive: boolean;
   isFirst: boolean;
+  isMobile: boolean;
 }) {
   const t_focalX = slide.focalX ?? 0;
   const t_focalY = slide.focalY ?? 0;
@@ -132,11 +167,24 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
   const t_contrast = slide.contrast ?? 1.0;
   const t_overlayOpacity = slide.overlayOpacity ?? 35;
 
-  const sharpStyle: React.CSSProperties = {
-    filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
-    transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
-    transformOrigin: "center",
-  };
+  // HARD MOBILE PERFORMANCE MODE: skip the brightness/contrast/saturate
+  // filter chain on mobile entirely (CSS in index.css already gates the
+  // base .hero-img filter; this skips the inline per-image multiplier
+  // too). Even when admin tunes values away from default we drop the
+  // inline filter on mobile — the GPU cost of a per-slide filter chain
+  // on a full-screen image during scroll outweighs the visual benefit.
+  // Transform (focal/zoom/rotate) is preserved because focal point is a
+  // composition-critical control, not a stylistic effect.
+  const sharpStyle: React.CSSProperties = isMobile
+    ? {
+        transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
+        transformOrigin: "center",
+      }
+    : {
+        filter: `brightness(${(1.05 * t_brightness).toFixed(3)}) contrast(${(1.08 * t_contrast).toFixed(3)}) saturate(1.05)`,
+        transform: `translate(${t_focalX}px, ${t_focalY}px) scale(${t_zoom}) rotate(${t_rotate}deg) translateZ(0)`,
+        transformOrigin: "center",
+      };
 
   return (
     <div
@@ -172,13 +220,34 @@ export function HeroSlider() {
   const slides = images.filter((s) => s.isActive !== false);
   const [tick, setTick] = useState(0);
   const reduced = prefersReducedMotion();
+  const isMobile = useIsMobileViewport();
 
   useEffect(() => {
-    if (reduced) return;
+    // HARD MOBILE PERFORMANCE MODE: never autoplay the slider on phones.
+    // The 8s setInterval triggers a React re-render → updates the
+    // `data-active` attribute → fires the 1200ms opacity cross-fade
+    // CSS transition on full-screen image layers. On mid-range Android
+    // this transition alone is enough to drop scroll frames if it
+    // happens while the user is mid-swipe. Mobile users see the first
+    // slide as a static hero (still beautiful, single high-fidelity
+    // photo) while desktop keeps the cinematic 8s rotation.
+    if (reduced || isMobile) return;
     if (slides.length <= 1) return;
     const id = window.setInterval(() => setTick((i) => i + 1), ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [reduced, slides.length]);
+  }, [reduced, isMobile, slides.length]);
+
+  // HARD MOBILE PERFORMANCE MODE: only render the FIRST active slide on
+  // mobile. The rotation timer is disabled (above), so non-first slides
+  // would never become active anyway — keeping them in the DOM only
+  // forces the browser to decode N base64 data URLs at mount, holding
+  // many MB of decoded bitmap pixels in GPU memory for no visible
+  // benefit. Single slide on mobile = single decoded image.
+  // Memoized so React reconciliation stays cheap.
+  const renderedSlides = useMemo(
+    () => (isMobile ? slides.slice(0, 1) : slides),
+    [isMobile, slides],
+  );
 
   const variants = [
     {
@@ -294,15 +363,19 @@ export function HeroSlider() {
         data-testid="img-hero-static-default"
       />
 
-      {/* STACKED IMAGE LAYER — v4 architecture. */}
-      {slides.length > 0 && (
+      {/* STACKED IMAGE LAYER — v4 architecture.
+          HARD MOBILE PERFORMANCE MODE: `renderedSlides` is sliced to
+          [first] on phones so only one layer mounts; tablet+ keeps the
+          full stack for the 8s cinematic rotation. */}
+      {renderedSlides.length > 0 && (
         <div className="absolute inset-0" aria-hidden="true">
-          {slides.map((slide, i) => (
+          {renderedSlides.map((slide, i) => (
             <HeroSlideLayer
               key={slide.id}
               slide={slide}
-              isActive={i === imageIndex}
+              isActive={i === imageIndex || isMobile}
               isFirst={i === 0}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -658,8 +731,10 @@ export function HeroSlider() {
         <ChevronDown size={16} strokeWidth={2.2} />
       </button>
 
-      {/* Pagination dots */}
-      {slides.length > 1 && (
+      {/* Pagination dots — desktop only. On mobile the slider is paused
+          (HARD MOBILE PERFORMANCE MODE) and only the first slide is
+          rendered, so dots would be non-functional clutter. */}
+      {!isMobile && slides.length > 1 && (
         <div
           className="absolute bottom-4 sm:bottom-3 md:bottom-7 lg:bottom-9 left-1/2 -translate-x-1/2 flex items-center gap-1 z-20"
           data-testid="hero-slider-dots"
