@@ -1630,34 +1630,51 @@ html[dir="rtl"] .hero-eyebrow-rule {
      viewport-wide cyan halo anchored at the very top-right corner
      (100%/0%) so the gradient terminates AT the edge, not 20%
      past it — physically impossible to clip. */
-  /* v9.2 (May-2026, "AMOLED black fade refinement"): cyan radial
-     anchors moved DOWN out of the hero-seam zone (top-right was
-     previously at 8% which bled subtle cyan into the band right
-     under the hero — exactly the "blue tinted section" the user
-     rejected). Both cyan accents now anchor at 35-55% vertically
-     so the area under the hero (top ~25% of the page) is pure
-     AMOLED black with zero color cast. The amber bottom accent
-     stays at 100% (deep page) for cinematic warmth far below the
-     fold. Base linear-gradient first stop locked to PURE BLACK
-     #000000 so the hero-bottom-blend's terminal #000 meets the
-     shell's #000 with zero seam — the hero dissolves into and
-     the next section starts on the SAME true black. */
+  /* v9.3 (May-2026, "pure-black breathing zone under hero"): per the
+     user clarification, the area DIRECTLY under the hero must be
+     ONE continuous pure black for 250-400px before any Tron Legacy
+     atmospheric glow re-enters. v9.2 pushed the cyan accents to
+     vertical 45-50% which still bled subtle cyan up into the
+     immediate-below-hero band on shorter pages.
+     v9.3 fix:
+       - Base linear holds PURE #000 from 0% to 35% of the homepage
+         shell — that is the cinematic black breathing zone the user
+         wants (well over 400px on every realistic page length).
+       - Cyan accents pushed to vertical 70-75% — they only appear
+         deep in the page, far below the fold, so the top-third
+         continues to read as true AMOLED black.
+       - Amber bottom warmth unchanged at vertical 100%.
+     Net result: hero photo dissolves into pure black, the next
+     250-400px below is also pure black, then the Tron Legacy
+     atmosphere quietly returns lower down the page. */
   background:
-    radial-gradient(ellipse 55% 35% at 85% 45%, rgba(125, 249, 255, 0.08), transparent 65%),
-    radial-gradient(ellipse 45% 32% at 12% 60%, rgba(125, 249, 255, 0.05), transparent 65%),
-    radial-gradient(ellipse 70% 30% at 50% 100%, rgba(255, 184, 0, 0.04), transparent 70%),
-    linear-gradient(180deg, #000000 0%, #030405 25%, #07090D 55%, #06080B 80%, #050608 100%);
+    radial-gradient(ellipse 55% 30% at 85% 70%, rgba(125, 249, 255, 0.08), transparent 65%),
+    radial-gradient(ellipse 45% 28% at 12% 80%, rgba(125, 249, 255, 0.05), transparent 65%),
+    radial-gradient(ellipse 70% 28% at 50% 100%, rgba(255, 184, 0, 0.04), transparent 70%),
+    linear-gradient(180deg,
+      #000000 0%,
+      #000000 35%,
+      #030405 55%,
+      #07090D 78%,
+      #050608 100%);
 }
 @media (max-width: 767px) {
   .homepage-shell {
-    /* v9.2 (May-2026): mobile shell mirrors desktop — single cyan
-       halo pushed DOWN to 50% vertical so the immediate-below-hero
-       area stays pure AMOLED black, plus the same #000 first stop
-       on the base linear so the seam is invisible. Single radial +
-       linear keeps per-frame paint cost minimal. */
+    /* v9.3 (May-2026): mobile shell mirrors desktop. Pure black
+       held to 38% (mobile pages are taller relative to the hero
+       so the breathing band must be slightly larger in % terms to
+       guarantee the 250-400px black zone the user requested). The
+       single cyan halo is pushed to vertical 80% so it lives well
+       below the fold. Single radial + linear keeps per-scroll-
+       frame paint cost minimal on mid-range Android. */
     background:
-      radial-gradient(ellipse 80% 35% at 100% 50%, rgba(125, 249, 255, 0.07), transparent 70%),
-      linear-gradient(180deg, #000000 0%, #030405 25%, #07090D 55%, #06080B 80%, #050608 100%);
+      radial-gradient(ellipse 80% 28% at 100% 80%, rgba(125, 249, 255, 0.06), transparent 70%),
+      linear-gradient(180deg,
+        #000000 0%,
+        #000000 38%,
+        #030405 58%,
+        #07090D 80%,
+        #050608 100%);
   }
 }
 
