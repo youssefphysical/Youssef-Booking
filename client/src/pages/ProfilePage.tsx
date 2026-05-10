@@ -271,10 +271,18 @@ export default function ProfilePage() {
       <Link
         href="/dashboard"
         data-testid="link-profile-inbody"
-        className="block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] hover:bg-primary/[0.07] transition-colors p-5"
+        className="group relative block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] p-5 overflow-hidden transition-all hover:border-primary/30 hover:bg-primary/[0.07] hover:shadow-[0_0_24px_-8px_hsl(183_100%_55%_/_0.4)]"
       >
-        <div className="flex items-start gap-4">
-          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-5 top-0 h-px opacity-60"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
+          }}
+        />
+        <div className="relative flex items-start gap-4">
+          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center shrink-0 transition-shadow group-hover:shadow-[0_0_18px_-4px_hsl(183_100%_55%_/_0.55)]">
             <Activity size={18} />
           </div>
           <div className="flex-1 min-w-0">
@@ -283,7 +291,7 @@ export default function ProfilePage() {
               {t("profile.inbodyBody")}
             </p>
           </div>
-          <ArrowRight size={16} className="text-primary mt-1 shrink-0" />
+          <ArrowRight size={16} className="text-primary mt-1 shrink-0 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180" />
         </div>
       </Link>
 
@@ -386,10 +394,10 @@ function PillButton({
       data-testid={testId}
       aria-pressed={active}
       className={cn(
-        "text-left rounded-2xl border px-3 py-3 transition-colors",
+        "text-left rounded-2xl border px-3 py-3 transition-all",
         active
-          ? "bg-primary/15 border-primary/40 text-foreground"
-          : "bg-white/[0.02] border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground",
+          ? "bg-primary/15 border-primary/40 text-foreground shadow-[0_0_18px_-6px_hsl(183_100%_55%_/_0.45)]"
+          : "bg-white/[0.02] border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground hover:border-white/20",
       )}
     >
       <p className={cn("text-sm font-semibold", active ? "text-primary" : "text-foreground")}>

@@ -143,17 +143,30 @@ function PublicCompareSlider({
       >
         <SafeImage src={before} alt="Before" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
       </div>
-      {/* Divider */}
+      {/* Divider — cyan Tron beam (replaces the prior white line). The
+          beam has a soft cyan halo so it reads as a HUD light strip
+          rather than a hard white seam. Pointer-events-none so the
+          drag region behind it stays usable. */}
       <div
-        className="absolute top-0 bottom-0 w-px bg-white/85 pointer-events-none shadow-[0_0_8px_rgba(255,255,255,0.6)]"
-        style={{ left: `${pos}%` }}
+        className="absolute top-0 bottom-0 w-px pointer-events-none"
+        style={{
+          left: `${pos}%`,
+          background: "linear-gradient(180deg, hsl(183 100% 75%), hsl(183 100% 65%))",
+          boxShadow:
+            "0 0 8px hsl(183 100% 60% / 0.55), 0 0 16px hsl(183 100% 55% / 0.35)",
+        }}
       />
-      {/* Handle */}
+      {/* Handle — dark-glass disc with cyan rim (replaces the white disc).
+          AMOLED-black surface, cyan border, restrained glow. */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-white shadow-2xl flex items-center justify-center pointer-events-none ring-2 ring-primary/40"
-        style={{ left: `${pos}%` }}
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-background/90 backdrop-blur-sm border border-primary/60 flex items-center justify-center pointer-events-none"
+        style={{
+          left: `${pos}%`,
+          boxShadow:
+            "0 0 0 1px hsl(183 100% 70% / 0.25), 0 0 18px -4px hsl(183 100% 55% / 0.55), 0 8px 18px -8px rgba(0,0,0,0.7)",
+        }}
       >
-        <ChevronsLeftRight size={18} className="text-black" />
+        <ChevronsLeftRight size={16} className="text-primary" />
       </div>
       {/* Labels */}
       <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold tracking-[0.2em] uppercase pointer-events-none border border-white/10">
