@@ -612,7 +612,18 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <StepDot active={step === 1} done={step > 1} label={t("auth.stepAccount")} />
-          <div className="flex-1 h-px bg-white/10" />
+          {/* Connector fills with cyan once step 1 is complete — gives a
+              subliminal "you're moving forward" cue without animation. */}
+          <div
+            className="flex-1 h-px"
+            style={{
+              background:
+                step > 1
+                  ? "linear-gradient(90deg, hsl(183 100% 70% / 0.6), hsl(183 100% 70% / 0.25))"
+                  : "rgba(255,255,255,0.1)",
+            }}
+            aria-hidden="true"
+          />
           <StepDot active={step === 2} done={false} label={t("auth.stepGoals")} />
         </div>
 
@@ -755,7 +766,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               type="button"
               onClick={handleNext}
               data-testid="button-next-step"
-              className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+              className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow"
             >
               {t("auth.continue")} <ArrowRight size={16} className="ml-2" />
             </Button>
@@ -848,10 +859,20 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               {t("auth.afterSignUpBody")}
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+              {/* Cinematic cyan top hairline — same HUD signature as the
+                  rest of the client journey. Decorative only. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
+                }}
+              />
               <div className="flex items-center gap-2">
                 <ShieldCheck size={14} className="text-primary" />
-                <p className="text-xs uppercase tracking-widest text-primary/90 font-semibold">
+                <p className="tron-eyebrow text-[10px] font-semibold">
                   {t("auth.requiredConsents")}
                 </p>
               </div>
@@ -899,7 +920,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
               <Button
                 type="submit"
                 data-testid="button-submit-register"
-                className="flex-1 h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                className="flex-1 h-12 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow disabled:shadow-none"
                 disabled={isPending || !allConsentsAccepted}
               >
                 {isPending && <Loader2 className="animate-spin mr-2" size={16} />}
@@ -1008,14 +1029,16 @@ function PackagePicker({
 }
 
 function StepDot({ active, done, label }: { active: boolean; done: boolean; label: string }) {
+  // Premium HUD step indicator. Cyan glow only on the live or completed
+  // step so the eye is drawn to forward motion — never to inactive chrome.
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
           done
-            ? "bg-primary text-primary-foreground"
+            ? "bg-primary text-primary-foreground shadow-[0_0_14px_-3px_hsl(183_100%_60%/0.55)]"
             : active
-            ? "bg-primary/20 text-primary border border-primary"
+            ? "bg-primary/15 text-primary border border-primary/70 shadow-[0_0_14px_-4px_hsl(183_100%_60%/0.5)]"
             : "bg-white/5 text-muted-foreground border border-white/10"
         }`}
       >

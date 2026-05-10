@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users,
@@ -63,6 +63,20 @@ const CHART_COLOR = {
   danger: "#f87171",                    // rose-400 — churn / loss
 } as const;
 const PIE_COLORS = [CHART_COLOR.primary, CHART_COLOR.warning, CHART_COLOR.danger, CHART_COLOR.comparison];
+
+/**
+ * Single source of truth for chart tooltip chrome. Shared across all 5
+ * charts so they read as one cohesive HUD surface — and a cinematic
+ * cyan-tinted hairline replaces the previous flat white-10 border for
+ * "intelligent coaching system" feel without tipping into neon.
+ */
+const CHART_TOOLTIP_STYLE: CSSProperties = {
+  background: "rgba(8,15,28,0.95)",
+  border: "1px solid hsl(183 100% 70% / 0.18)",
+  borderRadius: 12,
+  fontSize: 12,
+  boxShadow: "0 8px 32px -12px hsl(183 100% 50% / 0.25), 0 4px 16px -8px rgba(0,0,0,0.6)",
+};
 
 export default function AdminAnalytics() {
   const { t } = useTranslation();
@@ -224,12 +238,7 @@ export default function AdminAnalytics() {
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <Tooltip
-                      contentStyle={{
-                        background: "rgba(8,15,28,0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                       formatter={(v: any) => FMT_AED.format(Number(v))}
                     />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -250,12 +259,7 @@ export default function AdminAnalytics() {
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <Tooltip
-                      contentStyle={{
-                        background: "rgba(8,15,28,0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                     />
                     <Bar dataKey="count" name="Sessions" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                   </BarChart>
@@ -273,12 +277,7 @@ export default function AdminAnalytics() {
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <Tooltip
-                      contentStyle={{
-                        background: "rgba(8,15,28,0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                     />
                     <Line type="monotone" dataKey="count" name="Signups" stroke={CHART_COLOR.success} strokeWidth={2.5} dot={{ r: 3 }} />
                   </LineChart>
@@ -296,12 +295,7 @@ export default function AdminAnalytics() {
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <YAxis tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }} />
                     <Tooltip
-                      contentStyle={{
-                        background: "rgba(8,15,28,0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                     />
                     <Bar dataKey="count" name="Sessions" fill={CHART_COLOR.comparison} radius={[6, 6, 0, 0]} />
                   </BarChart>
@@ -333,12 +327,7 @@ export default function AdminAnalytics() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: "rgba(8,15,28,0.95)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                     />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                   </PieChart>
@@ -391,7 +380,10 @@ export default function AdminAnalytics() {
                         strokeLinecap="round"
                         strokeDasharray={`${2 * Math.PI * 52}`}
                         strokeDashoffset={`${2 * Math.PI * 52 * (1 - data.adherence.weeklyCheckinRate30d)}`}
-                        style={{ transition: "stroke-dashoffset 800ms ease-out" }}
+                        style={{
+                          transition: "stroke-dashoffset 800ms ease-out",
+                          filter: "drop-shadow(0 0 4px hsl(183 100% 60% / 0.55))",
+                        }}
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
