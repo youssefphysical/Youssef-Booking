@@ -1275,6 +1275,7 @@ function CreateBookingButton() {
 // and is intentionally not cleared here).
 // ============================================================
 function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearchLocal] = useState("");
   const { data: clients = [] } = useClients({ enabled: open });
@@ -1292,12 +1293,19 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      toast({ title: "Partner linked", description: "Confirmation sent to the partner." });
+      toast({
+        title: t("admin.linkPartner.linkedToast", "Partner linked"),
+        description: t("admin.linkPartner.linkedDesc", "Confirmation sent to the partner."),
+      });
       setOpen(false);
       setSearchLocal("");
     },
     onError: (err: Error) =>
-      toast({ title: "Link failed", description: err.message, variant: "destructive" }),
+      toast({
+        title: t("admin.linkPartner.linkFailed", "Link failed"),
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const unlinkMutation = useMutation({
@@ -1306,11 +1314,15 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      toast({ title: "Partner unlinked" });
+      toast({ title: t("admin.linkPartner.unlinkedToast", "Partner unlinked") });
       setOpen(false);
     },
     onError: (err: Error) =>
-      toast({ title: "Unlink failed", description: err.message, variant: "destructive" }),
+      toast({
+        title: t("admin.linkPartner.unlinkFailed", "Unlink failed"),
+        description: err.message,
+        variant: "destructive",
+      }),
   });
 
   const filtered = useMemo(() => {
@@ -1345,7 +1357,11 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               ? "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-400/10"
               : "text-amber-300 hover:text-amber-200 hover:bg-amber-500/10",
           )}
-          title={isLinked ? "Manage partner link" : "Link partner to account"}
+          title={
+            isLinked
+              ? t("admin.linkPartner.manage", "Manage partner link")
+              : t("admin.linkPartner.link", "Link partner to account")
+          }
           data-testid={`button-link-partner-${booking.id}`}
         >
           {isLinked ? <Link2 size={14} /> : <UserPlus size={14} />}
@@ -1354,13 +1370,15 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
       <DialogContent className="bg-card border-white/10 max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {isLinked ? "Manage partner link" : "Link partner to account"}
+            {isLinked
+              ? t("admin.linkPartner.manage", "Manage partner link")
+              : t("admin.linkPartner.link", "Link partner to account")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs">
           <div className="text-muted-foreground/80 uppercase tracking-wider text-[10px] mb-1">
-            Partner on this booking
+            {t("admin.linkPartner.partnerOnBooking", "Partner on this booking")}
           </div>
           <div className="font-semibold text-sm">{snapshotName || "—"}</div>
           {snapshotEmail && <div className="text-muted-foreground">{snapshotEmail}</div>}
@@ -1372,7 +1390,9 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               <Check size={16} className="text-cyan-300 shrink-0" />
               <div className="text-sm">
                 <div className="font-semibold text-cyan-200">
-                  Linked to {linkedUser?.fullName || `Client #${(booking as any).linkedPartnerUserId}`}
+                  {t("admin.linkPartner.linkedTo", "Linked to")}{" "}
+                  {linkedUser?.fullName ||
+                    `${t("admin.linkPartner.clientFallback", "Client")} #${(booking as any).linkedPartnerUserId}`}
                 </div>
                 {linkedUser?.email && (
                   <div className="text-xs text-muted-foreground">{linkedUser.email}</div>
@@ -1380,7 +1400,9 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                {t("admin.linkPartner.close", "Close")}
+              </Button>
               <Button
                 variant="destructive"
                 onClick={() => unlinkMutation.mutate()}
@@ -1389,7 +1411,7 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               >
                 {unlinkMutation.isPending && <Loader2 size={14} className="mr-2 animate-spin" />}
                 <Link2Off size={14} className="mr-2" />
-                Unlink partner
+                {t("admin.linkPartner.unlink", "Unlink partner")}
               </Button>
             </DialogFooter>
           </div>
@@ -1399,7 +1421,10 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               <Input
                 value={search}
                 onChange={(e) => setSearchLocal(e.target.value)}
-                placeholder="Search by name, email, or phone…"
+                placeholder={t(
+                  "admin.linkPartner.searchPlaceholder",
+                  "Search by name, email, or phone…",
+                )}
                 className="bg-white/5 border-white/10"
                 autoFocus
                 data-testid={`input-partner-search-${booking.id}`}
@@ -1408,7 +1433,7 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
             <div className="max-h-72 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <div className="p-4 text-sm text-muted-foreground text-center">
-                  No matching clients
+                  {t("admin.linkPartner.noClients", "No matching clients")}
                 </div>
               ) : (
                 filtered.map((c) => (
@@ -1438,7 +1463,9 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
               )}
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                {t("admin.linkPartner.cancel", "Cancel")}
+              </Button>
             </DialogFooter>
           </div>
         )}
