@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
@@ -927,16 +928,7 @@ function PackagesTab({ userId }: { userId: number }) {
               >
                 {/* Cyan top hairline — only on active packages, signals
                     "this is your live program" without being loud. */}
-                {p.isActive && (
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-x-5 top-0 h-px"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.45), transparent)",
-                    }}
-                  />
-                )}
+                {p.isActive && <CyanHairline intensity="strong" inset="inset-x-5" />}
                 <div className="relative flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate">

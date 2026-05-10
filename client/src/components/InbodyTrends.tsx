@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { format } from "date-fns";
 import {
   ResponsiveContainer,
@@ -103,14 +104,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
         className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/40 p-10 text-center"
         data-testid="inbody-trends-empty"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-          }}
-        />
+        <CyanHairline />
         <div className="mx-auto mb-3 inline-flex size-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.06] text-primary">
           <Minus size={20} />
         </div>
@@ -142,14 +136,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
               className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/60 p-5"
               data-testid={`trend-card-${s.key}`}
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.35), transparent)",
-                }}
-              />
+              <CyanHairline intensity="subtle" />
               <p className="tron-eyebrow text-[10px] font-semibold">{s.label}</p>
               <p className="text-sm text-muted-foreground mt-3">{t("common.notEnoughData")}</p>
             </div>
@@ -174,14 +161,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
             className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/60 p-5 transition-colors hover:border-primary/20"
             data-testid={`trend-card-${s.key}`}
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-px"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.35), transparent)",
-              }}
-            />
+            <CyanHairline intensity="subtle" />
             <div className="flex items-start justify-between mb-2">
               <div>
                 <p className="tron-eyebrow text-[10px] font-semibold">{s.label}</p>

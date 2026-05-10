@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   Activity as ActivityIcon,
@@ -88,14 +89,7 @@ export function ActivityFeed({
         className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-card/40 p-10 text-center"
         data-testid="activity-empty"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-          }}
-        />
+        <CyanHairline />
         <div className="mx-auto mb-3 inline-flex size-12 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.06] text-primary">
           <ActivityIcon size={20} />
         </div>

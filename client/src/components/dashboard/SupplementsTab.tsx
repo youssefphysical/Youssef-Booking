@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import {
   Pill,
   AlertTriangle,
@@ -104,14 +105,7 @@ export function SupplementsTab() {
           }}
         />
         {/* Hairline top rule */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-6 top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.45), transparent)",
-          }}
-        />
+        <CyanHairline intensity="strong" inset="inset-x-6" />
 
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
@@ -452,14 +446,7 @@ function EmptyProtocol() {
       className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/30 p-12 text-center"
       data-testid="empty-supplement-protocol"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-        }}
-      />
+      <CyanHairline />
       <div className="mx-auto mb-4 inline-flex size-14 items-center justify-center rounded-2xl border border-primary/25 bg-primary/[0.06] text-primary">
         <Pill size={24} />
       </div>

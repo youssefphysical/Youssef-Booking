@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -138,14 +139,7 @@ export default function AuthPage({
 
         <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           {/* Cyan hairline top accent — Tron HUD signature */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-8 top-0 h-px"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.5), transparent)",
-            }}
-          />
+          <CyanHairline intensity="hero" inset="inset-x-8" />
           {/* Soft cyan corner halo */}
           <div
             aria-hidden
@@ -868,14 +862,7 @@ function RegisterForm({ onComplete }: { onComplete: () => void }) {
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
               {/* Cinematic cyan top hairline — same HUD signature as the
                   rest of the client journey. Decorative only. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-px"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-                }}
-              />
+              <CyanHairline />
               <div className="flex items-center gap-2">
                 <ShieldCheck size={14} className="text-primary" />
                 <p className="tron-eyebrow text-[10px] font-semibold">

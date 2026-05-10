@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { format, formatDistanceToNow, isToday, isTomorrow } from "date-fns";
 import {
   CalendarClock,
@@ -94,14 +95,7 @@ export function TodayHero({ name }: { name?: string | null }) {
         className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-6"
         data-testid="today-hero-loading"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-6 top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-          }}
-        />
+        <CyanHairline inset="inset-x-6" />
         <div className="h-5 w-40 admin-shimmer rounded" />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -138,14 +132,7 @@ export function TodayHero({ name }: { name?: string | null }) {
       data-testid="today-hero"
     >
       {/* Cyan top hairline — consistent HUD signature across the app */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-6 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.45), transparent)",
-        }}
-      />
+      <CyanHairline intensity="strong" inset="inset-x-6" />
       {/* Soft cyan corner halo — restrained, AMOLED-friendly */}
       <div
         aria-hidden

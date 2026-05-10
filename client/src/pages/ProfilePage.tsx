@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -274,14 +275,7 @@ export default function ProfilePage() {
         data-testid="link-profile-inbody"
         className="group relative block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] p-5 overflow-hidden transition-all hover:border-primary/30 hover:bg-primary/[0.07] hover:shadow-[0_0_24px_-8px_hsl(183_100%_55%_/_0.4)]"
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-5 top-0 h-px opacity-60"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, hsl(183 100% 70% / 0.4), transparent)",
-          }}
-        />
+        <CyanHairline inset="inset-x-5" className="opacity-60" />
         <div className="relative flex items-start gap-4">
           <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center shrink-0 transition-shadow group-hover:shadow-[0_0_18px_-4px_hsl(183_100%_55%_/_0.55)]">
             <Activity size={18} />
