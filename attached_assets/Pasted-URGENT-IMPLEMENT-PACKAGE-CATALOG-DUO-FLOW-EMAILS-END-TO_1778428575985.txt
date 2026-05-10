@@ -1,0 +1,247 @@
+URGENT — IMPLEMENT PACKAGE CATALOG + DUO FLOW + EMAILS END-TO-END
+
+This was requested before, but it is NOT visible in production. Do not treat it as done until I can see and test it on the live Vercel website.
+
+Main requirement:
+Implement the approved package system end-to-end:
+frontend UI + backend validation + database persistence + admin visibility + booking emails + production verification.
+
+Approved package catalog ONLY:
+
+1. Single Session
+
+- 1 session
+- AED 375
+
+2. 10 Sessions Package
+
+- 10 sessions
+- AED 3,245
+
+3. 20 Sessions Package
+
+- 20 sessions
+- AED 5,750
+
+4. 25 Sessions Package
+
+- 25 sessions
+- AED 6,750
+
+5. Duo Package
+
+- 30 sessions
+- AED 9,900
+- for 2 people training together at the same time
+
+6. BMI Assessment
+
+7. Technical Movement Assessment
+   Use this label unless there is already a better professional name.
+
+Remove or hide all old package names and old package options from client-facing flows.
+
+==================================================
+A) CLIENT PACKAGE SELECTION
+
+The client must be able to choose one of the approved packages in the booking/onboarding flow.
+
+Package selection must:
+
+- be visible on live production
+- save to the database
+- appear in admin
+- appear in emails
+- control session type where relevant
+- show AED price
+- show session count
+- show package type clearly
+
+Do NOT keep this as UI-only state.
+
+==================================================
+B) DUO PACKAGE FLOW
+
+For Duo Package only:
+
+Do NOT force the second person to create an account during booking.
+
+When Duo Package is selected, show:
+“Training Partner Details”
+
+Fields:
+
+- Partner full name — required
+- Partner phone — optional
+- Partner email — optional
+
+Helper text:
+“Your training partner does not need an account now. Coach Youssef can invite or link them later if needed.”
+
+Duo logic:
+
+- primary logged-in client owns the package
+- partner is a training companion only
+- Duo booking creates one booking slot
+- Duo session blocks the slot once
+- Duo session deducts exactly 1 session from the 30-session Duo package
+- do NOT deduct 2 sessions
+- do NOT let the partner own or consume the package unless admin links them later
+
+Future-ready admin:
+
+- add nullable linked_partner_user_id if schema needs it
+- allow/admin-prepare concept for “Link Partner Account”
+- linked partner must not become package owner automatically
+
+==================================================
+C) ADMIN VISIBILITY
+
+Admin must see package and Duo information clearly.
+
+Admin booking/calendar/list must show:
+
+- package name
+- price
+- session number, example: Session 1 of 10 / Session 4 of 20 / Duo Session 3 of 30
+- remaining sessions
+- primary client name
+- partner name if Duo
+- Duo badge if Duo
+- payment status if available
+
+==================================================
+D) EMAIL TO ADMIN
+
+Upgrade admin booking email.
+
+Admin email must include:
+
+- client full name
+- client email
+- client phone
+- selected package
+- package price
+- total package sessions
+- current session number
+- remaining sessions after booking
+- Duo partner name/phone/email if Duo
+- selected date
+- exact time in 12-hour AM/PM format
+- Dubai timezone
+- session focus
+- training goal
+- session type
+- payment status if available
+- notes if available
+- admin bookings link/button
+
+Design:
+
+- premium Tron Legacy inspired email
+- wider responsive email layout
+- bigger readable text
+- mobile Gmail friendly
+- no tiny/cramped table
+- clear hierarchy
+
+==================================================
+E) EMAIL TO CLIENT
+
+Send a confirmation email to the client after booking.
+
+Greeting:
+Use first name only.
+Example:
+“Hi Ahmed,”
+
+Client email must include:
+
+- booking confirmation
+- selected package
+- package price
+- session number
+- remaining sessions
+- Duo partner name if Duo
+- selected date
+- exact time in 12-hour AM/PM format
+- Dubai timezone
+- session focus
+- training goal
+- session type
+- short professional coach message from Youssef
+- preparation note
+- WhatsApp contact button if available
+- cancellation/reschedule policy summary
+
+Policy wording:
+
+- normal cancellation is allowed only more than 6 hours before the session
+- emergency cancel depends on eligibility/training frequency
+- reschedule is limited and same-day only, based on available slots
+- released slots become available immediately on first-come, first-served basis
+
+Keep tone premium, clear, polite, and professional.
+
+==================================================
+F) SERVER-SIDE SAFETY
+
+All important rules must be enforced server-side, not only UI:
+
+- package selection validation
+- Duo partner required when Duo is selected
+- no fake package IDs from manual request edits
+- price/session count must come from trusted server catalog
+- session number must be calculated from real DB state
+- remaining sessions must be calculated from real DB state
+- package expiry must be respected if already supported
+- avoid duplicate bookings
+- avoid double deduction
+- sanitize all user-provided fields in emails/admin
+- Dubai timezone must be used for booking time
+
+==================================================
+G) PRODUCTION VERIFICATION REQUIRED
+
+Do not mark this task complete until all of this is visible and working on live Vercel production:
+
+Test:
+
+1. client can see approved package catalog
+2. client can select Single Session
+3. client can select 10 Sessions
+4. client can select 20 Sessions
+5. client can select 25 Sessions
+6. client can select Duo Package
+7. Duo requires partner full name
+8. selected package saves to DB
+9. admin sees package details
+10. admin sees Duo partner name
+11. client receives confirmation email
+12. admin receives detailed booking email
+13. emails include package/session number/remaining sessions
+14. session deduction still works
+15. 3-hour booking lead time still works
+16. 6-hour cancellation rule still works
+17. reschedule/emergency cancel remains stable
+
+After implementation:
+
+- typecheck
+- build/check
+- commit
+- push GitHub main
+- verify Vercel deployment
+- verify Neon schema/database compatibility
+- run live production smoke test
+
+Final report must include:
+
+- exact files changed
+- schema changes if any
+- commit hash
+- GitHub push status
+- Vercel deployment status
+- Neon status
+- live production verification result
+- screenshots or clear proof that package selection is visible in production
