@@ -237,15 +237,25 @@ export function HeroSlider() {
     return () => window.clearInterval(id);
   }, [reduced, isMobile, slides.length]);
 
-  // HARD MOBILE PERFORMANCE MODE: only render the FIRST active slide on
-  // mobile. The rotation timer is disabled (above), so non-first slides
-  // would never become active anyway — keeping them in the DOM only
-  // forces the browser to decode N base64 data URLs at mount, holding
-  // many MB of decoded bitmap pixels in GPU memory for no visible
-  // benefit. Single slide on mobile = single decoded image.
-  // Memoized so React reconciliation stays cheap.
+  // HARD MOBILE PERFORMANCE MODE (May-2026, pass 3):
+  // On mobile we skip mounting HeroSlideLayer ENTIRELY. The static
+  // <img src="/hero-initial.webp"> rendered above (80KB, preloaded
+  // with fetchpriority=high in client/index.html, baked from the
+  // current active hero on every Vercel deploy by
+  // scripts/inject-hero.mjs) is the sole hero image on phones.
+  // This eliminates:
+  //   - decoding the slide's full-resolution base64 data URL into a
+  //     bitmap (often several MB in GPU memory),
+  //   - the second image layer's compositor pass during scroll,
+  //   - any per-slide inline filter/transform paint cost.
+  // Trade-off: between an admin uploading a new hero and the next
+  // Vercel deploy rebaking /hero-initial.webp, mobile users see the
+  // previous hero photo. Copy (badge / headline / subhead) is still
+  // admin-controlled because slide metadata still loads via
+  // useHeroImages — only the IMAGE layer is skipped on mobile.
+  // Tablet+ (≥768px) keeps the full cinematic stack unchanged.
   const renderedSlides = useMemo(
-    () => (isMobile ? slides.slice(0, 1) : slides),
+    () => (isMobile ? [] : slides),
     [isMobile, slides],
   );
 

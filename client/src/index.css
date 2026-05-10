@@ -597,7 +597,14 @@ html[dir="rtl"] .hero-eyebrow-rule {
     transparent 100%);
 }
 .hero-horizon::after {
-  /* Soft outer bloom — cyan dominant, amber centre kiss */
+  /* Soft outer bloom — cyan dominant, amber centre kiss.
+     HARD MOBILE PERFORMANCE MODE (May-2026): the `filter: blur(4px)`
+     used to render unconditionally — a 4px blur filter on a positioned
+     element living at the hero/content seam means the compositor has
+     to re-rasterise the bloom every time anything in front of or
+     behind it changes (slide cross-fade, scroll, sticky nav state).
+     Gated to ≥768px below; mobile gets the sharp 1px hairline only,
+     no bloom — visually identical at phone DPI / viewing distance. */
   content: "";
   position: absolute;
   inset: -3px 0;
@@ -607,8 +614,12 @@ html[dir="rtl"] .hero-eyebrow-rule {
     rgba(255, 184, 0, 0.16) 50%,
     rgba(125, 249, 255, 0.10) 65%,
     transparent 100%);
-  filter: blur(4px);
   pointer-events: none;
+}
+@media (min-width: 768px) {
+  .hero-horizon::after {
+    filter: blur(4px);
+  }
 }
 
 /* Reduced-motion: kill transitions on amber utilities that animate.
@@ -1031,6 +1042,22 @@ html[dir="rtl"] .hero-eyebrow-rule {
     rgba(0, 0, 0, 0.15) 0%,
     rgba(0, 0, 0, 0.35) 100%
   );
+}
+@media (max-width: 767px) {
+  /* HARD MOBILE PERFORMANCE MODE (May-2026): per the user's brief
+     "simple gradient overlay only" — replace the radial wash with a
+     basic top→bottom linear darkening. A circle-radial requires the
+     compositor to evaluate distance-from-center per pixel; a linear
+     gradient is a single 1D ramp and rasterises significantly cheaper.
+     Visual contract preserved: copy still sits on a darkened lower
+     third for legibility against the photo. */
+  .hero-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.18) 0%,
+      rgba(0, 0, 0, 0.32) 100%
+    );
+  }
 }
 
 /* (3) Bottom-edge clean blend — v8.7.1 (May-2026).
