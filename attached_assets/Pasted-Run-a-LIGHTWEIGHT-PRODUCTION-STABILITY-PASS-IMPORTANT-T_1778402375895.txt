@@ -1,0 +1,90 @@
+Run a LIGHTWEIGHT PRODUCTION STABILITY PASS.
+
+IMPORTANT:
+The platform is already visually polished enough.
+Priority now is:
+- stability
+- speed
+- low memory usage
+- smoother Replit performance
+- mobile reliability
+
+DO NOT redesign anything.
+DO NOT change branding/style.
+DO NOT touch booking logic/auth/admin behavior.
+
+Main goal:
+Keep the same premium AMOLED/Tron aesthetic while reducing frontend heaviness and unnecessary rendering cost.
+
+Focus areas:
+
+1. Reduce expensive visual effects
+- Reduce excessive backdrop-blur usage
+- Avoid nested backdrop-filters
+- Simplify visually-identical glass effects
+- Reduce repaint-heavy shadows/glows
+- Preserve the same look as much as possible
+
+2. Animation optimization
+- Remove unnecessary continuous animations
+- Reduce GPU-heavy transitions
+- Keep only subtle essential motion
+- Preserve smooth mobile interactions
+- No laggy effects
+
+3. Mobile/browser stability
+- Improve Samsung Internet stability
+- Reduce memory pressure on long sessions
+- Avoid excessive rerenders
+- Prevent UI freezes/jank
+- Keep sticky navigation behavior intact
+
+4. PWA safety
+- Preserve installability
+- Preserve standalone mode
+- Preserve service worker behavior
+- Do NOT introduce aggressive caching
+- No auth/API caching mistakes
+
+5. Rendering optimization
+- Reduce unnecessary component remounts
+- Avoid layout thrashing
+- Preserve no-CLS behavior
+- Keep mobile scrolling smooth
+
+6. Asset/performance cleanup
+- Ensure images/icons are optimized
+- Avoid oversized runtime effects
+- Keep bundles lightweight where possible
+
+7. Replit workspace health
+- Keep replit.md concise from now on
+- Store only:
+  - active architecture decisions
+  - deployment notes
+  - production rules
+  - environment requirements
+- Remove repetitive audit history and oversized summaries
+
+DO NOT:
+- run massive architecture audits
+- run deep security scans unless necessary
+- add new systems/features
+- redesign UI
+- change booking/admin flows
+
+Verification:
+- app runs stable on Replit
+- mobile navigation smooth
+- PWA still installable
+- no visual regressions
+- no auth regressions
+- lower memory/render pressure
+- Samsung Internet + Chrome Android stable
+
+Priority order:
+1. stability
+2. performance
+3. reliability
+4. visual consistency
+5. effects

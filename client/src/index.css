@@ -1633,7 +1633,6 @@ html[dir="rtl"] .hero-eyebrow-rule {
     transparent 70%
   );
   transform: translateX(-120%);
-  animation: tronSweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   pointer-events: none;
   z-index: 0;
 }
@@ -1643,8 +1642,17 @@ html[dir="rtl"] .hero-eyebrow-rule {
   55%  { transform: translateX(120%); }
   100% { transform: translateX(120%); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .tron-sweep::after { animation: none; opacity: 0; }
+/* Stability pass (May 2026): the sweeping highlight is decorative and
+   was running infinitely on every .tron-sweep element regardless of
+   viewport. On lower-end Android (Samsung Internet, mid-range Chromium)
+   continuous transform animations on full-width gradient layers eat
+   battery and trigger paint-storms during scroll. Now gated to desktop
+   + motion-allowed only — same look on desktop, static gradient on
+   mobile (no visual regression, no element disappears). */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .tron-sweep::after {
+    animation: tronSweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
 }
 
 /* Cinematic section padding — gives "feature" sections (hero, CTA,
@@ -2358,12 +2366,19 @@ html[dir="rtl"] .hero-eyebrow-rule {
   /* Hide any non-PDF UI that might leak in (sidebars, toasts, etc.) */
   body > *:not(#root) { display: none !important; }
 }
-.hero-scroll-cue svg {
-  animation: heroScrollBounce 1.9s ease-in-out infinite;
-}
 @keyframes heroScrollBounce {
   0%, 100% { transform: translateY(0); opacity: 0.7; }
   50%      { transform: translateY(5px); opacity: 1; }
+}
+/* Stability pass: scroll-cue bounce is purely decorative and runs
+   forever on the homepage hero. Gate to motion-allowed only — for
+   reduced-motion users the cue stays visible (the @media block below
+   already pinned opacity:1) but no longer paints every frame. Mobile
+   keeps the bounce because it's a single tiny SVG (cheap). */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-scroll-cue svg {
+    animation: heroScrollBounce 1.9s ease-in-out infinite;
+  }
 }
 
 /* Reduced-motion overrides — kill all the new entrance fades and the
