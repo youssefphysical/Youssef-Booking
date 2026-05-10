@@ -601,42 +601,19 @@ html[dir="rtl"] .hero-eyebrow-rule {
    first content section like a Tron grid horizon. Use sparingly:
    max one per page (the hero/content boundary). */
 .hero-horizon {
-  position: relative;
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(125, 249, 255, 0.18) 18%,
-    rgba(125, 249, 255, 0.34) 35%,
-    rgba(255, 184, 0, 0.34) 50%,
-    rgba(125, 249, 255, 0.34) 65%,
-    rgba(125, 249, 255, 0.18) 82%,
-    transparent 100%);
-}
-.hero-horizon::after {
-  /* Soft outer bloom — cyan dominant, amber centre kiss.
-     HARD MOBILE PERFORMANCE MODE (May-2026): the `filter: blur(4px)`
-     used to render unconditionally — a 4px blur filter on a positioned
-     element living at the hero/content seam means the compositor has
-     to re-rasterise the bloom every time anything in front of or
-     behind it changes (slide cross-fade, scroll, sticky nav state).
-     Gated to ≥768px below; mobile gets the sharp 1px hairline only,
-     no bloom — visually identical at phone DPI / viewing distance. */
-  content: "";
-  position: absolute;
-  inset: -3px 0;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(125, 249, 255, 0.10) 35%,
-    rgba(255, 184, 0, 0.16) 50%,
-    rgba(125, 249, 255, 0.10) 65%,
-    transparent 100%);
-  pointer-events: none;
-}
-@media (min-width: 768px) {
-  .hero-horizon::after {
-    filter: blur(4px);
-  }
+  /* v9.2 (May-2026, "AMOLED black fade refinement"): the cyan→amber
+     hairline + bloom that previously marked the hero/content seam
+     was the visible "tinted band immediately under the hero" the
+     user explicitly rejected ("no green/blue tinted section
+     immediately under the hero", "no hard border"). The horizon
+     line is now FULLY HIDDEN so the hero dissolves into pure
+     AMOLED black with nothing breaking the fade. The element is
+     kept in the DOM (HeroSlider still renders it) and the class
+     is kept defined as a no-op so any future re-enable is a
+     one-line revert. Tron cyan/amber accents continue to live in
+     the rest of the site (CTAs, badges, dividers, dashboards) —
+     the only place we kill them is the hero seam. */
+  display: none;
 }
 
 /* Reduced-motion: kill transitions on amber utilities that animate.
@@ -1112,33 +1089,30 @@ html[dir="rtl"] .hero-eyebrow-rule {
   left: 0;
   right: 0;
   bottom: 0;
-  /* Height stays the same as v8.7.1 (taller, viewport-responsive)
-     so the new 3-stop ramp has comfortable room to dissolve from
-     transparent into the section color over ~120-180px. */
-  height: clamp(120px, 14vh, 180px);
+  /* v9.2 (May-2026, "AMOLED black fade refinement"): height nearly
+     doubled (clamp 200-320px from 120-180) so the ramp has room to
+     dissolve cinematically — like a premium influencer/profile app
+     hero — instead of the previous shorter blend that left the
+     transition feeling abrupt above the section seam. */
+  height: clamp(200px, 26vh, 320px);
   pointer-events: none;
   z-index: 3;
-  /* v8.7.2 (May-2026): 3-stop ramp per "fix visible white/gray
-     line" spec. Start = transparent BLACK (rgba(0,0,0,0)), middle
-     = section color at 0.6 alpha at 50%, terminal = SOLID section
-     color at 100%. Using rgb(12,24,38) — the next section's exact
-     composited top edge color (HSL 222 45% 4% bg tinted by HSL
-     183° cyan primary at 10% alpha — pure black-glass tint). */
-  /* v8.8 (May-2026): blend terminal updated from rgb(12,24,38) to
-     #03070d to match the new .homepage-shell linear-gradient's
-     darkest stop. The hero now sits on top of the page-level shell
-     instead of the section-specific gradient, so the blend must
-     terminate in the SHELL's color, not the old section's tinted
-     color. #03070d is the shell's 0%/100% stop; the shell at hero-
-     end y is between #03070d and #061222 (~#040B14), so #03070d
-     leaves an imperceptible 1-13 RGB-unit brightening below the
-     seam — much subtler than a band, and feels like the page
-     opening up downward. */
+  /* v9.2 (May-2026): per the "true AMOLED black under hero" brief —
+     ramp terminates in PURE BLACK #000000 (not the prior tinted
+     #03070d navy near-black). 4-stop S-curve so the hero photo
+     bleeds into transparent for the first ~15%, picks up alpha
+     across the middle, and locks to fully opaque pure black at the
+     final stop. The next section sits on the .homepage-shell whose
+     top stop is now also pure #000 (see .homepage-shell rule
+     below) so there is zero hue or luminance delta at the seam —
+     the hero feels like it naturally disappears into pure black,
+     and the next content begins on the same true-black surface. */
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0)       0%,
-    rgba(3, 7, 13, 0.6)    50%,
-    #03070d                100%
+    rgba(0, 0, 0, 0.45)    45%,
+    rgba(0, 0, 0, 0.85)    78%,
+    #000000                100%
   );
   /* v8.7.3 (May-2026): translateZ(0) REMOVED. The GPU promotion was
      creating a sub-pixel offset at the bottom edge — the blend's GPU
@@ -1656,21 +1630,34 @@ html[dir="rtl"] .hero-eyebrow-rule {
      viewport-wide cyan halo anchored at the very top-right corner
      (100%/0%) so the gradient terminates AT the edge, not 20%
      past it — physically impossible to clip. */
+  /* v9.2 (May-2026, "AMOLED black fade refinement"): cyan radial
+     anchors moved DOWN out of the hero-seam zone (top-right was
+     previously at 8% which bled subtle cyan into the band right
+     under the hero — exactly the "blue tinted section" the user
+     rejected). Both cyan accents now anchor at 35-55% vertically
+     so the area under the hero (top ~25% of the page) is pure
+     AMOLED black with zero color cast. The amber bottom accent
+     stays at 100% (deep page) for cinematic warmth far below the
+     fold. Base linear-gradient first stop locked to PURE BLACK
+     #000000 so the hero-bottom-blend's terminal #000 meets the
+     shell's #000 with zero seam — the hero dissolves into and
+     the next section starts on the SAME true black. */
   background:
-    radial-gradient(ellipse 60% 40% at 80% 8%, rgba(125, 249, 255, 0.10), transparent 60%),
-    radial-gradient(ellipse 45% 35% at 12% 55%, rgba(125, 249, 255, 0.05), transparent 65%),
-    radial-gradient(ellipse 70% 30% at 50% 100%, rgba(255, 184, 0, 0.045), transparent 70%),
-    linear-gradient(180deg, #050608 0%, #07090D 40%, #06080B 75%, #050608 100%);
+    radial-gradient(ellipse 55% 35% at 85% 45%, rgba(125, 249, 255, 0.08), transparent 65%),
+    radial-gradient(ellipse 45% 32% at 12% 60%, rgba(125, 249, 255, 0.05), transparent 65%),
+    radial-gradient(ellipse 70% 30% at 50% 100%, rgba(255, 184, 0, 0.04), transparent 70%),
+    linear-gradient(180deg, #000000 0%, #030405 25%, #07090D 55%, #06080B 80%, #050608 100%);
 }
 @media (max-width: 767px) {
   .homepage-shell {
-    /* Mobile-safe shell: single corner-anchored cyan halo + base
-       linear. Eliminates the right-edge cyan stripe and reduces the
-       per-scroll-frame paint cost (fewer gradient layers to composite
-       behind every section). */
+    /* v9.2 (May-2026): mobile shell mirrors desktop — single cyan
+       halo pushed DOWN to 50% vertical so the immediate-below-hero
+       area stays pure AMOLED black, plus the same #000 first stop
+       on the base linear so the seam is invisible. Single radial +
+       linear keeps per-frame paint cost minimal. */
     background:
-      radial-gradient(ellipse 80% 35% at 100% 0%, rgba(125, 249, 255, 0.08), transparent 70%),
-      linear-gradient(180deg, #050608 0%, #07090D 40%, #06080B 75%, #050608 100%);
+      radial-gradient(ellipse 80% 35% at 100% 50%, rgba(125, 249, 255, 0.07), transparent 70%),
+      linear-gradient(180deg, #000000 0%, #030405 25%, #07090D 55%, #06080B 80%, #050608 100%);
   }
 }
 

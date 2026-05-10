@@ -1,0 +1,83 @@
+HOMEPAGE HERO SHADOW / BLACK FADE REFINEMENT
+
+I want a focused visual fix only.
+
+Current issue:
+The area under the hero image feels separated and tinted. I want the hero image to fade smoothly into a true deep black section, similar to a premium influencer/profile app hero.
+
+Goal:
+The hero image should feel like it naturally disappears into pure AMOLED black.
+
+Important direction:
+
+- Keep the Tron Legacy premium identity.
+- Keep subtle cyan/amber atmosphere.
+- But directly under the hero image, the fade must become true black / AMOLED black.
+- The transition from image to black must be very smooth and cinematic.
+- No hard border.
+- No visible rectangular block.
+- No green/blue tinted section immediately under the hero.
+- No sudden color jump.
+
+Required hero treatment:
+
+1. Add a strong but smooth bottom gradient overlay on the hero image:
+   - transparent / image visible at top
+   - darker through the lower half
+   - true black at the bottom
+2. The content below the hero should start on AMOLED black.
+3. The hero should visually blend into the next section like one continuous background.
+4. Keep text and CTA readability strong.
+5. Preserve mobile smoothness and scroll performance.
+
+Reference feeling:
+Like a premium profile/influencer app:
+
+- image on top
+- very smooth black shadow fade at the bottom
+- next content starts from pure black
+- cinematic, clean, luxury
+
+Tron Legacy rule:
+
+- Keep Tron blur/glow in the rest of the website.
+- But the immediate area under the hero must be black-black, not cyan/green tinted.
+- Use cyan/amber only as subtle accents, not as background tint under the hero.
+
+Do NOT:
+
+- redesign the homepage
+- change layout
+- change copy
+- add new animation
+- add heavy blur effects
+- touch booking/auth/admin logic
+- create scroll performance issues
+
+Implementation notes:
+
+- Prefer CSS gradient overlay using pseudo-element or existing hero overlay.
+- Use GPU-safe static gradients only.
+- Avoid backdrop-filter here if it affects performance.
+- Ensure mobile Chrome, Samsung Internet, and iOS Safari look smooth.
+- Ensure no horizontal overflow.
+- Ensure the next section does not show a colored rectangle behind the fade.
+
+Verification:
+
+- homepage hero on mobile
+- hero bottom fade into black
+- text still readable
+- buttons still clear
+- no visual jump when scrolling
+- no scroll lag
+- rest of site keeps Tron Legacy mood
+
+After fix:
+
+- typecheck
+- build
+- commit
+- push GitHub
+- verify Vercel production
+- confirm live mobile homepage visually matches the requested black fade.
