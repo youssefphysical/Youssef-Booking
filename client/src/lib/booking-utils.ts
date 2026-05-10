@@ -11,7 +11,7 @@ export const ALL_TIME_SLOTS = [
 // in server/routes.ts — keep the two in sync. NOTE: this is the booking
 // lead-time; the cancellation cutoff is a separate setting (default 6h) and
 // lives in `settings.cancellation_cutoff_hours`.
-export const MIN_ADVANCE_HOURS = 6;
+export const MIN_ADVANCE_HOURS = 3;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 
 export function formatStatus(status: string): string {
