@@ -210,13 +210,23 @@ export function Navigation() {
           • Logical properties stay RTL-safe (Arabic flips ps↔pe
             automatically — the hamburger lands on the visual end on
             both LTR and RTL). */}
-      <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-16 flex items-center justify-between gap-2 sm:gap-3">
+      {/* v9.5 (May-2026, "navbar alignment + edge-safety"):
+          • ps/pe widened to max(1.25rem,…) base / max(1.5rem,…) sm+
+            so right-side controls always have a comfortable visual
+            breathing margin from the screen edge (no edge-touch on
+            Samsung / Android narrow widths).
+          • Brand wrapper drops `shrink-0` and adds `min-w-0`+`truncate`
+            so the brand can yield space to the right cluster on
+            narrow widths instead of forcing horizontal overflow.
+          • `overflow-x-clip` on the inner row is a defence-in-depth
+            against any future child overflowing past the safe pad. */}
+      <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-16 flex items-center justify-between gap-2 sm:gap-3 overflow-x-clip">
         <Link
           href="/"
-          className="font-display font-bold text-base sm:text-lg shrink-0 min-w-0"
+          className="font-display font-bold text-base sm:text-lg min-w-0"
           data-testid="link-brand"
         >
-          <span className="text-gradient-blue whitespace-nowrap">
+          <span className="text-gradient-blue truncate block">
             <span className="hidden sm:inline">{t("nav.brand")}</span>
             <span className="sm:hidden">{t("brand.trainerName", "Youssef Ahmed")}</span>
           </span>
@@ -244,7 +254,7 @@ export function Navigation() {
             never be obscured. This is belt-and-braces: the header is
             already z-[100] and the hero overlay layers all sit at the
             default z=0 inside their own .hero-isolate stacking context. */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-[110]">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 relative z-[110]">
           {isConfirmedUser && user?.role === "client" && <NotificationsBell />}
           <LanguageSelector />
           {/* DESKTOP AUTH AREA — STRICT mutually-exclusive conditional.
@@ -311,21 +321,27 @@ export function Navigation() {
               Sign Out so they can log out from the header without
               opening the drawer. Mutually exclusive with the
               authenticated branch via `isConfirmedUser`. */}
+          {/* v9.5: mobile Sign Out → ICON-ONLY square (36x36).
+              Frees ~60px of horizontal real estate so bell + lang +
+              sign-out + hamburger never collide on Samsung 360px /
+              iPhone SE 375px widths. Action label preserved as
+              aria-label + title for screen readers and tooltips. */}
           {isConfirmedUser ? (
             <button
               type="button"
               onClick={requestLogout}
               data-testid="button-mobile-signout-pill"
+              aria-label={t("nav.signOut")}
+              title={t("nav.signOut")}
               style={{
                 position: "relative",
                 zIndex: 9999,
                 opacity: 1,
                 pointerEvents: "auto",
               }}
-              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl border border-white/15 bg-white/5 text-foreground font-semibold hover:bg-white/10 hover:border-white/25 whitespace-nowrap shrink-0 btn-press"
+              className="inline-flex md:hidden items-center justify-center w-9 h-9 rounded-xl border border-white/15 bg-white/5 text-foreground hover:bg-white/10 hover:border-white/25 shrink-0 btn-press"
             >
-              <LogOut size={14} className="shrink-0" />
-              <span className="whitespace-nowrap">{t("nav.signOut")}</span>
+              <LogOut size={16} className="shrink-0" />
             </button>
           ) : (
             <Link
@@ -337,14 +353,17 @@ export function Navigation() {
                 opacity: 1,
                 pointerEvents: "auto",
               }}
-              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3.5 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
+              className="inline-flex md:hidden items-center justify-center gap-1.5 text-sm px-3 h-9 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap shrink-0 btn-press shadow-[0_0_0_1px_hsl(195_100%_60%/0.35),0_6px_22px_-6px_hsl(195_100%_60%/0.55)] hover:shadow-[0_0_0_1px_hsl(195_100%_60%/0.55),0_8px_28px_-6px_hsl(195_100%_60%/0.75)] transition-shadow"
             >
               <LogIn size={14} className="shrink-0" />
               <span className="whitespace-nowrap">{t("nav.signIn")}</span>
             </Link>
           )}
+          {/* v9.5: hamburger gets explicit 36×36 square so it visually
+              balances the 36px Sign Out pill / lang chip and remains a
+              comfortable WCAG touch target without padding drift. */}
           <button
-            className="md:hidden p-2 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-white/10 hover:bg-white/5 hover:border-white/20 shrink-0 btn-soft"
             onClick={() => setOpen(!open)}
             aria-label={t("nav.toggleMenu")}
             data-testid="button-mobile-menu"
