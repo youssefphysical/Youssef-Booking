@@ -167,25 +167,42 @@
   /* HARD MOBILE PERFORMANCE MODE (May-2026):
      Global horizontal-overflow guard. Without this, any absolute /
      decorative element that accidentally extends past the right edge
-     of the viewport (radial gradient anchored near 100%, animated
-     pseudo-element, off-screen carousel slide, etc.) creates a
-     horizontal scrollbar AND triggers compositor jank on every
-     vertical scroll frame on Samsung Internet / Chrome Android.
-     `max-width: 100vw` belt-and-braces so even iOS-Safari's quirky
-     viewport accounting can't expose a sliver of overflow at the
-     right edge. The admin-shell parent already had this guard for
-     authed pages — this extends the same protection to the public
-     homepage / marketing surfaces. Inner horizontally-scrolling
-     containers (admin tabs, code blocks, wide tables) already
-     declare their own `overflow-x: auto` so this global rule does
-     not regress them. */
-  html, body {
-    overflow-x: hidden;
-    max-width: 100vw;
+     of the viewport creates a horizontal scrollbar AND triggers
+     compositor jank on every vertical scroll frame.
+
+     CRITICAL SCROLL FIX (May-2026 hotfix): the previous version applied
+     `overflow-x: hidden` to BOTH <html> and <body>. On iOS Safari and
+     Samsung Internet, setting `overflow` on the <html> element turns
+     <html> into a scroll container that — combined with `min-height:
+     100dvh` and `overscroll-behavior-y: none` from the standalone
+     branches below — silently freezes vertical page scroll. The fix
+     is two-fold:
+       1. Scope the horizontal-overflow guard to <body> ONLY. The
+          viewport stays the sole vertical scroll surface, exactly
+          like a default page.
+       2. Use `overflow-x: clip` instead of `hidden`. `clip` prevents
+          horizontal overflow without establishing a scroll container,
+          so it cannot interfere with vertical scrolling under any
+          combination of standalone / safe-area / 100dvh rules.
+     `max-width: 100%` (was 100vw) avoids the scrollbar-width quirk
+     where 100vw includes the vertical scrollbar on desktop and pushes
+     1–2px past the right edge. Inner horizontally-scrolling
+     containers (admin tabs, code blocks, wide tables) already declare
+     their own `overflow-x: auto` so this global rule does not
+     regress them. */
+  body {
+    overflow-x: clip;
+    max-width: 100%;
   }
 
+  /* PWA standalone polish — apply to <body> ONLY, never <html>.
+     Putting `min-height: 100dvh` + `overscroll-behavior-y: none` on
+     <html> is what previously froze vertical scroll on installed PWAs
+     and iOS Add-to-Home-Screen. On <body> the same rules give the
+     identical native-feel (no pull-to-refresh, full-bleed AMOLED bg,
+     no URL-bar exposure stripe) without breaking scroll. */
   @media (display-mode: standalone) {
-    html, body {
+    body {
       overscroll-behavior-y: none;
       background: #050505;
       min-height: 100dvh;
@@ -194,7 +211,7 @@
   /* iOS Safari "Add to Home Screen" sets navigator.standalone but on
      older builds does NOT match (display-mode: standalone). main.tsx
      adds .is-standalone to <html> as a belt-and-braces fallback. */
-  html.is-standalone, html.is-standalone body {
+  html.is-standalone body {
     overscroll-behavior-y: none;
     background: #050505;
     min-height: 100dvh;

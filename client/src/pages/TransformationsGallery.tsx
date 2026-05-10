@@ -270,16 +270,23 @@ function FullscreenModal({
   const { t } = useTranslation();
   const name = row.displayName?.trim() || t("transformations.anonymous");
 
-  // Lock body scroll + Esc to close
+  // Lock body scroll + Esc to close.
+  // SCROLL-LOCK LEAK FIX (May-2026): previously captured `prev` from
+  // document.body.style.overflow at mount and restored to it on
+  // unmount. If two modals opened in sequence (or any other code set
+  // overflow="hidden" first), the second modal would capture "hidden"
+  // as `prev` and on close restore to "hidden" — pinning the entire
+  // site's scroll forever until a hard reload. We always restore to
+  // an empty string so the inline override is fully cleared and the
+  // CSS cascade wins.
   useEffect(() => {
-    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
