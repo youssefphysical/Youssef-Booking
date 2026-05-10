@@ -73,7 +73,15 @@ async function run(): Promise<void> {
       -- Nov 2026 Linked Partner Account: optional FK to users for
       -- admin-managed account linking on duo bookings. Nullable; the
       -- primary userId stays the package owner regardless.
-      ADD COLUMN IF NOT EXISTS linked_partner_user_id integer REFERENCES users(id);
+      ADD COLUMN IF NOT EXISTS linked_partner_user_id integer REFERENCES users(id),
+      -- Task #3 (Nov 2026): partner-scoped reminder dedupe so the linked
+      -- partner gets their own 24h / 1h reminder email exactly once,
+      -- independent of the primary client's reminder.
+      ADD COLUMN IF NOT EXISTS linked_partner_reminder_24h_sent_at timestamp,
+      ADD COLUMN IF NOT EXISTS linked_partner_reminder_1h_sent_at  timestamp;
+
+    CREATE INDEX IF NOT EXISTS bookings_linked_partner_user_id_idx
+      ON bookings(linked_partner_user_id);
 
     -- Partial UNIQUE INDEX: at most one ACTIVE booking per (date, slot).
     -- Cancelled variants are excluded so a cancelled slot is freed for

@@ -23,7 +23,15 @@ import {
   Clock,
   CheckCircle2,
   TrendingUp,
+  UserPlus,
+  Link2,
+  Link2Off,
+  Check,
 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { UserResponse } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -749,6 +757,29 @@ function BookingRow({
                   </span>
                 )}
               </div>
+              {/* Task #3: Duo partner status. Shows the linked client's
+                  name when bound, or the unlinked snapshot name as a hint
+                  to the admin to use the link button below. */}
+              {b.sessionType === "duo" && ((b as any).partnerFullName || (b as any).linkedPartnerUserId) && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {(b as any).linkedPartnerUserId && (b as any).linkedPartnerUser ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-cyan-400/30 bg-cyan-400/10 text-cyan-300"
+                      data-testid={`partner-linked-${b.id}`}
+                      title={(b as any).linkedPartnerUser?.email || ""}
+                    >
+                      <Link2 size={10} /> Partner: {(b as any).linkedPartnerUser?.fullName}
+                    </span>
+                  ) : (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
+                      data-testid={`partner-unlinked-${b.id}`}
+                    >
+                      <UserPlus size={10} /> Partner: {b.partnerFullName} · unlinked
+                    </span>
+                  )}
+                </div>
+              )}
               {b.notes && (
                 <p className="text-[11px] text-muted-foreground/70 mt-1.5 line-clamp-2">
                   {b.notes}
@@ -805,6 +836,9 @@ function BookingRow({
             </Select>
             <WorkoutLogButton booking={b} />
             <RescheduleButton booking={b} />
+            {b.sessionType === "duo" && b.partnerFullName && (
+              <LinkPartnerButton booking={b} />
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -1192,6 +1226,189 @@ function CreateBookingButton() {
             </DialogFooter>
           </form>
         </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================
+// LINK PARTNER BUTTON — Task #3
+// Lets the admin bind a Duo booking's partner snapshot
+// (partnerFullName / phone / email) to a real registered client
+// account. Once bound, that account sees the duo session on
+// their dashboard and gets their own confirmation/reminder
+// emails. Unlinking removes the per-booking pointer (the
+// package-level partnerUserId is owned by the package editor
+// and is intentionally not cleared here).
+// ============================================================
+function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearchLocal] = useState("");
+  const { data: clients = [] } = useClients({ enabled: open });
+  const { toast } = useToast();
+  const isLinked = !!(booking as any).linkedPartnerUserId;
+
+  const linkMutation = useMutation({
+    mutationFn: async (partnerUserId: number) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/admin/bookings/${booking.id}/link-partner`,
+        { partnerUserId },
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({ title: "Partner linked", description: "Confirmation sent to the partner." });
+      setOpen(false);
+      setSearchLocal("");
+    },
+    onError: (err: Error) =>
+      toast({ title: "Link failed", description: err.message, variant: "destructive" }),
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/admin/bookings/${booking.id}/unlink-partner`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({ title: "Partner unlinked" });
+      setOpen(false);
+    },
+    onError: (err: Error) =>
+      toast({ title: "Unlink failed", description: err.message, variant: "destructive" }),
+  });
+
+  const filtered = useMemo(() => {
+    const list = (clients as UserResponse[]).filter(
+      (c) => c.role === "client" && c.id !== booking.userId,
+    );
+    const q = search.trim().toLowerCase();
+    if (!q) return list.slice(0, 30);
+    return list
+      .filter(
+        (c) =>
+          (c.fullName || "").toLowerCase().includes(q) ||
+          (c.email || "").toLowerCase().includes(q) ||
+          (c.phone || "").toLowerCase().includes(q),
+      )
+      .slice(0, 30);
+  }, [clients, search, booking.userId]);
+
+  const snapshotName = (booking as any).partnerFullName as string | undefined;
+  const snapshotEmail = (booking as any).partnerEmail as string | undefined;
+  const linkedUser = (booking as any).linkedPartnerUser as UserResponse | undefined;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-8 w-8",
+            isLinked
+              ? "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-400/10"
+              : "text-amber-300 hover:text-amber-200 hover:bg-amber-500/10",
+          )}
+          title={isLinked ? "Manage partner link" : "Link partner to account"}
+          data-testid={`button-link-partner-${booking.id}`}
+        >
+          {isLinked ? <Link2 size={14} /> : <UserPlus size={14} />}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-card border-white/10 max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {isLinked ? "Manage partner link" : "Link partner to account"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs">
+          <div className="text-muted-foreground/80 uppercase tracking-wider text-[10px] mb-1">
+            Partner on this booking
+          </div>
+          <div className="font-semibold text-sm">{snapshotName || "—"}</div>
+          {snapshotEmail && <div className="text-muted-foreground">{snapshotEmail}</div>}
+        </div>
+
+        {isLinked ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-400/10 p-3">
+              <Check size={16} className="text-cyan-300 shrink-0" />
+              <div className="text-sm">
+                <div className="font-semibold text-cyan-200">
+                  Linked to {linkedUser?.fullName || `Client #${(booking as any).linkedPartnerUserId}`}
+                </div>
+                {linkedUser?.email && (
+                  <div className="text-xs text-muted-foreground">{linkedUser.email}</div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
+              <Button
+                variant="destructive"
+                onClick={() => unlinkMutation.mutate()}
+                disabled={unlinkMutation.isPending}
+                data-testid={`button-unlink-partner-confirm-${booking.id}`}
+              >
+                {unlinkMutation.isPending && <Loader2 size={14} className="mr-2 animate-spin" />}
+                <Link2Off size={14} className="mr-2" />
+                Unlink partner
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <Input
+                value={search}
+                onChange={(e) => setSearchLocal(e.target.value)}
+                placeholder="Search by name, email, or phone…"
+                className="bg-white/5 border-white/10"
+                autoFocus
+                data-testid={`input-partner-search-${booking.id}`}
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  No matching clients
+                </div>
+              ) : (
+                filtered.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => linkMutation.mutate(c.id)}
+                    disabled={linkMutation.isPending}
+                    className="w-full text-left p-3 hover:bg-white/5 disabled:opacity-50 flex items-center justify-between gap-3"
+                    data-testid={`button-pick-partner-${booking.id}-${c.id}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm truncate">
+                        {c.fullName || c.username}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {c.email || c.phone || "—"}
+                      </div>
+                    </div>
+                    {linkMutation.isPending && linkMutation.variables === c.id ? (
+                      <Loader2 size={14} className="animate-spin text-primary shrink-0" />
+                    ) : (
+                      <UserPlus size={14} className="text-primary shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

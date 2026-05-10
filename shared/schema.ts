@@ -298,6 +298,11 @@ export const bookings = pgTable("bookings", {
   //     by the same auth check that already exists.
   // Nullable on purpose — most duo bookings stay with just the snapshot.
   linkedPartnerUserId: integer("linked_partner_user_id").references(() => users.id),
+  // Task #3 (Nov 2026): partner-scoped reminder dedupe stamps so the
+  // linked partner gets their own 24h / 1h reminder email exactly once,
+  // independent of whether the primary client's reminder has fired.
+  linkedPartnerReminder24hSentAt: timestamp("linked_partner_reminder_24h_sent_at"),
+  linkedPartnerReminder1hSentAt: timestamp("linked_partner_reminder_1h_sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -465,7 +470,8 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const bookingsRelations = relations(bookings, ({ one }) => ({
-  user: one(users, { fields: [bookings.userId], references: [users.id] }),
+  user: one(users, { fields: [bookings.userId], references: [users.id], relationName: "bookingOwner" }),
+  linkedPartnerUser: one(users, { fields: [bookings.linkedPartnerUserId], references: [users.id], relationName: "bookingLinkedPartner" }),
   package: one(packages, { fields: [bookings.packageId], references: [packages.id] }),
 }));
 
@@ -1293,7 +1299,13 @@ export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type UpdateBooking = z.infer<typeof updateBookingSchema>;
-export type BookingWithUser = Booking & { user: UserResponse };
+export type BookingWithUser = Booking & {
+  user: UserResponse;
+  // Task #3: optional linked Duo partner (admin-bound). Server returns a
+  // minimal {id, fullName} for non-admins to avoid PII leak across
+  // clients; admins get the full sanitized user.
+  linkedPartnerUser?: UserResponse | { id: number; fullName: string | null } | null;
+};
 
 export type Settings = typeof settings.$inferSelect;
 export type UpdateSettings = z.infer<typeof updateSettingsSchema>;

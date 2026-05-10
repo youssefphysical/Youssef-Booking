@@ -429,7 +429,11 @@ function BookingsTab({ userId }: { userId: number }) {
               booking={b}
               cutoff={cutoff}
               allBookings={bookings as Booking[]}
-              canCancel
+              // Task #3: read-only when this account is the linked Duo
+              // partner rather than the booking owner. The server enforces
+              // this with a 403, but gating in the UI keeps the partner
+              // from ever seeing cancel/adjust controls.
+              canCancel={b.userId === userId}
             />
           ))
         )}
@@ -559,6 +563,19 @@ function BookingCard({
                 <Clock size={10} /> {t("dashboard.chipAdjusted")}
               </span>
             )}
+            {/* Task #3: this account is the linked Duo partner, not the
+                booking owner. Read-only — the cancel/adjust controls are
+                already gated by the server's owner check (PATCH/cancel
+                return 403 unless me.id === booking.userId). */}
+            {user && (booking as any).linkedPartnerUserId === user.id &&
+              booking.userId !== user.id && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-cyan-400/30 bg-cyan-400/10 text-cyan-300"
+                  data-testid={`chip-as-partner-${booking.id}`}
+                >
+                  <Users size={10} /> {t("dashboard.chipAsPartner") || "As partner"}
+                </span>
+              )}
           </div>
         </div>
       </div>

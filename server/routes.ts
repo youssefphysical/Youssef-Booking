@@ -1153,6 +1153,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
     }
+    // Privacy: usersById is already populated above with admin-vs-client
+    // shape per uid (admin → full sanitized user, non-admin → {id, fullName}
+    // minimal identity). The map is consumed directly below.
     res.json(
       list.map((b) =>
         sanitizeBookingForUser(me, {
@@ -1693,9 +1696,77 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
     }
+    const wasAlreadyLinked = booking.linkedPartnerUserId === parsed.data.partnerUserId;
     const updated = await storage.updateBooking(id, {
       linkedPartnerUserId: parsed.data.partnerUserId,
     });
+
+    // Task #3: best-effort partner-side confirmation email + in-app
+    // notification on FIRST link only. Reuses
+    // buildClientBookingConfirmationEmail so the partner's experience
+    // mirrors the primary client. notifyUserOnce dedupes per booking
+    // so re-linking the same partner is a no-op on the in-app channel.
+    if (!wasAlreadyLinked) {
+      void (async () => {
+        try {
+          const partnerLang = (partnerUser as any).preferredLanguage || "en";
+          const partnerName =
+            (partnerUser.fullName?.trim() || partnerUser.username || `Client #${partnerUser.id}`).trim();
+          const focusKey = booking.sessionFocus || "";
+          const goalKey = booking.trainingGoal || "";
+          const sessionFocusLabel = SESSION_FOCUS_LABELS_EN[focusKey] || focusKey || "—";
+          const trainingGoalLabel = BOOKING_TRAINING_GOAL_LABELS_EN[goalKey] || goalKey || "—";
+          const sessionTypeLabel =
+            SESSION_TYPE_LABELS_EN[booking.sessionType] || booking.sessionType;
+          const time12 = formatTime12Server(booking.timeSlot);
+          const owner = await storage.getUser(booking.userId).catch(() => undefined);
+          const ownerName =
+            owner?.fullName?.trim() || owner?.username || `Client #${booking.userId}`;
+
+          const details: BookingDetails = {
+            clientName: partnerName,
+            date: booking.date,
+            time12,
+            sessionFocusLabel,
+            trainingGoalLabel,
+            sessionTypeLabel,
+            packageName: null,
+            remainingSessions: null,
+            packageExpiryDate: null,
+            currentSessionNumber: null,
+            totalSessions: null,
+            // Surface the *primary* client's name as the partner line
+            // on the linked partner's email — mirrors what the primary sees.
+            partnerFullName: ownerName,
+            partnerPhone: null,
+            partnerEmail: null,
+          };
+
+          if (partnerUser.email) {
+            const built = buildClientBookingConfirmationEmail({ data: details, lang: partnerLang });
+            await sendEmail({
+              to: partnerUser.email,
+              subject: built.subject,
+              text: built.text,
+              html: built.html,
+              replyTo: trainerEmail(),
+            });
+          }
+
+          void notifyUserOnce(
+            partnerUser.id,
+            "system",
+            `partner-linked-${booking.id}`,
+            "You're on a Duo session",
+            `${booking.date} at ${time12} with ${ownerName} — ${sessionFocusLabel}`,
+            { link: "/dashboard", meta: { bookingId: booking.id, partnerOf: booking.userId } },
+          );
+        } catch (e) {
+          console.warn("[link-partner] partner notify failed:", e);
+        }
+      })();
+    }
+
     res.json(sanitizeBookingForUser(req.user as User, updated));
   });
 
@@ -1708,7 +1779,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         .status(400)
         .json({ message: "No linked partner on this booking." });
     }
-    const updated = await storage.updateBooking(id, { linkedPartnerUserId: null });
+    // Reset partner-scoped reminder dedupe so a future re-link can
+    // re-send the partner's 24h / 1h emails.
+    const updated = await storage.updateBooking(id, {
+      linkedPartnerUserId: null,
+      linkedPartnerReminder24hSentAt: null,
+      linkedPartnerReminder1hSentAt: null,
+    } as any);
     res.json(sanitizeBookingForUser(req.user as User, updated));
   });
 
@@ -2136,6 +2213,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     await storage.deleteBooking(id);
     res.sendStatus(204);
   });
+
+  // (Task #3 partner-side confirmation email + in-app notify is now
+  // wired inline into HEAD's /api/admin/bookings/:id/link-partner above
+  // so we only have ONE link route; the duplicate block was removed.)
 
   // ============== SETTINGS ==============
   app.get("/api/settings", async (_req, res) => {
@@ -3674,48 +3755,61 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const want1 = minsUntil >= 30 && minsUntil <= 90;
         const bAny = b as any;
 
-        const dispatch = async (kind: "24h" | "1h") => {
+        // Generalized dispatch: fans out to either the primary booking
+        // owner or the linked Duo partner. Each recipient has its own
+        // dedupe column (reminder_*_sent_at vs partner_reminder_*_sent_at)
+        // so the partner gets exactly one 24h / 1h email, independent of
+        // whether the primary's reminder has already fired.
+        const dispatch = async (
+          kind: "24h" | "1h",
+          recipient: "owner" | "partner",
+        ) => {
           try {
-            // Atomic check-and-claim: stamp the column NOW with a UPDATE ...
-            // WHERE col IS NULL RETURNING id. If two cron invocations race,
-            // exactly one wins the row. The loser sees rowCount=0 and skips.
-            const col = kind === "24h" ? "reminder_24h_sent_at" : "reminder_1h_sent_at";
+            const userId = recipient === "owner" ? b.userId : (b as any).linkedPartnerUserId;
+            if (!userId) return;
+            const col =
+              recipient === "owner"
+                ? kind === "24h"
+                  ? "reminder_24h_sent_at"
+                  : "reminder_1h_sent_at"
+                : kind === "24h"
+                  ? "linked_partner_reminder_24h_sent_at"
+                  : "linked_partner_reminder_1h_sent_at";
             const claim = await pool.query(
               `UPDATE bookings SET ${col} = now() WHERE id = $1 AND ${col} IS NULL RETURNING id`,
               [b.id],
             );
             if (claim.rowCount === 0) return; // already claimed by another worker
 
-            const owner = await storage.getUser(b.userId).catch(() => undefined);
-            if (!owner) return;
-            const ownerLang = (owner as any).preferredLanguage || "en";
+            const recipientUser = await storage.getUser(userId).catch(() => undefined);
+            if (!recipientUser) return;
+            const recipientLang = (recipientUser as any).preferredLanguage || "en";
             const built = buildSessionReminderEmail({
               kind,
-              lang: ownerLang,
+              lang: recipientLang,
               data: {
-                clientName: owner.fullName || owner.username || "Client",
+                clientName: recipientUser.fullName || recipientUser.username || "Client",
                 date: b.date,
                 time12: formatTime12Server(b.timeSlot),
                 sessionFocusLabel: b.sessionFocus || null,
                 trainingGoalLabel: b.trainingGoal || null,
               },
             });
-            // P5b: Mirror the reminder in-app FIRST — independent of the
-            // email channel. Users without an email address still get
-            // the in-app reminder, and the partial UNIQUE INDEX makes
-            // the insert safe under concurrent cron retries.
+            // Mirror the reminder in-app FIRST — independent of the email
+            // channel. Recipient-scoped dedupe key so primary + partner
+            // each get their own in-app notification.
             void notifyUserOnce(
-              b.userId,
+              userId,
               "session_reminder",
-              `reminder-${b.id}-${kind}`,
+              `reminder-${b.id}-${kind}-${recipient}`,
               kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
               `${b.date} at ${formatTime12Server(b.timeSlot)}`,
-              { link: "/dashboard", meta: { bookingId: b.id, kind } },
+              { link: "/dashboard", meta: { bookingId: b.id, kind, recipient } },
             );
 
-            if (!owner.email) return; // in-app already posted above
+            if (!recipientUser.email) return;
             const result = await sendEmail({
-              to: owner.email,
+              to: recipientUser.email,
               subject: built.subject,
               text: built.text,
               html: built.html,
@@ -3731,8 +3825,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           }
         };
 
-        if (want24 && !bAny.reminder24hSentAt) await dispatch("24h");
-        if (want1 && !bAny.reminder1hSentAt) await dispatch("1h");
+        if (want24 && !bAny.reminder24hSentAt) await dispatch("24h", "owner");
+        if (want1 && !bAny.reminder1hSentAt) await dispatch("1h", "owner");
+        // Task #3: Fan out to the linked Duo partner (if any). Partner-
+        // scoped dedupe means the primary's claim above doesn't block
+        // the partner's email and vice-versa.
+        if (bAny.linkedPartnerUserId) {
+          if (want24 && !bAny.linkedPartnerReminder24hSentAt) await dispatch("24h", "partner");
+          if (want1 && !bAny.linkedPartnerReminder1hSentAt) await dispatch("1h", "partner");
+        }
       }
 
       // P5b: Package-expiry warnings. For every active package whose
