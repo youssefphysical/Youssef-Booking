@@ -152,6 +152,34 @@
        layout-shifting on rubber-band overscroll. */
     overscroll-behavior: contain;
   }
+
+  /* ===== PWA standalone-mode polish =====
+     When the app is launched as an installed PWA (Add to Home Screen),
+     adopt a more native feel:
+       - kill pull-to-refresh (browser default would reload the entire
+         shell, jarring inside a "real" app),
+       - lock body bg to AMOLED #050505 so any momentary paint gap stays
+         seamless with the OS splash + standalone status-bar tint,
+       - guarantee min-height: 100dvh so iOS/Android URL-bar collapse
+         can never expose a stripe of background below the layout.
+     Only activates when the app is actually installed — the in-browser
+     tab experience is unaffected. */
+  @media (display-mode: standalone) {
+    html, body {
+      overscroll-behavior-y: none;
+      background: #050505;
+      min-height: 100dvh;
+    }
+  }
+  /* iOS Safari "Add to Home Screen" sets navigator.standalone but on
+     older builds does NOT match (display-mode: standalone). main.tsx
+     adds .is-standalone to <html> as a belt-and-braces fallback. */
+  html.is-standalone, html.is-standalone body {
+    overscroll-behavior-y: none;
+    background: #050505;
+    min-height: 100dvh;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     @apply tracking-tight font-bold;

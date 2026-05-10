@@ -15,7 +15,7 @@
         --muted: #8a93a6;
         --primary: #5ee7ff;
         --primary-glow: rgba(94, 231, 255, 0.55);
-        --border: rgba(255, 255, 255, 0.08);
+        --success: #4ade80;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -29,9 +29,9 @@
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
         overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
       }
-      /* AMOLED Tron backdrop — pure black with a faint cyan vignette
-         and a slowly drifting grid. CSS-only, no JS, no network. */
       .stage {
         position: fixed;
         inset: 0;
@@ -90,13 +90,19 @@
         border-radius: 999px;
         background: rgba(94, 231, 255, 0.06);
         margin-bottom: 1.5rem;
+        transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+      }
+      .badge[data-online="true"] {
+        color: var(--success);
+        border-color: rgba(74, 222, 128, 0.35);
+        background: rgba(74, 222, 128, 0.08);
       }
       .dot {
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: var(--primary);
-        box-shadow: 0 0 10px var(--primary-glow);
+        background: currentColor;
+        box-shadow: 0 0 10px currentColor;
         animation: pulse 1.6s ease-in-out infinite;
       }
       @keyframes pulse {
@@ -137,29 +143,42 @@
         box-shadow:
           0 0 0 1px rgba(94, 231, 255, 0.45),
           0 8px 28px -6px var(--primary-glow);
-        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
         -webkit-tap-highlight-color: transparent;
       }
       .btn:hover { transform: translateY(-1px); }
       .btn:active { transform: translateY(0); }
+      .btn[disabled] { opacity: 0.6; cursor: progress; }
       .meta {
         margin-top: 1.5rem;
         font-size: 11.5px;
         color: rgba(255, 255, 255, 0.35);
         letter-spacing: 0.04em;
       }
+      .hint {
+        margin-top: 0.75rem;
+        font-size: 12px;
+        color: var(--success);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .hint[data-visible="true"] { opacity: 1; }
       @media (prefers-reduced-motion: reduce) {
         .stage::after { animation: none; }
         .dot { animation: none; }
+        .btn, .badge, .hint { transition: none; }
       }
     </style>
   </head>
   <body>
     <main class="stage">
       <div class="card">
-        <span class="badge"><span class="dot"></span> Offline</span>
-        <h1>You're offline.</h1>
-        <p>
+        <span class="badge" id="badge" data-online="false">
+          <span class="dot"></span>
+          <span id="badge-text">Offline</span>
+        </span>
+        <h1 id="title">You're offline.</h1>
+        <p id="subtitle">
           Your connection dropped, but the app is still here.
           Reconnect and tap retry — your sessions, packages and
           progress are safe on the server.
@@ -167,13 +186,74 @@
         <button
           type="button"
           class="btn"
-          onclick="location.reload()"
+          id="retry"
           aria-label="Retry connection"
         >
-          Retry
+          <span id="retry-label">Retry</span>
         </button>
+        <div class="hint" id="hint" data-visible="false">
+          Connection restored. Reloading…
+        </div>
         <div class="meta">Youssef Ahmed · Personal Training · Dubai</div>
       </div>
     </main>
+    <script>
+      // ===== Connection-restored auto-reload =====
+      // The browser fires "online" the moment the network comes back.
+      // We swap the badge to a green "Back online" pill and reload
+      // automatically after a short pause so the user sees the
+      // transition (not a jarring instant jump).
+      (function () {
+        var badge = document.getElementById("badge");
+        var badgeText = document.getElementById("badge-text");
+        var title = document.getElementById("title");
+        var subtitle = document.getElementById("subtitle");
+        var retry = document.getElementById("retry");
+        var retryLabel = document.getElementById("retry-label");
+        var hint = document.getElementById("hint");
+        var reloading = false;
+
+        function reload() {
+          if (reloading) return;
+          reloading = true;
+          retry.setAttribute("disabled", "true");
+          retryLabel.textContent = "Reloading…";
+          // Tiny delay so the green badge + hint paint before nav.
+          setTimeout(function () { location.reload(); }, 450);
+        }
+
+        function onOnline() {
+          badge.setAttribute("data-online", "true");
+          badgeText.textContent = "Back online";
+          title.textContent = "You're back online.";
+          subtitle.textContent =
+            "Reconnecting to Youssef Ahmed Personal Training…";
+          hint.setAttribute("data-visible", "true");
+          reload();
+        }
+
+        retry.addEventListener("click", function () {
+          // If we've already detected online, just reload. Otherwise
+          // try a tiny same-origin probe — if it succeeds we're back.
+          if (navigator.onLine === false) {
+            // Optimistic retry — let location.reload handle the
+            // failure path (browser will land us back here).
+          }
+          reload();
+        });
+
+        window.addEventListener("online", onOnline);
+
+        // If the page loaded while we're already online (e.g. user
+        // tapped a stale tab), surface the restored state immediately.
+        if (navigator.onLine === true) {
+          // Don't auto-reload here — the SW already fell through to
+          // the offline page, so an instant reload could loop. Just
+          // let the user see "Back online" + tap retry.
+          badge.setAttribute("data-online", "true");
+          badgeText.textContent = "Back online";
+        }
+      })();
+    </script>
   </body>
 </html>

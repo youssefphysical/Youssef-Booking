@@ -21,6 +21,7 @@ import HomePage from "@/pages/HomePage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 // ===== Lazy-loaded routes (split into per-page chunks) =====
 // Every other page is loaded on demand. This keeps the initial JS
@@ -122,6 +123,7 @@ function Router() {
     <div className="min-h-screen bg-background text-foreground font-body">
       {!isPrintRoute && <Navigation />}
       {!isPrintRoute && <CookieBanner />}
+      {!isPrintRoute && <InstallPrompt />}
       {isAdminRoute && (
         <div
           className="admin-container"

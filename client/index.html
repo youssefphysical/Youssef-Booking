@@ -235,7 +235,13 @@
          duplicating DM Sans + Outfit in index.css is also removed. -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
-  <body>
+  <body style="background:#050505;color-scheme:dark">
+    <!-- Inline body bg = AMOLED #050505 paints on the very first
+         frame BEFORE any CSS loads, killing the white flash on cold
+         start (especially noticeable on Android Chrome / Samsung
+         Internet when launched from the home-screen icon). The
+         attribute matches manifest.background_color so the OS splash
+         and the first React paint are visually identical. -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
