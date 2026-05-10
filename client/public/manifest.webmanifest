@@ -1,13 +1,13 @@
 {
-  "name": "Youssef Ahmed Personal Training",
-  "short_name": "YA Training",
+  "name": "Youssef Ahmed",
+  "short_name": "Youssef",
   "description": "Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#050505",
+  "theme_color": "#050505",
   "lang": "en",
   "dir": "ltr",
   "categories": ["fitness", "health", "lifestyle"],
@@ -29,6 +29,20 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book a session",
+      "short_name": "Book",
+      "url": "/book",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

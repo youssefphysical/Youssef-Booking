@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <title>Offline · Youssef Ahmed</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.jpg" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050505;
+        --fg: #f5f9ff;
+        --muted: #8a93a6;
+        --primary: #5ee7ff;
+        --primary-glow: rgba(94, 231, 255, 0.55);
+        --border: rgba(255, 255, 255, 0.08);
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100dvh;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        overflow: hidden;
+      }
+      /* AMOLED Tron backdrop — pure black with a faint cyan vignette
+         and a slowly drifting grid. CSS-only, no JS, no network. */
+      .stage {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: env(safe-area-inset-top) max(1.5rem, env(safe-area-inset-right))
+                 env(safe-area-inset-bottom) max(1.5rem, env(safe-area-inset-left));
+        isolation: isolate;
+      }
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: -10%;
+        background:
+          radial-gradient(ellipse 60% 45% at 50% 30%,
+            rgba(94, 231, 255, 0.10), transparent 60%),
+          radial-gradient(ellipse 50% 35% at 50% 90%,
+            rgba(94, 231, 255, 0.06), transparent 60%);
+        z-index: -2;
+      }
+      .stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(94, 231, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(94, 231, 255, 0.04) 1px, transparent 1px);
+        background-size: 48px 48px;
+        mask-image: radial-gradient(ellipse 70% 60% at 50% 50%,
+          rgba(0, 0, 0, 1), transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%,
+          rgba(0, 0, 0, 1), transparent 75%);
+        animation: drift 32s linear infinite;
+        z-index: -1;
+        opacity: 0.7;
+      }
+      @keyframes drift {
+        from { background-position: 0 0, 0 0; }
+        to   { background-position: 48px 48px, 48px 48px; }
+      }
+      .card {
+        max-width: 460px;
+        width: 100%;
+        text-align: center;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--primary);
+        padding: 0.4rem 0.85rem;
+        border: 1px solid rgba(94, 231, 255, 0.25);
+        border-radius: 999px;
+        background: rgba(94, 231, 255, 0.06);
+        margin-bottom: 1.5rem;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--primary);
+        box-shadow: 0 0 10px var(--primary-glow);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.55; transform: scale(1); }
+        50%      { opacity: 1;    transform: scale(1.25); }
+      }
+      h1 {
+        font-family: "Plus Jakarta Sans", "DM Sans", sans-serif;
+        font-weight: 700;
+        font-size: clamp(1.6rem, 5vw, 2.2rem);
+        line-height: 1.15;
+        margin: 0 0 0.75rem;
+        background: linear-gradient(180deg, #ffffff 0%, #c8d6e5 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      p {
+        color: var(--muted);
+        font-size: 14.5px;
+        line-height: 1.6;
+        margin: 0 0 1.75rem;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.85rem 1.5rem;
+        font-weight: 600;
+        font-size: 14px;
+        color: #001016;
+        background: var(--primary);
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow:
+          0 0 0 1px rgba(94, 231, 255, 0.45),
+          0 8px 28px -6px var(--primary-glow);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .btn:hover { transform: translateY(-1px); }
+      .btn:active { transform: translateY(0); }
+      .meta {
+        margin-top: 1.5rem;
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.35);
+        letter-spacing: 0.04em;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .stage::after { animation: none; }
+        .dot { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stage">
+      <div class="card">
+        <span class="badge"><span class="dot"></span> Offline</span>
+        <h1>You're offline.</h1>
+        <p>
+          Your connection dropped, but the app is still here.
+          Reconnect and tap retry — your sessions, packages and
+          progress are safe on the server.
+        </p>
+        <button
+          type="button"
+          class="btn"
+          onclick="location.reload()"
+          aria-label="Retry connection"
+        >
+          Retry
+        </button>
+        <div class="meta">Youssef Ahmed · Personal Training · Dubai</div>
+      </div>
+    </main>
+  </body>
+</html>
