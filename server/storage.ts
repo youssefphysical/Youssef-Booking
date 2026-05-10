@@ -250,6 +250,12 @@ export interface IStorage {
   // `bookings.linkedPartnerUserId`. Each entry carries the set of sources
   // ("package" | "booking") so the UI can label provenance.
   getLinkedPartnerIds(userId: number): Promise<{ id: number; sources: ("package" | "booking")[] }[]>;
+  // Task #9: same as getLinkedPartnerIds but scoped to *current* duo
+  // relationships only — partners reachable via an active package or an
+  // upcoming booking. Used by the client-facing /api/me/linked-partners
+  // route so historical/expired/cancelled links don't leak back to the
+  // user's dashboard.
+  getActiveLinkedPartnerIds(userId: number): Promise<{ id: number; sources: ("package" | "booking")[] }[]>;
   getPackage(id: number): Promise<Package | undefined>;
   getActivePackageForUser(userId: number): Promise<Package | undefined>;
   createPackage(pkg: InsertPackage): Promise<Package>;
@@ -876,6 +882,64 @@ export class DatabaseStorage implements IStorage {
       .select({ userId: bookings.userId, linkedPartnerUserId: bookings.linkedPartnerUserId })
       .from(bookings)
       .where(or(eq(bookings.userId, userId), eq(bookings.linkedPartnerUserId, userId))!);
+
+    const map = new Map<number, Set<"package" | "booking">>();
+    const add = (other: number | null | undefined, src: "package" | "booking") => {
+      if (typeof other !== "number" || other === userId) return;
+      let set = map.get(other);
+      if (!set) {
+        set = new Set();
+        map.set(other, set);
+      }
+      set.add(src);
+    };
+    for (const r of pkgRows) {
+      add(r.userId === userId ? r.partnerUserId : r.userId, "package");
+    }
+    for (const r of bkRows) {
+      add(r.userId === userId ? r.linkedPartnerUserId : r.userId, "booking");
+    }
+    return Array.from(map.entries()).map(([id, sources]) => ({
+      id,
+      sources: Array.from(sources),
+    }));
+  }
+
+  async getActiveLinkedPartnerIds(userId: number) {
+    // Active packages where this user is on either side. We use the same
+    // `isActive` boolean the rest of the package surface uses (package
+    // builder, dashboard membership card) so "active" stays consistent.
+    const pkgRows = await db
+      .select({ userId: packages.userId, partnerUserId: packages.partnerUserId })
+      .from(packages)
+      .where(
+        and(
+          eq(packages.isActive, true),
+          or(eq(packages.userId, userId), eq(packages.partnerUserId, userId))!,
+        )!,
+      );
+
+    // Upcoming bookings (both directions). "Upcoming" = status is not a
+    // terminal one (cancelled/no_show/completed) AND the date is today or
+    // later. The booking's intra-day time slot doesn't matter for the
+    // partner-link question — being on today's schedule is enough to
+    // surface the partner. Same-day past slots are still "upcoming"
+    // enough for that purpose; cancelled/completed are excluded by
+    // status.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const bkRows = await db
+      .select({ userId: bookings.userId, linkedPartnerUserId: bookings.linkedPartnerUserId })
+      .from(bookings)
+      .where(
+        and(
+          gte(bookings.date, todayIso),
+          notInArray(bookings.status, ["cancelled", "no_show", "completed"]),
+          or(
+            eq(bookings.userId, userId),
+            eq(bookings.linkedPartnerUserId, userId),
+          )!,
+        )!,
+      );
 
     const map = new Map<number, Set<"package" | "booking">>();
     const add = (other: number | null | undefined, src: "package" | "booking") => {

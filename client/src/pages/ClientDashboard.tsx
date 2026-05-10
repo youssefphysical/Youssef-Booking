@@ -84,7 +84,7 @@ import { InbodyTrends } from "@/components/InbodyTrends";
 import { exportInbodyReportPdf } from "@/lib/pdf-export";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER, buildWhatsappMessage } from "@/lib/whatsapp";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { tierHasPriority, VIP_TIER_TAGLINES, evaluateBookingEligibility } from "@shared/schema";
 import { ShieldAlert } from "lucide-react";
 import {
@@ -172,6 +172,7 @@ export default function ClientDashboard() {
 
       <TodayHero name={user.fullName} />
       <MembershipBlock user={user} />
+      <DuoPartnersBlock />
       <BookingEligibilityBanner userId={user.id} user={user} />
 
       <Tabs defaultValue="bookings" className="w-full">
@@ -370,6 +371,63 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
         </a>
         .
       </p>
+    </div>
+  );
+}
+
+// =============== DUO PARTNERS BLOCK ===============
+
+// Task #9: surface the client's linked Duo partner(s) on their own
+// dashboard so the couple-view is consistent with the admin client
+// detail page. Privacy: only fullName + avatar leak across accounts —
+// matches the bookings-list privacy shape on the server.
+type LinkedPartner = {
+  id: number;
+  fullName: string | null;
+  profilePictureUrl: string | null;
+};
+
+function DuoPartnersBlock() {
+  const { t } = useTranslation();
+  const { data: partners, isLoading } = useQuery<LinkedPartner[]>({
+    queryKey: ["/api/me/linked-partners"],
+  });
+
+  if (isLoading || !partners || partners.length === 0) return null;
+
+  return (
+    <div
+      className="rounded-3xl border border-white/10 bg-card/40 p-5 mb-6"
+      data-testid="block-duo-partners"
+    >
+      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3 inline-flex items-center gap-1.5">
+        <Users size={12} />{" "}
+        {partners.length === 1
+          ? t("dashboard.duoPartner", "Duo partner")
+          : t("dashboard.duoPartners", "Duo partners")}
+      </p>
+      <ul className="flex flex-wrap gap-3">
+        {partners.map((p) => (
+          <li
+            key={p.id}
+            className="inline-flex items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2"
+            data-testid={`row-duo-partner-${p.id}`}
+          >
+            <UserAvatar
+              src={p.profilePictureUrl}
+              name={p.fullName ?? ""}
+              size={32}
+              testId={`avatar-duo-partner-${p.id}`}
+            />
+            <span
+              className="text-sm font-medium"
+              data-testid={`text-duo-partner-name-${p.id}`}
+            >
+              {p.fullName || t("dashboard.unnamedClient", "Client")}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

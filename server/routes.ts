@@ -3032,6 +3032,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
   });
 
+  // Task #9: Client-facing Duo partners. Mirrors the admin-only
+  // `/api/admin/clients/:id/linked-partners` route but self-scoped (reads
+  // userId from the session) and returns only the minimal identity shape
+  // — id, fullName, profilePictureUrl — so partners' private fields never
+  // leak across accounts. Same privacy shape as the bookings list.
+  app.get("/api/me/linked-partners", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const partners = await storage.getActiveLinkedPartnerIds(me.id);
+    const out: Array<{
+      id: number;
+      fullName: string | null;
+      profilePictureUrl: string | null;
+    }> = [];
+    for (const p of partners) {
+      const u = await storage.getUser(p.id);
+      if (!u) continue;
+      const su = sanitizeUser(u);
+      out.push({
+        id: su.id,
+        fullName: su.fullName ?? null,
+        profilePictureUrl: su.profilePictureUrl ?? null,
+      });
+    }
+    out.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+    res.json(out);
+  });
+
   // P4e: Activity feed (self-scoped — never trust client-supplied userId).
   app.get("/api/me/activity", requireAuth, async (req, res) => {
     const me = req.user as User;
