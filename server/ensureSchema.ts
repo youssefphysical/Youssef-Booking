@@ -64,7 +64,12 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS duration_minutes integer NOT NULL DEFAULT 60,
       ADD COLUMN IF NOT EXISTS completed_at timestamp,
       ADD COLUMN IF NOT EXISTS auto_completed_at timestamp,
-      ADD COLUMN IF NOT EXISTS package_session_deducted_at timestamp;
+      ADD COLUMN IF NOT EXISTS package_session_deducted_at timestamp,
+      -- Nov 2026 Duo Partner snapshot (per-booking partner contact for
+      -- duo sessions; partner does NOT need an account).
+      ADD COLUMN IF NOT EXISTS partner_full_name text,
+      ADD COLUMN IF NOT EXISTS partner_phone     text,
+      ADD COLUMN IF NOT EXISTS partner_email     text;
 
     -- Partial UNIQUE INDEX: at most one ACTIVE booking per (date, slot).
     -- Cancelled variants are excluded so a cancelled slot is freed for

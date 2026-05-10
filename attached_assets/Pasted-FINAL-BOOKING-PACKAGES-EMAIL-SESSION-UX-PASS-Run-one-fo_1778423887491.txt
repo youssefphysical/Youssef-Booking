@@ -1,0 +1,322 @@
+FINAL BOOKING PACKAGES + EMAIL + SESSION UX PASS
+
+Run one focused production pass.
+
+Do NOT redesign the whole website.
+Do NOT touch unrelated auth/admin/PWA/dashboard logic.
+Do NOT break current booking/session/package logic.
+Preserve performance, mobile smoothness, and Tron Legacy premium styling.
+
+==================================================
+
+1. PACKAGE CATALOG UPDATE
+   ==================================================
+
+Update the public/client-facing package options so ONLY these options exist:
+
+1. Single Session
+
+- 1 session
+- AED 375
+
+2. 10 Sessions Package
+
+- 10 sessions
+- AED 3,245
+
+3. 20 Sessions Package
+
+- 20 sessions
+- AED 5,750
+
+4. 25 Sessions Package
+
+- 25 sessions
+- AED 6,750
+
+5. Duo Package
+
+- 30 sessions
+- for 2 people training together at the same time
+- AED 9,900
+
+Also keep assessment options:
+
+- BMI Assessment
+- Technical Movement Assessment / Technical Training Assessment
+  Choose the more professional label if needed, but keep it clear for clients.
+
+Remove/hide any old package names that do not match this catalog.
+
+Package display should be:
+
+- premium
+- clear
+- easy to compare
+- AED pricing visible
+- session count visible
+- package type visible
+- Tron Legacy inspired but not flashy
+
+==================================================
+2. BOOKING EMAIL TO COACH / ADMIN
+
+Improve the booking notification email sent to me/admin.
+
+The email must include ALL booking details clearly:
+
+- Client full name
+- Client first name
+- Email
+- Phone
+- Selected date
+- Selected time in 12-hour format AM/PM
+- Dubai timezone
+- Session focus
+- Training goal
+- Session type
+- Package selected
+- Package price
+- Total package sessions
+- Remaining sessions after this booking
+- Current session number, example:
+  “Session 1 of 10”
+  “Session 5 of 20”
+  “Session 12 of 25”
+  “Session 3 of 30 Duo”
+- Booking status
+- Payment status if available
+- Notes if available
+- Admin button/link to open booking/admin panel
+
+Design:
+
+- Make the email visually stronger and more premium.
+- Use a wider responsive email layout that uses the email space better.
+- Text should be larger and clearer.
+- Keep it elegant, readable, professional.
+- Use the same luxury Tron Legacy inspired direction:
+  AMOLED dark background, cyan highlights, subtle amber accents, premium card structure.
+- Avoid tiny text.
+- Avoid cramped tables.
+- Make the details easy to scan quickly on mobile Gmail.
+
+==================================================
+3. BOOKING CONFIRMATION EMAIL TO CLIENT
+
+Create/send a professional confirmation email to the client email used for registration after a session is booked.
+
+Tone:
+
+- premium
+- friendly
+- professional
+- confident
+- from Coach Youssef
+- not robotic
+
+Greeting:
+Use only the client’s first name.
+Example:
+“Hi Ahmed,”
+
+Client email must include:
+
+- Confirmation that the session is booked
+- Client first name
+- Date
+- Exact time in 12-hour AM/PM format
+- Dubai timezone
+- Session focus chosen
+- Training goal chosen
+- Session type
+- Package selected
+- Session number:
+  “This is session 1 of 10”
+  “This is session 4 of 20”
+  etc.
+- Package remaining sessions after this booking
+- Short preparation note:
+  arrive on time, bring water, wear suitable training clothes, and be ready for the selected focus/goal.
+- Professional coach message:
+  something that feels personal and premium, like:
+  “I’ll make sure your session is structured, focused, and aligned with your goal.”
+- WhatsApp contact button/link if already available
+- Reminder of cancellation/reschedule rules
+
+Cancellation/reschedule policy section:
+Explain clearly but politely:
+
+- Standard cancellation is only allowed if the session is more than 6 hours away.
+- Emergency cancel depends on the client’s weekly training frequency/package eligibility.
+- Reschedule is limited and only available for the same day, based on available time slots.
+- If no valid same-day slot is available, the session remains counted according to the rules.
+- Released slots become available immediately to any client on a first-come, first-served basis.
+
+Keep this policy simple and client-friendly, not scary.
+
+==================================================
+4. SESSION FOCUS / TRAINING GOAL UX CLEANUP
+
+The Session Focus and Training Goal area currently feels visually loose and mixed together.
+
+Improve this section so it feels:
+
+- structured
+- premium
+- required
+- easy to understand
+- mobile-friendly
+- visually separated
+
+Required fields:
+
+- Session Focus is required
+- Training Goal is required
+- Session Type is required
+
+UX rules:
+
+- Booking CTA should remain disabled until all required fields are selected.
+- Show clear premium validation message if something is missing.
+- Do not let the client book without choosing required fields.
+- Selected options should have clear active styling.
+- Non-selected options should be clean and readable.
+- Avoid clutter.
+
+Suggested layout:
+Use premium grouped sections/cards:
+
+Session Focus:
+
+- Upper Body
+  
+  - Chest
+  - Back
+  - Shoulders
+  - Arms
+  - Front upper body
+  - Back upper body
+  - Push
+  - Pull
+
+- Lower Body
+  
+  - Legs
+  - Front lower body
+  - Back lower body
+
+- Conditioning & Full Body
+  
+  - Core
+  - Full body
+  - CrossFit
+
+Training Goal:
+
+- Hypertrophy
+- Strength
+- Endurance
+- Fat loss
+- Conditioning
+
+Each group should look separated and intentional, not floating randomly.
+
+Use Tron system style:
+
+- subtle cyan icons
+- clean HUD labels
+- premium glass panels
+- active option with restrained cyan/amber highlight
+- strong readability
+
+==================================================
+5. CALENDAR SELECTED DATE VISUAL BUG
+
+Fix the selected date visual issue.
+
+Current issue:
+When tapping a date number, a strange square/rectangle appears before or behind the orange selected circle.
+
+Required:
+
+- Remove the unwanted square/rectangle artifact.
+- Selected date should be clean, circular, premium, and readable.
+- Use strong Tron amber/orange selected state.
+- Date number must remain clear.
+- Today indicator can stay cyan/outlined.
+- Disabled/past dates remain muted.
+- No visual overlap between selected date and adjacent dates.
+
+==================================================
+6. BOOKING SLOT UX
+
+Keep/fix:
+
+- One tap on an available slot selects it.
+- Confirmation panel appears immediately.
+- Confirmation panel stays visible.
+- Mobile auto-scrolls gently to the confirmation panel if needed.
+- No double tap required.
+- No disappearing confirmation panel.
+
+==================================================
+7. FINAL VERIFICATION
+
+Verify:
+
+Package catalog:
+
+- only the approved packages appear
+- correct AED prices
+- correct session counts
+- Duo package clearly says 2 people / 30 sessions
+
+Booking:
+
+- focus required
+- goal required
+- session type required
+- booking CTA disabled until required fields completed
+- selected date has no square artifact
+- selected slot persists
+- confirmation panel appears correctly
+
+Emails:
+
+- admin email receives all booking/package/session details
+- client receives confirmation email
+- email layout looks premium on mobile Gmail
+- time uses 12-hour AM/PM
+- Dubai timezone is shown
+- session number is correct
+- package remaining count is correct
+- policy wording is clear
+
+Rules:
+
+- 3-hour booking lead time still works
+- 6-hour cancellation rule still works
+- emergency cancel/reschedule logic remains stable
+- released slots become available immediately
+- auto-complete/session deduction remains protected from double deduction
+
+After completion:
+
+- typecheck
+- build/check
+- commit
+- push GitHub
+- trigger Vercel deploy
+- verify live production
+- confirm Neon/schema stability if touched
+
+Final report must include:
+
+- files changed
+- package catalog status
+- email status
+- booking UX status
+- production verification result
+- commit hash
+- Vercel deployment status

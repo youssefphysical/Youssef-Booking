@@ -21,7 +21,9 @@ import {
   CreditCard,
   Dumbbell,
   Target,
+  UserPlus,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useCreateBooking, useBookings } from "@/hooks/use-bookings";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useSettings } from "@/hooks/use-settings";
@@ -83,6 +85,11 @@ export default function BookingPage() {
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
   const [trainingGoal, setTrainingGoal] = useState<TrainingGoal | null>(null);
+  // Duo partner snapshot — only sent when sessionType === "duo".
+  // partnerName is REQUIRED for Duo bookings; phone/email are optional.
+  const [partnerName, setPartnerName] = useState("");
+  const [partnerPhone, setPartnerPhone] = useState("");
+  const [partnerEmail, setPartnerEmail] = useState("");
 
   const createBooking = useCreateBooking();
   const { data: blocked = [] } = useBlockedSlots();
@@ -157,11 +164,15 @@ export default function BookingPage() {
   // canContinue is computed AFTER the eligibility const below; declare a
   // forward ref via a function so TS sees it. (eligibility is hoisted via let.)
   const eligibilityOk = isAdmin || evaluateBookingEligibility(user as any, activePackage ?? null).ok;
+  // Duo bookings require a partner full name (admins can override).
+  const duoPartnerOk =
+    isAdmin || sessionType !== "duo" || partnerName.trim().length >= 2;
   const canContinue =
     !!date &&
     !!selectedSlot &&
     (isAdmin || selectedSlotAvailable) &&
     (isAdmin || (!!sessionFocus && !!trainingGoal)) &&
+    duoPartnerOk &&
     eligibilityOk;
 
   const handleBook = () => {
@@ -172,6 +183,10 @@ export default function BookingPage() {
     if (!isAdmin && (!sessionFocus || !trainingGoal)) {
       return;
     }
+    if (!isAdmin && sessionType === "duo" && partnerName.trim().length < 2) {
+      return;
+    }
+    const isDuo = sessionType === "duo";
     createBooking.mutate(
       {
         userId: user.id,
@@ -184,6 +199,12 @@ export default function BookingPage() {
         notes: notes || undefined,
         acceptedPolicy: true,
         lang,
+        // Send partner snapshot only for Duo bookings; server superRefine
+        // also enforces this. Empty optional fields are sent as `undefined`
+        // so Zod's union(literal(""), email()) can clear them cleanly.
+        partnerFullName: isDuo ? partnerName.trim() : undefined,
+        partnerPhone: isDuo && partnerPhone.trim() ? partnerPhone.trim() : undefined,
+        partnerEmail: isDuo && partnerEmail.trim() ? partnerEmail.trim() : undefined,
         ...(isAdmin ? { override: true } : {}),
       } as any,
       {
@@ -515,6 +536,77 @@ export default function BookingPage() {
               hasUsedFreeTrial={hasUsedFreeTrial}
             />
 
+            {sessionType === "duo" && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-5 shadow-[0_0_24px_-12px_hsl(183_100%_74%/0.4)]"
+                data-testid="card-duo-partner"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold tracking-wide uppercase text-primary">
+                    Training Partner Details
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Tell us who's training with you. Your partner doesn't need an account —
+                  one slot is booked, and one session is deducted from your Duo package.
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium block mb-1.5 text-foreground/80">
+                      Partner full name <span className="text-primary">*</span>
+                    </label>
+                    <Input
+                      value={partnerName}
+                      onChange={(e) => setPartnerName(e.target.value)}
+                      placeholder="e.g. Ahmed Khalid"
+                      maxLength={120}
+                      className="bg-white/5 border-white/10 focus-visible:ring-primary/40"
+                      data-testid="input-partner-name"
+                    />
+                    {partnerName.trim().length > 0 && partnerName.trim().length < 2 && (
+                      <p className="text-xs text-destructive mt-1">
+                        Please enter your partner's full name.
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium block mb-1.5 text-foreground/80">
+                        Partner phone <span className="text-muted-foreground/70">(optional)</span>
+                      </label>
+                      <Input
+                        value={partnerPhone}
+                        onChange={(e) => setPartnerPhone(e.target.value)}
+                        placeholder="+971 ..."
+                        maxLength={40}
+                        inputMode="tel"
+                        className="bg-white/5 border-white/10 focus-visible:ring-primary/40"
+                        data-testid="input-partner-phone"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium block mb-1.5 text-foreground/80">
+                        Partner email <span className="text-muted-foreground/70">(optional)</span>
+                      </label>
+                      <Input
+                        type="email"
+                        value={partnerEmail}
+                        onChange={(e) => setPartnerEmail(e.target.value)}
+                        placeholder="partner@email.com"
+                        maxLength={254}
+                        className="bg-white/5 border-white/10 focus-visible:ring-primary/40"
+                        data-testid="input-partner-email"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <div>
               <label className="text-sm font-semibold block mb-2">{t("booking.notesLabel")}</label>
               <Textarea
@@ -577,6 +669,9 @@ export default function BookingPage() {
                 label={t("booking.trainingGoalLabel")}
                 value={t(`booking.goal.${trainingGoal}`)}
               />
+            )}
+            {sessionType === "duo" && partnerName.trim() && (
+              <Row label="Training partner" value={<span data-testid="text-confirm-partner">{partnerName.trim()}</span>} />
             )}
             {notes && <Row label={t("booking.notesLabel")} value={notes} />}
           </div>

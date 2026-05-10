@@ -273,6 +273,17 @@ export const bookings = pgTable("bookings", {
   privateCoachNotes: text("private_coach_notes"),
   clientVisibleCoachNotes: text("client_visible_coach_notes"),
   coachNotesUpdatedAt: timestamp("coach_notes_updated_at"),
+  // ─── Duo Partner snapshot (Nov 2026) ───────────────────────────────
+  // Captured per-booking when sessionType='duo'. The partner does NOT
+  // need an account — these fields are a lightweight contact snapshot
+  // so the trainer knows who's showing up alongside the primary client.
+  // Required: partnerFullName when sessionType='duo'. Phone/email are
+  // optional. Future-ready: when admin "links" the partner to a real
+  // account, packages.partnerUserId is stamped — these snapshot fields
+  // remain as the booking-time record of intent.
+  partnerFullName: text("partner_full_name"),
+  partnerPhone: text("partner_phone"),
+  partnerEmail: text("partner_email"),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
@@ -629,6 +640,18 @@ export const insertBookingSchema = createInsertSchema(bookings)
     // The POST /api/bookings route enforces both for non-admin users.
     sessionFocus: z.enum(SESSION_FOCUS_OPTIONS).nullable().optional(),
     trainingGoal: z.enum(BOOKING_TRAINING_GOALS).nullable().optional(),
+    // Duo partner snapshot. Server-side superRefine below enforces
+    // partnerFullName when sessionType='duo'. Email accepts empty string
+    // OR a valid email so the optional field can be cleared from the UI.
+    // NOTE: required-when-duo is enforced in the POST /api/bookings route
+    // rather than via .superRefine here, so this stays a ZodObject and
+    // downstream `.extend(...)` callers (routes.ts, shared/routes.ts) work.
+    partnerFullName: z.string().trim().min(2).max(120).nullable().optional(),
+    partnerPhone: z.string().trim().max(40).nullable().optional(),
+    partnerEmail: z
+      .union([z.literal(""), z.string().trim().email().max(254)])
+      .nullable()
+      .optional(),
   });
 
 export const updateBookingSchema = z.object({

@@ -1249,6 +1249,15 @@ export type BookingDetails = {
   packageName?: string | null;
   remainingSessions?: number | null;
   packageExpiryDate?: string | null;
+  // Session number / total for "Session 4 of 30" rendering. Both must be
+  // present to render. Falls back silently if either is null.
+  currentSessionNumber?: number | null;
+  totalSessions?: number | null;
+  // Duo partner snapshot (Nov 2026). Only rendered when present —
+  // single/package/trial bookings leave these null.
+  partnerFullName?: string | null;
+  partnerPhone?: string | null;
+  partnerEmail?: string | null;
 };
 
 export function buildClientBookingConfirmationEmail(opts: {
@@ -1274,8 +1283,12 @@ export function buildClientBookingConfirmationEmail(opts: {
         [t(lang, "bookingFocus"), d.sessionFocusLabel || null],
         [t(lang, "bookingGoal"), d.trainingGoalLabel || null],
         [t(lang, "bookingType"), d.sessionTypeLabel || null],
+        d.partnerFullName ? ["Training partner", d.partnerFullName] : ["", null],
         [t(lang, "bookingLocation"), t(lang, "bookingLocationValue")],
         [t(lang, "bookingPackage"), d.packageName || null],
+        d.currentSessionNumber != null && d.totalSessions != null
+          ? ["Session", `${d.currentSessionNumber} of ${d.totalSessions}`]
+          : ["", null],
         [t(lang, "bookingRemaining"), d.remainingSessions ?? null],
         [t(lang, "bookingExpires"), d.packageExpiryDate || null],
       ],
@@ -1529,11 +1542,17 @@ export function buildAdminBookingEmail(opts: {
         ["Email", opts.clientEmail ?? null],
         ["Phone", opts.clientPhone ?? null],
         ["Date", d.date],
-        ["Time", d.time12],
+        ["Time (Dubai)", `${d.time12} · GST (UTC+4)`],
         ["Focus", d.sessionFocusLabel ?? null],
         ["Goal", d.trainingGoalLabel ?? null],
         ["Type", d.sessionTypeLabel ?? null],
+        d.partnerFullName ? ["Training partner", d.partnerFullName] : ["", null],
+        d.partnerPhone ? ["Partner phone", d.partnerPhone] : ["", null],
+        d.partnerEmail ? ["Partner email", d.partnerEmail] : ["", null],
         ["Package", d.packageName ?? null],
+        d.currentSessionNumber != null && d.totalSessions != null
+          ? ["Session", `${d.currentSessionNumber} of ${d.totalSessions}`]
+          : ["", null],
         ["Remaining after this", d.remainingSessions ?? null],
         ["Package expires", d.packageExpiryDate ?? null],
       ],

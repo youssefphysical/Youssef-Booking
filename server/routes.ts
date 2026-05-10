@@ -480,11 +480,13 @@ async function dispatchBookingNotifications(args: {
   };
 
   // ---- 1. In-app admin notification ----
+  const partnerName = (booking as any).partnerFullName?.toString().trim();
+  const partnerSuffix = partnerName ? ` • partner: ${partnerName}` : "";
   try {
     await storage.createAdminNotification({
       kind: "booking_new",
       title: `New booking — ${clientName}`,
-      body: `${booking.date} at ${time12} • ${sessionFocusLabel} • ${trainingGoalLabel} • ${sessionTypeLabel}`,
+      body: `${booking.date} at ${time12} • ${sessionFocusLabel} • ${trainingGoalLabel} • ${sessionTypeLabel}${partnerSuffix}`,
       userId: targetUserId,
       bookingId: booking.id,
     });
@@ -512,6 +514,13 @@ async function dispatchBookingNotifications(args: {
     packageName,
     remainingSessions,
     packageExpiryDate,
+    currentSessionNumber: pkg ? (pkg.usedSessions ?? 0) + 1 : null,
+    totalSessions: pkg?.totalSessions ?? null,
+    // Sanitize partner fields before rendering — defense-in-depth even
+    // though the Zod insert schema already trims/validates on write.
+    partnerFullName: (booking as any).partnerFullName?.toString().trim() || null,
+    partnerPhone: (booking as any).partnerPhone?.toString().trim() || null,
+    partnerEmail: (booking as any).partnerEmail?.toString().trim() || null,
   };
 
   // ---- 2. Trainer email (premium English template, always to TRAINER_EMAIL) ----
@@ -1118,6 +1127,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const targetUserId = me.role === "admin" && parsed.data.userId ? parsed.data.userId : me.id;
 
+    // Duo bookings must include a partner full name (snapshot, not an account).
+    // Admins booking on behalf of clients may omit it. Phone/email stay optional.
+    if (
+      parsed.data.sessionType === "duo" &&
+      me.role !== "admin" &&
+      (!parsed.data.partnerFullName || parsed.data.partnerFullName.trim().length < 2)
+    ) {
+      return res.status(400).json({
+        message: "Training partner full name is required for a Duo session.",
+      });
+    }
+
     const sessionAt = buildSessionDate(parsed.data.date, parsed.data.timeSlot);
     if (isNaN(sessionAt.getTime())) {
       return res.status(400).json({ message: "Invalid date or time" });
@@ -1303,6 +1324,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // a clean 409 with the friendly message instead of leaking a 500.
     let booking;
     try {
+      // Normalize partner snapshot. ONLY persisted for duo sessions —
+      // any partner data sent on a non-duo booking is dropped to prevent
+      // cross-type leakage. Trim every field; treat empty strings as null.
+      const isDuoBooking = sessionType === "duo";
+      const partnerFullName = isDuoBooking
+        ? (parsed.data.partnerFullName?.trim() || null)
+        : null;
+      const partnerPhone = isDuoBooking
+        ? (parsed.data.partnerPhone?.trim() || null)
+        : null;
+      const partnerEmail = isDuoBooking
+        ? (parsed.data.partnerEmail?.trim() || null)
+        : null;
       booking = await storage.createBooking({
         userId: targetUserId,
         packageId: packageId ?? null,
@@ -1316,6 +1350,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         clientNotes: parsed.data.clientNotes ?? null,
         sessionFocus: parsed.data.sessionFocus ?? null,
         trainingGoal: parsed.data.trainingGoal ?? null,
+        partnerFullName,
+        partnerPhone,
+        partnerEmail,
       });
     } catch (err: any) {
       if (err?.code === "SLOT_TAKEN") {
