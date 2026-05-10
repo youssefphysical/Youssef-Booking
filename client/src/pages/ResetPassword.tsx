@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/i18n";
+import { PRIMARY_CTA_CLASS } from "@/lib/ui-tokens";
 
 export default function ResetPassword() {
   const [, navigate] = useLocation();
@@ -125,7 +126,7 @@ export default function ResetPassword() {
               type="submit"
               disabled={!token || pending}
               data-testid="button-reset-submit"
-              className="w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+              className={`w-full h-11 rounded-xl ${PRIMARY_CTA_CLASS}`}
             >
               {pending && <Loader2 className="animate-spin mr-2" size={14} />}
               {t("auth.resetSubmit", "Update password")}
@@ -134,7 +135,7 @@ export default function ResetPassword() {
         ) : (
           <Button
             onClick={() => navigate("/auth")}
-            className="w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 h-11"
+            className={`w-full h-11 rounded-xl ${PRIMARY_CTA_CLASS}`}
             data-testid="button-reset-go-signin"
           >
             {t("auth.goToSignIn", "Go to sign in")}

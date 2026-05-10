@@ -48,17 +48,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-type T = (key: string, fallback?: string) => string;
+import { PRIMARY_CTA_CLASS } from "@/lib/ui-tokens";
 
-/**
- * Shared primary-CTA chrome — one HUD signature across every auth surface
- * (client login, register step 1+2, admin login, forgot-password dialog).
- * Tight cyan glow, lifts on hover, never glows when disabled. Pair with
- * sizing/shape utilities (e.g. `w-full h-12 rounded-xl font-bold`) at the
- * call site so each CTA can keep its own footprint.
- */
-const PRIMARY_CTA_CLASS =
-  "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_24px_-6px_hsl(183_100%_55%/0.55)] hover:shadow-[0_0_28px_-4px_hsl(183_100%_60%/0.65)] transition-shadow disabled:shadow-none";
+type T = (key: string, fallback?: string) => string;
 
 const makeClientLoginSchema = (t: T) =>
   z.object({

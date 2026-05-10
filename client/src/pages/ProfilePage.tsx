@@ -41,6 +41,7 @@ import {
   type TrainingGoal,
 } from "@shared/schema";
 import { cn } from "@/lib/utils";
+import { PRIMARY_CTA_CLASS } from "@/lib/ui-tokens";
 import { useTranslation } from "@/i18n";
 
 type T = (key: string, fallback?: string) => string;
@@ -340,7 +341,7 @@ export default function ProfilePage() {
 
             <Button
               type="submit"
-              className="w-full h-12 rounded-xl"
+              className={`w-full h-12 rounded-xl ${PRIMARY_CTA_CLASS}`}
               disabled={updateMutation.isPending}
               data-testid="button-save-profile"
             >

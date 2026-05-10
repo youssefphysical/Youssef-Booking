@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
+import { PRIMARY_CTA_CLASS } from "@/lib/ui-tokens";
 
 export default function HowItWorks() {
   const { t } = useTranslation();
@@ -221,7 +222,7 @@ export default function HowItWorks() {
           <Link
             href="/auth"
             data-testid="link-cta-signup"
-            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 whitespace-nowrap btn-press"
+            className={`inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press ${PRIMARY_CTA_CLASS}`}
           >
             {t("howItWorks.ctaCreate")} <ArrowRight size={16} />
           </Link>
