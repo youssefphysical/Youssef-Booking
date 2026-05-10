@@ -608,6 +608,59 @@ async function run(): Promise<void> {
   try {
     console.log("[ensureSchema] running idempotent additive migration");
     await pool.query(sql);
+
+    // ONE-TIME MIGRATION (May 2026): drop orphan `homepage_sections`.
+    // The table is no longer referenced anywhere in shared/schema.ts and was
+    // blocking `npm run db:push` (data-loss prompt) on every post-merge
+    // setup. `IF EXISTS` makes this a safe no-op once it has run on each
+    // environment. Intentionally violates the file's additive-only contract
+    // for this single migration; remove this line once dev + prod are both
+    // confirmed clean (tracked as a follow-up task).
+    await pool.query(`DROP TABLE IF EXISTS homepage_sections;`);
+
+    // Self-healing seed for the approved production package catalog.
+    // INTENT: if `package_templates` is empty (fresh DB or a prod environment
+    // that was never seeded), populate the 7 approved entries. ON CONFLICT
+    // (name) DO NOTHING makes this concurrency-safe across simultaneous
+    // Vercel cold starts, and prevents duplicates if an admin re-creates a
+    // deleted template under the same name. Existing rows are never touched
+    // — admin edits to price / description / display_order are preserved.
+    // NOTE: this WILL repopulate the catalog if the table is ever fully
+    // emptied. That is intentional — the production booking flow is broken
+    // when this table is empty, so self-heal > silent breakage.
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS package_templates_name_uq
+         ON package_templates (name);`,
+    );
+    const tplCount = await pool.query<{ c: string }>(
+      `SELECT COUNT(*)::text AS c FROM package_templates`,
+    );
+    if ((tplCount.rows[0]?.c ?? "0") === "0") {
+      console.log("[ensureSchema] seeding approved package_templates (empty table)");
+      await pool.query(`
+        INSERT INTO package_templates
+          (name, type, paid_sessions, bonus_sessions, total_sessions,
+           price_per_session, total_price, expiration_value, expiration_unit,
+           description, is_active, display_order)
+        VALUES
+          ('Single Session',                'single',    1, 0,  1, 375,  375,  30, 'days',
+           'One personal training session — perfect for trying things out or topping up.', true, 10),
+          ('10 Sessions Package',           'standard', 10, 0, 10, 325, 3245,  60, 'days',
+           '10 personal training sessions — build consistency and start seeing real change.', true, 20),
+          ('20 Sessions Package',           'standard', 20, 0, 20, 288, 5750,  90, 'days',
+           '20 personal training sessions — the sweet spot for visible body recomposition and habit lock-in.', true, 30),
+          ('25 Sessions Package',           'standard', 25, 0, 25, 270, 6750, 120, 'days',
+           '25 personal training sessions — best per-session value for serious training goals.', true, 40),
+          ('Duo Package',                   'duo',      30, 0, 30, 330, 9900, 120, 'days',
+           '30 sessions for two people training together at the same time — share the package, share the wins.', true, 50),
+          ('BMI Assessment',                'custom',    1, 0,  1,   0,    0,  30, 'days',
+           'Body composition snapshot: BMI, weight, body fat, lean mass, baseline measurements.', true, 60),
+          ('Technical Movement Assessment', 'custom',    1, 0,  1,   0,    0,  30, 'days',
+           'Movement screen: posture, mobility, stability, and lift mechanics — sets the foundation for a tailored program.', true, 70)
+        ON CONFLICT (name) DO NOTHING;
+      `);
+    }
+
     console.log("[ensureSchema] OK");
   } catch (err) {
     console.error("[ensureSchema] FAILED — server will still try to boot:", err);
