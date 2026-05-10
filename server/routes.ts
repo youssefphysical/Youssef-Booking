@@ -2773,6 +2773,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Read the audit trail for a single client (used by the Sessions tab).
   // P4e: Activity feed (admin scoping a specific client).
+  // Task #5 (Nov 2026): Linked Duo partners for the admin client detail
+  // page. Aggregates BOTH directions of `packages.partnerUserId` and
+  // `bookings.linkedPartnerUserId` so the admin sees every account this
+  // client shares a duo session with — regardless of who's the "primary"
+  // on a given package or booking. Returns minimal sanitized identity
+  // shapes plus the source set so the UI can label provenance.
+  app.get("/api/admin/clients/:id/linked-partners", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    const partners = await storage.getLinkedPartnerIds(userId);
+    const out: Array<{
+      id: number;
+      fullName: string | null;
+      username: string | null;
+      profilePictureUrl: string | null;
+      sources: ("package" | "booking")[];
+    }> = [];
+    for (const p of partners) {
+      const u = await storage.getUser(p.id);
+      if (!u) continue;
+      const su = sanitizeUser(u);
+      out.push({
+        id: su.id,
+        fullName: su.fullName ?? null,
+        username: su.username ?? null,
+        profilePictureUrl: su.profilePictureUrl ?? null,
+        sources: p.sources,
+      });
+    }
+    out.sort((a, b) =>
+      (a.fullName || a.username || "").localeCompare(b.fullName || b.username || ""),
+    );
+    res.json(out);
+  });
+
   app.get("/api/admin/clients/:id/activity", requireAdmin, async (req, res) => {
     const userId = Number(req.params.id);
     if (!userId) return res.status(400).json({ message: "Invalid client id" });

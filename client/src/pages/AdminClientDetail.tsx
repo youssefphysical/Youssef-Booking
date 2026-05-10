@@ -135,7 +135,7 @@ import {
   type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
-import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck } from "lucide-react";
+import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users } from "lucide-react";
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -741,6 +741,7 @@ function OverviewTab({
         </div>
       </AdminCard>
 
+      <LinkedPartnersCard clientId={client.id} />
       <ClientPrivilegesCard client={client} />
       <ConsentsCard userId={client.id} />
     </div>
@@ -776,6 +777,89 @@ function CheckinChip({
         {v == null ? "—" : `${v}${suffix ?? ""}`}
       </p>
     </div>
+  );
+}
+
+/**
+ * Task #5: Linked Duo partners — surfaces every other client this client
+ * shares a duo session with. Aggregates packages.partnerUserId AND
+ * bookings.linkedPartnerUserId, in BOTH directions, so the admin can
+ * jump from one half of a couple straight to the other regardless of
+ * who's the "primary" on a given package or booking.
+ */
+type LinkedPartner = {
+  id: number;
+  fullName: string | null;
+  username: string | null;
+  profilePictureUrl: string | null;
+  sources: ("package" | "booking")[];
+};
+
+function LinkedPartnersCard({ clientId }: { clientId: number }) {
+  const { t } = useTranslation();
+  const { data = [], isLoading } = useQuery<LinkedPartner[]>({
+    queryKey: ["/api/admin/clients", clientId, "linked-partners"],
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/clients/${clientId}/linked-partners`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to load linked partners");
+      return res.json();
+    },
+  });
+
+  if (isLoading) return null;
+  if (data.length === 0) return null;
+
+  return (
+    <AdminCard testId="overview-linked-partners">
+      <AdminSectionTitle
+        title={t("admin.clientDetail.linkedPartners", "Duo partners")}
+      />
+      <p className="text-[11px] text-muted-foreground mb-2.5 inline-flex items-center gap-1.5">
+        <Users size={12} />
+        {t(
+          "admin.clientDetail.linkedPartnersHint",
+          "Other clients this client shares duo sessions or duo packages with.",
+        )}
+      </p>
+      <ul className="flex flex-wrap gap-2">
+        {data.map((p) => {
+          const name = p.fullName || p.username || `Client #${p.id}`;
+          const sourceLabel = p.sources
+            .map((s) =>
+              s === "package"
+                ? t("admin.clientDetail.linkedSourcePackage", "package")
+                : t("admin.clientDetail.linkedSourceBooking", "booking"),
+            )
+            .join(" · ");
+          return (
+            <li key={p.id}>
+              <Link
+                href={`/admin/clients/${p.id}`}
+                data-testid={`link-linked-partner-${p.id}`}
+                className="inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-cyan-400/30 bg-cyan-400/[0.06] text-cyan-200 hover:border-cyan-400/60 hover:bg-cyan-400/[0.12] transition-colors"
+              >
+                <UserAvatar
+                  name={name}
+                  src={p.profilePictureUrl}
+                  size={24}
+                />
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[12px] font-semibold inline-flex items-center gap-1.5">
+                    <Link2 size={10} />
+                    {name}
+                  </span>
+                  <span className="text-[9.5px] uppercase tracking-wider text-cyan-300/70 font-semibold">
+                    {sourceLabel}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </AdminCard>
   );
 }
 

@@ -245,6 +245,11 @@ export interface IStorage {
 
   // Packages
   getPackages(filters?: { userId?: number; activeOnly?: boolean }): Promise<Package[]>;
+  // Returns the distinct OTHER-user ids that share a duo relationship with
+  // `userId` — derived from BOTH directions of `packages.partnerUserId` and
+  // `bookings.linkedPartnerUserId`. Each entry carries the set of sources
+  // ("package" | "booking") so the UI can label provenance.
+  getLinkedPartnerIds(userId: number): Promise<{ id: number; sources: ("package" | "booking")[] }[]>;
   getPackage(id: number): Promise<Package | undefined>;
   getActivePackageForUser(userId: number): Promise<Package | undefined>;
   createPackage(pkg: InsertPackage): Promise<Package>;
@@ -857,6 +862,41 @@ export class DatabaseStorage implements IStorage {
   async getPackage(id: number) {
     const [p] = await db.select().from(packages).where(eq(packages.id, id));
     return p;
+  }
+
+  async getLinkedPartnerIds(userId: number) {
+    // Pull both forward (this user is primary) and reverse (this user is the
+    // partner) rows in a single query per table. We deliberately keep this
+    // narrow — only the id columns we need to derive the relationship.
+    const pkgRows = await db
+      .select({ userId: packages.userId, partnerUserId: packages.partnerUserId })
+      .from(packages)
+      .where(or(eq(packages.userId, userId), eq(packages.partnerUserId, userId))!);
+    const bkRows = await db
+      .select({ userId: bookings.userId, linkedPartnerUserId: bookings.linkedPartnerUserId })
+      .from(bookings)
+      .where(or(eq(bookings.userId, userId), eq(bookings.linkedPartnerUserId, userId))!);
+
+    const map = new Map<number, Set<"package" | "booking">>();
+    const add = (other: number | null | undefined, src: "package" | "booking") => {
+      if (typeof other !== "number" || other === userId) return;
+      let set = map.get(other);
+      if (!set) {
+        set = new Set();
+        map.set(other, set);
+      }
+      set.add(src);
+    };
+    for (const r of pkgRows) {
+      add(r.userId === userId ? r.partnerUserId : r.userId, "package");
+    }
+    for (const r of bkRows) {
+      add(r.userId === userId ? r.linkedPartnerUserId : r.userId, "booking");
+    }
+    return Array.from(map.entries()).map(([id, sources]) => ({
+      id,
+      sources: Array.from(sources),
+    }));
   }
 
   async getActivePackageForUser(userId: number) {
