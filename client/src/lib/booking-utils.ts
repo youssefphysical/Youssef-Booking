@@ -6,12 +6,12 @@ export const ALL_TIME_SLOTS = [
   "18:00", "19:00", "20:00", "21:00", "22:00",
 ];
 
-// Clients must book at least 3 hours before the session starts so the trainer
+// Clients must book at least 6 hours before the session starts so the trainer
 // has time to prepare and travel. Mirrors server `MIN_ADVANCE_BOOKING_HOURS`
 // in server/routes.ts — keep the two in sync. NOTE: this is the booking
 // lead-time; the cancellation cutoff is a separate setting (default 6h) and
 // lives in `settings.cancellation_cutoff_hours`.
-export const MIN_ADVANCE_HOURS = 3;
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 
 export function formatStatus(status: string): string {

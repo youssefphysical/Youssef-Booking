@@ -272,11 +272,11 @@ async function runMissedCheckinNotifications(): Promise<void> {
   }
 }
 
-// Clients must book at least 3 hours before the session starts so the trainer
+// Clients must book at least 6 hours before the session starts so the trainer
 // has time to prepare and travel to the location. Admins bypass this rule.
 // The cancellation cutoff is SEPARATE (default 6h, configurable via
 // settings.cancellation_cutoff_hours) — do not conflate.
-const MIN_ADVANCE_BOOKING_HOURS = 3;
+const MIN_ADVANCE_BOOKING_HOURS = 6;
 const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
 
 // Single source of truth for "this status consumes a session credit". Used
