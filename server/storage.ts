@@ -199,7 +199,21 @@ export interface IStorage {
   }>;
 
   // Bookings
-  getBookings(filters?: { userId?: number; from?: string }): Promise<Booking[]>;
+  getBookings(filters?: {
+    userId?: number;
+    from?: string;
+    orLinkedPartnerUserId?: number;
+  }): Promise<Booking[]>;
+  // Counts the number of DISTINCT active duo PACKAGES (not bookings)
+  // where the user is currently linked as a partner, EXCLUDING the
+  // package the new link would belong to. Used by the admin link
+  // endpoint so a partner can be linked to multiple bookings under the
+  // SAME package without a conflict, but linking them to bookings
+  // across DIFFERENT packages requires `override:true`.
+  countActiveLinkedDuoPackagesExcept(
+    userId: number,
+    excludePackageId: number | null,
+  ): Promise<number>;
   getBooking(id: number): Promise<Booking | undefined>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBooking(id: number, updates: Partial<Booking>): Promise<Booking>;
@@ -594,15 +608,66 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ===== Bookings =====
-  async getBookings(filters?: { userId?: number; from?: string }) {
+  async getBookings(filters?: {
+    userId?: number;
+    from?: string;
+    orLinkedPartnerUserId?: number;
+  }) {
     const conds: any[] = [];
-    if (filters?.userId) conds.push(eq(bookings.userId, filters.userId));
+    // Identity filter. If `orLinkedPartnerUserId` is set together with
+    // `userId`, return bookings where the user is EITHER the primary
+    // owner OR a linked duo partner — used by the client GET /api/bookings
+    // so a linked partner can see their duo bookings read-only.
+    if (filters?.userId && filters.orLinkedPartnerUserId === filters.userId) {
+      conds.push(
+        or(
+          eq(bookings.userId, filters.userId),
+          eq(bookings.linkedPartnerUserId, filters.userId),
+        )!,
+      );
+    } else if (filters?.userId) {
+      conds.push(eq(bookings.userId, filters.userId));
+    }
     if (filters?.from) conds.push(gte(bookings.date, filters.from));
     const q =
       conds.length > 0
         ? db.select().from(bookings).where(and(...conds))
         : db.select().from(bookings);
     return q.orderBy(asc(bookings.date), asc(bookings.timeSlot));
+  }
+
+  async countActiveLinkedDuoPackagesExcept(
+    userId: number,
+    excludePackageId: number | null,
+  ): Promise<number> {
+    // "Active" = not in any cancelled/completed terminal state. Mirrors
+    // the same set used by the slot-availability filter elsewhere.
+    // We count DISTINCT packageIds so multiple duo bookings under the
+    // same package count as one conflict.
+    const rows = await db
+      .select({ packageId: bookings.packageId })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.linkedPartnerUserId, userId),
+          eq(bookings.sessionType, "duo"),
+          notInArray(bookings.status, [
+            "cancelled",
+            "free_cancelled",
+            "late_cancelled",
+            "emergency_cancelled",
+            "completed",
+            "no_show",
+          ]),
+        ),
+      );
+    const distinct = new Set<number>();
+    for (const r of rows) {
+      if (typeof r.packageId === "number" && r.packageId !== excludePackageId) {
+        distinct.add(r.packageId);
+      }
+    }
+    return distinct.size;
   }
 
   async getBooking(id: number) {

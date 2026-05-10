@@ -1091,9 +1091,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // fire-and-forget so the response time is unaffected.
     triggerAutoCompleteBackstop();
 
-    const filters: { userId?: number; from?: string } = {};
+    const filters: {
+      userId?: number;
+      from?: string;
+      orLinkedPartnerUserId?: number;
+    } = {};
     if (me.role !== "admin") {
+      // Non-admin: see bookings where I'm the primary client OR a
+      // linked duo partner. Storage returns the OR-union; sanitization
+      // below still strips coach-private fields.
       filters.userId = me.id;
+      filters.orLinkedPartnerUserId = me.id;
     } else if (userIdQuery) {
       filters.userId = userIdQuery;
     }
@@ -1102,13 +1110,65 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const list = await storage.getBookings(filters);
     if (!includeUser) return res.json(list.map((b) => sanitizeBookingForUser(me, b)));
 
-    const userIds = Array.from(new Set(list.map((b) => b.userId)));
-    const usersById: Record<number, ReturnType<typeof sanitizeUser>> = {};
+    // Collect both primary owner ids AND linked partner ids so the
+    // admin booking row can render "<primary> + <partner>".
+    const userIds = Array.from(
+      new Set(
+        list.flatMap((b) =>
+          [b.userId, (b as any).linkedPartnerUserId].filter((x): x is number => typeof x === "number"),
+        ),
+      ),
+    );
+    // Privacy: admins get the full sanitized user. Non-admins (including
+    // linked partners) get a MINIMAL identity shape — just id + fullName —
+    // so a linked partner cannot harvest the primary client's email,
+    // phone, status, or other profile PII through the bookings list.
+    const usersById: Record<number, { id: number; fullName: string | null } | ReturnType<typeof sanitizeUser>> = {};
     for (const uid of userIds) {
       const u = await storage.getUser(uid);
-      if (u) usersById[uid] = sanitizeUser(u);
+      if (!u) continue;
+      usersById[uid] =
+        me.role === "admin"
+          ? sanitizeUser(u)
+          : { id: u.id, fullName: u.fullName ?? null };
     }
-    res.json(list.map((b) => sanitizeBookingForUser(me, { ...b, user: usersById[b.userId] || null })));
+    // For admin rows, also attach a lightweight package digest for
+    // duo bookings so the UI can render "Session N of M / X remaining"
+    // without an extra round-trip.
+    const packageIds = Array.from(
+      new Set(
+        list
+          .map((b) => (b as any).packageId)
+          .filter((x): x is number => typeof x === "number"),
+      ),
+    );
+    const packagesById: Record<number, { id: number; usedSessions: number; totalSessions: number; remaining: number } | null> = {};
+    if (me.role === "admin" && packageIds.length > 0) {
+      for (const pid of packageIds) {
+        const pkg = await storage.getPackage(pid);
+        if (pkg) {
+          const used = pkg.usedSessions ?? 0;
+          const total = pkg.totalSessions ?? 0;
+          packagesById[pid] = { id: pkg.id, usedSessions: used, totalSessions: total, remaining: Math.max(0, total - used) };
+        }
+      }
+    }
+    res.json(
+      list.map((b) =>
+        sanitizeBookingForUser(me, {
+          ...b,
+          user: usersById[b.userId] || null,
+          linkedPartnerUser:
+            typeof (b as any).linkedPartnerUserId === "number"
+              ? usersById[(b as any).linkedPartnerUserId] || null
+              : null,
+          package:
+            me.role === "admin" && typeof (b as any).packageId === "number"
+              ? packagesById[(b as any).packageId] || null
+              : null,
+        }),
+      ),
+    );
   });
 
   app.post("/api/bookings", requireAuth, async (req, res) => {
@@ -1561,6 +1621,95 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       to,
       from: cfg.from,
     });
+  });
+
+  // ============== ADMIN: Link / Unlink Duo Partner Account ==============
+  // Admin-only. Binds an existing user account to a duo booking's
+  // linked_partner_user_id so the partner can SEE the booking on their
+  // own dashboard. Does NOT change package ownership or grant any
+  // mutation rights — primary userId remains the owner, and the
+  // existing booking-mutation guards (`booking.userId === me.id`) keep
+  // linked partners read-only.
+  //
+  // Validation rules enforced server-side only:
+  //   • Booking must exist + sessionType must be "duo".
+  //   • Cannot self-link (partner !== primary).
+  //   • Target user must exist + role must be "client" (no admins as
+  //     partners — prevents privilege confusion).
+  //   • Partner cannot already be linked to another active duo booking
+  //     unless the request body sets `override: true` (admin override).
+  app.post("/api/admin/bookings/:id/link-partner", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const schema = z.object({
+      partnerUserId: z.number().int().positive(),
+      override: z.boolean().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    const booking = await storage.getBooking(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.sessionType !== "duo") {
+      return res
+        .status(400)
+        .json({ message: "Only duo bookings can have a linked partner." });
+    }
+    if (parsed.data.partnerUserId === booking.userId) {
+      return res
+        .status(400)
+        .json({ message: "Partner cannot be the same as the primary client." });
+    }
+    const partnerUser = await storage.getUser(parsed.data.partnerUserId);
+    if (!partnerUser) {
+      return res.status(404).json({ message: "Partner account not found." });
+    }
+    if (partnerUser.role !== "client") {
+      return res
+        .status(400)
+        .json({ message: "Only client accounts can be linked as a duo partner." });
+    }
+    if (booking.linkedPartnerUserId === parsed.data.partnerUserId) {
+      return res
+        .status(409)
+        .json({ message: "This partner is already linked to this booking." });
+    }
+    if (!parsed.data.override) {
+      // Per architecture rule #5: prevent linking the same user to
+      // multiple ACTIVE DUO PACKAGES simultaneously unless admin overrides.
+      // Multiple linked bookings under the SAME package are allowed
+      // (same duo couple booking several sessions on one package).
+      const conflicts = await storage.countActiveLinkedDuoPackagesExcept(
+        parsed.data.partnerUserId,
+        booking.packageId ?? null,
+      );
+      if (conflicts > 0) {
+        return res.status(409).json({
+          message:
+            "This client is already linked as a partner on another active duo package. Pass override:true to force link.",
+          code: "active_duo_link_exists",
+        });
+      }
+    }
+    const updated = await storage.updateBooking(id, {
+      linkedPartnerUserId: parsed.data.partnerUserId,
+    });
+    res.json(sanitizeBookingForUser(req.user as User, updated));
+  });
+
+  app.post("/api/admin/bookings/:id/unlink-partner", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const booking = await storage.getBooking(id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (booking.linkedPartnerUserId == null) {
+      return res
+        .status(400)
+        .json({ message: "No linked partner on this booking." });
+    }
+    const updated = await storage.updateBooking(id, { linkedPartnerUserId: null });
+    res.json(sanitizeBookingForUser(req.user as User, updated));
   });
 
   app.post("/api/bookings/:id/cancel", requireAuth, async (req, res) => {

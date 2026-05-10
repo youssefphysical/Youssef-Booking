@@ -284,6 +284,20 @@ export const bookings = pgTable("bookings", {
   partnerFullName: text("partner_full_name"),
   partnerPhone: text("partner_phone"),
   partnerEmail: text("partner_email"),
+  // ─── Linked Partner Account (Nov 2026 follow-up) ────────────────────
+  // OPTIONAL admin-only binding from the per-booking partner snapshot
+  // above to a real registered user account. When set:
+  //   • The linked partner can SEE this booking on their own dashboard
+  //     (read-only, sanitized like a primary client view).
+  //   • Linked partner does NOT become the package owner — the primary
+  //     `userId` remains the owner and the only account whose package
+  //     usage is deducted.
+  //   • Linked partner CANNOT mutate (cancel/reschedule/edit) the
+  //     booking. The existing booking-mutation guards key off
+  //     `booking.userId === me.id`, so a linked partner is blocked
+  //     by the same auth check that already exists.
+  // Nullable on purpose — most duo bookings stay with just the snapshot.
+  linkedPartnerUserId: integer("linked_partner_user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });

@@ -69,7 +69,11 @@ async function run(): Promise<void> {
       -- duo sessions; partner does NOT need an account).
       ADD COLUMN IF NOT EXISTS partner_full_name text,
       ADD COLUMN IF NOT EXISTS partner_phone     text,
-      ADD COLUMN IF NOT EXISTS partner_email     text;
+      ADD COLUMN IF NOT EXISTS partner_email     text,
+      -- Nov 2026 Linked Partner Account: optional FK to users for
+      -- admin-managed account linking on duo bookings. Nullable; the
+      -- primary userId stays the package owner regardless.
+      ADD COLUMN IF NOT EXISTS linked_partner_user_id integer REFERENCES users(id);
 
     -- Partial UNIQUE INDEX: at most one ACTIVE booking per (date, slot).
     -- Cancelled variants are excluded so a cancelled slot is freed for

@@ -673,6 +673,39 @@ function BookingRow({
                   </span>
                 )}
               </p>
+              {/* Duo metadata strip — partner snapshot + (when present) the
+                  linked partner account. Renders ONLY for duo bookings so
+                  single/package/trial rows stay visually clean. */}
+              {b.sessionType === "duo" && (b as any).partnerFullName && (
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span
+                    className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-primary/40 bg-primary/10 text-primary"
+                    data-testid={`badge-duo-${b.id}`}
+                  >
+                    Duo
+                  </span>
+                  <span
+                    className="text-[11px] text-foreground/80 truncate"
+                    data-testid={`text-partner-${b.id}`}
+                  >
+                    + {(b as any).partnerFullName}
+                    {(b as any).linkedPartnerUser?.fullName && (
+                      <span className="text-primary/80 ms-1">
+                        (linked: {(b as any).linkedPartnerUser.fullName})
+                      </span>
+                    )}
+                  </span>
+                  {(b as any).package && (
+                    <span
+                      className="text-[10px] text-muted-foreground tabular-nums"
+                      data-testid={`text-session-count-${b.id}`}
+                    >
+                      Session {((b as any).package.usedSessions ?? 0) + 1} of {(b as any).package.totalSessions} ·{" "}
+                      {(b as any).package.remaining} left
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <span
                   className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(b.status)}`}
