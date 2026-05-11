@@ -377,6 +377,8 @@ export default function BookingPage() {
               <Clock size={16} className="text-primary" />
               {t("booking.slotsFor").replace("{date}", format(date, "EEEE, MMM d"))}
             </h3>
+            <LeadTimeDebugStrip />
+            
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
               {ALL_TIME_SLOTS.map((slot) => {
                 const state = slotState[slot] || "available";
@@ -890,6 +892,48 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
           {t("booking.sessionsRemaining").replace("{n}", String(sessionsLeft))}
         </p>
         <p className="text-muted-foreground">{t("booking.deductedNote")}</p>
+      </div>
+    </div>
+  );
+}
+
+// TEMPORARY production diagnostic strip (May 2026): renders the EXACT values
+// the slot filter is using — so a screenshot is enough to know whether the
+// device clock, the bundle, or the math is the source of any disagreement.
+// Updates every second so a stale chunk would still drift visibly in <60s.
+function LeadTimeDebugStrip() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const now = new Date();
+  const fmt = (d: Date) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Dubai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(d);
+  const cutoff = new Date(now.getTime() + MIN_ADVANCE_MS);
+  return (
+    <div
+      data-testid="lead-time-debug"
+      className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] font-mono text-amber-200/90 leading-relaxed"
+    >
+      <div>
+        Now (Dubai):&nbsp;<span className="text-amber-100">{fmt(now)}</span>
+      </div>
+      <div>
+        Cutoff = Now + 3h:&nbsp;
+        <span className="text-amber-100">{fmt(cutoff)}</span>
+      </div>
+      <div className="opacity-70">
+        Build: 2026-05-11-v3 · MIN_ADVANCE_MS={MIN_ADVANCE_MS} · tick={tick}
       </div>
     </div>
   );
