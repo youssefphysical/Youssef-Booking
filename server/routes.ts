@@ -1314,7 +1314,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ) {
       return res.status(400).json({
         message:
-          "You don't have an active package linked to this booking. Please request a new package or contact Youssef.",
+          "You don't have an active package linked to this booking. Request a new package or contact support through the platform.",
         code: "no_active_package",
       });
     }
@@ -1855,14 +1855,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({
           message: `You have used all ${quota} Protected Cancellation${
             quota === 1 ? "" : "s"
-          } for this month. Please contact Youssef directly.`,
+          } for this month. Contact support through the platform for further assistance.`,
         });
       }
       newStatus = "free_cancelled";
       usedProtected = true;
     } else {
       return res.status(400).json({
-        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain. You can use a Protected Cancellation if available, or contact Youssef directly.`,
+        message: `Cancellation locked. Less than ${settings.cancellationCutoffHours} hours remain. Use a Protected Cancellation if available, or contact support through the platform.`,
       });
     }
 
@@ -2011,7 +2011,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (quota === 0) {
         return res.status(400).json({
           message:
-            "Same-Day Adjustments are not available on your current membership level. Contact Youssef on WhatsApp if you need help.",
+            "Same-Day Adjustments are not available on your current membership level. Contact support through the platform for assistance.",
         });
       }
       if (usedThisMonth >= quota) {
