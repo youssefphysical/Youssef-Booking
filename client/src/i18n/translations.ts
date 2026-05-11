@@ -982,7 +982,7 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     "legal.cookies.sec4Body": "Trusted third-party services are used for hosting, analytics, and AI-assisted InBody analysis. These services use their own technical cookies as required to function. They do not receive any of your personal training data beyond what is strictly necessary to operate the service.",
     "legal.cookies.sec5Title": "5. Contact",
     "legal.cookies.sec5BodyPre": "For any question about cookies or your data, contact support through the platform or via",
-    "booking.advanceRule": "Bookings must be made at least 6 hours in advance so the trainer can prepare and arrive on time.",
+    "booking.advanceRule": "Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time.",
     "common.notEnoughData": "Not enough data",
     "phone.searchCountry": "Search country or code",
     "admin.dashboard.subtitle": "Manage clients, bookings, packages, and settings — all in one place.",
