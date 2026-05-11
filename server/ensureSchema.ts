@@ -211,7 +211,24 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS frozen_reason text,
       ADD COLUMN IF NOT EXISTS admin_approved boolean NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS admin_approved_at timestamp,
-      ADD COLUMN IF NOT EXISTS admin_approved_by_user_id integer;
+      ADD COLUMN IF NOT EXISTS admin_approved_by_user_id integer,
+      -- May 2026 payment-tracking refinement (additive). amount_paid is the
+      -- running total of AED received against total_price; last_payment_date
+      -- stamps the most recent inbound payment. Both NULL-safe / 0-default
+      -- so legacy rows are never disturbed.
+      ADD COLUMN IF NOT EXISTS amount_paid integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS last_payment_date timestamp;
+
+    -- One-time backfill so existing fully-paid packages display "AED X / X"
+    -- instead of "AED 0 / X" after this migration ships. Only touches rows
+    -- where the trainer has already marked payment_status='paid' AND we
+    -- haven't seeded amount_paid yet (idempotent re-run safe).
+    UPDATE packages
+       SET amount_paid = COALESCE(total_price, 0)
+     WHERE payment_status = 'paid'
+       AND amount_paid = 0
+       AND total_price IS NOT NULL
+       AND total_price > 0;
 
     CREATE TABLE IF NOT EXISTS package_session_history (
       id serial PRIMARY KEY,

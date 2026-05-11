@@ -19,11 +19,12 @@
  * Bumping CACHE_VERSION invalidates ALL caches → safe escape hatch.
  */
 
-// Bumped 2026-05-11 to force-evict stale BookingPage / time-format chunks
-// after the Dubai-timezone lead-time fix. The activate handler deletes any
-// cache key not matching the current STATIC/RUNTIME names, so bumping this
-// is the safest escape hatch for "old code stuck on user devices" reports.
-const CACHE_VERSION = "v16-2026-05-11-booking-leadtime";
+// Bumped 2026-05-11 (v17) to force-evict stale package-card / payment-badge
+// chunks after the payment-tracking refinement (amount_paid + last_payment_date
+// + premium status badges). The activate handler deletes any cache key not
+// matching the current STATIC/RUNTIME names, so bumping this is the safest
+// escape hatch for "old code stuck on user devices" reports.
+const CACHE_VERSION = "v17-2026-05-11-payment-tracking";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 

@@ -67,7 +67,10 @@ import {
   extendPackageSchema,
   freezePackageSchema,
   updatePackagePaymentSchema,
+  addPackagePaymentSchema,
+  convertTrialPackageSchema,
   adjustPackageSessionsSchema,
+  expirationToDays,
   approvePackageSchema,
   evaluateBookingEligibility,
   CLIENT_STATUSES,
@@ -79,6 +82,7 @@ import {
   type AdminPermissionKey,
   type ClientStatus,
   type AdminAnalytics,
+  type PackagePaymentStatus,
 } from "@shared/schema";
 import {
   sendEmail,
@@ -2767,14 +2771,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const pkg = await storage.getPackage(id);
     if (!pkg) return res.status(404).json({ message: "Package not found" });
     const me = req.user as User;
+    const status = parsed.data.paymentStatus;
     const approved =
-      parsed.data.paymentApproved ?? parsed.data.paymentStatus === "paid";
+      parsed.data.paymentApproved ?? (status === "paid" || status === "complimentary");
+    // Derive amountPaid when not explicitly provided. "Mark Paid in Full"
+    // and "Complimentary" are bookkeeping shortcuts; partial / pending /
+    // unpaid leave the running total untouched so the trainer never
+    // accidentally wipes out a previously recorded partial payment.
+    const totalPrice = (pkg as any).totalPrice ?? 0;
+    let nextAmountPaid: number | undefined = parsed.data.amountPaid;
+    if (nextAmountPaid === undefined) {
+      if (status === "paid") nextAmountPaid = totalPrice;
+      else if (status === "complimentary") nextAmountPaid = 0;
+    }
+    const isFullPayment = status === "paid" && totalPrice > 0;
     const updated = await storage.updatePackage(id, {
-      paymentStatus: parsed.data.paymentStatus,
+      paymentStatus: status,
       paymentApproved: approved,
       paymentApprovedAt: approved ? new Date() : null,
       paymentApprovedByUserId: approved ? me.id : null,
       paymentNote: parsed.data.note ?? null,
+      ...(nextAmountPaid !== undefined ? { amountPaid: nextAmountPaid } : {}),
+      ...(isFullPayment ? { lastPaymentDate: new Date() } : {}),
     } as any);
     try {
       await storage.createPackageSessionHistory({
@@ -2783,7 +2801,106 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         action: "payment_updated",
         sessionsDelta: 0,
         performedByUserId: me.id,
-        reason: `${parsed.data.paymentStatus}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
+        reason: `${status}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Record a partial payment (delta). Accumulates onto amount_paid; when
+  // the running total reaches total_price we auto-promote the status to
+  // 'paid' + stamp paymentApproved + lastPaymentDate. Each call writes a
+  // payment_received audit entry so the timeline shows every receipt.
+  app.post("/api/admin/packages/:id/add-payment", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = addPackagePaymentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const totalPrice = (pkg as any).totalPrice ?? 0;
+    const prevPaid = (pkg as any).amountPaid ?? 0;
+    const nextPaid = prevPaid + parsed.data.amount;
+    const reachedFull = totalPrice > 0 && nextPaid >= totalPrice;
+    const nextStatus: PackagePaymentStatus = reachedFull ? "paid" : "partially_paid";
+    const updated = await storage.updatePackage(id, {
+      amountPaid: nextPaid,
+      lastPaymentDate: new Date(),
+      paymentStatus: nextStatus,
+      ...(reachedFull
+        ? {
+            paymentApproved: true,
+            paymentApprovedAt: new Date(),
+            paymentApprovedByUserId: me.id,
+          }
+        : {}),
+      ...(parsed.data.note ? { paymentNote: parsed.data.note } : {}),
+    } as any);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "payment_received",
+        sessionsDelta: 0,
+        performedByUserId: me.id,
+        reason: `AED ${parsed.data.amount.toLocaleString()}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
+  // Convert a free trial / zero-price package row into a real paid package
+  // by snapshotting a chosen template onto the existing row. Sessions reset
+  // (usedSessions=0), expiry is recomputed from the template's window, and
+  // payment defaults to 'pending' so the admin records the first payment
+  // via /add-payment afterwards. We mutate IN PLACE so historical bookings
+  // stay attached to the same packageId.
+  app.post("/api/admin/packages/:id/convert-trial", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = convertTrialPackageSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const tmpl = await storage.getPackageTemplate(parsed.data.templateId);
+    if (!tmpl) return res.status(404).json({ message: "Template not found" });
+    const me = req.user as User;
+    const startStr = parsed.data.startDate ?? new Date().toISOString().slice(0, 10);
+    const start = new Date(`${startStr}T00:00:00+04:00`);
+    const days = expirationToDays(tmpl.expirationValue, tmpl.expirationUnit);
+    const expiry = new Date(start);
+    expiry.setDate(expiry.getDate() + days);
+    const updated = await storage.updatePackage(id, {
+      templateId: tmpl.id,
+      name: tmpl.name,
+      type: tmpl.type,
+      paidSessions: tmpl.paidSessions,
+      bonusSessions: tmpl.bonusSessions,
+      totalSessions: tmpl.totalSessions,
+      pricePerSession: tmpl.pricePerSession,
+      totalPrice: tmpl.totalPrice,
+      usedSessions: 0,
+      isActive: true,
+      startDate: startStr as any,
+      expiryDate: expiry.toISOString().slice(0, 10) as any,
+      paymentStatus: "pending",
+      paymentApproved: false,
+      paymentApprovedAt: null,
+      paymentApprovedByUserId: null,
+      amountPaid: 0,
+      lastPaymentDate: null,
+    } as any);
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "trial_converted",
+        sessionsDelta: tmpl.totalSessions,
+        performedByUserId: me.id,
+        reason: `Converted to ${tmpl.name} (${tmpl.totalSessions} sessions, AED ${tmpl.totalPrice.toLocaleString()})`,
       } as any);
     } catch {/* ignore */}
     res.json(updated);

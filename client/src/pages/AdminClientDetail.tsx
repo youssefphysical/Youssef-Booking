@@ -135,7 +135,15 @@ import {
   type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
-import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users } from "lucide-react";
+import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles } from "lucide-react";
+import { usePackageTemplates as usePackageTemplatesForConvert } from "@/hooks/use-package-templates";
+
+const FMT_AED_ADMIN = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "AED",
+  currencyDisplay: "code",
+  maximumFractionDigits: 0,
+}).format;
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -2405,10 +2413,37 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
     onSuccess: () => { invalidate(); toast({ title: "Sessions adjusted" }); },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
+  // New: record an inbound partial payment (AED). Server accumulates onto
+  // amount_paid, auto-promotes to "paid" when running total reaches
+  // total_price, and stamps last_payment_date for the audit timeline.
+  const addPaymentMut = useMutation({
+    mutationFn: async (vars: { amount: number; note?: string | null }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/add-payment`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Payment recorded" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  // New: convert this free-trial / zero-price package into a real paid
+  // package by snapshotting the chosen template onto the same row.
+  const convertTrialMut = useMutation({
+    mutationFn: async (vars: { templateId: number; startDate?: string }) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/convert-trial`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Trial converted" }); },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
 
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjDelta, setAdjDelta] = useState<number>(1);
   const [adjReason, setAdjReason] = useState("");
+  const [payOpen, setPayOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState<number>(0);
+  const [payNote, setPayNote] = useState("");
+  const [convertOpen, setConvertOpen] = useState(false);
+  const [convertTemplateId, setConvertTemplateId] = useState<string>("");
+  const { data: convertTemplates = [] } = usePackageTemplatesForConvert({ activeOnly: true });
 
   const paymentStatus = ((pkg as any).paymentStatus ?? "unpaid") as PackagePaymentStatus;
   const adminApproved = !!(pkg as any).adminApproved;
@@ -2450,7 +2485,194 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
         )}
       </div>
 
+      {/* Payment ledger — running AED total / outstanding balance.
+          Hidden for complimentary packages (no money owed) and for
+          legacy packages without a totalPrice snapshot. */}
+      {(() => {
+        const totalPrice = ((pkg as any).totalPrice ?? 0) as number;
+        const amountPaid = ((pkg as any).amountPaid ?? 0) as number;
+        const lastPay = (pkg as any).lastPaymentDate as string | null;
+        const isComp = paymentStatus === "complimentary";
+        const isTrial = totalPrice <= 0 || (pkg as any).type === "trial";
+        if (isComp) {
+          return (
+            <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 px-3 py-2 text-[11px] text-sky-200">
+              <Gift size={11} className="inline mr-1 -mt-0.5" />
+              Complimentary package — no payment required.
+            </div>
+          );
+        }
+        if (isTrial) {
+          return (
+            <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-2 text-[11px] text-violet-200 flex items-center justify-between gap-2">
+              <span>
+                <Sparkles size={11} className="inline mr-1 -mt-0.5" />
+                Trial / zero-price snapshot — convert to paid package to set price &amp; expiry.
+              </span>
+            </div>
+          );
+        }
+        const outstanding = Math.max(0, totalPrice - amountPaid);
+        const pctPaid = totalPrice > 0 ? Math.min(100, Math.round((amountPaid / totalPrice) * 100)) : 0;
+        return (
+          <div className="rounded-xl border border-white/8 bg-black/30 p-3 space-y-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment ledger</p>
+              {lastPay && (
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  Last payment {format(new Date(lastPay), "MMM d, yyyy")}
+                </p>
+              )}
+            </div>
+            <div className="flex items-baseline justify-between gap-3 tabular-nums">
+              <p className="text-sm font-display font-semibold text-foreground">
+                {FMT_AED_ADMIN(amountPaid)} <span className="text-muted-foreground font-normal">/ {FMT_AED_ADMIN(totalPrice)}</span>
+              </p>
+              <p className={`text-xs font-semibold ${outstanding > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+                {outstanding > 0 ? `${FMT_AED_ADMIN(outstanding)} due` : "Settled"}
+              </p>
+            </div>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  pctPaid >= 100
+                    ? "bg-gradient-to-r from-emerald-500/70 to-emerald-300"
+                    : "bg-gradient-to-r from-amber-500/70 to-amber-300"
+                }`}
+                style={{ width: `${pctPaid}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="flex flex-wrap gap-2 items-center">
+        {/* Primary payment actions — Mark Paid in Full, Add Payment, Convert Trial. */}
+        {((pkg as any).totalPrice ?? 0) > 0 && paymentStatus !== "paid" && paymentStatus !== "complimentary" && (
+          <Button
+            size="sm"
+            className="h-8 text-xs rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-200"
+            onClick={() => paymentMut.mutate({ paymentStatus: "paid" })}
+            disabled={paymentMut.isPending}
+            data-testid={`button-mark-paid-${pkg.id}`}
+          >
+            <BadgeCheck size={12} className="mr-1" /> Mark Paid in Full
+          </Button>
+        )}
+        {((pkg as any).totalPrice ?? 0) > 0 && paymentStatus !== "paid" && paymentStatus !== "complimentary" && (
+          <Dialog open={payOpen} onOpenChange={setPayOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs rounded-lg"
+                data-testid={`button-add-payment-${pkg.id}`}
+              >
+                <CreditCard size={12} className="mr-1" /> Add Payment
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-sm">
+              <DialogHeader><DialogTitle>Record a payment</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Amount (AED)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={payAmount || ""}
+                    onChange={(e) => setPayAmount(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                    placeholder="e.g. 1500"
+                    className="bg-white/5 border-white/10 tabular-nums"
+                    data-testid="input-add-payment-amount"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
+                    Outstanding: {FMT_AED_ADMIN(Math.max(0, ((pkg as any).totalPrice ?? 0) - ((pkg as any).amountPaid ?? 0)))}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Note (optional)</label>
+                  <Input
+                    value={payNote}
+                    onChange={(e) => setPayNote(e.target.value)}
+                    placeholder="e.g. Cash on Apr 12, bank transfer ref…"
+                    className="bg-white/5 border-white/10"
+                    data-testid="input-add-payment-note"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    if (!payAmount || payAmount <= 0) return;
+                    addPaymentMut.mutate(
+                      { amount: payAmount, note: payNote.trim() || null },
+                      { onSuccess: () => { setPayOpen(false); setPayAmount(0); setPayNote(""); } },
+                    );
+                  }}
+                  disabled={addPaymentMut.isPending || !payAmount || payAmount <= 0}
+                  data-testid="button-submit-add-payment"
+                >
+                  {addPaymentMut.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Record
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        {(((pkg as any).totalPrice ?? 0) <= 0 || (pkg as any).type === "trial") && (
+          <Dialog open={convertOpen} onOpenChange={setConvertOpen}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                className="h-8 text-xs rounded-lg bg-primary/15 hover:bg-primary/25 border border-primary/40 text-primary"
+                data-testid={`button-convert-trial-${pkg.id}`}
+              >
+                <Sparkles size={12} className="mr-1" /> Convert Trial to Paid
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-sm">
+              <DialogHeader><DialogTitle>Convert trial to paid package</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Snapshots the chosen template onto this package. Sessions reset to zero, expiry is recomputed from today, and the payment status drops to <em>Pending</em> — record the first payment afterwards.
+                </p>
+                <div>
+                  <label className="text-xs text-muted-foreground">Template</label>
+                  <Select value={convertTemplateId} onValueChange={setConvertTemplateId}>
+                    <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-convert-template">
+                      <SelectValue placeholder="Pick a paid package…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {convertTemplates
+                        .filter((tt) => tt.totalPrice > 0)
+                        .map((tt) => (
+                          <SelectItem key={tt.id} value={String(tt.id)}>
+                            {tt.name} — {tt.totalSessions}× · {FMT_AED_ADMIN(tt.totalPrice)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => {
+                    const tid = Number(convertTemplateId);
+                    if (!tid) return;
+                    convertTrialMut.mutate(
+                      { templateId: tid },
+                      { onSuccess: () => { setConvertOpen(false); setConvertTemplateId(""); } },
+                    );
+                  }}
+                  disabled={convertTrialMut.isPending || !convertTemplateId}
+                  data-testid="button-submit-convert-trial"
+                >
+                  {convertTrialMut.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Convert
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
         <Select
           value={paymentStatus}
           onValueChange={(v) => paymentMut.mutate({ paymentStatus: v as PackagePaymentStatus })}

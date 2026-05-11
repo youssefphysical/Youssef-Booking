@@ -165,6 +165,12 @@ export const packages = pgTable("packages", {
   paymentApprovedAt: timestamp("payment_approved_at"),
   paymentApprovedByUserId: integer("payment_approved_by_user_id"),
   paymentNote: text("payment_note"),
+  // Cumulative AED paid against `totalPrice`. Drives the
+  // partially_paid badge + "AED X remaining" UX. Admin updates via
+  // POST /api/admin/packages/:id/add-payment (delta) or the existing
+  // payment-status route (mark paid in full sets this = totalPrice).
+  amountPaid: integer("amount_paid").notNull().default(0),
+  lastPaymentDate: timestamp("last_payment_date"),
   // Freeze: pauses booking on this package without changing balance.
   frozen: boolean("frozen").notNull().default(false),
   frozenAt: timestamp("frozen_at"),
@@ -867,14 +873,20 @@ export const PACKAGE_PAYMENT_STATUSES = [
   "pending",
   "partially_paid",
   "paid",
+  "complimentary",
 ] as const;
 export type PackagePaymentStatus = (typeof PACKAGE_PAYMENT_STATUSES)[number];
 
+// Premium customer-facing labels. Matches the brief's status vocabulary
+// (Paid in Full, Partial Payment, Payment Pending, Complimentary). 'unpaid'
+// is the legacy value clients see as Payment Pending until the trainer
+// records the first payment.
 export const PACKAGE_PAYMENT_STATUS_LABELS: Record<PackagePaymentStatus, string> = {
-  unpaid: "Unpaid",
-  pending: "Pending",
-  partially_paid: "Partially Paid",
-  paid: "Paid",
+  unpaid: "Payment Pending",
+  pending: "Payment Pending",
+  partially_paid: "Partial Payment",
+  paid: "Paid in Full",
+  complimentary: "Complimentary",
 };
 
 // =============================
@@ -888,6 +900,8 @@ export const SESSION_HISTORY_ACTIONS = [
   "package_unfrozen",
   "package_approved",
   "payment_updated",
+  "payment_received",
+  "trial_converted",
   "session_consumed",
   "session_refunded",
   "session_added_manual",
@@ -905,6 +919,8 @@ export const SESSION_HISTORY_ACTION_LABELS: Record<SessionHistoryAction, string>
   package_unfrozen: "Package unfrozen",
   package_approved: "Package approved",
   payment_updated: "Payment updated",
+  payment_received: "Payment received",
+  trial_converted: "Trial converted to paid package",
   session_consumed: "Session consumed",
   session_refunded: "Session refunded",
   session_added_manual: "Manual session added",
@@ -1031,6 +1047,8 @@ export const insertPackageSchema = createInsertSchema(packages)
     bonusSessions: z.number().int().min(0).nullable().optional(),
     pricePerSession: z.number().int().min(0).nullable().optional(),
     totalPrice: z.number().int().min(0).nullable().optional(),
+    amountPaid: z.number().int().min(0).optional(),
+    lastPaymentDate: z.date().nullable().optional(),
   });
 
 export const updatePackageSchema = insertPackageSchema.partial().omit({ userId: true });
@@ -1099,8 +1117,29 @@ export const updatePackagePaymentSchema = z.object({
   paymentStatus: z.enum(PACKAGE_PAYMENT_STATUSES),
   paymentApproved: z.boolean().optional(),
   note: z.string().max(500).nullable().optional(),
+  // Optional explicit override (admin can set the running balance directly).
+  amountPaid: z.number().int().min(0).max(10_000_000).optional(),
 });
 export type UpdatePackagePaymentInput = z.infer<typeof updatePackagePaymentSchema>;
+
+// Add a partial payment (delta). The route accumulates onto `amountPaid`,
+// stamps `lastPaymentDate=now()` and auto-promotes to paid_in_full when
+// the running total reaches `totalPrice`.
+export const addPackagePaymentSchema = z.object({
+  amount: z.number().int().min(1, "Amount must be greater than zero").max(1_000_000),
+  note: z.string().max(500).nullable().optional(),
+});
+export type AddPackagePaymentInput = z.infer<typeof addPackagePaymentSchema>;
+
+// Convert a free-trial / zero-price snapshot into a real paid package by
+// applying a chosen template. Sessions reset, expiry is recomputed from
+// the new template's window, payment defaults to "pending" until admin
+// records the first payment.
+export const convertTrialPackageSchema = z.object({
+  templateId: z.number().int().positive(),
+  startDate: z.string().optional(),
+});
+export type ConvertTrialPackageInput = z.infer<typeof convertTrialPackageSchema>;
 
 export const adjustPackageSessionsSchema = z.object({
   // signed delta; positive = grant credits, negative = remove credits

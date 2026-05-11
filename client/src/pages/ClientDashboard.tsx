@@ -25,6 +25,9 @@ import {
   Info,
   RefreshCw,
   CalendarPlus,
+  Wallet,
+  BadgeCheck,
+  Gift,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -963,14 +966,35 @@ function PackagesTab({ userId }: { userId: number }) {
             const status = computePackageStatus(p);
             const days = daysUntilExpiry(p);
 
+            // Payment-status surface: derives the customer-facing badge from
+            // the snapshot fields the admin maintains. Preserves the brand
+            // vocabulary (Paid in Full / Partial Payment / Payment Pending /
+            // Complimentary). Frozen packages get an additional cyan badge
+            // — they're a "lifecycle" state on top of payment, not a swap.
+            const totalPrice = ((p as any).totalPrice ?? 0) as number;
+            const amountPaid = ((p as any).amountPaid ?? 0) as number;
+            const outstanding = Math.max(0, totalPrice - amountPaid);
+            const payStatus = (((p as any).paymentStatus ?? "unpaid") as string);
+            const isFrozen = !!(p as any).frozen;
+            const payBadge =
+              payStatus === "paid"
+                ? { label: t("dashboard.packagePayPaid", "Paid in Full"), cls: "bg-emerald-500/10 border-emerald-400/30 text-emerald-300", icon: <BadgeCheck size={11} /> }
+                : payStatus === "partially_paid"
+                  ? { label: t("dashboard.packagePayPartial", "Partial Payment"), cls: "bg-amber-500/10 border-amber-400/30 text-amber-300", icon: <Wallet size={11} /> }
+                  : payStatus === "complimentary"
+                    ? { label: t("dashboard.packagePayComp", "Complimentary"), cls: "bg-sky-500/10 border-sky-400/30 text-sky-200", icon: <Gift size={11} /> }
+                    : { label: t("dashboard.packagePayPending", "Payment Pending"), cls: "bg-rose-500/10 border-rose-400/30 text-rose-200", icon: <Wallet size={11} /> };
+
             const statusBadge =
-              status === "expired"
-                ? { label: t("dashboard.packageStatusExpired", "Expired"), cls: "bg-red-500/10 border-red-500/30 text-red-300" }
-                : status === "expiring_soon"
-                  ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-amber-500/10 border-amber-500/30 text-amber-300" }
-                  : status === "completed"
-                    ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
-                    : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
+              isFrozen
+                ? { label: t("dashboard.packageStatusFrozen", "Frozen"), cls: "bg-cyan-500/10 border-cyan-400/30 text-cyan-200" }
+                : status === "expired"
+                  ? { label: t("dashboard.packageStatusExpired", "Expired"), cls: "bg-red-500/10 border-red-500/30 text-red-300" }
+                  : status === "expiring_soon"
+                    ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-amber-500/10 border-amber-500/30 text-amber-300" }
+                    : status === "completed"
+                      ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
+                      : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
 
             return (
               <motion.div
@@ -1017,6 +1041,13 @@ function PackagesTab({ userId }: { userId: number }) {
                     >
                       {statusBadge.label}
                     </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg border font-bold ${payBadge.cls}`}
+                      data-testid={`package-payment-${p.id}`}
+                    >
+                      {payBadge.icon}
+                      {payBadge.label}
+                    </span>
                     {def?.isDuo && (
                       <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
                         <Users size={11} /> {t("dashboard.packageDuo")}
@@ -1024,6 +1055,31 @@ function PackagesTab({ userId }: { userId: number }) {
                     )}
                   </div>
                 </div>
+                {/* Outstanding-balance banner — surfaces the AED still owed
+                    so the client can act on it. Booking remains UNGATED:
+                    this is informational, not a hard stop. Hidden when
+                    fully settled or complimentary. */}
+                {outstanding > 0 && payStatus !== "complimentary" && p.isActive && (
+                  <div
+                    className="mb-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 flex items-center justify-between gap-3"
+                    data-testid={`package-balance-${p.id}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/80">
+                        {t("dashboard.packageBalanceLabel", "Outstanding balance")}
+                      </p>
+                      <p className="text-sm font-display font-semibold text-amber-100 tabular-nums">
+                        AED {outstanding.toLocaleString()}
+                        {totalPrice > 0 && (
+                          <span className="text-[11px] font-normal text-amber-200/60 ml-1.5">
+                            of AED {totalPrice.toLocaleString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <Wallet size={16} className="text-amber-300 shrink-0" />
+                  </div>
+                )}
                 {/* Progress bar — cyan track with a soft glow at the
                     leading edge. Reads as a HUD meter, not a generic
                     bar. Glow is gated to active packages only. */}
