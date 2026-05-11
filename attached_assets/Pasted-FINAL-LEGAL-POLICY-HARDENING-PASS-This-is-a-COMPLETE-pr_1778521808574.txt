@@ -1,0 +1,369 @@
+FINAL LEGAL + POLICY HARDENING PASS
+This is a COMPLETE production-grade legal/protection refinement for the fitness booking platform.
+
+CRITICAL:
+The goal is:
+
+- maximum professionalism
+- premium luxury tone
+- strong business protection
+- clear client expectations
+- minimal legal ambiguity
+- consistent wording across the whole platform
+
+The language must NEVER sound:
+
+- aggressive
+- threatening
+- emotional
+- childish
+- robotic
+
+The platform should feel like:
+a premium private coaching service with professionally structured operational policies.
+
+━━━━━━━━━━━━━━━━━━━
+GLOBAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+Apply consistently across:
+
+- Terms & Conditions
+- Privacy Policy
+- Cancellation Policy
+- Cookie Policy
+- Medical Disclaimer
+- package wording
+- onboarding consent
+- booking confirmations
+- footer links
+- translations
+- mobile layout
+- modals/tooltips where needed
+
+IMPORTANT:
+Do NOT mention personal names.
+Never use:
+
+- “Youssef”
+- “Coach Youssef”
+- “message the coach personally”
+- “at his discretion”
+
+Instead use:
+
+- “the coach”
+- “the training team”
+- “support”
+- “the platform”
+- “the service”
+
+Tone:
+luxury / calm / elite / professional.
+
+━━━━━━━━━━━━━━━━━━━
+
+1. TERMS & CONDITIONS
+   ━━━━━━━━━━━━━━━━━━━
+
+Create or fully refine Terms & Conditions with the following sections:
+
+A. Service Overview
+Explain:
+
+- personal training booking platform
+- sessions/packages
+- scheduling system
+- optional assessments
+- coaching services
+
+B. Booking Rules
+Clearly define:
+
+- booking cutoff logic
+- sessions require advance booking
+- availability subject to schedule capacity
+
+C. Cancellation Rules
+Clearly separate:
+
+- normal cancellation
+- emergency cancellation
+- rescheduling
+
+State:
+
+- cancellations inside cutoff count as used sessions
+- emergency cancellation depends on package allowance
+- same-day reschedule only when eligible slots exist
+
+D. No-show Policy
+State:
+
+- missing a session without attendance counts as a completed session
+- late arrivals do not extend session duration
+
+E. Package Validity
+State:
+
+- packages have expiration periods
+- unused sessions expire automatically after validity ends
+- expired sessions are non-refundable and non-transferable
+
+F. Refund Policy
+State clearly:
+
+- completed, expired, or partially used packages are non-refundable
+- refunds are not guaranteed once sessions or assessments are used
+- administrative fees may apply where legally permitted
+
+G. Membership Responsibility
+State:
+
+- gym membership fees are separate from coaching services where applicable
+- access to training locations may require active membership
+
+H. Trainer Availability
+Protect the business from:
+
+- delays
+- emergencies
+- gym operational issues
+- force majeure events
+- weather/traffic disruptions
+
+State:
+reasonable efforts will always be made to maintain schedules.
+
+I. Results Disclaimer
+State:
+Results vary based on:
+
+- consistency
+- nutrition
+- recovery
+- genetics
+- lifestyle
+- medical condition
+- adherence to the program
+
+No guaranteed physical outcome is promised.
+
+J. Health Responsibility
+State:
+clients are responsible for:
+
+- disclosing injuries
+- medical conditions
+- limitations
+- relevant medications
+
+The platform is not a medical provider.
+
+K. Conduct & Safety
+State:
+abusive, unsafe, or inappropriate behavior may result in:
+
+- suspension
+- refusal of service
+- account termination
+
+L. Media & Transformations
+State:
+photos/progress media require explicit consent before public use.
+
+M. Platform Changes
+State:
+services, schedules, packages, and policies may evolve over time.
+
+━━━━━━━━━━━━━━━━━━━
+2. PRIVACY POLICY
+━━━━━━━━━━━━━━━━━━━
+
+Refine professionally.
+
+Must clearly explain:
+
+- what data is collected
+- booking/session data
+- body metrics/InBody data
+- uploaded images
+- profile information
+- cookies/local storage
+- analytics usage if present
+
+State:
+
+- data is protected reasonably
+- data is not sold
+- only operational/service use
+- limited authorized access
+
+Add:
+clients may request account deletion where legally applicable.
+
+IMPORTANT:
+Use calm/simple wording.
+Do NOT overcomplicate legally.
+
+━━━━━━━━━━━━━━━━━━━
+3. COOKIE POLICY
+━━━━━━━━━━━━━━━━━━━
+
+Refine professionally.
+
+Explain:
+
+- authentication/session cookies
+- language preferences
+- performance optimization
+- security/session persistence
+
+No creepy tracking wording.
+
+━━━━━━━━━━━━━━━━━━━
+4. MEDICAL DISCLAIMER
+━━━━━━━━━━━━━━━━━━━
+
+Strengthen professionally.
+
+State:
+
+- coaching is not medical treatment
+- clients should seek physician approval if needed
+- exercise carries inherent risk
+- clients participate voluntarily
+- stop training if pain/dizziness/injury occurs
+
+Protect the platform from:
+
+- unrealistic expectations
+- hidden conditions
+- self-diagnosed misuse
+
+━━━━━━━━━━━━━━━━━━━
+5. ONBOARDING CONSENT
+━━━━━━━━━━━━━━━━━━━
+
+During registration or first booking:
+Add professional consent confirmation checkbox:
+
+“I confirm that I have read and agreed to the platform policies, booking rules, cancellation policy, medical disclaimer, and terms of service.”
+
+Must be required.
+
+━━━━━━━━━━━━━━━━━━━
+6. BOOKING CONFIRMATION UX
+━━━━━━━━━━━━━━━━━━━
+
+Inside booking confirmation screens/emails:
+Clearly display:
+
+- session date/time
+- cancellation cutoff
+- reschedule policy
+- emergency cancellation availability if applicable
+
+WITHOUT sounding aggressive.
+
+━━━━━━━━━━━━━━━━━━━
+7. PACKAGE VALIDITY SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Ensure packages support:
+
+- expiry date
+- remaining sessions
+- remaining emergency cancellations
+- status labels:
+  - Active
+  - Expiring Soon
+  - Expired
+  - Completed
+
+Show subtle warnings before expiration.
+
+━━━━━━━━━━━━━━━━━━━
+8. UI/UX LEGAL POLISH
+━━━━━━━━━━━━━━━━━━━
+
+All policy pages must visually match the luxury theme:
+
+- dark premium cards
+- generous spacing
+- readable typography
+- mobile-first layout
+- soft cyan accents
+- restrained motion only
+- elegant section hierarchy
+
+NO:
+
+- giant red warning blocks
+- scary legal walls
+- dense paragraphs
+- clutter
+
+━━━━━━━━━━━━━━━━━━━
+9. TRANSLATION CONSISTENCY
+━━━━━━━━━━━━━━━━━━━
+
+Ensure:
+
+- all policies translated correctly
+- no broken Arabic RTL
+- no mixed languages
+- no literal robotic translation
+
+Arabic should feel:
+premium and natural.
+
+━━━━━━━━━━━━━━━━━━━
+10. FINAL HARDENING
+━━━━━━━━━━━━━━━━━━━
+
+Audit the entire production app for:
+
+- contradictory wording
+- loopholes
+- policy inconsistencies
+- outdated labels
+- personal references
+- admin-only accidental visibility
+- misleading promises
+- weak wording like:
+  - “may”
+  - “might”
+  - “usually”
+  - “try to”
+
+Replace with:
+clear operational wording.
+
+━━━━━━━━━━━━━━━━━━━
+11. PRODUCTION TASKS
+━━━━━━━━━━━━━━━━━━━
+
+After implementation:
+
+- run full production build
+- verify Vercel deployment
+- verify mobile rendering
+- verify footer links
+- verify translations
+- verify policy accessibility
+- verify onboarding consent flow
+- verify no broken routes
+
+Push everything to:
+
+- GitHub
+- Vercel production
+- Neon production if schema changes are required
+
+Then provide:
+
+- final production SHA
+- deployment confirmation
+- list of all updated policy files
+- confirmation that all old conflicting wording was removed completely.
