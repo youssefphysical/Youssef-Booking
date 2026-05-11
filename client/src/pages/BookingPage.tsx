@@ -53,7 +53,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ALL_TIME_SLOTS, buildSessionDate, MIN_ADVANCE_MS } from "@/lib/booking-utils";
+import {
+  ALL_TIME_SLOTS,
+  buildSessionDate,
+  MIN_ADVANCE_MS,
+  dubaiTodayYMD,
+  dubaiTodayAsLocalDate,
+  formatYMDInDubai,
+} from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
@@ -76,7 +83,12 @@ export default function BookingPage() {
       navigate("/auth?redirect=/book");
     }
   }, [isAuthLoading, user, navigate]);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  // Default to *Dubai* today, not browser-local today. A device sitting in a
+  // timezone ahead of Dubai (or with a wrong clock) would otherwise default the
+  // picker to Dubai-tomorrow, making early-morning slots erroneously appear
+  // available because they are >3h away in absolute terms but are not the
+  // calendar day the user thinks they are looking at.
+  const [date, setDate] = useState<Date | undefined>(() => dubaiTodayAsLocalDate());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [accepted, setAccepted] = useState(false);
@@ -94,7 +106,7 @@ export default function BookingPage() {
   const createBooking = useCreateBooking();
   const { data: blocked = [] } = useBlockedSlots();
   const { data: settings } = useSettings();
-  const { data: existing = [] } = useBookings({ from: format(new Date(), "yyyy-MM-dd") });
+  const { data: existing = [] } = useBookings({ from: dubaiTodayYMD() });
   const { data: packages = [] } = usePackages({ userId: user?.id });
 
   const isAdmin = user?.role === "admin";
@@ -106,7 +118,10 @@ export default function BookingPage() {
     ? activePackage.totalSessions - activePackage.usedSessions
     : 0;
 
-  const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+  // Format the picker's selected date in Dubai TZ (not browser-local) so the
+  // YYYY-MM-DD we send to the slot filter and the booking API matches the
+  // visible Dubai civil date the user clicked.
+  const dateStr = date ? formatYMDInDubai(date) : "";
 
   const wholeDayBlock = useMemo(() => {
     return blocked.find((b) => b.date === dateStr && b.timeSlot === null);
@@ -340,7 +355,7 @@ export default function BookingPage() {
               setDate(d);
               setSelectedSlot(null);
             }}
-            disabled={{ before: new Date() }}
+            disabled={{ before: dubaiTodayAsLocalDate() }}
             className="p-3"
             modifiersClassNames={{
               selected:

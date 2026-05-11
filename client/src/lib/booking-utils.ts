@@ -128,6 +128,47 @@ export function buildSessionDate(date: string, timeSlot: string): Date {
   return new Date(`${date}T${timeSlot}:00${DUBAI_TZ_OFFSET}`);
 }
 
+// Dubai-anchored "today" as YYYY-MM-DD. Critical: do NOT use
+// `format(new Date(), "yyyy-MM-dd")` for booking calendars — that uses the
+// BROWSER's local timezone. A user whose device sits east of Dubai (or whose
+// phone clock is wrong) would see Dubai-tomorrow's date by default, which then
+// makes early-morning slots erroneously appear available because they are
+// indeed >3h away in absolute terms but not what the user intends to book.
+// Dubai is fixed UTC+4 year-round (no DST), so `Intl` with `Asia/Dubai`
+// gives the correct civil date with no edge cases.
+export function dubaiTodayYMD(): string {
+  // en-CA → "YYYY-MM-DD" with no further parsing needed.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dubai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+// Same idea for an arbitrary Date: extract Y/M/D as seen from Dubai. Used so
+// that when the user clicks a calendar cell the resulting YYYY-MM-DD matches
+// the visible Dubai date, not the browser-local date the picker happened to
+// produce. Round-trip safe with `dubaiTodayYMD`.
+export function formatYMDInDubai(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dubai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+// Build a Date object that, when formatted by the calendar (which uses the
+// browser's local TZ), highlights the Dubai civil date. We anchor it to Dubai
+// noon (12:00 +04:00) — the safest hour because no realistic browser TZ can
+// shift noon-Dubai across a calendar boundary (max ±14h gives 22:00–02:00 of
+// the same Dubai day in the most extreme TZs, which `react-day-picker` still
+// renders on the correct civil cell).
+export function dubaiTodayAsLocalDate(): Date {
+  return new Date(`${dubaiTodayYMD()}T12:00:00${DUBAI_TZ_OFFSET}`);
+}
+
 export function hoursUntil(date: string, timeSlot: string): number {
   const d = buildSessionDate(date, timeSlot);
   return (d.getTime() - Date.now()) / (1000 * 60 * 60);
