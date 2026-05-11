@@ -278,6 +278,21 @@ async function runMissedCheckinNotifications(): Promise<void> {
 // settings.cancellation_cutoff_hours) — do not conflate.
 const MIN_ADVANCE_BOOKING_HOURS = 3;
 const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DUBAI_OFFSET_MS = 4 * HOUR_MS;
+/**
+ * Booking lead-time cutoff. Mirrors `bookingCutoffMs` in
+ * client/src/lib/booking-utils.ts — keep in sync. Business rule: round the
+ * current Dubai wall-clock UP to the next full hour, then add
+ * MIN_ADVANCE_BOOKING_HOURS. Any slot starting before the result must be
+ * rejected. Dubai is fixed UTC+4 (no DST) so the constant offset is safe.
+ */
+function bookingCutoffMs(now: number = Date.now()): number {
+  const dubaiNow = now + DUBAI_OFFSET_MS;
+  const remainder = dubaiNow % HOUR_MS;
+  const ceilDubai = remainder === 0 ? dubaiNow : dubaiNow + (HOUR_MS - remainder);
+  return ceilDubai - DUBAI_OFFSET_MS + MIN_ADVANCE_BOOKING_MS;
+}
 
 // Single source of truth for "this status consumes a session credit". Used
 // by every booking-mutation path (PATCH /:id, /:id/cancel, /:id/attendance,
@@ -1229,13 +1244,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     if (
       me.role !== "admin" &&
-      sessionAt.getTime() - Date.now() < MIN_ADVANCE_BOOKING_MS
+      sessionAt.getTime() < bookingCutoffMs()
     ) {
       console.warn("[booking:anomaly]", JSON.stringify({
         kind: "lead_time_too_short", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
       }));
       return res.status(400).json({
-        message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} hours in advance.`,
+        message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} full hours before the next hour boundary.`,
         code: "lead_time_too_short",
       });
     }

@@ -56,7 +56,7 @@ import {
 import {
   ALL_TIME_SLOTS,
   buildSessionDate,
-  MIN_ADVANCE_MS,
+  bookingCutoffMs,
   dubaiTodayYMD,
   dubaiTodayAsLocalDate,
   formatYMDInDubai,
@@ -163,13 +163,16 @@ export default function BookingPage() {
         map[slot] = "taken";
         continue;
       }
-      const sessionAt = buildSessionDate(dateStr, slot);
-      const msUntil = sessionAt.getTime() - Date.now();
-      if (msUntil < 0) {
+      const sessionAt = buildSessionDate(dateStr, slot).getTime();
+      const now = Date.now();
+      if (sessionAt < now) {
         map[slot] = "past";
         continue;
       }
-      if (!isAdmin && msUntil < MIN_ADVANCE_MS) {
+      // Business rule: round current Dubai time UP to the next full hour,
+      // then require slots to start at or after that ceiling + 3 booking
+      // hours. So at 11:10 Dubai the first allowed slot is 15:00, not 14:10.
+      if (!isAdmin && sessionAt < bookingCutoffMs(now)) {
         map[slot] = "tooSoon";
         continue;
       }
