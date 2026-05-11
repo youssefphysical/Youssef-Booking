@@ -161,7 +161,7 @@ export function buildSessionDate(date: string, timeSlot: string): Date {
 // BROWSER's local timezone. A user whose device sits east of Dubai (or whose
 // phone clock is wrong) would see Dubai-tomorrow's date by default, which then
 // makes early-morning slots erroneously appear available because they are
-// indeed >6h away in absolute terms but not what the user intends to book.
+// indeed past the cutoff in absolute terms but not what the user intends to book.
 // Dubai is fixed UTC+4 year-round (no DST), so `Intl` with `Asia/Dubai`
 // gives the correct civil date with no edge cases.
 export function dubaiTodayYMD(): string {

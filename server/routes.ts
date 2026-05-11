@@ -272,12 +272,12 @@ async function runMissedCheckinNotifications(): Promise<void> {
   }
 }
 
-// Clients must book at least 6 hours before the session starts so the trainer
-// has time to prepare and travel to the location. Bumped from 3h → 6h in
-// May 2026 per booking-safety brief — gives the trainer realistic same-day
-// runway. Universally enforced (admins included) per the May 2026 directive.
-// The cancellation cutoff is SEPARATE (default 6h, configurable via
-// settings.cancellation_cutoff_hours) — do not conflate.
+// Booking lead-time. Per the May 2026 booking-rules brief the cutoff is:
+//   cutoff = CEIL_TO_NEXT_FULL_HOUR(currentDubaiTime) + MIN_ADVANCE_BOOKING_HOURS
+// Slots strictly before the cutoff are rejected. Universally enforced for
+// every role (clients AND admins — no bypass). The cancellation cutoff is a
+// SEPARATE system (default 6h, lives in settings.cancellation_cutoff_hours)
+// — do not conflate. Mirrors MIN_ADVANCE_HOURS in client/src/lib/booking-utils.ts.
 const MIN_ADVANCE_BOOKING_HOURS = 3;
 const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
