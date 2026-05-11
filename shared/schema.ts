@@ -1140,13 +1140,13 @@ export function evaluateBookingEligibility(
 ): BookingEligibilityResult {
   const status = (user.clientStatus ?? "incomplete") as ClientStatus;
   if (status === "frozen") {
-    return { ok: false, code: "client_frozen", message: "Your account is currently frozen. Please contact Youssef to resume booking." };
+    return { ok: false, code: "client_frozen", message: "Your account is currently frozen. Contact support through the platform to resume booking." };
   }
   if (status === "cancelled") {
-    return { ok: false, code: "client_cancelled", message: "Your membership has been cancelled. Please contact Youssef to renew." };
+    return { ok: false, code: "client_cancelled", message: "Your membership has been cancelled. Contact support through the platform to renew." };
   }
   if (status === "completed") {
-    return { ok: false, code: "client_completed", message: "Your membership has been marked completed. Contact Youssef to book again." };
+    return { ok: false, code: "client_completed", message: "Your membership has been marked completed. Contact support through the platform to book again." };
   }
   if (status === "incomplete") {
     return { ok: false, code: "profile_incomplete", message: "Please finish your profile (training goal & weekly frequency) before booking." };
@@ -1160,7 +1160,7 @@ export function evaluateBookingEligibility(
   }
   if (pkg) {
     if (pkg.frozen) {
-      return { ok: false, code: "package_frozen", message: "Your active package is currently frozen. Please contact Youssef to unfreeze it." };
+      return { ok: false, code: "package_frozen", message: "Your active package is currently frozen. Contact support through the platform to unfreeze it." };
     }
     if (pkg.isActive === false) {
       return { ok: false, code: "package_inactive", message: "Your package is inactive. Please request a renewal." };
