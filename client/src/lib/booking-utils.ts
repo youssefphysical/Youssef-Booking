@@ -14,9 +14,10 @@ export const ALL_TIME_SLOTS = [
 // Business rule (NOT exact-minute math): the cutoff is computed by rounding
 // the *current Dubai wall-clock time UP to the next full hour* and then
 // adding MIN_ADVANCE_HOURS. So at 11:10 Dubai → ceil = 12:00 → cutoff =
-// 15:00 → first allowed slot is 15:00. At 11:00:00 exactly → ceil = 11:00
-// → cutoff = 14:00. See `bookingCutoffMs()` for the implementation.
-export const MIN_ADVANCE_HOURS = 3;
+// 18:00 → first allowed slot is 18:00. At 11:00:00 exactly → ceil = 11:00
+// → cutoff = 17:00. Bumped from 3h → 6h in May 2026 per booking-safety
+// brief. See `bookingCutoffMs()` for the implementation.
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
@@ -24,14 +25,14 @@ const DUBAI_OFFSET_MS = 4 * HOUR_MS;
 /**
  * Returns the absolute epoch-ms cutoff such that any slot whose start time
  * is < cutoff must be disabled. Implements the "round Dubai wall-clock UP
- * to the next full hour, then add 3 booking hours" rule. Dubai is fixed
+ * to the next full hour, then add 6 booking hours" rule. Dubai is fixed
  * UTC+4 (no DST) so the constant offset is safe.
  */
 export function bookingCutoffMs(now: number = Date.now()): number {
   const dubaiNow = now + DUBAI_OFFSET_MS;
   const remainder = dubaiNow % HOUR_MS;
   const ceilDubai = remainder === 0 ? dubaiNow : dubaiNow + (HOUR_MS - remainder);
-  // shift back to UTC, then add the 3-hour lead time
+  // shift back to UTC, then add the 6-hour lead time
   return ceilDubai - DUBAI_OFFSET_MS + MIN_ADVANCE_MS;
 }
 
@@ -154,7 +155,7 @@ export function buildSessionDate(date: string, timeSlot: string): Date {
 // BROWSER's local timezone. A user whose device sits east of Dubai (or whose
 // phone clock is wrong) would see Dubai-tomorrow's date by default, which then
 // makes early-morning slots erroneously appear available because they are
-// indeed >3h away in absolute terms but not what the user intends to book.
+// indeed >6h away in absolute terms but not what the user intends to book.
 // Dubai is fixed UTC+4 year-round (no DST), so `Intl` with `Asia/Dubai`
 // gives the correct civil date with no edge cases.
 export function dubaiTodayYMD(): string {

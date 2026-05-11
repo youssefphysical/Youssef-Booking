@@ -86,7 +86,7 @@ export default function BookingPage() {
   // Default to *Dubai* today, not browser-local today. A device sitting in a
   // timezone ahead of Dubai (or with a wrong clock) would otherwise default the
   // picker to Dubai-tomorrow, making early-morning slots erroneously appear
-  // available because they are >3h away in absolute terms but are not the
+  // available because they are >6h away in absolute terms but are not the
   // calendar day the user thinks they are looking at.
   const [date, setDate] = useState<Date | undefined>(() => dubaiTodayAsLocalDate());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -130,7 +130,7 @@ export default function BookingPage() {
   // Recompute slot states every 30s as wall-clock time advances. Without this,
   // `slotState`'s useMemo would only fire when date/blocked/existing changes —
   // a user who opened the page at 09:30 would still see 13:00 as "available"
-  // at 10:47 even though `Date.now()` has long since crossed the 3h cutoff.
+  // at 10:47 even though `Date.now()` has long since crossed the 6h cutoff.
   const [nowTick, setNowTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setNowTick((n) => n + 1), 30_000);
@@ -170,8 +170,8 @@ export default function BookingPage() {
         continue;
       }
       // Business rule: round current Dubai time UP to the next full hour,
-      // then require slots to start at or after that ceiling + 3 booking
-      // hours. So at 11:10 Dubai the first allowed slot is 15:00, not 14:10.
+      // then require slots to start at or after that ceiling + 6 booking
+      // hours. So at 11:10 Dubai the first allowed slot is 18:00, not 14:10.
       // Applies universally — admins included — per explicit product directive.
       if (sessionAt < bookingCutoffMs(now)) {
         map[slot] = "tooSoon";
