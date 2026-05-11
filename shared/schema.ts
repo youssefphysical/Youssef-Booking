@@ -634,7 +634,7 @@ export const SESSION_TYPE_LABELS_EN: Record<string, string> = {
   package: "Package Session",
   single: "Single Session",
   trial: "Free Trial Session — BMI Assessment + Technical Assessment",
-  duo: "Duo Session",
+  duo: "Duo Package Session",
   manual_historical: "Manual / Historical",
 };
 
@@ -1742,7 +1742,7 @@ export const SESSION_TYPE_LABELS: Record<string, string> = {
   package: "Training Session",
   single: "Single Session",
   trial: "Free Trial Session — BMI Assessment + Technical Assessment",
-  duo: "Duo Performance Session",
+  duo: "Duo Package Session",
   manual_historical: "Manual Historical Session",
 };
 
