@@ -127,10 +127,21 @@ export default function BookingPage() {
     return blocked.find((b) => b.date === dateStr && b.timeSlot === null);
   }, [blocked, dateStr]);
 
+  // Recompute slot states every 30s as wall-clock time advances. Without this,
+  // `slotState`'s useMemo would only fire when date/blocked/existing changes —
+  // a user who opened the page at 09:30 would still see 13:00 as "available"
+  // at 10:47 even though `Date.now()` has long since crossed the 3h cutoff.
+  const [nowTick, setNowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNowTick((n) => n + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   // Determine which slots are unavailable on the selected date
   const slotState = useMemo(() => {
     const map: Record<string, "available" | "blocked" | "taken" | "past" | "tooSoon"> = {};
     if (!date) return map;
+    void nowTick; // include tick in deps so this recomputes as time passes
     const wholeDayBlocked = blocked.some((b) => b.date === dateStr && b.timeSlot === null);
     for (const slot of ALL_TIME_SLOTS) {
       if (wholeDayBlocked) {
@@ -165,7 +176,7 @@ export default function BookingPage() {
       map[slot] = "available";
     }
     return map;
-  }, [date, dateStr, blocked, existing, isAdmin]);
+  }, [date, dateStr, blocked, existing, isAdmin, nowTick]);
 
   // Use the same storage key as the global I18nProvider so the email language
   // matches the UI language. (Old key "lang" was a stale leftover.)
@@ -377,7 +388,6 @@ export default function BookingPage() {
               <Clock size={16} className="text-primary" />
               {t("booking.slotsFor").replace("{date}", format(date, "EEEE, MMM d"))}
             </h3>
-            <LeadTimeDebugStrip dateStr={dateStr} />
             
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
               {ALL_TIME_SLOTS.map((slot) => {
@@ -897,66 +907,3 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
   );
 }
 
-// TEMPORARY production diagnostic strip (May 2026): renders the EXACT values
-// the slot filter is using — so a screenshot is enough to know whether the
-// device clock, the bundle, or the math is the source of any disagreement.
-// Updates every second so a stale chunk would still drift visibly in <60s.
-function LeadTimeDebugStrip({ dateStr }: { dateStr: string }) {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const now = new Date();
-  const fmt = (d: Date) =>
-    new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Dubai",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    }).format(d);
-  const cutoff = new Date(now.getTime() + MIN_ADVANCE_MS);
-  const probe = (slot: string) => {
-    const slotAt = buildSessionDate(dateStr, slot);
-    const deltaMs = slotAt.getTime() - now.getTime();
-    const result =
-      deltaMs < 0
-        ? "past"
-        : deltaMs < MIN_ADVANCE_MS
-          ? "tooSoon (DISABLED)"
-          : "available (ENABLED)";
-    return { slotAt, deltaMs, result };
-  };
-  const p13 = probe("13:00");
-  const p14 = probe("14:00");
-  return (
-    <div
-      data-testid="lead-time-debug"
-      className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] font-mono text-amber-200/90 leading-relaxed space-y-0.5"
-    >
-      <div>
-        Now (Dubai):&nbsp;<span className="text-amber-100">{fmt(now)}</span>
-      </div>
-      <div>
-        Cutoff = Now + 3h:&nbsp;
-        <span className="text-amber-100">{fmt(cutoff)}</span>
-      </div>
-      <div className="opacity-90 pt-1 border-t border-amber-500/20 mt-1">
-        slot 01:00 PM → slotTime {fmt(p13.slotAt)} · deltaMs {p13.deltaMs} →{" "}
-        <span className="text-amber-100">{p13.result}</span>
-      </div>
-      <div className="opacity-90">
-        slot 02:00 PM → slotTime {fmt(p14.slotAt)} · deltaMs {p14.deltaMs} →{" "}
-        <span className="text-amber-100">{p14.result}</span>
-      </div>
-      <div className="opacity-70">
-        Build: 2026-05-11-v4 · MIN_ADVANCE_MS={MIN_ADVANCE_MS} · dateStr=
-        {dateStr} · tick={tick}
-      </div>
-    </div>
-  );
-}
