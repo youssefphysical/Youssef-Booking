@@ -1,0 +1,87 @@
+Implement the package-intent registration flow with premium design and full production safety.
+
+CRITICAL:
+This must be completed as one clean production-ready feature:
+- beautiful UI
+- no broken logic
+- no errors
+- no half-deployed state
+- GitHub + Vercel + Neon all synchronized
+- live production verified
+
+Core flow:
+During account registration, the client chooses a starting option using premium mobile-first cards, not a dropdown:
+
+1. Free Trial Session — BMI Assessment + Technical Assessment — AED 0
+2. Single Session — AED 375
+3. 10 Sessions Package — AED 3,245
+4. 20 Sessions Package — AED 5,750
+5. 25 Sessions Package — AED 6,750
+6. Duo Package — AED 9,900 — 30 sessions for 2 people
+
+Important:
+The selected option is package_interest / requested_package only.
+It must NOT activate paid packages automatically.
+Admin approval/activation is required before any paid package can be used for booking.
+
+Booking behavior:
+- If active package exists: auto-use it and show package name, remaining sessions, expiry.
+- If no active package but selected package is pending: show “Pending confirmation” with Contact Support.
+- If Free Trial is selected and eligible: allow one Free Trial booking.
+- After Free Trial is completed: show premium recommended package cards.
+
+Admin:
+- show selected package interest
+- status: Pending / Approved / Rejected / Activated
+- allow admin to activate/change package
+- allow expiry/session assignment
+- Duo package must allow safe partner details/linking later without forcing the second client to create an account immediately.
+
+Design requirements:
+- Luxury dark theme
+- Tron Legacy cyan accents
+- premium card system
+- clean spacing
+- no cramped dropdowns
+- no text overflow
+- mobile-first
+- smooth subtle animations
+- clear hierarchy
+- polished empty/pending states
+- consistent with the rest of the platform
+
+Safety:
+Do NOT break:
+- booking 3h lead-time
+- cancellation 6h cutoff
+- emergency cancel
+- reschedule
+- active package deduction
+- auth
+- admin protection
+- existing package logic
+
+Before deploying:
+- run typecheck
+- run build
+- test registration flow
+- test booking with active package
+- test booking with pending package
+- test free trial once-only logic
+- test admin activation
+- test mobile UI
+
+Production:
+- push to GitHub main
+- deploy to Vercel production
+- apply Neon schema changes safely if required
+- invalidate service worker/cache
+- verify live production URL directly
+
+Final report must include:
+- changed files
+- Neon schema changes if any
+- latest GitHub SHA
+- Vercel deployment ID
+- production verification
+- confirmation that no old dropdown/package UX remains broken.
