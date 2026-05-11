@@ -643,23 +643,46 @@ async function run(): Promise<void> {
            price_per_session, total_price, expiration_value, expiration_unit,
            description, is_active, display_order)
         VALUES
-          ('Single Session',                'single',    1, 0,  1, 375,  375,  30, 'days',
+          ('Single Session',                                                 'single',    1, 0,  1, 375,  375,  30, 'days',
            'One personal training session — perfect for trying things out or topping up.', true, 10),
-          ('10 Sessions Package',           'standard', 10, 0, 10, 325, 3245,  60, 'days',
+          ('10 Sessions Package',                                            'standard', 10, 0, 10, 325, 3245,  60, 'days',
            '10 personal training sessions — build consistency and start seeing real change.', true, 20),
-          ('20 Sessions Package',           'standard', 20, 0, 20, 288, 5750,  90, 'days',
+          ('20 Sessions Package',                                            'standard', 20, 0, 20, 288, 5750,  90, 'days',
            '20 personal training sessions — the sweet spot for visible body recomposition and habit lock-in.', true, 30),
-          ('25 Sessions Package',           'standard', 25, 0, 25, 270, 6750, 120, 'days',
+          ('25 Sessions Package',                                            'standard', 25, 0, 25, 270, 6750, 120, 'days',
            '25 personal training sessions — best per-session value for serious training goals.', true, 40),
-          ('Duo Package',                   'duo',      30, 0, 30, 330, 9900, 120, 'days',
+          ('Duo Package',                                                    'duo',      30, 0, 30, 330, 9900, 120, 'days',
            '30 sessions for two people training together at the same time — share the package, share the wins.', true, 50),
-          ('BMI Assessment',                'custom',    1, 0,  1,   0,    0,  30, 'days',
-           'Body composition snapshot: BMI, weight, body fat, lean mass, baseline measurements.', true, 60),
-          ('Technical Movement Assessment', 'custom',    1, 0,  1,   0,    0,  30, 'days',
-           'Movement screen: posture, mobility, stability, and lift mechanics — sets the foundation for a tailored program.', true, 70)
+          ('Free Trial Session — BMI Assessment + Technical Assessment',     'custom',    1, 0,  1,   0,    0,  30, 'days',
+           'One free introductory session for new clients — includes BMI Assessment (body composition snapshot) and Technical Assessment (movement screen, posture, mobility, stability, lift mechanics).', true, 60)
         ON CONFLICT (name) DO NOTHING;
       `);
     }
+
+    // Idempotent catalog migration (May 2026): collapse the two separate
+    // assessment templates into a single combined Free Trial entry. Runs
+    // EVERY boot so prod environments seeded before this change converge to
+    // the new shape without manual intervention. Safe because:
+    //  - DELETE only removes catalog rows; client `packages` rows snapshot
+    //    every field at assignment time (templateId is nullable, no FK).
+    //  - INSERT … ON CONFLICT (name) DO NOTHING never touches an existing
+    //    row, so admin edits to the trial template are preserved once it
+    //    exists.
+    await pool.query(`
+      DELETE FROM package_templates
+      WHERE name IN ('BMI Assessment', 'Technical Movement Assessment');
+    `);
+    await pool.query(`
+      INSERT INTO package_templates
+        (name, type, paid_sessions, bonus_sessions, total_sessions,
+         price_per_session, total_price, expiration_value, expiration_unit,
+         description, is_active, display_order)
+      VALUES
+        ('Free Trial Session — BMI Assessment + Technical Assessment', 'custom', 1, 0, 1, 0, 0, 30, 'days',
+         'One free introductory session for new clients — includes BMI Assessment (body composition snapshot) and Technical Assessment (movement screen, posture, mobility, stability, lift mechanics).',
+         true, 60)
+      ON CONFLICT (name) DO NOTHING;
+    `);
 
     console.log("[ensureSchema] OK");
   } catch (err) {

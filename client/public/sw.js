@@ -23,7 +23,7 @@
 // after the Dubai-timezone lead-time fix. The activate handler deletes any
 // cache key not matching the current STATIC/RUNTIME names, so bumping this
 // is the safest escape hatch for "old code stuck on user devices" reports.
-const CACHE_VERSION = "v7-2026-05-11-no-admin-bypass";
+const CACHE_VERSION = "v8-2026-05-11-trial-rebrand";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 

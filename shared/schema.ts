@@ -633,7 +633,7 @@ export const BOOKING_TRAINING_GOAL_LABELS_EN: Record<string, string> = {
 export const SESSION_TYPE_LABELS_EN: Record<string, string> = {
   package: "Package Session",
   single: "Single Session",
-  trial: "Free Trial Session",
+  trial: "Free Trial Session — BMI Assessment + Technical Assessment",
   duo: "Duo Session",
   manual_historical: "Manual / Historical",
 };
@@ -1538,8 +1538,8 @@ export const PACKAGE_DEFINITIONS: Record<
     isDuo: true,
   },
   trial: {
-    label: "Intro Assessment Session",
-    tagline: "New client only",
+    label: "Free Trial Session — BMI Assessment + Technical Assessment",
+    tagline: "New clients only · BMI + Technical Assessment",
     sessions: 1,
     isTrial: true,
   },
@@ -1741,7 +1741,7 @@ export function isVerifiedClient(
 export const SESSION_TYPE_LABELS: Record<string, string> = {
   package: "Training Session",
   single: "Single Session",
-  trial: "Intro Assessment Session",
+  trial: "Free Trial Session — BMI Assessment + Technical Assessment",
   duo: "Duo Performance Session",
   manual_historical: "Manual Historical Session",
 };
