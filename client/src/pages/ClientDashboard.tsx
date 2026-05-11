@@ -115,6 +115,10 @@ import { SupplementsTab } from "@/components/dashboard/SupplementsTab";
 import { ProfileHero } from "@/components/dashboard/ProfileHero";
 import { QuickActionsGrid } from "@/components/dashboard/QuickActionsGrid";
 import { PackageStatusHero } from "@/components/dashboard/PackageStatusHero";
+import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
+import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
+import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
+import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
 import { Pill, LineChart as LineChartIcon } from "lucide-react";
 
 function currentMonthKey() {
@@ -175,6 +179,15 @@ export default function ClientDashboard() {
       <QuickActionsGrid onJump={jumpToTab} />
 
       <TodayHero name={user.fullName} />
+
+      {/* Phase 2 luxury layer — emotional, spacious, single-purpose cards. */}
+      <CoachInsightCard firstName={user.fullName.split(" ")[0]} />
+      <SessionTimeline userId={user.id} onJump={jumpToTab} />
+      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ConsistencyStreak userId={user.id} />
+        <ProgressSnapshot userId={user.id} />
+      </div>
+
       <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
       <MembershipBlock user={user} />
       <DuoPartnersBlock />
