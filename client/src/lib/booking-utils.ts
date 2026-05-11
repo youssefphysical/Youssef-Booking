@@ -7,32 +7,38 @@ export const ALL_TIME_SLOTS = [
 ];
 
 // Booking lead-time policy. Mirrors `MIN_ADVANCE_BOOKING_HOURS` in
-// server/routes.ts — keep the two in sync. NOTE: this is the booking
-// lead-time; the cancellation cutoff is a separate setting (default 6h)
-// and lives in `settings.cancellation_cutoff_hours`.
+// server/routes.ts — KEEP THE TWO IN SYNC. The booking cutoff is a
+// completely separate system from the cancellation cutoff (which lives
+// in `settings.cancellation_cutoff_hours`, default 6h). Do not merge them.
 //
-// Business rule (NOT exact-minute math): the cutoff is computed by rounding
-// the *current Dubai wall-clock time UP to the next full hour* and then
-// adding MIN_ADVANCE_HOURS. So at 11:10 Dubai → ceil = 12:00 → cutoff =
-// 18:00 → first allowed slot is 18:00. At 11:00:00 exactly → ceil = 11:00
-// → cutoff = 17:00. Bumped from 3h → 6h in May 2026 per booking-safety
-// brief. See `bookingCutoffMs()` for the implementation.
-export const MIN_ADVANCE_HOURS = 6;
+// Business rule (per the May 2026 booking-rules brief — see project log):
+//
+//   cutoff = CEIL_TO_NEXT_FULL_HOUR(currentDubaiTime) + MIN_ADVANCE_HOURS
+//
+// So at 10:00:00 Dubai → ceil = 10:00 → cutoff = 13:00 → first slot 1 PM.
+// At 10:00:01 Dubai     → ceil = 11:00 → cutoff = 14:00 → first slot 2 PM.
+// At 11:00:00 Dubai     → ceil = 11:00 → cutoff = 14:00 → first slot 2 PM.
+// At 11:00:01 Dubai     → ceil = 12:00 → cutoff = 15:00 → first slot 3 PM.
+//
+// This applies to ALL users (clients AND admins — no bypass). Same helper
+// is mirrored on the server at `bookingCutoffMs` in server/routes.ts so
+// the UI and validation can never disagree.
+export const MIN_ADVANCE_HOURS = 3;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
 
 /**
- * Returns the absolute epoch-ms cutoff such that any slot whose start time
- * is < cutoff must be disabled. Implements the "round Dubai wall-clock UP
- * to the next full hour, then add 6 booking hours" rule. Dubai is fixed
- * UTC+4 (no DST) so the constant offset is safe.
+ * Returns the absolute epoch-ms cutoff such that any slot whose start
+ * time is < cutoff must be disabled. Implements the "round Dubai
+ * wall-clock UP to the next full hour, then add MIN_ADVANCE_HOURS"
+ * rule. Dubai is fixed UTC+4 (no DST) so the constant offset is safe.
  */
 export function bookingCutoffMs(now: number = Date.now()): number {
   const dubaiNow = now + DUBAI_OFFSET_MS;
   const remainder = dubaiNow % HOUR_MS;
   const ceilDubai = remainder === 0 ? dubaiNow : dubaiNow + (HOUR_MS - remainder);
-  // shift back to UTC, then add the 6-hour lead time
+  // shift back to UTC, then add the 3-hour preparation buffer
   return ceilDubai - DUBAI_OFFSET_MS + MIN_ADVANCE_MS;
 }
 

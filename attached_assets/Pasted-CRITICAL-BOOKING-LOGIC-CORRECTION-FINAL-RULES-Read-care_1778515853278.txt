@@ -1,0 +1,322 @@
+CRITICAL BOOKING LOGIC CORRECTION + FINAL RULES
+Read carefully and implement EXACTLY as specified.
+
+This message replaces any previous confusion between:
+
+- booking cutoff logic
+- cancellation logic
+- emergency cancellation
+- reschedule logic
+
+These are DIFFERENT systems and must remain completely separated.
+
+━━━━━━━━━━━━━━━━━━━
+
+1. BOOKING CUT-OFF LOGIC
+   ━━━━━━━━━━━━━━━━━━━
+
+Purpose:
+The trainer needs preparation + travel time before a session.
+
+The booking system must therefore block:
+
+- the current hour
+- the next hour
+- the hour after that
+
+The FIRST AVAILABLE hour must always be:
+the NEXT FULL HOUR after 3 FULL HOURS have passed.
+
+This is NOT 6 hours.
+This is EXACTLY a rolling 3-hour preparation buffer.
+
+IMPORTANT:
+Use REAL-TIME rolling logic.
+Not rounded dates.
+Not static hourly snapshots.
+Not memoized stale calculations.
+
+━━━━━━━━━━━━━━━━━━━
+CORRECT EXAMPLES
+━━━━━━━━━━━━━━━━━━━
+
+If current Dubai time is:
+
+10:00 AM
+Blocked:
+
+- 10 AM
+- 11 AM
+- 12 PM
+  First available:
+- 01 PM
+
+10:10 AM
+Blocked:
+
+- 11 AM
+- 12 PM
+- 01 PM
+  First available:
+- 02 PM
+
+10:59 AM
+Blocked:
+
+- 11 AM
+- 12 PM
+- 01 PM
+  First available:
+- 02 PM
+
+11:00 AM
+Blocked:
+
+- 11 AM
+- 12 PM
+- 01 PM
+  First available:
+- 02 PM
+
+11:01 AM
+Blocked:
+
+- 12 PM
+- 01 PM
+- 02 PM
+  First available:
+- 03 PM
+
+11:59 AM
+Blocked:
+
+- 12 PM
+- 01 PM
+- 02 PM
+  First available:
+- 03 PM
+
+12:00 PM
+Blocked:
+
+- 12 PM
+- 01 PM
+- 02 PM
+  First available:
+- 03 PM
+
+━━━━━━━━━━━━━━━━━━━
+FINAL BOOKING RULE
+━━━━━━━━━━━━━━━━━━━
+
+Implementation logic:
+
+cutoff =
+CEIL_TO_NEXT_FULL_HOUR(currentDubaiTime)
+
++ 3 hours
+
+Any slot STRICTLY BEFORE cutoff:
+DISABLED
+
+Any slot GREATER THAN OR EQUAL TO cutoff:
+AVAILABLE
+(if not already booked)
+
+━━━━━━━━━━━━━━━━━━━
+VERY IMPORTANT
+━━━━━━━━━━━━━━━━━━━
+
+This logic applies to:
+
+- ALL users
+- ALL accounts
+- admins included
+- trainers included
+
+NO ADMIN BYPASS.
+
+The booking logic must behave identically:
+
+- client-side
+- server-side
+- booking validation API
+- UI rendering
+- session submission validation
+
+Everything must use ONE shared helper function.
+
+━━━━━━━━━━━━━━━━━━━
+2. CANCELLATION LOGIC
+━━━━━━━━━━━━━━━━━━━
+
+This is a COMPLETELY DIFFERENT SYSTEM.
+
+Cancellation has NOTHING to do with booking cutoff.
+
+Cancellation rule:
+
+A normal cancellation is allowed ONLY if:
+session_start_time - current_time >= 6 hours
+
+Meaning:
+The user must cancel at least 6 hours before the session starts.
+
+━━━━━━━━━━━━━━━━━━━
+CORRECT CANCELLATION EXAMPLE
+━━━━━━━━━━━━━━━━━━━
+
+Session:
+08:00 PM
+
+User can normally cancel until:
+01:59:59 PM
+
+At:
+02:00 PM or later:
+normal cancellation is locked.
+
+━━━━━━━━━━━━━━━━━━━
+3. EMERGENCY CANCELLATION
+━━━━━━━━━━━━━━━━━━━
+
+If the 6-hour cancellation window has passed:
+
+The user MAY still cancel using:
+Emergency Cancellation
+
+BUT ONLY if:
+their package still has emergency cancels remaining.
+
+Emergency cancellation:
+
+- deducts the session
+- frees the slot
+- decreases emergency cancel balance
+- records the reason + timestamp
+- shows warning confirmation modal
+
+Emergency cancel balance depends on package configuration.
+
+This logic already exists conceptually.
+Keep it.
+
+━━━━━━━━━━━━━━━━━━━
+4. RESCHEDULE LOGIC
+━━━━━━━━━━━━━━━━━━━
+
+Reschedule is ALSO separate from cancellation.
+
+After the normal 6-hour cancellation window expires:
+
+The user may STILL reschedule the session
+to another AVAILABLE slot
+on the SAME DAY ONLY.
+
+Conditions:
+
+- target slot must be available
+- target slot must pass booking cutoff rules
+- target slot must not already be booked
+- reschedule does NOT consume emergency cancel
+
+━━━━━━━━━━━━━━━━━━━
+IMPORTANT RESCHEDULE RULE
+━━━━━━━━━━━━━━━━━━━
+
+If NO available same-day slots exist:
+the session is LOST.
+
+Meaning:
+
+- session counts as used
+- no refund
+- no automatic recovery
+
+This is intentional.
+
+━━━━━━━━━━━━━━━━━━━
+5. PRIORITY ORDER
+━━━━━━━━━━━━━━━━━━━
+
+Booking cutoff system:
+3-hour rolling preparation buffer
+
+Cancellation system:
+6-hour cancellation deadline
+
+Emergency cancel:
+backup cancellation after deadline
+
+Reschedule:
+same-day move only after cancellation deadline
+
+These 4 systems MUST remain fully independent.
+
+━━━━━━━━━━━━━━━━━━━
+6. TECHNICAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+Implement consistently across:
+
+- client
+- server
+- APIs
+- validation
+- UI states
+- disabled buttons
+- session cards
+- modals
+- notifications
+
+Must deploy correctly to:
+
+- GitHub
+- Vercel
+- Neon production DB
+
+━━━━━━━━━━━━━━━━━━━
+7. UX REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+UI wording must be premium and crystal clear.
+
+Use elegant wording like:
+
+“Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time.”
+
+And separately:
+
+“Sessions may be cancelled up to 6 hours before the scheduled time.”
+
+And separately:
+
+“Late cancellations may use an emergency cancellation if available in your package.”
+
+And separately:
+
+“Late sessions may still be rescheduled to another available time on the same day.”
+
+Do NOT merge these explanations together.
+Users must understand the difference immediately.
+
+━━━━━━━━━━━━━━━━━━━
+8. FINAL REQUIREMENT
+━━━━━━━━━━━━━━━━━━━
+
+After implementation:
+
+- verify production build
+- verify live Vercel deployment
+- verify service worker cache invalidation
+- verify real Dubai timezone calculations
+- verify mobile behavior
+- verify edge cases around hour boundaries
+
+Then provide:
+
+- exact helper logic
+- final examples table
+- production verification
+- live deployed SHA
+- confirmation that ALL old conflicting logic was removed completely.

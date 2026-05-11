@@ -278,7 +278,7 @@ async function runMissedCheckinNotifications(): Promise<void> {
 // runway. Universally enforced (admins included) per the May 2026 directive.
 // The cancellation cutoff is SEPARATE (default 6h, configurable via
 // settings.cancellation_cutoff_hours) — do not conflate.
-const MIN_ADVANCE_BOOKING_HOURS = 6;
+const MIN_ADVANCE_BOOKING_HOURS = 3;
 const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
@@ -1251,7 +1251,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         kind: "lead_time_too_short", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
       }));
       return res.status(400).json({
-        message: `Bookings must be made at least ${MIN_ADVANCE_BOOKING_HOURS} full hours before the next hour boundary.`,
+        message:
+          "Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time.",
         code: "lead_time_too_short",
       });
     }
