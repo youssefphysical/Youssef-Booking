@@ -1,0 +1,529 @@
+IMPORTANT — READ CAREFULLY BEFORE IMPLEMENTING
+
+This task is ONLY for the AUTHENTICATED CLIENT PROFILE / CLIENT ACCOUNT AREA AFTER LOGIN.
+
+DO NOT redesign or modify:
+
+- the public homepage
+- landing pages
+- pricing section
+- hero section outside login
+- marketing pages
+- public navigation
+- public booking landing experience
+
+This redesign applies ONLY to:
+
+- logged-in client profile
+- client dashboard/profile experience
+- authenticated member area
+
+The goal is:
+Create a PREMIUM LUXURY PERSONAL TRAINING CLIENT PROFILE SYSTEM that feels:
+
+- modern
+- elite
+- emotional
+- motivating
+- extremely clean
+- easy to use
+- visually premium
+- highly organized
+- deeply connected together
+- smooth on mobile and desktop
+- NOT cluttered
+- NOT admin-like
+- NOT corporate
+- NOT overly technical
+
+The entire experience should feel like:
+
+- a luxury private coaching ecosystem
+- Apple Fitness meets high-end concierge coaching
+- modern athlete management experience
+- cinematic and premium
+- emotionally engaging
+
+VERY IMPORTANT:
+The client should NEVER feel overwhelmed.
+Everything must feel:
+
+- intuitive
+- smooth
+- soft
+- connected
+- simple
+- premium
+- luxurious
+- responsive
+- motivating
+
+====================================================
+GLOBAL DESIGN SYSTEM
+
+Use the existing website theme and branding consistently.
+
+Theme direction:
+
+- luxury dark mode
+- black + deep navy background
+- electric blue accents
+- subtle cyan glow
+- glassmorphism elements
+- premium soft shadows
+- layered depth
+- elegant gradients
+- smooth animations
+
+Avoid:
+
+- clutter
+- sharp harsh colors
+- cheap neon effects
+- overly bright UI
+- generic dashboard templates
+- boxed admin panels
+- heavy tables everywhere
+
+Typography:
+
+- modern luxury typography
+- bold clean headings
+- high spacing
+- breathing room
+- elegant hierarchy
+
+Animations:
+
+- smooth and subtle
+- premium motion
+- soft hover states
+- micro-interactions
+- fade + slide transitions
+- smooth card loading
+- premium button interactions
+
+Spacing:
+
+- highly organized
+- consistent paddings
+- strong visual hierarchy
+- no cramped sections
+
+Mobile responsiveness is CRITICAL.
+The mobile version must feel:
+
+- premium
+- spacious
+- touch-friendly
+- elegant
+- easy to navigate with one hand
+
+====================================================
+PROFILE PAGE STRUCTURE
+
+The client profile page should be transformed into a SMART PROFILE EXPERIENCE.
+
+This is NOT a traditional dashboard.
+
+The layout must feel:
+
+- personal
+- motivating
+- connected
+- athlete-focused
+
+====================================================
+
+1. HERO PROFILE SECTION
+   ====================================================
+
+Top section of the authenticated client profile.
+
+Must include:
+
+- profile image
+- client name
+- verified badge if verified
+- elite membership badge
+- current goal
+- short motivational subtitle
+
+Examples:
+
+- Muscle Gain Journey • Week 6
+- Fat Loss Transformation • Consistency 92%
+- Athletic Performance Phase
+
+Membership badge examples:
+
+- Bronze
+- Silver
+- Gold
+- Diamond Elite
+- Black Elite
+
+The badge must feel:
+
+- premium
+- glowing subtly
+- animated softly
+- luxurious
+
+Background:
+
+- dynamic luxury gradient
+- subtle moving glow
+- glass effect
+- layered premium depth
+
+The hero section should instantly make the client feel:
+“I am part of a premium coaching system.”
+
+====================================================
+2. QUICK ACTIONS SECTION
+
+Immediately below hero section.
+
+Create 4 premium large action buttons:
+
+- Book Session
+- Upload Check-In
+- View Progress
+- Message Coach
+
+Design:
+
+- large rounded buttons
+- premium hover/touch feedback
+- icons
+- soft glow
+- luxury gradients
+
+These buttons should be:
+
+- extremely easy to access
+- visually obvious
+- clean
+- fast
+
+====================================================
+3. TODAY STATUS SECTION
+
+Create a “Today” section with live daily status.
+
+Examples:
+
+- Next Session
+- Water Intake
+- Recovery Status
+- Sleep
+- Nutrition Adherence
+- Energy Level
+
+Examples:
+
+- Push Hypertrophy — 7 PM
+- Water: 2.1L / 4L
+- Recovery: Good
+- Sleep: 7h 15m
+
+Use:
+
+- premium stat cards
+- animated progress bars
+- circular progress visuals
+- subtle icons
+
+The design should feel:
+
+- modern athlete analytics
+- clean
+- motivating
+
+====================================================
+4. COACH INSIGHTS SECTION
+
+Create a premium “Coach Insights” area.
+
+This should feel like:
+
+- coach guidance
+- AI-enhanced coaching intelligence
+- personal feedback
+
+Examples:
+
+- Your consistency improved this week.
+- Increase sleep quality for better recovery.
+- Strength performance increased noticeably.
+
+Design:
+
+- elegant insight cards
+- glowing border accents
+- modern luxury appearance
+
+====================================================
+5. TRANSFORMATION SECTION
+
+This section is VERY important emotionally.
+
+Include:
+
+- before/after comparison
+- transformation slider
+- progress timeline
+- body progress visuals
+
+Examples:
+
+- Started: 92kg
+- Current: 84kg
+- Fat loss: -8kg
+- Lean mass: +2.3kg
+
+Design style:
+
+- cinematic
+- emotional
+- premium
+- visually powerful
+
+NOT:
+
+- boring medical charts
+- ugly tables
+
+====================================================
+6. BODY ANALYTICS SECTION
+
+Create a modern smart body analytics section.
+
+Display:
+
+- weight
+- body fat
+- muscle mass
+- water
+- visceral fat
+- BMI
+- metabolic age
+- skeletal muscle
+
+Each metric should include:
+
+- trends
+- arrows
+- color indicators
+- mini charts
+- progress comparison
+
+Design:
+
+- luxury analytics UI
+- modern fitness intelligence style
+
+====================================================
+7. CONSISTENCY & STREAK SECTION
+
+This section should psychologically motivate clients.
+
+Include:
+
+- attendance %
+- nutrition adherence %
+- hydration consistency
+- streak counters
+- training consistency
+
+Examples:
+
+- 23 Day Streak
+- 92% Attendance
+- 88% Nutrition Compliance
+
+Use:
+
+- glowing progress rings
+- premium badges
+- animated visuals
+
+====================================================
+8. PACKAGE STATUS SECTION
+
+This section is extremely important for retention.
+
+Display:
+
+- active package
+- sessions remaining
+- package expiration
+- membership tier
+- progress ring
+
+Examples:
+
+- 18 / 25 Sessions Remaining
+- Expires in 41 Days
+
+Include:
+
+- Renew Package button
+- premium subscription style visuals
+
+IMPORTANT:
+This must feel luxury.
+NOT like a billing system.
+
+====================================================
+9. SESSION HISTORY TIMELINE
+
+Do NOT use boring tables.
+
+Use:
+
+- vertical timeline cards
+- session history cards
+- premium session summaries
+
+Each session card may include:
+
+- session focus
+- completed status
+- intensity
+- trainer notes
+- date/time
+
+Examples:
+
+- Push Hypertrophy
+- Pull Strength
+- Fat Loss Conditioning
+
+====================================================
+10. ACHIEVEMENTS SECTION
+
+Create a motivational achievements system.
+
+Examples:
+
+- First 10 Sessions
+- 30 Day Streak
+- Consistency King
+- Hydration Master
+- Fat Loss Milestone
+
+Use:
+
+- luxury achievement cards
+- animated unlock effects
+- premium iconography
+
+====================================================
+11. CHECK-IN SYSTEM
+
+Create a premium check-in experience.
+
+Weekly check-ins may include:
+
+- weight
+- mood
+- sleep quality
+- stress
+- hunger
+- recovery
+- energy
+
+Admin/trainer should be able to view all check-ins.
+
+The UI should feel:
+
+- simple
+- clean
+- smooth
+- supportive
+
+====================================================
+12. SMART NOTIFICATIONS
+
+Notifications should feel:
+
+- motivational
+- intelligent
+- premium
+
+NOT generic system alerts.
+
+Examples:
+
+- You are 2 sessions away from your best month yet.
+- Your consistency dropped slightly this week.
+- Recovery is improving steadily.
+
+====================================================
+13. VISUAL FLOW & CONNECTED EXPERIENCE
+
+Everything must feel connected together.
+
+Examples:
+
+- clicking progress opens transformation details
+- clicking hydration opens water tracking
+- clicking sessions opens session history
+- clicking analytics opens body details
+
+The entire profile should feel:
+
+- seamless
+- unified
+- premium
+- smooth
+
+====================================================
+14. UX REQUIREMENTS
+
+CRITICAL:
+The user should NEVER need to think hard.
+
+Everything must feel:
+
+- obvious
+- smooth
+- easy
+- elegant
+- luxurious
+- emotionally motivating
+
+Avoid:
+
+- clutter
+- admin complexity
+- too many tabs
+- excessive text
+- crowded widgets
+
+====================================================
+15. FINAL DESIGN GOAL
+
+The final authenticated client profile must feel like:
+
+- a premium athlete ecosystem
+- a luxury private coaching app
+- emotionally engaging
+- motivational
+- elite
+- highly polished
+- futuristic but simple
+- beautiful on mobile and desktop
+
+The client should feel:
+
+- guided
+- motivated
+- premium
+- professionally coached
+- emotionally connected to the platform
+
+MOST IMPORTANT:
+Keep everything cohesive with the existing website branding, color palette, typography, animations, spacing, and overall luxury dark theme.
