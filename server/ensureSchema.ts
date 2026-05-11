@@ -670,34 +670,37 @@ async function run(): Promise<void> {
            '25 personal training sessions — best per-session value for serious training goals.', true, 40),
           ('Duo Package',                                                    'duo',      30, 0, 30, 330, 9900, 120, 'days',
            '30 sessions for two people training together at the same time — share the package, share the wins.', true, 50),
-          ('Free Trial Session — BMI Assessment + Technical Assessment',     'custom',    1, 0,  1,   0,    0,  30, 'days',
-           'One free introductory session for new clients — includes BMI Assessment (body composition snapshot) and Technical Assessment (movement screen, posture, mobility, stability, lift mechanics).', true, 60)
+          ('BMI Assessment',                                                  'custom',    1, 0,  1,   0,    0,  30, 'days',
+           'Free introductory body composition snapshot for new clients — BMI, body fat, weight baseline.', true, 60),
+          ('Technical Movement Assessment',                                    'custom',    1, 0,  1,   0,    0,  30, 'days',
+           'Free introductory movement screen for new clients — posture, mobility, stability, lift mechanics.', true, 70)
         ON CONFLICT (name) DO NOTHING;
       `);
     }
 
-    // Idempotent catalog migration (May 2026): collapse the two separate
-    // assessment templates into a single combined Free Trial entry. Runs
-    // EVERY boot so prod environments seeded before this change converge to
-    // the new shape without manual intervention. Safe because:
-    //  - DELETE only removes catalog rows; client `packages` rows snapshot
-    //    every field at assignment time (templateId is nullable, no FK).
-    //  - INSERT … ON CONFLICT (name) DO NOTHING never touches an existing
-    //    row, so admin edits to the trial template are preserved once it
-    //    exists.
+    // Idempotent cleanup: drop the legacy combined free-trial template
+    // (replaced by separate BMI + Technical Movement Assessment entries).
+    // Safe because client `packages` rows snapshot every field at assignment
+    // time — historical bookings/packages are unaffected.
     await pool.query(`
       DELETE FROM package_templates
-      WHERE name IN ('BMI Assessment', 'Technical Movement Assessment');
+      WHERE name = 'Free Trial Session — BMI Assessment + Technical Assessment';
     `);
+
+    // Idempotent reseed: ensure the two free-trial assessment templates
+    // exist on every environment that was previously seeded. Existing rows
+    // are preserved (ON CONFLICT DO NOTHING); only missing names are
+    // inserted. Safe because admin edits to price / description are kept.
     await pool.query(`
       INSERT INTO package_templates
         (name, type, paid_sessions, bonus_sessions, total_sessions,
          price_per_session, total_price, expiration_value, expiration_unit,
          description, is_active, display_order)
       VALUES
-        ('Free Trial Session — BMI Assessment + Technical Assessment', 'custom', 1, 0, 1, 0, 0, 30, 'days',
-         'One free introductory session for new clients — includes BMI Assessment (body composition snapshot) and Technical Assessment (movement screen, posture, mobility, stability, lift mechanics).',
-         true, 60)
+        ('BMI Assessment', 'custom', 1, 0, 1, 0, 0, 30, 'days',
+         'Free introductory body composition snapshot for new clients — BMI, body fat, weight baseline.', true, 60),
+        ('Technical Movement Assessment', 'custom', 1, 0, 1, 0, 0, 30, 'days',
+         'Free introductory movement screen for new clients — posture, mobility, stability, lift mechanics.', true, 70)
       ON CONFLICT (name) DO NOTHING;
     `);
 
