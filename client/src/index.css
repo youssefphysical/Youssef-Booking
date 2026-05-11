@@ -256,6 +256,44 @@
                 transform 220ms ease, opacity 220ms ease;
   }
 
+  /* Premium luxury polish (May-2026): suppress browser-default text
+     underlines globally — on anchors, buttons-as-links, and any element
+     in any interaction state (hover/focus/active/visited). Clickable
+     affordance is preserved through color, opacity, and the focus-ring
+     above; underlines are reserved for explicit `.text-underline-link`
+     opt-ins (long-form prose body copy where an underline is the only
+     reliable affordance). Apple/Tesla/Linear-grade restraint. */
+  a, a:hover, a:focus, a:active, a:visited,
+  button, [role="button"] {
+    text-decoration: none;
+  }
+  a {
+    color: inherit;
+  }
+  /* Tailwind Typography (`prose prose-invert`) injects its own anchor
+     underline + bold weight on `<a>` inside long-form content. Strip
+     them so legal pages, markdown renders, etc. inherit the same
+     restrained link treatment as the rest of the app. */
+  .prose a,
+  .prose-invert a {
+    text-decoration: none !important;
+    font-weight: inherit;
+    color: hsl(var(--primary));
+    transition: opacity 180ms ease, color 180ms ease;
+  }
+  .prose a:hover,
+  .prose-invert a:hover {
+    opacity: 0.82;
+    text-decoration: none !important;
+  }
+  /* Explicit opt-in if a future component genuinely needs an underline
+     (e.g. inline citation). Use sparingly. */
+  .text-underline-link {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
   /* RTL: Arabic / Urdu font support + slightly looser letter-spacing for clarity */
   html[dir="rtl"] body {
     letter-spacing: 0;

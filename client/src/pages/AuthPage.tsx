@@ -516,20 +516,20 @@ function useConsentItems(): { key: ConsentKey; label: React.ReactNode }[] {
       label: (
         <>
           {t("auth.consentAgreeBefore")}{" "}
-          <Link href="/terms" className="text-primary underline hover:opacity-80">
+          <Link href="/terms" className="text-primary hover:opacity-80">
             {t("auth.consentTermsLink")}
           </Link>
           {", "}
-          <Link href="/policy" className="text-primary underline hover:opacity-80">
+          <Link href="/policy" className="text-primary hover:opacity-80">
             {t("auth.consentCancellationLink")}
           </Link>
           {", "}
-          <Link href="/privacy" className="text-primary underline hover:opacity-80">
+          <Link href="/privacy" className="text-primary hover:opacity-80">
             {t("auth.consentDataLink")}
           </Link>
           {" "}
           {t("auth.consentAgreeAnd")}{" "}
-          <Link href="/medical-disclaimer" className="text-primary underline hover:opacity-80">
+          <Link href="/medical-disclaimer" className="text-primary hover:opacity-80">
             {t("auth.consentMedicalLink")}
           </Link>
           .

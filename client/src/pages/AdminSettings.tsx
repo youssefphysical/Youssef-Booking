@@ -500,7 +500,7 @@ function HeroSlideEditor({
             <button
               type="button"
               onClick={resetTuning}
-              className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              className="text-[11px] text-muted-foreground hover:text-foreground"
               data-testid={`button-hero-tuning-reset-${slide.id}`}
             >
               {t("admin.settingsPage.heroTuningReset")}

@@ -71,7 +71,7 @@ export function CookieBanner() {
                   {t("cookie.body")}{" "}
                   <Link
                     href="/cookies"
-                    className="text-primary underline hover:opacity-80"
+                    className="text-primary hover:opacity-80"
                     data-testid="link-cookie-policy"
                   >
                     {t("cookie.policyLink")}

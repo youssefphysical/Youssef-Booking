@@ -21,7 +21,7 @@ export default function NotFound() {
           <Link
             href="/"
             data-testid="link-notfound-home"
-            className="inline-block mt-5 text-sm text-primary hover:underline"
+            className="inline-block mt-5 text-sm text-primary hover:opacity-80"
           >
             {t("notFound.backHome")}
           </Link>

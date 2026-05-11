@@ -294,7 +294,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
             {VIP_TIER_DESCRIPTIONS[tier]}
           </p>
         </div>
-        <Link href="/how-it-works" className="text-xs text-primary hover:underline self-start">
+        <Link href="/how-it-works" className="text-xs text-primary hover:opacity-80 self-start">
           {t("dashboard.viewAllLevels")}
         </Link>
       </div>
@@ -344,7 +344,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER, t("dashboard.waChangeFreq"))}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:underline"
+          className="text-primary hover:opacity-80"
         >
           {t("dashboard.messageWaLink")}
         </a>
@@ -1588,7 +1588,7 @@ function InbodyTab({ userId }: { userId: number }) {
                   href={latest.fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-primary hover:opacity-80"
                   data-testid={`link-inbody-file-${latest.id}`}
                 >
                   {t("dashboard.viewOriginal")}
@@ -1644,7 +1644,7 @@ function InbodyTab({ userId }: { userId: number }) {
                     href={r.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline"
+                    className="text-xs text-primary hover:opacity-80"
                   >
                     {t("dashboard.view")}
                   </a>
@@ -1877,7 +1877,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
         <p className="text-xs text-amber-200/90 mt-1">{verdict.message}</p>
         <div className="mt-2 flex flex-wrap gap-3 text-xs">
           {verdict.code === "profile_incomplete" && (
-            <Link href="/profile" className="underline text-amber-100" data-testid="link-dashboard-profile">
+            <Link href="/profile" className="text-amber-100 hover:opacity-80" data-testid="link-dashboard-profile">
               Complete profile →
             </Link>
           )}
@@ -1885,7 +1885,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
             href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline text-amber-100"
+            className="text-amber-100 hover:opacity-80"
             data-testid="link-dashboard-whatsapp-help"
           >
             {t("dashboard.contactYoussef", "Contact Youssef →")}

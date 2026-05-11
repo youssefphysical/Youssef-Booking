@@ -353,7 +353,7 @@ export default function BookingPage() {
             <p className="text-sm font-semibold text-amber-100">Booking unavailable</p>
             <p className="text-xs text-amber-200/90 mt-1">{eligibility.message}</p>
             {(eligibility.code === "profile_incomplete") && (
-              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs underline text-amber-100">
+              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs text-amber-100 hover:opacity-80">
                 Complete profile →
               </Link>
             )}

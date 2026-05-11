@@ -1001,7 +1001,7 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
             {client.vipTierManualOverride && (
               <button
                 type="button"
-                className="text-[10px] text-muted-foreground underline mt-1"
+                className="text-[10px] text-muted-foreground hover:text-foreground mt-1"
                 onClick={() =>
                   updateMembership.mutate({
                     weeklyFrequency: client.weeklyFrequency ?? 1,
@@ -2652,7 +2652,7 @@ function InbodyRow({ record, onDelete }: { record: InbodyRecord; onDelete: () =>
             {record.aiExtracted ? "AI-extracted" : "Manual"}
             {record.fileUrl && " • "}
             {record.fileUrl && (
-              <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-80">
                 View file
               </a>
             )}

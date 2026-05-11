@@ -391,7 +391,7 @@ export function ImageCropper({
                 setPreviewDataUrl(null);
                 if (fileInputRef.current) fileInputRef.current.value = "";
               }}
-              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              className="text-xs text-muted-foreground hover:text-foreground"
               data-testid="button-cropper-change-photo"
             >
               {t("cropper.changePhoto")}

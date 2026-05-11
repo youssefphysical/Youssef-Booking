@@ -23,7 +23,7 @@ export const ALL_TIME_SLOTS = [
 // This applies to ALL users (clients AND admins — no bypass). Same helper
 // is mirrored on the server at `bookingCutoffMs` in server/routes.ts so
 // the UI and validation can never disagree.
-export const MIN_ADVANCE_HOURS = 3;
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
@@ -38,7 +38,7 @@ export function bookingCutoffMs(now: number = Date.now()): number {
   const dubaiNow = now + DUBAI_OFFSET_MS;
   const remainder = dubaiNow % HOUR_MS;
   const ceilDubai = remainder === 0 ? dubaiNow : dubaiNow + (HOUR_MS - remainder);
-  // shift back to UTC, then add the 3-hour preparation buffer
+  // shift back to UTC, then add the 6-hour preparation buffer
   return ceilDubai - DUBAI_OFFSET_MS + MIN_ADVANCE_MS;
 }
 
