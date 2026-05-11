@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import {
   Calendar,
-  Plus,
   Lock,
   X,
   AlertCircle,
@@ -111,9 +110,11 @@ import {
   type ProgressPhoto,
 } from "@shared/schema";
 import { UserAvatar } from "@/components/UserAvatar";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useTranslation } from "@/i18n";
 import { SupplementsTab } from "@/components/dashboard/SupplementsTab";
+import { ProfileHero } from "@/components/dashboard/ProfileHero";
+import { QuickActionsGrid } from "@/components/dashboard/QuickActionsGrid";
+import { PackageStatusHero } from "@/components/dashboard/PackageStatusHero";
 import { Pill, LineChart as LineChartIcon } from "lucide-react";
 
 function currentMonthKey() {
@@ -130,52 +131,56 @@ export default function ClientDashboard() {
   const { user } = useAuth();
   const { t } = useTranslation();
 
+  // Phase 1 luxury redesign (May 2026): controlled tabs so the new
+  // QuickActionsGrid + PackageStatusHero can deep-link into the right
+  // section without forcing a new route. Initial value mirrors the
+  // previous defaultValue. URL hash sync so external deep links
+  // (e.g. /dashboard#progress from a notification email) still work.
+  const [tab, setTab] = useState<string>(() => {
+    if (typeof window === "undefined") return "bookings";
+    const h = window.location.hash.replace(/^#/, "");
+    return h && ["bookings","packages","supplements","body","checkins","inbody","progress","activity"].includes(h)
+      ? h
+      : "bookings";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onHash = () => {
+      const h = window.location.hash.replace(/^#/, "");
+      if (h && ["bookings","packages","supplements","body","checkins","inbody","progress","activity"].includes(h)) {
+        setTab(h);
+      }
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const jumpToTab = (next: string) => {
+    setTab(next);
+    // Smooth-scroll to the tab list so the user's eye lands on the new content.
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        document
+          .getElementById("dashboard-tabs")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  };
+
   if (!user) return null;
 
   return (
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
-      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-start gap-4 min-w-0">
-          <Link href="/profile" data-testid="link-dashboard-avatar" className="shrink-0">
-            <UserAvatar
-              src={user.profilePictureUrl}
-              name={user.fullName}
-              size={64}
-              testId="img-dashboard-avatar"
-            />
-          </Link>
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("dashboard.eyebrow")}</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-3xl font-display font-bold leading-tight" data-testid="text-greeting">
-                {t("dashboard.greeting").replace("{name}", user.fullName.split(" ")[0])}
-              </h1>
-              {user.isVerified && <VerifiedBadge size="md" testId="badge-dashboard-verified" />}
-            </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              {t("dashboard.subtitle")}
-            </p>
-            <div className="mt-3">
-              <VipBadge tier={user.vipTier ?? "foundation"} />
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Link href="/book" data-testid="link-new-booking">
-            <Button className="h-11 rounded-xl">
-              <Plus size={16} className="mr-1.5" /> {t("dashboard.newBooking")}
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <ProfileHero user={user} />
+      <QuickActionsGrid onJump={jumpToTab} />
 
       <TodayHero name={user.fullName} />
+      <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
       <MembershipBlock user={user} />
       <DuoPartnersBlock />
       <BookingEligibilityBanner userId={user.id} user={user} />
 
-      <Tabs defaultValue="bookings" className="w-full">
+      <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
         <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
@@ -221,46 +226,7 @@ export default function ClientDashboard() {
 
 // =============== VIP BADGE ===============
 
-function VipBadge({ tier }: { tier: string }) {
-  const { t: trans } = useTranslation();
-  const tg = normaliseTier(tier);
-  const Icon =
-    tg === "diamond_elite" || tg === "pro_elite" || tg === "elite"
-      ? Crown
-      : tg === "momentum"
-      ? Star
-      : Sparkles;
-  const colour =
-    tg === "diamond_elite"
-      ? "bg-gradient-to-r from-cyan-400/20 to-violet-500/20 border-cyan-300/40 text-cyan-100"
-      : tg === "pro_elite"
-      ? "bg-gradient-to-r from-fuchsia-500/15 to-purple-500/15 border-fuchsia-400/30 text-fuchsia-200"
-      : tg === "elite"
-      ? "bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-amber-400/30 text-amber-200"
-      : tg === "momentum"
-      ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-200"
-      : tg === "starter"
-      ? "bg-sky-500/10 border-sky-400/30 text-sky-200"
-      : "bg-blue-500/10 border-blue-400/30 text-blue-200";
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-full border ${colour}`}
-            data-testid={`vip-badge-${tg}`}
-          >
-            <Icon size={12} />
-            {VIP_TIER_LABELS[tg] || trans("dashboard.member")}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="max-w-xs">
-          <p className="text-xs">{VIP_TIER_DESCRIPTIONS[tg]}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
+// VipBadge moved into ProfileHero (May 2026 redesign).
 
 // =============== MEMBERSHIP BLOCK ===============
 
