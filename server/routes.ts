@@ -1243,7 +1243,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     }
     if (
-      me.role !== "admin" &&
       sessionAt.getTime() < bookingCutoffMs()
     ) {
       console.warn("[booking:anomaly]", JSON.stringify({

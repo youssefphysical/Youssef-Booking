@@ -172,7 +172,8 @@ export default function BookingPage() {
       // Business rule: round current Dubai time UP to the next full hour,
       // then require slots to start at or after that ceiling + 3 booking
       // hours. So at 11:10 Dubai the first allowed slot is 15:00, not 14:10.
-      if (!isAdmin && sessionAt < bookingCutoffMs(now)) {
+      // Applies universally — admins included — per explicit product directive.
+      if (sessionAt < bookingCutoffMs(now)) {
         map[slot] = "tooSoon";
         continue;
       }
@@ -199,7 +200,7 @@ export default function BookingPage() {
   const canContinue =
     !!date &&
     !!selectedSlot &&
-    (isAdmin || selectedSlotAvailable) &&
+    selectedSlotAvailable &&
     (isAdmin || (!!sessionFocus && !!trainingGoal)) &&
     duoPartnerOk &&
     eligibilityOk;
