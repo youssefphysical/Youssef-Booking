@@ -1,0 +1,198 @@
+FINAL STRICT EMAIL RESPONSIVE REBUILD + GITHUB / VERCEL / NEON VERIFICATION
+
+The real Gmail Android email is STILL broken. This has wasted too much time.
+
+I need a complete, production-safe, Gmail-Android-first rebuild of the email template responsiveness.
+
+This is NOT a cosmetic polish pass.
+This is NOT another small width fix.
+This is a structural email HTML rebuild.
+
+MAIN PROBLEM:
+The email still renders on Gmail Android as a narrow compressed column.
+This means the current email structure is still not mobile-safe.
+
+STRICT RULE:
+Do not mark this complete until a REAL Gmail Android received email screenshot proves the layout is fixed.
+
+SCOPE:
+Email templates only.
+
+FREEZE MODE REMAINS ACTIVE.
+
+DO NOT TOUCH:
+- booking logic
+- auth
+- package/session logic
+- payment logic
+- schema
+- Neon DB
+- cron jobs
+- API behavior
+- website UI theme
+- calendar
+- dashboard
+- Vercel config
+- environment variables
+
+FILES:
+Only touch email rendering/template files unless absolutely required.
+If any other file is required, stop and explain before editing.
+
+REBUILD REQUIREMENTS:
+
+1. Build Gmail-Android-first.
+Assume Gmail Android ignores advanced CSS and compresses desktop tables.
+
+2. Use old-school email-safe HTML:
+- table-based structure
+- inline CSS
+- simple selectors
+- no flex
+- no grid
+- no CSS variables for layout
+- no clamp()
+- no calc()
+- no transforms
+- no filters
+- no unsupported gradients for layout
+
+3. Outer structure:
+- body width 100%
+- wrapper table width 100%
+- main container width 100%
+- max width 600px only for desktop
+- no fixed 600px attributes that force mobile shrink
+- no nested fixed-width tables
+- no percentage conflicts like 46% / 42% / 33% on mobile
+
+4. Mobile layout must be single-column by default.
+Desktop can enhance to wider layout only if safe.
+Mobile must not depend on media queries to become usable.
+
+5. Booking details:
+On mobile, every detail row must be vertical:
+LABEL
+VALUE
+
+Do NOT use:
+LABEL | VALUE
+
+No cramped two-column detail rows on mobile.
+
+6. Hero section:
+- full width on mobile
+- image or logo must not force narrow container
+- brand text readable
+- no fixed side-by-side layout on mobile
+
+7. Session duration card:
+- full-width on mobile
+- readable 60 MINUTES
+- no tiny boxed layout
+
+8. What to expect:
+- full-width card
+- items stacked with clear spacing
+
+9. CTA:
+- full-width or clearly centered
+- minimum height 48px
+- readable text
+- no squeezed button table
+
+10. Footer:
+- stack vertically on mobile
+- contact details readable
+- trust cards full-width or proper stacked blocks
+- no tiny square cards
+
+11. Typography:
+- body minimum 15px
+- important values 16px+
+- line-height at least 1.45
+- avoid tiny labels
+- strong contrast
+- Gmail dark mode readable
+
+12. Visual identity:
+Preserve:
+- TRON Freeze cyan palette
+- dark AMOLED luxury look
+- soft cyan glow
+- premium spacing
+- no amber/orange/yellow/gold
+
+13. Add email-safe meta:
+- viewport
+- x-apple-disable-message-reformatting
+- proper dark-mode safe background fallback
+
+14. Fallback behavior:
+If images are blocked:
+- layout still looks premium
+- no broken spacing
+- no broken empty boxes
+
+15. Validation must be real, not theoretical:
+You must verify against the generated HTML AND production path.
+
+REQUIRED PROOF BEFORE SAYING COMPLETE:
+- GitHub commit SHA
+- Vercel deployment READY
+- real production booking email sent
+- real Gmail Android received-email screenshot
+- desktop Gmail screenshot
+- confirmation Neon/database untouched
+- confirmation only email template files changed
+
+IF SANDBOX CANNOT SEND A REAL EMAIL:
+- say clearly that you cannot prove it
+- do NOT claim fixed
+- provide exact next manual test steps
+- wait for the real screenshot feedback
+
+ACCEPTANCE CRITERIA:
+The Gmail Android email must show:
+- full-width usable layout
+- no narrow squeezed column
+- readable cards
+- readable booking details
+- stacked label/value rows
+- proper spacing
+- CTA not squeezed
+- trust/footer cards not tiny
+- TRON Freeze styling consistent
+- no warm colors
+
+Do not report success based only on local render.
+Do not report success based only on CSS markers.
+Do not report success unless real Gmail Android output is fixed or clearly state proof is pending.
+
+DEPLOYMENT + PRODUCTION SYNC REQUIREMENTS:
+
+After the email rebuild is finished:
+
+1. Commit changes properly to local main
+2. Push to GitHub origin/main
+3. Verify GitHub remote updated successfully
+4. Trigger Vercel production deployment
+5. Wait until deployment status = READY
+6. Verify production is serving NEW email template code
+7. Confirm NO schema/db migrations executed
+8. Confirm Neon DB untouched
+9. Confirm no API/auth/business logic changes
+10. Confirm only email/template-related files changed
+
+Then provide:
+- GitHub commit SHA
+- Vercel deployment ID
+- Production verification result
+- Exact files changed
+- Confirmation that Neon DB was NOT modified
+- Confirmation that FREEZE MODE was respected
+
+FINAL NOTE:
+This must fix the actual Gmail Android received email, not just the preview.
+Email responsiveness only.
+No booking/auth/payment/package/schema/database changes.

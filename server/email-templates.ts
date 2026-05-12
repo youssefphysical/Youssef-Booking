@@ -1255,31 +1255,30 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- 2. HERO CARD — image left, brand stack right. Layered shadow:
-             outer halo (soft) + inner top highlight + 1px deep ring. -->
+        <!-- 2. HERO CARD — single-column ALWAYS: image centered on top,
+             brand block centered below. No 2-col table that depends on
+             @media to stack on mobile. -->
         <tr>
           <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 22px 60px -28px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-hero" style="padding:28px 30px">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
-                    <tr>
-                      <td valign="middle" class="px-hero-img-cell" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:18px;width:46%">
-                        ${heroImageCell}
-                      </td>
-                      <td valign="middle" align="${align}" class="px-hero-text" style="vertical-align:middle">
-                        <div class="px-hero-title" style="font-family:'Times New Roman',Georgia,serif;font-size:30px;font-weight:700;color:${COLOR.text};letter-spacing:1.6px;line-height:1.05;text-transform:uppercase">
-                          ${escapeHtml(BRAND.name)}
-                        </div>
-                        <div class="px-hero-sub" style="margin-top:10px;font-family:'Times New Roman',Georgia,serif;font-size:18px;letter-spacing:4px;text-transform:uppercase;color:${COLOR.primary};font-weight:600;line-height:1">
-                          Elite Coaching
-                        </div>
-                        <div class="px-hero-rule" style="margin-top:14px;height:1px;width:64px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
-                        <div class="px-hero-meta" style="margin-top:12px;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
-                          Personal Training&nbsp;&nbsp;·&nbsp;&nbsp;Dubai
-                        </div>
-                      </td>
-                    </tr>
+                <td class="px-hero" align="center" style="padding:30px 24px;text-align:center">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr><td align="center" style="text-align:center;padding:0 0 18px">
+                      ${heroImageCell}
+                    </td></tr>
+                    <tr><td align="center" style="text-align:center">
+                      <div style="font-family:'Times New Roman',Georgia,serif;font-size:30px;font-weight:700;color:${COLOR.text};letter-spacing:1.6px;line-height:1.1;text-transform:uppercase">
+                        ${escapeHtml(BRAND.name)}
+                      </div>
+                      <div style="margin-top:10px;font-family:'Times New Roman',Georgia,serif;font-size:16px;letter-spacing:3.6px;text-transform:uppercase;color:${COLOR.primary};font-weight:600;line-height:1.1">
+                        Elite Coaching
+                      </div>
+                      <div style="margin:16px auto 0;height:1px;width:64px;background:${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
+                      <div style="margin-top:14px;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
+                        Personal Training&nbsp;&nbsp;·&nbsp;&nbsp;Dubai
+                      </div>
+                    </td></tr>
                   </table>
                 </td>
               </tr>
@@ -1306,36 +1305,35 @@ export function shellHtml(opts: {
         <!-- spacer (premium rhythm) -->
         <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
-        <!-- 4. FOOTER PROFILE CARD — avatar + signature + contacts -->
+        <!-- 4. FOOTER PROFILE CARD — single-column ALWAYS: avatar+signature
+             on top centered, contacts panel below centered. No 2-col split. -->
         <tr>
           <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-footer" style="padding:28px 30px">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
-                    <tr>
-                      <td valign="middle" align="${align}" class="px-profile-block" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:14px;width:42%">
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                          <tr>
-                            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:14px">${avatarCell}</td>
-                            <td valign="middle">
-                              ${signatureBlock}
-                              <div style="margin-top:8px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.text};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto1)}</div>
-                              <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto2)}</div>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                      <td valign="middle" align="${align}" class="px-footer-contacts" style="vertical-align:middle;border-${align === "right" ? "right" : "left"}:1px solid ${COLOR.border};padding-${align === "right" ? "right" : "left"}:18px">
-                        <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">Let's Stay Connected</div>
-                        <div style="font-size:13px;color:${COLOR.text};line-height:1.95">
-                          <div>${ico("✆")}<a href="${wa}" style="color:${COLOR.text};text-decoration:none">WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
-                          <div>${ico("✉")}<a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.email)}</a></div>
-                          <div>${ico("◎")}<a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.instagramHandle)}</a></div>
-                          <div>${ico("◉")}<span style="color:${COLOR.text}">${escapeHtml(BRAND.location)}</span></div>
-                        </div>
-                      </td>
-                    </tr>
+                <td class="px-footer" align="center" style="padding:28px 24px;text-align:center">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr><td align="center" style="text-align:center;padding:0 0 18px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
+                        <tr>
+                          <td valign="middle" style="padding-right:14px">${avatarCell}</td>
+                          <td valign="middle" align="left" style="text-align:left">
+                            ${signatureBlock}
+                            <div style="margin-top:8px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.text};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto1)}</div>
+                            <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto2)}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td></tr>
+                    <tr><td align="center" style="text-align:center;padding:18px 0 0;border-top:1px solid ${COLOR.border}">
+                      <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin:14px 0 12px">Let's Stay Connected</div>
+                      <div style="font-size:15px;color:${COLOR.text};line-height:2">
+                        <div><a href="${wa}" style="color:${COLOR.text};text-decoration:none">${ico("✆")}WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
+                        <div><a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${ico("✉")}${escapeHtml(BRAND.email)}</a></div>
+                        <div><a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${ico("◎")}${escapeHtml(BRAND.instagramHandle)}</a></div>
+                        <div><span style="color:${COLOR.text}">${ico("◉")}${escapeHtml(BRAND.location)}</span></div>
+                      </div>
+                    </td></tr>
                   </table>
                 </td>
               </tr>
@@ -1346,47 +1344,31 @@ export function shellHtml(opts: {
         <!-- spacer (premium rhythm) -->
         <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
-        <!-- 5. TRUST ROW -->
+        <!-- 5. TRUST ROW — 3 stacked full-width tiles ALWAYS. No 3-col table. -->
         <tr>
           <td>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${[
+                { icon: "★", title: "Premium Coaching", sub: "Personalized for you" },
+                { icon: "◎", title: "Proven Methods", sub: "Results that last" },
+                { icon: "✓", title: "Commitment", sub: "We build champions" },
+              ].map((tile, i) => `
+              ${i > 0 ? `<tr><td style="height:10px;line-height:10px;font-size:0">&nbsp;</td></tr>` : ""}
               <tr>
-                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">★</td></tr></table>
-                    </td>
-                    <td valign="middle">
-                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Premium Coaching</div>
-                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Personalized for you</div>
-                    </td>
-                  </tr></table>
+                <td valign="middle" style="padding:18px 18px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:middle">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td valign="middle" width="44" style="width:44px;padding-right:14px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:34px;height:34px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:17px"><tr><td align="center" valign="middle" style="font-size:15px;color:${COLOR.primary};line-height:1">${tile.icon}</td></tr></table>
+                      </td>
+                      <td valign="middle">
+                        <div style="font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">${tile.title}</div>
+                        <div style="font-size:13px;color:${COLOR.textMuted};line-height:1.5;margin-top:4px">${tile.sub}</div>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
-                <td width="6" class="px-trust-spacer" style="font-size:0;line-height:0">&nbsp;</td>
-                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">◎</td></tr></table>
-                    </td>
-                    <td valign="middle">
-                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Proven Methods</div>
-                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Results that last</div>
-                    </td>
-                  </tr></table>
-                </td>
-                <td width="6" class="px-trust-spacer" style="font-size:0;line-height:0">&nbsp;</td>
-                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">✓</td></tr></table>
-                    </td>
-                    <td valign="middle">
-                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Commitment</div>
-                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">We build champions</div>
-                    </td>
-                  </tr></table>
-                </td>
-              </tr>
+              </tr>`).join("")}
             </table>
           </td>
         </tr>
@@ -1504,22 +1486,22 @@ export function sessionDetailsCardHtml(opts: {
   const heading = opts.heading || "Session Details";
   const filled = opts.rows.filter((r) => r.value !== null && r.value !== undefined && r.value !== "");
   if (filled.length === 0) return "";
-  const padSide = align === "right" ? "padding-left" : "padding-right";
   const rows = filled.map((r, i) => {
     const isLast = i === filled.length - 1;
     const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
     const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
-    return `<tr class="px-detail-row">
-      <td class="px-detail-icon" style="padding:13px 0;${borderStyle}width:24px;vertical-align:middle">
-        <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1">${r.icon}</span>
+    // Single <td> per row containing label-on-top-of-value as block-level
+    // <div>s. Bulletproof on Gmail Android — no row-cell stacking dependency.
+    return `<tr>
+      <td style="padding:14px 0;${borderStyle}vertical-align:top">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;margin:0 0 6px;text-align:${align}">${escapeHtml(r.label)}</div>
+        <div style="font-size:16px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
       </td>
-      <td class="px-detail-label" style="padding:13px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:38%">${escapeHtml(r.label)}</td>
-      <td class="px-detail-value" style="padding:13px 0;${borderStyle}color:${valueColor};font-size:14px;font-weight:600;letter-spacing:0.2px;text-align:${align === "right" ? "left" : "right"};vertical-align:middle">${escapeHtml(String(r.value))}</td>
     </tr>`;
   }).join("");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), inset 0 0 0 1px ${COLOR.primaryDeep}">
     <tr><td style="padding:22px 22px">
-      <div style="font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:12px;text-align:${align}">${escapeHtml(heading)}</div>
+      <div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:14px;text-align:${align}">${escapeHtml(heading)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
     </td></tr>
   </table>`;
@@ -1575,16 +1557,17 @@ export function bigCtaButtonHtml(opts: {
   icon?: string;             // unicode glyph, defaults to a calendar
 }): string {
   const icon = opts.icon || "▦";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-bigcta-wrap" style="margin:10px 0">
-    <tr><td align="center">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="px-bigcta-pill" style="margin:0 auto">
-        <tr><td bgcolor="${COLOR.bgCard}" style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(95,251,255,0.12), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -6px ${COLOR.primary}, 0 0 56px -16px ${COLOR.primaryGlow}">
-          <a href="${escapeHtml(opts.href)}" class="px-button-cell" style="display:inline-block;padding:18px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-shadow:0 0 16px ${COLOR.primaryDeep}">
-            <span style="margin-right:14px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:16px;vertical-align:middle">→</span>
-          </a>
-        </td></tr>
-      </table>
-    </td></tr>
+  // Full-width pill ALWAYS — outer table 100% width, anchor displays as a
+  // block-level button so it fills the cell on every client. Min height
+  // ~52px via line-height 20 + padding 16+16 = guaranteed 48px+ tap target.
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0">
+    <tr>
+      <td align="center" bgcolor="${COLOR.bgCard}" style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(95,251,255,0.12), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -6px ${COLOR.primary}, 0 0 56px -16px ${COLOR.primaryGlow}">
+        <a href="${escapeHtml(opts.href)}" style="display:block;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:20px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-align:center;text-shadow:0 0 16px ${COLOR.primaryDeep}">
+          <span style="margin-right:12px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:12px;font-size:16px;vertical-align:middle">→</span>
+        </a>
+      </td>
+    </tr>
   </table>`;
 }
 
@@ -1831,73 +1814,63 @@ export function buildClientBookingConfirmationEmail(opts: {
   const subject = fill(t(lang, "bookingSubject"), { date: d.date, time: d.time12 });
   const greeting = fill(t(lang, "greeting"), { name: d.clientName });
 
-  // Reference layout: top row = eyebrow+title (left) | duration card (right)
-  const topRow = splitRowHtml({
-    leftHtml: eyebrowTitleHtml({
-      eyebrow: "New Session",
-      titleStart: "Booking",
-      titleAccent: "Confirmed",
-      body: t(lang, "bookingBody"),
-      align,
-    }),
-    rightHtml: durationCardHtml({
-      minutes: 60,
-      label: "Session Duration",
-      sublabel: "This session is 1 hour long.",
-      align,
-    }),
-    widthLeft: "55%",
-    gap: 16,
+  // SINGLE-COLUMN ALWAYS — every section is its own full-width block.
+  // No splitRowHtml; mobile readability does not depend on @media stacking.
+  const eyebrowBlock = eyebrowTitleHtml({
+    eyebrow: "New Session",
+    titleStart: "Booking",
+    titleAccent: "Confirmed",
+    body: t(lang, "bookingBody"),
     align,
   });
-
-  // Reference layout: details card (left) | what-to-expect card (right)
-  const detailsRow = splitRowHtml({
-    leftHtml: sessionDetailsCardHtml({
-      heading: "Session Details",
-      align,
-      rows: [
-        { icon: "◉", label: "Client", value: d.clientName },
-        { icon: "✉", label: "Email", value: d.clientEmail || null },
-        { icon: "✆", label: "Phone", value: d.clientPhone || null },
-        { icon: "▣", label: t(lang, "bookingDate"), value: d.date },
-        { icon: "⏱", label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12, valueTone: "primary" },
-        { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
-        { icon: "◎", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
-        { icon: "▲", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel || null },
-        { icon: "⚡", label: t(lang, "bookingType"), value: d.sessionTypeLabel || null },
-        d.partnerFullName ? { icon: "◉", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
-        { icon: "◉", label: t(lang, "bookingPackage"), value: d.packageName || null },
-        d.currentSessionNumber != null && d.totalSessions != null
-          ? { icon: "▦", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
-          : { icon: "", label: "", value: null },
-        { icon: "▦", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
-        { icon: "▣", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
-        { icon: "◈", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus) },
-      ],
-    }),
-    rightHtml: whatToExpectCardHtml({
-      heading: "What to Expect",
-      align,
-      items: [
-        "Personalized warm-up",
-        "High intensity training",
-        "Proper form & technique",
-        "Progressive overload",
-        "Cool down & recovery",
-      ],
-      arrivalNote: "Please arrive 5–10 minutes early to get started.",
-    }),
-    widthLeft: "55%",
-    gap: 16,
+  const durationBlock = durationCardHtml({
+    minutes: 60,
+    label: "Session Duration",
+    sublabel: "This session is 1 hour long.",
     align,
   });
-
+  const detailsBlock = sessionDetailsCardHtml({
+    heading: "Session Details",
+    align,
+    rows: [
+      { icon: "◉", label: "Client", value: d.clientName },
+      { icon: "✉", label: "Email", value: d.clientEmail || null },
+      { icon: "✆", label: "Phone", value: d.clientPhone || null },
+      { icon: "▣", label: t(lang, "bookingDate"), value: d.date },
+      { icon: "⏱", label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12, valueTone: "primary" },
+      { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
+      { icon: "◎", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
+      { icon: "▲", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel || null },
+      { icon: "⚡", label: t(lang, "bookingType"), value: d.sessionTypeLabel || null },
+      d.partnerFullName ? { icon: "◉", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
+      { icon: "◉", label: t(lang, "bookingPackage"), value: d.packageName || null },
+      d.currentSessionNumber != null && d.totalSessions != null
+        ? { icon: "▦", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
+        : { icon: "", label: "", value: null },
+      { icon: "▦", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
+      { icon: "▣", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
+      { icon: "◈", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus) },
+    ],
+  });
+  const expectBlock = whatToExpectCardHtml({
+    heading: "What to Expect",
+    align,
+    items: [
+      "Personalized warm-up",
+      "High intensity training",
+      "Proper form & technique",
+      "Progressive overload",
+      "Cool down & recovery",
+    ],
+    arrivalNote: "Please arrive 5–10 minutes early to get started.",
+  });
+  const SPACER = `<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
-    `<p style="margin:0 0 18px;color:${COLOR.textMuted};font-size:14px">${escapeHtml(greeting)}</p>` +
-    topRow +
-    `<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>` +
-    detailsRow +
+    `<p style="margin:0 0 22px;color:${COLOR.textMuted};font-size:15px;line-height:1.55">${escapeHtml(greeting)}</p>` +
+    eyebrowBlock +
+    durationBlock + SPACER +
+    detailsBlock + SPACER +
+    expectBlock +
     `<div style="margin:24px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
 
   const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
