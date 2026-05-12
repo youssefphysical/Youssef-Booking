@@ -1094,6 +1094,8 @@ export function shellHtml(opts: {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <meta name="supported-color-schemes" content="dark light">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
 <title>${escapeHtml(BRAND.name)}</title>
 <!--[if mso]><style>* { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
 <style>
@@ -1107,7 +1109,9 @@ export function shellHtml(opts: {
     .px-button-cell { padding: 17px 32px !important; font-size: 13px !important; }
   }
   /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
-     Apple Mail, Outlook mobile. Premium feeling preserved at every breakpoint. */
+     Apple Mail, Outlook mobile. Mobile-first stacking: every multi-column
+     section becomes a single full-width column, every detail row becomes
+     label-on-top-of-value (no narrow 50/50 split). */
   @media only screen and (max-width: 480px) {
     /* Generic Gmail-safe utilities (per brief) */
     .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
@@ -1115,37 +1119,104 @@ export function shellHtml(opts: {
     .center-mobile { text-align: center !important; }
     .hide-mobile { display: none !important; }
 
-    .px-shell { padding: 14px 8px !important; }
+    /* Outer chrome */
+    .px-shell { padding: 12px 6px !important; }
     .px-card { border-radius: 14px !important; }
     .px-body { padding: 22px 18px !important; font-size: 15px !important; line-height: 1.65 !important; }
-    .px-hero { padding: 22px 18px !important; }
-    .px-hero-text { padding: 18px 0 0 !important; text-align: center !important; }
-    .px-hero-title { font-size: 26px !important; letter-spacing: 1.4px !important; }
-    .px-hero-sub { font-size: 14px !important; letter-spacing: 2.6px !important; }
-    .px-hero-meta { font-size: 10.5px !important; letter-spacing: 2px !important; }
-    .px-footer { padding: 22px 18px !important; }
     .px-topbar { padding: 12px 14px !important; font-size: 11.5px !important; }
     .px-topbar-right { display: none !important; }
+
+    /* Hero — true single-column, image on top, brand centered below */
+    .px-hero { padding: 26px 20px !important; }
+    .px-hero-text { padding: 22px 0 0 !important; text-align: center !important; }
+    .px-hero-title { font-size: 28px !important; letter-spacing: 1.4px !important; }
+    .px-hero-sub { font-size: 15px !important; letter-spacing: 3px !important; }
+    .px-hero-meta { font-size: 10.5px !important; letter-spacing: 2px !important; }
+    .px-hero-img-cell { padding: 0 !important; text-align: center !important; }
+    .px-hero-img-cell img { display: inline-block !important; width: 100% !important; max-width: 240px !important; height: auto !important; margin: 0 auto !important; }
+    .px-hero-rule { margin-left: auto !important; margin-right: auto !important; }
+
+    /* Body card */
+    .px-eyebrow-title { font-size: 28px !important; line-height: 1.1 !important; }
     .px-info-row td { padding: 12px 14px !important; font-size: 13.5px !important; }
     .px-button-cell { padding: 16px 24px !important; font-size: 13px !important; letter-spacing: 1.3px !important; }
     .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 10px !important; }
+
+    /* Generic 2/3-column stacker */
     .px-stack { display: block !important; width: 100% !important; }
-    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 18px !important; }
+    .px-stack > tbody > tr > td,
+    .px-stack td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; padding-bottom: 18px !important; }
     .px-stack td:last-child { padding-bottom: 0 !important; }
-    .px-trust-cell { display: block !important; width: 100% !important; padding: 14px 16px !important; margin-bottom: 8px !important; border-radius: 10px !important; }
-    .px-trust-cell:last-child { margin-bottom: 0 !important; }
-    .px-eyebrow-title { font-size: 26px !important; }
-    /* Detail row tightening — drop icon column, tighten paddings, give value
-       column more room. Prevents the "cramped narrow column" look on Gmail. */
+
+    /* Detail rows — full vertical stack: label on top, value below, single
+       divider line at the bottom of each row. NO more 50/50 cramped split. */
+    .px-detail-row td {
+      display: block !important;
+      width: 100% !important;
+      padding: 0 !important;
+      text-align: left !important;
+      border-bottom: 0 !important;
+    }
     .px-detail-icon { display: none !important; }
-    .px-detail-row td { padding: 11px 0 !important; }
-    .px-detail-label { font-size: 10.5px !important; width: 50% !important; padding-right: 8px !important; }
-    .px-detail-value { font-size: 14px !important; width: 50% !important; }
-    /* Footer profile contacts — full-width below the signature, no left
-       border on mobile (the divider creates visual squeeze). */
-    .px-footer-contacts { border-left: 0 !important; border-right: 0 !important; padding: 16px 0 0 !important; margin-top: 14px !important; border-top: 1px solid ${COLOR.border} !important; }
-    /* Big CTA — let the pill button breathe full width on phones. */
-    .px-bigcta { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+    .px-detail-label {
+      padding: 14px 0 2px !important;
+      font-size: 10.5px !important;
+      letter-spacing: 1.6px !important;
+      color: ${COLOR.textMuted} !important;
+      text-align: left !important;
+    }
+    .px-detail-value {
+      padding: 0 0 14px !important;
+      font-size: 15.5px !important;
+      line-height: 1.4 !important;
+      text-align: left !important;
+      border-bottom: 1px solid ${COLOR.border} !important;
+      word-break: break-word !important;
+    }
+    .px-detail-row:last-child .px-detail-value { border-bottom: 0 !important; padding-bottom: 0 !important; }
+    .px-detail-row:first-child .px-detail-label { padding-top: 0 !important; }
+
+    /* Footer profile — fully stacked, generous spacing, no vertical divider */
+    .px-footer { padding: 24px 20px !important; }
+    .px-footer-contacts {
+      border-left: 0 !important;
+      border-right: 0 !important;
+      padding: 18px 0 0 !important;
+      margin-top: 16px !important;
+      border-top: 1px solid ${COLOR.border} !important;
+      text-align: center !important;
+    }
+    .px-footer-contacts > div { text-align: center !important; }
+    .px-profile-block { text-align: center !important; }
+    .px-profile-block table { margin: 0 auto !important; }
+
+    /* Trust row — full-width premium tiles, NOT tiny boxes */
+    .px-trust-cell {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      padding: 18px 18px !important;
+      margin: 0 0 10px !important;
+      border-radius: 12px !important;
+    }
+    .px-trust-cell:last-child { margin-bottom: 0 !important; }
+    .px-trust-spacer { display: none !important; height: 0 !important; line-height: 0 !important; font-size: 0 !important; }
+    .px-trust-title { font-size: 13px !important; letter-spacing: 1.6px !important; }
+    .px-trust-sub { font-size: 12.5px !important; line-height: 1.5 !important; margin-top: 4px !important; }
+
+    /* Big CTA — guaranteed full-width centered pill button */
+    .px-bigcta-wrap { width: 100% !important; }
+    .px-bigcta-pill { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+    .px-bigcta-pill a {
+      display: block !important;
+      width: auto !important;
+      padding: 18px 20px !important;
+      font-size: 13px !important;
+      letter-spacing: 1.6px !important;
+      text-align: center !important;
+      box-sizing: border-box !important;
+    }
   }
   /* Gmail dark-mode polish — keeps panel surface stable. */
   @media (prefers-color-scheme: dark) {
@@ -1193,7 +1264,7 @@ export function shellHtml(opts: {
                 <td class="px-hero" style="padding:28px 30px">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
                     <tr>
-                      <td width="46%" valign="middle" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:18px">
+                      <td valign="middle" class="px-hero-img-cell" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:18px;width:46%">
                         ${heroImageCell}
                       </td>
                       <td valign="middle" align="${align}" class="px-hero-text" style="vertical-align:middle">
@@ -1203,7 +1274,7 @@ export function shellHtml(opts: {
                         <div class="px-hero-sub" style="margin-top:10px;font-family:'Times New Roman',Georgia,serif;font-size:18px;letter-spacing:4px;text-transform:uppercase;color:${COLOR.primary};font-weight:600;line-height:1">
                           Elite Coaching
                         </div>
-                        <div style="margin-top:14px;height:1px;width:64px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
+                        <div class="px-hero-rule" style="margin-top:14px;height:1px;width:64px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
                         <div class="px-hero-meta" style="margin-top:12px;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
                           Personal Training&nbsp;&nbsp;·&nbsp;&nbsp;Dubai
                         </div>
@@ -1243,7 +1314,7 @@ export function shellHtml(opts: {
                 <td class="px-footer" style="padding:28px 30px">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
                     <tr>
-                      <td width="42%" valign="middle" align="${align}" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:14px">
+                      <td valign="middle" align="${align}" class="px-profile-block" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:14px;width:42%">
                         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                           <tr>
                             <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:14px">${avatarCell}</td>
@@ -1286,32 +1357,32 @@ export function shellHtml(opts: {
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">★</td></tr></table>
                     </td>
                     <td valign="middle">
-                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Premium Coaching</div>
-                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Personalized for you</div>
+                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Premium Coaching</div>
+                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Personalized for you</div>
                     </td>
                   </tr></table>
                 </td>
-                <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                <td width="6" class="px-trust-spacer" style="font-size:0;line-height:0">&nbsp;</td>
                 <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
                     <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">◎</td></tr></table>
                     </td>
                     <td valign="middle">
-                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Proven Methods</div>
-                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Results that last</div>
+                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Proven Methods</div>
+                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Results that last</div>
                     </td>
                   </tr></table>
                 </td>
-                <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                <td width="6" class="px-trust-spacer" style="font-size:0;line-height:0">&nbsp;</td>
                 <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
                     <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
                       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">✓</td></tr></table>
                     </td>
                     <td valign="middle">
-                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Commitment</div>
-                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">We build champions</div>
+                      <div class="px-trust-title" style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Commitment</div>
+                      <div class="px-trust-sub" style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">We build champions</div>
                     </td>
                   </tr></table>
                 </td>
@@ -1504,9 +1575,9 @@ export function bigCtaButtonHtml(opts: {
   icon?: string;             // unicode glyph, defaults to a calendar
 }): string {
   const icon = opts.icon || "▦";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-bigcta-wrap" style="margin:10px 0">
     <tr><td align="center">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="px-bigcta-pill" style="margin:0 auto">
         <tr><td bgcolor="${COLOR.bgCard}" style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(95,251,255,0.12), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -6px ${COLOR.primary}, 0 0 56px -16px ${COLOR.primaryGlow}">
           <a href="${escapeHtml(opts.href)}" class="px-button-cell" style="display:inline-block;padding:18px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-shadow:0 0 16px ${COLOR.primaryDeep}">
             <span style="margin-right:14px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:16px;vertical-align:middle">→</span>
