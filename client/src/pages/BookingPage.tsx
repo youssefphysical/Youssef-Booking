@@ -35,13 +35,6 @@ import {
   BOOKING_TRAINING_GOALS,
   evaluateBookingEligibility,
 } from "@shared/schema";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,6 +90,10 @@ export default function BookingPage() {
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
   const [trainingGoal, setTrainingGoal] = useState<TrainingGoal | null>(null);
+  // Surfaces inline "required" hints under the missing field only after the
+  // user attempts to continue — keeps the form quiet on first render but
+  // explicit on submit.
+  const [attemptedContinue, setAttemptedContinue] = useState(false);
   // Duo partner snapshot — only sent when sessionType === "duo".
   // partnerName is REQUIRED for Duo bookings; phone/email are optional.
   const [partnerName, setPartnerName] = useState("");
@@ -457,115 +454,218 @@ export default function BookingPage() {
         )}
 
         {selectedSlot && (
-          <motion.div id="booking-confirm-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 scroll-mt-24">
-            {/* ---- SESSION FOCUS PICKER ---- */}
-            <div>
-              <label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                <Dumbbell size={14} className="text-primary" />
-                {t("booking.sessionFocusLabel")}
-                {!isAdmin && <span className="text-red-400">*</span>}
-              </label>
-              <p className="text-xs text-muted-foreground mb-3">{t("booking.sessionFocusHelp")}</p>
-              <div className="space-y-3">
-                {(["upper", "lower", "conditioning"] as const).map((groupKey) => (
-                  <div key={groupKey}>
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-1.5">
-                      {t(`booking.focusGroup.${groupKey}`)}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {SESSION_FOCUS_GROUPS[groupKey].map((opt) => {
-                        const active = sessionFocus === opt;
-                        return (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setSessionFocus(opt as SessionFocus)}
-                            data-testid={`pill-focus-${opt}`}
-                            className={`px-3 h-9 rounded-full text-xs font-semibold transition-all border ${
-                              active
-                                ? "bg-primary text-black border-primary shadow-md shadow-primary/20"
-                                : "bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10"
-                            }`}
-                          >
-                            {t(`booking.focus.${opt}`)}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ---- TRAINING GOAL PICKER ---- */}
-            <div>
-              <label className="text-sm font-semibold flex items-center gap-2 mb-2">
-                <Target size={14} className="text-primary" />
-                {t("booking.trainingGoalLabel")}
-                {!isAdmin && <span className="text-red-400">*</span>}
-              </label>
-              <p className="text-xs text-muted-foreground mb-3">{t("booking.trainingGoalHelp")}</p>
-              <div className="flex flex-wrap gap-2">
-                {BOOKING_TRAINING_GOALS.map((opt) => {
-                  const active = trainingGoal === opt;
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setTrainingGoal(opt as TrainingGoal)}
-                      data-testid={`pill-goal-${opt}`}
-                      className={`px-3 h-9 rounded-full text-xs font-semibold transition-all border ${
-                        active
-                          ? "bg-primary text-black border-primary shadow-md shadow-primary/20"
-                          : "bg-white/5 border-white/10 text-foreground/80 hover:bg-white/10"
-                      }`}
-                    >
-                      {t(`booking.goal.${opt}`)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold block mb-2">{t("booking.sessionTypeLabel")}</label>
-              <Select
-                value={sessionType}
-                onValueChange={(v) => setSessionType(v as SessionTypeChoice)}
-              >
-                <SelectTrigger
-                  data-testid="select-session-type"
-                  className="bg-white/5 border-white/10 h-11"
+          <motion.div id="booking-confirm-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 scroll-mt-24">
+            {/* ============================================================
+                SESSION PREFERENCES — single guided card
+                Wraps the three required steps (Focus / Goal / Booking Type)
+                in one premium AMOLED surface. Each step is numbered, has
+                its own subtitle, and surfaces inline validation directly
+                under the missing field instead of a floating banner.
+                ============================================================ */}
+            <section
+              className="relative overflow-hidden rounded-3xl border border-white/[0.07] bg-card/60 p-5 sm:p-7"
+              data-testid="card-session-preferences"
+              aria-labelledby="session-preferences-title"
+            >
+              {/* Cyan top hairline — same HUD signature used elsewhere */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent"
+              />
+              <header className="mb-6">
+                <p className="text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
+                  {t("booking.preferencesEyebrow", "Required")}
+                </p>
+                <h2
+                  id="session-preferences-title"
+                  className="text-xl sm:text-2xl font-display font-bold mt-1"
+                  data-testid="text-preferences-title"
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sessionTypeOptions.map((opt) => (
-                    <SelectItem
-                      key={opt.value}
-                      value={opt.value}
-                      disabled={opt.disabled}
-                      data-testid={`option-session-${opt.value}`}
-                    >
-                      <div className="flex flex-col">
-                        <span>{opt.label}</span>
-                        {opt.hint && (
-                          <span className="text-[11px] text-muted-foreground">{opt.hint}</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  {t("booking.preferencesTitle", "Session Preferences")}
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  {t(
+                    "booking.preferencesSubtitle",
+                    "Tell us how you want to train so the session is built around you.",
+                  )}
+                </p>
+              </header>
 
-            <SessionTypeNotice
-              sessionType={sessionType}
-              activePackage={activePackage}
-              sessionsLeft={sessionsLeft}
-              isAdmin={!!isAdmin}
-              hasUsedFreeTrial={hasUsedFreeTrial}
-            />
+              {/* ---- STEP 1: TRAINING FOCUS ---- */}
+              <PreferenceStep
+                step={1}
+                icon={<Dumbbell size={14} />}
+                title={t("booking.sessionFocusLabel")}
+                subtitle={t(
+                  "booking.sessionFocusHelp",
+                  "Choose the main muscle group or movement pattern.",
+                )}
+                required={!isAdmin}
+                fulfilled={!!sessionFocus}
+              >
+                <div className="space-y-4">
+                  {(["upper", "lower", "conditioning"] as const).map((groupKey) => (
+                    <div key={groupKey}>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70 font-semibold mb-2">
+                        {t(`booking.focusGroup.${groupKey}`)}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {SESSION_FOCUS_GROUPS[groupKey].map((opt) => {
+                          const active = sessionFocus === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setSessionFocus(opt as SessionFocus)}
+                              data-testid={`pill-focus-${opt}`}
+                              aria-pressed={active}
+                              className={`min-h-9 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                                active
+                                  ? "bg-primary/15 text-primary border-primary/50 shadow-[0_0_14px_-6px_hsl(183_100%_60%/0.55)]"
+                                  : "bg-white/[0.03] border-white/10 text-foreground/75 hover:bg-white/[0.06] hover:border-white/20 hover:text-foreground"
+                              }`}
+                            >
+                              {t(`booking.focus.${opt}`)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {attemptedContinue && !isAdmin && !sessionFocus && (
+                  <InlineRequiredHint testId="hint-focus-required">
+                    {t("booking.errors.pickFocus")}
+                  </InlineRequiredHint>
+                )}
+              </PreferenceStep>
+
+              <StepDivider />
+
+              {/* ---- STEP 2: TRAINING GOAL ---- */}
+              <PreferenceStep
+                step={2}
+                icon={<Target size={14} />}
+                title={t("booking.trainingGoalLabel")}
+                subtitle={t(
+                  "booking.trainingGoalHelp",
+                  "Choose the main objective for this session.",
+                )}
+                required={!isAdmin}
+                fulfilled={!!trainingGoal}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {BOOKING_TRAINING_GOALS.map((opt) => {
+                    const active = trainingGoal === opt;
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setTrainingGoal(opt as TrainingGoal)}
+                        data-testid={`pill-goal-${opt}`}
+                        aria-pressed={active}
+                        className={`min-h-9 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                          active
+                            ? "bg-primary/15 text-primary border-primary/50 shadow-[0_0_14px_-6px_hsl(183_100%_60%/0.55)]"
+                            : "bg-white/[0.03] border-white/10 text-foreground/75 hover:bg-white/[0.06] hover:border-white/20 hover:text-foreground"
+                        }`}
+                      >
+                        {t(`booking.goal.${opt}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {attemptedContinue && !isAdmin && !trainingGoal && (
+                  <InlineRequiredHint testId="hint-goal-required">
+                    {t("booking.errors.pickGoal")}
+                  </InlineRequiredHint>
+                )}
+              </PreferenceStep>
+
+              <StepDivider />
+
+              {/* ---- STEP 3: BOOKING TYPE ----
+                  Card grid replaces the cramped dropdown — no overlay
+                  covers other fields, and each option shows title + hint
+                  in plain sight. */}
+              <PreferenceStep
+                step={3}
+                icon={<PackageIcon size={14} />}
+                title={t("booking.sessionTypeLabel")}
+                subtitle={t(
+                  "booking.sessionTypeHelp",
+                  "Choose how this session will be booked.",
+                )}
+                required={false}
+                fulfilled={!!sessionType}
+              >
+                <div
+                  role="radiogroup"
+                  aria-label={t("booking.sessionTypeLabel")}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+                >
+                  {sessionTypeOptions.map((opt) => {
+                    const active = sessionType === opt.value;
+                    const Icon = sessionTypeIcon(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        disabled={opt.disabled}
+                        onClick={() => !opt.disabled && setSessionType(opt.value)}
+                        data-testid={`option-session-${opt.value}`}
+                        className={`relative text-left rounded-2xl border p-3.5 transition-all min-h-[68px] flex items-start gap-3 ${
+                          opt.disabled
+                            ? "bg-white/[0.02] border-white/5 opacity-50 cursor-not-allowed"
+                            : active
+                              ? "bg-primary/10 border-primary/50 shadow-[0_0_18px_-8px_hsl(183_100%_60%/0.55)]"
+                              : "bg-white/[0.03] border-white/10 hover:bg-white/[0.06] hover:border-white/20"
+                        }`}
+                      >
+                        <span
+                          className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${
+                            active
+                              ? "bg-primary/20 border-primary/40 text-primary"
+                              : "bg-white/[0.04] border-white/10 text-muted-foreground"
+                          }`}
+                        >
+                          <Icon size={16} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}
+                          >
+                            {opt.label}
+                          </span>
+                          {opt.hint && (
+                            <span className="block text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                              {opt.hint}
+                            </span>
+                          )}
+                        </span>
+                        {active && (
+                          <CheckCircle2
+                            size={14}
+                            className="absolute top-2.5 right-2.5 text-primary"
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-4">
+                  <SessionTypeNotice
+                    sessionType={sessionType}
+                    activePackage={activePackage}
+                    sessionsLeft={sessionsLeft}
+                    isAdmin={!!isAdmin}
+                    hasUsedFreeTrial={hasUsedFreeTrial}
+                  />
+                </div>
+              </PreferenceStep>
+            </section>
 
             {sessionType === "duo" && (
               <motion.div
@@ -663,16 +763,31 @@ export default function BookingPage() {
           >
             <div className="max-w-3xl mx-auto">
               <Button
-                onClick={() => setIsConfirmOpen(true)}
-                disabled={!canContinue}
+                onClick={() => {
+                  if (!canContinue) {
+                    setAttemptedContinue(true);
+                    // Scroll to the first missing field so the user sees the
+                    // inline hint instead of staring at a disabled button.
+                    requestAnimationFrame(() => {
+                      const target =
+                        (!isAdmin && !sessionFocus && document.querySelector('[data-testid="hint-focus-required"]')) ||
+                        (!isAdmin && !trainingGoal && document.querySelector('[data-testid="hint-goal-required"]')) ||
+                        document.getElementById("booking-confirm-panel");
+                      (target as HTMLElement | null)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    });
+                    return;
+                  }
+                  setIsConfirmOpen(true);
+                }}
+                aria-disabled={!canContinue}
                 data-testid="button-open-confirm"
-                className="w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20 disabled:opacity-50"
+                className={`w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20 transition-opacity ${
+                  canContinue ? "" : "opacity-60"
+                }`}
               >
                 {canContinue
                   ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))
-                  : !sessionFocus
-                    ? t("booking.errors.pickFocus")
-                    : t("booking.errors.pickGoal")}
+                  : t("booking.completeRequired", "Complete required fields to continue")}
               </Button>
             </div>
           </motion.div>
@@ -748,6 +863,117 @@ export default function BookingPage() {
       </Dialog>
     </div>
   );
+}
+
+/* ============================================================================
+   Session Preferences building blocks
+   ----------------------------------------------------------------------------
+   PreferenceStep — numbered step header (badge + icon + title + subtitle +
+                    elegant required asterisk + "done" check) wrapping the
+                    actual chip / card group as `children`.
+   StepDivider     — subtle hairline separator between numbered steps inside
+                     the same Session Preferences card.
+   InlineRequiredHint — calm but clear "required" message that lives directly
+                        under the missing field. Replaces the previous floating
+                        validation banner.
+   sessionTypeIcon  — lookup mapping each booking-type choice to its icon for
+                      the new card-grid selector.
+   ========================================================================= */
+function PreferenceStep({
+  step,
+  icon,
+  title,
+  subtitle,
+  required,
+  fulfilled,
+  children,
+}: {
+  step: number;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  required: boolean;
+  fulfilled: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div data-testid={`preference-step-${step}`}>
+      <div className="flex items-start gap-3 mb-3">
+        <span
+          className={`shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-display font-bold tabular-nums transition-colors ${
+            fulfilled
+              ? "bg-primary/15 border-primary/40 text-primary"
+              : "bg-white/[0.04] border-white/15 text-foreground/70"
+          }`}
+          aria-hidden
+        >
+          {fulfilled ? <CheckCircle2 size={14} /> : step}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm sm:text-[15px] font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
+            <span className="text-primary/80">{icon}</span>
+            <span>{title}</span>
+            {required && (
+              <span
+                className="text-primary/70 text-xs font-normal leading-none"
+                aria-label="required"
+                title="Required"
+              >
+                ✦
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <div className="ms-10 sm:ms-10">{children}</div>
+    </div>
+  );
+}
+
+function StepDivider() {
+  return (
+    <div
+      aria-hidden
+      className="my-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"
+    />
+  );
+}
+
+function InlineRequiredHint({
+  children,
+  testId,
+}: {
+  children: React.ReactNode;
+  testId: string;
+}) {
+  return (
+    <p
+      role="alert"
+      data-testid={testId}
+      className="mt-3 text-xs text-amber-300 inline-flex items-center gap-1.5"
+    >
+      <AlertTriangle size={12} />
+      {children}
+    </p>
+  );
+}
+
+function sessionTypeIcon(value: SessionTypeChoice) {
+  switch (value) {
+    case "package":
+      return PackageIcon;
+    case "single":
+      return Wallet;
+    case "trial":
+      return Gift;
+    case "duo":
+      return Users;
+    default:
+      return PackageIcon;
+  }
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
