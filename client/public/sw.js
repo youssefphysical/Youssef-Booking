@@ -19,12 +19,12 @@
  * Bumping CACHE_VERSION invalidates ALL caches → safe escape hatch.
  */
 
-// Bumped 2026-05-11 (v17) to force-evict stale package-card / payment-badge
-// chunks after the payment-tracking refinement (amount_paid + last_payment_date
-// + premium status badges). The activate handler deletes any cache key not
-// matching the current STATIC/RUNTIME names, so bumping this is the safest
-// escape hatch for "old code stuck on user devices" reports.
-const CACHE_VERSION = "v24-2026-05-12-segmented-focus-categories";
+// Bumped 2026-05-12 (v25) to force-evict stale CSS chunks after the
+// site-wide TRON Freeze color cleanup (every amber/gold/orange surface
+// remapped to ice cyan; --warm-accent token + email warn/VIP tokens
+// re-themed). Without this bump returning users would briefly see the
+// old warm palette until the previous CSS chunk is revalidated.
+const CACHE_VERSION = "v25-2026-05-12-tron-freeze";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
