@@ -13,7 +13,28 @@
  */
 
 const TRAINER_EMAIL_DEFAULT = "youssef.physical@gmail.com";
-const FROM_DEFAULT = "Youssef Fitness <bookings@youssef-ahmed.fit>";
+// Display name uses the full brand to match what clients see in-app —
+// inboxes show "Youssef Ahmed Personal Training" rather than a generic
+// "Youssef Fitness". The address half MUST live on a domain that is
+// fully verified in Resend (SPF + DKIM + DMARC). Override via EMAIL_FROM
+// once your verified domain is live.
+const FROM_DEFAULT = "Youssef Ahmed Personal Training <bookings@youssef-ahmed.fit>";
+
+/**
+ * Returns the bare email address from a "Display <addr@host>" string,
+ * or the input unchanged if no angle brackets are present. Used for
+ * DNS lookups and bounce-tracking headers.
+ */
+export function fromAddress(): string {
+  const raw = process.env.EMAIL_FROM || FROM_DEFAULT;
+  const m = raw.match(/<([^>]+)>/);
+  return (m ? m[1] : raw).trim();
+}
+export function fromDomain(): string {
+  const addr = fromAddress();
+  const at = addr.lastIndexOf("@");
+  return at >= 0 ? addr.slice(at + 1).toLowerCase() : "";
+}
 
 export function trainerEmail(): string {
   return process.env.TRAINER_EMAIL || TRAINER_EMAIL_DEFAULT;
@@ -105,6 +126,30 @@ export async function sendEmail(opts: {
     return { sent: false, error: "RESEND_API_KEY missing" };
   }
 
+  // Always set Reply-To so client replies route to the trainer's real
+  // inbox, not the no-reply sending mailbox. Falls back to the trainer
+  // email when the caller didn't supply one (most paths already do).
+  const replyTo = opts.replyTo || trainerEmail();
+
+  // Anti-spam / deliverability headers:
+  // - Auto-Submitted (RFC 3834): tells receiving servers + clients that
+  //   this is an automated transactional message and they should NOT
+  //   trigger auto-replies / vacation responders. Improves rep with
+  //   Gmail / Outlook + suppresses bounce loops.
+  // - X-Entity-Ref-ID: per-send unique id so support can correlate a
+  //   user-reported "didn't get the email" with a specific send.
+  // - List-Unsubscribe / List-Unsubscribe-Post: even on transactional
+  //   mail, Gmail explicitly recommends including these — they unlock
+  //   the native one-click unsubscribe UX and improve sender score.
+  const refId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const unsubMail = `mailto:${trainerEmail()}?subject=unsubscribe`;
+  const headers: Record<string, string> = {
+    "Auto-Submitted": "auto-generated",
+    "X-Entity-Ref-ID": refId,
+    "List-Unsubscribe": `<${unsubMail}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -120,7 +165,12 @@ export async function sendEmail(opts: {
         subject: String(opts.subject).replace(/[\r\n\u0000-\u001f]+/g, " ").trim().slice(0, 250),
         text: opts.text,
         html: opts.html,
-        reply_to: opts.replyTo,
+        reply_to: replyTo,
+        headers,
+        tags: [
+          { name: "category", value: "transactional" },
+          { name: "app", value: "youssef-fitness" },
+        ],
       }),
     });
     if (!res.ok) {

@@ -89,7 +89,10 @@ import {
   trainerEmail,
   emailConfigStatus,
   getRecentEmailSends,
+  fromDomain,
+  fromAddress,
 } from "./email";
+import { promises as dns } from "node:dns";
 import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
@@ -1762,6 +1765,157 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       replyTo: trainerEmail(),
     });
     res.json({ to, ...result, config: emailConfigStatus() });
+  });
+
+  // GET /api/admin/email/dns — resolves SPF / DKIM / DMARC for the
+  // configured From domain and reports pass/fail per record. This is
+  // the single endpoint that tells you "is your domain authentication
+  // actually wired up correctly". Read-only; safe to call freely.
+  app.get("/api/admin/email/dns", requireAdmin, async (_req, res) => {
+    const domain = fromDomain();
+    const address = fromAddress();
+    if (!domain) {
+      return res.status(400).json({ message: "EMAIL_FROM has no parseable domain." });
+    }
+
+    type Check = {
+      record: "SPF" | "DKIM" | "DMARC";
+      host: string;
+      status: "pass" | "fail" | "warn";
+      detail: string;
+      raw?: string[];
+    };
+    const checks: Check[] = [];
+
+    // ---- SPF: TXT @ apex containing "v=spf1" and either "include:_spf.resend.com" or similar ----
+    try {
+      const txt = await dns.resolveTxt(domain);
+      const flat = txt.map((parts) => parts.join(""));
+      const spf = flat.find((r) => /v=spf1/i.test(r));
+      if (!spf) {
+        checks.push({
+          record: "SPF",
+          host: domain,
+          status: "fail",
+          detail: `No SPF record found. Add a TXT record at ${domain}: "v=spf1 include:_spf.resend.com ~all"`,
+          raw: flat,
+        });
+      } else if (!/_spf\.resend\.com|amazonses\.com/i.test(spf)) {
+        checks.push({
+          record: "SPF",
+          host: domain,
+          status: "warn",
+          detail: `SPF exists but does not authorize Resend. Add "include:_spf.resend.com" to: ${spf}`,
+          raw: [spf],
+        });
+      } else {
+        checks.push({
+          record: "SPF",
+          host: domain,
+          status: "pass",
+          detail: "SPF authorizes Resend.",
+          raw: [spf],
+        });
+      }
+    } catch (e: any) {
+      checks.push({
+        record: "SPF",
+        host: domain,
+        status: "fail",
+        detail: `DNS lookup failed: ${e?.code || e?.message || "unknown"}`,
+      });
+    }
+
+    // ---- DKIM: Resend uses selector "resend" by default → resend._domainkey.<domain> CNAME ----
+    const dkimHost = `resend._domainkey.${domain}`;
+    try {
+      const cname = await dns.resolveCname(dkimHost).catch(() => null);
+      if (cname && cname.length > 0) {
+        checks.push({
+          record: "DKIM",
+          host: dkimHost,
+          status: "pass",
+          detail: `DKIM CNAME present → ${cname.join(", ")}`,
+          raw: cname,
+        });
+      } else {
+        const txt = await dns.resolveTxt(dkimHost).catch(() => null);
+        const flat = txt ? txt.map((p) => p.join("")) : null;
+        if (flat && flat.length > 0 && flat.some((r) => /v=DKIM1/i.test(r))) {
+          checks.push({
+            record: "DKIM",
+            host: dkimHost,
+            status: "pass",
+            detail: "DKIM TXT present.",
+            raw: flat,
+          });
+        } else {
+          checks.push({
+            record: "DKIM",
+            host: dkimHost,
+            status: "fail",
+            detail: `No DKIM record at ${dkimHost}. Copy the CNAME shown in Resend → Domains → ${domain} into your DNS.`,
+          });
+        }
+      }
+    } catch (e: any) {
+      checks.push({
+        record: "DKIM",
+        host: dkimHost,
+        status: "fail",
+        detail: `DNS lookup failed: ${e?.code || e?.message || "unknown"}`,
+      });
+    }
+
+    // ---- DMARC: TXT @ _dmarc.<domain> with v=DMARC1 ----
+    const dmarcHost = `_dmarc.${domain}`;
+    try {
+      const txt = await dns.resolveTxt(dmarcHost);
+      const flat = txt.map((p) => p.join(""));
+      const dmarc = flat.find((r) => /v=DMARC1/i.test(r));
+      if (!dmarc) {
+        checks.push({
+          record: "DMARC",
+          host: dmarcHost,
+          status: "fail",
+          detail: `No DMARC record. Add TXT at ${dmarcHost}: "v=DMARC1; p=none; rua=mailto:${trainerEmail()}"`,
+          raw: flat,
+        });
+      } else {
+        const policy = /p=(none|quarantine|reject)/i.exec(dmarc)?.[1] ?? "none";
+        checks.push({
+          record: "DMARC",
+          host: dmarcHost,
+          status: "pass",
+          detail: `DMARC present (policy=${policy}).`,
+          raw: [dmarc],
+        });
+      }
+    } catch (e: any) {
+      checks.push({
+        record: "DMARC",
+        host: dmarcHost,
+        status: "fail",
+        detail: `No DMARC record. Add TXT at ${dmarcHost}: "v=DMARC1; p=none; rua=mailto:${trainerEmail()}"`,
+      });
+    }
+
+    const overall = checks.every((c) => c.status === "pass")
+      ? "pass"
+      : checks.some((c) => c.status === "fail")
+        ? "fail"
+        : "warn";
+
+    res.json({
+      from: address,
+      domain,
+      overall,
+      checks,
+      next_steps:
+        overall === "pass"
+          ? "All authentication records pass. Sending should be trusted by Gmail, Outlook, and university gateways."
+          : `Fix the records flagged 'fail' above in your DNS provider for ${domain}, then re-run this check.`,
+    });
   });
 
   // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============
