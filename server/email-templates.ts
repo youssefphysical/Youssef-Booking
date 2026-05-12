@@ -1109,28 +1109,43 @@ export function shellHtml(opts: {
   /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
      Apple Mail, Outlook mobile. Premium feeling preserved at every breakpoint. */
   @media only screen and (max-width: 480px) {
-    .px-shell { padding: 16px 10px !important; }
+    /* Generic Gmail-safe utilities (per brief) */
+    .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
+    .fluid { width: 100% !important; max-width: 100% !important; height: auto !important; }
+    .center-mobile { text-align: center !important; }
+    .hide-mobile { display: none !important; }
+
+    .px-shell { padding: 14px 8px !important; }
     .px-card { border-radius: 14px !important; }
-    .px-body { padding: 26px 20px !important; font-size: 15px !important; line-height: 1.65 !important; }
-    .px-hero { padding: 24px 20px !important; }
-    .px-hero-text { padding: 20px 0 0 !important; text-align: center !important; }
+    .px-body { padding: 22px 18px !important; font-size: 15px !important; line-height: 1.65 !important; }
+    .px-hero { padding: 22px 18px !important; }
+    .px-hero-text { padding: 18px 0 0 !important; text-align: center !important; }
     .px-hero-title { font-size: 26px !important; letter-spacing: 1.4px !important; }
     .px-hero-sub { font-size: 14px !important; letter-spacing: 2.6px !important; }
     .px-hero-meta { font-size: 10.5px !important; letter-spacing: 2px !important; }
-    .px-footer { padding: 22px 20px !important; }
-    .px-topbar { padding: 14px 18px !important; font-size: 11.5px !important; }
+    .px-footer { padding: 22px 18px !important; }
+    .px-topbar { padding: 12px 14px !important; font-size: 11.5px !important; }
     .px-topbar-right { display: none !important; }
     .px-info-row td { padding: 12px 14px !important; font-size: 13.5px !important; }
-    .px-button-cell { padding: 18px 28px !important; font-size: 13.5px !important; letter-spacing: 1.4px !important; }
+    .px-button-cell { padding: 16px 24px !important; font-size: 13px !important; letter-spacing: 1.3px !important; }
     .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 10px !important; }
     .px-stack { display: block !important; width: 100% !important; }
-    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 22px !important; }
+    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 18px !important; }
     .px-stack td:last-child { padding-bottom: 0 !important; }
     .px-trust-cell { display: block !important; width: 100% !important; padding: 14px 16px !important; margin-bottom: 8px !important; border-radius: 10px !important; }
     .px-trust-cell:last-child { margin-bottom: 0 !important; }
-    .px-eyebrow-title { font-size: 28px !important; }
-    .px-detail-value { font-size: 14px !important; }
-    .px-detail-label { font-size: 10.5px !important; }
+    .px-eyebrow-title { font-size: 26px !important; }
+    /* Detail row tightening — drop icon column, tighten paddings, give value
+       column more room. Prevents the "cramped narrow column" look on Gmail. */
+    .px-detail-icon { display: none !important; }
+    .px-detail-row td { padding: 11px 0 !important; }
+    .px-detail-label { font-size: 10.5px !important; width: 50% !important; padding-right: 8px !important; }
+    .px-detail-value { font-size: 14px !important; width: 50% !important; }
+    /* Footer profile contacts — full-width below the signature, no left
+       border on mobile (the divider creates visual squeeze). */
+    .px-footer-contacts { border-left: 0 !important; border-right: 0 !important; padding: 16px 0 0 !important; margin-top: 14px !important; border-top: 1px solid ${COLOR.border} !important; }
+    /* Big CTA — let the pill button breathe full width on phones. */
+    .px-bigcta { display: block !important; width: 100% !important; box-sizing: border-box !important; }
   }
   /* Gmail dark-mode polish — keeps panel surface stable. */
   @media (prefers-color-scheme: dark) {
@@ -1150,7 +1165,8 @@ export function shellHtml(opts: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-shell" style="background:${COLOR.bgOuter};padding:24px 16px" dir="${dir}">
   <tr>
     <td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">
+      <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;margin:0 auto">
 
         <!-- 1. TOP BAR (visible preheader) -->
         <tr>
@@ -1239,7 +1255,7 @@ export function shellHtml(opts: {
                           </tr>
                         </table>
                       </td>
-                      <td valign="middle" align="${align}" style="vertical-align:middle;border-${align === "right" ? "right" : "left"}:1px solid ${COLOR.border};padding-${align === "right" ? "right" : "left"}:18px">
+                      <td valign="middle" align="${align}" class="px-footer-contacts" style="vertical-align:middle;border-${align === "right" ? "right" : "left"}:1px solid ${COLOR.border};padding-${align === "right" ? "right" : "left"}:18px">
                         <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">Let's Stay Connected</div>
                         <div style="font-size:13px;color:${COLOR.text};line-height:1.95">
                           <div>${ico("✆")}<a href="${wa}" style="color:${COLOR.text};text-decoration:none">WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
@@ -1422,11 +1438,11 @@ export function sessionDetailsCardHtml(opts: {
     const isLast = i === filled.length - 1;
     const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
     const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
-    return `<tr>
-      <td style="padding:13px 0;${borderStyle}width:24px;vertical-align:middle">
+    return `<tr class="px-detail-row">
+      <td class="px-detail-icon" style="padding:13px 0;${borderStyle}width:24px;vertical-align:middle">
         <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1">${r.icon}</span>
       </td>
-      <td class="px-detail-label" style="padding:13px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:36%">${escapeHtml(r.label)}</td>
+      <td class="px-detail-label" style="padding:13px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:38%">${escapeHtml(r.label)}</td>
       <td class="px-detail-value" style="padding:13px 0;${borderStyle}color:${valueColor};font-size:14px;font-weight:600;letter-spacing:0.2px;text-align:${align === "right" ? "left" : "right"};vertical-align:middle">${escapeHtml(String(r.value))}</td>
     </tr>`;
   }).join("");
@@ -1566,9 +1582,9 @@ export function infoCardHtml(opts: {
       ([k, v], i) => {
         const isLast = i === filled.length - 1;
         const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
-        return `<tr>
-        <td style="padding:13px 0;color:${COLOR.textMuted};font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;vertical-align:top;text-align:${align};${borderStyle}width:42%">${escapeHtml(k)}</td>
-        <td style="padding:13px 0;color:${COLOR.text};font-size:14.5px;font-weight:600;text-align:${align === "left" ? "right" : "left"};${borderStyle}">${escapeHtml(String(v))}</td>
+        return `<tr class="px-detail-row">
+        <td class="px-detail-label" style="padding:13px 0;color:${COLOR.textMuted};font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;vertical-align:top;text-align:${align};${borderStyle}width:42%">${escapeHtml(k)}</td>
+        <td class="px-detail-value" style="padding:13px 0;color:${COLOR.text};font-size:14.5px;font-weight:600;text-align:${align === "left" ? "right" : "left"};${borderStyle}">${escapeHtml(String(v))}</td>
       </tr>`;
       },
     )

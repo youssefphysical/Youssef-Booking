@@ -1,0 +1,82 @@
+URGENT EMAIL MOBILE RENDERING BUG + FULL DEPLOY/SYNC VERIFICATION
+
+I tested a real booking confirmation email on Gmail mobile and the layout is broken/narrow/cramped. The email content renders like a squeezed thin column instead of a premium responsive TRON Freeze email.
+
+This is NOT a booking logic issue.
+
+Fix EMAIL TEMPLATE RESPONSIVENESS only.
+
+Problems observed:
+- Gmail mobile layout too narrow
+- cards squeezed vertically
+- columns not stacking correctly
+- text alignment inconsistent
+- detail rows cramped
+- hero/branding sections scaling poorly
+- CTA spacing broken
+- overall email loses premium TRON hierarchy on phones
+
+Required fixes:
+1. Audit all email HTML tables and wrappers.
+2. Remove unsafe fixed widths/min-widths.
+3. Ensure outer wrapper:
+   - width="100%"
+   - max-width around 640px
+   - centered correctly
+4. Ensure all mobile sections stack vertically.
+5. Add Gmail-safe responsive email rules:
+   - .stack { display:block !important; width:100% !important; }
+   - .fluid { width:100% !important; max-width:100% !important; height:auto !important; }
+   - responsive padding reductions
+   - mobile-safe typography scaling
+6. Make all cards full-width on mobile.
+7. Make hero image scale properly.
+8. Make CTA centered and visually balanced.
+9. Ensure labels/values align properly.
+10. Preserve desktop/tablet premium layout.
+11. Preserve TRON Freeze cyan palette.
+12. Remove any remaining warm/amber styling in email templates.
+
+DO NOT TOUCH:
+- booking logic
+- package/session logic
+- payment logic
+- auth
+- APIs
+- cron
+- database behavior
+
+Email template/rendering only.
+
+AFTER FIXING:
+1. Commit changes locally.
+2. Push updates to GitHub main.
+3. Verify GitHub remote is synced.
+4. Verify Vercel production deployment completes successfully.
+5. Verify Neon/database untouched.
+6. Verify latest production build is live.
+7. Verify service worker/cache not serving stale email assets.
+8. Send REAL test emails after deployment.
+
+VALIDATION REQUIRED:
+- Gmail Android
+- Gmail desktop
+- Outlook mobile if possible
+- Tablet layout
+- Desktop layout
+
+Need screenshots of:
+- mobile email
+- desktop email
+- final responsive stacked layout
+
+Goal:
+The booking email must feel like a true premium TRON Legacy / luxury fitness brand email on ALL devices:
+- full-width
+- clean spacing
+- readable hierarchy
+- cinematic cyan glow
+- professional responsiveness
+- no cramped columns
+- no broken stacking
+- no amateur mobile rendering
