@@ -85,7 +85,7 @@
      badges, hero highlights, icon glows, timeline connectors, atmospheric
      reflections, premium outlines. Cyan stays primary identity; amber
      stays energy/contrast. NEVER as a full background or large fill. */
-  --warm-accent: 190 100% 65%;
+  --warm-accent: 190 72% 60%;
 
   /* Tertiary text: #6F7F95 — lowest-priority copy (timestamps, captions,
      deeply-muted metadata). Sits one tier below --muted-foreground. */
@@ -118,7 +118,7 @@
   --border: 215 20% 88%;
   --input: 215 20% 88%;
   --ring: 183 90% 38%;
-  --warm-accent: 190 90% 50%;
+  --warm-accent: 190 65% 42%;
   --tertiary-foreground: 213 14% 42%;
 }
 
@@ -603,8 +603,8 @@
    Site-wide warm-color removal: every former amber/gold/orange
    accent has been remapped to a frozen cyan family so the entire
    identity reads as a single TRON Legacy Freeze atmosphere. The
-   --warm-accent token + .amber-*/.warm-*/.amber-glow class names
-   are preserved for backcompat — only their values changed.
+   --warm-accent token plus the .amber-, .warm-accent and .amber-glow
+   class names are preserved for backcompat — only their values changed.
 
    PRIMARY    --warm-accent → #5EE7FF (TRON brand cyan, was #FFB800)
    BRIGHT     #7FF0FF (focus / hover apex, was #FFC400)
@@ -659,10 +659,12 @@
    uses solid amber outline (color, not alpha) for WCAG-compliant
    a11y independent of the alpha ceiling. */
 .amber-edge-glow {
-  /* REST state — warm halo always visible. Capped 0.18 haze. */
+  /* REST state — quiet ice halo. Freeze tune dropped 0.18 → 0.12 so
+     the rest state feels like reflected light, not an active glow;
+     hover/focus still escalate to 0.34 for the "selected" cue. */
   box-shadow:
-    0 0 0 1px hsl(var(--warm-accent) / 0.18),
-    0 6px 18px -8px rgba(94, 231, 255, 0.18);
+    0 0 0 1px hsl(var(--warm-accent) / 0.12),
+    0 6px 18px -8px rgba(94, 231, 255, 0.12);
   transition: box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .amber-edge-glow:hover {
@@ -710,23 +712,22 @@
    featured CTAs, premium badges, "most-popular" markers, hero stats.
    Mirrors .tron-glow geometry but in amber. */
 .amber-glow {
-  /* Polish v3 (May-2026): alphas calmed (0.24/0.18 → 0.18/0.12) so
-     amber halos read at the SAME visual magnitude as .tron-glow's
-     cyan (0.14/0.10). Previously amber was ~70% louder than cyan,
-     which made "Most Popular" pills feel hot rather than premium.
-     Now both halos sit at the same atmospheric weight; amber stays
-     identifiable via warm hue, not by being louder. */
+  /* Freeze tune (Nov-2026): now that both .tron-glow and .amber-glow
+     are cyan, this halo's job shifts from "warm counterpoint" to
+     "deeper atmospheric bloom" — slightly softer alphas + a lower
+     deep stop so it reads as cinematic depth rather than a second
+     neon ring competing with .tron-glow on the same surface. */
   box-shadow:
-    0 0 24px rgba(94, 231, 255, 0.18),
-    0 0 48px rgba(0, 184, 230, 0.12);
+    0 0 24px rgba(94, 231, 255, 0.12),
+    0 0 56px rgba(0, 184, 230, 0.07);
 }
 
 /* Soft amber tint background — for hover surfaces, premium chips,
    selected states. Capped 0.10 fill + 0.18 border. NEVER use as a
    large/full-page background — chips, pills, small panels only. */
 .amber-bg-soft {
-  background-color: rgba(94, 231, 255, 0.08);
-  border: 1px solid rgba(94, 231, 255, 0.18);
+  background-color: rgba(94, 231, 255, 0.05);
+  border: 1px solid rgba(94, 231, 255, 0.14);
 }
 
 /* Amber section divider — thin gradient hairline that fades through
