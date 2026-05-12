@@ -1020,15 +1020,37 @@ export function shellHtml(opts: {
 <meta name="supported-color-schemes" content="dark light">
 <title>${escapeHtml(BRAND.name)}</title>
 <!--[if mso]><style>* { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
+<style>
+  /* Mobile polish — collapses card padding, scales hero type, stacks
+     metric tiles and CTA to full-width. Honoured by Gmail iOS/Android,
+     Apple Mail, Outlook mobile. Desktop clients ignore. */
+  @media only screen and (max-width: 480px) {
+    .px-shell { padding: 24px 12px !important; }
+    .px-card { border-radius: 14px !important; }
+    .px-body { padding: 22px 18px !important; font-size: 14.5px !important; line-height: 1.6 !important; }
+    .px-header { padding: 22px 18px 16px !important; }
+    .px-footer { padding: 16px 18px 20px !important; }
+    .px-hero-title { font-size: 24px !important; line-height: 1.18 !important; }
+    .px-hero-eyebrow { font-size: 10px !important; letter-spacing: 2px !important; }
+    .px-info-row td { padding: 10px 12px !important; font-size: 13px !important; }
+    .px-button-cell { padding: 14px 22px !important; font-size: 13px !important; letter-spacing: 1px !important; }
+    .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 8px !important; }
+    .px-stack { display: block !important; width: 100% !important; }
+  }
+  /* Dark-mode hint for clients that honour it (Apple Mail, Outlook.com). */
+  @media (prefers-color-scheme: dark) {
+    .px-card { background: ${COLOR.bgCard} !important; }
+  }
+</style>
 </head>
 <body style="margin:0;padding:0;background:${COLOR.bgOuter};color:${COLOR.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased">
 <!-- Hidden preview (snippet shown by Gmail/Apple Mail in inbox list) -->
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;color:transparent;line-height:0;font-size:1px;opacity:0">${escapeHtml(opts.previewText)}</div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgOuter};padding:32px 16px" dir="${dir}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-shell" style="background:${COLOR.bgOuter};padding:32px 16px" dir="${dir}">
   <tr>
     <td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 60px -20px ${COLOR.primaryGlow}">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="px-card" style="max-width:600px;width:100%;background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 60px -20px ${COLOR.primaryGlow}">
 
         <!-- TRON top edge — luminous cyan strip + thin reflection line -->
         <tr>
@@ -1043,7 +1065,7 @@ export function shellHtml(opts: {
 
         <!-- Header: brand name + tagline + monogram -->
         <tr>
-          <td align="${align}" style="padding:30px 32px 22px;background:linear-gradient(180deg, ${COLOR.bgCard} 0%, ${COLOR.bgCardSoft} 100%);border-bottom:1px solid ${COLOR.borderCyan}">
+          <td align="${align}" class="px-header" style="padding:30px 32px 22px;background:linear-gradient(180deg, ${COLOR.bgCard} 0%, ${COLOR.bgCardSoft} 100%);border-bottom:1px solid ${COLOR.borderCyan}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td align="${align}" style="vertical-align:middle">
@@ -1062,14 +1084,14 @@ export function shellHtml(opts: {
 
         <!-- Body content -->
         <tr>
-          <td align="${align}" style="padding:32px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
+          <td align="${align}" class="px-body" style="padding:32px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
             ${opts.bodyHtml}
           </td>
         </tr>
 
         <!-- Footer -->
         <tr>
-          <td style="padding:20px 32px 24px;border-top:1px solid ${COLOR.border};background:${COLOR.bgCardSoft}">
+          <td class="px-footer" style="padding:20px 32px 24px;border-top:1px solid ${COLOR.border};background:${COLOR.bgCardSoft}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td align="${align}" style="font-size:12px;color:${COLOR.textMuted};line-height:1.6" dir="${dir}">

@@ -1235,7 +1235,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
+    // Snapshot the "before" values on the fields we surface to admin so
+    // the diff stays accurate even when the request body shapes are
+    // partial. Only the fields actually present in `updates` after the
+    // permission filtering above are considered.
+    const beforeForDiff: Record<string, unknown> = {
+      fullName: me.role === "client" ? me.fullName : null,
+      phone: me.role === "client" ? me.phone : null,
+      email: me.role === "client" ? me.email : null,
+      weeklyFrequency: me.role === "client" ? (me as any).weeklyFrequency : null,
+      vipTier: (me as any).vipTier ?? null,
+    };
+    const targetBefore = me.role === "admin" && me.id !== id
+      ? await storage.getUser(id).catch(() => undefined)
+      : null;
+    if (targetBefore) {
+      beforeForDiff.fullName = targetBefore.fullName;
+      beforeForDiff.phone = targetBefore.phone;
+      beforeForDiff.email = targetBefore.email;
+      beforeForDiff.weeklyFrequency = (targetBefore as any).weeklyFrequency ?? null;
+      beforeForDiff.vipTier = (targetBefore as any).vipTier ?? null;
+    }
+
     const updated = await storage.updateUser(id, updates as any);
+
+    // Best-effort admin email — fires only when a client's surfaced field
+    // actually changed (self-edit OR admin-on-client edit). Skipped for
+    // admin-on-admin edits and for no-op writes (same value submitted).
+    if (updated.role === "client") {
+      const PROFILE_FIELDS: Array<[keyof typeof beforeForDiff, string, (v: unknown) => string]> = [
+        ["fullName", "Full name", (v) => String(v ?? "—").trim() || "—"],
+        ["phone", "Phone", (v) => String(v ?? "—").trim() || "—"],
+        ["email", "Email", (v) => String(v ?? "—").trim() || "—"],
+        ["weeklyFrequency", "Weekly frequency", (v) => v == null ? "—" : `${v}×/week`],
+        ["vipTier", "VIP tier", (v) => v == null ? "—" : String(v)],
+      ];
+      const changes: Array<[string, string]> = [];
+      for (const [key, label, fmt] of PROFILE_FIELDS) {
+        const next = (updated as any)[key];
+        const prev = beforeForDiff[key];
+        if (next !== undefined && next !== prev) {
+          const prevStr = fmt(prev);
+          const nextStr = fmt(next);
+          if (prevStr !== nextStr) {
+            changes.push([label, `${prevStr} → ${nextStr}`]);
+          }
+        }
+      }
+      if (changes.length > 0) {
+        void dispatchAdminProfileUpdateEmail({ user: updated, changes });
+      }
+    }
+
     res.json(sanitizeUser(updated));
   });
 
