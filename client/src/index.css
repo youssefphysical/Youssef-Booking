@@ -331,6 +331,61 @@
                 box-shadow 180ms ease;
   }
 
+  /* Firefox: kill the inner dotted focus border on <button> elements.
+     Without this, focused buttons get a 1px dotted rectangle inside
+     their padding box on top of our cyan focus ring — visually noisy
+     and inconsistent with Chrome / Safari / Edge. */
+  button::-moz-focus-inner,
+  input[type="button"]::-moz-focus-inner,
+  input[type="submit"]::-moz-focus-inner,
+  input[type="reset"]::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+  }
+
+  /* Native form widget polish — strip the default OS chrome on inputs,
+     selects and textareas so they inherit our card/border styling
+     without the iOS rounded "bubble" or Android underline flash on
+     focus. shadcn already applies `appearance-none` per-component but
+     a global reset closes the gap on any custom <input> /<select>. */
+  input,
+  select,
+  textarea {
+    -webkit-appearance: none;
+    appearance: none;
+    background-clip: padding-box;
+  }
+
+  /* Stop iOS Safari from auto-zooming form fields on focus when their
+     font-size is < 16px. The zoom-then-unzoom motion looks like a
+     flash even though it's a viewport scale, not a colour change. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+
+  /* Smooth Radix [data-state] transitions everywhere — Switch, Tabs,
+     Toggle, Checkbox, RadioGroup, Accordion, Collapsible. Without an
+     explicit transition the state flip is instant and reads as a
+     "snap" on selection. 180ms matches our base interaction timing. */
+  [data-state] {
+    transition-property: background-color, color, border-color,
+                         box-shadow, opacity, transform;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Suppress the dragged/long-press callout on iOS for interactive
+     surfaces — the system context menu (copy, share image) on a
+     long-press of a card/chip/button looks broken on a dark UI. */
+  button,
+  [role="button"],
+  [data-radix-collection-item],
+  .premium-tap {
+    -webkit-touch-callout: none;
+  }
+
   /* `.premium-tap` — opt-in utility for non-button elements (motion
      <div>s, link wrappers, custom cards) that want the same press
      feedback. Add it to a wrapping <div role="button"> or <Link>. */

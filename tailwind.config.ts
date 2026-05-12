@@ -3,6 +3,20 @@ import type { Config } from "tailwindcss";
 export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
+  // PREMIUM INTERACTION CONSISTENCY (May-2026):
+  //   Restrict the `hover:` variant to devices that actually support
+  //   hovering (mouse / trackpad). On touch devices the legacy default
+  //   triggers `hover:` after every tap and the visual hover state stays
+  //   "stuck" until the user taps somewhere else, which reads as a
+  //   delayed/laggy gray flash on chips, cards, and dropdown items.
+  //   With this future flag, `hover:bg-foo` compiles to
+  //     @media (hover: hover) and (pointer: fine) { .hover\:bg-foo:hover }
+  //   so phones never paint the hover state and the `:active` press
+  //   feedback (defined globally in index.css) owns the entire mobile
+  //   touch language. Zero behavioural change on desktop.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       borderRadius: {

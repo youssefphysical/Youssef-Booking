@@ -1,0 +1,152 @@
+FINAL INTERACTION CONSISTENCY PASS
+
+The current interaction system is MUCH better now.
+
+However, I want a FINAL CONSISTENCY + POLISH PASS across the ENTIRE platform.
+
+IMPORTANT:
+Do NOT assume the work is complete just because the major gray flashes are removed.
+
+I want you to manually audit EVERY interactive component and guarantee that NO native/mobile/browser interaction artifacts remain ANYWHERE.
+
+====================================================
+FINAL UX GOAL
+====================================================
+
+The platform must feel:
+- fully native
+- luxury
+- premium
+- ultra-consistent
+- AMOLED polished
+- high-end mobile app quality
+
+Every tap anywhere in the app should feel like the SAME DESIGN SYSTEM.
+
+====================================================
+MANUAL COMPONENT AUDIT
+====================================================
+
+Manually inspect ALL:
+
+- buttons
+- chips
+- tabs
+- dropdown items
+- calendar days
+- time slots
+- cards
+- package selectors
+- nav items
+- menu buttons
+- toggles
+- auth buttons
+- footer links
+- modal actions
+- booking actions
+- admin controls
+- notification buttons
+- mobile menu items
+- profile actions
+- ANY clickable element
+
+====================================================
+REMOVE ALL REMAINING:
+====================================================
+
+- native Android highlight flashes
+- browser active rectangles
+- white flashes
+- delayed active states
+- flickering transitions
+- abrupt hover/active snapping
+- inconsistent chip animations
+- inconsistent glow timing
+- inconsistent border transitions
+- delayed checkmark appearance
+- ripple mismatch
+- square press artifacts
+- opacity flickers
+
+====================================================
+UNIFY THE INTERACTION SYSTEM
+====================================================
+
+Every component should use:
+- same easing family
+- same animation timing philosophy
+- same premium touch response
+- same active-state smoothness
+- same focus treatment
+- same shadow logic
+- same scale intensity range
+
+====================================================
+MOBILE-FIRST FEELING
+====================================================
+
+The site should feel:
+- designed FOR mobile first
+- not desktop adapted to mobile
+- not browser-styled
+- not HTML-form feeling
+
+The experience should resemble:
+- premium iOS/Android fitness app
+- luxury SaaS platform
+- polished native application
+
+====================================================
+INTERACTION PRIORITY
+====================================================
+
+Prioritize:
+1. Touch feedback smoothness
+2. Visual consistency
+3. Perceived responsiveness
+4. Luxury feeling
+5. Motion polish
+6. Selection elegance
+
+====================================================
+VERY IMPORTANT
+====================================================
+
+Do NOT overdo animations.
+Do NOT add flashy motion.
+Do NOT add gamer-style effects.
+
+Keep everything:
+- elegant
+- subtle
+- premium
+- restrained
+- expensive-looking
+
+====================================================
+FINAL QA
+====================================================
+
+After refinement:
+- manually test on mobile viewport
+- test repeated rapid tapping
+- test slow taps
+- test selection transitions
+- test dropdown opening/closing
+- test chips
+- test calendar interactions
+- test time slot interactions
+- test package selection
+- test all CTA buttons
+
+====================================================
+DEPLOYMENT
+====================================================
+
+After final polish:
+- build production
+- verify no lint/type issues
+- push GitHub
+- deploy Vercel
+- verify production manually
+- confirm ZERO native interaction artifacts remain
