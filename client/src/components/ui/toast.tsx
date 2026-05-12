@@ -72,7 +72,7 @@ const toastVariants = cva(
         info:
           "border-cyan-500/25 bg-cyan-500/10 text-cyan-50 shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.45)]",
         warning:
-          "border-amber-500/25 bg-amber-500/10 text-amber-50 shadow-[0_10px_30px_-12px_rgba(245,158,11,0.45)]",
+          "border-cyan-500/25 bg-cyan-500/10 text-cyan-50 shadow-[0_10px_30px_-12px_rgba(245,158,11,0.45)]",
         destructive:
           "destructive group border-red-500/30 bg-red-500/10 text-red-50 shadow-[0_10px_30px_-12px_rgba(239,68,68,0.45)]",
       },

@@ -185,16 +185,16 @@ export function SupplementsTab() {
       {/* ── WARNINGS BANNER ─────────────────────────── */}
       {warningCount > 0 && (
         <div
-          className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-4"
+          className="rounded-2xl border border-cyan-500/25 bg-cyan-500/[0.06] p-4"
           data-testid="banner-supplement-warnings"
         >
           <div className="flex items-start gap-2.5">
-            <AlertTriangle size={16} className="text-amber-300 shrink-0 mt-0.5" />
+            <AlertTriangle size={16} className="text-cyan-300 shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-amber-200">
+              <p className="text-sm font-semibold text-cyan-200">
                 {warningCount} {warningCount === 1 ? "item has" : "items have"} safety notes
               </p>
-              <p className="text-xs text-amber-200/80 mt-0.5">
+              <p className="text-xs text-cyan-200/80 mt-0.5">
                 Read them in the full protocol below before taking.
               </p>
             </div>
@@ -383,7 +383,7 @@ function SupplementCard({
           )}
 
           {item.warnings && (
-            <p className="text-[11px] text-amber-300/95 mt-1.5 inline-flex items-start gap-1.5 leading-relaxed">
+            <p className="text-[11px] text-cyan-300/95 mt-1.5 inline-flex items-start gap-1.5 leading-relaxed">
               <AlertTriangle size={11} className="shrink-0 mt-0.5" />
               <span>{item.warnings}</span>
             </p>
@@ -410,7 +410,7 @@ function StatCell({
   amber?: boolean;
 }) {
   const tone = amber
-    ? "border-amber-500/25 text-amber-200"
+    ? "border-cyan-500/25 text-cyan-200"
     : accent
       ? "border-primary/25 text-primary"
       : "border-white/[0.08] text-foreground";

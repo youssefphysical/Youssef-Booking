@@ -169,7 +169,7 @@ function SupplementCard({ item, onEdit, onDelete }: { item: Supplement; onEdit: 
         </Badge>
       )}
       {item.warnings && (
-        <p className="text-xs text-amber-300/90 inline-flex items-start gap-1.5">
+        <p className="text-xs text-cyan-300/90 inline-flex items-start gap-1.5">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <span className="line-clamp-2">{item.warnings}</span>
         </p>

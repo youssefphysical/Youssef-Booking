@@ -50,7 +50,7 @@ import { useTranslation } from "@/i18n";
 const STATUS_TONE: Record<NutritionPlanStatus, string> = {
   draft: "bg-muted text-muted-foreground",
   active: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  archived: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+  archived: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
 };
 const STATUS_ICON: Record<NutritionPlanStatus, JSX.Element> = {
   draft: <FileText size={11} aria-hidden="true" />,

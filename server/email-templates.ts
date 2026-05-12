@@ -71,9 +71,9 @@ const COLOR = {
   primaryGlow: "#0A4F66",    // outer glow base
   primaryDeep: "#003848",    // deepest cyan
   emerald: "#10B981",        // bonus / success
-  amber: "#F59E0B",          // warning
+  amber: "#38BDF8",          // warning (frozen sky — was #F59E0B)
   red: "#EF4444",            // danger
-  gold: "#FACC15",           // VIP / elite accent
+  gold: "#7FF0FF",           // VIP / elite accent (bright ice — was #FACC15)
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -2231,9 +2231,9 @@ export function statusBadgeHtml(opts: { label: string; tone?: BadgeTone }): stri
     info:    { bg: COLOR.bgCardElev, fg: COLOR.primary,  border: COLOR.borderCyan },
     tron:    { bg: COLOR.primaryDeep, fg: COLOR.primary, border: COLOR.primary },
     success: { bg: "#06251a",         fg: COLOR.emerald, border: "#127a55" },
-    warn:    { bg: "#2a1d05",         fg: COLOR.amber,   border: "#8a5b0a" },
+    warn:    { bg: "#04212c",         fg: COLOR.amber,   border: "#0a5870" },
     danger:  { bg: "#2a0a0a",         fg: COLOR.red,     border: "#8a1a1a" },
-    vip:     { bg: "#1f1805",         fg: COLOR.gold,    border: "#a37510" },
+    vip:     { bg: "#04222e",         fg: COLOR.gold,    border: "#0c6e8a" },
     neutral: { bg: COLOR.bgCardSoft,  fg: COLOR.textMuted, border: COLOR.border },
   };
   const p = palette[tone];

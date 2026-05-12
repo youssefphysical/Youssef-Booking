@@ -79,9 +79,9 @@ export default function DirectPaymentPage() {
         </div>
 
         {isHidden ? (
-          <div className="rounded-3xl border border-amber-500/30 bg-amber-500/5 p-6 flex items-start gap-3">
-            <Info className="text-amber-400 shrink-0 mt-1" size={20} />
-            <div className="text-sm text-amber-100/90">
+          <div className="rounded-3xl border border-cyan-500/30 bg-cyan-500/5 p-6 flex items-start gap-3">
+            <Info className="text-cyan-400 shrink-0 mt-1" size={20} />
+            <div className="text-sm text-cyan-100/90">
               <p className="font-semibold">{t("payment.confirmOnWa")}</p>
               <p className="mt-1 opacity-80">{t("payment.privateBody")}</p>
               <div className="flex flex-col sm:flex-row gap-2 mt-4">

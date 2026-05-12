@@ -96,7 +96,7 @@ export function ProgressSnapshot({ userId }: { userId: number }) {
                   className={`mt-2 inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-2.5 py-1 ${
                     delta < 0
                       ? "bg-emerald-500/10 text-emerald-300 border border-emerald-400/25"
-                      : "bg-amber-500/10 text-amber-300 border border-amber-400/25"
+                      : "bg-cyan-500/10 text-cyan-300 border border-cyan-400/25"
                   }`}
                   data-testid="text-weight-delta"
                 >

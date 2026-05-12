@@ -59,8 +59,8 @@ export function QuickActionsGrid({ onJump }: { onJump: (tab: string) => void }) 
       sub: t("dashboard.quick.coachSub", "Direct line on WhatsApp"),
       href: whatsappUrl(DEFAULT_WHATSAPP_NUMBER),
       external: true,
-      glow: "from-amber-500/25 via-amber-500/[0.06] to-transparent",
-      ringGlow: "group-hover:ring-amber-400/45 group-hover:text-amber-300",
+      glow: "from-cyan-500/25 via-cyan-500/[0.06] to-transparent",
+      ringGlow: "group-hover:ring-cyan-400/45 group-hover:text-cyan-300",
     },
   ];
 

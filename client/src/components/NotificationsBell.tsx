@@ -25,13 +25,13 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
 
 const ACCENT: Record<NotificationKind, string> = {
   session_reminder: "text-blue-300",
-  package_expiring: "text-amber-300",
-  missed_checkin: "text-amber-300",
+  package_expiring: "text-cyan-300",
+  missed_checkin: "text-cyan-300",
   nutrition_update: "text-emerald-300",
   supplement_reminder: "text-purple-300",
   coach_message: "text-blue-300",
   payment_reminder: "text-rose-300",
-  milestone: "text-yellow-300",
+  milestone: "text-cyan-300",
   system: "text-white/70",
 };
 

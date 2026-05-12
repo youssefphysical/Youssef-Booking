@@ -463,7 +463,7 @@ function RepairExpiredSessions() {
          !status.data.env.publicAppUrlSet) && (
           <div className="mt-2 pt-2 border-t border-white/[0.04] space-y-1" data-testid="diagnostics-block">
             {status.data.pendingExpired > 0 && (
-              <p className="text-[10.5px] text-amber-300/80 leading-relaxed">
+              <p className="text-[10.5px] text-cyan-300/80 leading-relaxed">
                 {status.data.pendingExpired} expired session{status.data.pendingExpired === 1 ? "" : "s"} pending auto-complete.
               </p>
             )}

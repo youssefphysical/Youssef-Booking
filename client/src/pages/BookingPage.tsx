@@ -360,15 +360,15 @@ export default function BookingPage() {
 
       {!eligibility.ok && (
         <div
-          className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3"
+          className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
           data-testid="banner-booking-blocked"
         >
-          <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />
+          <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-amber-100">Booking unavailable</p>
-            <p className="text-xs text-amber-200/90 mt-1">{eligibility.message}</p>
+            <p className="text-sm font-semibold text-cyan-100">Booking unavailable</p>
+            <p className="text-xs text-cyan-200/90 mt-1">{eligibility.message}</p>
             {(eligibility.code === "profile_incomplete") && (
-              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs text-amber-100 hover:opacity-80">
+              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs text-cyan-100 hover:opacity-80">
                 Complete profile →
               </Link>
             )}
@@ -389,7 +389,7 @@ export default function BookingPage() {
             className="p-3"
             modifiersClassNames={{
               selected:
-                "!bg-amber-400 !text-black font-extrabold rounded-full ring-2 ring-amber-300/60 shadow-[0_0_18px_rgba(251,191,36,0.55)]",
+                "!bg-cyan-400 !text-black font-extrabold rounded-full ring-2 ring-cyan-300/60 shadow-[0_0_18px_rgba(251,191,36,0.55)]",
               today: "text-primary font-bold ring-1 ring-primary/40 rounded-full",
             }}
             styles={{
@@ -443,12 +443,12 @@ export default function BookingPage() {
                       </span>
                     )}
                     {state === "tooSoon" && (
-                      <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-amber-400/70">
+                      <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-cyan-400/70">
                         {t("booking.slotTooSoon")}
                       </span>
                     )}
                     {state === "blocked" && (
-                      <Lock size={10} className="absolute top-1 right-1 text-amber-400/80" />
+                      <Lock size={10} className="absolute top-1 right-1 text-cyan-400/80" />
                     )}
                   </button>
                 );
@@ -895,9 +895,9 @@ export default function BookingPage() {
             {notes && <Row label={t("booking.notesLabel")} value={notes} />}
           </div>
 
-          <div className="flex gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs leading-relaxed">
-            <ShieldAlert className="text-amber-400 shrink-0 mt-0.5" size={16} />
-            <div className="text-amber-100/80 space-y-1.5">
+          <div className="flex gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-xs leading-relaxed">
+            <ShieldAlert className="text-cyan-400 shrink-0 mt-0.5" size={16} />
+            <div className="text-cyan-100/80 space-y-1.5">
               <p>{t("booking.advanceRule")}</p>
               <p>
                 {t("booking.cancellationWarningBefore")}{" "}
@@ -1026,7 +1026,7 @@ function InlineRequiredHint({
     <p
       role="alert"
       data-testid={testId}
-      className="mt-3 text-xs text-amber-300 inline-flex items-center gap-1.5"
+      className="mt-3 text-xs text-cyan-300 inline-flex items-center gap-1.5"
     >
       <AlertTriangle size={12} />
       {children}
@@ -1148,10 +1148,10 @@ function SessionTypeNotice({
     );
   }
   return (
-    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+    <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4 space-y-3">
       <div className="flex items-start gap-3">
-        <Wallet size={18} className="text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-100/90 flex-1">
+        <Wallet size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-cyan-100/90 flex-1">
           <p className="font-semibold mb-0.5">{t("booking.singleTitle")}</p>
           <p className="opacity-80">{t("booking.singleBody")}</p>
         </div>
@@ -1171,7 +1171,7 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
   const { t } = useTranslation();
   if (isAdmin) {
     return (
-      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200/90 inline-flex items-center gap-2">
+      <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-cyan-200/90 inline-flex items-center gap-2">
         <Sparkles size={13} /> {t("booking.adminBypass")}
       </div>
     );
@@ -1179,9 +1179,9 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
 
   if (!pkg) {
     return (
-      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
-        <PackageIcon size={18} className="text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-100/90">
+      <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4 flex items-start gap-3">
+        <PackageIcon size={18} className="text-cyan-400 shrink-0 mt-0.5" />
+        <div className="text-xs text-cyan-100/90">
           <p className="font-semibold mb-0.5">{t("booking.hintNoActivePackage")}</p>
           <p className="opacity-80">{t("booking.noPackageBody")}</p>
         </div>
@@ -1194,12 +1194,12 @@ function PackageBalance({ pkg, sessionsLeft, isAdmin }: { pkg?: Package; session
     <div
       className={`rounded-2xl border p-4 flex items-center gap-3 ${
         lowBalance
-          ? "border-amber-500/30 bg-amber-500/5"
+          ? "border-cyan-500/30 bg-cyan-500/5"
           : "border-primary/20 bg-primary/5"
       }`}
       data-testid="package-balance"
     >
-      <PackageIcon size={18} className={lowBalance ? "text-amber-400" : "text-primary"} />
+      <PackageIcon size={18} className={lowBalance ? "text-cyan-400" : "text-primary"} />
       <div className="text-xs flex-1">
         <p className="font-semibold">
           {t("booking.sessionsRemaining").replace("{n}", String(sessionsLeft))}

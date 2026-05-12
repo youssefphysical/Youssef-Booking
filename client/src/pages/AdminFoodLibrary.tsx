@@ -800,7 +800,7 @@ function FoodFormDialog({
               </div>
               {kcalMismatch && (
                 <p
-                  className="mt-2 text-xs text-amber-500"
+                  className="mt-2 text-xs text-cyan-500"
                   role="status"
                   data-testid="text-kcal-mismatch"
                 >

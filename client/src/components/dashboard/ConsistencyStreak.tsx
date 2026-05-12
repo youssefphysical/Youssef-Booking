@@ -81,7 +81,7 @@ export function ConsistencyStreak({ userId }: { userId: number }) {
             </span>
           </h3>
         </div>
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-amber-500/10 ring-1 ring-amber-400/40 text-amber-300">
+        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cyan-500/10 ring-1 ring-cyan-400/40 text-cyan-300">
           <Flame size={18} />
         </div>
       </div>

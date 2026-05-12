@@ -78,7 +78,7 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
 };
 
 const BLOCK_TYPE_COLORS: Record<string, string> = {
-  "off-day": "bg-amber-500/10 text-amber-300 border-amber-500/20",
+  "off-day": "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
   emergency: "bg-red-500/10 text-red-300 border-red-500/20",
   "fully-booked": "bg-blue-500/10 text-blue-300 border-blue-500/20",
 };
@@ -1273,7 +1273,7 @@ function BankDetailsSection() {
                   {field.value ? (
                     <Eye size={16} className="text-emerald-400 mt-0.5 shrink-0" />
                   ) : (
-                    <EyeOff size={16} className="text-amber-400 mt-0.5 shrink-0" />
+                    <EyeOff size={16} className="text-cyan-400 mt-0.5 shrink-0" />
                   )}
                   <div>
                     <FormLabel className="cursor-pointer">{t("admin.settingsPage.bankShow")}</FormLabel>

@@ -222,7 +222,7 @@ export default function AdminPackages() {
                       </Link>
                       <p className="text-xs text-muted-foreground mt-0.5">{owner?.email}</p>
                       {def?.isDuo && partner && (
-                        <p className="text-xs text-amber-300/80 mt-1 inline-flex items-center gap-1.5">
+                        <p className="text-xs text-cyan-300/80 mt-1 inline-flex items-center gap-1.5">
                           <Users size={11} /> {t("admin.packagesPage.partner")}: {partner.fullName}
                         </p>
                       )}
@@ -237,7 +237,7 @@ export default function AdminPackages() {
                     <PackageStat
                       label={t("admin.packagesPage.statBonus")}
                       value={bonus}
-                      accent={bonus > 0 ? "text-amber-300" : undefined}
+                      accent={bonus > 0 ? "text-cyan-300" : undefined}
                     />
                     <PackageStat
                       label={t("admin.packagesPage.statTotal")}

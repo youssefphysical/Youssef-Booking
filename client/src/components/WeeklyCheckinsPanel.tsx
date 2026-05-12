@@ -152,7 +152,7 @@ function ScaleSlider({
 }: { label: string; value: number; onChange: (n: number) => void; goodHigh?: boolean; disabled?: boolean }) {
   // Color cue: emerald when value is in the "good" half, amber otherwise.
   const isGood = goodHigh ? value >= 7 : value <= 4;
-  const color = isGood ? "text-emerald-300" : value === 5 || value === 6 ? "text-amber-300" : "text-orange-300";
+  const color = isGood ? "text-emerald-300" : value === 5 || value === 6 ? "text-cyan-300" : "text-sky-300";
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
@@ -173,7 +173,7 @@ function ScaleSlider({
 function PercentSlider({
   label, value, onChange, disabled,
 }: { label: string; value: number; onChange: (n: number) => void; disabled?: boolean }) {
-  const color = value >= 85 ? "text-emerald-300" : value >= 60 ? "text-amber-300" : "text-orange-300";
+  const color = value >= 85 ? "text-emerald-300" : value >= 60 ? "text-cyan-300" : "text-sky-300";
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
@@ -195,8 +195,8 @@ function AdherenceBadge({ score }: { score: number | null }) {
   if (score == null) return <Badge variant="outline" className="text-white/40">—</Badge>;
   const tone =
     score >= 85 ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-    : score >= 60 ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-    : "bg-orange-500/15 text-orange-300 border-orange-500/30";
+    : score >= 60 ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+    : "bg-sky-500/15 text-sky-300 border-sky-500/30";
   return <Badge className={`${tone} border`} data-testid={`badge-adherence-${score}`}>{score}%</Badge>;
 }
 
@@ -295,7 +295,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
               {trend != null && (
                 <span
                   className={`flex items-center gap-1 text-xs ${
-                    trend > 0 ? "text-emerald-300" : trend < 0 ? "text-orange-300" : "text-white/50"
+                    trend > 0 ? "text-emerald-300" : trend < 0 ? "text-sky-300" : "text-white/50"
                   }`}
                   data-testid="text-adherence-trend"
                 >
@@ -310,7 +310,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
           <CardContent className="p-4">
             <div className="text-[11px] uppercase tracking-widest text-white/50">Streak</div>
             <div className="mt-2 flex items-center gap-2 text-white">
-              <Flame size={16} className="text-orange-300" />
+              <Flame size={16} className="text-sky-300" />
               <span className="text-xl font-semibold tabular-nums" data-testid="text-checkin-streak">{streak}</span>
               <span className="text-xs text-white/50">{streak === 1 ? "week" : "weeks"}</span>
             </div>
@@ -422,7 +422,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
                           <Badge variant="outline" className="text-white/70 border-white/20">{row.weight} kg</Badge>
                         )}
                         {isAdmin && pendingCoach && (
-                          <Badge className="bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          <Badge className="bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                             <AlertTriangle size={10} className="mr-1" />Pending
                           </Badge>
                         )}

@@ -281,7 +281,7 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
             </span>
             {tierHasPriority(tier) && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200"
+                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-200"
                 data-testid="badge-priority"
               >
                 <Crown size={10} /> {t("dashboard.priorityChip")}
@@ -305,10 +305,10 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
         <div
-          className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3"
+          className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-3"
           data-testid="block-protected-remaining"
         >
-          <p className="text-[10px] uppercase tracking-wider text-amber-200/80 inline-flex items-center gap-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-cyan-200/80 inline-flex items-center gap-1.5">
             <Shield size={11} /> {t("dashboard.protectedCancellations")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
@@ -594,7 +594,7 @@ function BookingCard({
               </span>
             )}
             {booking.protectedCancellation && (
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
                 <Shield size={10} /> {t("dashboard.chipProtected")}
               </span>
             )}
@@ -648,7 +648,7 @@ function BookingCard({
             </Button>
           ) : (
             <>
-              <div className="text-xs text-amber-300/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 self-start sm:self-end">
+              <div className="text-xs text-cyan-300/80 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 self-start sm:self-end">
                 <Lock size={12} />
                 {t("dashboard.locked")} ({isStarted ? t("dashboard.lockedStarted") : t("dashboard.lockedHoursLeft").replace("{h}", String(hoursDisplay))})
               </div>
@@ -656,7 +656,7 @@ function BookingCard({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 text-xs"
+                  className="text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 text-xs"
                   onClick={() => setProtectedOpen(true)}
                   data-testid={`button-protected-cancel-${booking.id}`}
                 >
@@ -716,7 +716,7 @@ function BookingCard({
         <AlertDialogContent className="bg-card border-white/10 sm:rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Shield className="text-amber-300" size={18} />
+              <Shield className="text-cyan-300" size={18} />
               {t("dashboard.protectedTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
@@ -740,7 +740,7 @@ function BookingCard({
                   { onSuccess: () => setProtectedOpen(false) },
                 )
               }
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-cyan-500 hover:bg-cyan-600 text-black"
             >
               {t("dashboard.confirmProtectedFull")}
             </AlertDialogAction>
@@ -981,7 +981,7 @@ function PackagesTab({ userId }: { userId: number }) {
               payStatus === "paid"
                 ? { label: t("dashboard.packagePayPaid", "Paid in Full"), cls: "bg-emerald-500/10 border-emerald-400/30 text-emerald-300", icon: <BadgeCheck size={11} /> }
                 : payStatus === "partially_paid"
-                  ? { label: t("dashboard.packagePayPartial", "Partial Payment"), cls: "bg-amber-500/10 border-amber-400/30 text-amber-300", icon: <Wallet size={11} /> }
+                  ? { label: t("dashboard.packagePayPartial", "Partial Payment"), cls: "bg-cyan-500/10 border-cyan-400/30 text-cyan-300", icon: <Wallet size={11} /> }
                   : payStatus === "complimentary"
                     ? { label: t("dashboard.packagePayComp", "Complimentary"), cls: "bg-sky-500/10 border-sky-400/30 text-sky-200", icon: <Gift size={11} /> }
                     : { label: t("dashboard.packagePayPending", "Payment Pending"), cls: "bg-rose-500/10 border-rose-400/30 text-rose-200", icon: <Wallet size={11} /> };
@@ -992,7 +992,7 @@ function PackagesTab({ userId }: { userId: number }) {
                 : status === "expired"
                   ? { label: t("dashboard.packageStatusExpired", "Expired"), cls: "bg-red-500/10 border-red-500/30 text-red-300" }
                   : status === "expiring_soon"
-                    ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-amber-500/10 border-amber-500/30 text-amber-300" }
+                    ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300" }
                     : status === "completed"
                       ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
                       : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
@@ -1050,7 +1050,7 @@ function PackagesTab({ userId }: { userId: number }) {
                       {payBadge.label}
                     </span>
                     {def?.isDuo && (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 whitespace-nowrap">
                         <Users size={11} /> {t("dashboard.packageDuo")}
                       </span>
                     )}
@@ -1062,23 +1062,23 @@ function PackagesTab({ userId }: { userId: number }) {
                     fully settled or complimentary. */}
                 {outstanding > 0 && payStatus !== "complimentary" && p.isActive && (
                   <div
-                    className="mb-4 rounded-xl border border-amber-400/25 bg-amber-500/[0.07] px-3.5 py-2.5 flex items-center justify-between gap-3"
+                    className="mb-4 rounded-xl border border-cyan-400/25 bg-cyan-500/[0.07] px-3.5 py-2.5 flex items-center justify-between gap-3"
                     data-testid={`package-balance-${p.id}`}
                   >
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/80">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/80">
                         {t("dashboard.packageBalanceLabel", "Outstanding balance")}
                       </p>
-                      <p className="text-sm font-display font-semibold text-amber-100 tabular-nums mt-1">
+                      <p className="text-sm font-display font-semibold text-cyan-100 tabular-nums mt-1">
                         AED {outstanding.toLocaleString()}
                         {totalPrice > 0 && (
-                          <span className="text-[11px] font-normal text-amber-200/60 ml-1.5">
+                          <span className="text-[11px] font-normal text-cyan-200/60 ml-1.5">
                             of AED {totalPrice.toLocaleString()}
                           </span>
                         )}
                       </p>
                     </div>
-                    <Wallet size={16} className="text-amber-300 shrink-0" />
+                    <Wallet size={16} className="text-cyan-300 shrink-0" />
                   </div>
                 )}
                 {/* Progress bar — cyan track with a soft glow at the
@@ -1116,7 +1116,7 @@ function PackagesTab({ userId }: { userId: number }) {
                       {days !== null && days >= 0 && status !== "completed" && (
                         <>
                           {" • "}
-                          <span className={status === "expiring_soon" ? "text-amber-300 font-semibold" : ""}>
+                          <span className={status === "expiring_soon" ? "text-cyan-300 font-semibold" : ""}>
                             {t("dashboard.packageExpiresIn", "{days} days left").replace("{days}", String(days))}
                           </span>
                         </>
@@ -1634,7 +1634,7 @@ function InbodyTab({ userId }: { userId: number }) {
             <div className="flex items-center gap-3">
               {!latest.aiExtracted && (
                 <span
-                  className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                   data-testid="badge-needs-review"
                 >
                   <AlertCircle size={11} /> {t("dashboard.needsReview")}
@@ -1667,7 +1667,7 @@ function InbodyTab({ userId }: { userId: number }) {
             <p className="text-xs text-muted-foreground mt-4 italic">"{latest.notes}"</p>
           )}
           {!latest.aiExtracted && (
-            <p className="text-xs text-amber-300/80 mt-4 inline-flex items-start gap-1.5">
+            <p className="text-xs text-cyan-300/80 mt-4 inline-flex items-start gap-1.5">
               <AlertCircle size={12} className="mt-0.5" />
               {hasMetrics(latest) ? t("dashboard.lowConfidence") : t("dashboard.couldNotRead")}
             </p>
@@ -1925,16 +1925,16 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
   if (verdict.ok) return null;
   return (
     <div
-      className="mb-6 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 flex items-start gap-3"
+      className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
       data-testid="banner-dashboard-eligibility"
     >
-      <ShieldAlert size={18} className="text-amber-300 mt-0.5 shrink-0" />
+      <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-amber-100">Booking unavailable</p>
-        <p className="text-xs text-amber-200/90 mt-1">{verdict.message}</p>
+        <p className="text-sm font-semibold text-cyan-100">Booking unavailable</p>
+        <p className="text-xs text-cyan-200/90 mt-1">{verdict.message}</p>
         <div className="mt-2 flex flex-wrap gap-3 text-xs">
           {verdict.code === "profile_incomplete" && (
-            <Link href="/profile" className="text-amber-100 hover:opacity-80" data-testid="link-dashboard-profile">
+            <Link href="/profile" className="text-cyan-100 hover:opacity-80" data-testid="link-dashboard-profile">
               Complete profile →
             </Link>
           )}
@@ -1942,7 +1942,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
             href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-amber-100 hover:opacity-80"
+            className="text-cyan-100 hover:opacity-80"
             data-testid="link-dashboard-whatsapp-help"
           >
             {t("dashboard.contactYoussef", "Contact Youssef →")}

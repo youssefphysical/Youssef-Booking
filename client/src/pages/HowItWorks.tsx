@@ -157,7 +157,7 @@ export default function HowItWorks() {
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-display font-bold text-lg">{tier.name}</p>
                   {tier.priority && (
-                    <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
+                    <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-200">
                       {t("howItWorks.priorityBadge")}
                     </span>
                   )}

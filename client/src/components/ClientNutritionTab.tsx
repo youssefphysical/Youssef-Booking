@@ -36,7 +36,7 @@ interface Props {
 const STATUS_TONE: Record<NutritionPlanStatus, string> = {
   draft: "bg-muted text-muted-foreground",
   active: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
-  archived: "bg-amber-500/10 text-amber-300 border border-amber-500/30",
+  archived: "bg-cyan-500/10 text-cyan-300 border border-cyan-500/30",
 };
 
 /**
@@ -166,8 +166,8 @@ export function ClientNutritionTab({ client }: Props) {
             </div>
           )}
           {active.privateNotes && (
-            <div className="mt-2 rounded-lg bg-background/40 border border-amber-500/30 p-3">
-              <p className="text-[10px] uppercase text-amber-300/80 tracking-wider mb-1">
+            <div className="mt-2 rounded-lg bg-background/40 border border-cyan-500/30 p-3">
+              <p className="text-[10px] uppercase text-cyan-300/80 tracking-wider mb-1">
                 {t("admin.clientDetail.nutrition.privateNotes", "Private Notes (trainer only)")}
               </p>
               <p className="text-xs whitespace-pre-line">{active.privateNotes}</p>

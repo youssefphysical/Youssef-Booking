@@ -46,8 +46,8 @@ const MOMENTUM_META: Record<
   },
   slowing: {
     label: "Slowing",
-    tone: "text-amber-300",
-    bg: "bg-amber-400/10 border-amber-300/20",
+    tone: "text-cyan-300",
+    bg: "bg-cyan-400/10 border-cyan-300/20",
     icon: <TrendingDown size={13} />,
   },
   inactive: {
@@ -69,7 +69,7 @@ const SEVERITY_META: Record<
   { dot: string; ring: string; tone: string }
 > = {
   critical: { dot: "bg-rose-400", ring: "ring-rose-400/30", tone: "text-rose-200" },
-  warning: { dot: "bg-amber-400", ring: "ring-amber-400/30", tone: "text-amber-200" },
+  warning: { dot: "bg-cyan-400", ring: "ring-cyan-400/30", tone: "text-cyan-200" },
   watch: { dot: "bg-sky-400", ring: "ring-sky-400/30", tone: "text-sky-200" },
   info: { dot: "bg-zinc-400", ring: "ring-zinc-400/30", tone: "text-zinc-200" },
 };
@@ -79,9 +79,9 @@ const CHANGE_META: Record<RecentChangeKind, { icon: React.ReactNode; tone: strin
   session_missed: { icon: <XCircle size={12} />, tone: "text-rose-300" },
   checkin: { icon: <ClipboardList size={12} />, tone: "text-sky-300" },
   body_metric: { icon: <Scale size={12} />, tone: "text-cyan-300" },
-  package: { icon: <Sparkles size={12} />, tone: "text-amber-300" },
+  package: { icon: <Sparkles size={12} />, tone: "text-cyan-300" },
   coach_note: { icon: <Activity size={12} />, tone: "text-violet-300" },
-  renewal: { icon: <Sparkles size={12} />, tone: "text-amber-300" },
+  renewal: { icon: <Sparkles size={12} />, tone: "text-cyan-300" },
 };
 
 function SnapshotChip({
@@ -101,7 +101,7 @@ function SnapshotChip({
     tone === "good"
       ? "text-emerald-200"
       : tone === "warn"
-        ? "text-amber-200"
+        ? "text-cyan-200"
         : tone === "bad"
           ? "text-rose-200"
           : tone === "muted"

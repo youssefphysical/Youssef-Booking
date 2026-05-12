@@ -102,7 +102,7 @@ export function statusColor(status: string): string {
     case "free_cancelled":
       return "bg-zinc-500/15 text-zinc-300 border-zinc-500/30";
     case "emergency_cancelled":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
     case "no_show":
     case "late_cancelled":
       return "bg-red-500/15 text-red-300 border-red-500/30";
@@ -128,7 +128,7 @@ export function paymentColor(payment: string): string {
     case "paid":
       return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
     case "unpaid":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
     case "pending":
       return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
     case "direct_payment_requested":

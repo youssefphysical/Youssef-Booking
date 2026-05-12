@@ -37,7 +37,7 @@ function tierColor(tier: string): string {
     case "pro_elite":
       return "bg-gradient-to-r from-fuchsia-500/15 to-purple-500/15 border-fuchsia-400/30 text-fuchsia-200";
     case "elite":
-      return "bg-gradient-to-r from-amber-500/15 to-orange-500/15 border-amber-400/30 text-amber-200";
+      return "bg-gradient-to-r from-cyan-500/15 to-sky-500/15 border-cyan-400/30 text-cyan-200";
     case "momentum":
       return "bg-emerald-500/15 border-emerald-400/30 text-emerald-200";
     case "starter":

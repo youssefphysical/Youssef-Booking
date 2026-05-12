@@ -282,7 +282,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                   onSelect={() => go(`/admin/bookings?date=${b.date}`)}
                   data-testid={`palette-booking-${b.id}`}
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
                     <Calendar size={16} />
                   </span>
                   <span className="flex flex-col min-w-0">

@@ -1,0 +1,113 @@
+SITE-WIDE COLOR CLEANUP — REMOVE GOLD/YELLOW AND REPLACE WITH TRON LEGACY FREEZE THEME
+
+I want to remove every yellow/gold/amber color from the entire website UI.
+
+The current yellow/gold accents feel inconsistent with the TRON Legacy premium theme.
+
+Replace all yellow/gold/amber/orange warning-style accents with a “Legacy Freeze Tron” color system that matches the website identity.
+
+TARGET THEME:
+- AMOLED black
+- deep navy
+- ice cyan
+- electric blue
+- frozen teal
+- soft cyan glow
+- premium TRON Legacy atmosphere
+
+DO NOT use:
+- yellow
+- gold
+- amber
+- orange
+- mustard
+- warm warning colors
+
+Replace them with:
+- ice cyan
+- frozen blue
+- teal glow
+- soft electric cyan
+- blue-white highlights
+
+Apply this site-wide across:
+- buttons
+- badges
+- chips
+- progress bars
+- selected states
+- active states
+- hover states
+- focus rings
+- calendar highlights
+- booking slot states
+- warning boxes
+- package status cards
+- profile status cards
+- notification badges
+- icons
+- borders
+- gradients
+- shadows
+- glow effects
+- email preview UI if shown inside the app
+
+IMPORTANT:
+Maintain full visual consistency on:
+- mobile
+- tablet
+- desktop
+
+The replacement must feel intentional, premium, and fully integrated — not just a color swap.
+
+DESIGN REQUIREMENTS:
+- Selected states should use bright ice cyan glow
+- Active states should use cyan/blue gradient
+- Warning/attention states should use frozen teal/blue instead of amber
+- Progress indicators should use cyan/blue gradients
+- VIP/package highlights should use premium cyan glow, not gold
+- Calendar selected dates should match the TRON freeze theme
+- No random warm colors should remain
+
+ACCESSIBILITY:
+- Keep strong contrast
+- Text must stay readable
+- Disabled states must remain clearly different
+- Error states may stay red only where needed for true errors
+- Success states may stay green only where needed for true success
+
+TECHNICAL REQUIREMENTS:
+- Audit global theme tokens first
+- Replace hardcoded yellow/gold/amber/orange values
+- Update Tailwind classes if used
+- Update CSS variables if used
+- Update component-level overrides
+- Update mobile-specific styles
+- Update desktop-specific styles
+- Make sure no inline styles still use old warm colors
+
+DO NOT TOUCH:
+- booking logic
+- email sending logic
+- package calculation logic
+- authentication logic
+- payment logic
+- database schema
+
+This is a visual design/theme cleanup only.
+
+FINAL VERIFICATION:
+- Search codebase for yellow/gold/amber/orange color values/classes
+- Verify homepage
+- Verify booking page
+- Verify client profile
+- Verify admin/control panel
+- Verify package cards
+- Verify calendar
+- Verify mobile layout
+- Verify desktop layout
+- Verify dark mode
+- Provide before/after summary of all warm colors replaced
+
+Goal:
+The entire website should feel fully TRON Legacy Freeze — premium, icy, futuristic, consistent, and luxury.

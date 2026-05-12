@@ -341,8 +341,8 @@ export default function AdminAnalytics() {
                 </p>
                 <div className="space-y-2.5">
                   {[
-                    { label: "30d", value: data.retention.churn30d, tone: "text-amber-300" },
-                    { label: "60d", value: data.retention.churn60d, tone: "text-orange-300" },
+                    { label: "30d", value: data.retention.churn30d, tone: "text-cyan-300" },
+                    { label: "60d", value: data.retention.churn60d, tone: "text-sky-300" },
                     { label: "90d", value: data.retention.churn90d, tone: "text-red-300" },
                   ].map((row) => (
                     <div
@@ -403,7 +403,7 @@ export default function AdminAnalytics() {
                       </>
                     ) : (
                       <>
-                        <Activity size={13} className="text-amber-400" />
+                        <Activity size={13} className="text-cyan-400" />
                         <span>{t("admin.analytics.adherenceLow", "Room to grow")}</span>
                       </>
                     )}

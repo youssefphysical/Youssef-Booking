@@ -207,7 +207,7 @@ export function SupplementFormFields({
       {showWarnings && (
         <div>
           <Label className="text-xs flex items-center gap-1.5">
-            <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-amber-500/30 text-amber-300 bg-amber-500/5">Warning</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-cyan-500/30 text-cyan-300 bg-cyan-500/5">Warning</Badge>
             <span className="text-muted-foreground">Visible to client</span>
           </Label>
           <Textarea

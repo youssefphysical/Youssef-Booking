@@ -324,7 +324,7 @@ export default function AdminStaffPage() {
                       {a.fullName}
                       {canonical && (
                         <span
-                          className="ml-2 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-amber-500/30 bg-amber-500/10 text-amber-300"
+                          className="ml-2 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                           data-testid={`badge-super-${a.id}`}
                         >
                           {t("admin.staff.you", "You")}

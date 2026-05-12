@@ -365,7 +365,7 @@ function HeaderChip({
     tone === "danger"
       ? "text-red-300"
       : tone === "warning"
-        ? "text-amber-300"
+        ? "text-cyan-300"
         : tone === "muted"
           ? "text-muted-foreground/80"
           : "text-foreground";
@@ -668,7 +668,7 @@ function OverviewTab({
                 {weightDelta != null && weightDelta !== 0 && (
                   <span
                     className={`text-[11px] font-semibold tabular-nums ${
-                      weightDelta < 0 ? "text-emerald-300" : "text-amber-300"
+                      weightDelta < 0 ? "text-emerald-300" : "text-cyan-300"
                     }`}
                   >
                     {weightDelta > 0 ? "+" : ""}
@@ -776,7 +776,7 @@ function CheckinChip({
       : ratio >= 0.8
         ? "text-emerald-300"
         : ratio >= 0.5
-          ? "text-amber-300"
+          ? "text-cyan-300"
           : "text-red-300";
   return (
     <div className="rounded-lg bg-white/[0.03] border border-white/5 px-2 py-1.5 text-center">
@@ -1938,7 +1938,7 @@ function BookingsList({ userId }: { userId: number }) {
                 )}
                 {b.adminNotes && (
                   <p className="text-[11px]">
-                    <span className="text-amber-300/80 font-semibold">Admin: </span>
+                    <span className="text-cyan-300/80 font-semibold">Admin: </span>
                     <span className="text-foreground/80">{b.adminNotes}</span>
                   </p>
                 )}
@@ -1980,7 +1980,7 @@ function BookingsList({ userId }: { userId: number }) {
                 </div>
                 {b.privateCoachNotes && (
                   <p className="text-[11px]">
-                    <span className="text-amber-300/80 font-semibold">Private: </span>
+                    <span className="text-cyan-300/80 font-semibold">Private: </span>
                     <span className="text-foreground/80">{b.privateCoachNotes}</span>
                   </p>
                 )}
@@ -2339,7 +2339,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
 
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <SessionStat label="Base" value={base} />
-                  <SessionStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-amber-300" : undefined} />
+                  <SessionStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-cyan-300" : undefined} />
                   <SessionStat label="Total" value={p.totalSessions} accent="text-primary" />
                 </div>
 
@@ -2457,7 +2457,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
             paymentStatus === "paid"
               ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
               : paymentStatus === "partially_paid"
-              ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+              ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
               : paymentStatus === "pending"
               ? "border-sky-500/40 bg-sky-500/10 text-sky-200"
               : "border-red-500/40 bg-red-500/10 text-red-200"
@@ -2471,7 +2471,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
           className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${
             adminApproved
               ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+              : "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
           }`}
           data-testid={`badge-approved-${pkg.id}`}
         >
@@ -2528,7 +2528,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
               <p className="text-sm font-display font-semibold text-foreground">
                 {FMT_AED_ADMIN(amountPaid)} <span className="text-muted-foreground font-normal">/ {FMT_AED_ADMIN(totalPrice)}</span>
               </p>
-              <p className={`text-xs font-semibold ${outstanding > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+              <p className={`text-xs font-semibold ${outstanding > 0 ? "text-cyan-300" : "text-emerald-300"}`}>
                 {outstanding > 0 ? `${FMT_AED_ADMIN(outstanding)} due` : "Settled"}
               </p>
             </div>
@@ -2537,7 +2537,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
                 className={`h-full rounded-full transition-all ${
                   pctPaid >= 100
                     ? "bg-gradient-to-r from-emerald-500/70 to-emerald-300"
-                    : "bg-gradient-to-r from-amber-500/70 to-amber-300"
+                    : "bg-gradient-to-r from-cyan-500/70 to-cyan-300"
                 }`}
                 style={{ width: `${pctPaid}%` }}
               />
@@ -3233,7 +3233,7 @@ function ClientStatusBadge({ status }: { status: ClientStatus }) {
     tone === "success"
       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
       : tone === "warning"
-      ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+      ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
       : tone === "danger"
       ? "border-red-500/40 bg-red-500/10 text-red-200"
       : "border-white/10 bg-white/5 text-white/70";
@@ -3556,7 +3556,7 @@ function DocRow({ label, done, detail }: { label: string; done: boolean; detail?
         className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md border ${
           done
             ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-            : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+            : "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
         }`}
       >
         {done ? "On file" : "Missing"}
@@ -3612,7 +3612,7 @@ function AlertsPanel({ client }: { client: UserResponse }) {
                 a.tone === "danger"
                   ? "border-red-500/40 bg-red-500/10 text-red-200"
                   : a.tone === "warning"
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                  ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
                   : "border-sky-500/40 bg-sky-500/10 text-sky-200"
               }`}
             >

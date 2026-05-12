@@ -154,7 +154,7 @@ export function TodayHero({ name }: { name?: string | null }) {
         {/* Streak chip stays amber — semantic (achievement / heat metaphor) */}
         {data.streakWeeks >= 4 ? (
           <span
-            className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-200"
+            className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-200"
             data-testid="badge-streak-flame"
           >
             <Flame size={12} /> {data.streakWeeks}-week streak

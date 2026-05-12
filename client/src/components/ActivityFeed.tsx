@@ -40,12 +40,12 @@ const KIND_META: Record<
   session_completed: { Icon: CalendarCheck, tone: "text-emerald-300", ring: "ring-emerald-400/30" },
   session_booked: { Icon: CalendarPlus, tone: "text-sky-300", ring: "ring-sky-400/30" },
   session_cancelled: { Icon: CalendarX, tone: "text-rose-300", ring: "ring-rose-400/30" },
-  package_activated: { Icon: PackageIcon, tone: "text-amber-300", ring: "ring-amber-400/30" },
+  package_activated: { Icon: PackageIcon, tone: "text-cyan-300", ring: "ring-cyan-400/30" },
   body_metric: { Icon: Scale, tone: "text-indigo-300", ring: "ring-indigo-400/30" },
   weekly_checkin: { Icon: ClipboardCheck, tone: "text-violet-300", ring: "ring-violet-400/30" },
   inbody: { Icon: ActivityIcon, tone: "text-cyan-300", ring: "ring-cyan-400/30" },
   progress_photo: { Icon: Camera, tone: "text-fuchsia-300", ring: "ring-fuchsia-400/30" },
-  coach_note: { Icon: StickyNote, tone: "text-yellow-300", ring: "ring-yellow-400/30" },
+  coach_note: { Icon: StickyNote, tone: "text-cyan-300", ring: "ring-cyan-400/30" },
 };
 
 export function ActivityFeed({

@@ -190,7 +190,7 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5 text-amber-300/90">
+            <Label className="text-xs flex items-center gap-1.5 text-cyan-300/90">
               <EyeOff size={12} /> Private coach notes (admin-only)
             </Label>
             <Textarea
@@ -198,7 +198,7 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
               value={form.privateCoachNotes}
               onChange={(e) => setForm((f) => ({ ...f, privateCoachNotes: e.target.value }))}
               placeholder="Form cues, programming notes, things to watch — never shown to the client."
-              className="bg-white/5 border-amber-500/20"
+              className="bg-white/5 border-cyan-500/20"
               data-testid="textarea-private-notes"
             />
           </div>

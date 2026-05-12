@@ -183,7 +183,7 @@ function SupplementGroup({
               </div>
               {it.notes && <p className="text-xs text-muted-foreground mt-1.5">{it.notes}</p>}
               {it.warnings && (
-                <p className="text-xs text-amber-300/90 mt-1.5 inline-flex items-start gap-1.5">
+                <p className="text-xs text-cyan-300/90 mt-1.5 inline-flex items-start gap-1.5">
                   <AlertTriangle size={11} className="shrink-0 mt-0.5" />
                   <span>{it.warnings}</span>
                 </p>

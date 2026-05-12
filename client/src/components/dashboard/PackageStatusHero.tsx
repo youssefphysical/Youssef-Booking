@@ -175,7 +175,7 @@ export function PackageStatusHero({
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {def?.isDuo && (
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300">
                 <Users size={11} /> {t("dashboard.packageDuo", "Duo")}
               </span>
             )}
@@ -194,7 +194,7 @@ export function PackageStatusHero({
             <div
               className={`mt-3 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
                 expiringSoon
-                  ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
                   : "border-white/10 bg-white/[0.04] text-muted-foreground"
               }`}
               data-testid="text-package-expiry"

@@ -824,7 +824,7 @@ function BookingRow({
                   </span>
                 )}
                 {b.isEmergencyCancel && (
-                  <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                  <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
                     {t("admin.bookings.emergency")}
                   </span>
                 )}
@@ -857,7 +857,7 @@ function BookingRow({
                     </span>
                   ) : (
                     <span
-                      className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
+                      className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                       data-testid={`partner-unlinked-${b.id}`}
                     >
                       <UserPlus size={10} /> Partner: {b.partnerFullName} · unlinked
@@ -1407,7 +1407,7 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
             "h-8 w-8",
             isLinked
               ? "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-400/10"
-              : "text-amber-300 hover:text-amber-200 hover:bg-amber-500/10",
+              : "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10",
           )}
           title={
             isLinked

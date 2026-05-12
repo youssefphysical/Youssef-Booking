@@ -83,9 +83,9 @@ const TIER_STYLES: Record<
   { ring: string; bg: string; text: string; glow: string; icon: typeof Crown }
 > = {
   elite: {
-    ring: "ring-1 ring-amber-300/40",
-    bg: "bg-gradient-to-br from-amber-400/20 via-amber-300/10 to-transparent",
-    text: "text-amber-200",
+    ring: "ring-1 ring-cyan-300/40",
+    bg: "bg-gradient-to-br from-cyan-400/20 via-cyan-300/10 to-transparent",
+    text: "text-cyan-200",
     glow: "shadow-[0_0_18px_-6px_rgba(251,191,36,0.55)]",
     icon: Crown,
   },
@@ -104,9 +104,9 @@ const TIER_STYLES: Record<
     icon: Gem,
   },
   vip: {
-    ring: "ring-1 ring-amber-300/40",
-    bg: "bg-gradient-to-br from-amber-400/20 via-amber-300/10 to-transparent",
-    text: "text-amber-200",
+    ring: "ring-1 ring-cyan-300/40",
+    bg: "bg-gradient-to-br from-cyan-400/20 via-cyan-300/10 to-transparent",
+    text: "text-cyan-200",
     glow: "shadow-[0_0_18px_-6px_rgba(251,191,36,0.55)]",
     icon: Crown,
   },

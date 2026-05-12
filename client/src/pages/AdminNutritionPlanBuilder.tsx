@@ -139,7 +139,7 @@ function diffTone(actual: number, target: number) {
   if (target <= 0) return "text-muted-foreground";
   const pct = Math.abs(actual - target) / target;
   if (pct <= 0.05) return "text-emerald-400";
-  if (pct <= 0.15) return "text-amber-400";
+  if (pct <= 0.15) return "text-cyan-400";
   return "text-rose-400";
 }
 
@@ -604,7 +604,7 @@ export default function AdminNutritionPlanBuilder() {
                 </SelectContent>
               </Select>
               {status === "active" && (
-                <p className="text-[11px] text-amber-300/80 mt-1">
+                <p className="text-[11px] text-cyan-300/80 mt-1">
                   {t(
                     "admin.planBuilder.field.activeWarn",
                     "Saving will archive any other active plan for this client.",

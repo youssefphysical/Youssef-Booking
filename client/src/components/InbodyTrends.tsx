@@ -77,7 +77,7 @@ function chipColour(sentiment: Sentiment): string {
     return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
   if (sentiment === "bad")
     return "bg-red-500/15 text-red-300 border-red-500/30";
-  return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+  return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
 }
 
 function strokeColour(sentiment: Sentiment): string {

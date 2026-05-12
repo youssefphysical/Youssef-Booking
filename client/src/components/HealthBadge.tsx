@@ -13,10 +13,10 @@ const HEALTH_TONE: Record<
     label: "Healthy",
   },
   watch: {
-    dot: "bg-amber-300",
-    text: "text-amber-200",
-    bg: "bg-amber-300/10",
-    border: "border-amber-300/20",
+    dot: "bg-cyan-300",
+    text: "text-cyan-200",
+    bg: "bg-cyan-300/10",
+    border: "border-cyan-300/20",
     label: "Watch",
   },
   at_risk: {
