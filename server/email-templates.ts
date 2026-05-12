@@ -1051,25 +1051,35 @@ export function shellHtml(opts: {
 
   // Hero image cell — uses external https image when configured, else a
   // TRON-styled fallback panel so layout never collapses or shows broken
-  // image icons.
+  // image icons. The wrapper carries `bgcolor` so blocked images in
+  // Gmail/Outlook show a TRON-tinted tile instead of a white box, and
+  // the alt text becomes the cinematic "YA · ELITE COACHING" mark.
   const heroImageCell = images.hero
-    ? `<img src="${escapeHtml(images.hero)}" width="270" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:100%;max-width:270px;height:auto;border:0;border-radius:14px;outline:1px solid ${COLOR.borderCyan}">`
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 24px ${COLOR.primaryDeep}">
-        <tr><td align="center" style="padding:46px 16px;height:170px">
-          <div style="font-family:'Times New Roman',Georgia,serif;font-size:64px;font-weight:700;color:${COLOR.primary};line-height:1;letter-spacing:-2px;text-shadow:0 0 18px ${COLOR.primary}">YA</div>
-          <div style="margin-top:10px;font-size:9.5px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700">Elite Coaching</div>
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden">
+        <tr><td align="center" style="padding:0">
+          <img src="${escapeHtml(images.hero)}" width="270" alt="${escapeHtml(BRAND.trainerName)} — Elite Coaching" style="display:block;width:100%;max-width:270px;height:auto;border:0;border-radius:14px">
+        </td></tr>
+      </table>`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 28px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.08)">
+        <tr><td align="center" style="padding:50px 16px;height:178px">
+          <div style="font-family:'Times New Roman',Georgia,serif;font-size:68px;font-weight:700;color:${COLOR.primary};line-height:1;letter-spacing:-2px;text-shadow:0 0 24px ${COLOR.primary}">YA</div>
+          <div style="margin-top:14px;font-size:10px;letter-spacing:3.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700">Elite Coaching</div>
         </td></tr>
       </table>`;
 
   // Avatar (footer) — circular hosted image or cyan monogram fallback.
+  // Wrapping table carries `bgcolor` to ensure blocked images in Gmail
+  // show a tinted disc rather than a white circle.
   const avatarCell = images.avatar
-    ? `<img src="${escapeHtml(images.avatar)}" width="86" height="86" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:86px;height:86px;border-radius:50%;border:2px solid ${COLOR.primary};box-shadow:0 0 14px ${COLOR.primaryDeep}">`
-    : `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 14px ${COLOR.primaryDeep}"><tr><td align="center" valign="middle" style="font-family:'Times New Roman',Georgia,serif;font-size:34px;font-weight:700;color:${COLOR.primary};line-height:1">Y</td></tr></table>`;
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 16px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.12);overflow:hidden"><tr><td align="center" valign="middle" style="padding:0"><img src="${escapeHtml(images.avatar)}" width="86" height="86" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:86px;height:86px;border-radius:43px;border:0"></td></tr></table>`
+    : `<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 16px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.12)"><tr><td align="center" valign="middle" style="font-family:'Times New Roman',Georgia,serif;font-size:36px;font-weight:700;color:${COLOR.primary};line-height:1;text-shadow:0 0 12px ${COLOR.primaryDeep}">Y</td></tr></table>`;
 
   // Signature — hosted script-style image, else italic serif fallback.
+  // Image is wrapped in a transparent block so blocked-image fallback
+  // shows the alt text in the cyan signature color (no broken icon).
   const signatureBlock = images.signature
-    ? `<img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:160px;border:0">`
-    : `<div style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px">Youssef Ahmed</div>`;
+    ? `<img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:170px;border:0;color:${COLOR.primary};font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic">`
+    : `<div style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:28px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px">Youssef Ahmed</div>`;
 
   // Tiny inline cyan "icon" using a styled span — works in every client
   // (no SVG, no emoji rendering quirks, no image dependency).
@@ -1086,32 +1096,50 @@ export function shellHtml(opts: {
 <title>${escapeHtml(BRAND.name)}</title>
 <!--[if mso]><style>* { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
 <style>
-  /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
-     Apple Mail, Outlook mobile. */
-  @media only screen and (max-width: 480px) {
-    .px-shell { padding: 18px 10px !important; }
-    .px-card { border-radius: 14px !important; }
-    .px-body { padding: 22px 18px !important; font-size: 14.5px !important; line-height: 1.6 !important; }
-    .px-hero { padding: 22px 18px !important; }
-    .px-hero-text { padding: 18px 0 0 !important; text-align: center !important; }
-    .px-hero-title { font-size: 26px !important; letter-spacing: 1.4px !important; }
-    .px-hero-sub { font-size: 14px !important; letter-spacing: 2.4px !important; }
-    .px-hero-meta { font-size: 10px !important; letter-spacing: 1.8px !important; }
-    .px-footer { padding: 18px !important; }
-    .px-topbar { padding: 14px 18px !important; font-size: 11px !important; }
-    .px-topbar-right { display: none !important; }
-    .px-info-row td { padding: 10px 12px !important; font-size: 13px !important; }
-    .px-button-cell { padding: 16px 24px !important; font-size: 13px !important; letter-spacing: 1.2px !important; }
-    .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 8px !important; }
-    .px-stack { display: block !important; width: 100% !important; }
-    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 18px !important; }
-    .px-stack td:last-child { padding-bottom: 0 !important; }
-    .px-trust-cell { display: block !important; width: 100% !important; padding: 10px 0 !important; border-bottom: 1px solid ${COLOR.border} !important; }
-    .px-trust-cell:last-child { border-bottom: 0 !important; }
+  /* Tablet polish — preserve premium 2-col layouts but tighten spacing. */
+  @media only screen and (max-width: 640px) and (min-width: 481px) {
+    .px-shell { padding: 22px 14px !important; }
+    .px-body { padding: 28px 26px !important; }
+    .px-hero { padding: 24px 22px !important; }
+    .px-hero-title { font-size: 28px !important; }
+    .px-footer { padding: 22px !important; }
+    .px-button-cell { padding: 17px 32px !important; font-size: 13px !important; }
   }
+  /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
+     Apple Mail, Outlook mobile. Premium feeling preserved at every breakpoint. */
+  @media only screen and (max-width: 480px) {
+    .px-shell { padding: 16px 10px !important; }
+    .px-card { border-radius: 14px !important; }
+    .px-body { padding: 26px 20px !important; font-size: 15px !important; line-height: 1.65 !important; }
+    .px-hero { padding: 24px 20px !important; }
+    .px-hero-text { padding: 20px 0 0 !important; text-align: center !important; }
+    .px-hero-title { font-size: 26px !important; letter-spacing: 1.4px !important; }
+    .px-hero-sub { font-size: 14px !important; letter-spacing: 2.6px !important; }
+    .px-hero-meta { font-size: 10.5px !important; letter-spacing: 2px !important; }
+    .px-footer { padding: 22px 20px !important; }
+    .px-topbar { padding: 14px 18px !important; font-size: 11.5px !important; }
+    .px-topbar-right { display: none !important; }
+    .px-info-row td { padding: 12px 14px !important; font-size: 13.5px !important; }
+    .px-button-cell { padding: 18px 28px !important; font-size: 13.5px !important; letter-spacing: 1.4px !important; }
+    .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 10px !important; }
+    .px-stack { display: block !important; width: 100% !important; }
+    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 22px !important; }
+    .px-stack td:last-child { padding-bottom: 0 !important; }
+    .px-trust-cell { display: block !important; width: 100% !important; padding: 14px 16px !important; margin-bottom: 8px !important; border-radius: 10px !important; }
+    .px-trust-cell:last-child { margin-bottom: 0 !important; }
+    .px-eyebrow-title { font-size: 28px !important; }
+    .px-detail-value { font-size: 14px !important; }
+    .px-detail-label { font-size: 10.5px !important; }
+  }
+  /* Gmail dark-mode polish — keeps panel surface stable. */
   @media (prefers-color-scheme: dark) {
     .px-card { background: ${COLOR.bgCard} !important; }
+    .px-detail-value { color: ${COLOR.text} !important; }
+    .px-detail-label { color: ${COLOR.textMuted} !important; }
   }
+  /* Outlook.com dark mode (uses [data-ogsc] attribute selector) */
+  [data-ogsc] .px-card { background: ${COLOR.bgCard} !important; }
+  [data-ogsc] .px-detail-value { color: ${COLOR.text} !important; }
 </style>
 </head>
 <body style="margin:0;padding:0;background:${COLOR.bgOuter};color:${COLOR.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased">
@@ -1139,12 +1167,13 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- 2. HERO CARD — image left, brand stack right -->
+        <!-- 2. HERO CARD — image left, brand stack right. Layered shadow:
+             outer halo (soft) + inner top highlight + 1px deep ring. -->
         <tr>
-          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 50px -20px ${COLOR.primaryGlow}">
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 22px 60px -28px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-hero" style="padding:24px 26px">
+                <td class="px-hero" style="padding:28px 30px">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
                     <tr>
                       <td width="46%" valign="middle" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:18px">
@@ -1170,15 +1199,15 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- spacer -->
-        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+        <!-- spacer (premium rhythm) -->
+        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
         <!-- 3. BODY CARD -->
         <tr>
-          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}">
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td align="${align}" class="px-body" style="padding:30px 28px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
+                <td align="${align}" class="px-body" style="padding:34px 32px;color:${COLOR.text};font-size:15px;line-height:1.7" dir="${dir}">
                   ${opts.bodyHtml}
                 </td>
               </tr>
@@ -1186,15 +1215,15 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- spacer -->
-        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+        <!-- spacer (premium rhythm) -->
+        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
         <!-- 4. FOOTER PROFILE CARD — avatar + signature + contacts -->
         <tr>
-          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}">
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-footer" style="padding:24px 26px">
+                <td class="px-footer" style="padding:28px 30px">
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
                     <tr>
                       <td width="42%" valign="middle" align="${align}" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:14px">
@@ -1226,8 +1255,8 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- spacer -->
-        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+        <!-- spacer (premium rhythm) -->
+        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
         <!-- 5. TRUST ROW -->
         <tr>
@@ -1333,12 +1362,12 @@ export function eyebrowTitleHtml(opts: {
   align?: "left" | "right";
 }): string {
   const align = opts.align || "left";
-  return `<div style="text-align:${align};margin:0 0 18px">
-    <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">${escapeHtml(opts.eyebrow)}</div>
-    <div style="font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-0.4px;color:${COLOR.text}">
-      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary}">${escapeHtml(opts.titleAccent)}</span>
+  return `<div style="text-align:${align};margin:0 0 22px">
+    <div style="font-size:10.5px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:12px">${escapeHtml(opts.eyebrow)}</div>
+    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:32px;line-height:1.1;font-weight:700;letter-spacing:-0.4px;color:${COLOR.text}">
+      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary};text-shadow:0 0 24px ${COLOR.primaryDeep}">${escapeHtml(opts.titleAccent)}</span>
     </div>
-    ${opts.body ? `<p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
+    ${opts.body ? `<p style="margin:16px 0 0;font-size:14.5px;line-height:1.7;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
   </div>`;
 }
 
@@ -1355,20 +1384,20 @@ export function durationCardHtml(opts: {
   const align = opts.align || "left";
   const label = opts.label || "Session Duration";
   const sublabel = opts.sublabel || `This session is ${Math.round(opts.minutes / 60 * 10) / 10} hour long.`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 22px -8px ${COLOR.primaryGlow}">
-    <tr><td style="padding:18px 18px" align="${align}">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.06), inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -12px ${COLOR.primaryGlow}">
+    <tr><td style="padding:22px 22px" align="${align}">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:14px">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:44px;height:44px;border:2px solid ${COLOR.primary};border-radius:22px"><tr><td align="center" valign="middle" style="font-size:20px;color:${COLOR.primary};line-height:1">⏱</td></tr></table>
+          <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:16px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCard}" style="width:46px;height:46px;background:${COLOR.bgCard};border:2px solid ${COLOR.primary};border-radius:23px;box-shadow:0 0 14px -4px ${COLOR.primaryGlow}"><tr><td align="center" valign="middle" style="font-size:20px;color:${COLOR.primary};line-height:1">⏱</td></tr></table>
           </td>
           <td valign="middle">
-            <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700;line-height:1.2">${escapeHtml(label)}</div>
-            <div style="margin-top:4px;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;color:${COLOR.primary};line-height:1">${opts.minutes} MINUTES</div>
+            <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700;line-height:1.2">${escapeHtml(label)}</div>
+            <div style="margin-top:6px;font-family:'Times New Roman',Georgia,serif;font-size:26px;font-weight:700;color:${COLOR.primary};line-height:1;text-shadow:0 0 18px ${COLOR.primaryDeep}">${opts.minutes} MINUTES</div>
           </td>
         </tr>
       </table>
-      <div style="margin-top:10px;font-size:12px;color:${COLOR.textMuted};line-height:1.5">${escapeHtml(sublabel)}</div>
+      <div style="margin-top:12px;font-size:12.5px;color:${COLOR.textMuted};line-height:1.55">${escapeHtml(sublabel)}</div>
     </td></tr>
   </table>`;
 }
@@ -1393,16 +1422,16 @@ export function sessionDetailsCardHtml(opts: {
     const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
     const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
     return `<tr>
-      <td style="padding:11px 0;${borderStyle}width:24px;vertical-align:middle">
+      <td style="padding:13px 0;${borderStyle}width:24px;vertical-align:middle">
         <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1">${r.icon}</span>
       </td>
-      <td style="padding:11px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:34%">${escapeHtml(r.label)}</td>
-      <td style="padding:11px 0;${borderStyle}color:${valueColor};font-size:13.5px;font-weight:600;text-align:${align === "right" ? "left" : "right"};vertical-align:middle">${escapeHtml(String(r.value))}</td>
+      <td class="px-detail-label" style="padding:13px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:36%">${escapeHtml(r.label)}</td>
+      <td class="px-detail-value" style="padding:13px 0;${borderStyle}color:${valueColor};font-size:14px;font-weight:600;letter-spacing:0.2px;text-align:${align === "right" ? "left" : "right"};vertical-align:middle">${escapeHtml(String(r.value))}</td>
     </tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
-    <tr><td style="padding:18px 20px">
-      <div style="font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px;text-align:${align}">${escapeHtml(heading)}</div>
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), inset 0 0 0 1px ${COLOR.primaryDeep}">
+    <tr><td style="padding:22px 22px">
+      <div style="font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:12px;text-align:${align}">${escapeHtml(heading)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
     </td></tr>
   </table>`;
@@ -1422,26 +1451,26 @@ export function whatToExpectCardHtml(opts: {
   const heading = opts.heading || "What to Expect";
   const padSide = align === "right" ? "padding-left" : "padding-right";
   const items = opts.items.map((it) => `<tr>
-    <td valign="top" style="padding:7px 0;width:22px;vertical-align:top">
+    <td valign="top" style="padding:9px 0;width:22px;vertical-align:top">
       <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1.5">✓</span>
     </td>
-    <td valign="top" style="padding:7px 0;color:${COLOR.text};font-size:13.5px;line-height:1.5;${padSide}:8px;vertical-align:top">${escapeHtml(it)}</td>
+    <td valign="top" style="padding:9px 0;color:${COLOR.text};font-size:14px;line-height:1.55;${padSide}:10px;vertical-align:top">${escapeHtml(it)}</td>
   </tr>`).join("");
   const arrival = opts.arrivalNote
-    ? `<div style="margin-top:14px;padding:12px 14px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:10px;box-shadow:inset 0 0 12px ${COLOR.primaryDeep}">
+    ? `<div style="margin-top:18px;padding:14px 16px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:10px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.08), inset 0 0 14px ${COLOR.primaryDeep}">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
+            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:12px">
               <span style="display:inline-block;color:${COLOR.primary};font-size:14px;line-height:1">⏱</span>
             </td>
-            <td valign="middle" style="font-size:11.5px;color:${COLOR.primary};letter-spacing:1.2px;text-transform:uppercase;font-weight:700;line-height:1.45">${escapeHtml(opts.arrivalNote)}</td>
+            <td valign="middle" style="font-size:11.5px;color:${COLOR.primary};letter-spacing:1.4px;text-transform:uppercase;font-weight:700;line-height:1.5">${escapeHtml(opts.arrivalNote)}</td>
           </tr>
         </table>
       </div>`
     : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
-    <tr><td style="padding:18px 20px" align="${align}">
-      <div style="font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:6px">${escapeHtml(heading)}</div>
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), inset 0 0 0 1px ${COLOR.primaryDeep}">
+    <tr><td style="padding:22px 22px" align="${align}">
+      <div style="font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">${escapeHtml(heading)}</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>
       ${arrival}
     </td></tr>
@@ -1458,11 +1487,11 @@ export function bigCtaButtonHtml(opts: {
   icon?: string;             // unicode glyph, defaults to a calendar
 }): string {
   const icon = opts.icon || "▦";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0">
     <tr><td align="center">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
-        <tr><td style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -4px ${COLOR.primary}, 0 0 60px -12px ${COLOR.primaryGlow}">
-          <a href="${escapeHtml(opts.href)}" class="px-button-cell" style="display:inline-block;padding:16px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px">
+        <tr><td bgcolor="${COLOR.bgCard}" style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(95,251,255,0.12), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -6px ${COLOR.primary}, 0 0 56px -16px ${COLOR.primaryGlow}">
+          <a href="${escapeHtml(opts.href)}" class="px-button-cell" style="display:inline-block;padding:18px 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-shadow:0 0 16px ${COLOR.primaryDeep}">
             <span style="margin-right:14px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:16px;vertical-align:middle">→</span>
           </a>
         </td></tr>
