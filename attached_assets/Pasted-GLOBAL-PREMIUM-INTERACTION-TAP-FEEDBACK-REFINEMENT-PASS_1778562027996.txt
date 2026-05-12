@@ -1,0 +1,255 @@
+GLOBAL PREMIUM INTERACTION / TAP-FEEDBACK REFINEMENT PASS
+
+The current UI has a major premium-quality issue across the entire platform:
+
+PROBLEM:
+Whenever the user taps/clicks selectable UI elements (chips, cards, time slots, dates, selectors, buttons, toggles, booking options, package cards, session focus chips, calendar cells, dropdown options, etc.), a default gray/rectangular flash appears for a fraction of a second before the actual selected state appears.
+
+This creates:
+- cheap browser-like behavior
+- inconsistent interaction language
+- non-premium UX feeling
+- “laggy” visual perception
+- broken AMOLED luxury aesthetic
+
+The platform must feel like a polished high-end premium mobile application, not default browser controls.
+
+CRITICAL REQUIREMENT:
+REMOVE ALL DEFAULT TAP/CURSOR/ACTIVE/FOCUS FLASHES GLOBALLY.
+
+This includes:
+- browser tap highlight
+- default active background
+- default radix/shadcn active flashes
+- default focus flashes
+- default mobile web tap rectangles
+- default selection gray overlays
+- any white/gray flicker before selected state
+
+Apply this globally across the ENTIRE website.
+
+====================================================
+GLOBAL INTERACTION SYSTEM
+====================================================
+
+Create a unified premium interaction language.
+
+Every interactive/selectable component MUST have:
+
+1. Smooth press animation
+2. Ultra-fast visual feedback
+3. Consistent color-aware pressed state
+4. Soft scale animation
+5. Smooth transition timing
+6. Premium glow behavior
+7. No visual snapping
+8. No rectangular browser artifacts
+
+====================================================
+GLOBAL STYLING RULES
+====================================================
+
+Globally disable:
+- -webkit-tap-highlight-color
+- native outline flashes
+- default active backgrounds
+- unwanted focus rings
+- browser selection overlays
+
+But DO NOT break:
+- keyboard accessibility
+- accessibility focus navigation
+- screen reader behavior
+
+Replace with custom luxury focus/active states.
+
+====================================================
+INTERACTION DESIGN LANGUAGE
+====================================================
+
+ALL clickable/selectable elements should feel:
+- responsive
+- soft
+- premium
+- modern
+- luxury
+- fluid
+- high-end mobile-app quality
+
+NO harsh animations.
+NO abrupt state changes.
+NO cheap scaling.
+NO default browser behavior.
+
+====================================================
+ANIMATION SPEC
+====================================================
+
+Use:
+- transition-all
+- ultra-smooth easing
+- 150–220ms timing
+- subtle scale only
+
+Pressed state:
+- scale: 0.97–0.985
+- opacity shift: very subtle
+- glow intensity slightly increases
+- background softly deepens
+
+Selected state:
+- smooth animated transition
+- no instant snapping
+- no delayed checkmark pop-in
+- selection indicator fades/slides naturally
+
+====================================================
+COLOR-AWARE FEEDBACK
+====================================================
+
+IMPORTANT:
+The press/tap effect MUST inherit the color identity of the component itself.
+
+Examples:
+
+CYAN components:
+- cyan glow
+- cyan active tint
+- cyan ripple/overlay
+
+AMBER/GOLD selected dates:
+- warm amber pulse
+- soft gold glow
+- luxury golden pressed state
+
+RED warning cards:
+- subtle red active tint
+
+GREEN success buttons:
+- green pressed feedback
+
+NEVER use generic gray pressed overlays.
+
+====================================================
+COMPONENTS TO FIX
+====================================================
+
+Apply the refinement pass to ALL:
+
+- Calendar dates
+- Time slots
+- Session focus chips
+- Training goal chips
+- Package cards
+- Package selectors
+- Dropdown items
+- Navigation buttons
+- Menu buttons
+- Cards
+- Tabs
+- Toggle buttons
+- Auth buttons
+- CTA buttons
+- Mobile menu items
+- Notification buttons
+- Booking action buttons
+- Admin panel selectors
+- ALL selectable UI
+
+====================================================
+BOOKING PAGE (VERY IMPORTANT)
+====================================================
+
+BookingPage currently feels visually “stacked” and interaction-heavy.
+
+Refine:
+- touch feedback
+- spacing rhythm
+- selected chip animations
+- dropdown transitions
+- date picker interactions
+- slot selection animations
+
+The booking flow should feel:
+- calm
+- elegant
+- luxurious
+- premium
+- fluid
+- app-like
+
+NOT crowded.
+NOT twitchy.
+NOT browser-like.
+
+====================================================
+CHECKMARK / SELECTED STATE FIX
+====================================================
+
+Currently:
+- user taps
+- gray flash appears
+- THEN selected state/checkmark appears
+
+Fix this globally.
+
+Instead:
+- pressed animation instantly responds
+- selected state transitions smoothly
+- checkmarks/icons fade or scale in elegantly
+- no delayed state snapping
+
+====================================================
+PERFORMANCE REQUIREMENTS
+====================================================
+
+Animations must remain:
+- 60fps
+- mobile optimized
+- low repaint cost
+- GPU-friendly
+- no lag on Android Chrome
+
+Avoid:
+- expensive box-shadow spam
+- layout shifts
+- animation jank
+
+====================================================
+DO NOT BREAK
+====================================================
+
+Do NOT break:
+- booking logic
+- selection logic
+- forms
+- accessibility
+- keyboard navigation
+- validation
+- dropdown functionality
+- admin flows
+
+This is a UI/interaction refinement pass ONLY.
+
+====================================================
+FINAL REQUIREMENT
+====================================================
+
+After implementation:
+1. Build production
+2. Fix any type/lint issues
+3. Push to GitHub
+4. Deploy to Vercel
+5. Verify live production behavior on mobile viewport
+6. Confirm:
+   - no gray flashes
+   - no default tap overlays
+   - smooth premium interactions everywhere
+   - all selected states visually elegant
+   - no regressions
+
+The final feeling should match:
+- premium fitness app
+- luxury mobile SaaS
+- high-end native application quality
+- polished AMOLED-first UX
