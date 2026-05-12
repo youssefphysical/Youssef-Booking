@@ -28,33 +28,52 @@ export const BRAND = {
   tagline: "Elite Coaching • Dubai",
   trainerName: "Youssef Ahmed",
   whatsapp: "+971505394754",
+  whatsappDisplay: "+971 50 539 4754",
+  email: "youssef.physical@gmail.com",
+  instagramHandle: "@youssef.fitness",
+  instagramUrl: "https://instagram.com/youssef.fitness",
+  location: "Dubai, United Arab Emirates",
+  motto1: "Discipline Today",
+  motto2: "Success Tomorrow",
   // Public website URL — overridden at call time when known
   defaultWebsite: "https://youssef-booking.vercel.app",
 } as const;
 
-// TRON Legacy dark luxury palette — Outlook-safe (solid colors, no rgba on
-// backgrounds). AMOLED outer with deep navy interior + Tron-cyan accents
-// matching the website (#5ee7ff), tuned for email rendering across
-// Gmail / Apple Mail / Outlook / Samsung Mail.
+// External, configurable image assets. URLs come from env so production can
+// swap them without a redeploy. Empty string → graceful TRON-styled fallback
+// renders in place (no broken-image icons, layout preserved).
+export function getEmailImages() {
+  return {
+    hero: (process.env.EMAIL_HERO_IMAGE_URL || "").trim(),
+    avatar: (process.env.EMAIL_AVATAR_IMAGE_URL || "").trim(),
+    signature: (process.env.EMAIL_SIGNATURE_IMAGE_URL || "").trim(),
+    backgroundTexture: (process.env.EMAIL_BACKGROUND_TEXTURE_URL || "").trim(),
+  };
+}
+
+// TRON Legacy dark luxury palette — matches the cinematic reference.
+// AMOLED outer (#05070B) with deep navy panels (#08111B) + electric cyan
+// accents (#00E5FF). Outlook-safe (solid colors, no rgba on backgrounds).
 const COLOR = {
-  bgOuter: "#050505",        // AMOLED page bg — matches the site exactly
-  bgCard: "#0a0f1c",         // primary surface (deep night navy)
-  bgCardSoft: "#0f1730",     // secondary surface
-  bgCardElev: "#13203f",     // elevated surface (badges / metric tiles)
-  border: "#1b2746",         // subtle divider
-  borderGlow: "#2c4078",     // accent border
-  borderCyan: "#1d5e7a",     // tron border (cyan-tinted)
-  text: "#f1f5f9",           // primary text
-  textMuted: "#9fb1c9",      // secondary text (warmer for legibility)
-  textDim: "#64748b",        // tertiary text
-  primary: "#5ee7ff",        // TRON cyan — matches site accent
-  primaryDark: "#22b8e0",    // gradient stop
-  primaryGlow: "#0e6e8a",    // outer glow base
-  primaryDeep: "#06324a",    // deepest cyan
-  emerald: "#10b981",        // bonus / success
-  amber: "#f59e0b",          // warning
-  red: "#ef4444",            // danger
-  gold: "#facc15",           // VIP / elite accent
+  bgOuter: "#05070B",        // AMOLED page bg
+  bgCard: "#08111B",         // primary panel surface
+  bgCardSoft: "#0B1828",     // secondary panel surface
+  bgCardElev: "#0F2235",     // elevated tile surface
+  border: "#0F2A38",         // subtle divider
+  borderGlow: "#1A4A60",     // accent border
+  borderCyan: "#10384A",     // tron border (cyan-tinted)
+  text: "#EAF7FF",           // primary text
+  textMuted: "#8AA8B8",      // secondary text
+  textDim: "#5A7A8A",        // tertiary text
+  primary: "#00E5FF",        // TRON cyan
+  primaryBright: "#5FFBFF",  // brighter cyan (highlights / glow stops)
+  primaryDark: "#009DFF",    // accent blue (gradient stop)
+  primaryGlow: "#0A4F66",    // outer glow base
+  primaryDeep: "#003848",    // deepest cyan
+  emerald: "#10B981",        // bonus / success
+  amber: "#F59E0B",          // warning
+  red: "#EF4444",            // danger
+  gold: "#FACC15",           // VIP / elite accent
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1004,12 +1023,58 @@ export function shellHtml(opts: {
   previewText: string;
   bodyHtml: string;
   websiteUrl?: string;
+  /**
+   * Visible top bar above the card. Renders the small "Booking confirmed |
+   * You're one step closer." line + optional "View in browser" link.
+   * If omitted, derives from `previewText`.
+   */
+  topBar?: { label: string; sub?: string; viewInBrowserUrl?: string };
 }): string {
   const lang = normalizeLang(opts.lang);
   const dir = isRtl(lang) ? "rtl" : "ltr";
   const align = dir === "rtl" ? "right" : "left";
+  const alignOpp = align === "right" ? "left" : "right";
   const website = opts.websiteUrl || BRAND.defaultWebsite;
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
+  const images = getEmailImages();
+
+  // Top bar text — prefer explicit topBar, fall back to previewText split
+  // on the first " | " or " — ".
+  let topLabel = opts.topBar?.label || "";
+  let topSub = opts.topBar?.sub || "";
+  if (!topLabel) {
+    const parts = (opts.previewText || "").split(/\s[|—]\s/);
+    topLabel = parts[0] || BRAND.name;
+    topSub = parts[1] || "";
+  }
+  const browserUrl = opts.topBar?.viewInBrowserUrl || website;
+
+  // Hero image cell — uses external https image when configured, else a
+  // TRON-styled fallback panel so layout never collapses or shows broken
+  // image icons.
+  const heroImageCell = images.hero
+    ? `<img src="${escapeHtml(images.hero)}" width="270" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:100%;max-width:270px;height:auto;border:0;border-radius:14px;outline:1px solid ${COLOR.borderCyan}">`
+    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 24px ${COLOR.primaryDeep}">
+        <tr><td align="center" style="padding:46px 16px;height:170px">
+          <div style="font-family:'Times New Roman',Georgia,serif;font-size:64px;font-weight:700;color:${COLOR.primary};line-height:1;letter-spacing:-2px;text-shadow:0 0 18px ${COLOR.primary}">YA</div>
+          <div style="margin-top:10px;font-size:9.5px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700">Elite Coaching</div>
+        </td></tr>
+      </table>`;
+
+  // Avatar (footer) — circular hosted image or cyan monogram fallback.
+  const avatarCell = images.avatar
+    ? `<img src="${escapeHtml(images.avatar)}" width="86" height="86" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:86px;height:86px;border-radius:50%;border:2px solid ${COLOR.primary};box-shadow:0 0 14px ${COLOR.primaryDeep}">`
+    : `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 14px ${COLOR.primaryDeep}"><tr><td align="center" valign="middle" style="font-family:'Times New Roman',Georgia,serif;font-size:34px;font-weight:700;color:${COLOR.primary};line-height:1">Y</td></tr></table>`;
+
+  // Signature — hosted script-style image, else italic serif fallback.
+  const signatureBlock = images.signature
+    ? `<img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:160px;border:0">`
+    : `<div style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px">Youssef Ahmed</div>`;
+
+  // Tiny inline cyan "icon" using a styled span — works in every client
+  // (no SVG, no emoji rendering quirks, no image dependency).
+  const ico = (glyph: string) =>
+    `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;color:${COLOR.primary};font-size:13px;vertical-align:middle;margin-${align === "right" ? "left" : "right"}:8px">${glyph}</span>`;
 
   return `<!doctype html>
 <html lang="${lang}" dir="${dir}" style="margin:0;padding:0">
@@ -1021,120 +1086,202 @@ export function shellHtml(opts: {
 <title>${escapeHtml(BRAND.name)}</title>
 <!--[if mso]><style>* { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
 <style>
-  /* Mobile polish — collapses card padding, scales hero type, stacks
-     metric tiles and CTA to full-width. Honoured by Gmail iOS/Android,
-     Apple Mail, Outlook mobile. Desktop clients ignore. */
+  /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
+     Apple Mail, Outlook mobile. */
   @media only screen and (max-width: 480px) {
-    .px-shell { padding: 24px 12px !important; }
+    .px-shell { padding: 18px 10px !important; }
     .px-card { border-radius: 14px !important; }
     .px-body { padding: 22px 18px !important; font-size: 14.5px !important; line-height: 1.6 !important; }
-    .px-header { padding: 22px 18px 16px !important; }
-    .px-footer { padding: 16px 18px 20px !important; }
-    .px-hero-title { font-size: 24px !important; line-height: 1.18 !important; }
-    .px-hero-eyebrow { font-size: 10px !important; letter-spacing: 2px !important; }
+    .px-hero { padding: 22px 18px !important; }
+    .px-hero-text { padding: 18px 0 0 !important; text-align: center !important; }
+    .px-hero-title { font-size: 26px !important; letter-spacing: 1.4px !important; }
+    .px-hero-sub { font-size: 14px !important; letter-spacing: 2.4px !important; }
+    .px-hero-meta { font-size: 10px !important; letter-spacing: 1.8px !important; }
+    .px-footer { padding: 18px !important; }
+    .px-topbar { padding: 14px 18px !important; font-size: 11px !important; }
+    .px-topbar-right { display: none !important; }
     .px-info-row td { padding: 10px 12px !important; font-size: 13px !important; }
-    .px-button-cell { padding: 14px 22px !important; font-size: 13px !important; letter-spacing: 1px !important; }
+    .px-button-cell { padding: 16px 24px !important; font-size: 13px !important; letter-spacing: 1.2px !important; }
     .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 8px !important; }
     .px-stack { display: block !important; width: 100% !important; }
+    .px-stack td { display: block !important; width: 100% !important; padding-${align === "right" ? "left" : "right"}: 0 !important; padding-bottom: 18px !important; }
+    .px-stack td:last-child { padding-bottom: 0 !important; }
+    .px-trust-cell { display: block !important; width: 100% !important; padding: 10px 0 !important; border-bottom: 1px solid ${COLOR.border} !important; }
+    .px-trust-cell:last-child { border-bottom: 0 !important; }
   }
-  /* Dark-mode hint for clients that honour it (Apple Mail, Outlook.com). */
   @media (prefers-color-scheme: dark) {
     .px-card { background: ${COLOR.bgCard} !important; }
   }
 </style>
 </head>
 <body style="margin:0;padding:0;background:${COLOR.bgOuter};color:${COLOR.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased">
-<!-- Hidden preview (snippet shown by Gmail/Apple Mail in inbox list) -->
+<!-- Hidden preview snippet (Gmail/Apple Mail inbox list preview) -->
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;color:transparent;line-height:0;font-size:1px;opacity:0">${escapeHtml(opts.previewText)}</div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-shell" style="background:${COLOR.bgOuter};padding:32px 16px" dir="${dir}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-shell" style="background:${COLOR.bgOuter};padding:24px 16px" dir="${dir}">
   <tr>
     <td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="px-card" style="max-width:600px;width:100%;background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 60px -20px ${COLOR.primaryGlow}">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">
 
-        <!-- TRON top edge — luminous cyan strip + thin reflection line -->
+        <!-- 1. TOP BAR (visible preheader) -->
         <tr>
-          <td style="background:linear-gradient(90deg, ${COLOR.bgCard} 0%, ${COLOR.primary} 30%, ${COLOR.primary} 70%, ${COLOR.bgCard} 100%);height:2px;line-height:2px;font-size:0">&nbsp;</td>
-        </tr>
-        <tr>
-          <td style="background:${COLOR.bgCard};height:1px;line-height:1px;font-size:0">&nbsp;</td>
-        </tr>
-        <tr>
-          <td style="background:linear-gradient(90deg, ${COLOR.bgCard} 0%, ${COLOR.primaryGlow} 50%, ${COLOR.bgCard} 100%);height:1px;line-height:1px;font-size:0">&nbsp;</td>
-        </tr>
-
-        <!-- Header: brand name + tagline + monogram -->
-        <tr>
-          <td align="${align}" class="px-header" style="padding:30px 32px 22px;background:linear-gradient(180deg, ${COLOR.bgCard} 0%, ${COLOR.bgCardSoft} 100%);border-bottom:1px solid ${COLOR.borderCyan}">
+          <td class="px-topbar" style="padding:6px 4px 18px;font-size:12px;color:${COLOR.textMuted};font-weight:500;line-height:1.5" dir="${dir}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td align="${align}" style="vertical-align:middle">
-                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:1.2px;color:${COLOR.text};line-height:1.1;text-transform:uppercase">
-                    ${escapeHtml(BRAND.name)}
-                  </div>
-                  <div style="margin-top:8px;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">
-                    ${escapeHtml(t(lang, "brandTagline"))}
-                  </div>
-                  <div style="margin-top:14px;height:1px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;width:48px">&nbsp;</div>
+                <td align="${align}" style="font-size:12px;color:${COLOR.text}">
+                  <span style="color:${COLOR.primary};text-decoration:underline;text-underline-offset:3px;font-weight:600">${escapeHtml(topLabel)}</span>${topSub ? `<span style="color:${COLOR.textMuted}">&nbsp;|&nbsp;${escapeHtml(topSub)}</span>` : ""}
+                </td>
+                <td align="${alignOpp}" class="px-topbar-right" style="font-size:12px">
+                  <a href="${escapeHtml(browserUrl)}" style="color:${COLOR.primary};text-decoration:underline;text-underline-offset:3px">View in browser</a>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
 
-        <!-- Body content -->
+        <!-- 2. HERO CARD — image left, brand stack right -->
         <tr>
-          <td align="${align}" class="px-body" style="padding:32px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
-            ${opts.bodyHtml}
-          </td>
-        </tr>
-
-        <!-- Premium signature block -->
-        <tr>
-          <td class="px-signature" style="padding:0 32px 28px;background:${COLOR.bgCard}">
+          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 50px -20px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="padding:18px 0 0;border-top:1px solid ${COLOR.border}">
-                  <div style="height:1px;width:36px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
-                </td>
-              </tr>
-              <tr>
-                <td align="${align}" style="padding:14px 0 0" dir="${dir}">
-                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:18px;font-weight:700;color:${COLOR.text};letter-spacing:0.4px;line-height:1.2">
-                    Youssef Ahmed
-                  </div>
-                  <div style="margin-top:5px;font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">
-                    Elite Coaching &nbsp;·&nbsp; Dubai
-                  </div>
-                  <div style="margin-top:12px;font-size:12.5px;color:${COLOR.textMuted};line-height:1.7">
-                    <a href="mailto:youssef.physical@gmail.com" style="color:${COLOR.textMuted};text-decoration:none">youssef.physical@gmail.com</a>
-                    &nbsp;<span style="color:${COLOR.borderGlow}">|</span>&nbsp;
-                    <a href="${wa}" style="color:${COLOR.textMuted};text-decoration:none">WhatsApp +971 50 539 4754</a>
-                  </div>
+                <td class="px-hero" style="padding:24px 26px">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
+                    <tr>
+                      <td width="46%" valign="middle" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:18px">
+                        ${heroImageCell}
+                      </td>
+                      <td valign="middle" align="${align}" class="px-hero-text" style="vertical-align:middle">
+                        <div class="px-hero-title" style="font-family:'Times New Roman',Georgia,serif;font-size:30px;font-weight:700;color:${COLOR.text};letter-spacing:1.6px;line-height:1.05;text-transform:uppercase">
+                          ${escapeHtml(BRAND.name)}
+                        </div>
+                        <div class="px-hero-sub" style="margin-top:10px;font-family:'Times New Roman',Georgia,serif;font-size:18px;letter-spacing:4px;text-transform:uppercase;color:${COLOR.primary};font-weight:600;line-height:1">
+                          Elite Coaching
+                        </div>
+                        <div style="margin-top:14px;height:1px;width:64px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
+                        <div class="px-hero-meta" style="margin-top:12px;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
+                          Personal Training&nbsp;&nbsp;·&nbsp;&nbsp;Dubai
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
 
-        <!-- Footer -->
+        <!-- spacer -->
+        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+
+        <!-- 3. BODY CARD -->
         <tr>
-          <td class="px-footer" style="padding:20px 32px 24px;border-top:1px solid ${COLOR.border};background:${COLOR.bgCardSoft}">
+          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td align="${align}" style="font-size:12px;color:${COLOR.textMuted};line-height:1.6" dir="${dir}">
-                  <div style="margin-bottom:6px">
-                    <a href="${escapeHtml(website)}" style="color:${COLOR.primary};text-decoration:none;font-weight:600">${escapeHtml(BRAND.name)}</a>
-                    &nbsp;•&nbsp;
-                    <a href="${wa}" style="color:${COLOR.textMuted};text-decoration:none">WhatsApp</a>
-                  </div>
-                  <div style="font-size:11px;color:${COLOR.textDim};line-height:1.55">
-                    ${escapeHtml(t(lang, "footerNote"))}<br>
-                    ${escapeHtml(t(lang, "footerUnsubNote"))}
-                  </div>
+                <td align="${align}" class="px-body" style="padding:30px 28px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
+                  ${opts.bodyHtml}
                 </td>
               </tr>
             </table>
+          </td>
+        </tr>
+
+        <!-- spacer -->
+        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+
+        <!-- 4. FOOTER PROFILE CARD — avatar + signature + contacts -->
+        <tr>
+          <td class="px-card" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="px-footer" style="padding:24px 26px">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
+                    <tr>
+                      <td width="42%" valign="middle" align="${align}" style="vertical-align:middle;padding-${align === "right" ? "left" : "right"}:14px">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:14px">${avatarCell}</td>
+                            <td valign="middle">
+                              ${signatureBlock}
+                              <div style="margin-top:8px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.text};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto1)}</div>
+                              <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto2)}</div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td valign="middle" align="${align}" style="vertical-align:middle;border-${align === "right" ? "right" : "left"}:1px solid ${COLOR.border};padding-${align === "right" ? "right" : "left"}:18px">
+                        <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">Let's Stay Connected</div>
+                        <div style="font-size:13px;color:${COLOR.text};line-height:1.95">
+                          <div>${ico("✆")}<a href="${wa}" style="color:${COLOR.text};text-decoration:none">WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
+                          <div>${ico("✉")}<a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.email)}</a></div>
+                          <div>${ico("◎")}<a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.instagramHandle)}</a></div>
+                          <div>${ico("◉")}<span style="color:${COLOR.text}">${escapeHtml(BRAND.location)}</span></div>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- spacer -->
+        <tr><td style="height:14px;line-height:14px;font-size:0">&nbsp;</td></tr>
+
+        <!-- 5. TRUST ROW -->
+        <tr>
+          <td>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack">
+              <tr>
+                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">★</td></tr></table>
+                    </td>
+                    <td valign="middle">
+                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Premium Coaching</div>
+                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Personalized for you</div>
+                    </td>
+                  </tr></table>
+                </td>
+                <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">◎</td></tr></table>
+                    </td>
+                    <td valign="middle">
+                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Proven Methods</div>
+                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">Results that last</div>
+                    </td>
+                  </tr></table>
+                </td>
+                <td width="6" style="font-size:0;line-height:0">&nbsp;</td>
+                <td width="33%" valign="top" align="${align}" class="px-trust-cell" style="padding:14px 16px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:top">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                    <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:32px;height:32px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px"><tr><td align="center" valign="middle" style="font-size:14px;color:${COLOR.primary};line-height:1">✓</td></tr></table>
+                    </td>
+                    <td valign="middle">
+                      <div style="font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">Commitment</div>
+                      <div style="font-size:11px;color:${COLOR.textMuted};line-height:1.4;margin-top:2px">We build champions</div>
+                    </td>
+                  </tr></table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- 6. LEGAL FOOTER -->
+        <tr>
+          <td style="padding:20px 4px 8px" align="${align}" dir="${dir}">
+            <div style="font-size:11px;color:${COLOR.textDim};line-height:1.6">
+              ${escapeHtml(t(lang, "footerNote"))}<br>
+              ${escapeHtml(t(lang, "footerUnsubNote"))}&nbsp;
+              <a href="${escapeHtml(website)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(BRAND.name)}</a>
+            </div>
           </td>
         </tr>
 
@@ -1144,6 +1291,184 @@ export function shellHtml(opts: {
 </table>
 </body>
 </html>`;
+}
+
+// ---------------------------------------------------------------------------
+// Reference-aligned content primitives (used by booking confirmation and any
+// future builder that wants the cinematic reference layout).
+// ---------------------------------------------------------------------------
+
+/**
+ * Two-column row that stacks vertically on mobile (≤480px) via .px-stack.
+ * Each cell gets equal width by default (50/50). Pass widthLeft to override.
+ */
+export function splitRowHtml(opts: {
+  leftHtml: string;
+  rightHtml: string;
+  widthLeft?: string;        // e.g. "48%"
+  gap?: number;              // px between columns
+  align?: "left" | "right";
+}): string {
+  const align = opts.align || "left";
+  const wl = opts.widthLeft || "50%";
+  const gap = opts.gap ?? 14;
+  const padSide = align === "right" ? "padding-left" : "padding-right";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack" style="margin:0">
+    <tr>
+      <td width="${wl}" valign="top" style="vertical-align:top;${padSide}:${gap}px">${opts.leftHtml}</td>
+      <td valign="top" style="vertical-align:top">${opts.rightHtml}</td>
+    </tr>
+  </table>`;
+}
+
+/**
+ * Eyebrow + dual-tone title stack — matches "NEW SESSION / BOOKING CONFIRMED"
+ * from the reference. The second word of the title is rendered in cyan.
+ */
+export function eyebrowTitleHtml(opts: {
+  eyebrow: string;
+  titleStart: string;        // "BOOKING"
+  titleAccent: string;       // "CONFIRMED"
+  body?: string;
+  align?: "left" | "right";
+}): string {
+  const align = opts.align || "left";
+  return `<div style="text-align:${align};margin:0 0 18px">
+    <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">${escapeHtml(opts.eyebrow)}</div>
+    <div style="font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-0.4px;color:${COLOR.text}">
+      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary}">${escapeHtml(opts.titleAccent)}</span>
+    </div>
+    ${opts.body ? `<p style="margin:14px 0 0;font-size:14px;line-height:1.65;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
+  </div>`;
+}
+
+/**
+ * Glowing duration card — clock icon + "60 MINUTES" + descriptor.
+ * Renders inside the right column of the confirmation row.
+ */
+export function durationCardHtml(opts: {
+  minutes: number;
+  label?: string;            // "Session Duration"
+  sublabel?: string;         // "This session is 1 hour long."
+  align?: "left" | "right";
+}): string {
+  const align = opts.align || "left";
+  const label = opts.label || "Session Duration";
+  const sublabel = opts.sublabel || `This session is ${Math.round(opts.minutes / 60 * 10) / 10} hour long.`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 22px -8px ${COLOR.primaryGlow}">
+    <tr><td style="padding:18px 18px" align="${align}">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:14px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:44px;height:44px;border:2px solid ${COLOR.primary};border-radius:22px"><tr><td align="center" valign="middle" style="font-size:20px;color:${COLOR.primary};line-height:1">⏱</td></tr></table>
+          </td>
+          <td valign="middle">
+            <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700;line-height:1.2">${escapeHtml(label)}</div>
+            <div style="margin-top:4px;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;color:${COLOR.primary};line-height:1">${opts.minutes} MINUTES</div>
+          </td>
+        </tr>
+      </table>
+      <div style="margin-top:10px;font-size:12px;color:${COLOR.textMuted};line-height:1.5">${escapeHtml(sublabel)}</div>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Premium "Session Details" card with icon-prefixed rows — visually matches
+ * the reference exactly. Each row: cyan glyph + uppercase label + value.
+ * Pass an empty value for any row to skip it (graceful partial data).
+ */
+export function sessionDetailsCardHtml(opts: {
+  heading?: string;
+  rows: Array<{ icon: string; label: string; value: string | number | null | undefined; valueTone?: "default" | "primary" }>;
+  align?: "left" | "right";
+}): string {
+  const align = opts.align || "left";
+  const heading = opts.heading || "Session Details";
+  const filled = opts.rows.filter((r) => r.value !== null && r.value !== undefined && r.value !== "");
+  if (filled.length === 0) return "";
+  const padSide = align === "right" ? "padding-left" : "padding-right";
+  const rows = filled.map((r, i) => {
+    const isLast = i === filled.length - 1;
+    const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
+    const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
+    return `<tr>
+      <td style="padding:11px 0;${borderStyle}width:24px;vertical-align:middle">
+        <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1">${r.icon}</span>
+      </td>
+      <td style="padding:11px 0;${borderStyle}color:${COLOR.textMuted};font-size:10.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;vertical-align:middle;${padSide}:10px;width:34%">${escapeHtml(r.label)}</td>
+      <td style="padding:11px 0;${borderStyle}color:${valueColor};font-size:13.5px;font-weight:600;text-align:${align === "right" ? "left" : "right"};vertical-align:middle">${escapeHtml(String(r.value))}</td>
+    </tr>`;
+  }).join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
+    <tr><td style="padding:18px 20px">
+      <div style="font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px;text-align:${align}">${escapeHtml(heading)}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * "What to Expect" card — bullet list with cyan check-style glyphs and
+ * an optional glowing arrival reminder box at the bottom.
+ */
+export function whatToExpectCardHtml(opts: {
+  heading?: string;
+  items: string[];
+  arrivalNote?: string;
+  align?: "left" | "right";
+}): string {
+  const align = opts.align || "left";
+  const heading = opts.heading || "What to Expect";
+  const padSide = align === "right" ? "padding-left" : "padding-right";
+  const items = opts.items.map((it) => `<tr>
+    <td valign="top" style="padding:7px 0;width:22px;vertical-align:top">
+      <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1.5">✓</span>
+    </td>
+    <td valign="top" style="padding:7px 0;color:${COLOR.text};font-size:13.5px;line-height:1.5;${padSide}:8px;vertical-align:top">${escapeHtml(it)}</td>
+  </tr>`).join("");
+  const arrival = opts.arrivalNote
+    ? `<div style="margin-top:14px;padding:12px 14px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:10px;box-shadow:inset 0 0 12px ${COLOR.primaryDeep}">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:10px">
+              <span style="display:inline-block;color:${COLOR.primary};font-size:14px;line-height:1">⏱</span>
+            </td>
+            <td valign="middle" style="font-size:11.5px;color:${COLOR.primary};letter-spacing:1.2px;text-transform:uppercase;font-weight:700;line-height:1.45">${escapeHtml(opts.arrivalNote)}</td>
+          </tr>
+        </table>
+      </div>`
+    : "";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
+    <tr><td style="padding:18px 20px" align="${align}">
+      <div style="font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:6px">${escapeHtml(heading)}</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>
+      ${arrival}
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Large premium TRON CTA button — calendar/icon at left, label center,
+ * arrow at right. Heavier glow than buttonHtml; use as primary action.
+ */
+export function bigCtaButtonHtml(opts: {
+  href: string;
+  label: string;
+  icon?: string;             // unicode glyph, defaults to a calendar
+}): string {
+  const icon = opts.icon || "▦";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+        <tr><td style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -4px ${COLOR.primary}, 0 0 60px -12px ${COLOR.primaryGlow}">
+          <a href="${escapeHtml(opts.href)}" class="px-button-cell" style="display:inline-block;padding:16px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px">
+            <span style="margin-right:14px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:16px;vertical-align:middle">→</span>
+          </a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>`;
 }
 
 /**
@@ -1362,36 +1687,74 @@ export function buildClientBookingConfirmationEmail(opts: {
   const subject = fill(t(lang, "bookingSubject"), { date: d.date, time: d.time12 });
   const greeting = fill(t(lang, "greeting"), { name: d.clientName });
 
-  const bodyHtml =
-    `<p style="margin:0 0 12px;color:${COLOR.text};font-size:15px">${escapeHtml(greeting)}</p>` +
-    heroHtml({ title: t(lang, "bookingHero"), body: t(lang, "bookingBody"), align }) +
-    infoCardHtml({
-      rows: [
-        [t(lang, "bookingDate"), d.date],
-        [t(lang, "bookingTime"), d.time12],
-        [t(lang, "bookingFocus"), d.sessionFocusLabel || null],
-        [t(lang, "bookingGoal"), d.trainingGoalLabel || null],
-        [t(lang, "bookingType"), d.sessionTypeLabel || null],
-        d.partnerFullName ? ["Training partner", d.partnerFullName] : ["", null],
-        [t(lang, "bookingLocation"), t(lang, "bookingLocationValue")],
-        [t(lang, "bookingPackage"), d.packageName || null],
-        d.currentSessionNumber != null && d.totalSessions != null
-          ? ["Session", `${d.currentSessionNumber} of ${d.totalSessions}`]
-          : ["", null],
-        [t(lang, "bookingRemaining"), d.remainingSessions ?? null],
-        [t(lang, "bookingExpires"), d.packageExpiryDate || null],
-      ],
+  // Reference layout: top row = eyebrow+title (left) | duration card (right)
+  const topRow = splitRowHtml({
+    leftHtml: eyebrowTitleHtml({
+      eyebrow: "New Session",
+      titleStart: "Booking",
+      titleAccent: "Confirmed",
+      body: t(lang, "bookingBody"),
       align,
-    }) +
-    `<div style="margin:18px 0 8px;text-align:${align}">${buttonHtml({ href: `${website}/dashboard`, label: t(lang, "ctaDashboard") })}</div>` +
-    rulesHtml({
-      heading: t(lang, "bookingRulesHeading"),
-      items: [t(lang, "bookingRule1"), t(lang, "bookingRule2"), t(lang, "bookingRule3")],
+    }),
+    rightHtml: durationCardHtml({
+      minutes: 60,
+      label: "Session Duration",
+      sublabel: "This session is 1 hour long.",
       align,
-    }) +
-    signoffHtml({ lang });
+    }),
+    widthLeft: "55%",
+    gap: 16,
+    align,
+  });
 
-  const html = shellHtml({ lang, previewText: subject, bodyHtml, websiteUrl: website });
+  // Reference layout: details card (left) | what-to-expect card (right)
+  const detailsRow = splitRowHtml({
+    leftHtml: sessionDetailsCardHtml({
+      heading: "Session Details",
+      align,
+      rows: [
+        { icon: "◉", label: "Client", value: d.clientName },
+        { icon: "✆", label: t(lang, "bookingDate"), value: d.date },
+        { icon: "⏱", label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12, valueTone: "primary" },
+        { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
+        { icon: "◎", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
+        { icon: "▲", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel || null },
+        { icon: "⚡", label: t(lang, "bookingType"), value: d.sessionTypeLabel || null },
+        d.partnerFullName ? { icon: "◉", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
+        { icon: "◉", label: t(lang, "bookingPackage"), value: d.packageName || null },
+        d.currentSessionNumber != null && d.totalSessions != null
+          ? { icon: "▦", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
+          : { icon: "", label: "", value: null },
+        { icon: "▦", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
+        { icon: "▣", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
+      ],
+    }),
+    rightHtml: whatToExpectCardHtml({
+      heading: "What to Expect",
+      align,
+      items: [
+        "Personalized warm-up",
+        "High intensity training",
+        "Proper form & technique",
+        "Progressive overload",
+        "Cool down & recovery",
+      ],
+      arrivalNote: "Please arrive 5–10 minutes early to get started.",
+    }),
+    widthLeft: "55%",
+    gap: 16,
+    align,
+  });
+
+  const bodyHtml =
+    `<p style="margin:0 0 18px;color:${COLOR.textMuted};font-size:14px">${escapeHtml(greeting)}</p>` +
+    topRow +
+    `<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>` +
+    detailsRow +
+    `<div style="margin:24px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
+
+  const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
+  const html = shellHtml({ lang, previewText: `${subject} — ${t(lang, "bookingBody")}`, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
     greeting,
     "",
