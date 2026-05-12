@@ -1672,7 +1672,34 @@ export type BookingDetails = {
   partnerFullName?: string | null;
   partnerPhone?: string | null;
   partnerEmail?: string | null;
+  // Client contact + payment + provenance (May 2026). Reference brief asks
+  // for Email / Phone / Payment Status in the client confirmation card and
+  // Action Timestamp / Booking Source in admin operational footer.
+  clientEmail?: string | null;
+  clientPhone?: string | null;
+  paymentStatus?: string | null;
+  bookingSource?: string | null;     // "Web booking" / "Admin entry" / "Trial signup"
+  actionTimestamp?: string | null;   // ISO or pre-formatted "12 May 2026, 5:00 PM GST"
 };
+
+/**
+ * Pretty-print a payment status code into a human label suitable for
+ * client and admin emails. Returns null when status is null/empty so
+ * the row is gracefully skipped by the details card.
+ */
+export function formatPaymentStatus(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const map: Record<string, string> = {
+    paid: "Paid in full",
+    partially_paid: "Partial payment",
+    unpaid: "Awaiting payment",
+    pending: "Pending confirmation",
+    free: "Complimentary",
+    complimentary: "Complimentary",
+    refunded: "Refunded",
+  };
+  return map[s] || s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function buildClientBookingConfirmationEmail(opts: {
   data: BookingDetails;
@@ -1714,7 +1741,9 @@ export function buildClientBookingConfirmationEmail(opts: {
       align,
       rows: [
         { icon: "◉", label: "Client", value: d.clientName },
-        { icon: "✆", label: t(lang, "bookingDate"), value: d.date },
+        { icon: "✉", label: "Email", value: d.clientEmail || null },
+        { icon: "✆", label: "Phone", value: d.clientPhone || null },
+        { icon: "▣", label: t(lang, "bookingDate"), value: d.date },
         { icon: "⏱", label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12, valueTone: "primary" },
         { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
         { icon: "◎", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
@@ -1727,6 +1756,7 @@ export function buildClientBookingConfirmationEmail(opts: {
           : { icon: "", label: "", value: null },
         { icon: "▦", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
         { icon: "▣", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
+        { icon: "◈", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus) },
       ],
     }),
     rightHtml: whatToExpectCardHtml({
@@ -1986,32 +2016,55 @@ export function buildAdminBookingEmail(opts: {
   const d = opts.d;
   const subject = `New booking — ${d.clientName} | ${d.date} at ${d.time12}`;
   const website = opts.websiteUrl || BRAND.defaultWebsite;
-  const bodyHtml =
-    heroHtml({ title: "New session booking", body: `${d.clientName} booked a session.` }) +
-    infoCardHtml({
+  // Operational footer fields requested by the brief: package status,
+  // expiry, remaining sessions, payment status, action timestamp,
+  // booking source. All optional — gracefully omitted when null.
+  const detailsRow = splitRowHtml({
+    leftHtml: sessionDetailsCardHtml({
+      heading: "Session Details",
       rows: [
-        ["Client", d.clientName],
-        ["Email", opts.clientEmail ?? null],
-        ["Phone", opts.clientPhone ?? null],
-        ["Date", d.date],
-        ["Time (Dubai)", `${d.time12} · GST (UTC+4)`],
-        ["Focus", d.sessionFocusLabel ?? null],
-        ["Goal", d.trainingGoalLabel ?? null],
-        ["Type", d.sessionTypeLabel ?? null],
-        d.partnerFullName ? ["Training partner", d.partnerFullName] : ["", null],
-        d.partnerPhone ? ["Partner phone", d.partnerPhone] : ["", null],
-        d.partnerEmail ? ["Partner email", d.partnerEmail] : ["", null],
-        ["Package", d.packageName ?? null],
-        d.currentSessionNumber != null && d.totalSessions != null
-          ? ["Session", `${d.currentSessionNumber} of ${d.totalSessions}`]
-          : ["", null],
-        ["Remaining after this", d.remainingSessions ?? null],
-        ["Package expires", d.packageExpiryDate ?? null],
+        { icon: "◉", label: "Client", value: d.clientName },
+        { icon: "✉", label: "Email", value: opts.clientEmail || d.clientEmail || null },
+        { icon: "✆", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
+        { icon: "▣", label: "Date", value: d.date },
+        { icon: "⏱", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)`, valueTone: "primary" },
+        { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
+        { icon: "◎", label: "Focus", value: d.sessionFocusLabel ?? null },
+        { icon: "▲", label: "Goal", value: d.trainingGoalLabel ?? null },
+        { icon: "⚡", label: "Type", value: d.sessionTypeLabel ?? null },
+        d.partnerFullName ? { icon: "◉", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
       ],
+    }),
+    rightHtml: sessionDetailsCardHtml({
+      heading: "Package & Status",
+      rows: [
+        { icon: "◉", label: "Package", value: d.packageName ?? null },
+        d.currentSessionNumber != null && d.totalSessions != null
+          ? { icon: "▦", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
+          : { icon: "", label: "", value: null },
+        { icon: "▦", label: "Remaining After", value: d.remainingSessions ?? null },
+        { icon: "▣", label: "Expiry Date", value: d.packageExpiryDate ?? null },
+        { icon: "◈", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" },
+        { icon: "⌖", label: "Booking Source", value: d.bookingSource ?? null },
+        { icon: "◷", label: "Logged At", value: d.actionTimestamp ?? null },
+      ],
+    }),
+    widthLeft: "55%",
+    gap: 16,
+  });
+  const bodyHtml =
+    eyebrowTitleHtml({
+      eyebrow: "New Session",
+      titleStart: "Booking",
+      titleAccent: "Received",
+      body: `${d.clientName} just booked a session.`,
     }) +
-    (opts.clientNotes ? noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" }) : "") +
-    `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
-  const html = adminShell({ previewText: subject, bodyHtml });
+    `<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>` +
+    detailsRow +
+    (opts.clientNotes ? `<div style="margin-top:14px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
+    `<div style="margin:24px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+  const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
+  const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
     `New booking — ${d.clientName}`,
     "",
@@ -2242,7 +2295,12 @@ export function buildAdminAttendanceEmail(opts: {
   date: string;
   time12: string;
   packageName?: string | null;
+  packageStatus?: string | null;        // "Active" / "Expiring soon" / "Expired"
+  packageExpiryDate?: string | null;
   remainingSessions?: number | null;
+  paymentStatus?: string | null;        // raw status code, prettified at render
+  bookingSource?: string | null;        // "Admin entry" / "Web booking" / etc.
+  actionTimestamp?: string | null;      // pre-formatted Dubai timestamp
   reason?: string | null;
   websiteUrl?: string;
 }): Built {
@@ -2268,7 +2326,12 @@ export function buildAdminAttendanceEmail(opts: {
         ["Date", opts.date],
         ["Time (Dubai)", `${opts.time12} · GST (UTC+4)`],
         ["Package", opts.packageName ?? null],
+        ["Package status", opts.packageStatus ?? null],
         ["Remaining sessions", opts.remainingSessions ?? null],
+        ["Package expires", opts.packageExpiryDate ?? null],
+        ["Payment status", formatPaymentStatus(opts.paymentStatus)],
+        ["Booking source", opts.bookingSource ?? null],
+        ["Logged at (Dubai)", opts.actionTimestamp ?? null],
         ["Reason / note", opts.reason ?? null],
       ],
     }) +

@@ -556,6 +556,21 @@ async function dispatchBookingNotifications(args: {
     partnerFullName: (booking as any).partnerFullName?.toString().trim() || null,
     partnerPhone: (booking as any).partnerPhone?.toString().trim() || null,
     partnerEmail: (booking as any).partnerEmail?.toString().trim() || null,
+    // Brief: client confirmation needs Email/Phone/Payment Status; admin
+    // ops footer needs Booking Source + Action Timestamp.
+    clientEmail: user?.email ?? null,
+    clientPhone: (user as any)?.phone ?? null,
+    paymentStatus: (booking as any).paymentStatus ?? null,
+    bookingSource: (booking as any).adminEntered || (booking as any).createdByAdmin
+      ? "Admin entry"
+      : sessionType === "trial"
+        ? "Trial signup"
+        : "Web booking",
+    actionTimestamp: new Date().toLocaleString("en-GB", {
+      timeZone: "Asia/Dubai",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: true,
+    }) + " GST",
   };
 
   // ---- 2. Trainer email (premium English template, always to TRAINER_EMAIL) ----

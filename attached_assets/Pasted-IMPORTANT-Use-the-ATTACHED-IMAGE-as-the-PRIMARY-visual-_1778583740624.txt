@@ -1,0 +1,369 @@
+IMPORTANT:
+Use the ATTACHED IMAGE as the PRIMARY visual reference for the entire email system.
+
+Do NOT redesign from scratch.
+Do NOT simplify the structure.
+Do NOT change the layout direction.
+Match the attached reference as closely as technically possible inside real responsive HTML emails.
+
+This is NOT an image-generation task.
+Build REAL HTML email templates.
+
+════════════════════════════
+MAIN GOAL
+════════════════════════════
+
+Create a premium TRON Legacy luxury email system for my fitness booking platform.
+
+The final result should visually feel almost identical to the attached reference:
+- same composition
+- same section hierarchy
+- same spacing rhythm
+- same futuristic luxury atmosphere
+- same cyan glow intensity
+- same dark AMOLED look
+- same typography feeling
+- same premium high-end coaching vibe
+
+════════════════════════════
+MASTER DESIGN REFERENCE
+════════════════════════════
+
+The attached image is the MASTER DESIGN REFERENCE.
+
+Use it for:
+- layout
+- spacing
+- proportions
+- glow placement
+- border style
+- typography hierarchy
+- card structure
+- CTA placement
+- footer structure
+- visual rhythm
+- overall atmosphere
+
+DO NOT:
+- invent a different design
+- make it generic
+- make it minimal
+- remove sections
+- replace the TRON atmosphere
+- flatten the luxury feeling
+
+════════════════════════════
+BUILD REAL EMAILS
+════════════════════════════
+
+Do NOT create one large static image.
+
+Build:
+- real HTML email templates
+- responsive layout
+- editable text
+- editable images
+- dynamic data
+- reusable email design system
+
+════════════════════════════
+TRON DESIGN SYSTEM
+════════════════════════════
+
+STYLE:
+- TRON Legacy inspired
+- cinematic futuristic luxury
+- premium coaching aesthetic
+- dark AMOLED
+- cyan neon accents
+- subtle professional glow
+- elegant spacing
+- sharp borders
+- ultra clean typography
+
+COLORS:
+- Background: #05070B
+- Panels: #08111B
+- Cyan: #00E5FF
+- Bright cyan: #5FFBFF
+- Accent blue: #009DFF
+- Text: #EAF7FF
+- Muted text: #8AA8B8
+- Borders: rgba(0,229,255,0.18)
+
+Keep it luxury and clean.
+Avoid overdoing neon effects.
+
+════════════════════════════
+IMAGE CONTROL SYSTEM
+════════════════════════════
+
+I need FULL control over images later.
+
+Create configurable variables/settings:
+
+EMAIL_HERO_IMAGE_URL
+EMAIL_AVATAR_IMAGE_URL
+EMAIL_SIGNATURE_IMAGE_URL
+EMAIL_BACKGROUND_TEXTURE_URL
+
+Use:
+- hero image at top left
+- avatar image near footer
+- signature/logo image near bottom
+
+If any image is missing:
+- gracefully fallback
+- preserve layout
+- never show broken image icons
+
+════════════════════════════
+EMAIL STRUCTURE
+════════════════════════════
+
+1. PREHEADER BAR
+Like reference:
+“Booking confirmed | You’re one step closer.”
++ optional “View in browser”
+
+2. HERO SECTION
+LEFT:
+- coach hero image
+
+RIGHT:
+- YOUSSEF AHMED
+- ELITE COACHING
+- PERSONAL TRAINING • DUBAI
+
+Must visually match reference closely.
+
+3. MAIN CONFIRMATION SECTION
+LEFT:
+- NEW SESSION
+- BOOKING CONFIRMED
+- confirmation text
+
+RIGHT:
+- glowing duration panel
+- SESSION DURATION
+- 60 MINUTES
+- “This session is 1 hour long.”
+
+4. SESSION DETAILS CARD
+Fields:
+- Client
+- Email
+- Phone
+- Date
+- Time Dubai
+- Duration
+- Focus
+- Goal
+- Type
+- Package
+- Remaining Sessions
+- Expiry Date
+- Payment Status
+
+5. WHAT TO EXPECT CARD
+- Personalized warm-up
+- High intensity training
+- Proper form & technique
+- Progressive overload
+- Cool down & recovery
+
++ glowing arrival reminder box.
+
+6. CTA BUTTON
+Large premium TRON button:
+- OPEN MY BOOKING
+- OPEN ADMIN BOOKINGS
+
+Glow effect similar to reference.
+
+7. FOOTER PROFILE SECTION
+LEFT:
+- circular avatar image
+- signature image/text
+- Discipline Today
+- Success Tomorrow
+
+RIGHT:
+- WhatsApp
+- Email
+- Instagram
+- Dubai UAE
+
+8. TRUST ICON ROW
+- Premium Coaching
+- Proven Methods
+- Commitment
+
+9. LEGAL FOOTER
+Small premium footer text.
+
+════════════════════════════
+RESPONSIVE EMAIL REQUIREMENTS
+════════════════════════════
+
+This email system MUST be fully responsive and professionally optimized for:
+- mobile phones
+- tablets
+- desktop
+- Gmail mobile app
+- Outlook mobile
+- Apple Mail
+- desktop Gmail
+- desktop Outlook
+
+The layout must adapt professionally for each screen size.
+
+DESKTOP:
+- keep premium 2-column layouts
+- hero image left / brand right
+- details + expectation cards side by side
+- maintain cinematic luxury composition
+
+TABLET:
+- preserve clean spacing
+- allow adaptive columns only if visually balanced
+- otherwise stack smoothly
+- avoid cramped layouts
+
+MOBILE:
+- stack all sections vertically
+- hero image above or cleanly integrated
+- full-width cards
+- large readable typography
+- large CTA buttons
+- proper spacing between sections
+- no horizontal scrolling
+- no tiny labels
+- no broken alignment
+- no compressed cards
+- maintain premium luxury feeling
+
+IMPORTANT:
+The email must feel intentionally designed for:
+- phones
+- tablets
+- desktop
+
+NOT simply shrunk down.
+
+Add responsive breakpoints:
+- desktop
+- tablet
+- mobile under 480px
+
+════════════════════════════
+TEXT READABILITY
+════════════════════════════
+
+Prioritize readability:
+- increase contrast slightly for small texts
+- avoid ultra-thin fonts
+- keep labels crystal clear
+- maintain readability in Gmail dark mode
+- maintain strong hierarchy
+
+════════════════════════════
+IMAGE QUALITY
+════════════════════════════
+
+- Use high-quality optimized WebP where supported
+- Keep images sharp and premium
+- Avoid blurry compression
+- Preserve cinematic look
+
+════════════════════════════
+EMAIL ENGINEERING RULES
+════════════════════════════
+
+Use:
+- table-based HTML
+- inline CSS
+- email-safe layouts
+- hosted HTTPS assets
+- fallback colors
+- optimized image delivery
+
+Avoid:
+- unsupported CSS
+- flex-only layouts
+- CSS Outlook strips
+- giant email sizes
+- Gmail clipping
+
+════════════════════════════
+DO NOT TOUCH
+════════════════════════════
+
+Do NOT modify:
+- booking logic
+- lead-time logic
+- cancellation logic
+- package deduction logic
+- payment logic
+- availability logic
+
+EMAIL UI / TEMPLATE SYSTEM ONLY.
+
+════════════════════════════
+EMAIL TYPES
+════════════════════════════
+
+Apply the same premium TRON design system to:
+- booking confirmation
+- reminders
+- cancellations
+- reschedules
+- package activated
+- package expiring
+- package expired
+- payment confirmation
+- welcome email
+- admin alerts
+- password reset
+- check-in reminders
+
+Client emails:
+luxury motivational tone.
+
+Admin emails:
+premium operational tone.
+
+════════════════════════════
+ADMIN EMAIL REQUIREMENTS
+════════════════════════════
+
+Admin emails should also include:
+- package status
+- expiry date
+- remaining sessions
+- payment status
+- action timestamp
+- booking source if available
+
+════════════════════════════
+FINAL VALIDATION
+════════════════════════════
+
+Before deployment:
+- render previews
+- mobile screenshots
+- Gmail Android test
+- Gmail iPhone test
+- Outlook mobile test
+- Apple Mail test
+- desktop Gmail test
+- desktop Outlook test
+- verify dark mode
+- verify image fallback
+- verify glow consistency
+- verify responsive stacking
+- verify spacing consistency
+- verify typography hierarchy
+- verify no Gmail clipping
+
+Deploy only production-safe version.
