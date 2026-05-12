@@ -1258,21 +1258,25 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- 2. COMPACT BRAND HEADER — text-first, no big logo block.
-             Single centered column on every client. Premium spacing. -->
+        <!-- 2. CINEMATIC BRAND HEADER — premium TRON Legacy treatment.
+             Centered single column on every client. Top cyan hairline,
+             serif "YOUSSEF AHMED", cyan "ELITE COACHING", glowing rule,
+             muted "PERSONAL TRAINING · DUBAI". Generous breathing room. -->
         <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 12px 36px -22px ${COLOR.primaryGlow}">
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.08), 0 0 0 1px ${COLOR.primaryDeep}, 0 22px 56px -28px ${COLOR.primaryGlow}">
+            <!-- top accent hairline — TRON signature -->
+            <div style="height:2px;width:100%;background:${COLOR.primary};box-shadow:0 0 14px ${COLOR.primary};line-height:0;font-size:0">&nbsp;</div>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-hero" align="center" style="padding:22px 22px;text-align:center">
-                  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;letter-spacing:4px;color:${COLOR.text};line-height:1.1;text-transform:uppercase">
+                <td class="px-hero" align="center" style="padding:38px 24px 34px;text-align:center">
+                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:28px;font-weight:700;letter-spacing:5px;color:${COLOR.text};line-height:1.1;text-transform:uppercase;text-shadow:0 0 18px rgba(94,231,255,0.12)">
                     YOUSSEF AHMED
                   </div>
-                  <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:3.2px;color:${COLOR.primary};line-height:1.1;text-transform:uppercase">
+                  <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:700;letter-spacing:4px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 14px ${COLOR.primaryDeep}">
                     Elite Coaching
                   </div>
-                  <div style="margin:12px auto 0;height:1px;width:36px;background:${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
-                  <div style="margin-top:10px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
+                  <div style="margin:20px auto 0;height:1px;width:56px;background:${COLOR.primary};box-shadow:0 0 12px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
+                  <div style="margin-top:18px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
                     Personal Training&nbsp;·&nbsp;Dubai
                   </div>
                 </td>
@@ -1427,12 +1431,17 @@ export function eyebrowTitleHtml(opts: {
   align?: "left" | "right";
 }): string {
   const align = opts.align || "left";
-  return `<div style="text-align:${align};margin:0 0 22px">
-    <div style="font-size:10.5px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:12px">${escapeHtml(opts.eyebrow)}</div>
-    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:32px;line-height:1.1;font-weight:700;letter-spacing:-0.4px;color:${COLOR.text}">
-      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary};text-shadow:0 0 24px ${COLOR.primaryDeep}">${escapeHtml(opts.titleAccent)}</span>
+  // Cinematic accent rule above the eyebrow — the TRON Legacy hairline
+  // signature. Sized & positioned by alignment so it reads premium on
+  // every client (Gmail web, iOS, Android, Apple Mail, Outlook desktop).
+  const ruleAlign = align === "right" ? "margin-left:auto" : "margin-left:0";
+  return `<div style="text-align:${align};margin:0 0 30px">
+    <div style="height:1px;width:48px;background:${COLOR.primary};box-shadow:0 0 14px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:16px">&nbsp;</div>
+    <div style="font-size:11px;letter-spacing:3.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:16px;line-height:1.2">${escapeHtml(opts.eyebrow)}</div>
+    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:38px;line-height:1.08;font-weight:700;letter-spacing:-0.6px;color:${COLOR.text}">
+      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary};text-shadow:0 0 28px ${COLOR.primaryDeep}, 0 0 12px ${COLOR.primaryGlow}">${escapeHtml(opts.titleAccent)}</span>
     </div>
-    ${opts.body ? `<p style="margin:16px 0 0;font-size:14.5px;line-height:1.7;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
+    ${opts.body ? `<p style="margin:20px 0 0;font-size:15.5px;line-height:1.75;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
   </div>`;
 }
 
@@ -1492,17 +1501,17 @@ export function sessionDetailsCardHtml(opts: {
     // on Gmail Android). Each cell is its own table row, so no client can flow them
     // side-by-side. Defense-in-depth: explicit display:block;width:100% on the inner
     // divs as well.
-    return `<tr><td style="padding:14px 0 4px;vertical-align:top">
-        <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;text-align:${align}">${escapeHtml(r.label)}</div>
+    return `<tr><td style="padding:18px 0 6px;vertical-align:top">
+        <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;text-align:${align}">${escapeHtml(r.label)}</div>
       </td></tr>
-      <tr><td style="padding:0 0 14px;${borderStyle}vertical-align:top">
-        <div style="display:block;width:100%;font-size:16px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
+      <tr><td style="padding:0 0 18px;${borderStyle}vertical-align:top">
+        <div style="display:block;width:100%;font-size:17px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
       </td></tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 14px 36px -22px ${COLOR.primaryGlow}">
-    <tr><td style="padding:22px 22px">
-      <div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:6px;text-align:${align}">${escapeHtml(heading)}</div>
-      <div style="height:1px;width:28px;background:${COLOR.primary};margin:${align === "right" ? "0 0 16px auto" : "0 0 16px"};line-height:1px;font-size:0">&nbsp;</div>
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 18px 44px -22px ${COLOR.primaryGlow}">
+    <tr><td style="padding:30px 28px 26px">
+      <div style="font-size:12px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
+      <div style="height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 22px auto" : "0 0 22px"};line-height:1px;font-size:0">&nbsp;</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
     </td></tr>
   </table>`;
@@ -1561,11 +1570,11 @@ export function bigCtaButtonHtml(opts: {
   // Full-width pill ALWAYS — outer table 100% width, anchor displays as a
   // block-level button so it fills the cell on every client. Min height
   // ~52px via line-height 20 + padding 16+16 = guaranteed 48px+ tap target.
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0">
     <tr>
-      <td align="center" bgcolor="${COLOR.bgCard}" style="border:1.5px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(95,251,255,0.12), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -6px ${COLOR.primary}, 0 0 56px -16px ${COLOR.primaryGlow}">
-        <a href="${escapeHtml(opts.href)}" style="display:block;padding:16px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:20px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-align:center;text-shadow:0 0 16px ${COLOR.primaryDeep}">
-          <span style="margin-right:12px;font-size:14px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:12px;font-size:16px;vertical-align:middle">→</span>
+      <td align="center" bgcolor="${COLOR.bgCard}" style="border:2px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(94,231,255,0.16), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 32px -6px ${COLOR.primary}, 0 0 80px -18px ${COLOR.primaryGlow}">
+        <a href="${escapeHtml(opts.href)}" style="display:block;padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14.5px;line-height:20px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-align:center;text-shadow:0 0 18px ${COLOR.primaryDeep}, 0 0 8px ${COLOR.primaryGlow}">
+          <span style="margin-right:14px;font-size:15px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:17px;vertical-align:middle">→</span>
         </a>
       </td>
     </tr>
@@ -1837,12 +1846,12 @@ export function buildClientBookingConfirmationEmail(opts: {
     { label: "Duration", value: "60 Minutes" },
   ];
   const highlightStrip =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.08), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -12px ${COLOR.primaryGlow}">
-      <tr><td style="padding:22px 22px">
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.10), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 36px -12px ${COLOR.primaryGlow}">
+      <tr><td style="padding:30px 28px">
         ${stripRows.map((row, i) => `
-          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:16px;padding-top:16px;` : ""}text-align:${align}">
-            <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 6px">${escapeHtml(row.label)}</div>
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.4px;color:${COLOR.primary};line-height:1.3;text-shadow:0 0 18px ${COLOR.primaryDeep}">${escapeHtml(row.value)}</div>
+          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:22px;padding-top:22px;` : ""}text-align:${align}">
+            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 10px">${escapeHtml(row.label)}</div>
+            <div style="display:block;width:100%;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:0.2px;color:${COLOR.primary};line-height:1.25;text-shadow:0 0 22px ${COLOR.primaryDeep}, 0 0 10px ${COLOR.primaryGlow}">${escapeHtml(row.value)}</div>
           </div>`).join("")}
       </td></tr>
     </table>`;
@@ -1890,15 +1899,15 @@ export function buildClientBookingConfirmationEmail(opts: {
     arrivalNote: "Please arrive 5–10 minutes early so we can start on time.",
   });
 
-  const SPACER = `<div style="height:16px;line-height:16px;font-size:0">&nbsp;</div>`;
+  const SPACER = `<div style="height:24px;line-height:24px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
-    `<p style="margin:0 0 22px;color:${COLOR.textSecondary};font-size:15px;line-height:1.55">${escapeHtml(greeting)}</p>` +
+    `<p style="margin:0 0 28px;color:${COLOR.textSecondary};font-size:15.5px;line-height:1.65">${escapeHtml(greeting)}</p>` +
     statusHero +
     highlightStrip + SPACER +
     trainingSummary + SPACER +
     clientDetails + SPACER +
     expectBlock +
-    `<div style="margin:24px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
+    `<div style="margin:32px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
 
   const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
   const html = shellHtml({ lang, previewText: `${subject} — ${t(lang, "bookingBody")}`, bodyHtml, websiteUrl: website, topBar });
@@ -2154,12 +2163,12 @@ export function buildAdminBookingEmail(opts: {
     { label: "Duration", value: "60 Minutes" },
   ];
   const highlightStrip =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.08), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -12px ${COLOR.primaryGlow}">
-      <tr><td style="padding:22px 22px">
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.10), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 36px -12px ${COLOR.primaryGlow}">
+      <tr><td style="padding:30px 28px">
         ${stripRows.map((row, i) => `
-          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:16px;padding-top:16px;` : ""}text-align:left">
-            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 6px">${escapeHtml(row.label)}</div>
-            <div style="display:block;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.4px;color:${COLOR.primary};line-height:1.3;text-shadow:0 0 18px ${COLOR.primaryDeep}">${escapeHtml(row.value)}</div>
+          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:22px;padding-top:22px;` : ""}text-align:left">
+            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 10px">${escapeHtml(row.label)}</div>
+            <div style="display:block;width:100%;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:0.2px;color:${COLOR.primary};line-height:1.25;text-shadow:0 0 22px ${COLOR.primaryDeep}, 0 0 10px ${COLOR.primaryGlow}">${escapeHtml(row.value)}</div>
           </div>`).join("")}
       </td></tr>
     </table>`;
@@ -2198,15 +2207,15 @@ export function buildAdminBookingEmail(opts: {
     ],
   });
 
-  const SPACER = `<div style="height:16px;line-height:16px;font-size:0">&nbsp;</div>`;
+  const SPACER = `<div style="height:24px;line-height:24px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
     statusHero +
     highlightStrip + SPACER +
     clientDetails + SPACER +
     trainingCard + SPACER +
     opsCard +
-    (opts.clientNotes ? `<div style="margin-top:18px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
-    `<div style="margin:26px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+    (opts.clientNotes ? `<div style="margin-top:22px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
+    `<div style="margin:32px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
   const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
   const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
