@@ -109,6 +109,9 @@ import {
   buildAdminPackageExpiredEmail,
   buildAdminPackageExtendedEmail,
   buildAdminProfileUpdateEmail,
+  buildWelcomeEmail,
+  buildPasswordResetEmail,
+  buildAdminNewClientEmail,
   type BookingDetails,
 } from "./email-templates";
 import { z } from "zod";
@@ -1978,6 +1981,294 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       domain,
       dns: { overall: dnsOverall, detail: dnsDetail },
       recent: { total: recent.length, sent: recentSent, failed: recentFailed },
+    });
+  });
+
+  // GET /api/admin/email/preview — renders every email builder with
+  // realistic sample data and returns name/subject/textLength/htmlLength/
+  // ok/error per template. Lets the trainer verify dynamic variables,
+  // counters, and branding consistency without sending real mail.
+  // POST /api/admin/email/preview { to } sends ALL 18 templates to one
+  // recipient as a full delivery + rendering smoke-test.
+  const renderAllTemplates = () => {
+    const sampleBooking = {
+      clientName: "Sara Khalil",
+      date: "2026-05-20",
+      time12: "9:00 AM",
+      sessionFocusLabel: "Strength + Conditioning",
+      trainingGoalLabel: "Fat loss",
+      sessionTypeLabel: "Package",
+      packageName: "Premium 12 (3×/week)",
+      remainingSessions: 8,
+      packageExpiryDate: "2026-06-30",
+      currentSessionNumber: 4,
+      totalSessions: 12,
+      partnerFullName: null,
+      partnerPhone: null,
+      partnerEmail: null,
+    };
+    const items: Array<{ name: string; subject?: string; ok: boolean; htmlLength?: number; textLength?: number; error?: string }> = [];
+    const run = (name: string, fn: () => { subject: string; html: string; text: string }) => {
+      try {
+        const built = fn();
+        items.push({
+          name,
+          subject: built.subject,
+          ok: true,
+          htmlLength: built.html.length,
+          textLength: built.text.length,
+        });
+        return built;
+      } catch (e: any) {
+        items.push({ name, ok: false, error: e?.message || "render failed" });
+        return null;
+      }
+    };
+
+    run("client.welcome", () =>
+      buildWelcomeEmail({ clientName: "Sara Khalil", lang: "en" }),
+    );
+    run("client.bookingConfirmation", () =>
+      buildClientBookingConfirmationEmail({ data: sampleBooking, lang: "en" }),
+    );
+    run("client.reminder24h", () =>
+      buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "24h" }),
+    );
+    run("client.reminder1h", () =>
+      buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "1h" }),
+    );
+    run("client.packageExpiring", () =>
+      buildPackageExpiringEmail({
+        clientName: "Sara Khalil",
+        lang: "en",
+        remainingSessions: 2,
+        daysUntilExpiry: 5,
+        packageName: "Premium 12",
+      }),
+    );
+    run("client.packageFinished", () =>
+      buildPackageFinishedEmail({
+        clientName: "Sara Khalil",
+        lang: "en",
+        packageName: "Premium 12",
+      }),
+    );
+    run("client.passwordReset", () =>
+      buildPasswordResetEmail({
+        resetUrl: "https://example.com/reset-password?token=sample",
+        lang: "en",
+      }),
+    );
+    run("admin.newClient", () =>
+      buildAdminNewClientEmail({
+        clientName: "Sara Khalil",
+        email: "sara@example.com",
+        phone: "+971 50 123 4567",
+        primaryGoal: "Fat loss",
+        weeklyFrequency: 3,
+        area: "Dubai Marina",
+        packageName: "Premium 12",
+        packagePrice: 2500,
+      }),
+    );
+    run("admin.newBooking", () =>
+      buildAdminBookingEmail({
+        d: sampleBooking,
+        clientEmail: "sara@example.com",
+        clientPhone: "+971 50 123 4567",
+        clientNotes: "Please focus on hamstrings.",
+      }),
+    );
+    run("admin.bookingCancellation", () =>
+      buildAdminBookingChangeEmail({
+        kind: "cancellation",
+        clientName: "Sara Khalil",
+        date: "2026-05-20",
+        time12: "9:00 AM",
+        reason: "Client requested cancellation.",
+      }),
+    );
+    run("admin.bookingReschedule", () =>
+      buildAdminBookingChangeEmail({
+        kind: "reschedule",
+        clientName: "Sara Khalil",
+        date: "2026-05-22",
+        time12: "10:00 AM",
+        fromDate: "2026-05-20",
+        fromTime12: "9:00 AM",
+      }),
+    );
+    run("admin.inbody", () =>
+      buildAdminInbodyEmail({ clientName: "Sara Khalil", recordedDate: "2026-05-20" }),
+    );
+    run("admin.packageExpiringAlert", () =>
+      buildAdminPackageExpiringEmail({
+        clientName: "Sara Khalil",
+        packageName: "Premium 12",
+        remainingSessions: 2,
+        daysUntilExpiry: 5,
+      } as any),
+    );
+    run("admin.attendance", () =>
+      buildAdminAttendanceEmail({
+        attendance: "attended",
+        clientName: "Sara Khalil",
+        date: "2026-05-20",
+        time12: "9:00 AM",
+        packageName: "Premium 12",
+        remainingSessions: 7,
+      }),
+    );
+    run("admin.emergencyCancel", () =>
+      buildAdminEmergencyCancelEmail({
+        clientName: "Sara Khalil",
+        date: "2026-05-20",
+        time12: "9:00 AM",
+        monthlyQuotaUsed: 1,
+        monthlyQuotaTotal: 2,
+        reason: "Family emergency.",
+      }),
+    );
+    run("admin.payment", () =>
+      buildAdminPaymentEmail({
+        clientName: "Sara Khalil",
+        packageName: "Premium 12",
+        paymentStatus: "paid",
+        amountReceived: 2500,
+        amountPaidTotal: 2500,
+        packageTotal: 2500,
+      }),
+    );
+    run("admin.packageActivated", () =>
+      buildAdminPackageActivatedEmail({
+        clientName: "Sara Khalil",
+        packageName: "Premium 12",
+        totalSessions: 12,
+        paidSessions: 12,
+        bonusSessions: 0,
+        totalPrice: 2500,
+        startDate: "2026-05-15",
+        expiryDate: "2026-06-30",
+        paymentStatus: "paid",
+        source: "new",
+      }),
+    );
+    run("admin.packageExpired", () =>
+      buildAdminPackageExpiredEmail({
+        clientName: "Sara Khalil",
+        packageName: "Premium 12",
+        reason: "sessions_exhausted",
+        totalSessions: 12,
+        expiryDate: "2026-06-30",
+      }),
+    );
+    run("admin.packageExtended", () =>
+      buildAdminPackageExtendedEmail({
+        clientName: "Sara Khalil",
+        packageName: "Premium 12",
+        daysAdded: 7,
+        previousExpiry: "2026-06-30",
+        newExpiry: "2026-07-07",
+        reason: "Client travel.",
+      }),
+    );
+    run("admin.profileUpdate", () =>
+      buildAdminProfileUpdateEmail({
+        clientName: "Sara Khalil",
+        changes: [
+          ["Phone", "+971 50 123 4567 → +971 55 987 6543"],
+          ["Weekly frequency", "3×/week → 4×/week"],
+        ],
+      }),
+    );
+
+    return items;
+  };
+
+  app.get("/api/admin/email/preview", requireAdmin, (_req, res) => {
+    const items = renderAllTemplates();
+    const ok = items.filter((i) => i.ok).length;
+    const failed = items.filter((i) => !i.ok);
+    res.json({
+      total: items.length,
+      ok,
+      failed: failed.length,
+      items,
+      failures: failed,
+    });
+  });
+
+  app.post("/api/admin/email/preview", requireAdmin, async (req, res) => {
+    const to = String(req.body?.to ?? "").trim();
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return res.status(400).json({ message: "Provide a valid `to` email address." });
+    }
+    const sendResults: Array<{ name: string; sent: boolean; id?: string; error?: string }> = [];
+    const sampleBooking = {
+      clientName: "Sara Khalil",
+      date: "2026-05-20",
+      time12: "9:00 AM",
+      sessionFocusLabel: "Strength + Conditioning",
+      trainingGoalLabel: "Fat loss",
+      sessionTypeLabel: "Package",
+      packageName: "Premium 12 (3×/week)",
+      remainingSessions: 8,
+      packageExpiryDate: "2026-06-30",
+      currentSessionNumber: 4,
+      totalSessions: 12,
+      partnerFullName: null,
+      partnerPhone: null,
+      partnerEmail: null,
+    };
+
+    type Job = { name: string; build: () => { subject: string; html: string; text: string } };
+    const jobs: Job[] = [
+      { name: "client.welcome", build: () => buildWelcomeEmail({ clientName: "Sara Khalil", lang: "en" }) },
+      { name: "client.bookingConfirmation", build: () => buildClientBookingConfirmationEmail({ data: sampleBooking, lang: "en" }) },
+      { name: "client.reminder24h", build: () => buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "24h" }) },
+      { name: "client.reminder1h", build: () => buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "1h" }) },
+      { name: "client.packageExpiring", build: () => buildPackageExpiringEmail({ clientName: "Sara Khalil", lang: "en", remainingSessions: 2, daysUntilExpiry: 5, packageName: "Premium 12" }) },
+      { name: "client.packageFinished", build: () => buildPackageFinishedEmail({ clientName: "Sara Khalil", lang: "en", packageName: "Premium 12" }) },
+      { name: "client.passwordReset", build: () => buildPasswordResetEmail({ resetUrl: "https://example.com/reset-password?token=sample", lang: "en" }) },
+      { name: "admin.newClient", build: () => buildAdminNewClientEmail({ clientName: "Sara Khalil", email: "sara@example.com", phone: "+971 50 123 4567", primaryGoal: "Fat loss", weeklyFrequency: 3, area: "Dubai Marina", packageName: "Premium 12", packagePrice: 2500 }) },
+      { name: "admin.newBooking", build: () => buildAdminBookingEmail({ d: sampleBooking, clientEmail: "sara@example.com", clientPhone: "+971 50 123 4567", clientNotes: "Please focus on hamstrings." }) },
+      { name: "admin.bookingCancellation", build: () => buildAdminBookingChangeEmail({ kind: "cancellation", clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", reason: "Client requested cancellation." }) },
+      { name: "admin.bookingReschedule", build: () => buildAdminBookingChangeEmail({ kind: "reschedule", clientName: "Sara Khalil", date: "2026-05-22", time12: "10:00 AM", fromDate: "2026-05-20", fromTime12: "9:00 AM" }) },
+      { name: "admin.inbody", build: () => buildAdminInbodyEmail({ clientName: "Sara Khalil", recordedDate: "2026-05-20" }) },
+      { name: "admin.packageExpiringAlert", build: () => buildAdminPackageExpiringEmail({ clientName: "Sara Khalil", packageName: "Premium 12", remainingSessions: 2, daysUntilExpiry: 5 } as any) },
+      { name: "admin.attendance", build: () => buildAdminAttendanceEmail({ attendance: "attended", clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", packageName: "Premium 12", remainingSessions: 7 }) },
+      { name: "admin.emergencyCancel", build: () => buildAdminEmergencyCancelEmail({ clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", monthlyQuotaUsed: 1, monthlyQuotaTotal: 2, reason: "Family emergency." }) },
+      { name: "admin.payment", build: () => buildAdminPaymentEmail({ clientName: "Sara Khalil", packageName: "Premium 12", paymentStatus: "paid", amountReceived: 2500, amountPaidTotal: 2500, packageTotal: 2500 }) },
+      { name: "admin.packageActivated", build: () => buildAdminPackageActivatedEmail({ clientName: "Sara Khalil", packageName: "Premium 12", totalSessions: 12, paidSessions: 12, bonusSessions: 0, totalPrice: 2500, startDate: "2026-05-15", expiryDate: "2026-06-30", paymentStatus: "paid", source: "new" }) },
+      { name: "admin.packageExpired", build: () => buildAdminPackageExpiredEmail({ clientName: "Sara Khalil", packageName: "Premium 12", reason: "sessions_exhausted", totalSessions: 12, expiryDate: "2026-06-30" }) },
+      { name: "admin.packageExtended", build: () => buildAdminPackageExtendedEmail({ clientName: "Sara Khalil", packageName: "Premium 12", daysAdded: 7, previousExpiry: "2026-06-30", newExpiry: "2026-07-07", reason: "Client travel." }) },
+      { name: "admin.profileUpdate", build: () => buildAdminProfileUpdateEmail({ clientName: "Sara Khalil", changes: [["Phone", "+971 50 123 4567 → +971 55 987 6543"], ["Weekly frequency", "3×/week → 4×/week"]] }) },
+    ];
+
+    // Sequential to respect Resend rate limits and produce ordered results.
+    for (const job of jobs) {
+      try {
+        const built = job.build();
+        const r = await sendEmail({
+          to,
+          subject: `[PREVIEW ${job.name}] ${built.subject}`,
+          text: built.text,
+          html: built.html,
+          replyTo: trainerEmail(),
+        });
+        sendResults.push({ name: job.name, sent: r.sent, id: r.id, error: r.error });
+      } catch (e: any) {
+        sendResults.push({ name: job.name, sent: false, error: e?.message || "build failed" });
+      }
+    }
+
+    const ok = sendResults.filter((r) => r.sent).length;
+    res.json({
+      to,
+      total: sendResults.length,
+      sent: ok,
+      failed: sendResults.length - ok,
+      results: sendResults,
     });
   });
 
