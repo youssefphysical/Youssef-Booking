@@ -1258,27 +1258,22 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- 2. CINEMATIC BRAND HEADER — premium TRON Legacy treatment.
-             Centered single column on every client. Top cyan hairline,
-             serif "YOUSSEF AHMED", cyan "ELITE COACHING", glowing rule,
-             muted "PERSONAL TRAINING · DUBAI". Generous breathing room. -->
+        <!-- 2. BRAND HEADER — left-aligned, compact, sans (matches the
+             reference screenshot the user approved). YOUSSEF AHMED on top,
+             cyan "PERSONAL TRAINING · DUBAI" sub, then a small glowing
+             cyan accent rule. No "Elite Coaching" line. -->
         <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.08), 0 0 0 1px ${COLOR.primaryDeep}, 0 22px 56px -28px ${COLOR.primaryGlow}">
-            <!-- top accent hairline — TRON signature -->
-            <div style="height:2px;width:100%;background:${COLOR.primary};box-shadow:0 0 14px ${COLOR.primary};line-height:0;font-size:0">&nbsp;</div>
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-hero" align="center" style="padding:38px 24px 34px;text-align:center">
-                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:28px;font-weight:700;letter-spacing:5px;color:${COLOR.text};line-height:1.1;text-transform:uppercase;text-shadow:0 0 18px rgba(94,231,255,0.12)">
+                <td class="px-hero" align="left" style="padding:24px 24px 22px;text-align:left">
+                  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;letter-spacing:3.5px;color:${COLOR.text};line-height:1.15;text-transform:uppercase">
                     YOUSSEF AHMED
                   </div>
-                  <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:700;letter-spacing:4px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 14px ${COLOR.primaryDeep}">
-                    Elite Coaching
-                  </div>
-                  <div style="margin:20px auto 0;height:1px;width:56px;background:${COLOR.primary};box-shadow:0 0 12px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
-                  <div style="margin-top:18px;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600">
+                  <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:3px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 12px ${COLOR.primaryDeep}">
                     Personal Training&nbsp;·&nbsp;Dubai
                   </div>
+                  <div style="margin:14px 0 0;height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
                 </td>
               </tr>
             </table>
@@ -1431,17 +1426,23 @@ export function eyebrowTitleHtml(opts: {
   align?: "left" | "right";
 }): string {
   const align = opts.align || "left";
-  // Cinematic accent rule above the eyebrow — the TRON Legacy hairline
-  // signature. Sized & positioned by alignment so it reads premium on
-  // every client (Gmail web, iOS, Android, Apple Mail, Outlook desktop).
+  // Approved reference: small cyan accent rule on top, then sentence-case
+  // serif title (no color-split, no uppercase eyebrow), then a calm body
+  // line. The eyebrow text is rendered as a thin cyan label only when
+  // explicitly provided; if empty, only the rule shows.
   const ruleAlign = align === "right" ? "margin-left:auto" : "margin-left:0";
-  return `<div style="text-align:${align};margin:0 0 30px">
-    <div style="height:1px;width:48px;background:${COLOR.primary};box-shadow:0 0 14px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:16px">&nbsp;</div>
-    <div style="font-size:11px;letter-spacing:3.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:16px;line-height:1.2">${escapeHtml(opts.eyebrow)}</div>
-    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:38px;line-height:1.08;font-weight:700;letter-spacing:-0.6px;color:${COLOR.text}">
-      ${escapeHtml(opts.titleStart)} <span style="color:${COLOR.primary};text-shadow:0 0 28px ${COLOR.primaryDeep}, 0 0 12px ${COLOR.primaryGlow}">${escapeHtml(opts.titleAccent)}</span>
-    </div>
-    ${opts.body ? `<p style="margin:20px 0 0;font-size:15.5px;line-height:1.75;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
+  // Combine titleStart + titleAccent into a single sentence-case serif
+  // title (matches the screenshot — the title is *not* split into two
+  // tones). Trim handles either being empty.
+  const fullTitle = `${opts.titleStart} ${opts.titleAccent}`.trim();
+  const eyebrowHtml = opts.eyebrow
+    ? `<div style="font-size:11px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:14px;line-height:1.2;text-shadow:0 0 10px ${COLOR.primaryDeep}">${escapeHtml(opts.eyebrow)}</div>`
+    : "";
+  return `<div style="text-align:${align};margin:0 0 26px">
+    <div style="height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 12px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:18px">&nbsp;</div>
+    ${eyebrowHtml}
+    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.18;font-weight:700;letter-spacing:-0.3px;color:${COLOR.text}">${escapeHtml(fullTitle)}</div>
+    ${opts.body ? `<p style="margin:14px 0 0;font-size:15px;line-height:1.65;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
   </div>`;
 }
 
@@ -1501,17 +1502,30 @@ export function sessionDetailsCardHtml(opts: {
     // on Gmail Android). Each cell is its own table row, so no client can flow them
     // side-by-side. Defense-in-depth: explicit display:block;width:100% on the inner
     // divs as well.
-    return `<tr><td style="padding:18px 0 6px;vertical-align:top">
-        <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;text-align:${align}">${escapeHtml(r.label)}</div>
-      </td></tr>
-      <tr><td style="padding:0 0 18px;${borderStyle}vertical-align:top">
-        <div style="display:block;width:100%;font-size:17px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
-      </td></tr>`;
+    // Approved reference layout: HORIZONTAL label/value within a single
+    // row. Label-left (uppercase muted, ~45% width), value-right (white,
+    // right-aligned, word-break to handle long emails). Fixed widths +
+    // explicit `align` attrs so Gmail Android keeps them on one line and
+    // does NOT collapse into a single column.
+    const valueAlign = align === "right" ? "left" : "right";
+    return `<tr>
+        <td width="42%" align="${align}" valign="top" style="padding:14px 0;${borderStyle}width:42%;text-align:${align};vertical-align:top">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4">${escapeHtml(r.label)}</div>
+        </td>
+        <td width="58%" align="${valueAlign}" valign="top" style="padding:14px 0;${borderStyle}width:58%;text-align:${valueAlign};vertical-align:top">
+          <div style="font-size:15px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;word-break:break-word">${escapeHtml(String(r.value))}</div>
+        </td>
+      </tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 18px 44px -22px ${COLOR.primaryGlow}">
-    <tr><td style="padding:30px 28px 26px">
-      <div style="font-size:12px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
-      <div style="height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 22px auto" : "0 0 22px"};line-height:1px;font-size:0">&nbsp;</div>
+  // Optional heading — when omitted, the card renders as a clean rows-only
+  // panel (matches the approved screenshot's single combined detail card).
+  const headingBlock = heading
+    ? `<div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
+       <div style="height:1px;width:32px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 14px auto" : "0 0 14px"};line-height:1px;font-size:0">&nbsp;</div>`
+    : "";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 14px 40px -22px ${COLOR.primaryGlow}">
+    <tr><td style="padding:22px 22px 18px">
+      ${headingBlock}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
     </td></tr>
   </table>`;
@@ -1570,12 +1584,19 @@ export function bigCtaButtonHtml(opts: {
   // Full-width pill ALWAYS — outer table 100% width, anchor displays as a
   // block-level button so it fills the cell on every client. Min height
   // ~52px via line-height 20 + padding 16+16 = guaranteed 48px+ tap target.
+  // Approved reference: SOLID cyan filled pill, dark text, centered with
+  // auto-width (not full-bleed). Outer table is centered; inner table
+  // shrink-wraps to label width via inline-block-equivalent table cell.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0">
     <tr>
-      <td align="center" bgcolor="${COLOR.bgCard}" style="border:2px solid ${COLOR.primary};border-radius:999px;background:${COLOR.bgCard};box-shadow:inset 0 1px 0 rgba(94,231,255,0.16), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 32px -6px ${COLOR.primary}, 0 0 80px -18px ${COLOR.primaryGlow}">
-        <a href="${escapeHtml(opts.href)}" style="display:block;padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14.5px;line-height:20px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};text-decoration:none;border-radius:999px;text-align:center;text-shadow:0 0 18px ${COLOR.primaryDeep}, 0 0 8px ${COLOR.primaryGlow}">
-          <span style="margin-right:14px;font-size:15px;vertical-align:middle">${icon}</span><span style="vertical-align:middle">${escapeHtml(opts.label)}</span><span style="margin-left:14px;font-size:17px;vertical-align:middle">→</span>
-        </a>
+      <td align="center" style="text-align:center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+          <tr>
+            <td align="center" bgcolor="${COLOR.primary}" style="background:${COLOR.primary};border-radius:999px;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -4px ${COLOR.primary}, 0 0 64px -16px ${COLOR.primaryGlow}">
+              <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:14px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:18px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.bgOuter};text-decoration:none;border-radius:999px;text-align:center;mso-padding-alt:0">${escapeHtml(opts.label)}</a>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>`;
@@ -2150,72 +2171,47 @@ export function buildAdminBookingEmail(opts: {
   // client confirmation: Status Hero → Highlight Strip → Client Details →
   // Training & Package → Operational metadata → big full-width CTA.
 
+  // Approved reference layout: simple sentence-case title + plain body,
+  // ONE combined details card with all client + booking + training fields,
+  // solid cyan pill CTA centered. No status hero eyebrow, no highlight
+  // strip, no multi-card stacking — exactly matches the user's screenshot.
   const statusHero = eyebrowTitleHtml({
-    eyebrow: "Inbox",
-    titleStart: "New Booking",
-    titleAccent: "Received",
-    body: `${d.clientName} just booked a session. Review the details below.`,
+    eyebrow: "",
+    titleStart: "New session booking",
+    titleAccent: "",
+    body: `${d.clientName} booked a session.`,
   });
 
-  const stripRows: Array<{ label: string; value: string }> = [
-    { label: "Date", value: d.date },
-    { label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` },
-    { label: "Duration", value: "60 Minutes" },
+  // Single combined detail card — Client + Date/Time + Training fields,
+  // all rendered as horizontal label/value rows.
+  const combinedRows: Array<{ icon: string; label: string; value: string | number | null; valueTone?: "primary" | "default" }> = [
+    { icon: "", label: "Client", value: d.clientName },
+    { icon: "", label: "Email", value: opts.clientEmail || d.clientEmail || null },
+    { icon: "", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
   ];
-  const highlightStrip =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.10), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 36px -12px ${COLOR.primaryGlow}">
-      <tr><td style="padding:30px 28px">
-        ${stripRows.map((row, i) => `
-          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:22px;padding-top:22px;` : ""}text-align:left">
-            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 10px">${escapeHtml(row.label)}</div>
-            <div style="display:block;width:100%;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:0.2px;color:${COLOR.primary};line-height:1.25;text-shadow:0 0 22px ${COLOR.primaryDeep}, 0 0 10px ${COLOR.primaryGlow}">${escapeHtml(row.value)}</div>
-          </div>`).join("")}
-      </td></tr>
-    </table>`;
+  if (d.partnerFullName) combinedRows.push({ icon: "", label: "Training Partner", value: d.partnerFullName });
+  combinedRows.push({ icon: "", label: "Date", value: d.date });
+  combinedRows.push({ icon: "", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` });
+  if (d.sessionFocusLabel) combinedRows.push({ icon: "", label: "Focus", value: d.sessionFocusLabel });
+  if (d.trainingGoalLabel) combinedRows.push({ icon: "", label: "Goal", value: d.trainingGoalLabel });
+  if (d.sessionTypeLabel) combinedRows.push({ icon: "", label: "Type", value: d.sessionTypeLabel });
+  if (d.packageName) combinedRows.push({ icon: "", label: "Package", value: d.packageName });
+  if (d.currentSessionNumber != null && d.totalSessions != null) {
+    combinedRows.push({ icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` });
+  }
+  if (d.remainingSessions != null) combinedRows.push({ icon: "", label: "Remaining After", value: d.remainingSessions });
+  if (d.packageExpiryDate) combinedRows.push({ icon: "", label: "Expiry", value: d.packageExpiryDate });
+  if (d.paymentStatus) combinedRows.push({ icon: "", label: "Payment", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" });
+  if (d.bookingSource) combinedRows.push({ icon: "", label: "Source", value: d.bookingSource });
+  if (d.actionTimestamp) combinedRows.push({ icon: "", label: "Logged", value: d.actionTimestamp });
 
-  const clientDetails = sessionDetailsCardHtml({
-    heading: "Client Details",
-    rows: [
-      { icon: "", label: "Name", value: d.clientName },
-      { icon: "", label: "Email", value: opts.clientEmail || d.clientEmail || null },
-      { icon: "", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
-      d.partnerFullName ? { icon: "", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
-    ],
-  });
+  const detailsCard = sessionDetailsCardHtml({ heading: "", rows: combinedRows });
 
-  const trainingCard = sessionDetailsCardHtml({
-    heading: "Training & Package",
-    rows: [
-      { icon: "", label: "Focus", value: d.sessionFocusLabel ?? null },
-      { icon: "", label: "Goal", value: d.trainingGoalLabel ?? null },
-      { icon: "", label: "Session Type", value: d.sessionTypeLabel ?? null },
-      { icon: "", label: "Package", value: d.packageName ?? null },
-      d.currentSessionNumber != null && d.totalSessions != null
-        ? { icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
-        : { icon: "", label: "", value: null },
-      { icon: "", label: "Remaining After", value: d.remainingSessions ?? null },
-      { icon: "", label: "Expiry Date", value: d.packageExpiryDate ?? null },
-      { icon: "", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" },
-    ],
-  });
-
-  const opsCard = sessionDetailsCardHtml({
-    heading: "Operational",
-    rows: [
-      { icon: "", label: "Booking Source", value: d.bookingSource ?? null },
-      { icon: "", label: "Logged At", value: d.actionTimestamp ?? null },
-    ],
-  });
-
-  const SPACER = `<div style="height:24px;line-height:24px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
     statusHero +
-    highlightStrip + SPACER +
-    clientDetails + SPACER +
-    trainingCard + SPACER +
-    opsCard +
+    detailsCard +
     (opts.clientNotes ? `<div style="margin-top:22px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
-    `<div style="margin:32px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+    `<div style="margin:30px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
   const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
   const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
