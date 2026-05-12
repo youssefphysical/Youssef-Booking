@@ -13,12 +13,13 @@
  */
 
 const TRAINER_EMAIL_DEFAULT = "youssef.physical@gmail.com";
-// Display name uses the full brand to match what clients see in-app —
-// inboxes show "Youssef Ahmed Personal Training" rather than a generic
-// "Youssef Fitness". The address half MUST live on a domain that is
-// fully verified in Resend (SPF + DKIM + DMARC). Override via EMAIL_FROM
-// once your verified domain is live.
-const FROM_DEFAULT = "Youssef Ahmed Personal Training <bookings@youssef-ahmed.fit>";
+// Display name uses the elite-coaching brand identity — inboxes show
+// "Youssef Ahmed | Elite Coaching" for premium client perception. The
+// address half MUST live on a domain that is fully verified in Resend
+// (SPF + DKIM + DMARC). Override via EMAIL_FROM. Reply-To defaults to
+// trainerEmail() (youssef.physical@gmail.com) so client replies land
+// in the trainer's real Gmail inbox.
+const FROM_DEFAULT = "Youssef Ahmed | Elite Coaching <bookings@youssef-ahmed.fit>";
 
 /**
  * Returns the bare email address from a "Display <addr@host>" string,

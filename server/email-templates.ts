@@ -1,6 +1,6 @@
 /**
  * ===========================================================================
- * Premium email template system — Youssef Ahmed Personal Training
+ * Premium email template system — Youssef Ahmed | Elite Coaching
  * ===========================================================================
  *
  * Centralized, reusable, multi-language, RTL-aware, mobile-first email
@@ -25,7 +25,7 @@
 // ---------------------------------------------------------------------------
 export const BRAND = {
   name: "Youssef Ahmed",
-  tagline: "Personal Training • Dubai",
+  tagline: "Elite Coaching • Dubai",
   trainerName: "Youssef Ahmed",
   whatsapp: "+971505394754",
   // Public website URL — overridden at call time when known
@@ -81,13 +81,13 @@ type Strings = {
   signoff: string;              // "See you soon,"
   signoffName: string;          // "Coach Youssef Ahmed"
   questionsCta: string;         // "Have a question? Message me on WhatsApp."
-  footerNote: string;           // "Sent automatically by Youssef Ahmed Personal Training."
+  footerNote: string;           // "Sent automatically by Youssef Ahmed | Elite Coaching."
   footerUnsubNote: string;      // "You're receiving this because you have an active account."
   ctaDashboard: string;         // "Open my dashboard"
   ctaWhatsapp: string;          // "Message Coach on WhatsApp"
 
   // Welcome
-  welcomeSubject: string;       // "Welcome to Youssef Ahmed Personal Training"
+  welcomeSubject: string;       // "Welcome to Youssef Ahmed | Elite Coaching"
   welcomeHero: string;          // "Welcome aboard, {name}"
   welcomeBody: string;          // "Your account is live..."
   welcomeFeatBookT: string;
@@ -155,17 +155,17 @@ type Strings = {
 };
 
 const en: Strings = {
-  brandTagline: "Personal Training • Dubai",
+  brandTagline: "Elite Coaching • Dubai",
   greeting: "Hi {name},",
   signoff: "See you soon,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "Have a question? Message Coach Youssef directly on WhatsApp.",
-  footerNote: "Sent automatically by Youssef Ahmed Personal Training.",
-  footerUnsubNote: "You're receiving this because you have an active account with Youssef Ahmed Personal Training.",
+  footerNote: "Sent automatically by Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "You're receiving this because you have an active account with Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Open my dashboard",
   ctaWhatsapp: "Message Coach on WhatsApp",
 
-  welcomeSubject: "Welcome to Youssef Ahmed Personal Training",
+  welcomeSubject: "Welcome to Youssef Ahmed | Elite Coaching",
   welcomeHero: "Welcome aboard, {name}",
   welcomeBody: "Your account is ready. From here you can book sessions, track your InBody progress, and manage your training — all in one place. Coach Youssef will personally review your profile and tailor your programme to your goals.",
   welcomeFeatBookT: "Book your first session",
@@ -228,17 +228,17 @@ const en: Strings = {
 };
 
 const ar: Strings = {
-  brandTagline: "تدريب شخصي • دبي",
+  brandTagline: "تدريب نخبوي • دبي",
   greeting: "مرحباً {name}،",
   signoff: "إلى اللقاء قريباً،",
   signoffName: "الكوتش يوسف أحمد",
   questionsCta: "لديك سؤال؟ راسل الكوتش يوسف مباشرة عبر واتساب.",
-  footerNote: "أُرسلت تلقائياً من Youssef Ahmed Personal Training.",
-  footerUnsubNote: "تتلقى هذه الرسالة لأن لديك حساباً نشطاً مع Youssef Ahmed Personal Training.",
+  footerNote: "أُرسلت تلقائياً من Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "تتلقى هذه الرسالة لأن لديك حساباً نشطاً مع Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "افتح لوحة التحكم",
   ctaWhatsapp: "تواصل مع الكوتش عبر واتساب",
 
-  welcomeSubject: "أهلاً بك في Youssef Ahmed Personal Training",
+  welcomeSubject: "أهلاً بك في Youssef Ahmed | Elite Coaching",
   welcomeHero: "أهلاً بك معنا، {name}",
   welcomeBody: "حسابك جاهز. من هنا يمكنك حجز الجلسات، ومتابعة تقدمك في InBody، وإدارة تدريبك في مكان واحد. سيقوم الكوتش يوسف بمراجعة ملفك شخصياً وتفصيل البرنامج وفقاً لأهدافك.",
   welcomeFeatBookT: "احجز جلستك الأولى",
@@ -301,16 +301,16 @@ const ar: Strings = {
 };
 
 const fr: Strings = {
-  brandTagline: "Coaching personnel • Dubaï",
+  brandTagline: "Coaching d'élite • Dubaï",
   greeting: "Bonjour {name},",
   signoff: "À très bientôt,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "Une question ? Écris directement au Coach Youssef sur WhatsApp.",
-  footerNote: "Envoyé automatiquement par Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Vous recevez cet email car vous avez un compte actif chez Youssef Ahmed Personal Training.",
+  footerNote: "Envoyé automatiquement par Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Vous recevez cet email car vous avez un compte actif chez Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Ouvrir mon tableau de bord",
   ctaWhatsapp: "Écrire au coach sur WhatsApp",
-  welcomeSubject: "Bienvenue chez Youssef Ahmed Personal Training",
+  welcomeSubject: "Bienvenue chez Youssef Ahmed | Elite Coaching",
   welcomeHero: "Bienvenue à bord, {name}",
   welcomeBody: "Votre compte est prêt. Vous pouvez désormais réserver vos séances, suivre votre progression InBody et gérer votre entraînement en un seul endroit. Coach Youssef examinera personnellement votre profil et adaptera votre programme à vos objectifs.",
   welcomeFeatBookT: "Réservez votre première séance",
@@ -368,16 +368,16 @@ const fr: Strings = {
 };
 
 const de: Strings = {
-  brandTagline: "Personal Training • Dubai",
+  brandTagline: "Elite Coaching • Dubai",
   greeting: "Hallo {name},",
   signoff: "Bis bald,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "Fragen? Schreib Coach Youssef direkt auf WhatsApp.",
-  footerNote: "Automatisch versendet von Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Du erhältst diese E-Mail, weil du ein aktives Konto bei Youssef Ahmed Personal Training hast.",
+  footerNote: "Automatisch versendet von Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Du erhältst diese E-Mail, weil du ein aktives Konto bei Youssef Ahmed | Elite Coaching hast.",
   ctaDashboard: "Mein Dashboard öffnen",
   ctaWhatsapp: "Coach auf WhatsApp schreiben",
-  welcomeSubject: "Willkommen bei Youssef Ahmed Personal Training",
+  welcomeSubject: "Willkommen bei Youssef Ahmed | Elite Coaching",
   welcomeHero: "Willkommen an Bord, {name}",
   welcomeBody: "Dein Konto ist bereit. Ab jetzt kannst du Sessions buchen, deinen InBody-Fortschritt verfolgen und dein Training an einem Ort verwalten. Coach Youssef wird dein Profil persönlich prüfen und dein Programm auf deine Ziele zuschneiden.",
   welcomeFeatBookT: "Buche deine erste Session",
@@ -435,16 +435,16 @@ const de: Strings = {
 };
 
 const es: Strings = {
-  brandTagline: "Entrenamiento personal • Dubái",
+  brandTagline: "Coaching de élite • Dubái",
   greeting: "Hola {name},",
   signoff: "Hasta pronto,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "¿Tienes una pregunta? Escribe al Coach Youssef directamente por WhatsApp.",
-  footerNote: "Enviado automáticamente por Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Recibes este correo porque tienes una cuenta activa con Youssef Ahmed Personal Training.",
+  footerNote: "Enviado automáticamente por Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Recibes este correo porque tienes una cuenta activa con Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Abrir mi panel",
   ctaWhatsapp: "Escribir al coach por WhatsApp",
-  welcomeSubject: "Bienvenido a Youssef Ahmed Personal Training",
+  welcomeSubject: "Bienvenido a Youssef Ahmed | Elite Coaching",
   welcomeHero: "Bienvenido a bordo, {name}",
   welcomeBody: "Tu cuenta está lista. Desde aquí puedes reservar sesiones, seguir tu progreso InBody y gestionar tu entrenamiento en un solo lugar. El Coach Youssef revisará tu perfil personalmente y adaptará tu programa a tus objetivos.",
   welcomeFeatBookT: "Reserva tu primera sesión",
@@ -502,16 +502,16 @@ const es: Strings = {
 };
 
 const ru: Strings = {
-  brandTagline: "Персональные тренировки • Дубай",
+  brandTagline: "Элитный коучинг • Дубай",
   greeting: "Здравствуйте, {name}!",
   signoff: "До встречи,",
   signoffName: "Тренер Юссеф Ахмед",
   questionsCta: "Есть вопрос? Напишите тренеру Юссефу напрямую в WhatsApp.",
-  footerNote: "Отправлено автоматически Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Вы получили это письмо, потому что у вас активный аккаунт в Youssef Ahmed Personal Training.",
+  footerNote: "Отправлено автоматически Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Вы получили это письмо, потому что у вас активный аккаунт в Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Открыть мой кабинет",
   ctaWhatsapp: "Написать тренеру в WhatsApp",
-  welcomeSubject: "Добро пожаловать в Youssef Ahmed Personal Training",
+  welcomeSubject: "Добро пожаловать в Youssef Ahmed | Elite Coaching",
   welcomeHero: "Добро пожаловать, {name}",
   welcomeBody: "Ваш аккаунт готов. Здесь вы можете записываться на тренировки, отслеживать прогресс InBody и управлять занятиями в одном месте. Тренер Юссеф лично изучит ваш профиль и адаптирует программу под ваши цели.",
   welcomeFeatBookT: "Запишитесь на первую тренировку",
@@ -569,16 +569,16 @@ const ru: Strings = {
 };
 
 const tr: Strings = {
-  brandTagline: "Kişisel antrenman • Dubai",
+  brandTagline: "Elit Koçluk • Dubai",
   greeting: "Merhaba {name},",
   signoff: "Yakında görüşmek üzere,",
   signoffName: "Koç Youssef Ahmed",
   questionsCta: "Sorun mu var? Koç Youssef'e doğrudan WhatsApp'tan yaz.",
-  footerNote: "Youssef Ahmed Personal Training tarafından otomatik gönderildi.",
-  footerUnsubNote: "Bu e-postayı Youssef Ahmed Personal Training'de aktif hesabınız olduğu için alıyorsunuz.",
+  footerNote: "Youssef Ahmed | Elite Coaching tarafından otomatik gönderildi.",
+  footerUnsubNote: "Bu e-postayı Youssef Ahmed | Elite Coaching'de aktif hesabınız olduğu için alıyorsunuz.",
   ctaDashboard: "Panelimi aç",
   ctaWhatsapp: "Koça WhatsApp'tan yaz",
-  welcomeSubject: "Youssef Ahmed Personal Training'e hoş geldin",
+  welcomeSubject: "Youssef Ahmed | Elite Coaching'e hoş geldin",
   welcomeHero: "Aramıza hoş geldin, {name}",
   welcomeBody: "Hesabın hazır. Buradan seans rezervasyonu yapabilir, InBody ilerlemeni takip edebilir ve antrenmanını tek yerden yönetebilirsin. Koç Youssef profilini bizzat inceleyip programını hedeflerine göre düzenleyecek.",
   welcomeFeatBookT: "İlk seansını rezerve et",
@@ -636,16 +636,16 @@ const tr: Strings = {
 };
 
 const zh: Strings = {
-  brandTagline: "私人训练 • 迪拜",
+  brandTagline: "精英教练 • 迪拜",
   greeting: "您好 {name}，",
   signoff: "期待与您见面，",
   signoffName: "教练 Youssef Ahmed",
   questionsCta: "有任何问题？请直接在 WhatsApp 联系 Youssef 教练。",
-  footerNote: "由 Youssef Ahmed Personal Training 自动发送。",
-  footerUnsubNote: "您收到此邮件是因为您在 Youssef Ahmed Personal Training 拥有有效账户。",
+  footerNote: "由 Youssef Ahmed | Elite Coaching 自动发送。",
+  footerUnsubNote: "您收到此邮件是因为您在 Youssef Ahmed | Elite Coaching 拥有有效账户。",
   ctaDashboard: "打开我的面板",
   ctaWhatsapp: "WhatsApp 联系教练",
-  welcomeSubject: "欢迎加入 Youssef Ahmed Personal Training",
+  welcomeSubject: "欢迎加入 Youssef Ahmed | Elite Coaching",
   welcomeHero: "欢迎加入，{name}",
   welcomeBody: "您的账户已准备就绪。您可以在这里预约课程、查看 InBody 进度，并在一个平台上管理训练。Youssef 教练将亲自审阅您的资料，并根据您的目标定制方案。",
   welcomeFeatBookT: "预约您的第一节课",
@@ -703,16 +703,16 @@ const zh: Strings = {
 };
 
 const hi: Strings = {
-  brandTagline: "पर्सनल ट्रेनिंग • दुबई",
+  brandTagline: "एलीट कोचिंग • दुबई",
   greeting: "नमस्ते {name},",
   signoff: "जल्द ही मिलते हैं,",
   signoffName: "कोच Youssef Ahmed",
   questionsCta: "कोई सवाल है? कोच Youssef को सीधे WhatsApp पर मैसेज करें।",
-  footerNote: "Youssef Ahmed Personal Training द्वारा स्वचालित रूप से भेजा गया।",
-  footerUnsubNote: "आपको यह ईमेल इसलिए मिल रही है क्योंकि आपका Youssef Ahmed Personal Training में सक्रिय खाता है।",
+  footerNote: "Youssef Ahmed | Elite Coaching द्वारा स्वचालित रूप से भेजा गया।",
+  footerUnsubNote: "आपको यह ईमेल इसलिए मिल रही है क्योंकि आपका Youssef Ahmed | Elite Coaching में सक्रिय खाता है।",
   ctaDashboard: "मेरा डैशबोर्ड खोलें",
   ctaWhatsapp: "कोच को WhatsApp पर मैसेज करें",
-  welcomeSubject: "Youssef Ahmed Personal Training में आपका स्वागत है",
+  welcomeSubject: "Youssef Ahmed | Elite Coaching में आपका स्वागत है",
   welcomeHero: "स्वागत है, {name}",
   welcomeBody: "आपका खाता तैयार है। यहाँ से आप सेशन बुक कर सकते हैं, InBody प्रगति देख सकते हैं, और एक ही जगह से ट्रेनिंग मैनेज कर सकते हैं। कोच Youssef आपकी प्रोफाइल खुद रिव्यू करेंगे और प्रोग्राम आपके लक्ष्यों के अनुसार बनाएंगे।",
   welcomeFeatBookT: "अपना पहला सेशन बुक करें",
@@ -770,16 +770,16 @@ const hi: Strings = {
 };
 
 const ur: Strings = {
-  brandTagline: "ذاتی تربیت • دبئی",
+  brandTagline: "ایلیٹ کوچنگ • دبئی",
   greeting: "السلام علیکم {name}،",
   signoff: "جلد ملاقات کے انتظار میں،",
   signoffName: "کوچ یوسف احمد",
   questionsCta: "کوئی سوال ہے؟ کوچ یوسف کو براہِ راست واٹس ایپ پر پیغام بھیجیں۔",
-  footerNote: "Youssef Ahmed Personal Training کی طرف سے خودکار طور پر بھیجا گیا۔",
-  footerUnsubNote: "آپ کو یہ ای میل اس لیے موصول ہو رہی ہے کیونکہ Youssef Ahmed Personal Training میں آپ کا فعال اکاؤنٹ ہے۔",
+  footerNote: "Youssef Ahmed | Elite Coaching کی طرف سے خودکار طور پر بھیجا گیا۔",
+  footerUnsubNote: "آپ کو یہ ای میل اس لیے موصول ہو رہی ہے کیونکہ Youssef Ahmed | Elite Coaching میں آپ کا فعال اکاؤنٹ ہے۔",
   ctaDashboard: "میرا ڈیش بورڈ کھولیں",
   ctaWhatsapp: "کوچ کو واٹس ایپ پر پیغام دیں",
-  welcomeSubject: "Youssef Ahmed Personal Training میں خوش آمدید",
+  welcomeSubject: "Youssef Ahmed | Elite Coaching میں خوش آمدید",
   welcomeHero: "خوش آمدید، {name}",
   welcomeBody: "آپ کا اکاؤنٹ تیار ہے۔ یہاں سے آپ سیشن بک کر سکتے ہیں، اپنی InBody پیشرفت دیکھ سکتے ہیں، اور ایک ہی جگہ سے اپنی تربیت کا انتظام کر سکتے ہیں۔ کوچ یوسف ذاتی طور پر آپ کی پروفائل کا جائزہ لیں گے اور آپ کے اہداف کے مطابق پروگرام ترتیب دیں گے۔",
   welcomeFeatBookT: "اپنا پہلا سیشن بک کریں",
@@ -837,16 +837,16 @@ const ur: Strings = {
 };
 
 const pt: Strings = {
-  brandTagline: "Treino pessoal • Dubai",
+  brandTagline: "Coaching de elite • Dubai",
   greeting: "Olá {name},",
   signoff: "Até breve,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "Tem alguma pergunta? Fale diretamente com o Coach Youssef pelo WhatsApp.",
-  footerNote: "Enviado automaticamente por Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Você recebeu este email porque tem uma conta ativa na Youssef Ahmed Personal Training.",
+  footerNote: "Enviado automaticamente por Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Você recebeu este email porque tem uma conta ativa na Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Abrir meu painel",
   ctaWhatsapp: "Falar com o coach no WhatsApp",
-  welcomeSubject: "Bem-vindo à Youssef Ahmed Personal Training",
+  welcomeSubject: "Bem-vindo à Youssef Ahmed | Elite Coaching",
   welcomeHero: "Bem-vindo a bordo, {name}",
   welcomeBody: "Sua conta está pronta. Aqui você pode marcar sessões, acompanhar seu progresso InBody e gerenciar todo o treino em um único lugar. O Coach Youssef vai analisar seu perfil pessoalmente e ajustar o programa aos seus objetivos.",
   welcomeFeatBookT: "Marque sua primeira sessão",
@@ -904,16 +904,16 @@ const pt: Strings = {
 };
 
 const it: Strings = {
-  brandTagline: "Personal training • Dubai",
+  brandTagline: "Elite coaching • Dubai",
   greeting: "Ciao {name},",
   signoff: "A presto,",
   signoffName: "Coach Youssef Ahmed",
   questionsCta: "Hai una domanda? Scrivi direttamente al Coach Youssef su WhatsApp.",
-  footerNote: "Inviato automaticamente da Youssef Ahmed Personal Training.",
-  footerUnsubNote: "Ricevi questa email perché hai un account attivo su Youssef Ahmed Personal Training.",
+  footerNote: "Inviato automaticamente da Youssef Ahmed | Elite Coaching.",
+  footerUnsubNote: "Ricevi questa email perché hai un account attivo su Youssef Ahmed | Elite Coaching.",
   ctaDashboard: "Apri la mia dashboard",
   ctaWhatsapp: "Scrivi al coach su WhatsApp",
-  welcomeSubject: "Benvenuto in Youssef Ahmed Personal Training",
+  welcomeSubject: "Benvenuto in Youssef Ahmed | Elite Coaching",
   welcomeHero: "Benvenuto a bordo, {name}",
   welcomeBody: "Il tuo account è pronto. Da qui puoi prenotare sessioni, monitorare il progresso InBody e gestire tutto in un unico posto. Coach Youssef esaminerà personalmente il tuo profilo e adatterà il programma ai tuoi obiettivi.",
   welcomeFeatBookT: "Prenota la prima sessione",
@@ -1086,6 +1086,34 @@ export function shellHtml(opts: {
         <tr>
           <td align="${align}" class="px-body" style="padding:32px;color:${COLOR.text};font-size:15px;line-height:1.65" dir="${dir}">
             ${opts.bodyHtml}
+          </td>
+        </tr>
+
+        <!-- Premium signature block -->
+        <tr>
+          <td class="px-signature" style="padding:0 32px 28px;background:${COLOR.bgCard}">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:18px 0 0;border-top:1px solid ${COLOR.border}">
+                  <div style="height:1px;width:36px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : ""}">&nbsp;</div>
+                </td>
+              </tr>
+              <tr>
+                <td align="${align}" style="padding:14px 0 0" dir="${dir}">
+                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:18px;font-weight:700;color:${COLOR.text};letter-spacing:0.4px;line-height:1.2">
+                    Youssef Ahmed
+                  </div>
+                  <div style="margin-top:5px;font-size:10px;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">
+                    Elite Coaching &nbsp;·&nbsp; Dubai
+                  </div>
+                  <div style="margin-top:12px;font-size:12.5px;color:${COLOR.textMuted};line-height:1.7">
+                    <a href="mailto:youssef.physical@gmail.com" style="color:${COLOR.textMuted};text-decoration:none">youssef.physical@gmail.com</a>
+                    &nbsp;<span style="color:${COLOR.borderGlow}">|</span>&nbsp;
+                    <a href="${wa}" style="color:${COLOR.textMuted};text-decoration:none">WhatsApp +971 50 539 4754</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
