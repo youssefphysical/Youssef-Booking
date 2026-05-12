@@ -1075,10 +1075,11 @@ export function shellHtml(opts: {
     : `<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 16px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.12)"><tr><td align="center" valign="middle" style="font-family:'Times New Roman',Georgia,serif;font-size:36px;font-weight:700;color:${COLOR.primary};line-height:1;text-shadow:0 0 12px ${COLOR.primaryDeep}">Y</td></tr></table>`;
 
   // Signature — hosted script-style image, else italic serif fallback.
-  // Image is wrapped in a transparent block so blocked-image fallback
-  // shows the alt text in the cyan signature color (no broken icon).
+  // Wrapped in a table/td so blocked-image clients (Gmail/Outlook) render
+  // the cyan-tinted alt text in cursive style instead of a broken icon
+  // box. Mirrors the hero/avatar blocked-image pattern for consistency.
   const signatureBlock = images.signature
-    ? `<img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:170px;border:0;color:${COLOR.primary};font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic">`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:transparent"><tr><td style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px;padding:0"><img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:170px;border:0;color:${COLOR.primary};font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic"></td></tr></table>`
     : `<div style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:28px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px">Youssef Ahmed</div>`;
 
   // Tiny inline cyan "icon" using a styled span — works in every client
