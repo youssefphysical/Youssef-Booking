@@ -1487,16 +1487,22 @@ export function sessionDetailsCardHtml(opts: {
     const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
     // Single <td> per row containing label-on-top-of-value as block-level
     // <div>s. Bulletproof on Gmail Android — no row-cell stacking dependency.
-    return `<tr>
-      <td style="padding:14px 0;${borderStyle}vertical-align:top">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;margin:0 0 6px;text-align:${align}">${escapeHtml(r.label)}</div>
-        <div style="font-size:16px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
-      </td>
-    </tr>`;
+    // Two-row pattern per detail: row 1 = label-only `<td>`, row 2 = value-only `<td>`.
+    // This is structurally label-above-value at the HTML level (no div-collapse risk
+    // on Gmail Android). Each cell is its own table row, so no client can flow them
+    // side-by-side. Defense-in-depth: explicit display:block;width:100% on the inner
+    // divs as well.
+    return `<tr><td style="padding:14px 0 4px;vertical-align:top">
+        <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4;text-align:${align}">${escapeHtml(r.label)}</div>
+      </td></tr>
+      <tr><td style="padding:0 0 14px;${borderStyle}vertical-align:top">
+        <div style="display:block;width:100%;font-size:16px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;text-align:${align};word-break:break-word">${escapeHtml(String(r.value))}</div>
+      </td></tr>`;
   }).join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), inset 0 0 0 1px ${COLOR.primaryDeep}">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 14px 36px -22px ${COLOR.primaryGlow}">
     <tr><td style="padding:22px 22px">
-      <div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:14px;text-align:${align}">${escapeHtml(heading)}</div>
+      <div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:6px;text-align:${align}">${escapeHtml(heading)}</div>
+      <div style="height:1px;width:28px;background:${COLOR.primary};margin:${align === "right" ? "0 0 16px auto" : "0 0 16px"};line-height:1px;font-size:0">&nbsp;</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
     </td></tr>
   </table>`;
@@ -2130,50 +2136,77 @@ export function buildAdminBookingEmail(opts: {
   // Operational footer fields requested by the brief: package status,
   // expiry, remaining sessions, payment status, action timestamp,
   // booking source. All optional — gracefully omitted when null.
-  const detailsRow = splitRowHtml({
-    leftHtml: sessionDetailsCardHtml({
-      heading: "Session Details",
-      rows: [
-        { icon: "◉", label: "Client", value: d.clientName },
-        { icon: "✉", label: "Email", value: opts.clientEmail || d.clientEmail || null },
-        { icon: "✆", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
-        { icon: "▣", label: "Date", value: d.date },
-        { icon: "⏱", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)`, valueTone: "primary" },
-        { icon: "⏱", label: "Duration", value: "60 MINUTES", valueTone: "primary" },
-        { icon: "◎", label: "Focus", value: d.sessionFocusLabel ?? null },
-        { icon: "▲", label: "Goal", value: d.trainingGoalLabel ?? null },
-        { icon: "⚡", label: "Type", value: d.sessionTypeLabel ?? null },
-        d.partnerFullName ? { icon: "◉", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
-      ],
-    }),
-    rightHtml: sessionDetailsCardHtml({
-      heading: "Package & Status",
-      rows: [
-        { icon: "◉", label: "Package", value: d.packageName ?? null },
-        d.currentSessionNumber != null && d.totalSessions != null
-          ? { icon: "▦", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
-          : { icon: "", label: "", value: null },
-        { icon: "▦", label: "Remaining After", value: d.remainingSessions ?? null },
-        { icon: "▣", label: "Expiry Date", value: d.packageExpiryDate ?? null },
-        { icon: "◈", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" },
-        { icon: "⌖", label: "Booking Source", value: d.bookingSource ?? null },
-        { icon: "◷", label: "Logged At", value: d.actionTimestamp ?? null },
-      ],
-    }),
-    widthLeft: "55%",
-    gap: 16,
+  // ===== TRON LEGACY FREEZE — premium ADMIN booking notification =====
+  // Operational hierarchy in the same single-column premium journey as the
+  // client confirmation: Status Hero → Highlight Strip → Client Details →
+  // Training & Package → Operational metadata → big full-width CTA.
+
+  const statusHero = eyebrowTitleHtml({
+    eyebrow: "Inbox",
+    titleStart: "New Booking",
+    titleAccent: "Received",
+    body: `${d.clientName} just booked a session. Review the details below.`,
   });
+
+  const stripRows: Array<{ label: string; value: string }> = [
+    { label: "Date", value: d.date },
+    { label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` },
+    { label: "Duration", value: "60 Minutes" },
+  ];
+  const highlightStrip =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.08), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -12px ${COLOR.primaryGlow}">
+      <tr><td style="padding:22px 22px">
+        ${stripRows.map((row, i) => `
+          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:16px;padding-top:16px;` : ""}text-align:left">
+            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 6px">${escapeHtml(row.label)}</div>
+            <div style="display:block;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:0.4px;color:${COLOR.primary};line-height:1.3;text-shadow:0 0 18px ${COLOR.primaryDeep}">${escapeHtml(row.value)}</div>
+          </div>`).join("")}
+      </td></tr>
+    </table>`;
+
+  const clientDetails = sessionDetailsCardHtml({
+    heading: "Client Details",
+    rows: [
+      { icon: "", label: "Name", value: d.clientName },
+      { icon: "", label: "Email", value: opts.clientEmail || d.clientEmail || null },
+      { icon: "", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
+      d.partnerFullName ? { icon: "", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
+    ],
+  });
+
+  const trainingCard = sessionDetailsCardHtml({
+    heading: "Training & Package",
+    rows: [
+      { icon: "", label: "Focus", value: d.sessionFocusLabel ?? null },
+      { icon: "", label: "Goal", value: d.trainingGoalLabel ?? null },
+      { icon: "", label: "Session Type", value: d.sessionTypeLabel ?? null },
+      { icon: "", label: "Package", value: d.packageName ?? null },
+      d.currentSessionNumber != null && d.totalSessions != null
+        ? { icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
+        : { icon: "", label: "", value: null },
+      { icon: "", label: "Remaining After", value: d.remainingSessions ?? null },
+      { icon: "", label: "Expiry Date", value: d.packageExpiryDate ?? null },
+      { icon: "", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" },
+    ],
+  });
+
+  const opsCard = sessionDetailsCardHtml({
+    heading: "Operational",
+    rows: [
+      { icon: "", label: "Booking Source", value: d.bookingSource ?? null },
+      { icon: "", label: "Logged At", value: d.actionTimestamp ?? null },
+    ],
+  });
+
+  const SPACER = `<div style="height:16px;line-height:16px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
-    eyebrowTitleHtml({
-      eyebrow: "New Session",
-      titleStart: "Booking",
-      titleAccent: "Received",
-      body: `${d.clientName} just booked a session.`,
-    }) +
-    `<div style="height:18px;line-height:18px;font-size:0">&nbsp;</div>` +
-    detailsRow +
-    (opts.clientNotes ? `<div style="margin-top:14px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
-    `<div style="margin:24px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+    statusHero +
+    highlightStrip + SPACER +
+    clientDetails + SPACER +
+    trainingCard + SPACER +
+    opsCard +
+    (opts.clientNotes ? `<div style="margin-top:18px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
+    `<div style="margin:26px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
   const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
   const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
