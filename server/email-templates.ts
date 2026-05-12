@@ -1258,22 +1258,25 @@ export function shellHtml(opts: {
           </td>
         </tr>
 
-        <!-- 2. BRAND HEADER — left-aligned, compact, sans (matches the
-             reference screenshot the user approved). YOUSSEF AHMED on top,
-             cyan "PERSONAL TRAINING · DUBAI" sub, then a small glowing
-             cyan accent rule. No "Elite Coaching" line. -->
+        <!-- 2. BRAND HEADER — compact 3-line TRON Legacy treatment.
+             YOUSSEF AHMED (white) → ELITE COACHING (cyan) → PERSONAL
+             TRAINING · DUBAI (muted) → small glowing cyan accent rule.
+             Tight vertical padding for one-screen mobile. -->
         <tr>
           <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-hero" align="left" style="padding:24px 24px 22px;text-align:left">
+                <td class="px-hero" align="left" style="padding:22px 24px 20px;text-align:left">
                   <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;letter-spacing:3.5px;color:${COLOR.text};line-height:1.15;text-transform:uppercase">
                     YOUSSEF AHMED
                   </div>
-                  <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:3px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 12px ${COLOR.primaryDeep}">
+                  <div style="margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:3px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 12px ${COLOR.primaryDeep}">
+                    Elite Coaching
+                  </div>
+                  <div style="margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:2.4px;color:${COLOR.textMuted};line-height:1.2;text-transform:uppercase">
                     Personal Training&nbsp;·&nbsp;Dubai
                   </div>
-                  <div style="margin:14px 0 0;height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
+                  <div style="margin:12px 0 0;height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
                 </td>
               </tr>
             </table>
@@ -1299,78 +1302,33 @@ export function shellHtml(opts: {
         <!-- spacer (premium rhythm) -->
         <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
-        <!-- 4. FOOTER PROFILE CARD — single-column ALWAYS: avatar+signature
-             on top centered, contacts panel below centered. No 2-col split. -->
+        <!-- 4. COMPACT BRAND FOOTER — single block, NOT 3 stacked trust
+             tiles. Brand line · motto · 36px cyan rule · contact row ·
+             location · trust trio inline · legal note. Massive height
+             reduction vs the previous footer + trust + legal stack. -->
         <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
+          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td class="px-footer" align="center" style="padding:28px 24px;text-align:center">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr><td align="center" style="text-align:center;padding:0 0 18px">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
-                        <tr>
-                          <td valign="middle" style="padding-right:14px">${avatarCell}</td>
-                          <td valign="middle" align="left" style="text-align:left">
-                            ${signatureBlock}
-                            <div style="margin-top:8px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.text};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto1)}</div>
-                            <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto2)}</div>
-                          </td>
-                        </tr>
-                      </table>
-                    </td></tr>
-                    <tr><td align="center" style="text-align:center;padding:18px 0 0;border-top:1px solid ${COLOR.border}">
-                      <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin:14px 0 12px">Let's Stay Connected</div>
-                      <div style="font-size:15px;color:${COLOR.text};line-height:2">
-                        <div><a href="${wa}" style="color:${COLOR.text};text-decoration:none">${ico("✆")}WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
-                        <div><a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${ico("✉")}${escapeHtml(BRAND.email)}</a></div>
-                        <div><a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${ico("◎")}${escapeHtml(BRAND.instagramHandle)}</a></div>
-                        <div><span style="color:${COLOR.text}">${ico("◉")}${escapeHtml(BRAND.location)}</span></div>
-                      </div>
-                    </td></tr>
-                  </table>
+                <td align="center" style="padding:22px 20px 20px;text-align:center">
+                  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:800;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">YOUSSEF AHMED&nbsp;<span style="color:${COLOR.primary}">|</span>&nbsp;ELITE COACHING</div>
+                  <div style="margin-top:6px;font-size:10.5px;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.3;text-shadow:0 0 10px ${COLOR.primaryDeep}">Discipline Today. Success Tomorrow.</div>
+                  <div style="margin:12px auto 0;height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
+                  <div style="margin-top:14px;font-size:13px;color:${COLOR.text};line-height:1.85">
+                    <a href="${wa}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.whatsappDisplay)}</a>&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;<a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.email)}</a>&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;<a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${escapeHtml(BRAND.instagramHandle)}</a>
+                  </div>
+                  <div style="margin-top:6px;font-size:12px;color:${COLOR.textMuted};line-height:1.5">${escapeHtml(BRAND.location)}</div>
+                  <div style="margin-top:14px;font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:600;line-height:1.4">Premium Coaching&nbsp;<span style="color:${COLOR.primary}">·</span>&nbsp;Proven Methods&nbsp;<span style="color:${COLOR.primary}">·</span>&nbsp;Commitment</div>
                 </td>
               </tr>
             </table>
           </td>
         </tr>
 
-        <!-- spacer (premium rhythm) -->
-        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
-
-        <!-- 5. TRUST ROW — 3 stacked full-width tiles ALWAYS. No 3-col table. -->
+        <!-- 5. LEGAL FOOTER (compact, outside the card) -->
         <tr>
-          <td>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${[
-                { icon: "★", title: "Premium Coaching", sub: "Personalized for you" },
-                { icon: "◎", title: "Proven Methods", sub: "Results that last" },
-                { icon: "✓", title: "Commitment", sub: "We build champions" },
-              ].map((tile, i) => `
-              ${i > 0 ? `<tr><td style="height:10px;line-height:10px;font-size:0">&nbsp;</td></tr>` : ""}
-              <tr>
-                <td valign="middle" style="padding:18px 18px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:middle">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td valign="middle" width="44" style="width:44px;padding-right:14px">
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:34px;height:34px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:17px"><tr><td align="center" valign="middle" style="font-size:15px;color:${COLOR.primary};line-height:1">${tile.icon}</td></tr></table>
-                      </td>
-                      <td valign="middle">
-                        <div style="font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">${tile.title}</div>
-                        <div style="font-size:13px;color:${COLOR.textMuted};line-height:1.5;margin-top:4px">${tile.sub}</div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>`).join("")}
-            </table>
-          </td>
-        </tr>
-
-        <!-- 6. LEGAL FOOTER -->
-        <tr>
-          <td style="padding:20px 4px 8px" align="${align}" dir="${dir}">
-            <div style="font-size:11px;color:${COLOR.textDim};line-height:1.6">
+          <td style="padding:14px 4px 6px" align="${align}" dir="${dir}">
+            <div style="font-size:11px;color:${COLOR.textDim};line-height:1.55">
               ${escapeHtml(t(lang, "footerNote"))}<br>
               ${escapeHtml(t(lang, "footerUnsubNote"))}&nbsp;
               <a href="${escapeHtml(website)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(BRAND.name)}</a>
@@ -1426,23 +1384,19 @@ export function eyebrowTitleHtml(opts: {
   align?: "left" | "right";
 }): string {
   const align = opts.align || "left";
-  // Approved reference: small cyan accent rule on top, then sentence-case
-  // serif title (no color-split, no uppercase eyebrow), then a calm body
-  // line. The eyebrow text is rendered as a thin cyan label only when
-  // explicitly provided; if empty, only the rule shows.
+  // Compact one-screen variant: small cyan accent rule on top, then a
+  // serif title (sentence-case, ~26px), then a tight body line. Eyebrow
+  // only renders when provided; when omitted, the rule alone leads in.
   const ruleAlign = align === "right" ? "margin-left:auto" : "margin-left:0";
-  // Combine titleStart + titleAccent into a single sentence-case serif
-  // title (matches the screenshot — the title is *not* split into two
-  // tones). Trim handles either being empty.
   const fullTitle = `${opts.titleStart} ${opts.titleAccent}`.trim();
   const eyebrowHtml = opts.eyebrow
-    ? `<div style="font-size:11px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:14px;line-height:1.2;text-shadow:0 0 10px ${COLOR.primaryDeep}">${escapeHtml(opts.eyebrow)}</div>`
+    ? `<div style="font-size:10.5px;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px;line-height:1.2;text-shadow:0 0 10px ${COLOR.primaryDeep}">${escapeHtml(opts.eyebrow)}</div>`
     : "";
-  return `<div style="text-align:${align};margin:0 0 26px">
-    <div style="height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 12px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:18px">&nbsp;</div>
+  return `<div style="text-align:${align};margin:0 0 18px">
+    <div style="height:1px;width:32px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:14px">&nbsp;</div>
     ${eyebrowHtml}
-    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.18;font-weight:700;letter-spacing:-0.3px;color:${COLOR.text}">${escapeHtml(fullTitle)}</div>
-    ${opts.body ? `<p style="margin:14px 0 0;font-size:15px;line-height:1.65;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
+    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:26px;line-height:1.18;font-weight:700;letter-spacing:-0.2px;color:${COLOR.text}">${escapeHtml(fullTitle)}</div>
+    ${opts.body ? `<p style="margin:10px 0 0;font-size:14px;line-height:1.55;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
   </div>`;
 }
 
@@ -1509,24 +1463,78 @@ export function sessionDetailsCardHtml(opts: {
     // does NOT collapse into a single column.
     const valueAlign = align === "right" ? "left" : "right";
     return `<tr>
-        <td width="42%" align="${align}" valign="top" style="padding:14px 0;${borderStyle}width:42%;text-align:${align};vertical-align:top">
-          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4">${escapeHtml(r.label)}</div>
+        <td width="42%" align="${align}" valign="top" style="padding:10px 0;${borderStyle}width:42%;text-align:${align};vertical-align:top">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.35">${escapeHtml(r.label)}</div>
         </td>
-        <td width="58%" align="${valueAlign}" valign="top" style="padding:14px 0;${borderStyle}width:58%;text-align:${valueAlign};vertical-align:top">
-          <div style="font-size:15px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;word-break:break-word">${escapeHtml(String(r.value))}</div>
+        <td width="58%" align="${valueAlign}" valign="top" style="padding:10px 0;${borderStyle}width:58%;text-align:${valueAlign};vertical-align:top">
+          <div style="font-size:15px;font-weight:600;letter-spacing:0.1px;color:${valueColor};line-height:1.45;word-break:break-word">${escapeHtml(String(r.value))}</div>
         </td>
       </tr>`;
   }).join("");
   // Optional heading — when omitted, the card renders as a clean rows-only
   // panel (matches the approved screenshot's single combined detail card).
   const headingBlock = heading
-    ? `<div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
-       <div style="height:1px;width:32px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 14px auto" : "0 0 14px"};line-height:1px;font-size:0">&nbsp;</div>`
+    ? `<div style="font-size:11.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:6px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
+       <div style="height:1px;width:28px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 10px auto" : "0 0 10px"};line-height:1px;font-size:0">&nbsp;</div>`
+    : "";
+  // Optional inline footer block (e.g. package progress bar) rendered inside
+  // the same card body, separated by a thin cyan hairline. Lets a single
+  // card carry both detail rows and a compact progress visual.
+  const footerBlock = (opts as { footerHtml?: string }).footerHtml
+    ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid ${COLOR.border}">${(opts as { footerHtml?: string }).footerHtml}</div>`
     : "";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 14px 40px -22px ${COLOR.primaryGlow}">
-    <tr><td style="padding:22px 22px 18px">
+    <tr><td style="padding:18px 20px 16px">
       ${headingBlock}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+      ${footerBlock}
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Compact, email-safe package progress visual. Renders as a horizontal
+ * cyan/dark bar split via two table cells (no CSS gradients, no SVG, no
+ * round-rect masking) — Gmail Android safe. Shows "X / Y sessions used"
+ * above the bar and "Remaining" + "Expires" below as a single subtle row.
+ */
+export function packageProgressHtml(opts: {
+  used: number;
+  total: number;
+  remaining?: number | null;
+  expiry?: string | null;
+}): string {
+  const total = Math.max(1, opts.total);
+  const used = Math.max(0, Math.min(total, opts.used));
+  const pct = Math.round((used / total) * 100);
+  const remaining = opts.remaining ?? Math.max(0, total - used);
+  const usedPctStr = `${pct}%`;
+  const remainPctStr = `${100 - pct}%`;
+  const usedCell = pct > 0
+    ? `<td bgcolor="${COLOR.primary}" width="${usedPctStr}" style="background:${COLOR.primary};height:6px;line-height:6px;font-size:0">&nbsp;</td>`
+    : "";
+  const restCell = pct < 100
+    ? `<td bgcolor="${COLOR.bgCardElev}" width="${remainPctStr}" style="background:${COLOR.bgCardElev};height:6px;line-height:6px;font-size:0">&nbsp;</td>`
+    : "";
+  const meta: string[] = [];
+  meta.push(`<span style="color:${COLOR.text};font-weight:700">${remaining}</span> <span style="color:${COLOR.textMuted}">remaining</span>`);
+  if (opts.expiry) meta.push(`<span style="color:${COLOR.textMuted}">Expires</span> <span style="color:${COLOR.text};font-weight:600">${escapeHtml(opts.expiry)}</span>`);
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td align="left" valign="middle" style="text-align:left;vertical-align:middle">
+            <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3">Package Progress</div>
+          </td>
+          <td align="right" valign="middle" style="text-align:right;vertical-align:middle">
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:700;color:${COLOR.text};line-height:1.3"><span style="color:${COLOR.primary}">${used}</span> / ${total} <span style="color:${COLOR.textMuted};font-weight:600;font-size:12px">used</span></div>
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};margin-top:8px;border-radius:6px;overflow:hidden">
+        <tr>${usedCell}${restCell}</tr>
+      </table>
+      <div style="margin-top:8px;font-size:12px;color:${COLOR.textSecondary};line-height:1.5">${meta.join(`&nbsp;&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;&nbsp;`)}</div>
     </td></tr>
   </table>`;
 }
@@ -1845,90 +1853,61 @@ export function buildClientBookingConfirmationEmail(opts: {
   const subject = fill(t(lang, "bookingSubject"), { date: d.date, time: d.time12 });
   const greeting = fill(t(lang, "greeting"), { name: d.clientName });
 
-  // ===== TRON LEGACY FREEZE — premium client booking confirmation =====
-  // Marketing journey order: Status Hero → Highlight Strip → Training
-  // Summary → Client Details (secondary) → What to Expect → Arrival → CTA.
-  // Every block is single-column-by-construction; no @media required.
-
-  // 1. Status hero — short premium title + motivational line.
+  // ===== TRON LEGACY FREEZE — compact one-screen client confirmation =====
+  // Order: Status Hero (BOOKING CONFIRMED + motivational line) → ONE
+  // combined details card (Date/Time/Duration/Focus/Goal/Type/Package +
+  // optional progress bar inside) → arrival note → CTA. No highlight
+  // strip, no separate training/client/expect cards — single screen on
+  // mobile while still cinematic.
   const statusHero = eyebrowTitleHtml({
-    eyebrow: "Status",
+    eyebrow: t(lang, "bookingHero"),
     titleStart: "Booking",
     titleAccent: "Confirmed",
-    body: "Your session is booked. Arrive focused — we'll take care of the plan.",
+    body: "Your session is confirmed. Stay ready.",
     align,
   });
 
-  // 2. Session highlight strip — most readable section after the title.
-  // 3 prominent stacked rows: Date / Time (Dubai) / Duration.
-  const stripRows: Array<{ label: string; value: string }> = [
-    { label: t(lang, "bookingDate"), value: d.date },
-    { label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12 },
-    { label: "Duration", value: "60 Minutes" },
+  const hasProgress = d.currentSessionNumber != null && d.totalSessions != null;
+  const rows: Array<{ icon: string; label: string; value: string | number | null; valueTone?: "primary" | "default" }> = [
+    { icon: "", label: t(lang, "bookingDate"), value: d.date },
+    { icon: "", label: `${t(lang, "bookingTime")} (Dubai)`, value: `${d.time12} · GST (UTC+4)` },
+    { icon: "", label: "Duration", value: "60 Minutes" },
   ];
-  const highlightStrip =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.10), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 36px -12px ${COLOR.primaryGlow}">
-      <tr><td style="padding:30px 28px">
-        ${stripRows.map((row, i) => `
-          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:22px;padding-top:22px;` : ""}text-align:${align}">
-            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 10px">${escapeHtml(row.label)}</div>
-            <div style="display:block;width:100%;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:0.2px;color:${COLOR.primary};line-height:1.25;text-shadow:0 0 22px ${COLOR.primaryDeep}, 0 0 10px ${COLOR.primaryGlow}">${escapeHtml(row.value)}</div>
-          </div>`).join("")}
-      </td></tr>
-    </table>`;
+  if (d.sessionFocusLabel) rows.push({ icon: "", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel });
+  if (d.trainingGoalLabel) rows.push({ icon: "", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel });
+  if (d.sessionTypeLabel) rows.push({ icon: "", label: t(lang, "bookingType"), value: d.sessionTypeLabel });
+  rows.push({ icon: "", label: t(lang, "bookingPackage"), value: d.packageName ?? "Not available" });
+  if (!hasProgress) {
+    if (d.remainingSessions != null) rows.push({ icon: "", label: t(lang, "bookingRemaining"), value: d.remainingSessions });
+    if (d.packageExpiryDate) rows.push({ icon: "", label: t(lang, "bookingExpires"), value: d.packageExpiryDate });
+  }
 
-  // 3. Training summary — Focus / Goal / Type / Package / Remaining / Expiry / Payment.
-  const trainingSummary = sessionDetailsCardHtml({
-    heading: "Training Summary",
+  const progressHtml = hasProgress
+    ? packageProgressHtml({
+        used: d.currentSessionNumber as number,
+        total: d.totalSessions as number,
+        remaining: d.remainingSessions ?? null,
+        expiry: d.packageExpiryDate ?? null,
+      })
+    : "";
+
+  const detailsCard = sessionDetailsCardHtml({
+    heading: "",
     align,
-    rows: [
-      { icon: "", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
-      { icon: "", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel || null },
-      { icon: "", label: t(lang, "bookingType"), value: d.sessionTypeLabel || null },
-      { icon: "", label: t(lang, "bookingPackage"), value: d.packageName || null },
-      d.currentSessionNumber != null && d.totalSessions != null
-        ? { icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
-        : { icon: "", label: "", value: null },
-      { icon: "", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
-      { icon: "", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
-      { icon: "", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus) },
-    ],
-  });
+    rows,
+    ...(progressHtml ? ({ footerHtml: progressHtml } as Record<string, string>) : {}),
+  } as Parameters<typeof sessionDetailsCardHtml>[0]);
 
-  // 4. Client details — secondary, smaller heading, no domination.
-  const clientDetails = sessionDetailsCardHtml({
-    heading: "Client Details",
-    align,
-    rows: [
-      { icon: "", label: "Name", value: d.clientName },
-      { icon: "", label: "Email", value: d.clientEmail || null },
-      { icon: "", label: "Phone", value: d.clientPhone || null },
-      d.partnerFullName ? { icon: "", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
-    ],
-  });
+  // Inline arrival + motivation — single short line, no full "what to
+  // expect" card. Keeps the email near one screen.
+  const arrivalLine = `<div style="margin:14px 0 0;padding:12px 14px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.border};border-radius:10px;font-size:13px;color:${COLOR.textSecondary};line-height:1.55;text-align:${align}"><span style="color:${COLOR.primary};font-weight:700">Arrive 5–10 min early.</span> Bring water, focus, and intent — we'll handle the plan.</div>`;
 
-  // 5. What to expect — compact, with arrival note baked in (gold ice tint).
-  const expectBlock = whatToExpectCardHtml({
-    heading: "What to Expect",
-    align,
-    items: [
-      "Personalized warm-up",
-      "Proper form & technique",
-      "Progressive overload",
-      "Cool down & recovery",
-    ],
-    arrivalNote: "Please arrive 5–10 minutes early so we can start on time.",
-  });
-
-  const SPACER = `<div style="height:24px;line-height:24px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
-    `<p style="margin:0 0 28px;color:${COLOR.textSecondary};font-size:15.5px;line-height:1.65">${escapeHtml(greeting)}</p>` +
+    `<p style="margin:0 0 16px;color:${COLOR.textSecondary};font-size:14px;line-height:1.55">${escapeHtml(greeting)}</p>` +
     statusHero +
-    highlightStrip + SPACER +
-    trainingSummary + SPACER +
-    clientDetails + SPACER +
-    expectBlock +
-    `<div style="margin:32px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
+    detailsCard +
+    arrivalLine +
+    `<div style="margin:18px 0 4px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
 
   const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
   const html = shellHtml({ lang, previewText: `${subject} — ${t(lang, "bookingBody")}`, bodyHtml, websiteUrl: website, topBar });
@@ -2171,47 +2150,65 @@ export function buildAdminBookingEmail(opts: {
   // client confirmation: Status Hero → Highlight Strip → Client Details →
   // Training & Package → Operational metadata → big full-width CTA.
 
-  // Approved reference layout: simple sentence-case title + plain body,
-  // ONE combined details card with all client + booking + training fields,
-  // solid cyan pill CTA centered. No status hero eyebrow, no highlight
-  // strip, no multi-card stacking — exactly matches the user's screenshot.
+  // Compact one-screen TRON Legacy admin email: cyan eyebrow + serif title
+  // + ONE combined card carrying all booking/package/contact info, with an
+  // inline cyan progress bar inside the card when package data is present.
   const statusHero = eyebrowTitleHtml({
-    eyebrow: "",
-    titleStart: "New session booking",
+    eyebrow: "New session booking",
+    titleStart: d.clientName,
     titleAccent: "",
-    body: `${d.clientName} booked a session.`,
+    body: "A new booking has been received.",
   });
 
-  // Single combined detail card — Client + Date/Time + Training fields,
-  // all rendered as horizontal label/value rows.
+  // Priority order per the brief: Client → Date/Time/Duration → Focus/Goal/
+  // Type → Package (followed by progress visual) → Payment → Source → Logged
+  // → Contact mini row (smaller). Package usage rows omitted when progress
+  // bar is shown to avoid duplication.
+  const hasProgress = d.currentSessionNumber != null && d.totalSessions != null;
   const combinedRows: Array<{ icon: string; label: string; value: string | number | null; valueTone?: "primary" | "default" }> = [
     { icon: "", label: "Client", value: d.clientName },
-    { icon: "", label: "Email", value: opts.clientEmail || d.clientEmail || null },
-    { icon: "", label: "Phone", value: opts.clientPhone || d.clientPhone || null },
+    { icon: "", label: "Date", value: d.date },
+    { icon: "", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` },
+    { icon: "", label: "Duration", value: "60 Minutes" },
   ];
   if (d.partnerFullName) combinedRows.push({ icon: "", label: "Training Partner", value: d.partnerFullName });
-  combinedRows.push({ icon: "", label: "Date", value: d.date });
-  combinedRows.push({ icon: "", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` });
   if (d.sessionFocusLabel) combinedRows.push({ icon: "", label: "Focus", value: d.sessionFocusLabel });
   if (d.trainingGoalLabel) combinedRows.push({ icon: "", label: "Goal", value: d.trainingGoalLabel });
   if (d.sessionTypeLabel) combinedRows.push({ icon: "", label: "Type", value: d.sessionTypeLabel });
-  if (d.packageName) combinedRows.push({ icon: "", label: "Package", value: d.packageName });
-  if (d.currentSessionNumber != null && d.totalSessions != null) {
-    combinedRows.push({ icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` });
+  combinedRows.push({ icon: "", label: "Package", value: d.packageName ?? "No active package" });
+  if (!hasProgress) {
+    if (d.remainingSessions != null) combinedRows.push({ icon: "", label: "Remaining", value: d.remainingSessions });
+    if (d.packageExpiryDate) combinedRows.push({ icon: "", label: "Expires", value: d.packageExpiryDate });
   }
-  if (d.remainingSessions != null) combinedRows.push({ icon: "", label: "Remaining After", value: d.remainingSessions });
-  if (d.packageExpiryDate) combinedRows.push({ icon: "", label: "Expiry", value: d.packageExpiryDate });
-  if (d.paymentStatus) combinedRows.push({ icon: "", label: "Payment", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" });
+  combinedRows.push({ icon: "", label: "Payment", value: formatPaymentStatus(d.paymentStatus) || "Not available", valueTone: "primary" });
   if (d.bookingSource) combinedRows.push({ icon: "", label: "Source", value: d.bookingSource });
   if (d.actionTimestamp) combinedRows.push({ icon: "", label: "Logged", value: d.actionTimestamp });
+  // Contact mini row — smaller, last so it never dominates.
+  const contactEmail = opts.clientEmail || d.clientEmail;
+  const contactPhone = opts.clientPhone || d.clientPhone;
+  if (contactEmail) combinedRows.push({ icon: "", label: "Email", value: contactEmail });
+  if (contactPhone) combinedRows.push({ icon: "", label: "Phone", value: contactPhone });
 
-  const detailsCard = sessionDetailsCardHtml({ heading: "", rows: combinedRows });
+  const progressHtml = hasProgress
+    ? packageProgressHtml({
+        used: d.currentSessionNumber as number,
+        total: d.totalSessions as number,
+        remaining: d.remainingSessions ?? null,
+        expiry: d.packageExpiryDate ?? null,
+      })
+    : "";
+
+  const detailsCard = sessionDetailsCardHtml({
+    heading: "",
+    rows: combinedRows,
+    ...(progressHtml ? ({ footerHtml: progressHtml } as Record<string, string>) : {}),
+  } as Parameters<typeof sessionDetailsCardHtml>[0]);
 
   const bodyHtml =
     statusHero +
     detailsCard +
-    (opts.clientNotes ? `<div style="margin-top:22px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
-    `<div style="margin:30px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+    (opts.clientNotes ? `<div style="margin-top:14px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
+    `<div style="margin:18px 0 4px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
   const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
   const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(

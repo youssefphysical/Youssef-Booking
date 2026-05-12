@@ -1,0 +1,265 @@
+COMPACT ONE-SCREEN TRON LEGACY EMAIL REDESIGN + PACKAGE PROGRESS DETAILS
+
+The restored email design is close, but it is still too long. I need a compact, premium, highly readable TRON Legacy email layout.
+
+This is NOT a full rebuild from scratch.
+This is a compact premium redesign based on the restored TRON style.
+
+MAIN GOAL:
+Make the email feel like a luxury TRON Legacy / Elite Coaching confirmation email, but much shorter, clearer, and more powerful visually.
+
+The admin booking email should fit as close to one mobile screen as possible, with all important information visible quickly.
+
+VISUAL STYLE:
+
+- TRON Legacy Freeze
+- AMOLED black
+- deep navy panels
+- ice cyan highlights
+- electric cyan accents
+- premium soft cyan glow
+- clean futuristic luxury
+- cinematic but not overdone
+- no gamer RGB
+- no cheap neon
+- no amber/orange/yellow/gold
+
+COLORS:
+Use only the TRON Freeze palette:
+
+- #05070B background
+- #08111B panel
+- #0B1724 card
+- #0E1D2E elevated card
+- #5EE7FF primary cyan
+- #00E5FF electric cyan
+- #007BFF deep blue
+- #F2FBFF primary text
+- #A9C7D8 secondary text
+- #6F8FA3 muted text
+- rgba(94,231,255,0.18) borders/glow
+
+DO NOT use:
+
+- amber
+- orange
+- yellow
+- gold
+- mustard
+- warm rgba glow
+
+COMPACT EMAIL STRUCTURE:
+
+1. Compact Brand Header
+
+- YOUSSEF AHMED
+- ELITE COACHING
+- PERSONAL TRAINING • DUBAI
+- reduce vertical padding
+- keep it premium and cinematic
+- no huge empty logo block
+
+2. Main Status Section
+   For admin:
+
+- NEW SESSION BOOKING
+- client name under it
+- short subtitle: “A new booking has been received.”
+
+For client:
+
+- BOOKING CONFIRMED
+- short motivational subtitle: “Your session is confirmed. Stay ready.”
+
+3. One Compact Booking Summary Card
+   Do NOT create many separate cards.
+   Use one strong premium card with clear grouped information.
+
+Required booking fields:
+
+- Client
+- Date
+- Time Dubai
+- Duration
+- Focus
+- Goal
+- Session Type
+- Package
+- Sessions Used / Total
+- Sessions Remaining
+- Expiration Date
+- Payment Status
+- Source / Booking Source
+
+Example package display:
+Package: 25 Sessions
+Progress: 16 / 25 sessions used
+Remaining: 9 sessions
+Expiration: 12 May 2026
+
+If package data is missing:
+
+- show “No active package” or “Not available”
+- do not break layout
+
+4. Package Progress Visual
+   Add a compact premium progress indicator inside the same card:
+
+- “16 / 25 Sessions”
+- small cyan progress bar
+- remaining sessions clearly visible
+- expiration date clearly visible
+- keep it email-safe
+- no complex CSS required
+- must work in Gmail Android
+
+5. Client Contact Mini Row
+   Inside the same card or immediately below:
+
+- Email
+- Phone
+
+Make it smaller than the main booking details.
+Do not let client email/phone dominate the design.
+
+6. CTA
+   Directly after the booking card:
+
+- OPEN ADMIN BOOKINGS for admin emails
+- OPEN MY BOOKING for client emails
+- premium cyan pill/button
+- large enough to tap
+- compact vertical spacing
+- no huge gap before/after
+
+7. Compact Marketing Footer
+   Replace the long footer + 3 separate trust cards with ONE compact brand block:
+
+- Youssef Ahmed | Elite Coaching
+- Discipline Today. Success Tomorrow.
+- WhatsApp + Email + Instagram
+- Dubai, UAE
+- Premium Coaching • Proven Methods • Commitment
+
+Do NOT use three large stacked trust cards on mobile/admin emails.
+Use one clean compact trust line instead.
+
+HEIGHT REQUIREMENT:
+Reduce total email height by at least 35–45%.
+Remove unnecessary empty space.
+Make it feel close to a one-screen mobile email.
+
+READABILITY REQUIREMENTS:
+
+- Text must be clear, bold, and scannable
+- Important values should stand out
+- Labels should be small but readable
+- Main values should be 15–17px
+- Strong line-height
+- No tiny unreadable text
+- No excessive letter spacing on important values
+- No cramped technical-form feeling
+
+MOBILE-FIRST REQUIREMENTS:
+Gmail Android is the priority.
+Keep the Gmail-safe responsiveness fixes:
+
+- width="100%" outer wrapper
+- no forced 600px mobile scaling
+- no horizontal overflow
+- no squeezed columns
+- no complex desktop layout on mobile
+- label/value must remain readable
+- CTA must not shrink
+- progress bar must not break
+
+EMAIL HTML RULES:
+
+- table-based layout
+- inline styles
+- simple selectors
+- no flex/grid for email layout
+- no CSS variables for layout sizing
+- no clamp()
+- no calc()
+- no transform/filter
+- no unsupported layout tricks
+- no fixed width that breaks mobile
+
+ADMIN EMAIL PRIORITY:
+Admin booking emails must prioritize:
+
+1. Client
+2. Date / Time / Duration
+3. Focus / Goal / Type
+4. Package / progress / remaining / expiration
+5. Payment status
+6. Source
+7. Contact info
+
+CLIENT EMAIL PRIORITY:
+Client emails should include:
+
+1. Booking confirmed
+2. Date / Time / Duration
+3. Focus / Goal
+4. Package status if available
+5. Arrival note
+6. Motivational coaching message
+7. CTA
+
+DO NOT TOUCH:
+
+- booking logic
+- auth
+- schema
+- Neon DB
+- cron
+- API
+- package/session/payment logic
+- website UI
+- calendar
+- dashboard
+- Vercel config
+- environment variables
+
+Only edit:
+server/email-templates.ts
+or email-template rendering files only.
+
+DEPLOYMENT REQUIREMENTS:
+After changes:
+
+1. Typecheck
+2. Render generated HTML
+3. Confirm email body size safe under Gmail clipping limit
+4. Confirm no warm colors in rendered HTML
+5. Commit changes
+6. Push to GitHub origin/main
+7. Verify GitHub SHA
+8. Deploy to Vercel production
+9. Wait for Vercel READY
+10. Confirm production is serving the new email templates
+11. Confirm Neon DB untouched
+12. Confirm FREEZE MODE respected
+13. Provide exact changed files
+
+VALIDATION:
+Send or trigger a real booking email if possible.
+Verify:
+
+- Gmail Android
+- Gmail iOS / Apple Mail if possible
+- Desktop Gmail
+- Tablet view
+
+Acceptance:
+The final email should be compact, premium, readable, TRON Legacy styled, and close to one-screen on mobile while still containing:
+
+- booking details
+- package progress like 16/25
+- remaining sessions
+- expiration date
+- payment status
+- CTA
+- compact brand marketing footer
