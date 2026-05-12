@@ -131,6 +131,12 @@ export async function sendEmail(opts: {
   // email when the caller didn't supply one (most paths already do).
   const replyTo = opts.replyTo || trainerEmail();
 
+  // Per-send idempotency key so retries cannot deliver duplicates if
+  // a transient failure (network blip, Resend 502) caused us to retry
+  // after Resend already accepted the message. Resend honours the
+  // standard Idempotency-Key HTTP header.
+  const idempotencyKey = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+
   // Anti-spam / deliverability headers:
   // - Auto-Submitted (RFC 3834): tells receiving servers + clients that
   //   this is an automated transactional message and they should NOT
@@ -150,72 +156,98 @@ export async function sendEmail(opts: {
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   };
 
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [opts.to],
-        // Strip CR/LF + control chars from subject to defeat header-injection
-        // attempts via user-controlled values like clientName / clientNotes.
-        subject: String(opts.subject).replace(/[\r\n\u0000-\u001f]+/g, " ").trim().slice(0, 250),
-        text: opts.text,
-        html: opts.html,
-        reply_to: replyTo,
-        headers,
-        tags: [
-          { name: "category", value: "transactional" },
-          { name: "app", value: "youssef-fitness" },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      console.warn(
-        `[email] Resend ${res.status} — to=${opts.to} from=${from}: ${txt.slice(0, 300)}`,
-      );
-      const err = `Resend ${res.status}: ${txt.slice(0, 200)}`;
-      pushSendLog({
-        ts: new Date().toISOString(),
-        to: opts.to,
-        from,
-        subject: String(opts.subject).slice(0, 200),
-        sent: false,
-        provider: "resend",
-        error: err,
+  // Retry policy:
+  //   - Up to 3 total attempts (initial + 2 retries).
+  //   - Backoff: 250ms, 1000ms.
+  //   - Retryable: network exception, HTTP 408/425/429/500/502/503/504.
+  //   - Non-retryable: any other 4xx (validation, unverified domain,
+  //     suppressed recipient) — retrying won't help and wastes quota.
+  //   - Idempotency-Key prevents duplicate delivery if Resend accepted
+  //     a previous attempt that timed out on our side.
+  const safeSubject = String(opts.subject)
+    .replace(/[\r\n\u0000-\u001f]+/g, " ")
+    .trim()
+    .slice(0, 250);
+  const payload = JSON.stringify({
+    from,
+    to: [opts.to],
+    subject: safeSubject,
+    text: opts.text,
+    html: opts.html,
+    reply_to: replyTo,
+    headers,
+    tags: [
+      { name: "category", value: "transactional" },
+      { name: "app", value: "youssef-fitness" },
+    ],
+  });
+  const MAX_ATTEMPTS = 3;
+  const BACKOFF_MS = [250, 1000];
+  let lastErr = "unknown";
+  let lastStatus: number | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: payload,
       });
-      return { sent: false, provider: "resend", error: err };
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { id?: string };
+        console.log(
+          `[email] sent via Resend id=${data.id ?? "?"} to=${opts.to} attempt=${attempt}`,
+        );
+        pushSendLog({
+          ts: new Date().toISOString(),
+          to: opts.to,
+          from,
+          subject: safeSubject.slice(0, 200),
+          sent: true,
+          provider: "resend",
+          id: data.id,
+        });
+        return { sent: true, provider: "resend", id: data.id };
+      }
+
+      const txt = await res.text().catch(() => "");
+      lastStatus = res.status;
+      lastErr = `Resend ${res.status}: ${txt.slice(0, 200)}`;
+      const retryable =
+        res.status === 408 ||
+        res.status === 425 ||
+        res.status === 429 ||
+        (res.status >= 500 && res.status <= 599);
+      console.warn(
+        `[email] Resend ${res.status} attempt=${attempt}/${MAX_ATTEMPTS} retryable=${retryable} to=${opts.to} from=${from}: ${txt.slice(0, 300)}`,
+      );
+      if (!retryable || attempt === MAX_ATTEMPTS) break;
+      await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]));
+    } catch (e: any) {
+      // Network / DNS / TLS exception — always retryable.
+      lastErr = e?.message || "network error";
+      console.warn(
+        `[email] Resend request threw attempt=${attempt}/${MAX_ATTEMPTS}: ${lastErr}`,
+      );
+      if (attempt === MAX_ATTEMPTS) break;
+      await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1]));
     }
-    const data = (await res.json().catch(() => ({}))) as { id?: string };
-    console.log(`[email] sent via Resend id=${data.id ?? "?"} to=${opts.to}`);
-    pushSendLog({
-      ts: new Date().toISOString(),
-      to: opts.to,
-      from,
-      subject: String(opts.subject).slice(0, 200),
-      sent: true,
-      provider: "resend",
-      id: data.id,
-    });
-    return { sent: true, provider: "resend", id: data.id };
-  } catch (e: any) {
-    console.warn("[email] Resend request failed:", e?.message || e);
-    const err = e?.message || "unknown";
-    pushSendLog({
-      ts: new Date().toISOString(),
-      to: opts.to,
-      from,
-      subject: String(opts.subject).slice(0, 200),
-      sent: false,
-      provider: "resend",
-      error: err,
-    });
-    return { sent: false, provider: "resend", error: err };
   }
+
+  pushSendLog({
+    ts: new Date().toISOString(),
+    to: opts.to,
+    from,
+    subject: safeSubject.slice(0, 200),
+    sent: false,
+    provider: "resend",
+    error: lastErr + (lastStatus ? ` (final after ${MAX_ATTEMPTS} attempts)` : ""),
+  });
+  return { sent: false, provider: "resend", error: lastErr };
 }
 
 // =====================================================================

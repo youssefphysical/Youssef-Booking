@@ -1918,6 +1918,69 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
   });
 
+  // GET /api/admin/email/health — single go/no-go verdict combining
+  // RESEND_API_KEY presence, From-domain DNS authentication (SPF/DKIM/
+  // DMARC), and recent send health. Use this as the production smoke
+  // test after wiring DNS records.
+  app.get("/api/admin/email/health", requireAdmin, async (_req, res) => {
+    const cfg = emailConfigStatus();
+    const recent = getRecentEmailSends(20);
+    const recentSent = recent.filter((e) => e.sent).length;
+    const recentFailed = recent.filter((e) => !e.sent).length;
+
+    let dnsOverall: "pass" | "warn" | "fail" | "unknown" = "unknown";
+    let dnsDetail: string[] = [];
+    const domain = fromDomain();
+    if (domain) {
+      try {
+        const txt = await dns.resolveTxt(domain).catch(() => [] as string[][]);
+        const flat = txt.map((p) => p.join(""));
+        const spfPass = flat.some(
+          (r) => /v=spf1/i.test(r) && /_spf\.resend\.com|amazonses\.com/i.test(r),
+        );
+        const dkimCname = await dns.resolveCname(`resend._domainkey.${domain}`).catch(() => null);
+        const dkimTxt = await dns.resolveTxt(`resend._domainkey.${domain}`).catch(() => null);
+        const dkimPass = !!(
+          (dkimCname && dkimCname.length > 0) ||
+          (dkimTxt && dkimTxt.some((p) => /v=DKIM1/i.test(p.join(""))))
+        );
+        const dmarcTxt = await dns.resolveTxt(`_dmarc.${domain}`).catch(() => [] as string[][]);
+        const dmarcPass = dmarcTxt.some((p) => /v=DMARC1/i.test(p.join("")));
+        if (spfPass && dkimPass && dmarcPass) dnsOverall = "pass";
+        else if (!spfPass && !dkimPass && !dmarcPass) dnsOverall = "fail";
+        else dnsOverall = "warn";
+        dnsDetail = [
+          `SPF: ${spfPass ? "pass" : "fail"}`,
+          `DKIM: ${dkimPass ? "pass" : "fail"}`,
+          `DMARC: ${dmarcPass ? "pass" : "fail"}`,
+        ];
+      } catch (e: any) {
+        dnsOverall = "fail";
+        dnsDetail = [`DNS lookup error: ${e?.message || "unknown"}`];
+      }
+    }
+
+    const ready =
+      cfg.ready &&
+      dnsOverall === "pass" &&
+      (recent.length === 0 || recentFailed === 0 || recentSent > 0);
+    res.json({
+      ready,
+      verdict: ready
+        ? "OK — production email delivery is healthy."
+        : !cfg.ready
+          ? "BLOCKED — RESEND_API_KEY missing in env."
+          : dnsOverall !== "pass"
+            ? `BLOCKED — domain authentication for ${domain} is not fully configured.`
+            : "DEGRADED — recent sends are failing; check /api/admin/email/status.",
+      config: cfg,
+      from: fromAddress(),
+      domain,
+      dns: { overall: dnsOverall, detail: dnsDetail },
+      recent: { total: recent.length, sent: recentSent, failed: recentFailed },
+    });
+  });
+
   // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============
   app.get("/api/admin/notifications", requireAdmin, async (req, res) => {
     const unreadOnly = req.query.unreadOnly === "true";
