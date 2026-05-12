@@ -32,22 +32,29 @@ export const BRAND = {
   defaultWebsite: "https://youssef-booking.vercel.app",
 } as const;
 
-// Dark luxury palette — Outlook-safe (solid colors, no rgba on backgrounds)
+// TRON Legacy dark luxury palette — Outlook-safe (solid colors, no rgba on
+// backgrounds). AMOLED outer with deep navy interior + Tron-cyan accents
+// matching the website (#5ee7ff), tuned for email rendering across
+// Gmail / Apple Mail / Outlook / Samsung Mail.
 const COLOR = {
-  bgOuter: "#070a14",        // page bg
-  bgCard: "#0f1424",         // primary surface
-  bgCardSoft: "#141a2e",     // secondary surface
-  border: "#1d2540",         // subtle divider
-  borderGlow: "#2a3a6b",     // accent border
+  bgOuter: "#050505",        // AMOLED page bg — matches the site exactly
+  bgCard: "#0a0f1c",         // primary surface (deep night navy)
+  bgCardSoft: "#0f1730",     // secondary surface
+  bgCardElev: "#13203f",     // elevated surface (badges / metric tiles)
+  border: "#1b2746",         // subtle divider
+  borderGlow: "#2c4078",     // accent border
+  borderCyan: "#1d5e7a",     // tron border (cyan-tinted)
   text: "#f1f5f9",           // primary text
-  textMuted: "#94a3b8",      // secondary text
+  textMuted: "#9fb1c9",      // secondary text (warmer for legibility)
   textDim: "#64748b",        // tertiary text
-  primary: "#4fc3f7",        // electric blue accent
-  primaryDark: "#0288d1",    // gradient stop
-  primaryGlow: "#1e3a8a",    // outer glow base
+  primary: "#5ee7ff",        // TRON cyan — matches site accent
+  primaryDark: "#22b8e0",    // gradient stop
+  primaryGlow: "#0e6e8a",    // outer glow base
+  primaryDeep: "#06324a",    // deepest cyan
   emerald: "#10b981",        // bonus / success
   amber: "#f59e0b",          // warning
   red: "#ef4444",            // danger
+  gold: "#facc15",           // VIP / elite accent
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -1021,22 +1028,35 @@ export function shellHtml(opts: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgOuter};padding:32px 16px" dir="${dir}">
   <tr>
     <td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:18px;overflow:hidden">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:18px;overflow:hidden;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 18px 60px -20px ${COLOR.primaryGlow}">
 
-        <!-- Brand bar — gradient header strip -->
+        <!-- TRON top edge — luminous cyan strip + thin reflection line -->
         <tr>
-          <td style="background:linear-gradient(90deg, ${COLOR.primaryGlow} 0%, ${COLOR.primaryDark} 50%, ${COLOR.primaryGlow} 100%);height:4px;line-height:4px;font-size:0">&nbsp;</td>
+          <td style="background:linear-gradient(90deg, ${COLOR.bgCard} 0%, ${COLOR.primary} 30%, ${COLOR.primary} 70%, ${COLOR.bgCard} 100%);height:2px;line-height:2px;font-size:0">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="background:${COLOR.bgCard};height:1px;line-height:1px;font-size:0">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="background:linear-gradient(90deg, ${COLOR.bgCard} 0%, ${COLOR.primaryGlow} 50%, ${COLOR.bgCard} 100%);height:1px;line-height:1px;font-size:0">&nbsp;</td>
         </tr>
 
-        <!-- Header: brand name + tagline -->
+        <!-- Header: brand name + tagline + monogram -->
         <tr>
-          <td align="${align}" style="padding:28px 32px 20px;border-bottom:1px solid ${COLOR.border}">
-            <div style="font-family:'Times New Roman',Georgia,serif;font-size:22px;font-weight:700;letter-spacing:0.5px;color:${COLOR.text};line-height:1">
-              ${escapeHtml(BRAND.name)}
-            </div>
-            <div style="margin-top:6px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${COLOR.primary};font-weight:600">
-              ${escapeHtml(t(lang, "brandTagline"))}
-            </div>
+          <td align="${align}" style="padding:30px 32px 22px;background:linear-gradient(180deg, ${COLOR.bgCard} 0%, ${COLOR.bgCardSoft} 100%);border-bottom:1px solid ${COLOR.borderCyan}">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="${align}" style="vertical-align:middle">
+                  <div style="font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:1.2px;color:${COLOR.text};line-height:1.1;text-transform:uppercase">
+                    ${escapeHtml(BRAND.name)}
+                  </div>
+                  <div style="margin-top:8px;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">
+                    ${escapeHtml(t(lang, "brandTagline"))}
+                  </div>
+                  <div style="margin-top:14px;height:1px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;width:48px">&nbsp;</div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
 
@@ -1086,15 +1106,20 @@ export function buttonHtml(opts: {
   variant?: "primary" | "secondary";
 }): string {
   const isSecondary = opts.variant === "secondary";
-  const bg = isSecondary ? "transparent" : COLOR.primary;
+  const bg = isSecondary ? COLOR.bgCardElev : COLOR.primary;
   const color = isSecondary ? COLOR.primary : "#06121f";
-  const border = isSecondary ? `2px solid ${COLOR.primary}` : `2px solid ${COLOR.primary}`;
+  const border = isSecondary
+    ? `1px solid ${COLOR.borderCyan}`
+    : `1px solid ${COLOR.primary}`;
+  // Layered Tron-glow shadow — outer halo + tight inner ring. Email clients
+  // ignore this; modern web-mail clients (Apple Mail, Gmail web on dark mode)
+  // honour it for the cinematic glow effect.
   const shadow = isSecondary
-    ? "none"
-    : `0 4px 24px -4px ${COLOR.primary}, 0 0 0 4px rgba(79,195,247,0.12)`;
+    ? `0 0 0 1px ${COLOR.primaryDeep}`
+    : `0 0 0 1px ${COLOR.primary}, 0 0 28px -4px ${COLOR.primary}, 0 0 60px -12px ${COLOR.primaryGlow}`;
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
-    <tr><td style="border-radius:12px;background:${bg};box-shadow:${shadow}">
-      <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:13px 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.3px;color:${color};text-decoration:none;border-radius:12px;border:${border}">${escapeHtml(opts.label)}</a>
+    <tr><td style="border-radius:14px;background:${bg};box-shadow:${shadow}">
+      <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:14px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${color};text-decoration:none;border-radius:14px;border:${border}">${escapeHtml(opts.label)}</a>
     </td></tr>
   </table>`;
 }
@@ -1102,11 +1127,22 @@ export function buttonHtml(opts: {
 /**
  * Hero block — large title + body intro.
  */
-export function heroHtml(opts: { title: string; body?: string; align?: "left" | "right" | "center" }): string {
+export function heroHtml(opts: {
+  title: string;
+  body?: string;
+  align?: "left" | "right" | "center";
+  eyebrow?: string;
+}): string {
   const align = opts.align || "left";
-  return `<div style="margin:0 0 24px;text-align:${align}">
-    <h1 style="margin:0 0 12px;font-family:'Times New Roman',Georgia,serif;font-size:26px;line-height:1.2;font-weight:700;color:${COLOR.text};letter-spacing:-0.3px">${escapeHtml(opts.title)}</h1>
-    ${opts.body ? `<p style="margin:0;font-size:15px;line-height:1.65;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
+  const accentLine = `<div style="margin:0 0 14px;height:1px;width:42px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : align === "center" ? "margin-left:auto;margin-right:auto" : ""}">&nbsp;</div>`;
+  const eyebrow = opts.eyebrow
+    ? `<div style="margin:0 0 6px;font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">${escapeHtml(opts.eyebrow)}</div>`
+    : "";
+  return `<div style="margin:0 0 26px;text-align:${align}">
+    ${eyebrow}
+    ${accentLine}
+    <h1 style="margin:0 0 14px;font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.15;font-weight:700;color:${COLOR.text};letter-spacing:-0.4px">${escapeHtml(opts.title)}</h1>
+    ${opts.body ? `<p style="margin:0;font-size:15.5px;line-height:1.7;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
   </div>`;
 }
 
@@ -1122,14 +1158,17 @@ export function infoCardHtml(opts: {
   const align = opts.align || "left";
   const rows = filled
     .map(
-      ([k, v]) => `<tr>
-        <td style="padding:12px 0;color:${COLOR.textMuted};font-size:13px;font-weight:500;letter-spacing:0.2px;vertical-align:top;text-align:${align};border-bottom:1px solid ${COLOR.border};width:42%">${escapeHtml(k)}</td>
-        <td style="padding:12px 0;color:${COLOR.text};font-size:14px;font-weight:600;text-align:${align === "left" ? "right" : "left"};border-bottom:1px solid ${COLOR.border}">${escapeHtml(String(v))}</td>
-      </tr>`,
+      ([k, v], i) => {
+        const isLast = i === filled.length - 1;
+        const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
+        return `<tr>
+        <td style="padding:13px 0;color:${COLOR.textMuted};font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;vertical-align:top;text-align:${align};${borderStyle}width:42%">${escapeHtml(k)}</td>
+        <td style="padding:13px 0;color:${COLOR.text};font-size:14.5px;font-weight:600;text-align:${align === "left" ? "right" : "left"};${borderStyle}">${escapeHtml(String(v))}</td>
+      </tr>`;
+      },
     )
     .join("");
-  // Strip the last border-bottom by setting it on the row before — simpler: leave it; visually fine.
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.border};border-radius:14px;padding:8px 18px">
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 26px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;padding:6px 20px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
     <tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table></td></tr>
   </table>`;
 }
@@ -1669,5 +1708,480 @@ export function buildAdminPackageExpiringEmail(opts: {
     `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(`Client renewal likely needed — ${opts.clientName}`, opts.packageName && `Package: ${opts.packageName}`, detail);
+  return { subject, html, text };
+}
+
+// ===========================================================================
+// PREMIUM HELPERS — TRON status badges, divider rails, metric tiles, AED card
+// ===========================================================================
+
+type BadgeTone =
+  | "info"
+  | "success"
+  | "warn"
+  | "danger"
+  | "vip"
+  | "neutral"
+  | "tron";
+
+/**
+ * Pill-shaped status badge — high-contrast, uppercase, letter-spaced.
+ * Use at the top of the body to communicate the email's primary intent
+ * (NEW BOOKING / CANCELLED / RESCHEDULED / PROTECTED / PAID / EXPIRED / VIP).
+ */
+export function statusBadgeHtml(opts: { label: string; tone?: BadgeTone }): string {
+  const tone = opts.tone || "tron";
+  const palette: Record<BadgeTone, { bg: string; fg: string; border: string }> = {
+    info:    { bg: COLOR.bgCardElev, fg: COLOR.primary,  border: COLOR.borderCyan },
+    tron:    { bg: COLOR.primaryDeep, fg: COLOR.primary, border: COLOR.primary },
+    success: { bg: "#06251a",         fg: COLOR.emerald, border: "#127a55" },
+    warn:    { bg: "#2a1d05",         fg: COLOR.amber,   border: "#8a5b0a" },
+    danger:  { bg: "#2a0a0a",         fg: COLOR.red,     border: "#8a1a1a" },
+    vip:     { bg: "#1f1805",         fg: COLOR.gold,    border: "#a37510" },
+    neutral: { bg: COLOR.bgCardSoft,  fg: COLOR.textMuted, border: COLOR.border },
+  };
+  const p = palette[tone];
+  return `<span style="display:inline-block;padding:6px 12px;background:${p.bg};border:1px solid ${p.border};border-radius:999px;color:${p.fg};font-size:10.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;line-height:1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">${escapeHtml(opts.label)}</span>`;
+}
+
+/**
+ * TRON divider rail — thin glowing horizontal line with center fade.
+ * Use to separate sections inside the body without heavy visual weight.
+ */
+export function dividerHtml(): string {
+  return `<div style="margin:22px 0;height:1px;background:linear-gradient(90deg, transparent 0%, ${COLOR.borderCyan} 30%, ${COLOR.primary} 50%, ${COLOR.borderCyan} 70%, transparent 100%);line-height:1px;font-size:0">&nbsp;</div>`;
+}
+
+/**
+ * Metric tile grid — 2-column layout for InBody / body metrics / KPIs.
+ * Each tile shows a label + a large numeric value + optional unit.
+ */
+export function metricGridHtml(opts: {
+  metrics: Array<{ label: string; value: string | number | null | undefined; unit?: string; tone?: "primary" | "success" | "warn" | "danger" }>;
+}): string {
+  const cells = opts.metrics
+    .filter((m) => m.value !== null && m.value !== undefined && m.value !== "")
+    .map((m) => {
+      const fg =
+        m.tone === "success" ? COLOR.emerald :
+        m.tone === "warn"    ? COLOR.amber :
+        m.tone === "danger"  ? COLOR.red :
+        COLOR.primary;
+      return `<td width="50%" style="padding:6px;vertical-align:top">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:12px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
+          <tr><td style="padding:14px 16px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};margin:0 0 8px">${escapeHtml(m.label)}</div>
+            <div style="font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;color:${fg};line-height:1">${escapeHtml(String(m.value))}${m.unit ? `<span style="font-size:13px;font-weight:600;color:${COLOR.textMuted};margin-left:4px;letter-spacing:0.5px">${escapeHtml(m.unit)}</span>` : ""}</div>
+          </td></tr>
+        </table>
+      </td>`;
+    });
+  if (cells.length === 0) return "";
+  // Pad to even count for clean 2-column grid
+  if (cells.length % 2 === 1) cells.push(`<td width="50%" style="padding:6px">&nbsp;</td>`);
+  const rows: string[] = [];
+  for (let i = 0; i < cells.length; i += 2) {
+    rows.push(`<tr>${cells[i]}${cells[i + 1]}</tr>`);
+  }
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px -6px 22px">
+    ${rows.join("")}
+  </table>`;
+}
+
+/**
+ * AED price card — premium currency display for payment / package emails.
+ * Renders the amount with a luminous TRON cyan accent and AED label.
+ */
+export function priceCardHtml(opts: {
+  label: string;
+  amountAed: number;
+  sublabel?: string;
+  tone?: "primary" | "success" | "warn";
+}): string {
+  const fg =
+    opts.tone === "success" ? COLOR.emerald :
+    opts.tone === "warn"    ? COLOR.amber :
+    COLOR.primary;
+  const formatted = new Intl.NumberFormat("en-US").format(Math.round(opts.amountAed));
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 22px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -8px ${COLOR.primaryGlow}">
+    <tr><td style="padding:20px 24px">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};margin:0 0 10px">${escapeHtml(opts.label)}</div>
+      <div style="font-family:'Times New Roman',Georgia,serif;color:${fg};line-height:1">
+        <span style="font-size:14px;font-weight:600;letter-spacing:2px;color:${COLOR.textMuted};margin-right:8px;vertical-align:middle">AED</span><span style="font-size:32px;font-weight:700;letter-spacing:-0.5px;vertical-align:middle">${escapeHtml(formatted)}</span>
+      </div>
+      ${opts.sublabel ? `<div style="margin-top:8px;font-size:13px;color:${COLOR.textMuted}">${escapeHtml(opts.sublabel)}</div>` : ""}
+    </td></tr>
+  </table>`;
+}
+
+// ===========================================================================
+// NEW ADMIN EMAIL BUILDERS — operational coverage for every important event
+// ===========================================================================
+
+/**
+ * Admin notification when an attendance status is recorded against a booking
+ * (attended / no_show / late_cancel_charged / late_cancel_free). Distinct
+ * subjects per state so the inbox is glanceable.
+ */
+export function buildAdminAttendanceEmail(opts: {
+  attendance: "attended" | "no_show" | "late_cancel_charged" | "late_cancel_free";
+  clientName: string;
+  date: string;
+  time12: string;
+  packageName?: string | null;
+  remainingSessions?: number | null;
+  reason?: string | null;
+  websiteUrl?: string;
+}): Built {
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const cfg = (() => {
+    switch (opts.attendance) {
+      case "attended":
+        return { subject: `Session attended — ${opts.clientName}`, badge: "Attended", tone: "success" as BadgeTone, eyebrow: "Attendance recorded", title: "Session attended", body: `${opts.clientName} completed their session on ${opts.date} at ${opts.time12}.` };
+      case "no_show":
+        return { subject: `No-show — ${opts.clientName} | ${opts.date} ${opts.time12}`, badge: "No-show", tone: "danger" as BadgeTone, eyebrow: "Attendance flagged", title: "Client did not attend", body: `${opts.clientName} did not arrive for the ${opts.date} session at ${opts.time12}. The session has been counted from their package.` };
+      case "late_cancel_charged":
+        return { subject: `Late cancel (charged) — ${opts.clientName} | ${opts.date} ${opts.time12}`, badge: "Late Cancel", tone: "warn" as BadgeTone, eyebrow: "Attendance recorded", title: "Late cancellation — session charged", body: `${opts.clientName} cancelled the ${opts.date} session at ${opts.time12} inside the cutoff window. The session has been deducted.` };
+      case "late_cancel_free":
+        return { subject: `Late cancel (free) — ${opts.clientName} | ${opts.date} ${opts.time12}`, badge: "Cancelled", tone: "neutral" as BadgeTone, eyebrow: "Attendance recorded", title: "Late cancellation — waived", body: `${opts.clientName}'s ${opts.date} session at ${opts.time12} was cancelled and not deducted from their package.` };
+    }
+  })();
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: cfg.badge, tone: cfg.tone })}</div>` +
+    heroHtml({ title: cfg.title, body: cfg.body, eyebrow: cfg.eyebrow }) +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Date", opts.date],
+        ["Time (Dubai)", `${opts.time12} · GST (UTC+4)`],
+        ["Package", opts.packageName ?? null],
+        ["Remaining sessions", opts.remainingSessions ?? null],
+        ["Reason / note", opts.reason ?? null],
+      ],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
+  const html = adminShell({ previewText: cfg.subject, bodyHtml });
+  const text = plain(
+    cfg.title,
+    `Client: ${opts.clientName}`,
+    `When: ${opts.date} at ${opts.time12} (Dubai)`,
+    opts.packageName && `Package: ${opts.packageName}`,
+    opts.remainingSessions != null && `Remaining: ${opts.remainingSessions}`,
+    opts.reason && `Reason: ${opts.reason}`,
+  );
+  return { subject: cfg.subject, html, text };
+}
+
+/**
+ * Admin notification specifically for protected / emergency cancellations —
+ * distinct subject + badge so it stands apart from regular cancellations.
+ */
+export function buildAdminEmergencyCancelEmail(opts: {
+  clientName: string;
+  date: string;
+  time12: string;
+  monthlyQuotaUsed?: number | null;
+  monthlyQuotaTotal?: number | null;
+  reason?: string | null;
+  websiteUrl?: string;
+}): Built {
+  const subject = `Protected cancellation — ${opts.clientName} | ${opts.date} ${opts.time12}`;
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const quotaLine =
+    opts.monthlyQuotaUsed != null && opts.monthlyQuotaTotal != null
+      ? `${opts.monthlyQuotaUsed} of ${opts.monthlyQuotaTotal} used this month`
+      : null;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Protected · No charge", tone: "vip" })}</div>` +
+    heroHtml({
+      eyebrow: "Premium cancellation used",
+      title: "Protected cancellation",
+      body: `${opts.clientName} used a Protected Cancellation for the ${opts.date} session at ${opts.time12}. The session was not deducted.`,
+    }) +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Date", opts.date],
+        ["Time (Dubai)", `${opts.time12} · GST (UTC+4)`],
+        ["Monthly quota", quotaLine],
+        ["Note", opts.reason ?? null],
+      ],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    "Protected cancellation",
+    `Client: ${opts.clientName}`,
+    `When: ${opts.date} at ${opts.time12} (Dubai)`,
+    quotaLine && `Monthly quota: ${quotaLine}`,
+    opts.reason && `Note: ${opts.reason}`,
+  );
+  return { subject, html, text };
+}
+
+/**
+ * Admin notification when a payment is recorded / status changed
+ * (paid in full, partial receipt, complimentary, refund-pending, etc.).
+ */
+export function buildAdminPaymentEmail(opts: {
+  clientName: string;
+  packageName?: string | null;
+  paymentStatus: string;
+  amountReceived?: number | null;     // delta this transaction (for add-payment)
+  amountPaidTotal?: number | null;    // running total
+  packageTotal?: number | null;
+  note?: string | null;
+  websiteUrl?: string;
+}): Built {
+  const websiteUrl = opts.websiteUrl || BRAND.defaultWebsite;
+  const isPaid = opts.paymentStatus === "paid";
+  const isPartial = opts.paymentStatus === "partially_paid";
+  const isComp = opts.paymentStatus === "complimentary";
+  const badge = isPaid ? "Paid in full" : isPartial ? "Partial payment" : isComp ? "Complimentary" : opts.paymentStatus;
+  const tone: BadgeTone = isPaid ? "success" : isPartial ? "tron" : isComp ? "vip" : "warn";
+  const title = isPaid
+    ? "Package paid in full"
+    : isPartial
+      ? "Partial payment received"
+      : isComp
+        ? "Package marked complimentary"
+        : "Payment status updated";
+  const subject = `${title} — ${opts.clientName}${opts.packageName ? ` · ${opts.packageName}` : ""}`;
+  const remaining =
+    opts.amountPaidTotal != null && opts.packageTotal != null
+      ? Math.max(0, opts.packageTotal - opts.amountPaidTotal)
+      : null;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: badge, tone })}</div>` +
+    heroHtml({
+      eyebrow: "Payment update",
+      title,
+      body: `${opts.clientName}${opts.packageName ? ` — ${opts.packageName}` : ""}`,
+    }) +
+    (opts.amountReceived != null && opts.amountReceived > 0
+      ? priceCardHtml({
+          label: "Amount received",
+          amountAed: opts.amountReceived,
+          sublabel:
+            opts.amountPaidTotal != null && opts.packageTotal != null
+              ? `Total paid AED ${new Intl.NumberFormat("en-US").format(Math.round(opts.amountPaidTotal))} of AED ${new Intl.NumberFormat("en-US").format(Math.round(opts.packageTotal))}`
+              : undefined,
+          tone: "success",
+        })
+      : opts.amountPaidTotal != null && isPaid
+        ? priceCardHtml({
+            label: "Package total paid",
+            amountAed: opts.amountPaidTotal,
+            tone: "success",
+          })
+        : "") +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Package", opts.packageName ?? null],
+        ["Status", badge],
+        opts.amountPaidTotal != null ? ["Total paid", `AED ${new Intl.NumberFormat("en-US").format(Math.round(opts.amountPaidTotal))}`] : ["", null],
+        opts.packageTotal != null ? ["Package value", `AED ${new Intl.NumberFormat("en-US").format(Math.round(opts.packageTotal))}`] : ["", null],
+        remaining != null && remaining > 0 ? ["Outstanding", `AED ${new Intl.NumberFormat("en-US").format(Math.round(remaining))}`] : ["", null],
+        ["Note", opts.note ?? null],
+      ],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${websiteUrl}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    title,
+    `Client: ${opts.clientName}`,
+    opts.packageName && `Package: ${opts.packageName}`,
+    `Status: ${badge}`,
+    opts.amountReceived != null && opts.amountReceived > 0 && `Received: AED ${opts.amountReceived}`,
+    opts.amountPaidTotal != null && `Total paid: AED ${opts.amountPaidTotal}`,
+    opts.packageTotal != null && `Package value: AED ${opts.packageTotal}`,
+    remaining != null && remaining > 0 && `Outstanding: AED ${remaining}`,
+    opts.note && `Note: ${opts.note}`,
+  );
+  return { subject, html, text };
+}
+
+/**
+ * Admin notification when a package is activated — newly created, approved,
+ * or converted from a trial. Snapshots package economics.
+ */
+export function buildAdminPackageActivatedEmail(opts: {
+  clientName: string;
+  packageName: string;
+  totalSessions?: number | null;
+  paidSessions?: number | null;
+  bonusSessions?: number | null;
+  totalPrice?: number | null;
+  startDate?: string | null;
+  expiryDate?: string | null;
+  paymentStatus?: string | null;
+  source?: "new" | "approved" | "converted_trial";
+  websiteUrl?: string;
+}): Built {
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const verb = opts.source === "approved" ? "approved" : opts.source === "converted_trial" ? "activated from trial" : "created";
+  const subject = `Package ${verb} — ${opts.clientName} · ${opts.packageName}`;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Package live", tone: "success" })}</div>` +
+    heroHtml({
+      eyebrow: "Client onboarding",
+      title: "Package is live",
+      body: `${opts.clientName}'s ${opts.packageName} has been ${verb} and is now active.`,
+    }) +
+    (opts.totalPrice != null && opts.totalPrice > 0
+      ? priceCardHtml({ label: "Package value", amountAed: opts.totalPrice, sublabel: opts.paymentStatus ? `Payment status — ${opts.paymentStatus}` : undefined })
+      : "") +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Package", opts.packageName],
+        opts.totalSessions != null ? ["Total sessions", `${opts.totalSessions}${opts.bonusSessions ? ` (incl. ${opts.bonusSessions} bonus)` : ""}`] : ["", null],
+        opts.paidSessions != null ? ["Paid sessions", opts.paidSessions] : ["", null],
+        ["Start date", opts.startDate ?? null],
+        ["Expires", opts.expiryDate ?? null],
+        ["Payment status", opts.paymentStatus ?? null],
+      ],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    `Package ${verb} — ${opts.clientName}`,
+    `Package: ${opts.packageName}`,
+    opts.totalSessions != null && `Total sessions: ${opts.totalSessions}`,
+    opts.totalPrice != null && `Value: AED ${opts.totalPrice}`,
+    opts.startDate && `Start: ${opts.startDate}`,
+    opts.expiryDate && `Expires: ${opts.expiryDate}`,
+    opts.paymentStatus && `Payment: ${opts.paymentStatus}`,
+  );
+  return { subject, html, text };
+}
+
+/**
+ * Admin notification when a package expires (sessions exhausted OR expiry
+ * date passed). Distinct from "expiring soon" — this is the terminal state.
+ */
+export function buildAdminPackageExpiredEmail(opts: {
+  clientName: string;
+  packageName: string;
+  reason: "sessions_exhausted" | "date_expired";
+  totalSessions?: number | null;
+  expiryDate?: string | null;
+  websiteUrl?: string;
+}): Built {
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const detail =
+    opts.reason === "sessions_exhausted"
+      ? "All sessions have been used."
+      : "The package window has closed.";
+  const subject = `Package finished — ${opts.clientName} · ${opts.packageName}`;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Renewal needed", tone: "warn" })}</div>` +
+    heroHtml({
+      eyebrow: "Renewal moment",
+      title: "Package complete — renewal opportunity",
+      body: `${opts.clientName}'s ${opts.packageName} is finished. ${detail} Reach out before the rhythm breaks.`,
+    }) +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Package", opts.packageName],
+        ["Reason", opts.reason === "sessions_exhausted" ? "Sessions exhausted" : "Date expired"],
+        opts.totalSessions != null ? ["Total sessions", opts.totalSessions] : ["", null],
+        ["Expired on", opts.expiryDate ?? null],
+      ],
+    }) +
+    noteHtml({ text: "Tip: a same-day check-in often converts renewals. The momentum is yours to keep alive.", tone: "info" }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    `Package finished — ${opts.clientName}`,
+    `Package: ${opts.packageName}`,
+    `Reason: ${opts.reason === "sessions_exhausted" ? "Sessions exhausted" : "Date expired"}`,
+    opts.expiryDate && `Expired on: ${opts.expiryDate}`,
+  );
+  return { subject, html, text };
+}
+
+/**
+ * Admin notification when a package is extended (admin-granted or
+ * client-request approved). Captures old + new expiry.
+ */
+export function buildAdminPackageExtendedEmail(opts: {
+  clientName: string;
+  packageName: string;
+  daysAdded: number;
+  previousExpiry?: string | null;
+  newExpiry: string;
+  reason?: string | null;
+  websiteUrl?: string;
+}): Built {
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const subject = `Package extended — ${opts.clientName} · +${opts.daysAdded}d`;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: `+${opts.daysAdded} days`, tone: "tron" })}</div>` +
+    heroHtml({
+      eyebrow: "Package extension",
+      title: "Package window extended",
+      body: `${opts.clientName}'s ${opts.packageName} expiry has been pushed forward by ${opts.daysAdded} day${opts.daysAdded === 1 ? "" : "s"}.`,
+    }) +
+    infoCardHtml({
+      rows: [
+        ["Client", opts.clientName],
+        ["Package", opts.packageName],
+        ["Days added", `+${opts.daysAdded}`],
+        ["Previous expiry", opts.previousExpiry ?? null],
+        ["New expiry", opts.newExpiry],
+        ["Reason", opts.reason ?? null],
+      ],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    `Package extended — ${opts.clientName}`,
+    `Package: ${opts.packageName}`,
+    `+${opts.daysAdded} days`,
+    opts.previousExpiry && `From: ${opts.previousExpiry}`,
+    `New expiry: ${opts.newExpiry}`,
+    opts.reason && `Reason: ${opts.reason}`,
+  );
+  return { subject, html, text };
+}
+
+/**
+ * Admin notification when a client makes a meaningful profile change
+ * (avatar updated, contact info changed, training goal updated). Aggregates
+ * the diff into a single concise email so the inbox doesn't fill with noise.
+ */
+export function buildAdminProfileUpdateEmail(opts: {
+  clientName: string;
+  changes: Array<[string, string | null]>;  // [field, new-value]
+  websiteUrl?: string;
+}): Built {
+  const website = opts.websiteUrl || BRAND.defaultWebsite;
+  const subject = `Profile updated — ${opts.clientName}`;
+  const bodyHtml =
+    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Profile updated", tone: "info" })}</div>` +
+    heroHtml({
+      eyebrow: "Client activity",
+      title: "Profile updated",
+      body: `${opts.clientName} just updated their profile.`,
+    }) +
+    infoCardHtml({
+      rows: [["Client", opts.clientName], ...opts.changes],
+    }) +
+    dividerHtml() +
+    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+  const html = adminShell({ previewText: subject, bodyHtml });
+  const text = plain(
+    `Profile updated — ${opts.clientName}`,
+    ...opts.changes.map(([k, v]) => `${k}: ${v ?? "—"}`),
+  );
   return { subject, html, text };
 }

@@ -98,6 +98,13 @@ import {
   buildPackageExpiringEmail,
   buildPackageFinishedEmail,
   buildSessionReminderEmail,
+  buildAdminAttendanceEmail,
+  buildAdminEmergencyCancelEmail,
+  buildAdminPaymentEmail,
+  buildAdminPackageActivatedEmail,
+  buildAdminPackageExpiredEmail,
+  buildAdminPackageExtendedEmail,
+  buildAdminProfileUpdateEmail,
   type BookingDetails,
 } from "./email-templates";
 import { z } from "zod";
@@ -282,7 +289,7 @@ async function runMissedCheckinNotifications(): Promise<void> {
 // every role (clients AND admins — no bypass). The cancellation cutoff is a
 // SEPARATE system (default 6h, lives in settings.cancellation_cutoff_hours)
 // — do not conflate. Mirrors MIN_ADVANCE_HOURS in client/src/lib/booking-utils.ts.
-const MIN_ADVANCE_BOOKING_HOURS = 6;
+const MIN_ADVANCE_BOOKING_HOURS = 3;
 const MIN_ADVANCE_BOOKING_MS = MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
@@ -615,12 +622,17 @@ async function dispatchBookingNotifications(args: {
           replyTo: trainerEmail(),
         });
         try { await storage.updatePackage(pkg.id, { finishedNotifiedAt: new Date() } as any); } catch {}
+        // Use the dedicated "expired" template (renewal opportunity tone)
+        // rather than the generic "expiring" warning. Distinguishes
+        // sessions_exhausted vs date_expired in subject + body.
         try {
-          const adminMsg = buildAdminPackageExpiringEmail({
+          const exhausted = (remainingAfter ?? 0) <= 0;
+          const adminMsg = buildAdminPackageExpiredEmail({
             clientName,
-            packageName,
-            remainingSessions: remainingAfter,
-            daysUntilExpiry: daysToExpiry,
+            packageName: packageName ?? "Training package",
+            reason: exhausted ? "sessions_exhausted" : "date_expired",
+            totalSessions: pkg.totalSessions ?? null,
+            expiryDate: pkg.expiryDate ? String(pkg.expiryDate) : null,
           });
           await sendEmail({ to: trainerEmail(), subject: adminMsg.subject, text: adminMsg.text, html: adminMsg.html });
         } catch {}
@@ -666,17 +678,71 @@ async function dispatchBookingChangeNotification(opts: {
   fromDate?: string | null;
   fromTime12?: string | null;
   reason?: string | null;
+  protectedCancel?: boolean;
+  monthlyQuotaUsed?: number | null;
+  monthlyQuotaTotal?: number | null;
 }): Promise<void> {
   try {
     const user = await storage.getUser(opts.booking.userId).catch(() => undefined);
     const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.booking.userId}`).trim();
-    const built = buildAdminBookingChangeEmail({
-      kind: opts.kind,
+    const time12 = formatTime12Server(opts.booking.timeSlot);
+    const built =
+      opts.kind === "cancellation" && opts.protectedCancel
+        ? buildAdminEmergencyCancelEmail({
+            clientName,
+            date: opts.booking.date,
+            time12,
+            monthlyQuotaUsed: opts.monthlyQuotaUsed ?? null,
+            monthlyQuotaTotal: opts.monthlyQuotaTotal ?? null,
+            reason: opts.reason ?? null,
+          })
+        : buildAdminBookingChangeEmail({
+            kind: opts.kind,
+            clientName,
+            date: opts.booking.date,
+            time12,
+            fromDate: opts.fromDate ?? null,
+            fromTime12: opts.fromTime12 ?? null,
+            reason: opts.reason ?? null,
+          });
+    await sendEmail({
+      to: trainerEmail(),
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: user?.email ?? undefined,
+    });
+  } catch (e) {
+    console.warn(`[notif] booking ${opts.kind} email failed:`, e);
+  }
+}
+
+// Best-effort admin email helpers — never throw, never block. Each wraps
+// a builder + sendEmail into one dispatcher so trigger sites stay readable.
+async function dispatchAdminAttendanceEmail(opts: {
+  attendance: "attended" | "no_show" | "late_cancel_charged" | "late_cancel_free";
+  booking: Booking;
+  reason?: string | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.booking.userId).catch(() => undefined);
+    const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.booking.userId}`).trim();
+    let packageName: string | null = null;
+    let remainingSessions: number | null = null;
+    if (opts.booking.packageId) {
+      const pkg = await storage.getPackage(opts.booking.packageId).catch(() => undefined);
+      if (pkg) {
+        packageName = pkg.name ?? null;
+        remainingSessions = Math.max(0, (pkg.totalSessions ?? 0) - (pkg.usedSessions ?? 0));
+      }
+    }
+    const built = buildAdminAttendanceEmail({
+      attendance: opts.attendance,
       clientName,
       date: opts.booking.date,
       time12: formatTime12Server(opts.booking.timeSlot),
-      fromDate: opts.fromDate ?? null,
-      fromTime12: opts.fromTime12 ?? null,
+      packageName,
+      remainingSessions,
       reason: opts.reason ?? null,
     });
     await sendEmail({
@@ -687,7 +753,97 @@ async function dispatchBookingChangeNotification(opts: {
       replyTo: user?.email ?? undefined,
     });
   } catch (e) {
-    console.warn(`[notif] booking ${opts.kind} email failed:`, e);
+    console.warn("[notif] admin attendance email failed:", e);
+  }
+}
+
+async function dispatchAdminPaymentEmail(opts: {
+  pkg: any;
+  amountReceived?: number | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.pkg.userId).catch(() => undefined);
+    const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.pkg.userId}`).trim();
+    const built = buildAdminPaymentEmail({
+      clientName,
+      packageName: opts.pkg.name ?? null,
+      paymentStatus: opts.pkg.paymentStatus ?? "pending",
+      amountReceived: opts.amountReceived ?? null,
+      amountPaidTotal: opts.pkg.amountPaid ?? null,
+      packageTotal: opts.pkg.totalPrice ?? null,
+      note: opts.pkg.paymentNote ?? null,
+    });
+    await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
+  } catch (e) {
+    console.warn("[notif] admin payment email failed:", e);
+  }
+}
+
+async function dispatchAdminPackageActivatedEmail(opts: {
+  pkg: any;
+  source: "new" | "approved" | "converted_trial";
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.pkg.userId).catch(() => undefined);
+    const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.pkg.userId}`).trim();
+    const built = buildAdminPackageActivatedEmail({
+      clientName,
+      packageName: opts.pkg.name ?? "Training package",
+      totalSessions: opts.pkg.totalSessions ?? null,
+      paidSessions: opts.pkg.paidSessions ?? null,
+      bonusSessions: opts.pkg.bonusSessions ?? null,
+      totalPrice: opts.pkg.totalPrice ?? null,
+      startDate: opts.pkg.startDate ? String(opts.pkg.startDate) : null,
+      expiryDate: opts.pkg.expiryDate ? String(opts.pkg.expiryDate) : null,
+      paymentStatus: opts.pkg.paymentStatus ?? null,
+      source: opts.source,
+    });
+    await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
+  } catch (e) {
+    console.warn("[notif] admin package-activated email failed:", e);
+  }
+}
+
+async function dispatchAdminPackageExtendedEmail(opts: {
+  pkg: any;
+  daysAdded: number;
+  previousExpiry?: string | null;
+  newExpiry: string;
+  reason?: string | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.pkg.userId).catch(() => undefined);
+    const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.pkg.userId}`).trim();
+    const built = buildAdminPackageExtendedEmail({
+      clientName,
+      packageName: opts.pkg.name ?? "Training package",
+      daysAdded: opts.daysAdded,
+      previousExpiry: opts.previousExpiry ?? null,
+      newExpiry: opts.newExpiry,
+      reason: opts.reason ?? null,
+    });
+    await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
+  } catch (e) {
+    console.warn("[notif] admin package-extended email failed:", e);
+  }
+}
+
+async function dispatchAdminProfileUpdateEmail(opts: {
+  user: User;
+  changes: Array<[string, string | null]>;
+}): Promise<void> {
+  try {
+    const clientName = (opts.user.fullName?.trim() || opts.user.username || `Client #${opts.user.id}`).trim();
+    const built = buildAdminProfileUpdateEmail({ clientName, changes: opts.changes });
+    await sendEmail({
+      to: trainerEmail(),
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: opts.user.email ?? undefined,
+    });
+  } catch (e) {
+    console.warn("[notif] admin profile-update email failed:", e);
   }
 }
 
@@ -974,6 +1130,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const dataUrl = `data:image/webp;base64,${webp.toString("base64")}`;
       const updated = await storage.updateUser(id, { profilePictureUrl: dataUrl } as any);
       const enriched = await sanitizeAndEnrich(updated);
+      // Best-effort admin email — flag profile photo updates for clients only.
+      // Skipped when admin updates an admin's own avatar (no operational value).
+      if (updated.role === "client") {
+        void dispatchAdminProfileUpdateEmail({
+          user: updated,
+          changes: [["Change", "Profile photo updated"]],
+        });
+      }
       res.json(enriched);
     } catch (e) {
       console.error("[profile-picture] processing failed:", e);
@@ -996,6 +1160,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const updated = await storage.updateUser(id, { profilePictureUrl: null } as any);
     const enriched = await sanitizeAndEnrich(updated);
+    if (updated.role === "client") {
+      void dispatchAdminProfileUpdateEmail({
+        user: updated,
+        changes: [["Change", "Profile photo removed"]],
+      });
+    }
     res.json(enriched);
   });
 
@@ -1256,7 +1426,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }));
       return res.status(400).json({
         message:
-          "Bookings must be made at least 6 hours in advance so the trainer can prepare and arrive on time.",
+          "Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time.",
         code: "lead_time_too_short",
       });
     }
@@ -1912,12 +2082,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    // Best-effort admin email — never blocks the response.
-    void dispatchBookingChangeNotification({
-      kind: "cancellation",
-      booking,
-      reason: usedProtected ? "Protected cancellation" : isWithinCutoff ? "Late cancellation" : "Free cancellation (outside cutoff)",
-    });
+    // Best-effort admin email — never blocks the response. Protected
+    // cancellations route to the dedicated VIP-styled template with the
+    // monthly quota snapshot; everything else uses the generic builder.
+    {
+      let monthlyQuotaUsed: number | null = null;
+      let monthlyQuotaTotal: number | null = null;
+      if (usedProtected) {
+        try {
+          const actorAfter = await storage.getUser(me.id);
+          monthlyQuotaUsed = actorAfter?.protectedCancelCount ?? null;
+          monthlyQuotaTotal = protectedCancellationQuota(actorAfter?.vipTier);
+        } catch { /* ignore */ }
+      }
+      void dispatchBookingChangeNotification({
+        kind: "cancellation",
+        booking,
+        reason: usedProtected
+          ? "Protected cancellation"
+          : isWithinCutoff
+            ? "Late cancellation"
+            : "Free cancellation (outside cutoff)",
+        protectedCancel: usedProtected,
+        monthlyQuotaUsed,
+        monthlyQuotaTotal,
+      });
+    }
 
     // P5b / Task #6: Anyone who didn't initiate this cancellation needs
     // to know. That includes the booking owner (when an admin or the
@@ -2700,6 +2890,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: created.name ?? null,
       } as any);
     } catch {/* ignore */}
+    void dispatchAdminPackageActivatedEmail({ pkg: created, source: "new" });
     res.status(201).json(created);
   });
 
@@ -2804,6 +2995,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `${status}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
+    void dispatchAdminPaymentEmail({ pkg: updated });
     res.json(updated);
   });
 
@@ -2848,6 +3040,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `AED ${parsed.data.amount.toLocaleString()}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
+    void dispatchAdminPaymentEmail({ pkg: updated, amountReceived: parsed.data.amount });
     res.json(updated);
   });
 
@@ -2903,6 +3096,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `Converted to ${tmpl.name} (${tmpl.totalSessions} sessions, AED ${tmpl.totalPrice.toLocaleString()})`,
       } as any);
     } catch {/* ignore */}
+    void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "converted_trial" });
     res.json(updated);
   });
 
@@ -4881,6 +5075,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       try { await storage.incrementUserNoShow(booking.userId); } catch {}
     }
 
+    if (newStatus !== previousStatus) {
+      void dispatchAdminAttendanceEmail({
+        attendance: parsed.data.attendance,
+        booking: updated,
+        reason: parsed.data.reason ?? null,
+      });
+    }
+
     // P5b: Milestone notification on the 5th / 10th / 25th / 50th / 100th
     // completed session. Fired only on the transition INTO `completed`
     // so toggling attendance back-and-forth never re-fires (a) because
@@ -4960,7 +5162,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const note: string | null = (req.body?.note ?? null) || null;
     const updated = await storage.updateUser(id, { clientStatus: "active" } as any);
 
-    // Approve newest package if one is awaiting approval
+    // Approve newest package if one is awaiting approval. The activation
+    // email fires only on the actual false→true transition so repeated
+    // approve calls (idempotent admin clicks) don't spam Youssef's inbox.
     try {
       const pkgs = await storage.getPackages({ userId: id });
       const newest = pkgs
@@ -4992,6 +5196,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             reason: note ?? "Client approved by admin",
           } as any);
         } catch {}
+        void dispatchAdminPackageActivatedEmail({ pkg: approvedPkg, source: "approved" });
       }
     } catch (e) {
       console.warn("[admin/approve] package approval failed:", e);
@@ -5059,13 +5264,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const pkg = await storage.getPackage(id);
     if (!pkg) return res.status(404).json({ message: "Package not found" });
 
+    const previousExpiry = pkg.expiryDate ? String(pkg.expiryDate) : null;
     let newExpiryStr: string;
+    let daysAdded: number;
     if (parsed.data.newExpiryDate) {
       newExpiryStr = parsed.data.newExpiryDate;
+      const baseMs = previousExpiry ? new Date(previousExpiry).getTime() : Date.now();
+      daysAdded = Math.max(
+        0,
+        Math.round((new Date(newExpiryStr).getTime() - baseMs) / 86_400_000),
+      );
     } else {
       const base = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
       const next = new Date(base);
-      next.setDate(next.getDate() + (parsed.data.addDays ?? 7));
+      daysAdded = parsed.data.addDays ?? 7;
+      next.setDate(next.getDate() + daysAdded);
       newExpiryStr = next.toISOString().slice(0, 10);
     }
     const updated = await storage.updatePackage(id, {
@@ -5084,6 +5297,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : `Extended by ${parsed.data.addDays ?? 7} days → ${newExpiryStr}`,
       } as any);
     } catch {/* ignore */}
+    void dispatchAdminPackageExtendedEmail({
+      pkg: updated,
+      daysAdded,
+      previousExpiry,
+      newExpiry: newExpiryStr,
+    });
     res.json(updated);
   });
 
