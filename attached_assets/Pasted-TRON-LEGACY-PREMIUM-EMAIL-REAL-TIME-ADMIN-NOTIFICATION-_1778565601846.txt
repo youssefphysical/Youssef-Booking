@@ -1,0 +1,466 @@
+TRON LEGACY PREMIUM EMAIL + REAL-TIME ADMIN NOTIFICATION SYSTEM — FULL PLATFORM PASS
+
+Create a COMPLETE premium email ecosystem for the platform.
+
+The entire email experience must feel like:
+
+- TRON LEGACY
+- futuristic luxury
+- cinematic premium fitness brand
+- elite private training service
+- ultra high-end SaaS platform
+
+The design language MUST match the website:
+
+- AMOLED black backgrounds
+- neon cyan glow accents
+- smooth glassmorphism
+- soft luxury gradients
+- premium typography
+- futuristic spacing
+- elegant animations where email-safe
+- clean hierarchy
+- modern luxury branding
+
+IMPORTANT:
+Emails must look FULL and professionally designed.
+Do NOT leave large empty spaces.
+Every email should feel intentionally designed edge-to-edge like a luxury product.
+
+====================================================
+GLOBAL EMAIL DESIGN SYSTEM
+
+Use:
+
+- responsive HTML email templates
+- mobile-first email rendering
+- Gmail/Outlook compatibility
+- premium spacing system
+- consistent card design
+- soft glow borders
+- neon cyan highlights
+- elegant section dividers
+- premium CTA buttons
+- subtle Tron-style visual effects
+
+Typography:
+
+- clean luxury font stack
+- strong readable hierarchy
+- bold section titles
+- soft secondary text
+- clear data alignment
+
+Buttons:
+
+- smooth rounded corners
+- cyan neon glow
+- premium hover states
+- large tap targets for mobile
+
+Cards:
+
+- glass-effect luxury cards
+- dark layered surfaces
+- subtle borders
+- elegant shadows
+
+====================================================
+CLIENT EMAIL SYSTEM
+
+Create FULL premium client email flows for:
+
+AUTH:
+
+- Welcome email
+- Email verification
+- Password reset
+- Account approved
+- Verification success
+
+BOOKING:
+
+- Booking confirmation
+- Booking reminder
+- Reschedule confirmation
+- Cancellation confirmation
+- Emergency cancellation review
+- Session completed
+- No-show warning
+
+PACKAGE:
+
+- Package activated
+- Sessions updated
+- Sessions running low
+- Package expiring soon
+- Package expired
+- Package upgraded
+- Package renewed
+- Trial completed
+- Trial converted to paid package
+
+PAYMENT:
+
+- Payment confirmation
+- Partial payment recorded
+- Outstanding balance reminder
+- Full payment completed
+
+MARKETING / RETENTION:
+
+- Welcome to the platform
+- Come back reminder
+- VIP status unlocked
+- Transformation motivation emails
+- Consistency motivation
+- Fitness journey reminders
+
+====================================================
+CLIENT EMAIL CONTENT STYLE
+
+Client emails must feel:
+
+- motivational
+- premium
+- luxurious
+- personal
+- elite coaching experience
+
+Every email should contain:
+
+- client name
+- package details
+- remaining sessions
+- expiry date
+- trainer branding
+- strong CTA buttons
+- premium layout
+- motivational message
+
+Add professional motivational copy like:
+“Discipline creates transformation.”
+“Consistency builds results.”
+“Your next level starts with your next session.”
+
+====================================================
+EMAIL VISUAL STRUCTURE
+
+Every email should visually include:
+
+HEADER:
+
+- Tron luxury hero
+- glowing logo area
+- premium branding
+- neon cyan accents
+
+BODY:
+
+- important information cards
+- package status
+- booking details
+- session progress
+- trainer message
+- premium CTA buttons
+
+FOOTER:
+
+- WhatsApp support
+- Instagram
+- copyright
+- privacy links
+- premium closing line
+
+====================================================
+BOOKING CONFIRMATION EMAIL
+
+When a client books a session:
+send a PREMIUM booking email containing:
+
+- Client name
+- Session date
+- Session time
+- Dubai timezone
+- Session focus
+- Training goal
+- Package name
+- Remaining sessions
+- Expiry date
+- Cancellation policy
+- Reminder notice
+- WhatsApp support button
+- Add-to-calendar button if possible
+
+Make this email feel:
+high-end, exciting, professional.
+
+====================================================
+BOOKING REMINDER SYSTEM
+
+Automatic reminders:
+
+- 24 hours before session
+- 3 hours before session
+- 1 hour before session
+
+Reminder emails must:
+
+- feel premium
+- increase excitement
+- reduce no-shows
+- clearly show session info
+
+====================================================
+PACKAGE EXPIRY SYSTEM
+
+Automatic emails when:
+
+- package expires in 7 days
+- package expires in 3 days
+- package expires in 24 hours
+- sessions are low
+
+Show:
+
+- remaining sessions
+- expiry countdown
+- renewal CTA
+- WhatsApp support
+
+====================================================
+PAYMENT STATUS SYSTEM
+
+Support:
+
+- fully paid
+- partially paid
+- unpaid
+- outstanding balance
+
+Visually display payment status with luxury badges:
+
+- GREEN = paid
+- YELLOW = partial payment
+- RED = unpaid
+- CYAN = VIP / premium
+
+====================================================
+ADMIN REAL-TIME NOTIFICATION SYSTEM
+
+ANY important action the client performs on the platform must instantly trigger a PREMIUM ADMIN EMAIL notification to:
+youssef.physical@gmail.com
+
+The goal:
+I must always know exactly what is happening on the platform in real time without opening the dashboard.
+
+====================================================
+REAL-TIME ADMIN NOTIFICATIONS
+
+Send a premium admin email instantly when:
+
+ACCOUNT & AUTH:
+
+- New user registration
+- Email verified
+- Password reset requested
+- Profile updated
+- Phone number changed
+- InBody uploaded
+- Verification submitted
+
+BOOKING ACTIONS:
+
+- New booking created
+- Session rescheduled
+- Session cancelled
+- Emergency cancellation submitted
+- Emergency cancellation approved/rejected
+- Booking edited
+- Booking completed
+- Client marked no-show
+- Trainer modified booking
+- Session auto-completed
+
+PACKAGE EVENTS:
+
+- Package selected during signup
+- Package activated
+- Package changed
+- Package upgraded
+- Package downgraded
+- Sessions deducted
+- Sessions added manually
+- Package renewed
+- Package expired
+- Package close to expiry
+- Remaining sessions low
+- Trial assessment completed
+- Trial converted to paid package
+
+PAYMENT EVENTS:
+
+- Payment marked paid
+- Partial payment recorded
+- Outstanding balance remaining
+- Payment pending
+- Payment updated
+- Payment fully completed
+- Manual admin adjustment
+
+CLIENT ACTIVITY:
+
+- Contact form submitted
+- WhatsApp support clicked
+- Multiple failed booking attempts
+- Repeated cancellations
+- High-value lead detected
+- VIP client activity
+- Inactive client reminder triggered
+
+SYSTEM EVENTS:
+
+- Reminder emails failed
+- Booking conflict detected
+- Calendar sync issue
+- Payment mismatch
+- Expiry automation executed
+
+====================================================
+ADMIN EMAIL STYLE
+
+Admin emails must match the same:
+
+- Tron Legacy luxury design
+- premium futuristic styling
+- AMOLED dark theme
+- cyan glow
+- elegant structure
+
+BUT optimized for:
+
+- fast reading
+- fast decision making
+- ultra clear hierarchy
+
+====================================================
+ADMIN EMAIL CONTENT
+
+Every admin email should clearly show:
+
+CLIENT DETAILS:
+
+- Full name
+- Email
+- Phone number
+- Country
+- Registration date
+- Verification status
+
+PACKAGE DETAILS:
+
+- Package name
+- Total sessions
+- Remaining sessions
+- Used sessions
+- Expiry date
+- Payment status
+- Outstanding balance
+
+BOOKING DETAILS:
+
+- Session date
+- Session time
+- Dubai timezone
+- Session focus
+- Training goal
+- Booking status
+- Cancellation reason if exists
+
+ACTIVITY DETAILS:
+
+- Exact action performed
+- Time of action
+- Device/browser if possible
+- Relevant notes
+
+====================================================
+SMART PRIORITY SYSTEM
+
+Use visual alert levels:
+
+GREEN:
+normal activity
+(bookings, successful payments)
+
+YELLOW:
+attention needed
+(partial payment, expiry soon)
+
+RED:
+important issue
+(no-show, unpaid, repeated cancellations)
+
+CYAN/PREMIUM:
+VIP/high-value actions
+
+====================================================
+EMAIL SUBJECT LINES
+
+Subjects must be ultra clear.
+
+Examples:
+
+- New Booking — Ahmed Hassan — May 14, 7:00 PM
+- Package Expiring Soon — Sara Ali — 2 Sessions Left
+- Emergency Cancellation Request — Omar Khaled
+- Payment Marked Paid — Duo Package — AED 9,900
+- VIP Client Registered — High Frequency User
+
+====================================================
+SMART AUTOMATIONS
+
+Add automatic admin alerts for:
+
+- package expires in 7 days
+- package expires in 3 days
+- package expires today
+- remaining sessions below threshold
+- client inactive for X days
+- repeated late cancellations
+- unpaid balances older than X days
+
+====================================================
+TECHNICAL REQUIREMENTS
+
+- Use reusable email component system
+- Centralized email theme tokens
+- Shared design system
+- Dynamic data rendering
+- Queue-based sending
+- Retry failed emails
+- Prevent duplicate sends
+- Track delivery status
+- Email logging
+- Mobile optimization
+- Dark-mode safe rendering
+- Production-grade email performance
+
+====================================================
+FINAL GOAL
+
+The platform’s email system should feel like:
+
+- Apple-level polish
+- luxury fitness brand
+- futuristic elite coaching service
+- premium SaaS operations center
+
+Every email should:
+
+- impress clients
+- build trust
+- increase retention
+- strengthen branding
+- look visually unforgettable
+- feel premium and cinematic
