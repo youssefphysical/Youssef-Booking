@@ -23,7 +23,7 @@ export const ALL_TIME_SLOTS = [
 // This applies to ALL users (clients AND admins — no bypass). Same helper
 // is mirrored on the server at `bookingCutoffMs` in server/routes.ts so
 // the UI and validation can never disagree.
-export const MIN_ADVANCE_HOURS = 6;
+export const MIN_ADVANCE_HOURS = 3;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;

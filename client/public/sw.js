@@ -24,7 +24,7 @@
 // + premium status badges). The activate handler deletes any cache key not
 // matching the current STATIC/RUNTIME names, so bumping this is the safest
 // escape hatch for "old code stuck on user devices" reports.
-const CACHE_VERSION = "v22-2026-05-12-interaction-consistency";
+const CACHE_VERSION = "v23-2026-05-12-leadtime-3h-restored";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
