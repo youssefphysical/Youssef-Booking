@@ -1,0 +1,116 @@
+GO — commit immediately, push to GitHub main, deploy to Vercel production, wait for READY status, then verify the LIVE production email rendering only (not local).
+
+After deploy:
+- trigger a real production booking email
+- verify Gmail Android rendering carefully
+- confirm:
+  • compact one-screen structure
+  • progress bar visible
+  • 16/25 sessions visible
+  • expiration date visible
+  • no horizontal overflow
+  • no squeezed rows
+  • CTA centered and full width
+  • footer compact and premium
+  • no empty spaces
+  • no warm colors anywhere
+  • body size still under Gmail clipping threshold
+
+TRON LEGACY DESIGN REQUIREMENTS:
+- ultra premium Tron Legacy aesthetic
+- deep dark navy / black background
+- electric cyan glow accents only
+- luxury futuristic typography
+- very high readability on mobile
+- no visual clutter
+- compact premium spacing
+- all important information visible in ONE screen without excessive scrolling
+- bold clear titles and values
+- elegant cyan dividers and borders
+- subtle premium glow (not excessive)
+- premium coaching brand feel
+- modern elite Dubai luxury aesthetic
+
+BOOKING EMAIL STRUCTURE:
+1. compact premium header
+   - YOUSSEF AHMED
+   - ELITE COACHING
+   - PERSONAL TRAINING • DUBAI
+
+2. booking confirmation section
+   - Booking Confirmed
+   - short premium subtitle
+
+3. unified session card
+   include:
+   - Client
+   - Email
+   - Phone
+   - Date
+   - Time Dubai
+   - Focus
+   - Goal
+   - Type
+   - Payment status
+   - Sessions progress (example 16/25)
+   - Expiration date
+   - Booking source
+
+4. progress section
+   - cyan progress bar
+   - premium compact style
+   - highly readable on mobile
+
+5. CTA section
+   - centered filled cyan button
+   - premium rounded style
+   - full width on mobile
+   - no broken alignment
+
+6. compact premium footer
+   include:
+   - WhatsApp
+   - Email
+   - Instagram
+   - Dubai location
+   - short premium motivational line
+
+MOBILE RULES:
+- Gmail Android safe
+- Gmail iOS safe
+- Apple Mail safe
+- Desktop Gmail safe
+- tablet safe
+- no CSS tricks that Gmail breaks
+- no horizontal scrolling
+- no 2-column collapse bugs
+- no width squeeze
+- no giant empty spacing
+- no oversized footer
+- no tiny text
+- all text highly readable
+
+STRICT FREEZE MODE:
+DO NOT TOUCH:
+- booking logic
+- auth
+- schema
+- Neon DB
+- cron
+- API
+- package logic
+- website UI
+- redirects
+- sessions system
+
+ONLY modify:
+- server/email-templates.ts
+- safe email-only assets if needed
+
+After deployment provide:
+- GitHub SHA
+- Vercel deployment ID
+- production verification
+- exact changed files
+- production smoke test result
+- confirmation Neon DB untouched

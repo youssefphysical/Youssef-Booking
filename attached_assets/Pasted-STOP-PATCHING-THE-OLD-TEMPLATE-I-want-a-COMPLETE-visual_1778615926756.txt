@@ -1,0 +1,134 @@
+STOP PATCHING THE OLD TEMPLATE.
+
+I want a COMPLETE visual redesign from scratch.
+
+Current issue:
+The email is technically responsive now, but visually it still feels too long, too soft, too template-like, and not premium enough.
+
+I want an ULTRA COMPACT luxury TRON LEGACY booking email that feels like:
+- elite private coaching
+- futuristic Dubai luxury brand
+- cinematic
+- aggressive visual hierarchy
+- premium sports-tech interface
+- NOT a normal email template
+
+MAIN OBJECTIVE:
+The ENTIRE important content should feel visible almost immediately on mobile without excessive scrolling.
+
+REMOVE:
+- excessive padding
+- giant vertical spacing
+- stacked empty sections
+- unnecessary intro text
+- weak typography hierarchy
+- oversized containers
+- long footer blocks
+- soft generic email feeling
+
+DESIGN DIRECTION:
+TRON LEGACY + luxury elite coaching + high-end sports-tech UI.
+
+STYLE:
+- black/deep navy background
+- electric cyan accents only
+- subtle glow
+- sharp luxury typography
+- compact spacing
+- premium dashboard aesthetic
+- futuristic control-panel feeling
+- strong readability
+- visually dense but elegant
+
+MOBILE-FIRST LAYOUT:
+Design for Gmail Android FIRST.
+Desktop adapts afterward.
+
+NO CLASSIC EMAIL LAYOUTS.
+NO corporate newsletter feeling.
+NO giant stacked cards.
+
+NEW STRUCTURE:
+
+1. MICRO HEADER
+Very compact:
+YOUSSEF AHMED
+Elite Coaching
+Dubai
+
+single block only.
+
+2. MAIN STATUS BLOCK
+One compact hero block:
+BOOKING CONFIRMED
+
+Then immediately:
+- Date
+- Time
+- Duration
+- Focus
+- Goal
+- Type
+
+Use:
+compact 2-column grid look
+or ultra compact inline rows.
+
+3. PACKAGE STATUS BAR
+Very compact:
+16 / 25 sessions used
+Expiration: 12 May 2026
+
+Add:
+thin cyan progress bar.
+
+4. ACTION BUTTON
+One premium centered cyan button.
+
+5. MICRO FOOTER
+ONE SINGLE LINE STYLE:
+WhatsApp • Instagram • Email • Dubai
+
+NO huge footer cards.
+
+TYPOGRAPHY:
+- important values BIGGER and brighter
+- labels tiny and elegant
+- titles cinematic and bold
+- much stronger contrast hierarchy
+
+SPACING:
+Reduce vertical height by at least 40%.
+
+CRITICAL:
+I want this to feel like a luxury private-membership confirmation screen, NOT an email template.
+
+TECHNICAL RULES:
+- Gmail Android safe
+- Gmail iOS safe
+- Apple Mail safe
+- Desktop Gmail safe
+- no horizontal overflow
+- no media-query dependence for critical layout
+- no clipping
+- no giant wrappers
+- no huge borders
+
+FREEZE MODE STILL ACTIVE:
+DO NOT TOUCH:
+- booking logic
+- auth
+- schema
+- Neon DB
+- cron
+- API
+- packages system
+- website UI
+
+ONLY email template files allowed.
+
+After changes:
+- push GitHub
+- deploy Vercel
+- verify production
+- provide SHA + deployment ID + changed files
