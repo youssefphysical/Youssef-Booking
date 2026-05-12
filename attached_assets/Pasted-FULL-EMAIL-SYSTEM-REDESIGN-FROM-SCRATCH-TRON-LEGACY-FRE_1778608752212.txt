@@ -1,0 +1,487 @@
+FULL EMAIL SYSTEM REDESIGN FROM SCRATCH — TRON LEGACY FREEZE PREMIUM GLOBAL BRAND
+
+I want to completely redesign the email system from the beginning.
+
+The current emails are technically responsive now, but visually they are not premium enough and do not represent the luxury fitness coaching brand I want.
+
+This must be a full professional redesign, not another small patch.
+
+PROJECT CONTEXT:
+This is a premium personal training / elite coaching booking platform for:
+Youssef Ahmed | Elite Coaching
+Personal Training • Dubai
+
+The website style is:
+
+- TRON Legacy inspired
+- dark AMOLED
+- freeze cyan / ice blue accents
+- luxury fitness brand
+- premium futuristic coaching
+- clean, cinematic, high-end
+- not gamer RGB
+- not cheap neon
+- not crowded dashboard
+
+MAIN GOAL:
+Create a world-class professional email design system that looks premium on:
+
+- Gmail Android
+- Gmail iOS
+- Apple Mail
+- Desktop Gmail
+- Outlook
+- tablets
+- desktop screens
+
+The email must feel like a luxury fitness brand confirmation email, not an admin form and not a broken technical layout.
+
+VERY IMPORTANT:
+Build mobile-first.
+Gmail Android must be the main priority.
+The email must look professional even if media queries are ignored.
+
+FREEZE MODE:
+Email templates only.
+
+DO NOT TOUCH:
+
+- booking logic
+- auth
+- package/session deduction logic
+- payment logic
+- schema
+- Neon DB
+- cron jobs
+- API behavior
+- website dashboard
+- calendar
+- routing
+- Vercel config
+- environment variables
+
+If any file outside email templates/rendering is required, stop and explain first.
+
+DESIGN PRINCIPLES:
+
+1. Mobile-first single-column by default.
+2. Desktop can enhance, but never at the cost of mobile.
+3. No complex multi-column layout that Gmail Android can compress.
+4. No technical-form feeling.
+5. No excessive borders.
+6. No excessive glow.
+7. No tiny cards.
+8. No narrow squeezed layout.
+9. No amber/orange/yellow/gold.
+10. Cyan must be used strategically, not everywhere.
+
+VISUAL STYLE:
+
+- TRON Legacy Freeze
+- AMOLED black background
+- deep navy panels
+- ice cyan highlights
+- electric blue micro accents
+- soft premium cyan glow
+- luxury sci-fi fitness atmosphere
+- clean premium spacing
+- strong readability
+- elegant hierarchy
+- cinematic but email-safe
+
+COLOR SYSTEM:
+Use a restrained premium palette:
+
+- Background: #05070B
+- Main panel: #08111B
+- Card surface: #0B1724
+- Card elevated: #0E1D2E
+- Primary cyan: #5EE7FF
+- Electric cyan: #00E5FF
+- Deep blue: #007BFF
+- Text primary: #F2FBFF
+- Text secondary: #A9C7D8
+- Text muted: #6F8FA3
+- Border: rgba(94,231,255,0.18)
+- Soft glow: rgba(94,231,255,0.18)
+
+Forbidden colors:
+
+- amber
+- orange
+- yellow
+- gold
+- mustard
+- warm blur/glow
+- warm rgba shadows
+
+EMAIL ARCHITECTURE:
+Create a reusable email design system, not separate inconsistent templates.
+
+Build reusable helpers/components:
+
+- emailShell
+- emailHeader
+- emailStatusHero
+- emailSummaryCard
+- emailDetailList
+- emailCTA
+- emailCoachFooter
+- emailTrustSection
+- emailAdminOperationalPanel
+
+All templates should share the same design language.
+
+TECHNICAL EMAIL RULES:
+Use email-safe HTML:
+
+- table-based layout
+- inline styles
+- simple selectors
+- minimal CSS in style block
+- avoid flex
+- avoid grid
+- avoid CSS variables for layout sizing
+- avoid clamp()
+- avoid calc()
+- avoid transforms
+- avoid filters
+- avoid complex gradients for layout
+- avoid fixed desktop widths that shrink mobile
+- avoid percentage side-by-side columns on mobile
+
+Outer structure:
+
+- body width 100%
+- wrapper table width 100%
+- main content width 100%
+- desktop max-width around 600px
+- no fixed width="600" that forces mobile shrink
+- no nested fixed-width compression
+- no layout depending on media queries to become usable
+
+Meta:
+
+- viewport
+- x-apple-disable-message-reformatting
+- dark mode safe background fallbacks
+
+MOBILE-FIRST LAYOUT:
+The mobile version must be the primary design.
+
+On mobile:
+
+- full-width readable sections
+- strong vertical rhythm
+- compact but premium spacing
+- large readable typography
+- CTA clear and tappable
+- booking info clean and scannable
+- no tiny trust boxes
+- no compressed cards
+- no label/value horizontal split
+
+TYPOGRAPHY:
+Use email-safe fallback fonts.
+Futuristic feeling without depending on external fonts.
+
+Hierarchy:
+
+- brand name: strong, spaced, premium
+- main title: bold and clear
+- section titles: cyan uppercase micro label + white heading
+- body text: 15–16px minimum
+- important values: 16–20px
+- line-height at least 1.45
+- no tiny unreadable labels
+
+HEADER REDESIGN:
+Current header is too large and boxy.
+
+New header:
+
+- compact premium brand header
+- Youssef Ahmed
+- Elite Coaching
+- Personal Training • Dubai
+- optional small YA mark
+- no huge empty square logo block
+- no oversized card wasting vertical space
+- must look elegant on mobile
+
+If image variables exist, support them:
+EMAIL_HERO_IMAGE_URL
+EMAIL_AVATAR_IMAGE_URL
+EMAIL_SIGNATURE_IMAGE_URL
+EMAIL_BACKGROUND_TEXTURE_URL
+
+But if images are blocked:
+
+- email must still look premium
+- no broken image icons
+- no huge empty boxes
+
+CLIENT BOOKING CONFIRMATION EMAIL:
+Design the client email around a clear marketing journey:
+
+1. Preheader:
+   “Booking confirmed | You’re one step closer.”
+
+2. Brand header:
+   Youssef Ahmed | Elite Coaching
+   Personal Training • Dubai
+
+3. Main hero:
+   BOOKING CONFIRMED
+   Short motivational line:
+   “Your session is booked. Arrive focused — we’ll take care of the plan.”
+
+4. Session highlight strip:
+
+- Date
+- Time Dubai
+- Duration: 60 Minutes
+
+This should be the most readable section after the title.
+
+5. Training summary:
+
+- Focus
+- Goal
+- Session Type
+- Package
+- Remaining Sessions
+- Expiry Date
+- Payment Status
+
+6. Client details:
+   Smaller secondary section:
+
+- Client name
+- Email
+- Phone
+
+Do not let client details dominate the email.
+
+7. What to expect:
+   Compact and premium:
+
+- Personalized warm-up
+- Proper form & technique
+- Progressive overload
+- Cool down & recovery
+
+8. Arrival note:
+   “Please arrive 5–10 minutes early so we can start on time.”
+
+9. CTA:
+   Large premium button:
+   OPEN MY BOOKING
+
+10. Coach footer:
+    Youssef Ahmed | Elite Coaching
+    Discipline Today. Success Tomorrow.
+    WhatsApp
+    Email
+    Instagram
+    Dubai, UAE
+
+11. Trust line:
+    Premium Coaching • Proven Methods • Commitment
+
+ADMIN BOOKING EMAIL:
+Use same premium design but operational hierarchy.
+
+Main title:
+NEW BOOKING RECEIVED
+
+Admin priority data:
+
+- Client
+- Email
+- Phone
+- Date
+- Time Dubai
+- Duration
+- Focus
+- Goal
+- Session Type
+- Package
+- Remaining Sessions
+- Expiry Date
+- Payment Status
+- Booking Source
+- Action Timestamp
+
+CTA:
+OPEN ADMIN BOOKINGS
+
+Admin email must be clear and operational, but still premium.
+
+OTHER EMAIL TYPES:
+Apply same system to:
+
+- welcome email
+- password reset
+- booking confirmation
+- booking reminder
+- reschedule
+- cancellation
+- package activated
+- package expiring
+- package expired
+- payment confirmation
+- check-in reminders
+- admin alerts
+
+Each should have:
+
+- clear status title
+- short human message
+- relevant details
+- CTA
+- footer
+
+COPYWRITING STYLE:
+Tone must be:
+
+- premium
+- motivational
+- clear
+- human
+- not robotic
+- not too long
+- not spammy
+
+Examples:
+“Your session is confirmed.”
+“Stay ready. Your next step is already scheduled.”
+“Discipline today. Success tomorrow.”
+“Your coaching journey continues.”
+
+Avoid:
+
+- too much text
+- generic marketing fluff
+- exaggerated claims
+- cheap sales tone
+
+DETAIL CARD DESIGN:
+Do not make details look like a technical form.
+
+Use clean grouped summaries:
+
+- Session Snapshot
+- Training Focus
+- Package Status
+- Client Details
+
+Each row should be:
+LABEL
+Value
+
+On mobile:
+vertical label above value only.
+
+No horizontal label/value split.
+
+CTA DESIGN:
+Button must be:
+
+- almost full width on mobile
+- 48–54px tall
+- clear text
+- premium cyan border/fill
+- no squeeze
+- no tiny arrow-only CTA
+- must work in Gmail and Outlook
+
+FOOTER DESIGN:
+Footer must be compact and elegant.
+Avoid tall unnecessary sections.
+
+Trust elements should be either:
+
+- one clean horizontal text line, or
+- stacked compact rows
+
+Do not use tiny separate boxed cards on mobile.
+
+DARK MODE:
+Ensure Gmail dark mode does not destroy contrast.
+Keep backgrounds dark.
+Keep text readable.
+No invisible muted text.
+
+RESPONSIVE REQUIREMENTS:
+Must look intentionally designed on:
+
+- Android Gmail
+- iPhone Mail
+- Gmail iOS
+- Apple Mail desktop
+- Gmail desktop
+- Outlook desktop
+- tablets
+
+Acceptance:
+
+- no narrow squeezed column
+- no tiny trust cards
+- no oversized empty logo box
+- no excessive total height
+- no cramped detail rows
+- no broken spacing
+- no warm colors
+- no Gmail clipping
+- CTA readable
+- premium visual hierarchy
+
+VALIDATION:
+Do not claim success based only on local HTML rendering.
+
+Required validation:
+
+1. Typecheck pass
+2. Render generated HTML
+3. Confirm email body size safe from Gmail clipping
+4. Confirm no warm colors in rendered HTML
+5. Confirm no fixed-width mobile compression
+6. Push to GitHub
+7. Deploy to Vercel
+8. Confirm production READY
+9. Send real production booking email test if possible
+10. If sandbox cannot send real email, clearly say so and wait for my real Gmail Android screenshot
+
+DEPLOYMENT + SYNC:
+After redesign:
+
+1. Commit changes properly
+2. Push to GitHub origin/main
+3. Verify GitHub SHA
+4. Trigger Vercel production deployment
+5. Wait for Vercel READY
+6. Verify production uses new email templates
+7. Confirm Neon DB untouched
+8. Confirm no migrations
+9. Confirm no business logic changes
+10. Provide:
+
+- GitHub commit SHA
+- Vercel deployment ID
+- exact changed files
+- confirmation only email template/rendering files changed
+- confirmation FREEZE MODE respected
+
+IMPORTANT:
+Do not mix this with any booking-hardening plan.
+Do not run schema/db push.
+Do not modify Neon.
+Do not modify auth or booking.
+
+This task is:
+FULL EMAIL DESIGN SYSTEM REDESIGN ONLY.
+Production-safe.
+Mobile-first.
+Gmail-Android-first.
+TRON Legacy Freeze premium brand.
