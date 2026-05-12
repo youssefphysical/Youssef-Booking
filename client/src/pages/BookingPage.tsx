@@ -389,7 +389,7 @@ export default function BookingPage() {
             className="p-3"
             modifiersClassNames={{
               selected:
-                "!bg-cyan-400 !text-black font-extrabold rounded-full ring-2 ring-cyan-300/60 shadow-[0_0_18px_rgba(251,191,36,0.55)]",
+                "!bg-cyan-400 !text-black font-extrabold rounded-full ring-2 ring-cyan-300/70 shadow-[0_0_14px_rgba(94,231,255,0.45)]",
               today: "text-primary font-bold ring-1 ring-primary/40 rounded-full",
             }}
             styles={{

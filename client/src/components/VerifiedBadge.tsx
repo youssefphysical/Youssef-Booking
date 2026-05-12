@@ -86,7 +86,7 @@ const TIER_STYLES: Record<
     ring: "ring-1 ring-cyan-300/40",
     bg: "bg-gradient-to-br from-cyan-400/20 via-cyan-300/10 to-transparent",
     text: "text-cyan-200",
-    glow: "shadow-[0_0_18px_-6px_rgba(251,191,36,0.55)]",
+    glow: "shadow-[0_0_18px_-6px_rgba(94,231,255,0.45)]",
     icon: Crown,
   },
   pro_elite: {
@@ -107,7 +107,7 @@ const TIER_STYLES: Record<
     ring: "ring-1 ring-cyan-300/40",
     bg: "bg-gradient-to-br from-cyan-400/20 via-cyan-300/10 to-transparent",
     text: "text-cyan-200",
-    glow: "shadow-[0_0_18px_-6px_rgba(251,191,36,0.55)]",
+    glow: "shadow-[0_0_18px_-6px_rgba(94,231,255,0.45)]",
     icon: Crown,
   },
 };
