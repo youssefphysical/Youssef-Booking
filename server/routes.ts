@@ -88,6 +88,7 @@ import {
   sendEmail,
   trainerEmail,
   emailConfigStatus,
+  getRecentEmailSends,
 } from "./email";
 import {
   buildClientBookingConfirmationEmail,
@@ -1709,6 +1710,58 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     res.status(201).json(sanitizeBookingForUser(me, booking));
+  });
+
+  // ============== ADMIN EMAIL DIAGNOSTICS ==============
+  // Surfaces Resend config + last 50 send attempts so the trainer can
+  // pinpoint why a client didn't receive an email without needing access
+  // to Vercel logs. Read-only; safe to call freely.
+  app.get("/api/admin/email/status", requireAdmin, (_req, res) => {
+    const status = emailConfigStatus();
+    const recent = getRecentEmailSends(50);
+    const lastFailure = recent.find((e) => !e.sent) ?? null;
+    const lastSuccess = recent.find((e) => e.sent) ?? null;
+    res.json({
+      config: status,
+      trainerEmail: trainerEmail(),
+      counts: {
+        recentTotal: recent.length,
+        recentSent: recent.filter((e) => e.sent).length,
+        recentFailed: recent.filter((e) => !e.sent).length,
+      },
+      lastSuccess,
+      lastFailure,
+      recent,
+    });
+  });
+
+  // Sends a tiny test email through the same sendEmail() pipeline used
+  // by booking confirmations. Returns the raw provider response so the
+  // trainer sees the EXACT reason (e.g. "Resend 403: domain not verified").
+  app.post("/api/admin/email/test", requireAdmin, async (req, res) => {
+    const to = String(req.body?.to ?? "").trim();
+    if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      return res.status(400).json({ message: "Provide a valid `to` email address." });
+    }
+    const subject = String(req.body?.subject ?? "Youssef Fitness email test").slice(0, 200);
+    const stamp = new Date().toISOString();
+    const result = await sendEmail({
+      to,
+      subject,
+      text:
+        `This is a delivery test from the Youssef Fitness booking system.\n\n` +
+        `Sent at: ${stamp}\nFrom env EMAIL_FROM: ${process.env.EMAIL_FROM ? "custom" : "default"}\n\n` +
+        `If you received this, transactional email is working.`,
+      html:
+        `<div style="font-family:-apple-system,sans-serif;line-height:1.55;color:#111;max-width:540px">` +
+        `<h2 style="margin:0 0 12px;color:#0a7d4f">Email delivery test</h2>` +
+        `<p style="margin:0 0 8px">This message was sent through the same pipeline as booking confirmations.</p>` +
+        `<p style="margin:0 0 8px;font-size:13px;color:#555">Sent at <code>${stamp}</code></p>` +
+        `<p style="margin:16px 0 0;font-size:13px;color:#555">If you received this, transactional email is working.</p>` +
+        `</div>`,
+      replyTo: trainerEmail(),
+    });
+    res.json({ to, ...result, config: emailConfigStatus() });
   });
 
   // ============== ADMIN NOTIFICATIONS (in-app trainer inbox) ==============

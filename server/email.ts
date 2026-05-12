@@ -22,6 +22,32 @@ export function trainerEmail(): string {
 export type SendResult = { sent: boolean; provider?: string; id?: string; error?: string };
 
 /**
+ * In-memory ring buffer of the most recent send attempts. Survives the
+ * lifetime of a single Vercel lambda instance (so admins should hit the
+ * diagnostic endpoint shortly after a test). Never holds bodies — only
+ * recipient, subject, status, and provider error string.
+ */
+type SendLogEntry = {
+  ts: string;
+  to: string;
+  from: string;
+  subject: string;
+  sent: boolean;
+  provider?: string;
+  id?: string;
+  error?: string;
+};
+const SEND_LOG_MAX = 100;
+const sendLog: SendLogEntry[] = [];
+function pushSendLog(entry: SendLogEntry) {
+  sendLog.push(entry);
+  if (sendLog.length > SEND_LOG_MAX) sendLog.splice(0, sendLog.length - SEND_LOG_MAX);
+}
+export function getRecentEmailSends(limit = 50): SendLogEntry[] {
+  return sendLog.slice(-Math.max(1, Math.min(SEND_LOG_MAX, limit))).reverse();
+}
+
+/**
  * Returns a brief diagnosis of why email might not be deliverable, without
  * exposing any secret values. Safe to surface to admin-only diagnostic
  * endpoints. Returns null when configuration looks complete.
@@ -68,6 +94,14 @@ export async function sendEmail(opts: {
     if (process.env.NODE_ENV !== "production") {
       console.info(`--- Email body to ${opts.to} ---\n${opts.text}`);
     }
+    pushSendLog({
+      ts: new Date().toISOString(),
+      to: opts.to,
+      from,
+      subject: String(opts.subject).slice(0, 200),
+      sent: false,
+      error: "RESEND_API_KEY missing",
+    });
     return { sent: false, error: "RESEND_API_KEY missing" };
   }
 
@@ -94,18 +128,43 @@ export async function sendEmail(opts: {
       console.warn(
         `[email] Resend ${res.status} — to=${opts.to} from=${from}: ${txt.slice(0, 300)}`,
       );
-      return {
+      const err = `Resend ${res.status}: ${txt.slice(0, 200)}`;
+      pushSendLog({
+        ts: new Date().toISOString(),
+        to: opts.to,
+        from,
+        subject: String(opts.subject).slice(0, 200),
         sent: false,
         provider: "resend",
-        error: `Resend ${res.status}: ${txt.slice(0, 200)}`,
-      };
+        error: err,
+      });
+      return { sent: false, provider: "resend", error: err };
     }
     const data = (await res.json().catch(() => ({}))) as { id?: string };
     console.log(`[email] sent via Resend id=${data.id ?? "?"} to=${opts.to}`);
+    pushSendLog({
+      ts: new Date().toISOString(),
+      to: opts.to,
+      from,
+      subject: String(opts.subject).slice(0, 200),
+      sent: true,
+      provider: "resend",
+      id: data.id,
+    });
     return { sent: true, provider: "resend", id: data.id };
   } catch (e: any) {
     console.warn("[email] Resend request failed:", e?.message || e);
-    return { sent: false, provider: "resend", error: e?.message || "unknown" };
+    const err = e?.message || "unknown";
+    pushSendLog({
+      ts: new Date().toISOString(),
+      to: opts.to,
+      from,
+      subject: String(opts.subject).slice(0, 200),
+      sent: false,
+      provider: "resend",
+      error: err,
+    });
+    return { sent: false, provider: "resend", error: err };
   }
 }
 
