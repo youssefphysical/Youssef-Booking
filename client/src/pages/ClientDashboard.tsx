@@ -95,6 +95,7 @@ import {
   statusColor,
   hoursUntil,
   isCancellable,
+  buildSessionDate,
 } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import {
@@ -427,7 +428,7 @@ function BookingsTab({ userId }: { userId: number }) {
     const list = bookings as Booking[];
     const up = list
       .filter((b) => {
-        const sd = new Date(`${b.date}T${b.timeSlot}:00`);
+        const sd = buildSessionDate(b.date, b.timeSlot);
         return (
           ["upcoming", "confirmed"].includes(b.status) &&
           sd.getTime() >= now.getTime() - 60 * 60 * 1000
@@ -816,7 +817,7 @@ function SameDayAdjustDialog({
       if (t === booking.timeSlot) return false;
       if (taken.has(t)) return false;
       if (blockedSlotSet.has(t)) return false;
-      const d = new Date(`${booking.date}T${t}:00`);
+      const d = buildSessionDate(booking.date, t);
       return d.getTime() - now >= 30 * 60 * 1000;
     });
   }, [allBookings, blocked, booking.date, booking.id, booking.timeSlot, open]);

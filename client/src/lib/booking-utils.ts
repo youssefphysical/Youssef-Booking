@@ -15,15 +15,15 @@ export const ALL_TIME_SLOTS = [
 //
 //   cutoff = CEIL_TO_NEXT_FULL_HOUR(currentDubaiTime) + MIN_ADVANCE_HOURS
 //
-// So at 10:00:00 Dubai → ceil = 10:00 → cutoff = 13:00 → first slot 1 PM.
-// At 10:00:01 Dubai     → ceil = 11:00 → cutoff = 14:00 → first slot 2 PM.
-// At 11:00:00 Dubai     → ceil = 11:00 → cutoff = 14:00 → first slot 2 PM.
-// At 11:00:01 Dubai     → ceil = 12:00 → cutoff = 15:00 → first slot 3 PM.
+// So at 10:00:00 Dubai → ceil = 10:00 → cutoff = 16:00 → first slot 4 PM.
+// At 10:00:01 Dubai     → ceil = 11:00 → cutoff = 17:00 → first slot 5 PM.
+// At 11:00:00 Dubai     → ceil = 11:00 → cutoff = 17:00 → first slot 5 PM.
+// At 11:00:01 Dubai     → ceil = 12:00 → cutoff = 18:00 → first slot 6 PM.
 //
 // This applies to ALL users (clients AND admins — no bypass). Same helper
 // is mirrored on the server at `bookingCutoffMs` in server/routes.ts so
 // the UI and validation can never disagree.
-export const MIN_ADVANCE_HOURS = 3;
+export const MIN_ADVANCE_HOURS = 6;
 export const MIN_ADVANCE_MS = MIN_ADVANCE_HOURS * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DUBAI_OFFSET_MS = 4 * HOUR_MS;
