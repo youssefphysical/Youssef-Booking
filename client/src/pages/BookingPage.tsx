@@ -89,6 +89,24 @@ export default function BookingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
+  // Premium segmented category selector — only the chips for the active
+  // category are shown, eliminating the chip-overcrowding the prior layout
+  // suffered from. Defaults to "upper" but auto-syncs to whichever group
+  // contains the currently-selected chip so a deep-link / restored selection
+  // never lands the user on the wrong tab.
+  type FocusCategory = "upper" | "lower" | "conditioning";
+  const focusCategoryOf = (f: SessionFocus | null): FocusCategory => {
+    if (!f) return "upper";
+    if ((SESSION_FOCUS_GROUPS.upper as readonly string[]).includes(f)) return "upper";
+    if ((SESSION_FOCUS_GROUPS.lower as readonly string[]).includes(f)) return "lower";
+    return "conditioning";
+  };
+  const [activeFocusCategory, setActiveFocusCategory] = useState<FocusCategory>(() =>
+    focusCategoryOf(sessionFocus),
+  );
+  useEffect(() => {
+    if (sessionFocus) setActiveFocusCategory(focusCategoryOf(sessionFocus));
+  }, [sessionFocus]);
   const [trainingGoal, setTrainingGoal] = useState<TrainingGoal | null>(null);
   // Surfaces inline "required" hints under the missing field only after the
   // user attempts to continue — keeps the form quiet on first render but
@@ -504,13 +522,65 @@ export default function BookingPage() {
                 fulfilled={!!sessionFocus}
               >
                 <div className="space-y-4">
-                  {(["upper", "lower", "conditioning"] as const).map((groupKey) => (
-                    <div key={groupKey}>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground/70 font-semibold mb-2">
-                        {t(`booking.focusGroup.${groupKey}`)}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {SESSION_FOCUS_GROUPS[groupKey].map((opt) => {
+                  {/* Premium segmented category selector — cyan active pill
+                      slides via Framer's shared layoutId. Tap targets are
+                      48px tall (mobile-first), full grid distribution so each
+                      category is equally weighted visually. */}
+                  <div
+                    role="tablist"
+                    aria-label={t("booking.sessionFocusLabel")}
+                    className="relative grid grid-cols-3 gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/10"
+                  >
+                    {(["upper", "lower", "conditioning"] as const).map((groupKey) => {
+                      const active = activeFocusCategory === groupKey;
+                      return (
+                        <button
+                          key={groupKey}
+                          type="button"
+                          role="tab"
+                          aria-selected={active}
+                          onClick={() => setActiveFocusCategory(groupKey)}
+                          data-testid={`tab-focus-category-${groupKey}`}
+                          className={`relative h-12 px-2 rounded-xl text-[12px] sm:text-sm font-semibold tracking-tight transition-colors duration-200 z-10 ${
+                            active
+                              ? "text-primary"
+                              : "text-foreground/60 hover:text-foreground/85"
+                          }`}
+                        >
+                          {active && (
+                            <motion.span
+                              layoutId="focus-category-active"
+                              transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                              className="absolute inset-0 rounded-xl bg-primary/15 border border-primary/45 shadow-[0_0_18px_-6px_hsl(183_100%_60%/0.6)]"
+                              aria-hidden
+                            />
+                          )}
+                          <span className="relative">
+                            {t(`booking.focusGroup.${groupKey}`)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Animated chip set — only the active category is rendered.
+                      AnimatePresence with mode="wait" gives a smooth fade-in
+                      without layout jump between categories. min-h reserves
+                      vertical space so the form never grows/shrinks when
+                      switching between Upper (8 chips) and Full Body (3 chips). */}
+                  <div className="relative min-h-[112px]">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={activeFocusCategory}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.18, ease: "easeOut" }}
+                        className="flex flex-wrap gap-2"
+                        role="tabpanel"
+                        aria-label={t(`booking.focusGroup.${activeFocusCategory}`)}
+                      >
+                        {SESSION_FOCUS_GROUPS[activeFocusCategory].map((opt) => {
                           const active = sessionFocus === opt;
                           return (
                             <button
@@ -519,9 +589,9 @@ export default function BookingPage() {
                               onClick={() => setSessionFocus(opt as SessionFocus)}
                               data-testid={`pill-focus-${opt}`}
                               aria-pressed={active}
-                              className={`min-h-9 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                              className={`min-h-11 px-4 py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all border whitespace-nowrap ${
                                 active
-                                  ? "bg-primary/15 text-primary border-primary/50 shadow-[0_0_14px_-6px_hsl(183_100%_60%/0.55)]"
+                                  ? "bg-primary/20 text-primary border-primary/60 ring-1 ring-primary/40 shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.65)]"
                                   : "bg-white/[0.03] border-white/10 text-foreground/75 hover:bg-white/[0.06] hover:border-white/20 hover:text-foreground"
                               }`}
                             >
@@ -529,9 +599,9 @@ export default function BookingPage() {
                             </button>
                           );
                         })}
-                      </div>
-                    </div>
-                  ))}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
                 </div>
                 {attemptedContinue && !isAdmin && !sessionFocus && (
                   <InlineRequiredHint testId="hint-focus-required">
@@ -554,6 +624,9 @@ export default function BookingPage() {
                 required={!isAdmin}
                 fulfilled={!!trainingGoal}
               >
+                {/* Training Goal chips — sized to match Session Focus chips
+                    exactly (same min-h/padding/typography) so the two
+                    sections feel like one cohesive premium control surface. */}
                 <div className="flex flex-wrap gap-2">
                   {BOOKING_TRAINING_GOALS.map((opt) => {
                     const active = trainingGoal === opt;
@@ -564,9 +637,9 @@ export default function BookingPage() {
                         onClick={() => setTrainingGoal(opt as TrainingGoal)}
                         data-testid={`pill-goal-${opt}`}
                         aria-pressed={active}
-                        className={`min-h-9 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border whitespace-nowrap ${
+                        className={`min-h-11 px-4 py-2 rounded-full text-xs sm:text-[13px] font-semibold transition-all border whitespace-nowrap ${
                           active
-                            ? "bg-primary/15 text-primary border-primary/50 shadow-[0_0_14px_-6px_hsl(183_100%_60%/0.55)]"
+                            ? "bg-primary/20 text-primary border-primary/60 ring-1 ring-primary/40 shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.65)]"
                             : "bg-white/[0.03] border-white/10 text-foreground/75 hover:bg-white/[0.06] hover:border-white/20 hover:text-foreground"
                         }`}
                       >
