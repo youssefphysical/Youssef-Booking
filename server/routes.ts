@@ -2007,7 +2007,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       partnerPhone: null,
       partnerEmail: null,
     };
-    const items: Array<{ name: string; subject?: string; ok: boolean; htmlLength?: number; textLength?: number; error?: string }> = [];
+    const items: Array<{ name: string; subject?: string; ok: boolean; htmlLength?: number; textLength?: number; html?: string; text?: string; error?: string }> = [];
     const run = (name: string, fn: () => { subject: string; html: string; text: string }) => {
       try {
         const built = fn();
@@ -2017,6 +2017,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           ok: true,
           htmlLength: built.html.length,
           textLength: built.text.length,
+          html: built.html,
+          text: built.text,
         });
         return built;
       } catch (e: any) {
@@ -2185,8 +2187,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     return items;
   };
 
-  app.get("/api/admin/email/preview", requireAdmin, (_req, res) => {
+  // GET /api/admin/email/lint — runs structural deliverability checks
+  // on every rendered template (Gmail clip risk, table balance, image
+  // origins, viewport/dark/mobile media hooks, CTA button tables,
+  // subject CRLF). No emails are sent.
+  app.get("/api/admin/email/lint", requireAdmin, (_req, res) => {
     const items = renderAllTemplates();
+    const GMAIL_CLIP = 102 * 1024;
+    const checks = items.map((it) => {
+      if (!it.ok) return { name: it.name, ok: false, error: it.error };
+      const html = (it as any).html as string | undefined;
+      const subject = (it as any).subject as string | undefined;
+      const bytes = html ? Buffer.byteLength(html, "utf8") : 0;
+      const oTbl = (html?.match(/<table\b/gi) || []).length;
+      const cTbl = (html?.match(/<\/table>/gi) || []).length;
+      const oTr = (html?.match(/<tr\b/gi) || []).length;
+      const cTr = (html?.match(/<\/tr>/gi) || []).length;
+      const oTd = (html?.match(/<td\b/gi) || []).length;
+      const cTd = (html?.match(/<\/td>/gi) || []).length;
+      const imgs = html ? Array.from(html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi), (m) => m[1]) : [];
+      const widths = html ? Array.from(html.matchAll(/width=["']?(\d+)["']?/gi), (m) => +m[1]) : [];
+      const failures: string[] = [];
+      if (bytes >= GMAIL_CLIP) failures.push(`gmail-clip:${bytes}b`);
+      if (oTbl !== cTbl || oTr !== cTr || oTd !== cTd) failures.push(`tables-unbalanced:${oTbl}/${cTbl} ${oTr}/${cTr} ${oTd}/${cTd}`);
+      if (widths.length && Math.max(...widths) > 640) failures.push(`width>${Math.max(...widths)}`);
+      if (html && !/name=["']viewport/i.test(html)) failures.push("no-viewport");
+      if (html && !/color-scheme/i.test(html)) failures.push("no-dark-color-scheme");
+      if (html && !/@media[^{]*max-width/i.test(html)) failures.push("no-mobile-media");
+      if (html && !/<table[^>]*role=["']?presentation/i.test(html)) failures.push("no-button-table");
+      if (subject && /[\r\n]/.test(subject)) failures.push("subject-crlf");
+      return {
+        name: it.name,
+        ok: failures.length === 0,
+        kb: +(bytes / 1024).toFixed(1),
+        gmailClip: bytes >= GMAIL_CLIP ? "CLIP" : bytes >= GMAIL_CLIP * 0.9 ? "WARN" : "OK",
+        externalImgs: imgs.filter((s) => /^https?:/i.test(s)).length,
+        dataImgs: imgs.filter((s) => /^data:/i.test(s)).length,
+        externalImgUrls: imgs.filter((s) => /^https?:/i.test(s)),
+        maxWidth: widths.length ? Math.max(...widths) : 0,
+        failures,
+      };
+    });
+    const failed = checks.filter((c) => !c.ok);
+    res.json({
+      total: checks.length,
+      passed: checks.length - failed.length,
+      failed: failed.length,
+      verdict: failed.length === 0 ? "PASS" : "FAIL",
+      items: checks,
+      failures: failed,
+    });
+  });
+
+  app.get("/api/admin/email/preview", requireAdmin, (_req, res) => {
+    const items = renderAllTemplates().map(({ html, text, ...rest }) => rest);
     const ok = items.filter((i) => i.ok).length;
     const failed = items.filter((i) => !i.ok);
     res.json({
