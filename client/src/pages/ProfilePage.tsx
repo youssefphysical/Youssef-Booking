@@ -171,8 +171,8 @@ export default function ProfilePage() {
   const isVerified = user.isVerified === true;
 
   return (
-    <div className="max-w-2xl mx-auto px-5 pt-24 pb-20">
-      <div className="flex items-center gap-5 mb-8 flex-wrap">
+    <div className="max-w-2xl mx-auto px-5 pt-24 pb-20 sm:pt-28">
+      <div className="flex items-center gap-5 sm:gap-6 mb-8 flex-wrap">
         <div className="relative">
           <UserAvatar
             src={user.profilePictureUrl}
@@ -273,7 +273,7 @@ export default function ProfilePage() {
       <Link
         href="/dashboard"
         data-testid="link-profile-inbody"
-        className="group relative block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] p-5 overflow-hidden transition-all hover:border-primary/30 hover:bg-primary/[0.07] hover:shadow-[0_0_24px_-8px_hsl(183_100%_55%_/_0.4)]"
+        className="group relative block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] p-5 sm:p-6 overflow-hidden transition-all hover:border-primary/30 hover:bg-primary/[0.07] hover:shadow-[0_0_18px_-10px_hsl(183_100%_55%_/_0.35)]"
       >
         <CyanHairline inset="inset-x-5" className="opacity-60" />
         <div className="relative flex items-start gap-4">
@@ -346,7 +346,7 @@ export default function ProfilePage() {
         </Form>
       </div>
 
-      <div className="mt-8 rounded-2xl border border-white/5 bg-card/60 p-6 flex items-center justify-between gap-4 flex-wrap">
+      <div className="mt-6 rounded-3xl border border-white/5 bg-card/60 p-5 sm:p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="font-bold">{t("profile.talkYoussef")}</p>
           <p className="text-sm text-muted-foreground">{t("profile.reachOutWa")}</p>
@@ -391,7 +391,7 @@ function PillButton({
       className={cn(
         "text-left rounded-2xl border px-3 py-3 transition-all",
         active
-          ? "bg-primary/15 border-primary/40 text-foreground shadow-[0_0_18px_-6px_hsl(183_100%_55%_/_0.45)]"
+          ? "bg-primary/15 border-primary/40 text-foreground shadow-[0_0_14px_-8px_hsl(183_100%_55%_/_0.35)]"
           : "bg-white/[0.02] border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground hover:border-white/20",
       )}
     >

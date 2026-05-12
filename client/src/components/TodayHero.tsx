@@ -136,10 +136,10 @@ export function TodayHero({ name }: { name?: string | null }) {
       {/* Soft cyan corner halo — restrained, AMOLED-friendly */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-50"
+        className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-40"
         style={{
           background:
-            "radial-gradient(circle, hsl(183 100% 55% / 0.12), transparent 70%)",
+            "radial-gradient(circle, hsl(183 100% 55% / 0.10), transparent 70%)",
         }}
       />
 

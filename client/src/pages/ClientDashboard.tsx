@@ -557,26 +557,26 @@ function BookingCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-white/5 bg-card/60 p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+      className="rounded-2xl border border-white/5 bg-card/60 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5"
       data-testid={`booking-card-${booking.id}`}
     >
-      <div className="flex items-center gap-4 flex-1">
-        <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
-          <span className="text-[10px] uppercase font-bold">
+      <div className="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+        <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
+          <span className="text-[10px] uppercase font-bold tracking-wider">
             {format(new Date(booking.date), "MMM")}
           </span>
-          <span className="text-xl font-display font-bold leading-none">
+          <span className="text-2xl font-display font-bold leading-none mt-0.5">
             {format(new Date(booking.date), "d")}
           </span>
         </div>
-        <div className="min-w-0">
-          <p className="font-semibold">{format(new Date(booking.date), "EEEE")}</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold truncate">{format(new Date(booking.date), "EEEE")}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {formatTime12(booking.timeSlot)} • {sessionLabel}
           </p>
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             <span
-              className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border ${statusColor(
+              className={`inline-block text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-md border whitespace-nowrap ${statusColor(
                 booking.status,
               )}`}
               data-testid={`status-${booking.id}`}
@@ -958,7 +958,7 @@ function PackagesTab({ userId }: { userId: number }) {
           }
         />
       ) : (
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
           {list.map((p) => {
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
@@ -1001,15 +1001,15 @@ function PackagesTab({ userId }: { userId: number }) {
                 key={p.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`relative overflow-hidden rounded-2xl border p-5 ${
+                className={`relative overflow-hidden rounded-2xl border p-5 sm:p-6 ${
                   p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"
                 }`}
                 data-testid={`package-card-${p.id}`}
               >
                 {/* Cyan top hairline — only on active packages, signals
                     "this is your live program" without being loud. */}
-                {p.isActive && <CyanHairline intensity="strong" inset="inset-x-5" />}
-                <div className="relative flex items-start justify-between gap-3 mb-3">
+                {p.isActive && <CyanHairline intensity="strong" inset="inset-x-5 sm:inset-x-6" />}
+                <div className="relative flex items-start justify-between gap-4 mb-4">
                   <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate">
                       {(p as any).name || def?.label || `${p.type} Package`}
@@ -1034,22 +1034,22 @@ function PackagesTab({ userId }: { userId: number }) {
                       <p className="text-[10px] text-muted-foreground/70 mt-1">{def.tagline}</p>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     <span
-                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg border font-bold ${statusBadge.cls}`}
+                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap ${statusBadge.cls}`}
                       data-testid={`package-status-${p.id}`}
                     >
                       {statusBadge.label}
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg border font-bold ${payBadge.cls}`}
+                      className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap ${payBadge.cls}`}
                       data-testid={`package-payment-${p.id}`}
                     >
                       {payBadge.icon}
                       {payBadge.label}
                     </span>
                     {def?.isDuo && (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 whitespace-nowrap">
                         <Users size={11} /> {t("dashboard.packageDuo")}
                       </span>
                     )}
@@ -1061,14 +1061,14 @@ function PackagesTab({ userId }: { userId: number }) {
                     fully settled or complimentary. */}
                 {outstanding > 0 && payStatus !== "complimentary" && p.isActive && (
                   <div
-                    className="mb-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 flex items-center justify-between gap-3"
+                    className="mb-4 rounded-xl border border-amber-400/25 bg-amber-500/[0.07] px-3.5 py-2.5 flex items-center justify-between gap-3"
                     data-testid={`package-balance-${p.id}`}
                   >
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-[0.18em] text-amber-200/80">
                         {t("dashboard.packageBalanceLabel", "Outstanding balance")}
                       </p>
-                      <p className="text-sm font-display font-semibold text-amber-100 tabular-nums">
+                      <p className="text-sm font-display font-semibold text-amber-100 tabular-nums mt-1">
                         AED {outstanding.toLocaleString()}
                         {totalPrice > 0 && (
                           <span className="text-[11px] font-normal text-amber-200/60 ml-1.5">
@@ -1083,18 +1083,18 @@ function PackagesTab({ userId }: { userId: number }) {
                 {/* Progress bar — cyan track with a soft glow at the
                     leading edge. Reads as a HUD meter, not a generic
                     bar. Glow is gated to active packages only. */}
-                <div className="relative h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all"
                     style={{
                       width: `${pct}%`,
                       boxShadow: p.isActive
-                        ? "0 0 8px hsl(183 100% 60% / 0.5)"
+                        ? "0 0 6px hsl(183 100% 60% / 0.35)"
                         : undefined,
                     }}
                   />
                 </div>
-                <div className="text-xs text-muted-foreground mt-3 space-y-1">
+                <div className="text-xs text-muted-foreground mt-4 space-y-1 leading-relaxed">
                   <p>
                     {t("dashboard.packageStarted").replace(
                       "{date}",
@@ -1132,26 +1132,26 @@ function PackagesTab({ userId }: { userId: number }) {
                   )}
                 </div>
                 {(status === "expired" || status === "expiring_soon" || status === "completed") && p.isActive && (
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg h-8 text-xs flex-1"
+                      className="rounded-lg h-9 text-xs flex-1"
                       onClick={() => setRenewalOpen(true)}
                       data-testid={`button-renew-${p.id}`}
                     >
-                      <RefreshCw size={11} className="mr-1" />
+                      <RefreshCw size={12} className="mr-1.5" />
                       {t("dashboard.requestRenewal", "Request Renewal")}
                     </Button>
                     {status !== "completed" && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg h-8 text-xs flex-1"
+                        className="rounded-lg h-9 text-xs flex-1"
                         onClick={() => setExtensionPkg(p)}
                         data-testid={`button-extend-${p.id}`}
                       >
-                        <CalendarPlus size={11} className="mr-1" />
+                        <CalendarPlus size={12} className="mr-1.5" />
                         {t("dashboard.requestExtension", "Request Extension")}
                       </Button>
                     )}
