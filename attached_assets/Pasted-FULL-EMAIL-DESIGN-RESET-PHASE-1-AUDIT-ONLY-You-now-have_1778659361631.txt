@@ -1,0 +1,174 @@
+FULL EMAIL DESIGN RESET — PHASE 1 (AUDIT ONLY)
+
+You now have FULL design authority over the booking email system ONLY.
+
+Scope:
+- Client booking emails
+- Admin booking emails
+- ONLY email visual design and composition
+- You may fully inspect and analyze all email-related design code, layout structure, typography, spacing, cards, CTA styling, colors, gradients, hierarchy, and rendering behavior.
+
+Important:
+This is NOT a polish pass.
+This is NOT a tweak pass.
+This is NOT a spacing adjustment.
+This is NOT a deployment task.
+
+DO NOT redesign yet.
+DO NOT deploy yet.
+DO NOT push commits yet.
+DO NOT modify production yet.
+
+This phase is AUDIT + RESET STRATEGY ONLY.
+
+--------------------------------------------------
+PROJECT CONTEXT
+--------------------------------------------------
+
+The current booking email design became visually fragmented after too many iterative polish passes.
+
+The problem is NOT functionality.
+The system works technically.
+
+The problem is:
+- weak premium feeling
+- dashboard/developer feeling
+- spreadsheet-like layouts
+- over-engineered hierarchy
+- inconsistent typography rhythm
+- weak cinematic composition
+- excessive borders/dividers
+- overuse of TRON cyan/glow
+- weak luxury perception
+- poor emotional impact
+- flat cards/surfaces
+- Gmail mobile readability inconsistencies
+- weak visual storytelling
+- sections competing equally for attention
+- CTA lacking premium presence
+- footer lacking luxury brand feel
+
+The current direction feels:
+- too technical
+- too UI-heavy
+- too “developer dashboard”
+instead of:
+- luxury futuristic
+- cinematic
+- premium elite coaching brand
+
+--------------------------------------------------
+TARGET DESIGN DIRECTION
+--------------------------------------------------
+
+The NEW direction moving forward should become:
+
+- luxury futuristic
+- cinematic
+- premium
+- emotionally elegant
+- minimal but rich
+- mobile-first
+- highly readable
+- visually calm
+- editorial
+- clean hierarchy
+- modern luxury coaching brand
+
+Inspired by:
+- TRON Legacy mood ONLY (not full TRON styling)
+- Apple Wallet
+- Tesla UI
+- Rivian
+- Linear
+- Arc Browser
+- premium fintech products
+- cinematic sci-fi interfaces
+
+IMPORTANT:
+TRON should become ONLY a subtle mood/accent.
+NOT the full design language.
+
+Avoid:
+- gaming visuals
+- neon overload
+- excessive glow
+- cyan everywhere
+- dashboard feeling
+- spreadsheet layouts
+- tiny labels
+- overly technical composition
+- flat boxes everywhere
+- excessive dividers
+- harsh borders
+- cramped typography
+
+--------------------------------------------------
+YOUR TASK IN THIS PHASE
+--------------------------------------------------
+
+1. Audit the FULL current email visual system.
+
+2. Identify ALL visual/design problems causing:
+- weak premium feel
+- poor composition
+- visual fragmentation
+- poor hierarchy
+- poor readability
+- weak emotional impact
+- outdated CTA feeling
+- excessive visual noise
+- flat surfaces
+- Gmail/mobile rendering weakness
+- weak spacing rhythm
+- typography inconsistency
+- footer weakness
+- non-premium perception
+
+3. Explain WHY each issue hurts the design.
+
+4. Identify:
+- what must be REMOVED completely
+- what can remain
+- what should be rebuilt later
+
+5. Define the NEW visual philosophy clearly.
+
+6. Define the future direction for:
+- typography
+- card system
+- CTA behavior
+- spacing rhythm
+- color palette
+- gradients
+- hierarchy
+- footer identity
+- cinematic depth
+- Gmail mobile rendering
+
+--------------------------------------------------
+IMPORTANT EXECUTION RULES
+--------------------------------------------------
+
+- DO NOT redesign yet
+- DO NOT deploy
+- DO NOT push commits
+- DO NOT modify production
+- DO NOT perform polish passes
+- DO NOT implement visual changes yet
+
+This phase is analysis + reset strategy ONLY.
+
+--------------------------------------------------
+OUTPUT FORMAT
+--------------------------------------------------
+
+Return ONLY:
+1. Full visual audit
+2. Main design problems
+3. Root causes
+4. Reset strategy
+5. New visual philosophy
+6. Exact components/sections that must be rebuilt later
+
+Then STOP and wait for the next phase.
