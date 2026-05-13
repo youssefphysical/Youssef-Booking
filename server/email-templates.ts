@@ -1869,7 +1869,6 @@ export const DS_V2 = {
     inkSoft:       "#C9D6E1",                    // body
     inkMuted:      "#94A4B3",                    // captions / quiet labels
     inkFaint:      "#5A6A78",                    // separators on type, dim dots
-    inkLabel:      "#6FB8CD",                    // muted-cyan tracked label tone (premium TRON identity, not screaming)
     hairline:      "rgba(255,255,255,0.05)",     // neutral hairline
     hairlineWarm:  "rgba(255,255,255,0.08)",     // stronger neutral break
     surface0:      "#070F1A",                    // outer surface band (footer connection)
@@ -1954,7 +1953,7 @@ export function dsAmbientGlowV2(): string {
   // Stronger top stop, gentle navy mid, fade to canvas. Apple Mail / iOS
   // Gmail render the gradient; Android falls back to flat dark canvas.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas}">
-    <tr><td height="120" style="height:120px;line-height:0;font-size:0;background:${C.canvas};background-image:linear-gradient(180deg, ${C.glowStrong} 0%, ${C.glow} 45%, rgba(94,231,255,0) 100%)">&nbsp;</td></tr>
+    <tr><td height="160" style="height:160px;line-height:0;font-size:0;background:${C.canvas};background-image:linear-gradient(180deg, ${C.glowStrong} 0%, ${C.glow} 45%, rgba(94,231,255,0) 100%)">&nbsp;</td></tr>
   </table>`;
 }
 
@@ -2094,11 +2093,10 @@ export function dsCardV2(innerHtml: string): string {
 }
 
 /**
- * Information grid — Phase 5 / Phase 7 polish. Renders an array of
- * label/value rows inside a cyan-bordered card, separated by hairlines.
- * Phase 7: tighter row padding (16→12px vertical) so the card feels
- * dense and substantial instead of thin/tall; labels render in muted
- * cyan (`inkLabel #6FB8CD`) for premium TRON identity without screaming.
+ * Information grid — Phase 5 restoration of the premium booking-system
+ * identity. Renders an array of label/value rows inside a cyan-bordered
+ * card, separated by neutral hairlines. Labels render as tracked mono
+ * (CSS-uppercased), values as semibold body, right-aligned.
  *
  * `value` is treated as pre-escaped HTML so callers can interpolate
  * `<a>` / `<strong>` — caller is responsible for escaping any user data.
@@ -2106,58 +2104,20 @@ export function dsCardV2(innerHtml: string): string {
  */
 export function dsInfoGridV2(rows: Array<{ label: string; value: string }>): string {
   const C = DS_V2.color;
-  const labelStyle = _ds_style(DS_V2.type.mono, C.inkLabel);
+  const SP = DS_V2.space;
+  const labelStyle = _ds_style(DS_V2.type.mono, C.inkMuted);
   const valueStyle = _ds_style(DS_V2.type.body, C.ink, "font-weight:600;");
-  // Phase 8 — restore clearer business-email row rhythm: 14px vertical
-  // (between Phase 5's loose 16 and Phase 7's tight 12) + warmer dividers
-  // (hairline 5% → hairlineWarm 8%) for stronger structural clarity.
-  const ROW_V = 14;
   const inner = rows.map((r, i) => {
     const hairline = i === 0
       ? ""
-      : `<tr><td colspan="2" style="padding:0"><div style="height:1px;line-height:1px;font-size:0;background:${C.hairlineWarm}">&nbsp;</div></td></tr>`;
+      : `<tr><td colspan="2" style="padding:0"><div style="height:1px;line-height:1px;font-size:0;background:${C.hairline}">&nbsp;</div></td></tr>`;
     return `${hairline}
       <tr>
-        <td valign="middle" style="padding:${ROW_V}px 16px ${ROW_V}px 0;${labelStyle}width:38%;vertical-align:middle">${escapeHtml(r.label)}</td>
-        <td valign="middle" align="right" style="padding:${ROW_V}px 0;${valueStyle}text-align:right;vertical-align:middle;word-break:break-word">${r.value}</td>
+        <td valign="middle" style="padding:${SP.sm}px ${SP.sm}px ${SP.sm}px 0;${labelStyle}width:38%;vertical-align:middle">${escapeHtml(r.label)}</td>
+        <td valign="middle" align="right" style="padding:${SP.sm}px 0;${valueStyle}text-align:right;vertical-align:middle;word-break:break-word">${r.value}</td>
       </tr>`;
   }).join("");
   return dsCardV2(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${inner}</table>`);
-}
-
-/**
- * Phase 7 — MASTER cinematic panel. Wraps the entire booking composition
- * (brand → hero → info card → arrival → CTA) in a single layered surface
- * so sections feel like one premium marketing piece, not floating blocks.
- *
- *   ┌─ ambient cyan halo border (1px glowEdge) ───┐
- *   │ ▔▔▔▔ 2px bright cyan top ridge ▔▔▔▔ │  ← edge-lit
- *   │  surface1 → surface0 → canvas (deep)        │  ← darker than nested info card
- *   │  ┌─ inset content (32px padding) ─┐         │
- *   │  │  brand · hero · info card · CTA │         │
- *   │  └─────────────────────────────────┘         │
- *   │ ▁▁▁▁ 1px hairline bottom ▁▁▁▁ │
- *   └─────────────────────────────────────────────┘
- *
- * Surface intentionally darker than dsCardV2 so the nested info card
- * pops with its own brighter cyan border (two-tier hierarchy).
- */
-export function dsMasterPanelV2(innerHtml: string): string {
-  const C = DS_V2.color;
-  const SP = DS_V2.space;
-  const r = DS_V2.radius.soft;
-  // Phase 8 — slimmer horizontal padding (SP.lg→SP.md) so the inset info
-  // card breathes wider for clearer business-email information density.
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.glowEdge}" style="background:${C.glowEdge};border-radius:${r}px">
-    <tr><td style="padding:1px;border-radius:${r}px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface1} 0%, ${C.surface0} 60%, ${C.canvas} 100%);border-radius:${r}px">
-        <tr><td height="2" style="height:2px;line-height:2px;font-size:0;background:${C.glowEdgeBright};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
-        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.glow}">&nbsp;</td></tr>
-        <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
-        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.hairline};border-radius:0 0 ${r}px ${r}px">&nbsp;</td></tr>
-      </table>
-    </td></tr>
-  </table>`;
 }
 
 /**
@@ -2179,7 +2139,7 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
     <tr><td bgcolor="${C.glowEdgeBright}" align="center" style="background:${C.glowEdgeBright};border-radius:${r}px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:1px;border-radius:${r}px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-          <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentBright} 0%, ${C.accent} 40%, ${C.accentDeepTop} 100%);border-radius:${r}px">
+          <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentBright} 0%, ${C.accent} 55%, ${C.accent} 100%);border-radius:${r}px">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
               <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
             </tr><tr>
@@ -2204,31 +2164,24 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
 export function dsFooterV2(opts: { variant?: "client" | "admin"; explanation?: string | null } = {}): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
-  const r = DS_V2.radius.soft;
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
   const mail = `mailto:${BRAND.email}`;
-  const linkStyle = _ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.4px;text-decoration:none;font-weight:600;");
-  const sep = `<span style="color:${C.accentSoft};margin:0 10px">·</span>`;
+  const linkStyle = _ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.4px;text-decoration:none;");
+  const sep = `<span style="color:${C.accentSoft};margin:0 8px">·</span>`;
   const explanationHtml = opts.explanation
-    ? `<div style="margin-top:${SP.sm}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
+    ? `<div style="margin-top:${SP.md}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
     : "";
-  // Phase 8 — footer is now a CONTAINED CARD (was a band) — same framing
-  // language as the master panel above it but dimmer: 1px hairlineWarm
-  // border + 1px soft cyan top hairline + dim navy gradient surface.
-  // Matching architecture, lower hierarchy. Cyan dot still anchors brand.
-  const dot = `<span style="display:inline-block;width:6px;height:6px;background:${C.accent};border-radius:3px;margin-right:10px;vertical-align:middle;box-shadow:0 0 6px ${C.accentSoft}"></span>`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.hairlineWarm}" style="background:${C.hairlineWarm};border-radius:${r}px">
-    <tr><td style="padding:1px;border-radius:${r}px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface0}" style="background:${C.surface0};background-image:linear-gradient(180deg, ${C.surface0} 0%, ${C.canvas} 100%);border-radius:${r}px">
-        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.glow};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
-        <tr><td align="left" style="text-align:left;padding:${SP.md}px ${SP.md}px">
-          <div style="${_ds_style(DS_V2.type.caption, C.ink, "letter-spacing:0.6px;font-weight:700;")}">${dot}${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span><span style="color:${C.inkSoft};font-weight:500">Dubai</span></div>
-          <div style="margin-top:${SP.sm}px;padding-left:16px">
-            <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
-          </div>
-          <div style="padding-left:16px">${explanationHtml}</div>
-        </td></tr>
-      </table>
+  // Phase 6 — connect footer to ecosystem with a subtle dark band (surface0
+  // → canvas) and a small cyan dot before the brand line. Reads like a
+  // continuation of the panel system, not an unrelated text block.
+  const dot = `<span style="display:inline-block;width:6px;height:6px;background:${C.accent};border-radius:3px;margin-right:10px;vertical-align:middle"></span>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas};background-image:linear-gradient(180deg, ${C.surface0} 0%, ${C.canvas} 100%);border-radius:${DS_V2.radius.soft}px">
+    <tr><td align="left" style="text-align:left;padding:${SP.md}px ${SP.md}px">
+      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;font-weight:600;")}">${dot}${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span>Dubai</div>
+      <div style="margin-top:${SP.sm}px;padding-left:16px">
+        <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
+      </div>
+      <div style="padding-left:16px">${explanationHtml}</div>
     </td></tr>
   </table>`;
 }
@@ -2263,45 +2216,21 @@ function dsBookingShellV2(opts: {
   const C = DS_V2.color;
   const SP = DS_V2.space;
 
-  // Phase 7 — full marketing restructure. Compose brand → hero → info grid
-  // → arrival → CTA INSIDE one cinematic master panel (dsMasterPanelV2)
-  // so the email reads as one premium piece, not floating blocks. Footer
-  // remains as a separate dim system band below the panel — visually
-  // continuous, hierarchically distinct.
-
-  // ---- Inset info grid (cyan-bordered card nested inside the panel)
+  // ---- TRON information grid — restored Phase 5 reference identity --------
+  // Cyan-bordered card with label/value rows separated by neutral hairlines.
+  // Replaces the Phase 3/4 focal-time card + prose summary direction; brings
+  // back the premium booking-system feel without breaking the typography
+  // calibration from Phase 4.1 (semibold serif, body 16/1.65, mono 1.6px).
   const infoGrid = dsInfoGridV2(opts.infoRows);
 
   // ---- Italic arrival moment — coach voice (client only)
   const arrivalBlock = opts.arrivalNote
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr><td align="center" style="text-align:center;padding:0">
+        <tr><td align="center" style="text-align:center;padding:0 ${SP.sm}px">
           <div style="font-family:${DS_V2.font.serif};font-size:17px;font-style:italic;font-weight:400;color:${C.inkSoft};line-height:1.6;letter-spacing:0.2px;max-width:440px;margin:0 auto">${escapeHtml(opts.arrivalNote)}</div>
         </td></tr>
       </table>`
     : "";
-
-  // ---- Master panel inner composition (single table; tight rhythm)
-  const panelInner = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-
-      <tr><td>${dsBrandMarkV2()}</td></tr>
-
-      ${dsSpacerV2(SP.md)}
-      ${dsHairlineV2()}
-      ${dsSpacerV2(SP.lg)}
-
-      <tr><td>${dsHeroV2({ eyebrow: opts.statusEyebrow, title: opts.statusTitle, sub: opts.subtitle, variant: opts.variant })}</td></tr>
-
-      ${dsSpacerV2(SP.lg)}
-      <tr><td>${infoGrid}</td></tr>
-${opts.arrivalNote ? `
-      ${dsSpacerV2(SP.lg)}
-      <tr><td>${arrivalBlock}</td></tr>` : ""}
-
-      ${dsSpacerV2(SP.lg)}
-      <tr><td align="center">${dsCtaV2({ label: opts.ctaLabel, href: opts.ctaHref })}</td></tr>
-
-    </table>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -2324,12 +2253,30 @@ ${opts.arrivalNote ? `
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${escapeHtml(opts.previewText)}</div>
 ${dsAmbientGlowV2()}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas}">
-  <tr><td align="center" style="padding:0 ${SP.sm}px ${SP.lg}px">
+  <tr><td align="center" style="padding:0 ${SP.sm}px ${SP.xxl}px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:${DS_V2.layout.maxWidth}px;width:100%">
 
-      ${dsSpacerV2(SP.md)}
-      <tr><td>${dsMasterPanelV2(panelInner)}</td></tr>
-      ${dsSpacerV2(SP.md)}
+      ${dsSpacerV2(SP.xl)}
+      <tr><td>${dsBrandMarkV2()}</td></tr>
+
+      ${dsSpacerV2(SP.lg)}
+      ${dsHairlineV2()}
+      ${dsSpacerV2(SP.xl)}
+
+      <tr><td>${dsHeroV2({ eyebrow: opts.statusEyebrow, title: opts.statusTitle, sub: opts.subtitle, variant: opts.variant })}</td></tr>
+
+      ${dsSpacerV2(SP.xl)}
+      <tr><td>${infoGrid}</td></tr>
+${opts.arrivalNote ? `
+      ${dsSpacerV2(SP.xl)}
+      <tr><td>${arrivalBlock}</td></tr>` : ""}
+
+      ${dsSpacerV2(SP.xxl)}
+      <tr><td align="center">${dsCtaV2({ label: opts.ctaLabel, href: opts.ctaHref })}</td></tr>
+
+      ${dsSpacerV2(SP.xxl)}
+      ${dsHairlineV2()}
+      ${dsSpacerV2(SP.lg)}
       <tr><td>${dsFooterV2({ variant: opts.variant, explanation: opts.footerExplanation })}</td></tr>
 
     </table>
