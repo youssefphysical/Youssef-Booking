@@ -1,0 +1,166 @@
+FINAL ART-DIRECTION POLISH — PUSH HARDER INTO TRON LEGACY LUXURY
+
+The current version is MUCH closer.
+The structure, hierarchy, readability, and information layout are now correct.
+
+DO NOT redesign again.
+DO NOT simplify further.
+DO NOT flatten the interface again.
+
+What is missing now is:
+high-end cinematic TRON Legacy polish and luxury visual presence.
+
+You now have FULL visual authority over the booking email art direction ONLY.
+
+Push the visual identity further toward:
+TRON Legacy luxury interface
+with stronger cinematic color presence and richer premium surfaces.
+
+IMPORTANT:
+It is OK now to go stronger and more expressive with the colors and atmosphere,
+AS LONG AS it stays elegant, cinematic, premium, and readable.
+
+Reference feeling:
+TRON Legacy
+Disney TRON UI
+luxury futuristic control panel
+high-end cinematic dashboard
+premium holographic interface
+
+NOT:
+cheap gaming neon
+generic SaaS template
+flat minimal email
+cyberpunk clutter
+
+KEEP:
+
+- current layout
+- current structure
+- current typography system
+- current information grid
+- current readability
+- current hierarchy
+- current spacing rhythm
+
+ONLY improve:
+art direction, visual richness, premium atmosphere, depth, polish.
+
+VISUAL DIRECTION:
+
+1. Stronger TRON palette
+
+- deeper navy backgrounds
+- richer cyan glow accents
+- brighter cinematic cyan highlights
+- layered dark blue surfaces
+- subtle electric gradients
+- soft holographic atmosphere
+- controlled neon energy
+
+2. Premium surfaces
+   Cards should feel:
+
+- glassy
+- layered
+- dimensional
+- premium
+- expensive
+
+Add:
+
+- subtle inner glow
+- soft cyan edge lighting
+- layered gradients
+- ambient shadows
+- refined border glow
+- cinematic reflections VERY subtle
+
+3. Hero/header refinement
+   Top section still feels too empty.
+
+Improve:
+
+- logo/brand presence
+- visual anchor strength
+- cinematic composition
+- premium top spacing balance
+- stronger first impression
+
+4. CTA refinement
+   Current CTA is still not premium enough.
+
+Target:
+luxury TRON control button.
+
+Improve:
+
+- depth
+- glow layering
+- edge lighting
+- proportions
+- cyan richness
+- hover/press feel if supported
+- premium contrast
+
+The CTA should feel:
+expensive and cinematic,
+not bootstrap neon.
+
+5. Information card polish
+   KEEP the current grid and structure.
+
+ONLY improve:
+
+- surface richness
+- depth
+- borders
+- premium panel feeling
+- subtle layered gradients
+- elegant separators
+- refined glow
+
+6. Footer integration
+   Footer should feel connected to the ecosystem,
+   not detached plain text.
+
+7. Emotional direction
+   The email should feel:
+   exclusive,
+   high-end,
+   luxury coaching system,
+   premium futuristic experience.
+
+The user should feel:
+“I booked something premium.”
+
+VERY IMPORTANT:
+Do NOT sacrifice readability again.
+Do NOT remove information again.
+Do NOT over-minimize again.
+Do NOT turn it into plain editorial layout again.
+
+Luxury + cinematic + readable + premium.
+
+Technical restrictions:
+
+- booking email templates ONLY
+- no backend changes
+- no auth
+- no cron
+- no schema
+- no APIs
+- no booking logic
+- no routes
+- no Neon DB
+- no Vercel config changes
+
+After changes:
+
+- render verify Gmail mobile
+- verify dark mode
+- verify no clipping
+- verify typography readability
+- push to GitHub
+- deploy to Vercel
+- provide before/after summary + commit SHA + deployment ID

@@ -1859,23 +1859,34 @@ export function formatPaymentStatus(s: string | null | undefined): string | null
 
 export const DS_V2 = {
   color: {
-    canvas:        "#04070D",                    // deeper cinematic black
+    // Phase 6 (May 2026) — TRON Legacy luxury polish. Surfaces shifted from
+    // pure black to deep navy-cinematic for richer cinematic presence;
+    // ambient cyan bumped 0.06→0.10 (still calm, no longer thin); CTA
+    // brightened to layered TRON cockpit pill with edge highlights.
+    canvas:        "#03080F",                    // deepest cinematic ink (slightly bluer than pure black)
+    canvasEdge:    "#06101A",                    // 1px outer frame tint behind the email body — suggests bezel
     ink:           "#F4F8FB",                    // primary white
     inkSoft:       "#C9D6E1",                    // body
-    inkMuted:      "#94A4B3",                    // captions / quiet labels (Phase 4: lifted from #8395A4 for Gmail Android legibility)
+    inkMuted:      "#94A4B3",                    // captions / quiet labels
     inkFaint:      "#5A6A78",                    // separators on type, dim dots
-    hairline:      "rgba(255,255,255,0.05)",     // neutral hairline (replaces cyan)
+    hairline:      "rgba(255,255,255,0.05)",     // neutral hairline
     hairlineWarm:  "rgba(255,255,255,0.08)",     // stronger neutral break
-    surface1:      "#08111C",                    // rare premium card base
-    surface2:      "#0B1828",                    // rare card top of gradient
-    glow:          "rgba(94,231,255,0.06)",      // ambient cyan wash (hero)
-    glowEdge:      "rgba(94,231,255,0.18)",      // optional cyan underline
-    accent:        "#5EE7FF",                    // pure TRON cyan — sparingly
+    surface0:      "#070F1A",                    // outer surface band (footer connection)
+    surface1:      "#0A1622",                    // card base — navy-tinted (was #08111C)
+    surface2:      "#11233A",                    // card top of gradient — richer navy (was #0B1828)
+    surface3:      "#162D49",                    // card top accent ridge for premium edge lighting
+    glow:          "rgba(94,231,255,0.10)",      // ambient cyan wash — Phase 6: 0.06→0.10
+    glowStrong:    "rgba(94,231,255,0.18)",      // amplified atmospheric pass (top of hero)
+    glowEdge:      "rgba(94,231,255,0.22)",      // 1px card border (Phase 6: 0.18→0.22 for cinematic ridge)
+    glowEdgeBright:"rgba(122,238,255,0.55)",     // brighter edge ridge for inner top highlight
+    accent:        "#5EE7FF",                    // pure TRON cyan
     accentSoft:    "#7AEEFF",                    // headline accent tint
-    accentDeep:    "#2A8DAA",                    // CTA tone (calm teal)
-    accentDeepTop: "#3FB6D4",                    // CTA inner top light
+    accentBright:  "#B6F4FF",                    // top highlight ridge (CTA, card edges)
+    accentDeep:    "#2A8DAA",                    // (legacy) calm teal — kept for compat
+    accentDeepTop: "#3FB6D4",                    // (legacy) — kept for compat
     ctaInk:        "#001019",                    // CTA label colour
-    ctaInnerLight: "rgba(255,255,255,0.10)",     // 1px subtle inner highlight
+    ctaInnerLight: "rgba(255,255,255,0.18)",     // 1px subtle inner highlight (was 0.10)
+    ctaShadowEdge: "rgba(0,16,25,0.55)",         // 1px CTA bottom edge (depth)
   },
   font: {
     serif: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
@@ -1938,8 +1949,11 @@ export function dsHairlineV2(opts: { tone?: "soft" | "warm" } = {}): string {
  */
 export function dsAmbientGlowV2(): string {
   const C = DS_V2.color;
+  // Phase 6 — taller two-stop atmospheric band (cinematic horizon).
+  // Stronger top stop, gentle navy mid, fade to canvas. Apple Mail / iOS
+  // Gmail render the gradient; Android falls back to flat dark canvas.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas}">
-    <tr><td height="120" style="height:120px;line-height:0;font-size:0;background:${C.canvas};background-image:linear-gradient(180deg, ${C.glow} 0%, rgba(94,231,255,0) 100%)">&nbsp;</td></tr>
+    <tr><td height="160" style="height:160px;line-height:0;font-size:0;background:${C.canvas};background-image:linear-gradient(180deg, ${C.glowStrong} 0%, ${C.glow} 45%, rgba(94,231,255,0) 100%)">&nbsp;</td></tr>
   </table>`;
 }
 
@@ -1950,22 +1964,38 @@ export function dsAmbientGlowV2(): string {
 export function dsBrandMarkV2(opts: { align?: "left" | "center" } = {}): string {
   const C = DS_V2.color;
   const align = opts.align ?? "left";
-  // Cyan caption (was muted) — small and tracked, NOT a headline accent.
+  // Cyan caption — small, tracked, premium.
   const captionStyle = _ds_style(DS_V2.type.caption, C.accentSoft, "letter-spacing:2px;text-transform:uppercase;font-weight:700;");
-  // Two-stroke cyan rule — long + short. Built with a 2-cell table so it
-  // renders in every client (no inline-block reliance).
-  const strokeRow = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${align}" style="margin-top:12px">
+  // Two-stroke cyan rule — long + short.
+  const strokeRow = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px">
     <tr>
       <td width="32" height="2" style="width:32px;height:2px;line-height:2px;font-size:0;background:${C.accent}">&nbsp;</td>
       <td width="6"  height="2" style="width:6px; height:2px;line-height:2px;font-size:0">&nbsp;</td>
       <td width="10" height="2" style="width:10px;height:2px;line-height:2px;font-size:0;background:${C.accent}">&nbsp;</td>
     </tr>
   </table>`;
+  // Phase 6 — TRON cockpit identifier: a 3px cyan vertical bar (40px tall)
+  // sits to the left of the wordmark stack. Anchors the header with strong
+  // first-impression presence without crowding.
+  const wordmarkStack = `
+    <div style="${_ds_style(DS_V2.type.headline, C.ink)}">${escapeHtml(BRAND.name)}</div>
+    <div style="margin-top:8px;${captionStyle}">Personal Training&nbsp;·&nbsp;Dubai</div>
+    ${strokeRow}
+  `;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="${align}" style="text-align:${align};padding:0">
-      <div style="${_ds_style(DS_V2.type.headline, C.ink)}">${escapeHtml(BRAND.name)}</div>
-      <div style="margin-top:8px;${captionStyle}">Personal Training&nbsp;·&nbsp;Dubai</div>
-      ${strokeRow}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${align}">
+        <tr>
+          <td width="3" valign="top" style="width:3px;padding:0">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr><td width="3" height="40" style="width:3px;height:40px;line-height:40px;font-size:0;background:${C.accent}">&nbsp;</td></tr>
+              <tr><td width="3" height="6"  style="width:3px;height:6px;line-height:6px;font-size:0;background:${C.glowEdge}">&nbsp;</td></tr>
+            </table>
+          </td>
+          <td width="18" style="width:18px">&nbsp;</td>
+          <td valign="top" style="vertical-align:top">${wordmarkStack}</td>
+        </tr>
+      </table>
     </td></tr>
   </table>`;
 }
@@ -1983,8 +2013,16 @@ export function dsHeroV2(opts: {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const titleType = opts.variant === "admin" ? DS_V2.type.headline : DS_V2.type.hero;
+  // Phase 6 — eyebrow gets a small bright cyan tick prefix for cinematic
+  // anchor (matches the brand mark's vertical-bar identifier language).
   const eyebrowHtml = opts.eyebrow
-    ? `<div style="${_ds_style(DS_V2.type.mono, C.accentSoft)}">${escapeHtml(opts.eyebrow)}</div>
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+         <tr>
+           <td width="6" height="6" style="width:6px;height:6px;line-height:6px;font-size:0;background:${C.accent};vertical-align:middle">&nbsp;</td>
+           <td width="10" style="width:10px">&nbsp;</td>
+           <td valign="middle" style="${_ds_style(DS_V2.type.mono, C.accentSoft)}vertical-align:middle">${escapeHtml(opts.eyebrow)}</td>
+         </tr>
+       </table>
        <div style="height:${SP.md}px;line-height:${SP.md}px;font-size:0">&nbsp;</div>`
     : "";
   const subHtml = opts.sub
@@ -2036,10 +2074,19 @@ export function dsCardV2(innerHtml: string): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const r = DS_V2.radius.soft;
+  // Phase 6 — glassy layered TRON panel:
+  //  ┌───────────────────────────────────┐  ← 1px cyan outer border (glowEdge)
+  //  │ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │  ← 1px brighter cyan top ridge (edge light)
+  //  │  surface3 → surface2 → surface1   │  ← three-stop navy gradient
+  //  │  ………………… content …………………………… │
+  //  │ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ │  ← 1px hairline bottom (depth)
+  //  └───────────────────────────────────┘
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.glowEdge}" style="background:${C.glowEdge};border-radius:${r}px">
     <tr><td style="padding:1px;border-radius:${r}px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface2} 0%, ${C.surface1} 100%);border-radius:${r}px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface3} 0%, ${C.surface2} 35%, ${C.surface1} 100%);border-radius:${r}px">
+        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.glowEdgeBright};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
         <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
+        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.hairline};border-radius:0 0 ${r}px ${r}px">&nbsp;</td></tr>
       </table>
     </td></tr>
   </table>`;
@@ -2082,15 +2129,29 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const r = DS_V2.radius.pill;
+  // Phase 6 — TRON cockpit pill (luxury, edge-lit, dimensional):
+  //   ┌─ 1px outer cyan glow halo (glowEdgeBright) ─┐
+  //   │  ┌─ 1px top inner highlight (accentBright) ─┐  │
+  //   │  │  accentBright → accent → accent face     │  │
+  //   │  └─ 1px bottom inner shadow (ctaShadowEdge) ┘  │
+  //   └────────────────────────────────────────────────┘
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate">
-    <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentSoft} 0%, ${C.accent} 100%);border-radius:${r}px">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-        <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
-      </tr><tr>
-        <td align="center" style="padding:0">
-          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
-        </td>
-      </tr></table>
+    <tr><td bgcolor="${C.glowEdgeBright}" align="center" style="background:${C.glowEdgeBright};border-radius:${r}px">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:1px;border-radius:${r}px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentBright} 0%, ${C.accent} 55%, ${C.accent} 100%);border-radius:${r}px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+              <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
+            </tr><tr>
+              <td align="center" style="padding:0">
+                <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.md}px ${SP.xxl}px;font-family:${DS_V2.font.sans};font-size:14px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
+              </td>
+            </tr><tr>
+              <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaShadowEdge};border-radius:0 0 ${r}px ${r}px">&nbsp;</td>
+            </tr></table>
+          </td></tr>
+        </table>
+      </td></tr></table>
     </td></tr>
   </table>`;
 }
@@ -2110,13 +2171,17 @@ export function dsFooterV2(opts: { variant?: "client" | "admin"; explanation?: s
   const explanationHtml = opts.explanation
     ? `<div style="margin-top:${SP.md}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
     : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr><td align="left" style="text-align:left;padding:0">
-      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;font-weight:600;")}">${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span>Dubai</div>
-      <div style="margin-top:${SP.sm}px">
+  // Phase 6 — connect footer to ecosystem with a subtle dark band (surface0
+  // → canvas) and a small cyan dot before the brand line. Reads like a
+  // continuation of the panel system, not an unrelated text block.
+  const dot = `<span style="display:inline-block;width:6px;height:6px;background:${C.accent};border-radius:3px;margin-right:10px;vertical-align:middle"></span>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas};background-image:linear-gradient(180deg, ${C.surface0} 0%, ${C.canvas} 100%);border-radius:${DS_V2.radius.soft}px">
+    <tr><td align="left" style="text-align:left;padding:${SP.md}px ${SP.md}px">
+      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;font-weight:600;")}">${dot}${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span>Dubai</div>
+      <div style="margin-top:${SP.sm}px;padding-left:16px">
         <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
       </div>
-      ${explanationHtml}
+      <div style="padding-left:16px">${explanationHtml}</div>
     </td></tr>
   </table>`;
 }
