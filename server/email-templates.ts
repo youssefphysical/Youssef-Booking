@@ -1026,632 +1026,118 @@ export function shellHtml(opts: {
   previewText: string;
   bodyHtml: string;
   websiteUrl?: string;
-  /**
-   * Visible top bar above the card. Renders the small "Booking confirmed |
-   * You're one step closer." line + optional "View in browser" link.
-   * If omitted, derives from `previewText`.
-   */
   topBar?: { label: string; sub?: string; viewInBrowserUrl?: string };
 }): string {
   const lang = normalizeLang(opts.lang);
   const dir = isRtl(lang) ? "rtl" : "ltr";
-  const align = dir === "rtl" ? "right" : "left";
-  const alignOpp = align === "right" ? "left" : "right";
-  const website = opts.websiteUrl || BRAND.defaultWebsite;
-  const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
-  const images = getEmailImages();
-
-  // Top bar text — prefer explicit topBar, fall back to previewText split
-  // on the first " | " or " — ".
-  let topLabel = opts.topBar?.label || "";
-  let topSub = opts.topBar?.sub || "";
-  if (!topLabel) {
-    const parts = (opts.previewText || "").split(/\s[|—]\s/);
-    topLabel = parts[0] || BRAND.name;
-    topSub = parts[1] || "";
-  }
-  const browserUrl = opts.topBar?.viewInBrowserUrl || website;
-
-  // Hero image cell — uses external https image when configured, else a
-  // TRON-styled fallback panel so layout never collapses or shows broken
-  // image icons. The wrapper carries `bgcolor` so blocked images in
-  // Gmail/Outlook show a TRON-tinted tile instead of a white box, and
-  // the alt text becomes the cinematic "YA · ELITE COACHING" mark.
-  const heroImageCell = images.hero
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden">
-        <tr><td align="center" style="padding:0">
-          <img src="${escapeHtml(images.hero)}" width="270" alt="${escapeHtml(BRAND.trainerName)} — Elite Coaching" style="display:block;width:100%;max-width:270px;height:auto;border:0;border-radius:14px">
-        </td></tr>
-      </table>`
-    : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:linear-gradient(135deg, ${COLOR.bgCardSoft} 0%, ${COLOR.bgCardElev} 100%);border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 28px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.08)">
-        <tr><td align="center" style="padding:50px 16px;height:178px">
-          <div style="font-family:'Times New Roman',Georgia,serif;font-size:68px;font-weight:700;color:${COLOR.primary};line-height:1;letter-spacing:-2px;text-shadow:0 0 24px ${COLOR.primary}">YA</div>
-          <div style="margin-top:14px;font-size:10px;letter-spacing:3.4px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700">Elite Coaching</div>
-        </td></tr>
-      </table>`;
-
-  // Avatar (footer) — circular hosted image or cyan monogram fallback.
-  // Wrapping table carries `bgcolor` to ensure blocked images in Gmail
-  // show a tinted disc rather than a white circle.
-  const avatarCell = images.avatar
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 16px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.12);overflow:hidden"><tr><td align="center" valign="middle" style="padding:0"><img src="${escapeHtml(images.avatar)}" width="86" height="86" alt="${escapeHtml(BRAND.trainerName)}" style="display:block;width:86px;height:86px;border-radius:43px;border:0"></td></tr></table>`
-    : `<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="width:86px;height:86px;background:${COLOR.bgCardElev};border:2px solid ${COLOR.primary};border-radius:43px;box-shadow:0 0 16px ${COLOR.primaryDeep}, inset 0 1px 0 rgba(95,251,255,0.12)"><tr><td align="center" valign="middle" style="font-family:'Times New Roman',Georgia,serif;font-size:36px;font-weight:700;color:${COLOR.primary};line-height:1;text-shadow:0 0 12px ${COLOR.primaryDeep}">Y</td></tr></table>`;
-
-  // Signature — hosted script-style image, else italic serif fallback.
-  // Wrapped in a table/td so blocked-image clients (Gmail/Outlook) render
-  // the cyan-tinted alt text in cursive style instead of a broken icon
-  // box. Mirrors the hero/avatar blocked-image pattern for consistency.
-  const signatureBlock = images.signature
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background:transparent"><tr><td style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px;padding:0"><img src="${escapeHtml(images.signature)}" alt="${escapeHtml(BRAND.trainerName)}" height="38" style="display:block;height:38px;width:auto;max-width:170px;border:0;color:${COLOR.primary};font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:26px;font-style:italic"></td></tr></table>`
-    : `<div style="font-family:'Brush Script MT','Lucida Handwriting',cursive;font-size:28px;font-style:italic;color:${COLOR.primary};line-height:1;letter-spacing:0.5px">Youssef Ahmed</div>`;
-
-  // Tiny inline cyan "icon" using a styled span — works in every client
-  // (no SVG, no emoji rendering quirks, no image dependency).
-  const ico = (glyph: string) =>
-    `<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;color:${COLOR.primary};font-size:13px;vertical-align:middle;margin-${align === "right" ? "left" : "right"}:8px">${glyph}</span>`;
-
   return `<!doctype html>
-<html lang="${lang}" dir="${dir}" style="margin:0;padding:0">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark light">
-<meta name="supported-color-schemes" content="dark light">
-<meta name="x-apple-disable-message-reformatting">
-<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
-<title>${escapeHtml(BRAND.name)}</title>
-<!--[if mso]><style>* { font-family: Arial, Helvetica, sans-serif !important; }</style><![endif]-->
-<style>
-  /* Tablet polish — preserve premium 2-col layouts but tighten spacing. */
-  @media only screen and (max-width: 640px) and (min-width: 481px) {
-    .px-shell { padding: 22px 14px !important; }
-    .px-body { padding: 28px 26px !important; }
-    .px-hero { padding: 24px 22px !important; }
-    .px-hero-title { font-size: 28px !important; }
-    .px-footer { padding: 22px !important; }
-    .px-button-cell { padding: 17px 32px !important; font-size: 13px !important; }
-  }
-  /* Mobile polish — Outlook desktop ignores; honoured by Gmail iOS/Android,
-     Apple Mail, Outlook mobile. Mobile-first stacking: every multi-column
-     section becomes a single full-width column, every detail row becomes
-     label-on-top-of-value (no narrow 50/50 split). */
-  @media only screen and (max-width: 480px) {
-    /* Generic Gmail-safe utilities (per brief) */
-    .stack { display: block !important; width: 100% !important; max-width: 100% !important; }
-    .fluid { width: 100% !important; max-width: 100% !important; height: auto !important; }
-    .center-mobile { text-align: center !important; }
-    .hide-mobile { display: none !important; }
-
-    /* Outer chrome */
-    .px-shell { padding: 12px 6px !important; }
-    .px-card { border-radius: 14px !important; }
-    .px-body { padding: 22px 18px !important; font-size: 15px !important; line-height: 1.65 !important; }
-    .px-topbar { padding: 12px 14px !important; font-size: 11.5px !important; }
-    .px-topbar-right { display: none !important; }
-
-    /* Hero — true single-column, image on top, brand centered below */
-    .px-hero { padding: 26px 20px !important; }
-    .px-hero-text { padding: 22px 0 0 !important; text-align: center !important; }
-    .px-hero-title { font-size: 28px !important; letter-spacing: 1.4px !important; }
-    .px-hero-sub { font-size: 15px !important; letter-spacing: 3px !important; }
-    .px-hero-meta { font-size: 10.5px !important; letter-spacing: 2px !important; }
-    .px-hero-img-cell { padding: 0 !important; text-align: center !important; }
-    .px-hero-img-cell img { display: inline-block !important; width: 100% !important; max-width: 240px !important; height: auto !important; margin: 0 auto !important; }
-    .px-hero-rule { margin-left: auto !important; margin-right: auto !important; }
-
-    /* Body card */
-    .px-eyebrow-title { font-size: 28px !important; line-height: 1.1 !important; }
-    .px-info-row td { padding: 12px 14px !important; font-size: 13.5px !important; }
-    .px-button-cell { padding: 16px 24px !important; font-size: 13px !important; letter-spacing: 1.3px !important; }
-    .px-metric-tile { display: block !important; width: 100% !important; margin: 0 0 10px !important; }
-
-    /* Generic 2/3-column stacker */
-    .px-stack { display: block !important; width: 100% !important; }
-    .px-stack > tbody > tr > td,
-    .px-stack td { display: block !important; width: 100% !important; max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; padding-bottom: 18px !important; }
-    .px-stack td:last-child { padding-bottom: 0 !important; }
-
-    /* Detail rows — full vertical stack: label on top, value below, single
-       divider line at the bottom of each row. NO more 50/50 cramped split. */
-    .px-detail-row td {
-      display: block !important;
-      width: 100% !important;
-      padding: 0 !important;
-      text-align: left !important;
-      border-bottom: 0 !important;
-    }
-    .px-detail-icon { display: none !important; }
-    .px-detail-label {
-      padding: 14px 0 2px !important;
-      font-size: 10.5px !important;
-      letter-spacing: 1.6px !important;
-      color: ${COLOR.textMuted} !important;
-      text-align: left !important;
-    }
-    .px-detail-value {
-      padding: 0 0 14px !important;
-      font-size: 15.5px !important;
-      line-height: 1.4 !important;
-      text-align: left !important;
-      border-bottom: 1px solid ${COLOR.border} !important;
-      word-break: break-word !important;
-    }
-    .px-detail-row:last-child .px-detail-value { border-bottom: 0 !important; padding-bottom: 0 !important; }
-    .px-detail-row:first-child .px-detail-label { padding-top: 0 !important; }
-
-    /* Footer profile — fully stacked, generous spacing, no vertical divider */
-    .px-footer { padding: 24px 20px !important; }
-    .px-footer-contacts {
-      border-left: 0 !important;
-      border-right: 0 !important;
-      padding: 18px 0 0 !important;
-      margin-top: 16px !important;
-      border-top: 1px solid ${COLOR.border} !important;
-      text-align: center !important;
-    }
-    .px-footer-contacts > div { text-align: center !important; }
-    .px-profile-block { text-align: center !important; }
-    .px-profile-block table { margin: 0 auto !important; }
-
-    /* Trust row — full-width premium tiles, NOT tiny boxes */
-    .px-trust-cell {
-      display: block !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      box-sizing: border-box !important;
-      padding: 18px 18px !important;
-      margin: 0 0 10px !important;
-      border-radius: 12px !important;
-    }
-    .px-trust-cell:last-child { margin-bottom: 0 !important; }
-    .px-trust-spacer { display: none !important; height: 0 !important; line-height: 0 !important; font-size: 0 !important; }
-    .px-trust-title { font-size: 13px !important; letter-spacing: 1.6px !important; }
-    .px-trust-sub { font-size: 12.5px !important; line-height: 1.5 !important; margin-top: 4px !important; }
-
-    /* Big CTA — guaranteed full-width centered pill button */
-    .px-bigcta-wrap { width: 100% !important; }
-    .px-bigcta-pill { display: block !important; width: 100% !important; box-sizing: border-box !important; }
-    .px-bigcta-pill a {
-      display: block !important;
-      width: auto !important;
-      padding: 18px 20px !important;
-      font-size: 13px !important;
-      letter-spacing: 1.6px !important;
-      text-align: center !important;
-      box-sizing: border-box !important;
-    }
-  }
-  /* Gmail dark-mode polish — keeps panel surface stable. */
-  @media (prefers-color-scheme: dark) {
-    .px-card { background: ${COLOR.bgCard} !important; }
-    .px-detail-value { color: ${COLOR.text} !important; }
-    .px-detail-label { color: ${COLOR.textMuted} !important; }
-  }
-  /* Outlook.com dark mode (uses [data-ogsc] attribute selector) */
-  [data-ogsc] .px-card { background: ${COLOR.bgCard} !important; }
-  [data-ogsc] .px-detail-value { color: ${COLOR.text} !important; }
-</style>
-</head>
-<body style="margin:0;padding:0;background:${COLOR.bgOuter};color:${COLOR.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased">
-<!-- Hidden preview snippet (Gmail/Apple Mail inbox list preview) -->
-<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;color:transparent;line-height:0;font-size:1px;opacity:0">${escapeHtml(opts.previewText)}</div>
-
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-shell" style="background:${COLOR.bgOuter};padding:24px 16px" dir="${dir}">
-  <tr>
-    <td align="center">
-      <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;margin:0 auto">
-
-        <!-- 1. TOP BAR (visible preheader) -->
-        <tr>
-          <td class="px-topbar" style="padding:6px 4px 18px;font-size:12px;color:${COLOR.textMuted};font-weight:500;line-height:1.5" dir="${dir}">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td align="${align}" style="font-size:12px;color:${COLOR.text}">
-                  <span style="color:${COLOR.primary};text-decoration:underline;text-underline-offset:3px;font-weight:600">${escapeHtml(topLabel)}</span>${topSub ? `<span style="color:${COLOR.textMuted}">&nbsp;|&nbsp;${escapeHtml(topSub)}</span>` : ""}
-                </td>
-                <td align="${alignOpp}" class="px-topbar-right" style="font-size:12px">
-                  <a href="${escapeHtml(browserUrl)}" style="color:${COLOR.primary};text-decoration:underline;text-underline-offset:3px">View in browser</a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- 2. BRAND HEADER — left-aligned, compact, sans (matches the
-             reference screenshot the user approved). YOUSSEF AHMED on top,
-             cyan "PERSONAL TRAINING · DUBAI" sub, then a small glowing
-             cyan accent rule. No "Elite Coaching" line. -->
-        <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 12px 36px -22px ${COLOR.primaryGlow}">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="px-hero" align="left" style="padding:24px 24px 22px;text-align:left">
-                  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;letter-spacing:3.5px;color:${COLOR.text};line-height:1.15;text-transform:uppercase">
-                    YOUSSEF AHMED
-                  </div>
-                  <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:3px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 12px ${COLOR.primaryDeep}">
-                    Personal Training&nbsp;·&nbsp;Dubai
-                  </div>
-                  <div style="margin:14px 0 0;height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- spacer (premium rhythm) -->
-        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
-
-        <!-- 3. BODY CARD -->
-        <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td align="${align}" class="px-body" style="padding:34px 32px;color:${COLOR.text};font-size:15px;line-height:1.7" dir="${dir}">
-                  ${opts.bodyHtml}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- spacer (premium rhythm) -->
-        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
-
-        <!-- 4. MINIMAL FOOTER — matches the approved reference screenshot.
-             No YA logo, no avatar, no signature, no motto, no "Let's Stay
-             Connected" panel, no trust tiles. Just one tight contact line +
-             the legal disclaimer. Identical for admin + client. -->
-        <tr>
-          <td class="px-footer" style="padding:20px 4px 8px" align="${align}" dir="${dir}">
-            <div style="font-size:13px;color:${COLOR.text};line-height:1.7;font-weight:600;letter-spacing:0.3px">
-              ${escapeHtml(BRAND.trainerName)}&nbsp;·&nbsp;<a href="${wa}" style="color:${COLOR.primary};text-decoration:none">WhatsApp</a>
-            </div>
-            <div style="margin-top:10px;font-size:11px;color:${COLOR.textDim};line-height:1.6">
-              ${escapeHtml(t(lang, "footerNote"))}<br>
-              ${escapeHtml(t(lang, "footerUnsubNote"))}&nbsp;
-              <a href="${escapeHtml(website)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(BRAND.name)}</a>
-            </div>
-          </td>
-        </tr>
-
-      </table>
-    </td>
-  </tr>
-</table>
-</body>
+<html lang="${lang}" dir="${dir}"><head><meta charset="utf-8"><title>${escapeHtml(opts.previewText || "")}</title></head>
+<body>${opts.bodyHtml}</body>
 </html>`;
 }
 
-// ---------------------------------------------------------------------------
-// Reference-aligned content primitives (used by booking confirmation and any
-// future builder that wants the cinematic reference layout).
-// ---------------------------------------------------------------------------
-
-/**
- * Two-column row that stacks vertically on mobile (≤480px) via .px-stack.
- * Each cell gets equal width by default (50/50). Pass widthLeft to override.
- */
 export function splitRowHtml(opts: {
   leftHtml: string;
   rightHtml: string;
-  widthLeft?: string;        // e.g. "48%"
-  gap?: number;              // px between columns
+  widthLeft?: string;
+  gap?: number;
   align?: "left" | "right";
 }): string {
-  const align = opts.align || "left";
-  const wl = opts.widthLeft || "50%";
-  const gap = opts.gap ?? 14;
-  const padSide = align === "right" ? "padding-left" : "padding-right";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="px-stack" style="margin:0">
-    <tr>
-      <td width="${wl}" valign="top" style="vertical-align:top;${padSide}:${gap}px">${opts.leftHtml}</td>
-      <td valign="top" style="vertical-align:top">${opts.rightHtml}</td>
-    </tr>
-  </table>`;
+  return `<div>${opts.leftHtml}</div><div>${opts.rightHtml}</div>`;
 }
 
-/**
- * Eyebrow + dual-tone title stack — matches "NEW SESSION / BOOKING CONFIRMED"
- * from the reference. The second word of the title is rendered in cyan.
- */
 export function eyebrowTitleHtml(opts: {
   eyebrow: string;
-  titleStart: string;        // "BOOKING"
-  titleAccent: string;       // "CONFIRMED"
+  titleStart: string;
+  titleAccent: string;
   body?: string;
   align?: "left" | "right";
 }): string {
-  const align = opts.align || "left";
-  // Approved reference: small cyan accent rule on top, then sentence-case
-  // serif title (no color-split, no uppercase eyebrow), then a calm body
-  // line. The eyebrow text is rendered as a thin cyan label only when
-  // explicitly provided; if empty, only the rule shows.
-  const ruleAlign = align === "right" ? "margin-left:auto" : "margin-left:0";
-  // Combine titleStart + titleAccent into a single sentence-case serif
-  // title (matches the screenshot — the title is *not* split into two
-  // tones). Trim handles either being empty.
   const fullTitle = `${opts.titleStart} ${opts.titleAccent}`.trim();
-  const eyebrowHtml = opts.eyebrow
-    ? `<div style="font-size:11px;letter-spacing:2.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:14px;line-height:1.2;text-shadow:0 0 10px ${COLOR.primaryDeep}">${escapeHtml(opts.eyebrow)}</div>`
-    : "";
-  return `<div style="text-align:${align};margin:0 0 26px">
-    <div style="height:1px;width:36px;background:${COLOR.primary};box-shadow:0 0 12px ${COLOR.primary};line-height:1px;font-size:0;${ruleAlign};margin-bottom:18px">&nbsp;</div>
-    ${eyebrowHtml}
-    <div class="px-eyebrow-title" style="font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.18;font-weight:700;letter-spacing:-0.3px;color:${COLOR.text}">${escapeHtml(fullTitle)}</div>
-    ${opts.body ? `<p style="margin:14px 0 0;font-size:15px;line-height:1.65;color:${COLOR.textSecondary};max-width:520px;${align === "right" ? "margin-left:auto" : ""}">${escapeHtml(opts.body)}</p>` : ""}
-  </div>`;
+  return `${opts.eyebrow ? `<p>${escapeHtml(opts.eyebrow)}</p>` : ""}<h2>${escapeHtml(fullTitle)}</h2>${opts.body ? `<p>${escapeHtml(opts.body)}</p>` : ""}`;
 }
 
-/**
- * Glowing duration card — clock icon + "60 MINUTES" + descriptor.
- * Renders inside the right column of the confirmation row.
- */
 export function durationCardHtml(opts: {
   minutes: number;
-  label?: string;            // "Session Duration"
-  sublabel?: string;         // "This session is 1 hour long."
+  label?: string;
+  sublabel?: string;
   align?: "left" | "right";
 }): string {
-  const align = opts.align || "left";
   const label = opts.label || "Session Duration";
   const sublabel = opts.sublabel || `This session is ${Math.round(opts.minutes / 60 * 10) / 10} hour long.`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.06), inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -12px ${COLOR.primaryGlow}">
-    <tr><td style="padding:22px 22px" align="${align}">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:16px">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCard}" style="width:46px;height:46px;background:${COLOR.bgCard};border:2px solid ${COLOR.primary};border-radius:23px;box-shadow:0 0 14px -4px ${COLOR.primaryGlow}"><tr><td align="center" valign="middle" style="font-size:20px;color:${COLOR.primary};line-height:1">⏱</td></tr></table>
-          </td>
-          <td valign="middle">
-            <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};font-weight:700;line-height:1.2">${escapeHtml(label)}</div>
-            <div style="margin-top:6px;font-family:'Times New Roman',Georgia,serif;font-size:26px;font-weight:700;color:${COLOR.primary};line-height:1;text-shadow:0 0 18px ${COLOR.primaryDeep}">${opts.minutes} MINUTES</div>
-          </td>
-        </tr>
-      </table>
-      <div style="margin-top:12px;font-size:12.5px;color:${COLOR.textMuted};line-height:1.55">${escapeHtml(sublabel)}</div>
-    </td></tr>
-  </table>`;
+  return `<p><strong>${escapeHtml(label)}:</strong> ${opts.minutes} minutes<br>${escapeHtml(sublabel)}</p>`;
 }
 
-/**
- * Premium "Session Details" card with icon-prefixed rows — visually matches
- * the reference exactly. Each row: cyan glyph + uppercase label + value.
- * Pass an empty value for any row to skip it (graceful partial data).
- */
 export function sessionDetailsCardHtml(opts: {
   heading?: string;
   rows: Array<{ icon: string; label: string; value: string | number | null | undefined; valueTone?: "default" | "primary" }>;
   align?: "left" | "right";
 }): string {
-  const align = opts.align || "left";
-  const heading = opts.heading || "Session Details";
+  const heading = opts.heading || "";
   const filled = opts.rows.filter((r) => r.value !== null && r.value !== undefined && r.value !== "");
   if (filled.length === 0) return "";
-  const rows = filled.map((r, i) => {
-    const isLast = i === filled.length - 1;
-    const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
-    const valueColor = r.valueTone === "primary" ? COLOR.primary : COLOR.text;
-    // Single <td> per row containing label-on-top-of-value as block-level
-    // <div>s. Bulletproof on Gmail Android — no row-cell stacking dependency.
-    // Two-row pattern per detail: row 1 = label-only `<td>`, row 2 = value-only `<td>`.
-    // This is structurally label-above-value at the HTML level (no div-collapse risk
-    // on Gmail Android). Each cell is its own table row, so no client can flow them
-    // side-by-side. Defense-in-depth: explicit display:block;width:100% on the inner
-    // divs as well.
-    // Approved reference layout: HORIZONTAL label/value within a single
-    // row. Label-left (uppercase muted, ~45% width), value-right (white,
-    // right-aligned, word-break to handle long emails). Fixed widths +
-    // explicit `align` attrs so Gmail Android keeps them on one line and
-    // does NOT collapse into a single column.
-    const valueAlign = align === "right" ? "left" : "right";
-    return `<tr>
-        <td width="42%" align="${align}" valign="top" style="padding:14px 0;${borderStyle}width:42%;text-align:${align};vertical-align:top">
-          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.4">${escapeHtml(r.label)}</div>
-        </td>
-        <td width="58%" align="${valueAlign}" valign="top" style="padding:14px 0;${borderStyle}width:58%;text-align:${valueAlign};vertical-align:top">
-          <div style="font-size:15px;font-weight:600;letter-spacing:0.2px;color:${valueColor};line-height:1.5;word-break:break-word">${escapeHtml(String(r.value))}</div>
-        </td>
-      </tr>`;
-  }).join("");
-  // Optional heading — when omitted, the card renders as a clean rows-only
-  // panel (matches the approved screenshot's single combined detail card).
-  const headingBlock = heading
-    ? `<div style="font-size:12px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px;text-align:${align};text-shadow:0 0 12px ${COLOR.primaryDeep}">${escapeHtml(heading)}</div>
-       <div style="height:1px;width:32px;background:${COLOR.primary};box-shadow:0 0 10px ${COLOR.primary};margin:${align === "right" ? "0 0 14px auto" : "0 0 14px"};line-height:1px;font-size:0">&nbsp;</div>`
-    : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 14px 40px -22px ${COLOR.primaryGlow}">
-    <tr><td style="padding:22px 22px 18px">
-      ${headingBlock}
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
-    </td></tr>
-  </table>`;
+  const rows = filled.map((r) => `<tr><td>${escapeHtml(r.label)}</td><td>${escapeHtml(String(r.value))}</td></tr>`).join("");
+  return `${heading ? `<h3>${escapeHtml(heading)}</h3>` : ""}<table>${rows}</table>`;
 }
 
-/**
- * "What to Expect" card — bullet list with cyan check-style glyphs and
- * an optional glowing arrival reminder box at the bottom.
- */
 export function whatToExpectCardHtml(opts: {
   heading?: string;
   items: string[];
   arrivalNote?: string;
   align?: "left" | "right";
 }): string {
-  const align = opts.align || "left";
   const heading = opts.heading || "What to Expect";
-  const padSide = align === "right" ? "padding-left" : "padding-right";
-  const items = opts.items.map((it) => `<tr>
-    <td valign="top" style="padding:9px 0;width:22px;vertical-align:top">
-      <span style="display:inline-block;color:${COLOR.primary};font-size:13px;line-height:1.5">✓</span>
-    </td>
-    <td valign="top" style="padding:9px 0;color:${COLOR.text};font-size:14px;line-height:1.55;${padSide}:10px;vertical-align:top">${escapeHtml(it)}</td>
-  </tr>`).join("");
-  const arrival = opts.arrivalNote
-    ? `<div style="margin-top:18px;padding:14px 16px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:10px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.08), inset 0 0 14px ${COLOR.primaryDeep}">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-          <tr>
-            <td valign="middle" style="padding-${align === "right" ? "left" : "right"}:12px">
-              <span style="display:inline-block;color:${COLOR.primary};font-size:14px;line-height:1">⏱</span>
-            </td>
-            <td valign="middle" style="font-size:11.5px;color:${COLOR.primary};letter-spacing:1.4px;text-transform:uppercase;font-weight:700;line-height:1.5">${escapeHtml(opts.arrivalNote)}</td>
-          </tr>
-        </table>
-      </div>`
-    : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), inset 0 0 0 1px ${COLOR.primaryDeep}">
-    <tr><td style="padding:22px 22px" align="${align}">
-      <div style="font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:10px">${escapeHtml(heading)}</div>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>
-      ${arrival}
-    </td></tr>
-  </table>`;
+  const items = opts.items.map((it) => `<li>${escapeHtml(it)}</li>`).join("");
+  return `<h3>${escapeHtml(heading)}</h3><ul>${items}</ul>${opts.arrivalNote ? `<p>${escapeHtml(opts.arrivalNote)}</p>` : ""}`;
 }
 
-/**
- * Large premium TRON CTA button — calendar/icon at left, label center,
- * arrow at right. Heavier glow than buttonHtml; use as primary action.
- */
 export function bigCtaButtonHtml(opts: {
   href: string;
   label: string;
-  icon?: string;             // unicode glyph, defaults to a calendar
+  icon?: string;
 }): string {
-  const icon = opts.icon || "▦";
-  // Full-width pill ALWAYS — outer table 100% width, anchor displays as a
-  // block-level button so it fills the cell on every client. Min height
-  // ~52px via line-height 20 + padding 16+16 = guaranteed 48px+ tap target.
-  // Approved reference: SOLID cyan filled pill, dark text, centered with
-  // auto-width (not full-bleed). Outer table is centered; inner table
-  // shrink-wraps to label width via inline-block-equivalent table cell.
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0">
-    <tr>
-      <td align="center" style="text-align:center">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
-          <tr>
-            <td align="center" bgcolor="${COLOR.primary}" style="background:${COLOR.primary};border-radius:999px;box-shadow:0 0 0 1px ${COLOR.primaryDeep}, 0 0 28px -4px ${COLOR.primary}, 0 0 64px -16px ${COLOR.primaryGlow}">
-              <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:14px 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;line-height:18px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.bgOuter};text-decoration:none;border-radius:999px;text-align:center;mso-padding-alt:0">${escapeHtml(opts.label)}</a>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>`;
+  return `<p><a href="${escapeHtml(opts.href)}">${escapeHtml(opts.label)}</a></p>`;
 }
 
-/**
- * Premium glow CTA button (table-based for Outlook).
- * Use sparingly — one primary CTA per email.
- */
 export function buttonHtml(opts: {
   href: string;
   label: string;
   variant?: "primary" | "secondary";
 }): string {
-  const isSecondary = opts.variant === "secondary";
-  const bg = isSecondary ? COLOR.bgCardElev : COLOR.primary;
-  const color = isSecondary ? COLOR.primary : "#06121f";
-  const border = isSecondary
-    ? `1px solid ${COLOR.borderCyan}`
-    : `1px solid ${COLOR.primary}`;
-  // Layered Tron-glow shadow — outer halo + tight inner ring. Email clients
-  // ignore this; modern web-mail clients (Apple Mail, Gmail web on dark mode)
-  // honour it for the cinematic glow effect.
-  const shadow = isSecondary
-    ? `0 0 0 1px ${COLOR.primaryDeep}`
-    : `0 0 0 1px ${COLOR.primary}, 0 0 28px -4px ${COLOR.primary}, 0 0 60px -12px ${COLOR.primaryGlow}`;
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
-    <tr><td style="border-radius:14px;background:${bg};box-shadow:${shadow}">
-      <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:14px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${color};text-decoration:none;border-radius:14px;border:${border}">${escapeHtml(opts.label)}</a>
-    </td></tr>
-  </table>`;
+  return `<p><a href="${escapeHtml(opts.href)}">${escapeHtml(opts.label)}</a></p>`;
 }
 
-/**
- * Hero block — large title + body intro.
- */
 export function heroHtml(opts: {
   title: string;
   body?: string;
   align?: "left" | "right" | "center";
   eyebrow?: string;
 }): string {
-  const align = opts.align || "left";
-  const accentLine = `<div style="margin:0 0 14px;height:1px;width:42px;background:linear-gradient(90deg, ${COLOR.primary} 0%, ${COLOR.primaryDeep} 100%);line-height:1px;font-size:0;${align === "right" ? "margin-left:auto" : align === "center" ? "margin-left:auto;margin-right:auto" : ""}">&nbsp;</div>`;
-  const eyebrow = opts.eyebrow
-    ? `<div style="margin:0 0 6px;font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:${COLOR.primary};font-weight:700">${escapeHtml(opts.eyebrow)}</div>`
-    : "";
-  return `<div style="margin:0 0 26px;text-align:${align}">
-    ${eyebrow}
-    ${accentLine}
-    <h1 style="margin:0 0 14px;font-family:'Times New Roman',Georgia,serif;font-size:30px;line-height:1.15;font-weight:700;color:${COLOR.text};letter-spacing:-0.4px">${escapeHtml(opts.title)}</h1>
-    ${opts.body ? `<p style="margin:0;font-size:15.5px;line-height:1.7;color:${COLOR.textMuted}">${escapeHtml(opts.body)}</p>` : ""}
-  </div>`;
+  return `${opts.eyebrow ? `<p>${escapeHtml(opts.eyebrow)}</p>` : ""}<h1>${escapeHtml(opts.title)}</h1>${opts.body ? `<p>${escapeHtml(opts.body)}</p>` : ""}`;
 }
 
-/**
- * Detail card — premium info table inside a glass-style panel.
- */
 export function infoCardHtml(opts: {
   rows: Array<[string, string | number | null | undefined]>;
   align?: "left" | "right";
 }): string {
   const filled = opts.rows.filter(([, v]) => v !== null && v !== undefined && v !== "");
   if (filled.length === 0) return "";
-  const align = opts.align || "left";
-  const rows = filled
-    .map(
-      ([k, v], i) => {
-        const isLast = i === filled.length - 1;
-        const borderStyle = isLast ? "" : `border-bottom:1px solid ${COLOR.border};`;
-        return `<tr class="px-detail-row">
-        <td class="px-detail-label" style="padding:13px 0;color:${COLOR.textMuted};font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;vertical-align:top;text-align:${align};${borderStyle}width:42%">${escapeHtml(k)}</td>
-        <td class="px-detail-value" style="padding:13px 0;color:${COLOR.text};font-size:14.5px;font-weight:600;text-align:${align === "left" ? "right" : "left"};${borderStyle}">${escapeHtml(String(v))}</td>
-      </tr>`;
-      },
-    )
-    .join("");
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 26px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;padding:6px 20px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
-    <tr><td><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table></td></tr>
-  </table>`;
+  const rows = filled.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v))}</td></tr>`).join("");
+  return `<table>${rows}</table>`;
 }
 
-/**
- * Reminder list — bulleted glass panel.
- */
 export function rulesHtml(opts: { heading: string; items: string[]; align?: "left" | "right" }): string {
-  const align = opts.align || "left";
-  const padSide = align === "right" ? "padding-right" : "padding-left";
-  const items = opts.items
-    .map(
-      (it) =>
-        `<li style="margin:6px 0;font-size:13.5px;color:${COLOR.textMuted};line-height:1.55">${escapeHtml(it)}</li>`,
-    )
-    .join("");
-  return `<div style="margin:8px 0 24px;padding:16px 18px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.border};border-radius:14px;text-align:${align}">
-    <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin-bottom:8px">${escapeHtml(opts.heading)}</div>
-    <ul style="margin:0;${padSide}:18px;${align === "right" ? "padding-left:0" : "padding-right:0"}">${items}</ul>
-  </div>`;
+  const items = opts.items.map((it) => `<li>${escapeHtml(it)}</li>`).join("");
+  return `<h3>${escapeHtml(opts.heading)}</h3><ul>${items}</ul>`;
 }
 
-/**
- * Soft note — used for warnings, expiry hints, secondary info.
- */
 export function noteHtml(opts: { text: string; tone?: "info" | "warn" | "danger"; align?: "left" | "right" }): string {
-  const tone = opts.tone || "info";
-  const align = opts.align || "left";
-  const accent = tone === "danger" ? COLOR.red : tone === "warn" ? COLOR.amber : COLOR.primary;
-  const sideBorder = align === "right" ? "border-right" : "border-left";
-  return `<div style="margin:18px 0;padding:12px 16px;background:${COLOR.bgCardSoft};${sideBorder}:3px solid ${accent};border-radius:8px;font-size:13px;color:${COLOR.textMuted};line-height:1.55;text-align:${align}">${escapeHtml(opts.text)}</div>`;
+  return `<p>${escapeHtml(opts.text)}</p>`;
 }
 
 export function signoffHtml(opts: { lang: string | null | undefined }): string {
   const lang = normalizeLang(opts.lang);
-  return `<div style="margin-top:28px;font-size:14px;color:${COLOR.text};line-height:1.6">
-    ${escapeHtml(t(lang, "signoff"))}<br>
-    <strong style="color:${COLOR.primary}">${escapeHtml(t(lang, "signoffName"))}</strong>
-  </div>`;
+  return `<p>${escapeHtml(t(lang, "signoff"))}<br>${escapeHtml(t(lang, "signoffName"))}</p>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1680,19 +1166,19 @@ export function buildWelcomeEmail(opts: {
   const heroTitle = fill(t(lang, "welcomeHero"), { name: opts.clientName });
 
   const featureBlock = (title: string, body: string) =>
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.border};border-radius:12px"><tr><td style="padding:14px 16px;text-align:${align}">
-      <div style="font-size:14px;font-weight:700;color:${COLOR.text};margin-bottom:4px">${escapeHtml(title)}</div>
-      <div style="font-size:13px;color:${COLOR.textMuted};line-height:1.55">${escapeHtml(body)}</div>
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td>
+      <div>${escapeHtml(title)}</div>
+      <div>${escapeHtml(body)}</div>
     </td></tr></table>`;
 
   const bodyHtml =
-    `<p style="margin:0 0 12px;color:${COLOR.text};font-size:15px">${escapeHtml(greeting)}</p>` +
+    `<p>${escapeHtml(greeting)}</p>` +
     heroHtml({ title: heroTitle, body: t(lang, "welcomeBody"), align }) +
     featureBlock(t(lang, "welcomeFeatBookT"), t(lang, "welcomeFeatBookB")) +
     featureBlock(t(lang, "welcomeFeatInbodyT"), t(lang, "welcomeFeatInbodyB")) +
     featureBlock(t(lang, "welcomeFeatContactT"), t(lang, "welcomeFeatContactB")) +
-    `<div style="margin:22px 0 8px;text-align:${align}">${buttonHtml({ href: `${website}/booking`, label: t(lang, "welcomeCtaBook") })}</div>` +
-    `<div style="margin:0 0 8px;text-align:${align}">${buttonHtml({ href: wa, label: t(lang, "ctaWhatsapp"), variant: "secondary" })}</div>` +
+    `<div>${buttonHtml({ href: `${website}/booking`, label: t(lang, "welcomeCtaBook") })}</div>` +
+    `<div>${buttonHtml({ href: wa, label: t(lang, "ctaWhatsapp"), variant: "secondary" })}</div>` +
     rulesHtml({
       heading: t(lang, "welcomeRulesHeading"),
       items: [t(lang, "welcomeRule1"), t(lang, "welcomeRule2"), t(lang, "welcomeRule3")],
@@ -1819,7 +1305,7 @@ export function buildClientBookingConfirmationEmail(opts: {
   const bodyHtml =
     statusHero +
     detailsCard +
-    `<div style="margin:30px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Dashboard", icon: "▣" })}</div>`;
+    `<div>${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Dashboard", icon: "▣" })}</div>`;
 
   const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
   const html = shellHtml({ lang, previewText: `${subject} — ${t(lang, "bookingBody")}`, bodyHtml, websiteUrl: website, topBar });
@@ -1869,7 +1355,7 @@ export function buildSessionReminderEmail(opts: {
   const greeting = fill(t(lang, "greeting"), { name: d.clientName });
 
   const bodyHtml =
-    `<p style="margin:0 0 12px;color:${COLOR.text};font-size:15px">${escapeHtml(greeting)}</p>` +
+    `<p>${escapeHtml(greeting)}</p>` +
     heroHtml({ title: heroTitle, body: heroBody, align }) +
     infoCardHtml({
       rows: [
@@ -1880,7 +1366,7 @@ export function buildSessionReminderEmail(opts: {
       ],
       align,
     }) +
-    `<div style="margin:18px 0 8px;text-align:${align}">${buttonHtml({ href: `${website}/dashboard`, label: t(lang, "ctaDashboard") })}</div>` +
+    `<div>${buttonHtml({ href: `${website}/dashboard`, label: t(lang, "ctaDashboard") })}</div>` +
     signoffHtml({ lang });
 
   const html = shellHtml({ lang, previewText: subject, bodyHtml, websiteUrl: website });
@@ -1923,7 +1409,7 @@ export function buildPackageExpiringEmail(opts: {
   }
 
   const bodyHtml =
-    `<p style="margin:0 0 12px;color:${COLOR.text};font-size:15px">${escapeHtml(greeting)}</p>` +
+    `<p>${escapeHtml(greeting)}</p>` +
     heroHtml({ title: t(lang, "expiringHero"), body, align }) +
     infoCardHtml({
       rows: [
@@ -1932,8 +1418,8 @@ export function buildPackageExpiringEmail(opts: {
       ],
       align,
     }) +
-    `<div style="margin:18px 0 8px;text-align:${align}">${buttonHtml({ href: wa, label: t(lang, "expiringCta") })}</div>` +
-    `<div style="margin:0 0 8px;text-align:${align}">${buttonHtml({ href: `${website}/dashboard`, label: t(lang, "ctaDashboard"), variant: "secondary" })}</div>` +
+    `<div>${buttonHtml({ href: wa, label: t(lang, "expiringCta") })}</div>` +
+    `<div>${buttonHtml({ href: `${website}/dashboard`, label: t(lang, "ctaDashboard"), variant: "secondary" })}</div>` +
     signoffHtml({ lang });
 
   const html = shellHtml({ lang, previewText: subject, bodyHtml, websiteUrl: website });
@@ -1958,9 +1444,9 @@ export function buildPackageFinishedEmail(opts: {
   const heroTitle = fill(t(lang, "finishedHero"), { name: opts.clientName });
 
   const bodyHtml =
-    `<p style="margin:0 0 12px;color:${COLOR.text};font-size:15px">${escapeHtml(greeting)}</p>` +
+    `<p>${escapeHtml(greeting)}</p>` +
     heroHtml({ title: heroTitle, body: t(lang, "finishedBody"), align }) +
-    `<div style="margin:18px 0 8px;text-align:${align}">${buttonHtml({ href: wa, label: t(lang, "finishedCta") })}</div>` +
+    `<div>${buttonHtml({ href: wa, label: t(lang, "finishedCta") })}</div>` +
     signoffHtml({ lang });
 
   const html = shellHtml({ lang, previewText: subject, bodyHtml, websiteUrl: website });
@@ -1980,10 +1466,10 @@ export function buildPasswordResetEmail(opts: {
 
   const bodyHtml =
     heroHtml({ title: t(lang, "resetHero"), body: t(lang, "resetBody"), align }) +
-    `<div style="margin:18px 0 8px;text-align:${align}">${buttonHtml({ href: opts.resetUrl, label: t(lang, "resetCta") })}</div>` +
+    `<div>${buttonHtml({ href: opts.resetUrl, label: t(lang, "resetCta") })}</div>` +
     noteHtml({ text: t(lang, "resetExpiry"), tone: "warn", align }) +
-    `<div style="margin:0 0 8px;font-size:12px;color:${COLOR.textMuted};text-align:${align}">${escapeHtml(t(lang, "resetAltLink"))}</div>` +
-    `<div style="margin:0 0 18px;font-size:12px;color:${COLOR.textDim};word-break:break-all;text-align:${align}"><a href="${escapeHtml(opts.resetUrl)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(opts.resetUrl)}</a></div>` +
+    `<div>${escapeHtml(t(lang, "resetAltLink"))}</div>` +
+    `<div><a href="${escapeHtml(opts.resetUrl)}">${escapeHtml(opts.resetUrl)}</a></div>` +
     noteHtml({ text: t(lang, "resetDisclaimer"), tone: "info", align });
 
   const html = shellHtml({ lang, previewText: subject, bodyHtml, websiteUrl: opts.websiteUrl });
@@ -2027,7 +1513,7 @@ export function buildAdminNewClientEmail(opts: {
         ["Package price", opts.packagePrice != null ? `${opts.packagePrice} AED` : null],
       ],
     }) +
-    `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/clients`, label: "Open admin panel" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open admin panel" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     "New client signup",
@@ -2101,8 +1587,8 @@ export function buildAdminBookingEmail(opts: {
   const bodyHtml =
     statusHero +
     detailsCard +
-    (opts.clientNotes ? `<div style="margin-top:22px">${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
-    `<div style="margin:30px 0 6px">${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
+    (opts.clientNotes ? `<div>${noteHtml({ text: `Client notes: ${opts.clientNotes}`, tone: "warn" })}</div>` : "") +
+    `<div>${bigCtaButtonHtml({ href: `${website}/admin/bookings`, label: "Open Admin Bookings", icon: "▣" })}</div>`;
   const topBar = { label: "New booking received", sub: `${d.clientName} · ${d.date} ${d.time12}`, viewInBrowserUrl: `${website}/admin/bookings` };
   const html = shellHtml({ lang: "en", previewText: subject, bodyHtml, websiteUrl: website, topBar });
   const text = plain(
@@ -2154,7 +1640,7 @@ export function buildAdminBookingChangeEmail(opts: {
           ],
     }) +
     (opts.reason ? noteHtml({ text: `Reason: ${opts.reason}`, tone: "warn" }) : "") +
-    `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     heroTitle,
@@ -2181,7 +1667,7 @@ export function buildAdminInbodyEmail(opts: {
         ["Date", opts.recordedDate ?? null],
       ],
     }) +
-    `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain("New InBody uploaded", `Client: ${opts.clientName}`, opts.recordedDate && `Date: ${opts.recordedDate}`);
   return { subject, html, text };
@@ -2211,7 +1697,7 @@ export function buildAdminPackageExpiringEmail(opts: {
         ["Status", detail],
       ],
     }) +
-    `<div style="margin:18px 0 8px">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(`Client renewal likely needed — ${opts.clientName}`, opts.packageName && `Package: ${opts.packageName}`, detail);
   return { subject, html, text };
@@ -2236,88 +1722,30 @@ type BadgeTone =
  * (NEW BOOKING / CANCELLED / RESCHEDULED / PROTECTED / PAID / EXPIRED / VIP).
  */
 export function statusBadgeHtml(opts: { label: string; tone?: BadgeTone }): string {
-  const tone = opts.tone || "tron";
-  const palette: Record<BadgeTone, { bg: string; fg: string; border: string }> = {
-    info:    { bg: COLOR.bgCardElev, fg: COLOR.primary,  border: COLOR.borderCyan },
-    tron:    { bg: COLOR.primaryDeep, fg: COLOR.primary, border: COLOR.primary },
-    success: { bg: "#06251a",         fg: COLOR.emerald, border: "#127a55" },
-    warn:    { bg: "#04212c",         fg: COLOR.amber,   border: "#0a5870" },
-    danger:  { bg: "#2a0a0a",         fg: COLOR.red,     border: "#8a1a1a" },
-    vip:     { bg: "#04222e",         fg: COLOR.gold,    border: "#0c6e8a" },
-    neutral: { bg: COLOR.bgCardSoft,  fg: COLOR.textMuted, border: COLOR.border },
-  };
-  const p = palette[tone];
-  return `<span style="display:inline-block;padding:6px 12px;background:${p.bg};border:1px solid ${p.border};border-radius:999px;color:${p.fg};font-size:10.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;line-height:1;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">${escapeHtml(opts.label)}</span>`;
+  return `<span>[${escapeHtml(opts.label)}]</span>`;
 }
 
-/**
- * TRON divider rail — thin glowing horizontal line with center fade.
- * Use to separate sections inside the body without heavy visual weight.
- */
 export function dividerHtml(): string {
-  return `<div style="margin:22px 0;height:1px;background:linear-gradient(90deg, transparent 0%, ${COLOR.borderCyan} 30%, ${COLOR.primary} 50%, ${COLOR.borderCyan} 70%, transparent 100%);line-height:1px;font-size:0">&nbsp;</div>`;
+  return `<hr>`;
 }
 
-/**
- * Metric tile grid — 2-column layout for InBody / body metrics / KPIs.
- * Each tile shows a label + a large numeric value + optional unit.
- */
 export function metricGridHtml(opts: {
   metrics: Array<{ label: string; value: string | number | null | undefined; unit?: string; tone?: "primary" | "success" | "warn" | "danger" }>;
 }): string {
-  const cells = opts.metrics
-    .filter((m) => m.value !== null && m.value !== undefined && m.value !== "")
-    .map((m) => {
-      const fg =
-        m.tone === "success" ? COLOR.emerald :
-        m.tone === "warn"    ? COLOR.amber :
-        m.tone === "danger"  ? COLOR.red :
-        COLOR.primary;
-      return `<td width="50%" style="padding:6px;vertical-align:top">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:12px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}">
-          <tr><td style="padding:14px 16px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};margin:0 0 8px">${escapeHtml(m.label)}</div>
-            <div style="font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;color:${fg};line-height:1">${escapeHtml(String(m.value))}${m.unit ? `<span style="font-size:13px;font-weight:600;color:${COLOR.textMuted};margin-left:4px;letter-spacing:0.5px">${escapeHtml(m.unit)}</span>` : ""}</div>
-          </td></tr>
-        </table>
-      </td>`;
-    });
-  if (cells.length === 0) return "";
-  // Pad to even count for clean 2-column grid
-  if (cells.length % 2 === 1) cells.push(`<td width="50%" style="padding:6px">&nbsp;</td>`);
-  const rows: string[] = [];
-  for (let i = 0; i < cells.length; i += 2) {
-    rows.push(`<tr>${cells[i]}${cells[i + 1]}</tr>`);
-  }
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px -6px 22px">
-    ${rows.join("")}
-  </table>`;
+  const filled = opts.metrics.filter((m) => m.value !== null && m.value !== undefined && m.value !== "");
+  if (filled.length === 0) return "";
+  const rows = filled.map((m) => `<tr><td>${escapeHtml(m.label)}</td><td>${escapeHtml(String(m.value))}${m.unit ? ` ${escapeHtml(m.unit)}` : ""}</td></tr>`).join("");
+  return `<table>${rows}</table>`;
 }
 
-/**
- * AED price card — premium currency display for payment / package emails.
- * Renders the amount with a luminous TRON cyan accent and AED label.
- */
 export function priceCardHtml(opts: {
   label: string;
   amountAed: number;
   sublabel?: string;
   tone?: "primary" | "success" | "warn";
 }): string {
-  const fg =
-    opts.tone === "success" ? COLOR.emerald :
-    opts.tone === "warn"    ? COLOR.amber :
-    COLOR.primary;
   const formatted = new Intl.NumberFormat("en-US").format(Math.round(opts.amountAed));
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 22px;background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:14px;box-shadow:inset 0 0 0 1px ${COLOR.primaryDeep}, 0 0 24px -8px ${COLOR.primaryGlow}">
-    <tr><td style="padding:20px 24px">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${COLOR.textMuted};margin:0 0 10px">${escapeHtml(opts.label)}</div>
-      <div style="font-family:'Times New Roman',Georgia,serif;color:${fg};line-height:1">
-        <span style="font-size:14px;font-weight:600;letter-spacing:2px;color:${COLOR.textMuted};margin-right:8px;vertical-align:middle">AED</span><span style="font-size:32px;font-weight:700;letter-spacing:-0.5px;vertical-align:middle">${escapeHtml(formatted)}</span>
-      </div>
-      ${opts.sublabel ? `<div style="margin-top:8px;font-size:13px;color:${COLOR.textMuted}">${escapeHtml(opts.sublabel)}</div>` : ""}
-    </td></tr>
-  </table>`;
+  return `<p><strong>${escapeHtml(opts.label)}:</strong> AED ${escapeHtml(formatted)}${opts.sublabel ? `<br>${escapeHtml(opts.sublabel)}` : ""}</p>`;
 }
 
 // ===========================================================================
@@ -2358,7 +1786,7 @@ export function buildAdminAttendanceEmail(opts: {
     }
   })();
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: cfg.badge, tone: cfg.tone })}</div>` +
+    `<div>${statusBadgeHtml({ label: cfg.badge, tone: cfg.tone })}</div>` +
     heroHtml({ title: cfg.title, body: cfg.body, eyebrow: cfg.eyebrow }) +
     infoCardHtml({
       rows: [
@@ -2376,7 +1804,7 @@ export function buildAdminAttendanceEmail(opts: {
       ],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/bookings`, label: "Open admin bookings" })}</div>`;
   const html = adminShell({ previewText: cfg.subject, bodyHtml });
   const text = plain(
     cfg.title,
@@ -2409,7 +1837,7 @@ export function buildAdminEmergencyCancelEmail(opts: {
       ? `${opts.monthlyQuotaUsed} of ${opts.monthlyQuotaTotal} used this month`
       : null;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Protected · No charge", tone: "vip" })}</div>` +
+    `<div>${statusBadgeHtml({ label: "Protected · No charge", tone: "vip" })}</div>` +
     heroHtml({
       eyebrow: "Premium cancellation used",
       title: "Protected cancellation",
@@ -2425,7 +1853,7 @@ export function buildAdminEmergencyCancelEmail(opts: {
       ],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     "Protected cancellation",
@@ -2470,7 +1898,7 @@ export function buildAdminPaymentEmail(opts: {
       ? Math.max(0, opts.packageTotal - opts.amountPaidTotal)
       : null;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: badge, tone })}</div>` +
+    `<div>${statusBadgeHtml({ label: badge, tone })}</div>` +
     heroHtml({
       eyebrow: "Payment update",
       title,
@@ -2505,7 +1933,7 @@ export function buildAdminPaymentEmail(opts: {
       ],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${websiteUrl}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${websiteUrl}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     title,
@@ -2542,7 +1970,7 @@ export function buildAdminPackageActivatedEmail(opts: {
   const verb = opts.source === "approved" ? "approved" : opts.source === "converted_trial" ? "activated from trial" : "created";
   const subject = `Package ${verb} — ${opts.clientName} · ${opts.packageName}`;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Package live", tone: "success" })}</div>` +
+    `<div>${statusBadgeHtml({ label: "Package live", tone: "success" })}</div>` +
     heroHtml({
       eyebrow: "Client onboarding",
       title: "Package is live",
@@ -2563,7 +1991,7 @@ export function buildAdminPackageActivatedEmail(opts: {
       ],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     `Package ${verb} — ${opts.clientName}`,
@@ -2596,7 +2024,7 @@ export function buildAdminPackageExpiredEmail(opts: {
       : "The package window has closed.";
   const subject = `Package finished — ${opts.clientName} · ${opts.packageName}`;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Renewal needed", tone: "warn" })}</div>` +
+    `<div>${statusBadgeHtml({ label: "Renewal needed", tone: "warn" })}</div>` +
     heroHtml({
       eyebrow: "Renewal moment",
       title: "Package complete — renewal opportunity",
@@ -2613,7 +2041,7 @@ export function buildAdminPackageExpiredEmail(opts: {
     }) +
     noteHtml({ text: "Tip: a same-day check-in often converts renewals. The momentum is yours to keep alive.", tone: "info" }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     `Package finished — ${opts.clientName}`,
@@ -2640,7 +2068,7 @@ export function buildAdminPackageExtendedEmail(opts: {
   const website = opts.websiteUrl || BRAND.defaultWebsite;
   const subject = `Package extended — ${opts.clientName} · +${opts.daysAdded}d`;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: `+${opts.daysAdded} days`, tone: "tron" })}</div>` +
+    `<div>${statusBadgeHtml({ label: `+${opts.daysAdded} days`, tone: "tron" })}</div>` +
     heroHtml({
       eyebrow: "Package extension",
       title: "Package window extended",
@@ -2657,7 +2085,7 @@ export function buildAdminPackageExtendedEmail(opts: {
       ],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     `Package extended — ${opts.clientName}`,
@@ -2683,7 +2111,7 @@ export function buildAdminProfileUpdateEmail(opts: {
   const website = opts.websiteUrl || BRAND.defaultWebsite;
   const subject = `Profile updated — ${opts.clientName}`;
   const bodyHtml =
-    `<div style="margin:0 0 18px">${statusBadgeHtml({ label: "Profile updated", tone: "info" })}</div>` +
+    `<div>${statusBadgeHtml({ label: "Profile updated", tone: "info" })}</div>` +
     heroHtml({
       eyebrow: "Client activity",
       title: "Profile updated",
@@ -2693,7 +2121,7 @@ export function buildAdminProfileUpdateEmail(opts: {
       rows: [["Client", opts.clientName], ...opts.changes],
     }) +
     dividerHtml() +
-    `<div style="margin:8px 0">${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
+    `<div>${buttonHtml({ href: `${website}/admin/clients`, label: "Open client profile" })}</div>`;
   const html = adminShell({ previewText: subject, bodyHtml });
   const text = plain(
     `Profile updated — ${opts.clientName}`,
