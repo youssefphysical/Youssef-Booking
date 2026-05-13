@@ -1845,90 +1845,43 @@ export function buildClientBookingConfirmationEmail(opts: {
   const subject = fill(t(lang, "bookingSubject"), { date: d.date, time: d.time12 });
   const greeting = fill(t(lang, "greeting"), { name: d.clientName });
 
-  // ===== TRON LEGACY FREEZE — premium client booking confirmation =====
-  // Marketing journey order: Status Hero → Highlight Strip → Training
-  // Summary → Client Details (secondary) → What to Expect → Arrival → CTA.
-  // Every block is single-column-by-construction; no @media required.
-
-  // 1. Status hero — short premium title + motivational line.
+  // Approved reference layout — mirrors the admin email visual system 1:1:
+  // simple sentence-case title + plain body, ONE combined details card with
+  // all session + training + package fields, solid cyan pill CTA centered.
+  // No "Status / Booking Confirmed" eyebrow, no big blue highlight strip,
+  // no Duration card, no "What to Expect" block, no two-column splits.
   const statusHero = eyebrowTitleHtml({
-    eyebrow: "Status",
-    titleStart: "Booking",
-    titleAccent: "Confirmed",
-    body: "Your session is booked. Arrive focused — we'll take care of the plan.",
+    eyebrow: "",
+    titleStart: "Session confirmed",
+    titleAccent: "",
+    body: "Your session is locked in. Arrive focused — we'll handle the plan.",
     align,
   });
 
-  // 2. Session highlight strip — most readable section after the title.
-  // 3 prominent stacked rows: Date / Time (Dubai) / Duration.
-  const stripRows: Array<{ label: string; value: string }> = [
-    { label: t(lang, "bookingDate"), value: d.date },
-    { label: `${t(lang, "bookingTime")} (Dubai)`, value: d.time12 },
-    { label: "Duration", value: "60 Minutes" },
+  // Single combined detail card — Date/Time + Training + Package fields,
+  // all rendered as horizontal label/value rows. Same shape as admin.
+  const combinedRows: Array<{ icon: string; label: string; value: string | number | null; valueTone?: "primary" | "default" }> = [
+    { icon: "", label: t(lang, "bookingDate"), value: d.date },
+    { icon: "", label: `${t(lang, "bookingTime")} (Dubai)`, value: `${d.time12} · GST (UTC+4)` },
   ];
-  const highlightStrip =
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:16px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.10), 0 0 0 1px ${COLOR.primaryDeep}, 0 0 36px -12px ${COLOR.primaryGlow}">
-      <tr><td style="padding:30px 28px">
-        ${stripRows.map((row, i) => `
-          <div style="${i > 0 ? `border-top:1px solid ${COLOR.border};margin-top:22px;padding-top:22px;` : ""}text-align:${align}">
-            <div style="display:block;width:100%;font-size:11px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3;margin:0 0 10px">${escapeHtml(row.label)}</div>
-            <div style="display:block;width:100%;font-family:'Times New Roman',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:0.2px;color:${COLOR.primary};line-height:1.25;text-shadow:0 0 22px ${COLOR.primaryDeep}, 0 0 10px ${COLOR.primaryGlow}">${escapeHtml(row.value)}</div>
-          </div>`).join("")}
-      </td></tr>
-    </table>`;
+  if (d.sessionFocusLabel) combinedRows.push({ icon: "", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel });
+  if (d.trainingGoalLabel) combinedRows.push({ icon: "", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel });
+  if (d.sessionTypeLabel) combinedRows.push({ icon: "", label: t(lang, "bookingType"), value: d.sessionTypeLabel });
+  if (d.partnerFullName)  combinedRows.push({ icon: "", label: "Training Partner", value: d.partnerFullName });
+  if (d.packageName)      combinedRows.push({ icon: "", label: t(lang, "bookingPackage"), value: d.packageName });
+  if (d.currentSessionNumber != null && d.totalSessions != null) {
+    combinedRows.push({ icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` });
+  }
+  if (d.remainingSessions != null) combinedRows.push({ icon: "", label: t(lang, "bookingRemaining"), value: d.remainingSessions });
+  if (d.packageExpiryDate) combinedRows.push({ icon: "", label: t(lang, "bookingExpires"), value: d.packageExpiryDate });
+  if (d.paymentStatus)     combinedRows.push({ icon: "", label: "Payment", value: formatPaymentStatus(d.paymentStatus), valueTone: "primary" });
 
-  // 3. Training summary — Focus / Goal / Type / Package / Remaining / Expiry / Payment.
-  const trainingSummary = sessionDetailsCardHtml({
-    heading: "Training Summary",
-    align,
-    rows: [
-      { icon: "", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel || null },
-      { icon: "", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel || null },
-      { icon: "", label: t(lang, "bookingType"), value: d.sessionTypeLabel || null },
-      { icon: "", label: t(lang, "bookingPackage"), value: d.packageName || null },
-      d.currentSessionNumber != null && d.totalSessions != null
-        ? { icon: "", label: "Session", value: `${d.currentSessionNumber} of ${d.totalSessions}` }
-        : { icon: "", label: "", value: null },
-      { icon: "", label: t(lang, "bookingRemaining"), value: d.remainingSessions ?? null },
-      { icon: "", label: t(lang, "bookingExpires"), value: d.packageExpiryDate || null },
-      { icon: "", label: "Payment Status", value: formatPaymentStatus(d.paymentStatus) },
-    ],
-  });
+  const detailsCard = sessionDetailsCardHtml({ heading: "", align, rows: combinedRows });
 
-  // 4. Client details — secondary, smaller heading, no domination.
-  const clientDetails = sessionDetailsCardHtml({
-    heading: "Client Details",
-    align,
-    rows: [
-      { icon: "", label: "Name", value: d.clientName },
-      { icon: "", label: "Email", value: d.clientEmail || null },
-      { icon: "", label: "Phone", value: d.clientPhone || null },
-      d.partnerFullName ? { icon: "", label: "Training Partner", value: d.partnerFullName } : { icon: "", label: "", value: null },
-    ],
-  });
-
-  // 5. What to expect — compact, with arrival note baked in (gold ice tint).
-  const expectBlock = whatToExpectCardHtml({
-    heading: "What to Expect",
-    align,
-    items: [
-      "Personalized warm-up",
-      "Proper form & technique",
-      "Progressive overload",
-      "Cool down & recovery",
-    ],
-    arrivalNote: "Please arrive 5–10 minutes early so we can start on time.",
-  });
-
-  const SPACER = `<div style="height:24px;line-height:24px;font-size:0">&nbsp;</div>`;
   const bodyHtml =
-    `<p style="margin:0 0 28px;color:${COLOR.textSecondary};font-size:15.5px;line-height:1.65">${escapeHtml(greeting)}</p>` +
     statusHero +
-    highlightStrip + SPACER +
-    trainingSummary + SPACER +
-    clientDetails + SPACER +
-    expectBlock +
-    `<div style="margin:32px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Booking", icon: "▣" })}</div>`;
+    detailsCard +
+    `<div style="margin:30px 0 6px">${bigCtaButtonHtml({ href: `${website}/dashboard`, label: "Open My Dashboard", icon: "▣" })}</div>`;
 
   const topBar = { label: "Booking confirmed", sub: "You're one step closer.", viewInBrowserUrl: `${website}/dashboard` };
   const html = shellHtml({ lang, previewText: `${subject} — ${t(lang, "bookingBody")}`, bodyHtml, websiteUrl: website, topBar });
