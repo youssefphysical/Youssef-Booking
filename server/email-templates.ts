@@ -1299,78 +1299,16 @@ export function shellHtml(opts: {
         <!-- spacer (premium rhythm) -->
         <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
 
-        <!-- 4. FOOTER PROFILE CARD — single-column ALWAYS: avatar+signature
-             on top centered, contacts panel below centered. No 2-col split. -->
+        <!-- 4. MINIMAL FOOTER — matches the approved reference screenshot.
+             No YA logo, no avatar, no signature, no motto, no "Let's Stay
+             Connected" panel, no trust tiles. Just one tight contact line +
+             the legal disclaimer. Identical for admin + client. -->
         <tr>
-          <td class="px-card" bgcolor="${COLOR.bgCard}" style="background:${COLOR.bgCard};border:1px solid ${COLOR.borderCyan};border-radius:16px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(95,251,255,0.05), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 36px -22px ${COLOR.primaryGlow}">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="px-footer" align="center" style="padding:28px 24px;text-align:center">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr><td align="center" style="text-align:center;padding:0 0 18px">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
-                        <tr>
-                          <td valign="middle" style="padding-right:14px">${avatarCell}</td>
-                          <td valign="middle" align="left" style="text-align:left">
-                            ${signatureBlock}
-                            <div style="margin-top:8px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.text};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto1)}</div>
-                            <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;line-height:1.5">${escapeHtml(BRAND.motto2)}</div>
-                          </td>
-                        </tr>
-                      </table>
-                    </td></tr>
-                    <tr><td align="center" style="text-align:center;padding:18px 0 0;border-top:1px solid ${COLOR.border}">
-                      <div style="font-size:10.5px;letter-spacing:2.4px;text-transform:uppercase;color:${COLOR.primary};font-weight:700;margin:14px 0 12px">Let's Stay Connected</div>
-                      <div style="font-size:15px;color:${COLOR.text};line-height:2">
-                        <div><a href="${wa}" style="color:${COLOR.text};text-decoration:none">${ico("✆")}WhatsApp: ${escapeHtml(BRAND.whatsappDisplay)}</a></div>
-                        <div><a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">${ico("✉")}${escapeHtml(BRAND.email)}</a></div>
-                        <div><a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">${ico("◎")}${escapeHtml(BRAND.instagramHandle)}</a></div>
-                        <div><span style="color:${COLOR.text}">${ico("◉")}${escapeHtml(BRAND.location)}</span></div>
-                      </div>
-                    </td></tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- spacer (premium rhythm) -->
-        <tr><td style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>
-
-        <!-- 5. TRUST ROW — 3 stacked full-width tiles ALWAYS. No 3-col table. -->
-        <tr>
-          <td>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${[
-                { icon: "★", title: "Premium Coaching", sub: "Personalized for you" },
-                { icon: "◎", title: "Proven Methods", sub: "Results that last" },
-                { icon: "✓", title: "Commitment", sub: "We build champions" },
-              ].map((tile, i) => `
-              ${i > 0 ? `<tr><td style="height:10px;line-height:10px;font-size:0">&nbsp;</td></tr>` : ""}
-              <tr>
-                <td valign="middle" style="padding:18px 18px;background:${COLOR.bgCard};border:1px solid ${COLOR.border};border-radius:12px;vertical-align:middle">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td valign="middle" width="44" style="width:44px;padding-right:14px">
-                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:34px;height:34px;background:${COLOR.bgCardElev};border:1px solid ${COLOR.borderCyan};border-radius:17px"><tr><td align="center" valign="middle" style="font-size:15px;color:${COLOR.primary};line-height:1">${tile.icon}</td></tr></table>
-                      </td>
-                      <td valign="middle">
-                        <div style="font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.text};line-height:1.3">${tile.title}</div>
-                        <div style="font-size:13px;color:${COLOR.textMuted};line-height:1.5;margin-top:4px">${tile.sub}</div>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>`).join("")}
-            </table>
-          </td>
-        </tr>
-
-        <!-- 6. LEGAL FOOTER -->
-        <tr>
-          <td style="padding:20px 4px 8px" align="${align}" dir="${dir}">
-            <div style="font-size:11px;color:${COLOR.textDim};line-height:1.6">
+          <td class="px-footer" style="padding:20px 4px 8px" align="${align}" dir="${dir}">
+            <div style="font-size:13px;color:${COLOR.text};line-height:1.7;font-weight:600;letter-spacing:0.3px">
+              ${escapeHtml(BRAND.trainerName)}&nbsp;·&nbsp;<a href="${wa}" style="color:${COLOR.primary};text-decoration:none">WhatsApp</a>
+            </div>
+            <div style="margin-top:10px;font-size:11px;color:${COLOR.textDim};line-height:1.6">
               ${escapeHtml(t(lang, "footerNote"))}<br>
               ${escapeHtml(t(lang, "footerUnsubNote"))}&nbsp;
               <a href="${escapeHtml(website)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(BRAND.name)}</a>
