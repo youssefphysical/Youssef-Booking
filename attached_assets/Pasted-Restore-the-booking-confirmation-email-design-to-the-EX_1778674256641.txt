@@ -1,0 +1,162 @@
+Restore the booking confirmation email design to the EXACT premium layout/style that existed on 2026-05-22 at 5:00 PM.
+
+IMPORTANT:
+Do NOT redesign from scratch.
+Do NOT modernize it differently.
+Do NOT simplify it.
+I want the original luxury Tron Legacy / premium dark neon style restored exactly.
+
+The current email design lost:
+- proper spacing
+- premium hierarchy
+- visual depth
+- luxury card structure
+- balanced typography
+- glow consistency
+- clean container proportions
+
+Restore the previous design language with these exact characteristics:
+
+========================================
+GLOBAL STYLE
+========================================
+- Ultra premium dark luxury aesthetic
+- Inspired by Tron Legacy / futuristic premium UI
+- Deep navy + black gradients
+- Cyan/blue neon edge glow accents
+- Strong cinematic contrast
+- High-end fitness brand feel
+- Desktop AND mobile perfectly optimized
+- Everything centered properly
+- Clean spacing system
+- NO flat/plain layout
+
+========================================
+EMAIL CONTAINER
+========================================
+- Main email body must sit inside a centered premium dark container
+- Rounded corners around entire email
+- Subtle outer glow around the whole email card
+- Add layered depth using gradients and shadows
+- Background should NOT feel empty or plain black
+- Add subtle radial glow effects behind content
+- Width should feel premium and compact
+- Mobile responsive with proportional padding
+
+========================================
+HEADER
+========================================
+Restore original premium branding header:
+- "YOUSSEF AHMED"
+- Subtitle:
+  PERSONAL TRAINING • DUBAI
+
+Header styling requirements:
+- Luxurious typography
+- Better letter spacing
+- Stronger visual presence
+- Thin neon divider line underneath
+- Balanced top/bottom padding
+- Subtle cyan glow around divider
+
+========================================
+TITLE SECTION
+========================================
+"New session booking"
+
+Needs:
+- More breathing room
+- Better font scale hierarchy
+- Cleaner vertical spacing
+- Professional white typography
+- Supporting text below slightly dimmed
+
+========================================
+CLIENT DETAILS CARD
+========================================
+The inner booking details section MUST look like a premium glass/neon card.
+
+Restore:
+- Deep gradient card background
+- Smooth rounded corners
+- Thin glowing cyan borders
+- Elegant separators between rows
+- Better spacing between each row
+- Proper alignment left/right
+- Labels small and luxurious
+- Values brighter and stronger
+- Rows vertically centered
+
+The card should feel:
+- futuristic
+- premium
+- expensive
+- organized
+- visually balanced
+
+========================================
+BUTTON
+========================================
+Restore original premium CTA button style:
+- Cyan neon gradient
+- Glow effect
+- Bigger premium padding
+- Rounded pill shape
+- Better hover effect
+- Centered perfectly
+- Strong contrast with dark background
+
+Button must feel:
+- luxurious
+- clickable
+- modern
+- premium SaaS quality
+
+========================================
+FOOTER
+========================================
+Restore:
+- subtle footer separator
+- balanced footer spacing
+- smaller muted text
+- premium dark footer background
+- cleaner typography hierarchy
+
+========================================
+VERY IMPORTANT DESIGN RULES
+========================================
+- NO excessive empty spaces
+- NO random line spacing
+- NO oversized padding blocks
+- NO cheap bootstrap look
+- NO flat/plain sections
+- NO basic email template styling
+- NO generic SaaS appearance
+
+Everything must feel:
+- premium
+- cinematic
+- expensive
+- futuristic
+- polished
+- luxury fitness brand
+
+========================================
+TECHNICAL REQUIREMENTS
+========================================
+- Improve email HTML structure
+- Improve responsive rendering
+- Improve typography consistency
+- Improve dark mode compatibility
+- Ensure Gmail rendering works properly
+- Ensure Outlook-safe spacing
+- Keep performance optimized
+- Keep email width responsive
+
+========================================
+CRITICAL
+========================================
+The final result must visually match the premium style from the old version before the redesign changes.
+
+Do not create a new style direction.
+Restore the previous premium visual identity accurately.
