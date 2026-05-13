@@ -1862,7 +1862,7 @@ export const DS_V2 = {
     canvas:        "#04070D",                    // deeper cinematic black
     ink:           "#F4F8FB",                    // primary white
     inkSoft:       "#C9D6E1",                    // body
-    inkMuted:      "#8395A4",                    // captions / quiet labels
+    inkMuted:      "#94A4B3",                    // captions / quiet labels (Phase 4: lifted from #8395A4 for Gmail Android legibility)
     inkFaint:      "#5A6A78",                    // separators on type, dim dots
     hairline:      "rgba(255,255,255,0.05)",     // neutral hairline (replaces cyan)
     hairlineWarm:  "rgba(255,255,255,0.08)",     // stronger neutral break
@@ -1882,12 +1882,14 @@ export const DS_V2 = {
     sans:  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
   // Three sizes only — kills the 16/18/22/24/28 middle-tier monotony.
+  // Phase 4 tuning: body 15→16, caption 12→13, mono 11→12 for Gmail Android
+  // legibility; tracked-mono ls 2.5→2.4 to feel less industrial at larger size.
   type: {
     hero:     { size: 40, weight: 500, lh: 1.05, ls: "-1px",   family: "serif" as const },
     headline: { size: 28, weight: 500, lh: 1.10, ls: "-0.5px", family: "serif" as const },
-    body:     { size: 15, weight: 400, lh: 1.65, ls: "0",      family: "sans"  as const },
-    caption:  { size: 12, weight: 500, lh: 1.50, ls: "0.4px",  family: "sans"  as const, upper: false as const },
-    mono:     { size: 11, weight: 600, lh: 1.30, ls: "2.5px",  family: "sans"  as const, upper: true  as const },
+    body:     { size: 16, weight: 400, lh: 1.60, ls: "0",      family: "sans"  as const },
+    caption:  { size: 13, weight: 500, lh: 1.50, ls: "0.4px",  family: "sans"  as const, upper: false as const },
+    mono:     { size: 12, weight: 600, lh: 1.30, ls: "2.4px",  family: "sans"  as const, upper: true  as const },
   },
   // 8px grid, named editorially. Use SP.* everywhere — never raw pixels.
   space:  { xs: 8, sm: 16, md: 24, lg: 32, xl: 48, xxl: 64, xxxl: 80 } as const,
@@ -2004,7 +2006,7 @@ export function dsSurfaceV2(innerHtml: string): string {
   const r = DS_V2.radius.soft;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface2} 0%, ${C.surface1} 100%);border-radius:${r}px">
     <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.hairline};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
-    <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
+    <tr><td style="padding:${SP.xl}px ${SP.lg}px">${innerHtml}</td></tr>
   </table>`;
 }
 
@@ -2023,7 +2025,7 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
         <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
       </tr><tr>
         <td align="center" style="padding:0">
-          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:12px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
+          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:13px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
         </td>
       </tr></table>
     </td></tr>
@@ -2045,7 +2047,7 @@ export function dsFooterV2(_opts: { variant?: "client" | "admin" } = {}): string
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="left" style="text-align:left;padding:0">
       <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;")}">${escapeHtml(BRAND.name)}<span style="color:${C.inkFaint};margin:0 10px">·</span>Dubai</div>
-      <div style="margin-top:${SP.xs}px">
+      <div style="margin-top:${SP.sm}px">
         <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
       </div>
     </td></tr>
@@ -2092,14 +2094,16 @@ function dsBookingShellV2(opts: {
   //   ─── 32px cyan accent line ───      (the ONE cyan accent on this card)
   //                  ↓ sm
   //   60 MINUTES · DUBAI                (mono muted)
+  // Phase 4: tighter date→time lockup (one beat, not two). Duration uses the
+  // global mono token tracking — no override — for tracking consistency.
   const primaryCardInner = `
     <div style="${_ds_style(DS_V2.type.mono, C.accentSoft)}">${escapeHtml(opts.primaryDateLine)}</div>
-    <div style="height:${SP.md}px;line-height:${SP.md}px;font-size:0">&nbsp;</div>
+    <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
     <div style="${_ds_style(DS_V2.type.hero, C.ink)}">${escapeHtml(opts.primaryTimeFocal)}</div>
     <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
     <div style="width:32px;height:1px;background:${C.glowEdge};line-height:1px;font-size:0">&nbsp;</div>
     <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
-    <div style="${_ds_style(DS_V2.type.mono, C.inkMuted, "letter-spacing:1.6px;")}">${escapeHtml(opts.primaryDurationLine)}</div>
+    <div style="${_ds_style(DS_V2.type.mono, C.inkMuted)}">${escapeHtml(opts.primaryDurationLine)}</div>
   `;
   const primaryCard = dsSurfaceV2(primaryCardInner);
 
@@ -2146,13 +2150,13 @@ ${dsAmbientGlowV2()}
       ${dsSpacerV2(SP.xl)}
       <tr><td>${primaryCard}</td></tr>
 
-      ${dsSpacerV2(SP.lg)}
+      ${dsSpacerV2(SP.xl)}
       <tr><td>${dsProseSummaryV2(opts.proseSummaryHtml)}</td></tr>
 ${opts.arrivalNote ? `
       ${dsSpacerV2(SP.xl)}
       <tr><td>${arrivalBlock}</td></tr>` : ""}
 
-      ${dsSpacerV2(SP.xl)}
+      ${dsSpacerV2(SP.xxl)}
       <tr><td align="center">${dsCtaV2({ label: opts.ctaLabel, href: opts.ctaHref })}</td></tr>
 
       ${dsSpacerV2(SP.xxl)}
@@ -2249,7 +2253,7 @@ export function buildClientBookingConfirmationEmail(opts: {
 
   const proseLines = [line1, line2, line3].filter(Boolean);
   const proseSummaryHtml = proseLines
-    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:12px\"`}>${l}</div>`)
+    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:16px\"`}>${l}</div>`)
     .join("");
 
   const html = dsBookingShellV2({
@@ -2570,7 +2574,7 @@ export function buildAdminBookingEmail(opts: {
 
   const proseLines = [idLine, opsLine, pkgLine, notesLine].filter(Boolean);
   const proseSummaryHtml = proseLines
-    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:12px\"`}>${l}</div>`)
+    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:16px\"`}>${l}</div>`)
     .join("");
 
   const html = dsBookingShellV2({

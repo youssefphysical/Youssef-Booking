@@ -1,0 +1,240 @@
+PHASE 4 — TYPOGRAPHY + RHYTHM MASTERING ONLY
+
+Phase 3 is live and the email composition has been rebuilt.
+
+Now we are NOT rebuilding again.
+
+This phase is ONLY about mastering:
+- typography
+- rhythm
+- readability
+- optical balance
+- mobile rendering
+- premium emotional flow
+
+DO NOT:
+- rebuild the layout
+- change the section order
+- add new sections
+- remove core sections
+- redesign from scratch
+- touch backend logic
+- touch booking logic
+- touch schema
+- touch auth
+- touch cron
+- touch API
+- touch package logic
+- touch Vercel config
+- touch Neon DB
+
+This is EMAIL VISUAL REFINEMENT ONLY.
+
+--------------------------------------------------
+MISSION
+--------------------------------------------------
+
+The current emails are structurally cleaner, but they still need final premium refinement.
+
+The goal:
+Make the emails feel less like HTML emails and more like a luxury cinematic brand communication.
+
+Focus on:
+- text clarity
+- visual rhythm
+- premium hierarchy
+- elegant spacing
+- mobile readability
+- luxury restraint
+- Gmail Android/iOS rendering quality
+
+--------------------------------------------------
+PRIMARY GOAL
+--------------------------------------------------
+
+The email must feel:
+- premium
+- cinematic
+- calm
+- expensive
+- readable
+- emotionally balanced
+- luxury coaching brand
+
+NOT:
+- dashboard
+- spreadsheet
+- template
+- developer UI
+- gaming neon
+- over-designed sci-fi
+
+--------------------------------------------------
+TYPOGRAPHY MASTERING
+--------------------------------------------------
+
+Audit and refine all typography.
+
+Fix:
+- tiny labels
+- weak contrast
+- inconsistent line-height
+- awkward wrapping
+- over-tracked text
+- underpowered body copy
+- footer text that becomes unreadable
+- hero text that feels either too weak or too heavy
+
+Create clear hierarchy:
+
+1. Hero headline = strongest emotional anchor
+2. Date / Time / Duration = strongest operational anchor
+3. Details = readable but calmer
+4. Arrival note = human and elegant
+5. CTA = clear action
+6. Footer = soft premium closure
+
+Typography should feel:
+- editorial
+- premium
+- clear
+- mobile-friendly
+- confident
+
+--------------------------------------------------
+RHYTHM MASTERING
+--------------------------------------------------
+
+Refine vertical spacing and section breathing.
+
+Use optical judgment, not random numbers.
+
+Fix:
+- awkward empty spaces
+- cramped cards
+- disconnected sections
+- CTA too close/far
+- footer floating feeling
+- weak flow between sections
+
+The eye should move naturally:
+Brand → Hero → Date/Time → Details → Arrival Note → CTA → Footer
+
+No section should feel isolated.
+No section should compete equally.
+
+--------------------------------------------------
+CARD RHYTHM
+--------------------------------------------------
+
+Do NOT redesign the cards.
+
+Only refine:
+- internal padding
+- label/value rhythm
+- spacing between rows
+- contrast
+- optical alignment
+- visual weight
+
+Cards should feel:
+- premium
+- readable
+- calm
+- layered
+- intentional
+
+Avoid:
+- spreadsheet feeling
+- equal emphasis everywhere
+- tiny unreadable labels
+- harsh dividers
+
+--------------------------------------------------
+CTA OPTICAL BALANCE
+--------------------------------------------------
+
+Do NOT rebuild the CTA.
+
+Only refine:
+- text contrast
+- vertical centering
+- pill proportions
+- shadow softness
+- glow restraint
+- spacing above/below
+- perceived luxury
+
+CTA must be:
+- obvious
+- readable
+- premium
+- calm
+- not SaaS-looking
+- not cartoonish
+
+--------------------------------------------------
+MOBILE-FIRST QA
+--------------------------------------------------
+
+Gmail Android is priority #1.
+
+Verify:
+- text readability
+- no tiny labels
+- no bad wrapping
+- no cramped sections
+- no horizontal overflow
+- CTA readable
+- footer readable
+- hero readable
+- cards not too flat
+- spacing feels intentional
+
+Also verify:
+- Gmail iOS
+- Apple Mail
+- Desktop Gmail
+- tablet width
+
+--------------------------------------------------
+COLOR / CONTRAST TUNING
+--------------------------------------------------
+
+Do NOT change the palette direction.
+
+Only tune:
+- text contrast
+- label visibility
+- card depth perception
+- cyan restraint
+- CTA readability
+- footer legibility
+
+No new color system.
+No warm colors.
+No cyan overload.
+
+--------------------------------------------------
+DELIVERABLE
+--------------------------------------------------
+
+After this pass, provide:
+
+1. Typography changes
+2. Rhythm changes
+3. Mobile readability improvements
+4. CTA optical refinements
+5. Card rhythm refinements
+6. Footer readability improvements
+7. Gmail Android verification
+8. Gmail iOS / desktop safety notes
+9. Body size / clipping verification
+10. Deployment status
+
+Then deploy to production and provide:
+- GitHub commit SHA
+- Vercel deployment ID
+- production URL
+- changed files
+- confirmation that only email template files changed
