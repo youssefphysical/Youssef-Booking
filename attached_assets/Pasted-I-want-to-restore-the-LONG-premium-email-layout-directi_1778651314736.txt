@@ -1,0 +1,222 @@
+I want to restore the LONG premium email layout direction again, based on my previous screenshot, but upgraded with the current refined luxury TRON style.
+
+Important:
+Do NOT use the ultra-compact one-screen layout as the main direction anymore.
+
+I prefer the longer premium layout because it feels more complete, more branded, and more luxurious.
+
+Goal:
+Restore the long cinematic email composition, but keep the new refined visual system.
+
+Use the LONG layout structure from the older screenshot:
+
+- strong premium header card
+- clear large title section
+- full session details card
+- centered CTA
+- elegant footer/signature block
+- premium brand feel
+- more breathing space
+
+But upgrade it with the NEW refined style:
+
+- muted electric cyan, not cheap bright cyan
+- luxury serif headline
+- modern sans body
+- restrained glow
+- thinner borders
+- smaller radius
+- better depth
+- no gamer neon
+- no visual clutter
+- no amber/orange/yellow/gold
+- improved Gmail Android safety
+
+What I liked in the old long version:
+
+- it felt more complete
+- the brand presence was stronger
+- the card layout felt clearer
+- the email looked more like a full professional confirmation
+- the structure had a luxury invitation feeling
+- it looked more impressive than the ultra-compact version
+
+What I do NOT want from the old version:
+
+- cheap cyan button
+- overly bright glow
+- weak typography
+- generic template feeling
+- cramped or spreadsheet rows
+- oversized empty blocks
+- footer that feels like newsletter
+- Gmail Android squeezing
+
+New target:
+A LONG premium TRON Legacy email that feels like:
+
+- luxury private coaching invitation
+- elite Dubai concierge confirmation
+- Apple Wallet / Tesla UI inspired
+- cinematic sports-tech interface
+- premium automated booking experience
+
+Structure for CLIENT booking confirmation:
+
+1. Premium brand header
+
+- Youssef Ahmed
+- Elite Coaching
+- Personal Training • Dubai
+- elegant compact brand lockup
+- subtle cyan hairline
+- refined dark surface
+
+2. Hero section
+
+- CONFIRMED / BOOKING CONFIRMED
+- main headline: “Your session is set.”
+- premium short subtitle
+- emotional but not cheesy
+
+3. Primary session highlight card
+   Make Date + Time dominant:
+
+- Date
+- Time Dubai
+- Duration
+
+4. Full details card
+   Include:
+
+- Focus
+- Goal
+- Type
+- Package
+- Sessions Progress, example 16 / 25
+- Remaining Sessions
+- Expiration Date
+- Payment Status
+
+5. Arrival note
+   Compact premium note:
+   “Arrive 5–10 minutes early — focused, ready, and prepared to train.”
+
+6. CTA
+
+- VIEW SESSION / OPEN MY BOOKING
+- premium muted cyan
+- dark navy text
+- centered
+- strong but not cheap
+- balanced breathing space
+
+7. Footer/signature block
+   Elegant but not huge:
+
+- Youssef Ahmed | Elite Coaching
+- Discipline Today. Success Tomorrow.
+- WhatsApp • Instagram • Email • Dubai
+- Premium Coaching • Proven Methods • Commitment
+
+Structure for ADMIN booking email:
+
+1. Premium brand header
+2. Hero title:
+   NEW SESSION BOOKING
+3. Subtitle:
+   A new booking has been received.
+4. Full admin details card:
+
+- Client
+- Email
+- Phone
+- Date
+- Time Dubai
+- Duration
+- Focus
+- Goal
+- Type
+- Package
+- Sessions Progress
+- Remaining Sessions
+- Expiration Date
+- Payment Status
+- Source
+- Logged Time
+
+5. CTA:
+   OPEN ADMIN BOOKINGS
+6. Compact premium footer
+
+Design rules:
+
+- Long layout is allowed again
+- But make it intentional and luxury, not bloated
+- More breathing space than compact version
+- Better brand presence
+- Clean section separation
+- Premium readability
+- Strong hierarchy
+- No excessive empty spaces
+- No huge useless logo block
+- No old bright cyan
+- No newsletter footer
+- No cheap neon glow
+
+Technical rules:
+
+- Gmail Android safe
+- iOS Gmail safe
+- Apple Mail safe
+- Desktop Gmail safe
+- tablet safe
+- no horizontal overflow
+- no 600px mobile squeezing
+- no broken columns
+- no media-query dependency for basic layout
+- no Gmail clipping
+- keep body size under Gmail clipping threshold
+
+FREEZE MODE:
+Email templates only.
+
+DO NOT TOUCH:
+
+- booking logic
+- auth
+- schema
+- Neon DB
+- cron
+- API
+- package/session logic
+- payment logic
+- website UI
+- Vercel config
+- environment variables
+
+Only edit:
+server/email-templates.ts or email-template rendering files only.
+
+After changes:
+
+1. Typecheck
+2. Render generated HTML
+3. Confirm body size safe
+4. Confirm zero warm colors
+5. Commit
+6. Push GitHub main
+7. Deploy Vercel production
+8. Wait for READY
+9. Confirm Neon untouched
+10. Provide:
+
+- GitHub SHA
+- Vercel deployment ID
+- exact changed files
+- production verification
+- confirmation FREEZE MODE respected
+
+Very important:
+This is NOT a downgrade to the old version.
+This is the old LONG premium composition rebuilt using the current refined luxury TRON design system.
