@@ -1,0 +1,315 @@
+PHASE 3 — REBUILD THE EMAIL COMPOSITION & LAYOUT SYSTEM
+
+The visual system foundation is now established.
+
+This phase is about rebuilding the FULL EMAIL COMPOSITION using the new luxury cinematic design system.
+
+IMPORTANT:
+This is NOT a polish pass.
+This is NOT micro-adjustment work.
+This is a controlled structural rebuild using the new visual philosophy.
+
+You now have authority to rebuild:
+- email composition
+- layout hierarchy
+- section flow
+- information rhythm
+- card arrangement
+- focal structure
+- emotional pacing
+
+ONLY for booking emails:
+- client emails
+- admin emails
+
+--------------------------------------------------
+MISSION
+--------------------------------------------------
+
+Transform the booking emails from:
+- dashboard-style information blocks
+into:
+- cinematic premium brand communication
+
+The email must feel like:
+- a luxury futuristic coaching brand
+- emotionally designed
+- visually intentional
+- cinematic
+- premium
+- modern
+- calm
+- powerful
+- mobile-first
+- elegant
+
+Inspired by:
+- TRON Legacy mood (subtle only)
+- Apple Wallet
+- Tesla UI
+- Rivian
+- Linear
+- premium fintech communication
+- cinematic sci-fi interfaces
+
+--------------------------------------------------
+MOST IMPORTANT GOAL
+--------------------------------------------------
+
+The email should NO LONGER feel like:
+- a developer dashboard
+- an admin panel
+- a booking spreadsheet
+- stacked info boxes
+
+Instead:
+It should feel like:
+- a premium invitation
+- a luxury coaching interaction
+- a cinematic brand experience
+
+--------------------------------------------------
+COMPOSITION RULES
+--------------------------------------------------
+
+Create STRONG visual hierarchy.
+
+The eye flow should naturally move through:
+
+1. Brand atmosphere
+2. Hero message
+3. Primary booking information
+4. Important session details
+5. Emotional support/arrival guidance
+6. CTA
+7. Elegant brand closure
+
+NO equal-weight sections.
+
+--------------------------------------------------
+STRUCTURE REQUIREMENTS
+--------------------------------------------------
+
+1. HEADER / BRAND ATMOSPHERE
+Rebuild the header completely.
+
+Goals:
+- premium brand presence
+- elegant luxury feel
+- subtle futuristic atmosphere
+- cinematic calmness
+
+Avoid:
+- panel feeling
+- dashboard header
+- excessive labels
+- excessive lines
+- glowing TRON styling
+
+The header should feel:
+- expensive
+- intentional
+- emotionally premium
+
+--------------------------------------------------
+
+2. HERO SECTION
+Rebuild the hero section.
+
+Current issue:
+The hero still feels generic and informational.
+
+Goals:
+- cinematic headline hierarchy
+- emotionally premium tone
+- stronger focal dominance
+- elegant breathing room
+- luxury editorial composition
+
+The hero must immediately create:
+- premium emotional impact
+- visual confidence
+- luxury coaching perception
+
+--------------------------------------------------
+
+3. PRIMARY HIGHLIGHT BLOCK
+This should become the MAIN focal object.
+
+Prioritize:
+- Date
+- Time
+- Duration
+
+This block should feel:
+- premium automotive UI
+- cinematic control surface
+- elegant futuristic product card
+
+Avoid:
+- table feeling
+- spreadsheet rhythm
+- equal columns without focus
+
+Create:
+- dominant focal hierarchy
+- stronger composition
+- luxury spacing rhythm
+- premium depth
+
+--------------------------------------------------
+
+4. DETAILS SECTION
+Rebuild the details layout completely.
+
+Current issue:
+Still feels too much like stacked dashboard information.
+
+Goals:
+- softer information rhythm
+- grouped storytelling
+- cleaner reading flow
+- more premium spacing
+- less technical appearance
+
+Important:
+Reduce visual noise.
+Reduce divider dependency.
+Reduce excessive micro-label feeling.
+
+--------------------------------------------------
+
+5. ARRIVAL / SUPPORT SECTION
+This section should feel:
+- human
+- premium
+- calm
+- coach-like
+- emotionally supportive
+
+NOT system-generated.
+
+It should feel like:
+A luxury coach speaking calmly to the client.
+
+--------------------------------------------------
+
+6. CTA SECTION
+The CTA must become:
+- premium
+- cinematic
+- emotionally important
+- visually magnetic
+
+Current issue:
+Still partially SaaS/admin feeling.
+
+The CTA should feel inspired by:
+- luxury automotive UI
+- futuristic premium hardware
+- Apple/Tesla interaction surfaces
+
+Goals:
+- strong visual confidence
+- elegant proportions
+- premium lighting behavior
+- calm dominance
+- highly readable
+
+--------------------------------------------------
+
+7. FOOTER / BRAND CLOSURE
+Completely rethink the footer composition.
+
+Goals:
+- luxury signature feel
+- emotional closure
+- premium editorial finish
+- cinematic ending
+- elegant brand memory
+
+Avoid:
+- random links
+- technical footer feel
+- stacked tiny text
+- system-looking information
+
+The footer should feel like:
+- luxury brand identity
+- cinematic signature lockup
+- premium ending scene
+
+--------------------------------------------------
+MOBILE-FIRST REQUIREMENTS
+--------------------------------------------------
+
+The email MUST be optimized primarily for:
+- Gmail Android
+- Gmail iOS
+- Apple Mail mobile
+
+Prioritize:
+- readability
+- emotional spacing
+- visual rhythm
+- thumb-safe CTA
+- proper hierarchy on narrow screens
+
+Avoid:
+- cramped sections
+- tiny labels
+- over-dense information
+- desktop-first layouts
+
+--------------------------------------------------
+IMPORTANT EXECUTION RULES
+--------------------------------------------------
+
+ALLOWED:
+- rebuild layout composition
+- rebuild section hierarchy
+- redesign information flow
+- redesign cards
+- redesign emotional pacing
+- redesign footer
+- redesign CTA hierarchy
+
+NOT ALLOWED:
+- visual chaos
+- excessive glow
+- gaming TRON aesthetics
+- over-cinematic experimentation
+- over-editorial abstraction
+- destroying readability
+- overly minimal layouts with weak information clarity
+
+--------------------------------------------------
+DELIVERABLE
+--------------------------------------------------
+
+Return:
+1. What sections were rebuilt
+2. New hierarchy logic
+3. Composition philosophy
+4. Emotional flow explanation
+5. Hero redesign logic
+6. Card redesign logic
+7. CTA redesign logic
+8. Footer redesign logic
+9. Mobile/Gmail render verification
+10. Before vs after composition improvements
+
+THEN:
+- Deploy to production
+- Verify Gmail mobile rendering
+- Verify Android Gmail readability
+- Verify iOS rendering safety
+- Verify clipping safety
+
+After deployment:
+Provide:
+- deployment confirmation
+- changed files
+- production verification
+- render verification
+- body size verification
