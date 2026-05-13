@@ -1,0 +1,319 @@
+You now have FULL DESIGN AUTHORITY for ALL booking-related email systems ONLY.
+
+IMPORTANT:
+You are officially allowed to fully redesign, restructure, polish, optimize, and art-direct ALL CLIENT and ADMIN transactional booking emails without asking for additional permission each message.
+
+━━━━━━━━━━━━━━━━━━━
+AUTHORIZED SCOPE
+━━━━━━━━━━━━━━━━━━━
+
+You are granted full authority to modify:
+
+- server/email-templates.ts
+- all booking email HTML structures
+- all email-safe styling
+- all typography systems
+- all spacing systems
+- all card layouts
+- all CTA styling
+- all mobile responsiveness
+- all Gmail-safe rendering improvements
+- all editorial hierarchy
+- all premium visual polish
+- all TRON Legacy art direction
+- all CLIENT booking emails
+- all ADMIN booking emails
+- all booking-related email components
+- all footer/header structures
+- all premium marketing sections inside emails
+
+You are ALSO authorized to:
+
+- push to GitHub
+- deploy to Vercel
+- run production verification
+- run smoke tests
+- optimize Gmail rendering
+- optimize iOS + Android email rendering
+- optimize desktop rendering
+- optimize responsive behavior
+- optimize typography hierarchy
+- optimize spacing rhythm
+- optimize cinematic visual hierarchy
+
+━━━━━━━━━━━━━━━━━━━
+FREEZE RULES
+━━━━━━━━━━━━━━━━━━━
+
+DO NOT touch:
+
+- database schema
+- booking logic
+- auth system
+- Neon DB structure
+- routes outside email rendering
+- API logic
+- cron systems
+- protected FREEZE paths unrelated to email UI
+
+ONLY booking email presentation/design/art-direction is authorized.
+
+━━━━━━━━━━━━━━━━━━━
+MAIN DESIGN DIRECTION
+━━━━━━━━━━━━━━━━━━━
+
+The booking emails must become:
+PREMIUM CINEMATIC TRON LEGACY EMAILS.
+
+NOT gaming.
+NOT cheap neon.
+NOT SaaS template.
+
+The feeling must be:
+
+- luxury
+- futuristic
+- premium
+- cinematic
+- elegant
+- high-end
+- rich
+- editorial
+- smooth
+- expensive
+
+Visual references:
+
+- TRON Legacy
+- Tesla UI
+- Apple-level restraint
+- luxury concierge systems
+- premium Dubai private coaching brands
+
+━━━━━━━━━━━━━━━━━━━
+CORE DESIGN GOALS
+━━━━━━━━━━━━━━━━━━━
+
+The emails must:
+
+- look premium on Gmail Android
+- look premium on Gmail iPhone
+- look premium on desktop
+- look premium in dark mode
+- feel balanced and elegant
+- have PERFECT readability
+- have strong visual hierarchy
+- have luxury typography
+- have cinematic spacing
+- have layered premium cards
+- have clean CTA buttons
+- have visually rich depth
+- have beautiful TRON Legacy cyan accents
+- maintain excellent readability
+
+NO:
+
+- messy spacing
+- broken rhythm
+- flat cards
+- weak typography
+- tiny text
+- excessive glow
+- cheap gradients
+- gaming UI
+- unnecessary text
+- oversized empty spaces
+- hard-to-read sections
+- color-on-color readability issues
+- random spacing
+- ugly alignment
+- inconsistent typography
+
+━━━━━━━━━━━━━━━━━━━
+TYPOGRAPHY REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+Typography is EXTREMELY important.
+
+Need:
+
+- cinematic serif hero headlines
+- premium sans-serif support typography
+- perfect hierarchy
+- visually dominant titles
+- softer secondary text
+- elegant labels
+- readable detail values
+- beautiful tracking/letter spacing
+- clean editorial rhythm
+
+The text must:
+
+- feel luxurious
+- feel sharp
+- feel intentional
+- feel premium
+- be easy to read instantly
+
+NO tiny unreadable text.
+NO weak contrast.
+NO dull hierarchy.
+
+━━━━━━━━━━━━━━━━━━━
+CARD SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Cards must feel:
+
+- layered
+- dimensional
+- premium
+- cinematic
+- deep
+- rich
+
+Use:
+
+- subtle gradients
+- inset lighting
+- refined cyan edge highlights
+- premium borders
+- elegant shadows
+- depth separation
+- clean spacing
+
+NO flat rectangles.
+NO cheap glassmorphism.
+NO over-neon effects.
+
+━━━━━━━━━━━━━━━━━━━
+TRON LEGACY COLOR SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Use a refined cinematic TRON palette.
+
+Primary colors:
+
+- #5EE7FF
+- #2F9CBA
+- #2A8DAA
+- #071120
+- #09192B
+- #0D2238
+- #F5FAFC
+- #D6E3F5
+
+Keep colors:
+
+- premium
+- elegant
+- rich
+- eye-comfortable
+- cinematic
+
+Avoid:
+
+- warm colors
+- oversaturated cyan
+- purple glow
+- RGB gaming look
+
+━━━━━━━━━━━━━━━━━━━
+CTA BUTTONS
+━━━━━━━━━━━━━━━━━━━
+
+CTA buttons must feel:
+
+- luxurious
+- expensive
+- smooth
+- premium
+- cinematic
+
+NOT generic SaaS buttons.
+
+Need:
+
+- premium capsule buttons
+- deeper cyan-teal tones
+- soft reflections
+- elegant depth
+- readable text
+- luxury proportions
+- centered perfectly
+
+━━━━━━━━━━━━━━━━━━━
+MARKETING / BRANDING
+━━━━━━━━━━━━━━━━━━━
+
+The emails are ALSO part of the brand marketing experience.
+
+The user should feel:
+
+- professionalism
+- trust
+- luxury service
+- premium coaching
+- elite experience
+
+The branding should feel:
+
+- high-end Dubai fitness brand
+- premium concierge coaching
+- cinematic and elegant
+
+The footer and signature areas should feel:
+
+- refined
+- luxurious
+- editorial
+- premium
+- clean
+
+━━━━━━━━━━━━━━━━━━━
+LAYOUT REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+The email must:
+
+- feel full and intentional
+- avoid awkward empty areas
+- avoid excessive blank space
+- avoid cramped content
+- feel visually balanced
+- have excellent flow from top to bottom
+
+Need:
+
+- perfect spacing rhythm
+- beautiful section transitions
+- proper visual pacing
+- smooth eye movement
+
+━━━━━━━━━━━━━━━━━━━
+TECHNICAL REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━
+
+Maintain:
+
+- Gmail-safe rendering
+- Outlook-safe rendering
+- responsive layouts
+- mobile optimization
+- dark mode compatibility
+- production-safe HTML email structure
+- body size under Gmail clipping limits
+- clean rendering in iOS + Android
+
+You are authorized to:
+
+- optimize
+- restructure
+- polish
+- refine
+- redesign the email presentation fully
+  until the result feels truly premium and production-ready.
+
+Push polished builds to GitHub and Vercel whenever necessary.
+Maintain production stability.
+Run verification after deployment.
