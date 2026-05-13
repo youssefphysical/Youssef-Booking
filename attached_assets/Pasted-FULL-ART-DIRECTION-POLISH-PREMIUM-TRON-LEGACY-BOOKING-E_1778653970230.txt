@@ -1,0 +1,367 @@
+FULL ART-DIRECTION POLISH — PREMIUM TRON LEGACY BOOKING EMAILS
+
+IMPORTANT:
+Keep the current LONG premium structure.
+Do NOT redesign from scratch.
+This is now a high-end editorial polish pass.
+
+Goal:
+Transform the booking emails into a true luxury cinematic TRON Legacy experience that feels:
+- premium
+- expensive
+- elegant
+- futuristic
+- editorial
+- high-end hospitality
+NOT gaming UI
+NOT neon overload
+NOT SaaS template
+
+The final feeling should resemble:
+Tesla UI × TRON Legacy × luxury concierge system × cinematic sci-fi dashboard.
+
+━━━━━━━━━━━━━━━━━━━
+GLOBAL DESIGN RULES
+━━━━━━━━━━━━━━━━━━━
+
+Use a refined 8px spacing system ONLY:
+8 / 16 / 24 / 32 / 40 / 48
+
+No random spacing values.
+
+Everything must feel intentionally aligned and rhythmically balanced.
+
+Prioritize:
+- readability
+- hierarchy
+- premium breathing room
+- mobile elegance
+- iOS + Android consistency
+- Gmail safety
+- desktop refinement
+
+Keep:
+- pure HTML email safe rendering
+- no unsupported CSS
+- Gmail-safe layout
+- responsive stacking
+- current booking logic untouched
+- FREEZE MODE respected
+
+Only touch:
+server/email-templates.ts
+
+━━━━━━━━━━━━━━━━━━━
+COLOR ART DIRECTION
+━━━━━━━━━━━━━━━━━━━
+
+Use TRUE cinematic TRON palette.
+
+Avoid:
+- warm colors
+- purple glow
+- cheap neon cyan
+- oversaturated blue
+- gaming RGB feel
+
+Palette direction:
+
+Background:
+#040816
+#050A18
+#071120
+
+Card layers:
+#09192B
+#0B1F33
+#0D2238
+
+Borders:
+rgba(94,231,255,0.18)
+rgba(94,231,255,0.28)
+
+Primary TRON cyan:
+#5EE7FF
+
+Deep premium cyan:
+#2F9CBA
+#2A8DAA
+
+Muted typography:
+#D6E3F5
+#9FB8CF
+#7F98AE
+
+White:
+#F5FAFC
+#FFFFFF
+
+NO flat colors.
+Use layered gradients subtly.
+
+━━━━━━━━━━━━━━━━━━━
+TYPOGRAPHY SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Typography must feel editorial and luxurious.
+
+Use stronger hierarchy.
+
+Current issue:
+too many elements compete visually.
+
+Need:
+- hero title visually dominant
+- date/time card secondary dominant
+- details calmer
+- footer softer and elegant
+
+Create stronger eye flow.
+
+Typography styling:
+
+Hero serif:
+- 38px desktop
+- 34px mobile
+- weight 600
+- cinematic white
+- tight elegant line-height
+- slight negative tracking
+
+Subtitles:
+- softer
+- calmer
+- max-width constrained
+- elegant rhythm
+
+Eyebrows:
+- uppercase
+- tracked
+- cyan accent
+- refined
+- smaller than current
+
+Detail labels:
+- quiet
+- muted cyan-gray
+- smaller
+- premium tracking
+
+Values:
+- brighter
+- clearer
+- visually important
+- stronger contrast
+
+Footer:
+- elegant
+- soft
+- restrained
+- luxury signature feel
+
+━━━━━━━━━━━━━━━━━━━
+SPACING + RHYTHM
+━━━━━━━━━━━━━━━━━━━
+
+Current issue:
+some sections feel cramped while others feel disconnected.
+
+Fix the vertical rhythm.
+
+Need:
+- generous hero breathing
+- cleaner section transitions
+- balanced CTA spacing
+- elegant footer separation
+
+Use:
+40–48px around major sections
+24–32px inside sections
+16px for internal rhythm
+
+Everything should feel intentional.
+
+━━━━━━━━━━━━━━━━━━━
+CARD SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Cards still feel slightly flat.
+
+Add cinematic TRON depth:
+- inset top glow
+- soft inner shadow
+- layered dark gradients
+- faint cyan reflective edge
+- subtle depth separation
+
+Think:
+luxury sci-fi dashboard
+NOT gaming panel
+
+Requirements:
+- rounded corners 10–12px
+- layered surfaces
+- premium edge lighting
+- restrained glow
+- elegant contrast
+
+Avoid:
+- excessive borders
+- flat rectangles
+- cheap glassmorphism
+- aggressive neon
+
+━━━━━━━━━━━━━━━━━━━
+PRIMARY HIGHLIGHT CARD
+━━━━━━━━━━━━━━━━━━━
+
+The Date / Time / Duration card must become the visual anchor.
+
+Need:
+- stronger hierarchy
+- richer surface
+- subtle depth
+- more premium spacing
+- stronger typography contrast
+
+Make:
+Date and Time visually dominant.
+
+This card should feel:
+important,
+cinematic,
+premium,
+operational.
+
+━━━━━━━━━━━━━━━━━━━
+DETAILS CARD
+━━━━━━━━━━━━━━━━━━━
+
+The details card should become quieter and cleaner.
+
+Current issue:
+too much equal visual weight.
+
+Need:
+- calmer layout
+- softer labels
+- more refined typography
+- cleaner alignment
+- better breathing room
+
+Reduce spreadsheet feeling.
+
+━━━━━━━━━━━━━━━━━━━
+CTA BUTTON
+━━━━━━━━━━━━━━━━━━━
+
+The CTA still feels like a normal SaaS button.
+
+I need:
+- luxury automotive feel
+- heavier premium capsule
+- deeper cyan-teal
+- glossy upper reflection
+- stronger bottom shadow
+- subtle cyan edge light
+- smoother gradient transition
+- cinematic depth
+
+Reference:
+Tesla UI × TRON Legacy × luxury hospitality.
+
+Button requirements:
+- visually expensive
+- premium proportions
+- centered perfectly
+- dark navy text
+- elegant tracking
+- soft glow only
+- more dimensional
+
+Avoid:
+- flat cyan
+- cheap gradients
+- gaming glow
+- cartoon highlights
+
+━━━━━━━━━━━━━━━━━━━
+FOOTER SYSTEM
+━━━━━━━━━━━━━━━━━━━
+
+Footer should feel like:
+a luxury signature,
+NOT a website footer.
+
+Need:
+- softer typography
+- elegant spacing
+- refined alignment
+- calmer visual weight
+
+Keep:
+WhatsApp · Instagram · Email · Dubai
+
+But present them more elegantly.
+
+Tagline should feel cinematic and subtle.
+
+━━━━━━━━━━━━━━━━━━━
+MOBILE PRIORITY
+━━━━━━━━━━━━━━━━━━━
+
+MOST IMPORTANT.
+
+Optimize primarily for:
+- Gmail Android
+- Gmail iOS
+- Outlook mobile
+- Apple Mail
+
+Requirements:
+- no cramped text
+- no tiny labels
+- no inconsistent spacing
+- no broken hierarchy
+- no oversized width
+
+The email must feel:
+native,
+premium,
+luxury,
+smooth on mobile.
+
+━━━━━━━━━━━━━━━━━━━
+FINAL GOAL
+━━━━━━━━━━━━━━━━━━━
+
+Final emotional feel:
+
+A premium private coaching system
+for high-end clients in Dubai.
+
+The user should instantly feel:
+luxury,
+precision,
+confidence,
+premium service,
+cinematic polish.
+
+The design should feel:
+expensive,
+clean,
+editorial,
+futuristic,
+high-end.
+
+NOT:
+cheap neon,
+gaming UI,
+generic SaaS,
+template email.
+
+Keep body size under Gmail clipping limit.
+Maintain Gmail-safe rendering.
+Preserve responsiveness.
+Keep current logic intact.
+Respect FREEZE MODE fully.

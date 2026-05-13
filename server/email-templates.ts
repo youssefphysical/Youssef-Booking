@@ -1871,24 +1871,30 @@ function compactBookingShellHtml(opts: {
   // Does NOT mutate the global COLOR map used by other transactional emails.
   const PAL = {
     outer:        "#040816",   // deepest navy-black canvas
-    panel:        "#0A1426",   // primary card surface
-    panelElev:    "#0D1830",   // elevated tile (brand / details)
-    panelDeep:    "#071120",   // recessed (primary highlight focal point)
-    hairline:     "rgba(91,231,255,0.10)",
-    hairlineSoft: "rgba(91,231,255,0.06)",
-    border:       "rgba(91,231,255,0.18)",
-    borderTop:    "rgba(91,231,255,0.42)",   // stronger specular top edge
+    panel:        "#09192B",   // primary card base (mid-layer)
+    panelElev:    "#0B1F33",   // elevated tile — details card top of gradient
+    panelTop:     "#0D2238",   // top of primary highlight gradient (lifted)
+    panelDeep:    "#071120",   // recessed bottom of primary highlight gradient
+    hairline:     "rgba(94,231,255,0.10)",
+    hairlineSoft: "rgba(94,231,255,0.06)",
+    border:       "rgba(94,231,255,0.18)",
+    borderStrong: "rgba(94,231,255,0.28)",   // primary card border — slightly hotter
+    borderTop:    "rgba(94,231,255,0.42)",   // bright specular top edge
+    insetGlow:    "rgba(94,231,255,0.08)",   // 2nd hairline = inset top glow
+    shadowEdge:   "rgba(0,8,22,0.55)",        // bottom drop edge under CTA
     text:         "#F3F8FF",
-    textHero:     "#FFFFFF",                  // full near-white for headlines
-    textDim:      "#D6E3F5",                  // body text — high contrast
-    textMuted:    "#8EA3BF",                  // muted cyan-gray for labels
-    textFaint:    "#4F657F",
-    accent:       "#5BE7FF",                  // pure TRON cyan
-    accentText:   "#7AEEFF",                  // brighter cyan eyebrow
-    cta:          "#2A8DAA",                  // deeper teal-cyan — automotive
-    ctaTopEdge:   "#5BC8E0",                  // glossy top reflection
-    ctaRing:      "rgba(91,231,255,0.20)",
-    ctaText:      "#001019",                  // near-black for max contrast
+    textHero:     "#FFFFFF",
+    textDim:      "#D6E3F5",
+    textMuted:    "#9FB8CF",                  // softer muted cyan-gray (per brief)
+    textFaint:    "#7F98AE",                  // restrained dim per brief
+    accent:       "#5EE7FF",                  // exact TRON cyan from brief
+    accentText:   "#7AEEFF",
+    cta:          "#2A8DAA",
+    ctaTop:       "#3FB6D4",                  // top of CTA gradient (gloss)
+    ctaBottom:    "#207B96",                  // bottom of CTA gradient (depth)
+    ctaTopEdge:   "#6DD4EA",                  // 1px ultra-bright specular
+    ctaRing:      "rgba(94,231,255,0.22)",
+    ctaText:      "#001019",
   } as const;
 
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
@@ -1907,9 +1913,9 @@ function compactBookingShellHtml(opts: {
           </td>
         </tr>
       </table>
-      <div style="margin-top:20px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:500;letter-spacing:-0.5px;color:${PAL.textHero};line-height:1.05">Youssef Ahmed</div>
+      <div style="margin-top:24px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:28px;font-weight:500;letter-spacing:-0.5px;color:${PAL.textHero};line-height:1.05">Youssef Ahmed</div>
       <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:${PAL.textDim};line-height:1.3">Elite Coaching</div>
-      <div style="margin-top:28px;height:1px;background:${PAL.hairline};line-height:1px;font-size:0">&nbsp;</div>
+      <div style="margin-top:32px;height:1px;background:${PAL.hairline};line-height:1px;font-size:0">&nbsp;</div>
     </td></tr>
   </table>`;
 
@@ -1918,16 +1924,20 @@ function compactBookingShellHtml(opts: {
   const highlightCellWidth = highlights.length > 0 ? Math.floor(100 / highlights.length) : 100;
   const highlightCells = highlights.map((h, i) => {
     const isLast = i === highlights.length - 1;
-    return `<td width="${highlightCellWidth}%" valign="top" align="left" style="width:${highlightCellWidth}%;vertical-align:top;text-align:left;padding:0 ${isLast ? "0" : "18px"} 0 ${i === 0 ? "0" : "18px"};${isLast ? "" : `border-right:1px solid ${PAL.border};`}">
+    return `<td width="${highlightCellWidth}%" valign="top" align="left" style="width:${highlightCellWidth}%;vertical-align:top;text-align:left;padding:0 ${isLast ? "0" : "16px"} 0 ${i === 0 ? "0" : "16px"};${isLast ? "" : `border-right:1px solid ${PAL.border};`}">
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase;color:${PAL.accentText};line-height:1.3">${escapeHtml(h.label)}</div>
-      <div style="margin-top:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;color:${PAL.textHero};line-height:1.1;letter-spacing:-0.5px;word-break:break-word">${escapeHtml(h.value)}</div>
+      <div style="margin-top:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;color:${PAL.textHero};line-height:1.1;letter-spacing:-0.5px;word-break:break-word">${escapeHtml(h.value)}</div>
     </td>`;
   }).join("");
+  // Primary highlight uses a true vertical gradient (Apple Mail / iOS Gmail
+  // render the linear-gradient; Gmail Android falls back to bgcolor).
+  // Stacked hairlines: bright 1px specular + soft 1px inset glow → cinematic depth.
   const primaryHighlightCard = highlights.length > 0
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panelDeep}" style="background:${PAL.panelDeep};border:1px solid ${PAL.border};border-radius:10px">
-        <tr><td bgcolor="${PAL.borderTop}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.borderTop};border-radius:10px 10px 0 0">&nbsp;</td></tr>
-        <tr><td style="padding:30px 24px 28px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${highlightCells}</tr></table></td></tr>
-        <tr><td bgcolor="${PAL.hairlineSoft}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.hairlineSoft};border-radius:0 0 10px 10px">&nbsp;</td></tr>
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panelDeep}" style="background:${PAL.panelDeep};background-image:linear-gradient(180deg, ${PAL.panelTop} 0%, ${PAL.panelDeep} 100%);border:1px solid ${PAL.borderStrong};border-radius:12px">
+        <tr><td bgcolor="${PAL.borderTop}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.borderTop};border-radius:12px 12px 0 0">&nbsp;</td></tr>
+        <tr><td bgcolor="${PAL.insetGlow}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.insetGlow}">&nbsp;</td></tr>
+        <tr><td style="padding:32px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${highlightCells}</tr></table></td></tr>
+        <tr><td bgcolor="${PAL.hairlineSoft}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.hairlineSoft};border-radius:0 0 12px 12px">&nbsp;</td></tr>
       </table>`
     : "";
 
@@ -1937,15 +1947,15 @@ function compactBookingShellHtml(opts: {
     const a = opts.detailPairs[i];
     const b = opts.detailPairs[i + 1];
     const isLast = i + 2 >= opts.detailPairs.length;
-    const rowPadBottom = isLast ? "0" : "14px";
+    const rowPadBottom = isLast ? "0" : "16px";
     const cellLeft = `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 16px ${rowPadBottom} 0">
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(a.label)}</div>
-      <div style="margin-top:9px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:${PAL.textDim};line-height:1.45;letter-spacing:-0.1px;word-break:break-word">${escapeHtml(a.value)}</div>
+      <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:${PAL.textDim};line-height:1.5;letter-spacing:-0.1px;word-break:break-word">${escapeHtml(a.value)}</div>
     </td>`;
     const cellRight = b
       ? `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 0 ${rowPadBottom} 16px">
           <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(b.label)}</div>
-          <div style="margin-top:9px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:${PAL.textDim};line-height:1.45;letter-spacing:-0.1px;word-break:break-word">${escapeHtml(b.value)}</div>
+          <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:${PAL.textDim};line-height:1.5;letter-spacing:-0.1px;word-break:break-word">${escapeHtml(b.value)}</div>
         </td>`
       : `<td width="50%" style="width:50%;padding:0 0 ${rowPadBottom} 16px">&nbsp;</td>`;
     detailRows.push(`<tr>${cellLeft}${cellRight}</tr>`);
@@ -1959,30 +1969,30 @@ function compactBookingShellHtml(opts: {
   if (opts.progress) {
     const { used, total, remaining, expiry } = opts.progress;
     const pct = total > 0 ? Math.max(0, Math.min(100, Math.round((used / total) * 100))) : 0;
-    progressBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:22px"><tr><td>
+    progressBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px"><tr><td>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td align="left" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">Sessions Progress</td>
         <td align="right" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${PAL.textDim};line-height:1.3;white-space:nowrap">${used}<span style="color:${PAL.textFaint}"> / </span>${total}</td>
       </tr></table>
-      <div style="margin-top:10px;height:4px;line-height:4px;font-size:0;background:${PAL.panelDeep};border-radius:2px;overflow:hidden">
+      <div style="margin-top:8px;height:4px;line-height:4px;font-size:0;background:${PAL.panelDeep};border-radius:2px;overflow:hidden">
         <div style="width:${pct}%;height:4px;line-height:4px;font-size:0;background:${PAL.accent};border-radius:2px">&nbsp;</div>
       </div>
-      <div style="margin-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:500;color:${PAL.textDim};line-height:1.5">${remaining} remaining${expiry ? `&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;Expires ${escapeHtml(expiry)}` : ""}</div>
+      <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:500;color:${PAL.textDim};line-height:1.5">${remaining} remaining${expiry ? `&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;Expires ${escapeHtml(expiry)}` : ""}</div>
     </td></tr></table>`;
   }
 
   // ---- Admin contact mini-strip (above details) ----
   const contactBlock = opts.contactLine
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px"><tr><td align="left" style="text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:${PAL.textDim};line-height:1.65">${opts.contactLine}</td></tr></table>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px"><tr><td align="left" style="text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:${PAL.textDim};line-height:1.65">${opts.contactLine}</td></tr></table>`
     : "";
 
-  // ---- Full details card — layered Tesla/TRON surface with subtle edge
-  // highlight, deeper interior. Still recedes vs the primary card via thinner
-  // top edge & reduced radius — but reads as a confident card, not a flat block.
+  // ---- Full details card — calmer surface, vertical gradient, recedes vs
+  // the primary card via softer border & no bright top specular. Still has
+  // a faint hairline + inset glow for depth (luxury sci-fi dashboard feel).
   const detailCard = (opts.detailPairs.length || opts.progress || opts.contactLine)
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panelElev}" style="background:${PAL.panelElev};border:1px solid ${PAL.border};border-radius:10px">
-        <tr><td bgcolor="${PAL.hairline}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.hairline};border-radius:10px 10px 0 0">&nbsp;</td></tr>
-        <tr><td style="padding:26px 24px 26px">
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panel}" style="background:${PAL.panel};background-image:linear-gradient(180deg, ${PAL.panelElev} 0%, ${PAL.panel} 100%);border:1px solid ${PAL.border};border-radius:12px">
+        <tr><td bgcolor="${PAL.hairline}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.hairline};border-radius:12px 12px 0 0">&nbsp;</td></tr>
+        <tr><td style="padding:32px 24px">
           ${contactBlock}
           ${detailGrid}
           ${progressBlock}
@@ -1990,7 +2000,7 @@ function compactBookingShellHtml(opts: {
       </table>`
     : "";
 
-  // ---- 5. ARRIVAL NOTE — editorial centered italic serif, brighter -------
+  // ---- 5. ARRIVAL NOTE — editorial centered italic serif --------------------
   const arrivalNoteBlock = opts.arrivalNote
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:0 16px;text-align:center">
         <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:16px;font-style:italic;font-weight:400;color:${PAL.textDim};line-height:1.6;letter-spacing:0.2px;max-width:440px;margin:0 auto">${escapeHtml(opts.arrivalNote)}</div>
@@ -2001,18 +2011,20 @@ function compactBookingShellHtml(opts: {
   const tagline = opts.variant === "client"
     ? "Premium Coaching&nbsp;&nbsp;·&nbsp;&nbsp;Proven Methods&nbsp;&nbsp;·&nbsp;&nbsp;Commitment"
     : "Internal notification&nbsp;&nbsp;·&nbsp;&nbsp;Booking System";
+  // Softer luxury signature: weight 400 on the serif name, calmer cyan motto,
+  // muted-cyan-gray for footer links (recede vs hero), wider tracking for tagline.
   const footerBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="center" style="padding:0 8px;text-align:center">
       <div style="width:32px;height:1px;background:${PAL.accent};line-height:1px;font-size:0;margin:0 auto">&nbsp;</div>
     </td></tr>
-    <tr><td align="center" style="padding:32px 8px 4px;text-align:center">
-      <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:24px;font-weight:500;letter-spacing:-0.4px;color:${PAL.textHero};line-height:1.1">Youssef Ahmed</div>
-      <div style="margin-top:10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">Elite Coaching</div>
-      <div style="margin-top:24px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:15.5px;font-style:italic;font-weight:400;color:${PAL.accentText};line-height:1.45;letter-spacing:0.3px">${escapeHtml(BRAND.motto1)}.&nbsp;&nbsp;${escapeHtml(BRAND.motto2)}.</div>
-      <div style="margin-top:28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;letter-spacing:0.6px;color:${PAL.textDim};line-height:1.7">
-        <a href="${wa}" style="color:${PAL.textDim};text-decoration:none">WhatsApp</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<a href="${BRAND.instagramUrl}" style="color:${PAL.textDim};text-decoration:none">Instagram</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<a href="${mail}" style="color:${PAL.textDim};text-decoration:none">Email</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<span style="color:${PAL.textDim}">Dubai</span>
+    <tr><td align="center" style="padding:32px 8px 0;text-align:center">
+      <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;letter-spacing:-0.4px;color:${PAL.textHero};line-height:1.1">Youssef Ahmed</div>
+      <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">Elite Coaching</div>
+      <div style="margin-top:24px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:15.5px;font-style:italic;font-weight:400;color:${PAL.accent};line-height:1.45;letter-spacing:0.3px">${escapeHtml(BRAND.motto1)}.&nbsp;&nbsp;${escapeHtml(BRAND.motto2)}.</div>
+      <div style="margin-top:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;letter-spacing:0.6px;color:${PAL.textMuted};line-height:1.7">
+        <a href="${wa}" style="color:${PAL.textMuted};text-decoration:none">WhatsApp</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<a href="${BRAND.instagramUrl}" style="color:${PAL.textMuted};text-decoration:none">Instagram</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<a href="${mail}" style="color:${PAL.textMuted};text-decoration:none">Email</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<span style="color:${PAL.textMuted}">Dubai</span>
       </div>
-      <div style="margin-top:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:500;letter-spacing:2.6px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.4">${tagline}</div>
+      <div style="margin-top:16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:500;letter-spacing:2.8px;text-transform:uppercase;color:${PAL.textFaint};line-height:1.4">${tagline}</div>
     </td></tr>
   </table>`;
 
@@ -2036,43 +2048,45 @@ function compactBookingShellHtml(opts: {
 <body style="margin:0;padding:0;background:${PAL.outer};color:${PAL.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${escapeHtml(opts.previewText)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.outer}" style="background:${PAL.outer}">
-  <tr><td align="center" style="padding:44px 16px 40px">
+  <tr><td align="center" style="padding:48px 16px 48px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%">
 
       <!-- 1. PREMIUM BRAND HEADER (editorial lockup) -->
       <tr><td>${brandHeader}</td></tr>
 
       <!-- 2. HERO — cinematic dominance, mobile-first readable -->
-      <tr><td align="left" style="padding:46px 2px 52px;text-align:left">
+      <tr><td align="left" style="padding:48px 0 56px;text-align:left">
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:${PAL.accentText};line-height:1.2">${escapeHtml(opts.statusEyebrow)}</div>
-        <div style="margin-top:20px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:38px;font-weight:600;letter-spacing:-0.9px;color:${PAL.textHero};line-height:1.0">${escapeHtml(opts.statusTitle)}</div>
-        <div style="margin-top:22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:400;color:${PAL.textDim};line-height:1.65;letter-spacing:0.1px;max-width:420px">${escapeHtml(opts.subtitle)}</div>
+        <div style="margin-top:24px;font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:40px;font-weight:600;letter-spacing:-1px;color:${PAL.textHero};line-height:1.0">${escapeHtml(opts.statusTitle)}</div>
+        <div style="margin-top:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:400;color:${PAL.textDim};line-height:1.65;letter-spacing:0.1px;max-width:420px">${escapeHtml(opts.subtitle)}</div>
       </td></tr>
 
       <!-- 3. PRIMARY HIGHLIGHT CARD — dominant focal point -->
       ${primaryHighlightCard ? `<tr><td>${primaryHighlightCard}</td></tr>` : ""}
 
-      <!-- spacer (recedes details visually) -->
-      ${primaryHighlightCard && detailCard ? `<tr><td height="18" style="height:18px;line-height:18px;font-size:0">&nbsp;</td></tr>` : ""}
+      <!-- spacer (8px grid; recedes details visually) -->
+      ${primaryHighlightCard && detailCard ? `<tr><td height="16" style="height:16px;line-height:16px;font-size:0">&nbsp;</td></tr>` : ""}
 
       <!-- 4. FULL DETAILS CARD (with progress) -->
       ${detailCard ? `<tr><td>${detailCard}</td></tr>` : ""}
 
       <!-- 5. ARRIVAL NOTE — editorial italic moment (client only) -->
-      ${arrivalNoteBlock ? `<tr><td height="36" style="height:36px;line-height:36px;font-size:0">&nbsp;</td></tr><tr><td>${arrivalNoteBlock}</td></tr>` : ""}
+      ${arrivalNoteBlock ? `<tr><td height="40" style="height:40px;line-height:40px;font-size:0">&nbsp;</td></tr><tr><td>${arrivalNoteBlock}</td></tr>` : ""}
 
-      <!-- 6. CTA — Tesla pill, deeper teal-cyan, luxury proportions -->
-      <tr><td align="center" style="padding:${opts.arrivalNote ? "36" : "40"}px 0 8px;text-align:center">
+      <!-- 6. CTA — Tesla automotive pill: gloss top → deep bottom + soft shadow -->
+      <tr><td align="center" style="padding:${opts.arrivalNote ? "40" : "48"}px 0 0;text-align:center">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate">
           <tr><td align="center" style="padding:2px;background:${PAL.ctaRing};border-radius:999px">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
-              <td bgcolor="${PAL.cta}" align="center" style="background:${PAL.cta};border-radius:999px">
+              <td bgcolor="${PAL.cta}" align="center" style="background:${PAL.cta};background-image:linear-gradient(180deg, ${PAL.ctaTop} 0%, ${PAL.cta} 55%, ${PAL.ctaBottom} 100%);border-radius:999px">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
                   <td bgcolor="${PAL.ctaTopEdge}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.ctaTopEdge};border-radius:999px 999px 0 0">&nbsp;</td>
                 </tr><tr>
                   <td align="center" style="padding:0">
-                    <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:18px 52px 19px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:${PAL.ctaText};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.ctaLabel)}</a>
+                    <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:16px 48px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:${PAL.ctaText};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.ctaLabel)}</a>
                   </td>
+                </tr><tr>
+                  <td bgcolor="${PAL.shadowEdge}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.shadowEdge};border-radius:0 0 999px 999px">&nbsp;</td>
                 </tr></table>
               </td>
             </tr></table>
