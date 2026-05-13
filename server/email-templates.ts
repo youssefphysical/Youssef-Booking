@@ -1868,41 +1868,66 @@ function compactBookingShellHtml(opts: {
   const PAL = {
     outer:        "#04070D",   // deepest navy-black background
     panel:        "#0A1320",   // card surface
-    panelElev:    "#0F1B2C",   // elevated tile
-    hairline:     "rgba(111,211,233,0.12)", // ultra-thin cyan divider
-    border:       "rgba(125,196,222,0.18)", // card border (muted)
-    text:         "#EAF4F9",   // primary text
+    panelElev:    "#0F1B2C",   // elevated tile / inner highlight
+    panelDeep:    "#070E18",   // recessed (under primary block)
+    hairline:     "rgba(125,196,222,0.10)", // ultra-thin divider inside card
+    hairlineSoft: "rgba(125,196,222,0.06)", // softest divider
+    border:       "rgba(125,196,222,0.16)", // card border (muted)
+    borderTop:    "rgba(125,196,222,0.30)", // 1px top highlight inside card
+    text:         "#EEF6FA",   // primary text
+    textHero:     "#F5FAFC",   // hero serif title
     textDim:      "#9DB3C2",   // secondary
-    textMuted:    "#62798A",   // tertiary / labels
-    textFaint:    "#3F5260",   // micro footer / legal
+    textMuted:    "#5C7080",   // tertiary / labels
+    textFaint:    "#3A4D5C",   // micro footer / legal
     accent:       "#7BD9F0",   // muted electric cyan (hairlines / highlights)
     accentText:   "#9FE4F4",   // text accent (slightly brighter for legibility)
-    cta:          "#3FB8D6",   // darker electric cyan — CTA fill
-    ctaText:      "#03121A",   // dark navy — CTA label
+    cta:          "#36ADCC",   // deeper electric cyan — CTA fill
+    ctaTopEdge:   "#5BC8E2",   // 1px top highlight inside CTA pill
+    ctaRing:      "rgba(125,196,222,0.22)", // outer halo ring
+    ctaText:      "#02101A",   // dark navy — CTA label
   } as const;
 
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
 
-  // -------- 2-col grid: label above value, equal heights, balanced rhythm.
+  // ---- PRIMARY BLOCK: first 2 pairs render larger to dominate hierarchy ----
+  const primary = opts.pairs.slice(0, 2);
+  const secondary = opts.pairs.slice(2);
+
+  const renderPrimaryCell = (p: { label: string; value: string }, side: "left" | "right") => `
+    <td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:${side === "left" ? "0 12px 0 0" : "0 0 0 12px"}">
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(p.label)}</div>
+      <div style="margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:600;color:${PAL.textHero};line-height:1.25;letter-spacing:-0.1px;word-break:break-word">${escapeHtml(p.value)}</div>
+    </td>`;
+  const primaryBlock = primary.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panelDeep}" style="background:${PAL.panelDeep};border-radius:6px"><tr><td style="padding:14px 14px 14px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${renderPrimaryCell(primary[0], "left")}${primary[1] ? renderPrimaryCell(primary[1], "right") : `<td width="50%" style="width:50%">&nbsp;</td>`}</tr></table></td></tr></table>`
+    : "";
+
+  // ---- SECONDARY GRID: lighter weight, dimmer values — visually fades back ----
   const gridRows: string[] = [];
-  for (let i = 0; i < opts.pairs.length; i += 2) {
-    const a = opts.pairs[i];
-    const b = opts.pairs[i + 1];
-    const isLast = i + 2 >= opts.pairs.length;
-    const rowPadBottom = isLast ? "0" : "14px";
-    const cellLeft = `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 10px ${rowPadBottom} 0">
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(a.label)}</div>
-      <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:${PAL.text};line-height:1.35;word-break:break-word">${escapeHtml(a.value)}</div>
+  for (let i = 0; i < secondary.length; i += 2) {
+    const a = secondary[i];
+    const b = secondary[i + 1];
+    const isLast = i + 2 >= secondary.length;
+    const rowPadBottom = isLast ? "0" : "12px";
+    const cellLeft = `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 12px ${rowPadBottom} 0">
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(a.label)}</div>
+      <div style="margin-top:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13.5px;font-weight:500;color:${PAL.textDim};line-height:1.4;word-break:break-word">${escapeHtml(a.value)}</div>
     </td>`;
     const cellRight = b
-      ? `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 0 ${rowPadBottom} 10px">
-          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(b.label)}</div>
-          <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:${PAL.text};line-height:1.35;word-break:break-word">${escapeHtml(b.value)}</div>
+      ? `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 0 ${rowPadBottom} 12px">
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(b.label)}</div>
+          <div style="margin-top:4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13.5px;font-weight:500;color:${PAL.textDim};line-height:1.4;word-break:break-word">${escapeHtml(b.value)}</div>
         </td>`
-      : `<td width="50%" style="width:50%;padding:0 0 ${rowPadBottom} 10px">&nbsp;</td>`;
+      : `<td width="50%" style="width:50%;padding:0 0 ${rowPadBottom} 12px">&nbsp;</td>`;
     gridRows.push(`<tr>${cellLeft}${cellRight}</tr>`);
   }
-  const gridHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${gridRows.join("")}</table>`;
+  const secondaryGrid = secondary.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:0">${gridRows.join("")}</table>`
+    : "";
+  const primarySecondaryDivider = primary.length && secondary.length
+    ? `<tr><td height="1" style="height:1px;line-height:1px;font-size:0;padding:14px 0 14px"><div style="height:1px;line-height:1px;font-size:0;background:${PAL.hairline}">&nbsp;</div></td></tr>`
+    : "";
+  const gridHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${primary.length ? `<tr><td>${primaryBlock}</td></tr>` : ""}${primarySecondaryDivider}${secondary.length ? `<tr><td>${secondaryGrid}</td></tr>` : ""}</table>`;
 
   // -------- Slim 4px progress bar — refined HUD aesthetic, no glow.
   let progressBlock = "";
@@ -1954,26 +1979,36 @@ function compactBookingShellHtml(opts: {
 <body style="margin:0;padding:0;background:${PAL.outer};color:${PAL.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${escapeHtml(opts.previewText)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.outer}" style="background:${PAL.outer}">
-  <tr><td align="center" style="padding:18px 10px 14px">
+  <tr><td align="center" style="padding:20px 10px 16px">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%">
 
-      <!-- 1. ELEGANT BRAND HEADER — single line, controlled tracking -->
-      <tr><td align="left" style="padding:0 2px 18px;text-align:left">
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:3.4px;color:${PAL.text};line-height:1.2;text-transform:uppercase">YOUSSEF&nbsp;AHMED</div>
-        <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:500;letter-spacing:2.4px;color:${PAL.textMuted};line-height:1.3;text-transform:uppercase">Elite&nbsp;Coaching&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;Dubai</div>
+      <!-- 1. ELEGANT BRAND HEADER — refined single-line lockup with cyan tick -->
+      <tr><td align="left" style="padding:0 2px 16px;text-align:left">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td valign="middle" style="vertical-align:middle;padding-right:12px">
+              <div style="width:14px;height:1px;background:${PAL.accent};line-height:1px;font-size:0">&nbsp;</div>
+            </td>
+            <td valign="middle" style="vertical-align:middle">
+              <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:2.4px;color:${PAL.textMuted};line-height:1.3;text-transform:uppercase">Youssef&nbsp;Ahmed&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<span style="color:${PAL.textMuted}">Elite&nbsp;Coaching</span></div>
+            </td>
+          </tr>
+        </table>
       </td></tr>
 
-      <!-- 2. STATUS HERO — luxury serif headline + minimal subtitle -->
-      <tr><td align="left" style="padding:0 2px 20px;text-align:left">
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase;color:${PAL.accentText};line-height:1.2;margin-bottom:10px">${escapeHtml(opts.statusEyebrow)}</div>
-        <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:30px;font-weight:500;letter-spacing:-0.4px;color:${PAL.text};line-height:1.12">${escapeHtml(opts.statusTitle)}</div>
-        <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:400;color:${PAL.textDim};line-height:1.55;letter-spacing:0.1px">${escapeHtml(opts.subtitle)}</div>
+      <!-- 2. STATUS HERO — cinematic moment: small eyebrow, serif title, subtle hairline -->
+      <tr><td align="left" style="padding:14px 2px 22px;text-align:left">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:${PAL.accentText};line-height:1.2;margin-bottom:14px">${escapeHtml(opts.statusEyebrow)}</div>
+        <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:32px;font-weight:500;letter-spacing:-0.6px;color:${PAL.textHero};line-height:1.08">${escapeHtml(opts.statusTitle)}</div>
+        <div style="margin-top:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:400;color:${PAL.textDim};line-height:1.6;letter-spacing:0.1px;max-width:420px">${escapeHtml(opts.subtitle)}</div>
+        <div style="margin-top:20px;height:1px;background:${PAL.hairline};line-height:1px;font-size:0">&nbsp;</div>
       </td></tr>
 
-      <!-- 3. UNIFIED DATA CARD — layered navy panel, thin border, slim radius -->
+      <!-- 3. UNIFIED DATA CARD — layered panel, top hairline highlight, thin border -->
       <tr><td>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panel}" style="background:${PAL.panel};border:1px solid ${PAL.border};border-radius:8px">
-          <tr><td style="padding:18px 18px 16px;border-top:1px solid ${PAL.hairline};border-radius:8px">
+          <tr><td bgcolor="${PAL.borderTop}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.borderTop};border-radius:8px 8px 0 0">&nbsp;</td></tr>
+          <tr><td style="padding:18px 16px 16px">
             ${gridHtml}
             ${progressBlock}
             ${contactBlock}
@@ -1981,26 +2016,36 @@ function compactBookingShellHtml(opts: {
         </table>
       </td></tr>
 
-      <!-- 4. CTA — Tesla / Apple Wallet style slim pill, deep electric cyan -->
-      <tr><td align="center" style="padding:24px 0 6px;text-align:center">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
-          <tr><td bgcolor="${PAL.cta}" align="center" style="background:${PAL.cta};border-radius:999px">
-            <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:13px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${PAL.ctaText};text-decoration:none;line-height:1">${escapeHtml(opts.ctaLabel)}</a>
+      <!-- 4. CTA — Tesla / Apple Wallet pill: deep cyan + 1px top highlight + halo ring -->
+      <tr><td align="center" style="padding:26px 0 6px;text-align:center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate">
+          <tr><td align="center" style="padding:3px;background:${PAL.ctaRing};border-radius:999px">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+              <td bgcolor="${PAL.cta}" align="center" style="background:${PAL.cta};border-radius:999px">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+                  <td bgcolor="${PAL.ctaTopEdge}" height="1" style="height:1px;line-height:1px;font-size:0;background:${PAL.ctaTopEdge};border-radius:999px 999px 0 0">&nbsp;</td>
+                </tr><tr>
+                  <td align="center" style="padding:0">
+                    <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:13px 38px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${PAL.ctaText};text-decoration:none;line-height:1">${escapeHtml(opts.ctaLabel)}</a>
+                  </td>
+                </tr></table>
+              </td>
+            </tr></table>
           </td></tr>
         </table>
       </td></tr>
 
-      <!-- 5. ULTRA-MINIMAL FOOTER — single elegant line -->
-      <tr><td align="center" style="padding:22px 4px 4px;text-align:center">
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;letter-spacing:0.4px;color:${PAL.textDim};line-height:1.6">
-          <a href="${wa}" style="color:${PAL.textDim};text-decoration:none">WhatsApp</a>&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;<a href="${BRAND.instagramUrl}" style="color:${PAL.textDim};text-decoration:none">Instagram</a>&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;<span style="color:${PAL.textMuted}">Dubai</span>
+      <!-- 5. ULTRA-MINIMAL FOOTER — single elegant line, no website link, no motto -->
+      <tr><td align="center" style="padding:24px 4px 6px;text-align:center">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;letter-spacing:0.5px;color:${PAL.textMuted};line-height:1.6">
+          <a href="${wa}" style="color:${PAL.textMuted};text-decoration:none">WhatsApp</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<a href="${BRAND.instagramUrl}" style="color:${PAL.textMuted};text-decoration:none">Instagram</a>&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<span style="color:${PAL.textMuted}">Dubai</span>
         </div>
-        <div style="margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:400;letter-spacing:0.3px;color:${PAL.textFaint};line-height:1.4"><a href="${escapeHtml(opts.websiteUrl)}" style="color:${PAL.textFaint};text-decoration:none">${escapeHtml(BRAND.name)}</a></div>
       </td></tr>
 
     </table>
   </td></tr>
 </table>
+<a href="${escapeHtml(opts.websiteUrl)}" style="display:none;color:transparent">${escapeHtml(BRAND.name)}</a>
 </body>
 </html>`;
 }
@@ -2287,10 +2332,12 @@ export function buildAdminBookingEmail(opts: {
 
   // ===== TRON LEGACY FREEZE — ultra-compact ADMIN notification (rebuilt
   // from scratch via compactBookingShellHtml; bypasses shellHtml entirely).
+  // Date + Time first → render as primary (dominant) block; everything
+  // else fades into the secondary metadata grid for proper hierarchy.
   const pairs: Array<{ label: string; value: string }> = [
-    { label: "Client", value: d.clientName },
     { label: "Date", value: d.date },
     { label: "Time (Dubai)", value: d.time12 },
+    { label: "Client", value: d.clientName },
     { label: "Duration", value: "60 Min" },
   ];
   if (d.sessionFocusLabel) pairs.push({ label: "Focus", value: d.sessionFocusLabel });
