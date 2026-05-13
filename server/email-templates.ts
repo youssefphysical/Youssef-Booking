@@ -1944,15 +1944,28 @@ export function dsAmbientGlowV2(): string {
 }
 
 /**
- * Slim brand mark — single editorial lockup, no chrome.
+ * Slim brand mark — single editorial lockup. Phase 5: tracked cyan caption
+ * + short cyan stroke restore the TRON dashboard identity.
  */
 export function dsBrandMarkV2(opts: { align?: "left" | "center" } = {}): string {
   const C = DS_V2.color;
   const align = opts.align ?? "left";
+  // Cyan caption (was muted) — small and tracked, NOT a headline accent.
+  const captionStyle = _ds_style(DS_V2.type.caption, C.accentSoft, "letter-spacing:2px;text-transform:uppercase;font-weight:700;");
+  // Two-stroke cyan rule — long + short. Built with a 2-cell table so it
+  // renders in every client (no inline-block reliance).
+  const strokeRow = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${align}" style="margin-top:12px">
+    <tr>
+      <td width="32" height="2" style="width:32px;height:2px;line-height:2px;font-size:0;background:${C.accent}">&nbsp;</td>
+      <td width="6"  height="2" style="width:6px; height:2px;line-height:2px;font-size:0">&nbsp;</td>
+      <td width="10" height="2" style="width:10px;height:2px;line-height:2px;font-size:0;background:${C.accent}">&nbsp;</td>
+    </tr>
+  </table>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="${align}" style="text-align:${align};padding:0">
       <div style="${_ds_style(DS_V2.type.headline, C.ink)}">${escapeHtml(BRAND.name)}</div>
-      <div style="margin-top:6px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.6px;")}">Personal Training&nbsp;·&nbsp;Dubai</div>
+      <div style="margin-top:8px;${captionStyle}">Personal Training&nbsp;·&nbsp;Dubai</div>
+      ${strokeRow}
     </td></tr>
   </table>`;
 }
@@ -2000,9 +2013,9 @@ export function dsProseSummaryV2(html: string): string {
 }
 
 /**
- * Rare premium card. Use ONLY when content genuinely groups (e.g. package
- * progress strip). Single neutral hairline top + soft radius + subtle
- * vertical surface gradient. NO cyan border, NO multiple hairlines.
+ * Neutral surface card (Phase 3). Hairline top + soft radius + subtle
+ * vertical gradient. Currently unused by the booking shell but retained
+ * for any non-booking template that needs a quiet card surface.
  */
 export function dsSurfaceV2(innerHtml: string): string {
   const C = DS_V2.color;
@@ -2015,16 +2028,62 @@ export function dsSurfaceV2(innerHtml: string): string {
 }
 
 /**
- * Premium CTA — single-tone deep cyan-teal pill with a subtle inner top
- * highlight only. NO outer ring, NO bottom shadow row, NO 3-stop gloss.
- * Calm, automotive, luxurious. Uppercase tracked label preserved.
+ * Cyan-bordered TRON card — Phase 5 restoration of the premium dashboard
+ * identity. 1px cyan-tint outer (via cellpadding-bg trick) + soft surface
+ * gradient inner. Renders consistently in Gmail, Outlook, Apple Mail.
+ */
+export function dsCardV2(innerHtml: string): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const r = DS_V2.radius.soft;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.glowEdge}" style="background:${C.glowEdge};border-radius:${r}px">
+    <tr><td style="padding:1px;border-radius:${r}px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface2} 0%, ${C.surface1} 100%);border-radius:${r}px">
+        <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
+      </table>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Information grid — Phase 5 restoration of the premium booking-system
+ * identity. Renders an array of label/value rows inside a cyan-bordered
+ * card, separated by neutral hairlines. Labels render as tracked mono
+ * (CSS-uppercased), values as semibold body, right-aligned.
+ *
+ * `value` is treated as pre-escaped HTML so callers can interpolate
+ * `<a>` / `<strong>` — caller is responsible for escaping any user data.
+ * `label` is escaped here.
+ */
+export function dsInfoGridV2(rows: Array<{ label: string; value: string }>): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const labelStyle = _ds_style(DS_V2.type.mono, C.inkMuted);
+  const valueStyle = _ds_style(DS_V2.type.body, C.ink, "font-weight:600;");
+  const inner = rows.map((r, i) => {
+    const hairline = i === 0
+      ? ""
+      : `<tr><td colspan="2" style="padding:0"><div style="height:1px;line-height:1px;font-size:0;background:${C.hairline}">&nbsp;</div></td></tr>`;
+    return `${hairline}
+      <tr>
+        <td valign="middle" style="padding:${SP.sm}px ${SP.sm}px ${SP.sm}px 0;${labelStyle}width:38%;vertical-align:middle">${escapeHtml(r.label)}</td>
+        <td valign="middle" align="right" style="padding:${SP.sm}px 0;${valueStyle}text-align:right;vertical-align:middle;word-break:break-word">${r.value}</td>
+      </tr>`;
+  }).join("");
+  return dsCardV2(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${inner}</table>`);
+}
+
+/**
+ * Premium CTA — Phase 5: brightened back to pure TRON cyan to match the
+ * approved reference (single bright cyan with dark ink). Phase 4.1
+ * label sizing/tracking preserved (14px / 1.4px / w700).
  */
 export function dsCtaV2(opts: { label: string; href: string }): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const r = DS_V2.radius.pill;
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate">
-    <tr><td bgcolor="${C.accentDeep}" align="center" style="background:${C.accentDeep};background-image:linear-gradient(180deg, ${C.accentDeepTop} 0%, ${C.accentDeep} 100%);border-radius:${r}px">
+    <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentSoft} 0%, ${C.accent} 100%);border-radius:${r}px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
         <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
       </tr><tr>
@@ -2037,23 +2096,27 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
 }
 
 /**
- * Two-line luxury signature footer. Drops the multi-deck stack
- * (name + tag + motto + 4-link + tagline) for: brand line + contact line.
- * Calm. Confident. Done.
+ * Luxury signature footer. Brand line + contact links + optional
+ * explanation paragraph (Phase 5: restored — informs recipient WHY
+ * they're receiving the email, calmly).
  */
-export function dsFooterV2(_opts: { variant?: "client" | "admin" } = {}): string {
+export function dsFooterV2(opts: { variant?: "client" | "admin"; explanation?: string | null } = {}): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
   const mail = `mailto:${BRAND.email}`;
   const linkStyle = _ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.4px;text-decoration:none;");
-  const sep = `<span style="color:${C.inkFaint};margin:0 8px">·</span>`;
+  const sep = `<span style="color:${C.accentSoft};margin:0 8px">·</span>`;
+  const explanationHtml = opts.explanation
+    ? `<div style="margin-top:${SP.md}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
+    : "";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr><td align="left" style="text-align:left;padding:0">
-      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;")}">${escapeHtml(BRAND.name)}<span style="color:${C.inkFaint};margin:0 10px">·</span>Dubai</div>
+      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;font-weight:600;")}">${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span>Dubai</div>
       <div style="margin-top:${SP.sm}px">
         <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
       </div>
+      ${explanationHtml}
     </td></tr>
   </table>`;
 }
@@ -2077,42 +2140,25 @@ function dsBookingShellV2(opts: {
   statusEyebrow: string;        // natural case — CSS uppercases
   statusTitle: string;          // emotional headline (serif)
   subtitle: string;             // short premium subtitle
-  primaryDateLine: string;      // "Saturday · 13 May 2026"  (CSS uppercases via mono)
-  primaryTimeFocal: string;     // "7:00 AM"  — the focal hero number
-  primaryDurationLine: string;  // "60 minutes · Dubai"
-  proseSummaryHtml: string;     // pre-composed HTML; caller MUST escape user fields
+  infoRows: Array<{ label: string; value: string }>;  // Phase 5: TRON info grid
   arrivalNote?: string | null;  // client-only italic moment
   ctaLabel: string;
   ctaHref: string;
+  footerExplanation: string;    // Phase 5: restored explanation paragraph
   websiteUrl: string;
   variant: "client" | "admin";
 }): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
 
-  // ---- Primary focal card — single editorial control surface --------------
-  // SATURDAY · 13 MAY 2026  (mono cyan)
-  //                  ↓ md
-  //   7:00 AM                           (serif hero — THE focal number)
-  //                  ↓ sm
-  //   ─── 32px cyan accent line ───      (the ONE cyan accent on this card)
-  //                  ↓ sm
-  //   60 MINUTES · DUBAI                (mono muted)
-  // Phase 4: tighter date→time lockup (one beat, not two). Duration uses the
-  // global mono token tracking — no override — for tracking consistency.
-  const primaryCardInner = `
-    <div style="${_ds_style(DS_V2.type.mono, C.accentSoft)}">${escapeHtml(opts.primaryDateLine)}</div>
-    <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
-    <div style="${_ds_style(DS_V2.type.hero, C.ink)}">${escapeHtml(opts.primaryTimeFocal)}</div>
-    <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
-    <div style="width:32px;height:1px;background:${C.glowEdge};line-height:1px;font-size:0">&nbsp;</div>
-    <div style="height:${SP.sm}px;line-height:${SP.sm}px;font-size:0">&nbsp;</div>
-    <div style="${_ds_style(DS_V2.type.mono, C.inkMuted)}">${escapeHtml(opts.primaryDurationLine)}</div>
-  `;
-  const primaryCard = dsSurfaceV2(primaryCardInner);
+  // ---- TRON information grid — restored Phase 5 reference identity --------
+  // Cyan-bordered card with label/value rows separated by neutral hairlines.
+  // Replaces the Phase 3/4 focal-time card + prose summary direction; brings
+  // back the premium booking-system feel without breaking the typography
+  // calibration from Phase 4.1 (semibold serif, body 16/1.65, mono 1.6px).
+  const infoGrid = dsInfoGridV2(opts.infoRows);
 
-  // ---- Italic arrival moment — coach voice (centered, the only centered
-  //      element in the entire email — earned focal break)
+  // ---- Italic arrival moment — coach voice (client only)
   const arrivalBlock = opts.arrivalNote
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr><td align="center" style="text-align:center;padding:0 ${SP.sm}px">
@@ -2148,14 +2194,14 @@ ${dsAmbientGlowV2()}
       ${dsSpacerV2(SP.xl)}
       <tr><td>${dsBrandMarkV2()}</td></tr>
 
-      ${dsSpacerV2(SP.xxl)}
+      ${dsSpacerV2(SP.lg)}
+      ${dsHairlineV2()}
+      ${dsSpacerV2(SP.xl)}
+
       <tr><td>${dsHeroV2({ eyebrow: opts.statusEyebrow, title: opts.statusTitle, sub: opts.subtitle, variant: opts.variant })}</td></tr>
 
       ${dsSpacerV2(SP.xl)}
-      <tr><td>${primaryCard}</td></tr>
-
-      ${dsSpacerV2(SP.xl)}
-      <tr><td>${dsProseSummaryV2(opts.proseSummaryHtml)}</td></tr>
+      <tr><td>${infoGrid}</td></tr>
 ${opts.arrivalNote ? `
       ${dsSpacerV2(SP.xl)}
       <tr><td>${arrivalBlock}</td></tr>` : ""}
@@ -2166,7 +2212,7 @@ ${opts.arrivalNote ? `
       ${dsSpacerV2(SP.xxl)}
       ${dsHairlineV2()}
       ${dsSpacerV2(SP.lg)}
-      <tr><td>${dsFooterV2({ variant: opts.variant })}</td></tr>
+      <tr><td>${dsFooterV2({ variant: opts.variant, explanation: opts.footerExplanation })}</td></tr>
 
     </table>
   </td></tr>
@@ -2220,58 +2266,38 @@ export function buildClientBookingConfirmationEmail(opts: {
   void greeting;
   void primaryHighlights; void detailPairs; void progress;
 
-  // ===== Phase 3 cinematic composition (DS_V2). The detail-grid mental
-  // model is replaced by a single prose summary that reads as a sentence,
-  // not a spreadsheet.
-  const C = DS_V2.color;
-  const inkBold = `color:${C.ink};font-weight:500`;
-
-  // Line 1 — what & why
-  const focusEsc = d.sessionFocusLabel ? escapeHtml(d.sessionFocusLabel) : "";
-  const goalEsc  = d.trainingGoalLabel ? escapeHtml(d.trainingGoalLabel.toLowerCase()) : "";
-  const typeEsc  = d.sessionTypeLabel  ? escapeHtml(d.sessionTypeLabel)  : "";
-  let line1 = focusEsc
-    ? `<span style="${inkBold}">${focusEsc}</span> session`
-    : `Personal training session`;
-  if (goalEsc) line1 += ` focused on ${goalEsc}`;
-  if (typeEsc) line1 += ` &nbsp;·&nbsp; ${typeEsc}`;
-  line1 += ".";
-
-  // Line 2 — package + payment status
+  // ===== Phase 5 (May 2026) — restore the TRON information-grid identity.
+  // The detail-grid is the structural core; values are pre-escaped HTML so
+  // we can interpolate emphasis (`<strong>`) and links cleanly.
   const pay = formatPaymentStatus(d.paymentStatus);
-  const pkgBits: string[] = [];
-  if (d.packageName) pkgBits.push(`<span style="${inkBold}">${escapeHtml(d.packageName)}</span>`);
-  if (pay) pkgBits.push(pay);
-  const line2 = pkgBits.length ? pkgBits.join(" &nbsp;·&nbsp; ") + "." : "";
-
-  // Line 3 — progress + expiry
-  const progBits: string[] = [];
+  const infoRows: Array<{ label: string; value: string }> = [
+    { label: "Date",          value: escapeHtml(d.date) },
+    { label: "Time (Dubai)",  value: `${escapeHtml(d.time12)} <span style="color:${DS_V2.color.inkMuted};font-weight:500">· GST (UTC+4)</span>` },
+    { label: "Duration",      value: "60 Minutes" },
+  ];
+  if (d.sessionFocusLabel) infoRows.push({ label: "Focus", value: escapeHtml(d.sessionFocusLabel) });
+  if (d.trainingGoalLabel) infoRows.push({ label: "Goal",  value: escapeHtml(d.trainingGoalLabel) });
+  if (d.sessionTypeLabel)  infoRows.push({ label: "Type",  value: escapeHtml(d.sessionTypeLabel) });
+  if (d.packageName)       infoRows.push({ label: "Package", value: escapeHtml(d.packageName) });
   if (d.totalSessions != null && d.remainingSessions != null) {
     const used = d.currentSessionNumber ?? Math.max(0, (d.totalSessions as number) - (d.remainingSessions as number));
-    progBits.push(`<span style="${inkBold}">${used} of ${d.totalSessions}</span> sessions used`);
+    infoRows.push({ label: "Sessions", value: `${used} of ${d.totalSessions} used` });
   } else if (d.remainingSessions != null) {
-    progBits.push(`<span style="${inkBold}">${d.remainingSessions}</span> sessions remaining`);
+    infoRows.push({ label: "Remaining", value: `${d.remainingSessions} sessions` });
   }
-  if (d.packageExpiryDate) progBits.push(`expires ${escapeHtml(d.packageExpiryDate)}`);
-  const line3 = progBits.length ? progBits.join(", ") + "." : "";
-
-  const proseLines = [line1, line2, line3].filter(Boolean);
-  const proseSummaryHtml = proseLines
-    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:16px\"`}>${l}</div>`)
-    .join("");
+  if (d.packageExpiryDate) infoRows.push({ label: "Expires", value: escapeHtml(d.packageExpiryDate) });
+  if (pay)                 infoRows.push({ label: "Payment", value: pay });
 
   const html = dsBookingShellV2({
     previewText: `${subject} — your session is confirmed.`,
     statusEyebrow: "Booking Confirmed",
     statusTitle: "Your session is set.",
     subtitle: "Reserved on your calendar — focused, intentional, ready to train.",
-    primaryDateLine: d.date,
-    primaryTimeFocal: d.time12,
-    primaryDurationLine: "60 minutes · Dubai",
-    proseSummaryHtml,
+    infoRows,
     arrivalNote: "Arrive 5–10 minutes early — focused, ready, and prepared to train.",
     ctaLabel: "Open My Booking",
     ctaHref: `${website}/dashboard`,
+    footerExplanation: "Sent automatically by Youssef Ahmed Personal Training. You're receiving this because you have an active account with Youssef Ahmed Personal Training.",
     websiteUrl: website,
     variant: "client",
   });
@@ -2539,60 +2565,51 @@ export function buildAdminBookingEmail(opts: {
 
   void primaryHighlights; void detailPairs; void progress;
 
-  // ===== Phase 3 cinematic composition (DS_V2) — admin operational brief.
-  // Three prose lines: identity → ops summary → package state. Contact
-  // information sits up top (admin's primary use) and uses cyan accents
-  // only on the email link.
+  // ===== Phase 5 (May 2026) — restore the TRON information-grid identity.
+  // Admin operational brief: client identity + contact at top of grid,
+  // ops details mid, package state, optional notes. Cyan accent only
+  // on the email mailto link.
   const C = DS_V2.color;
-  const inkBold = `color:${C.ink};font-weight:500`;
-  const sep = `<span style="color:${C.inkFaint};margin:0 8px">·</span>`;
-
   const contactEmail = opts.clientEmail || d.clientEmail;
   const contactPhone = opts.clientPhone || d.clientPhone;
-  const idBits: string[] = [`<span style="${inkBold}">${escapeHtml(d.clientName)}</span>`];
-  if (contactEmail) idBits.push(`<a href="mailto:${escapeHtml(contactEmail)}" style="color:${C.accentSoft};text-decoration:none">${escapeHtml(contactEmail)}</a>`);
-  if (contactPhone) idBits.push(`<span style="color:${C.inkSoft}">${escapeHtml(contactPhone)}</span>`);
-  const idLine = idBits.join(sep);
-
-  const opsBits: string[] = [];
-  if (d.sessionFocusLabel) opsBits.push(escapeHtml(d.sessionFocusLabel));
-  if (d.trainingGoalLabel) opsBits.push(escapeHtml(d.trainingGoalLabel));
-  if (d.sessionTypeLabel)  opsBits.push(escapeHtml(d.sessionTypeLabel));
   const pay = formatPaymentStatus(d.paymentStatus);
-  if (pay) opsBits.push(pay);
-  const opsLine = opsBits.length ? opsBits.join(" · ") + "." : "";
 
-  const pkgBits: string[] = [];
-  if (d.packageName) pkgBits.push(`<span style="${inkBold}">${escapeHtml(d.packageName)}</span>`);
+  const infoRows: Array<{ label: string; value: string }> = [
+    { label: "Client", value: escapeHtml(d.clientName) },
+  ];
+  if (contactEmail) {
+    infoRows.push({
+      label: "Email",
+      value: `<a href="mailto:${escapeHtml(contactEmail)}" style="color:${C.accentSoft};text-decoration:none;font-weight:600">${escapeHtml(contactEmail)}</a>`,
+    });
+  }
+  if (contactPhone) infoRows.push({ label: "Phone", value: escapeHtml(contactPhone) });
+  infoRows.push({ label: "Date",         value: escapeHtml(d.date) });
+  infoRows.push({ label: "Time (Dubai)", value: `${escapeHtml(d.time12)} <span style="color:${C.inkMuted};font-weight:500">· GST (UTC+4)</span>` });
+  if (d.sessionFocusLabel) infoRows.push({ label: "Focus", value: escapeHtml(d.sessionFocusLabel) });
+  if (d.trainingGoalLabel) infoRows.push({ label: "Goal",  value: escapeHtml(d.trainingGoalLabel) });
+  if (d.sessionTypeLabel)  infoRows.push({ label: "Type",  value: escapeHtml(d.sessionTypeLabel) });
+  if (d.packageName)       infoRows.push({ label: "Package", value: escapeHtml(d.packageName) });
   if (d.totalSessions != null && d.remainingSessions != null) {
     const used = d.currentSessionNumber ?? Math.max(0, (d.totalSessions as number) - (d.remainingSessions as number));
-    pkgBits.push(`${used} of ${d.totalSessions} used`);
+    infoRows.push({ label: "Sessions", value: `${used} of ${d.totalSessions} used` });
   } else if (d.remainingSessions != null) {
-    pkgBits.push(`${d.remainingSessions} remaining`);
+    infoRows.push({ label: "Remaining", value: `${d.remainingSessions} sessions` });
   }
-  if (d.packageExpiryDate) pkgBits.push(`expires ${escapeHtml(d.packageExpiryDate)}`);
-  const pkgLine = pkgBits.length ? pkgBits.join(" · ") + "." : "";
-
-  let notesLine = "";
-  if (opts.clientNotes) notesLine = `<span style="color:${C.accentSoft}">Notes</span> &nbsp;<span style="color:${C.inkSoft}">${escapeHtml(opts.clientNotes)}</span>`;
-
-  const proseLines = [idLine, opsLine, pkgLine, notesLine].filter(Boolean);
-  const proseSummaryHtml = proseLines
-    .map((l, i) => `<div${i === 0 ? "" : ` style=\"margin-top:16px\"`}>${l}</div>`)
-    .join("");
+  if (d.packageExpiryDate) infoRows.push({ label: "Expires", value: escapeHtml(d.packageExpiryDate) });
+  if (pay)                 infoRows.push({ label: "Payment", value: pay });
+  if (opts.clientNotes)    infoRows.push({ label: "Notes",   value: `<span style="color:${C.inkSoft};font-weight:500">${escapeHtml(opts.clientNotes)}</span>` });
 
   const html = dsBookingShellV2({
     previewText: subject,
     statusEyebrow: "New Session Booking",
     statusTitle: "New booking received.",
-    subtitle: `${d.clientName} has reserved a session on ${d.date} at ${d.time12} (Dubai).`,
-    primaryDateLine: d.date,
-    primaryTimeFocal: d.time12,
-    primaryDurationLine: "60 minutes · Dubai",
-    proseSummaryHtml,
+    subtitle: `${escapeHtml(d.clientName)} has reserved a session.`,
+    infoRows,
     arrivalNote: null,
     ctaLabel: "Open Admin Bookings",
     ctaHref: `${website}/admin/bookings`,
+    footerExplanation: "Sent automatically by Youssef Ahmed Personal Training. You're receiving this because you're listed as the operator on this booking system.",
     websiteUrl: website,
     variant: "admin",
   });
