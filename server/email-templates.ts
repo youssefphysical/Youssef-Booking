@@ -1883,13 +1883,17 @@ export const DS_V2 = {
   },
   // Three sizes only — kills the 16/18/22/24/28 middle-tier monotony.
   // Phase 4 tuning: body 15→16, caption 12→13, mono 11→12 for Gmail Android
-  // legibility; tracked-mono ls 2.5→2.4 to feel less industrial at larger size.
+  // legibility.
+  // Phase 4.1 readability pass: hero/headline weight 500→600 (warmer presence,
+  // doesn't read thin at 40px on Android Georgia fallback); body lh 1.6→1.65
+  // for comfortable scanning; mono ls 2.4→1.6 (still tracked as label, no
+  // longer fashion-editorial). CTA tracking relaxed at the primitive site.
   type: {
-    hero:     { size: 40, weight: 500, lh: 1.05, ls: "-1px",   family: "serif" as const },
-    headline: { size: 28, weight: 500, lh: 1.10, ls: "-0.5px", family: "serif" as const },
-    body:     { size: 16, weight: 400, lh: 1.60, ls: "0",      family: "sans"  as const },
-    caption:  { size: 13, weight: 500, lh: 1.50, ls: "0.4px",  family: "sans"  as const, upper: false as const },
-    mono:     { size: 12, weight: 600, lh: 1.30, ls: "2.4px",  family: "sans"  as const, upper: true  as const },
+    hero:     { size: 40, weight: 600, lh: 1.08, ls: "-0.6px", family: "serif" as const },
+    headline: { size: 28, weight: 600, lh: 1.15, ls: "-0.3px", family: "serif" as const },
+    body:     { size: 16, weight: 400, lh: 1.65, ls: "0",      family: "sans"  as const },
+    caption:  { size: 13, weight: 500, lh: 1.55, ls: "0.3px",  family: "sans"  as const, upper: false as const },
+    mono:     { size: 12, weight: 600, lh: 1.40, ls: "1.6px",  family: "sans"  as const, upper: true  as const },
   },
   // 8px grid, named editorially. Use SP.* everywhere — never raw pixels.
   space:  { xs: 8, sm: 16, md: 24, lg: 32, xl: 48, xxl: 64, xxxl: 80 } as const,
@@ -2025,7 +2029,7 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
         <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
       </tr><tr>
         <td align="center" style="padding:0">
-          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:13px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
+          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:14px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
         </td>
       </tr></table>
     </td></tr>
