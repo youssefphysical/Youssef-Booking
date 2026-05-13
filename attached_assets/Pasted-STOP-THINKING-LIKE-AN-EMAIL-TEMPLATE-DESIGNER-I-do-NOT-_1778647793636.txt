@@ -1,0 +1,209 @@
+STOP THINKING LIKE AN EMAIL TEMPLATE DESIGNER.
+
+I do NOT want:
+- newsletter style
+- SaaS template feeling
+- generic “responsive email”
+- gaming neon look
+- cheap glow effects
+- oversized cards
+- corporate spacing
+- basic Gmail-safe aesthetics
+
+I want a COMPLETE PREMIUM VISUAL SYSTEM redesign.
+
+The email must feel like:
+- TRON LEGACY
+- Tesla UI
+- Apple Wallet elegance
+- luxury Dubai private coaching
+- elite concierge system
+- cinematic sports-tech interface
+
+CURRENT PROBLEMS TO FIX:
+1. Typography feels generic and unbalanced
+2. Cards look outdated and heavy
+3. CTA button looks cheap and low contrast
+4. Layout still feels like squeezed desktop
+5. Footer feels like newsletter footer
+6. Cyan color is too bright/cheap
+7. No emotional luxury impact
+8. Too much dead visual space
+9. Weak hierarchy and poor rhythm
+10. Doesn’t feel premium or exclusive
+
+NEW DESIGN SYSTEM REQUIREMENTS:
+
+GLOBAL STYLE:
+- ultra premium
+- cinematic
+- futuristic
+- minimal but powerful
+- visually balanced
+- elite private membership aesthetic
+- luxury sports-tech interface
+- modern Tron Legacy energy WITHOUT overdoing glow
+
+COLOR SYSTEM:
+DO NOT use cheap bright cyan.
+
+Use:
+- deep navy blacks
+- dark layered panels
+- muted electric cyan accents
+- subtle premium glow only
+- monochrome luxury base
+- stronger contrast hierarchy
+
+TARGET FEELING:
+The email should feel like:
+“exclusive elite coaching access”
+NOT:
+“booking confirmation template”
+
+TYPOGRAPHY SYSTEM:
+This is currently the biggest weakness.
+
+I want:
+- luxury serif ONLY for main headline
+- clean modern sans-serif everywhere else
+- stronger hierarchy
+- larger important values
+- smaller elegant labels
+- tighter spacing consistency
+- improved line-height rhythm
+- premium spacing between sections
+
+IMPORTANT:
+No aggressive letter spacing everywhere.
+Tracking should be elegant and controlled.
+
+LAYOUT SYSTEM:
+TRUE MOBILE-FIRST design.
+
+NOT desktop squeezed into mobile.
+
+Requirements:
+- wider content usage on phones
+- reduced outer gutters
+- less dead space
+- balanced vertical rhythm
+- compact but breathable
+- visually centered composition
+
+CARD DESIGN:
+Current cards feel old and generic.
+
+Replace with:
+- thinner borders
+- smaller radius
+- layered dark surfaces
+- subtle depth
+- softer premium shadows
+- cleaner luxury panel system
+- more “interface” feeling
+- less “email template” feeling
+
+GRID SYSTEM:
+The internal rows currently feel inconsistent.
+
+Rebuild using:
+- perfectly aligned 2-column structure
+- label above value always
+- equal spacing rhythm
+- visually balanced row heights
+- strong readability
+- no compressed feeling
+
+CTA BUTTON REDESIGN:
+Current button is NOT premium.
+
+I want:
+- darker electric cyan
+- dark navy text
+- stronger font-weight
+- slimmer height
+- cleaner pill shape
+- subtle premium shadow
+- centered perfectly
+- visually similar to:
+Tesla / Apple Wallet / premium HUD systems
+
+Button should feel:
+exclusive and expensive.
+
+FOOTER REDESIGN:
+Current footer feels like newsletter UI.
+
+I want:
+- ultra minimal footer
+- single elegant line
+- tiny premium typography
+- no stacked footer blocks
+- no giant contact areas
+- no visual heaviness
+
+Example style:
+WhatsApp • Instagram • Dubai
+
+That’s it.
+
+VISUAL RHYTHM:
+This is critical.
+
+Every section must feel:
+- intentionally aligned
+- balanced
+- premium
+- cinematic
+- elegant
+
+No random spacing.
+No awkward gaps.
+No “template builder” feel.
+
+BRAND IMPACT:
+The email must instantly communicate:
+- authority
+- exclusivity
+- discipline
+- luxury
+- professionalism
+- elite coaching experience
+
+TECHNICAL REQUIREMENTS:
+- Gmail Android perfect
+- Gmail iOS perfect
+- Apple Mail perfect
+- Desktop Gmail perfect
+- Tablet safe
+- no horizontal overflow
+- no clipping
+- no Gmail rendering hacks that damage aesthetics
+- no oversized wrappers
+- no broken alignment
+
+FREEZE MODE STILL ACTIVE:
+DO NOT TOUCH:
+- booking logic
+- auth
+- schema
+- Neon DB
+- cron
+- API
+- packages system
+- website UI
+- redirects
+- sessions system
+
+ONLY EMAIL TEMPLATE FILES ALLOWED.
+
+After redesign:
+- push GitHub
+- deploy Vercel
+- verify production
+- provide GitHub SHA
+- provide deployment ID
+- provide changed files
+- provide production verification
+- provide real rendering screenshots if possible

@@ -1861,65 +1861,83 @@ function compactBookingShellHtml(opts: {
   ctaHref: string;
   websiteUrl: string;
 }): string {
+  // ===== TRON LEGACY × TESLA × APPLE WALLET — premium booking palette =====
+  // Local palette only — does NOT mutate the global COLOR map used by other
+  // transactional emails. Muted electric cyan, layered navy panels, refined
+  // monochrome base. No bright glow gimmicks.
+  const PAL = {
+    outer:        "#04070D",   // deepest navy-black background
+    panel:        "#0A1320",   // card surface
+    panelElev:    "#0F1B2C",   // elevated tile
+    hairline:     "rgba(111,211,233,0.12)", // ultra-thin cyan divider
+    border:       "rgba(125,196,222,0.18)", // card border (muted)
+    text:         "#EAF4F9",   // primary text
+    textDim:      "#9DB3C2",   // secondary
+    textMuted:    "#62798A",   // tertiary / labels
+    textFaint:    "#3F5260",   // micro footer / legal
+    accent:       "#7BD9F0",   // muted electric cyan (hairlines / highlights)
+    accentText:   "#9FE4F4",   // text accent (slightly brighter for legibility)
+    cta:          "#3FB8D6",   // darker electric cyan — CTA fill
+    ctaText:      "#03121A",   // dark navy — CTA label
+  } as const;
+
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
-  // Pair the field grid into rows of two (left + right). Odd field renders
-  // alone in the left cell; right cell stays empty for clean alignment.
+
+  // -------- 2-col grid: label above value, equal heights, balanced rhythm.
   const gridRows: string[] = [];
   for (let i = 0; i < opts.pairs.length; i += 2) {
     const a = opts.pairs[i];
     const b = opts.pairs[i + 1];
     const isLast = i + 2 >= opts.pairs.length;
-    const cellPad = isLast ? "0" : "0 0 12px 0";
-    const cellLeft = `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:${cellPad};padding-right:8px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3">${escapeHtml(a.label)}</div>
-      <div style="margin-top:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;font-weight:700;color:${COLOR.text};line-height:1.35;word-break:break-word">${escapeHtml(a.value)}</div>
+    const rowPadBottom = isLast ? "0" : "14px";
+    const cellLeft = `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 10px ${rowPadBottom} 0">
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(a.label)}</div>
+      <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:${PAL.text};line-height:1.35;word-break:break-word">${escapeHtml(a.value)}</div>
     </td>`;
     const cellRight = b
-      ? `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:${cellPad};padding-left:8px">
-          <div style="font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3">${escapeHtml(b.label)}</div>
-          <div style="margin-top:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14.5px;font-weight:700;color:${COLOR.text};line-height:1.35;word-break:break-word">${escapeHtml(b.value)}</div>
+      ? `<td width="50%" valign="top" align="left" style="width:50%;vertical-align:top;text-align:left;padding:0 0 ${rowPadBottom} 10px">
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">${escapeHtml(b.label)}</div>
+          <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:${PAL.text};line-height:1.35;word-break:break-word">${escapeHtml(b.value)}</div>
         </td>`
-      : `<td width="50%" style="width:50%;padding:${cellPad}">&nbsp;</td>`;
+      : `<td width="50%" style="width:50%;padding:0 0 ${rowPadBottom} 10px">&nbsp;</td>`;
     gridRows.push(`<tr>${cellLeft}${cellRight}</tr>`);
   }
   const gridHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${gridRows.join("")}</table>`;
 
-  // Compact cyan progress bar (two-cell split, Gmail Android safe).
+  // -------- Slim 4px progress bar — refined HUD aesthetic, no glow.
   let progressBlock = "";
   if (opts.progress) {
     const total = Math.max(1, opts.progress.total);
     const used = Math.max(0, Math.min(total, opts.progress.used));
     const pct = Math.round((used / total) * 100);
-    const usedW = `${pct}%`;
-    const restW = `${100 - pct}%`;
-    const usedCell = pct > 0 ? `<td bgcolor="${COLOR.primary}" width="${usedW}" style="background:${COLOR.primary};height:5px;line-height:5px;font-size:0">&nbsp;</td>` : "";
-    const restCell = pct < 100 ? `<td bgcolor="${COLOR.bgCardElev}" width="${restW}" style="background:${COLOR.bgCardElev};height:5px;line-height:5px;font-size:0">&nbsp;</td>` : "";
-    const expiryStr = opts.progress.expiry ? `&nbsp;&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;&nbsp;<span style="color:${COLOR.textMuted}">Expires</span>&nbsp;<span style="color:${COLOR.text};font-weight:700">${escapeHtml(opts.progress.expiry)}</span>` : "";
-    progressBlock = `<tr><td style="padding:14px 0 0">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${COLOR.border};padding-top:14px">
+    const usedCell = pct > 0 ? `<td bgcolor="${PAL.accent}" width="${pct}%" style="background:${PAL.accent};height:4px;line-height:4px;font-size:0">&nbsp;</td>` : "";
+    const restCell = pct < 100 ? `<td bgcolor="${PAL.panelElev}" width="${100 - pct}%" style="background:${PAL.panelElev};height:4px;line-height:4px;font-size:0">&nbsp;</td>` : "";
+    const expiryStr = opts.progress.expiry ? `&nbsp;&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;&nbsp;<span style="color:${PAL.textMuted}">Expires</span>&nbsp;<span style="color:${PAL.text};font-weight:600">${escapeHtml(opts.progress.expiry)}</span>` : "";
+    progressBlock = `<tr><td style="padding:16px 0 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${PAL.hairline};padding-top:16px">
         <tr><td>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td align="left" valign="middle" style="text-align:left;vertical-align:middle">
-                <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${COLOR.textMuted};line-height:1.3">Package Progress</div>
+                <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${PAL.textMuted};line-height:1.3">Package Progress</div>
               </td>
               <td align="right" valign="middle" style="text-align:right;vertical-align:middle">
-                <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:800;color:${COLOR.text};line-height:1.3"><span style="color:${COLOR.primary}">${used}</span> / ${total} <span style="color:${COLOR.textMuted};font-weight:600;font-size:11.5px">used</span></div>
+                <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:${PAL.text};line-height:1.3"><span style="color:${PAL.accentText}">${used}</span><span style="color:${PAL.textMuted};font-weight:500"> / ${total}</span></div>
               </td>
             </tr>
           </table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardElev}" style="background:${COLOR.bgCardElev};margin-top:7px;border-radius:4px;overflow:hidden">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panelElev}" style="background:${PAL.panelElev};margin-top:9px;border-radius:2px;overflow:hidden">
             <tr>${usedCell}${restCell}</tr>
           </table>
-          <div style="margin-top:7px;font-size:11.5px;color:${COLOR.textSecondary};line-height:1.5"><span style="color:${COLOR.text};font-weight:700">${opts.progress.remaining}</span>&nbsp;<span style="color:${COLOR.textMuted}">remaining</span>${expiryStr}</div>
+          <div style="margin-top:9px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;color:${PAL.textDim};line-height:1.5"><span style="color:${PAL.text};font-weight:600">${opts.progress.remaining}</span>&nbsp;<span style="color:${PAL.textMuted}">remaining</span>${expiryStr}</div>
         </td></tr>
       </table>
     </td></tr>`;
   }
 
   const contactBlock = opts.contactLine
-    ? `<tr><td style="padding:12px 0 0">
-        <div style="border-top:1px solid ${COLOR.border};padding-top:12px;font-size:12px;color:${COLOR.textSecondary};line-height:1.55;word-break:break-word">${opts.contactLine}</div>
+    ? `<tr><td style="padding:14px 0 0">
+        <div style="border-top:1px solid ${PAL.hairline};padding-top:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;color:${PAL.textDim};line-height:1.6;word-break:break-word">${opts.contactLine}</div>
       </td></tr>`
     : "";
 
@@ -1933,31 +1951,29 @@ function compactBookingShellHtml(opts: {
 <meta name="supported-color-schemes" content="dark">
 <title>${escapeHtml(opts.statusTitle)}</title>
 </head>
-<body style="margin:0;padding:0;background:${COLOR.bgOuter};color:${COLOR.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+<body style="margin:0;padding:0;background:${PAL.outer};color:${PAL.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px">${escapeHtml(opts.previewText)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgOuter}" style="background:${COLOR.bgOuter}">
-  <tr><td align="center" style="padding:14px 12px">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.outer}" style="background:${PAL.outer}">
+  <tr><td align="center" style="padding:18px 10px 14px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%">
 
-      <!-- 1. MICRO HEADER — single compact block, 3 lines -->
-      <tr><td align="left" style="padding:6px 4px 14px;text-align:left">
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:800;letter-spacing:3px;color:${COLOR.text};line-height:1.15;text-transform:uppercase">YOUSSEF AHMED</div>
-        <div style="margin-top:3px;font-size:10px;font-weight:700;letter-spacing:2.6px;color:${COLOR.primary};line-height:1.2;text-transform:uppercase;text-shadow:0 0 10px ${COLOR.primaryDeep}">Elite Coaching</div>
-        <div style="margin-top:2px;font-size:9.5px;font-weight:600;letter-spacing:2.2px;color:${COLOR.textMuted};line-height:1.2;text-transform:uppercase">Dubai</div>
-        <div style="margin-top:10px;height:1px;width:28px;background:${COLOR.primary};box-shadow:0 0 8px ${COLOR.primary};line-height:1px;font-size:0">&nbsp;</div>
+      <!-- 1. ELEGANT BRAND HEADER — single line, controlled tracking -->
+      <tr><td align="left" style="padding:0 2px 18px;text-align:left">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:3.4px;color:${PAL.text};line-height:1.2;text-transform:uppercase">YOUSSEF&nbsp;AHMED</div>
+        <div style="margin-top:5px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:500;letter-spacing:2.4px;color:${PAL.textMuted};line-height:1.3;text-transform:uppercase">Elite&nbsp;Coaching&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;Dubai</div>
       </td></tr>
 
-      <!-- 2. STATUS HERO -->
-      <tr><td align="left" style="padding:0 4px 14px;text-align:left">
-        <div style="font-size:10.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.primary};line-height:1.2;margin-bottom:8px">${escapeHtml(opts.statusEyebrow)}</div>
-        <div style="font-family:'Times New Roman',Georgia,serif;font-size:26px;font-weight:700;letter-spacing:-0.2px;color:${COLOR.text};line-height:1.18">${escapeHtml(opts.statusTitle)}</div>
-        <div style="margin-top:6px;font-size:13px;color:${COLOR.textSecondary};line-height:1.5">${escapeHtml(opts.subtitle)}</div>
+      <!-- 2. STATUS HERO — luxury serif headline + minimal subtitle -->
+      <tr><td align="left" style="padding:0 2px 20px;text-align:left">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase;color:${PAL.accentText};line-height:1.2;margin-bottom:10px">${escapeHtml(opts.statusEyebrow)}</div>
+        <div style="font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif;font-size:30px;font-weight:500;letter-spacing:-0.4px;color:${PAL.text};line-height:1.12">${escapeHtml(opts.statusTitle)}</div>
+        <div style="margin-top:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:400;color:${PAL.textDim};line-height:1.55;letter-spacing:0.1px">${escapeHtml(opts.subtitle)}</div>
       </td></tr>
 
-      <!-- 3. UNIFIED DATA CARD — 2-col compact grid + progress bar + (optional) contact -->
+      <!-- 3. UNIFIED DATA CARD — layered navy panel, thin border, slim radius -->
       <tr><td>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLOR.bgCardSoft}" style="background:${COLOR.bgCardSoft};border:1px solid ${COLOR.borderCyan};border-radius:12px;box-shadow:inset 0 1px 0 rgba(94,231,255,0.06), 0 0 0 1px ${COLOR.primaryDeep}, 0 12px 32px -22px ${COLOR.primaryGlow}">
-          <tr><td style="padding:16px 16px 14px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${PAL.panel}" style="background:${PAL.panel};border:1px solid ${PAL.border};border-radius:8px">
+          <tr><td style="padding:18px 18px 16px;border-top:1px solid ${PAL.hairline};border-radius:8px">
             ${gridHtml}
             ${progressBlock}
             ${contactBlock}
@@ -1965,22 +1981,21 @@ function compactBookingShellHtml(opts: {
         </table>
       </td></tr>
 
-      <!-- 4. CTA — centered solid cyan pill -->
-      <tr><td align="center" style="padding:18px 0 4px;text-align:center">
+      <!-- 4. CTA — Tesla / Apple Wallet style slim pill, deep electric cyan -->
+      <tr><td align="center" style="padding:24px 0 6px;text-align:center">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto">
-          <tr><td bgcolor="${COLOR.primary}" align="center" style="background:${COLOR.primary};border-radius:999px;box-shadow:0 0 24px ${COLOR.primaryGlow}">
-            <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:14px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;color:${COLOR.bgOuter};text-decoration:none;line-height:1">${escapeHtml(opts.ctaLabel)}</a>
+          <tr><td bgcolor="${PAL.cta}" align="center" style="background:${PAL.cta};border-radius:999px">
+            <a href="${escapeHtml(opts.ctaHref)}" style="display:inline-block;padding:13px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${PAL.ctaText};text-decoration:none;line-height:1">${escapeHtml(opts.ctaLabel)}</a>
           </td></tr>
         </table>
       </td></tr>
 
-      <!-- 5. MICRO FOOTER — single line + motto -->
-      <tr><td align="center" style="padding:18px 4px 6px;text-align:center">
-        <div style="font-size:12px;color:${COLOR.text};line-height:1.6">
-          <a href="${wa}" style="color:${COLOR.text};text-decoration:none">WhatsApp</a>&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;<a href="${BRAND.instagramUrl}" style="color:${COLOR.text};text-decoration:none">Instagram</a>&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;<a href="mailto:${BRAND.email}" style="color:${COLOR.text};text-decoration:none">Email</a>&nbsp;<span style="color:${COLOR.border}">·</span>&nbsp;<span style="color:${COLOR.textMuted}">Dubai</span>
+      <!-- 5. ULTRA-MINIMAL FOOTER — single elegant line -->
+      <tr><td align="center" style="padding:22px 4px 4px;text-align:center">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;letter-spacing:0.4px;color:${PAL.textDim};line-height:1.6">
+          <a href="${wa}" style="color:${PAL.textDim};text-decoration:none">WhatsApp</a>&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;<a href="${BRAND.instagramUrl}" style="color:${PAL.textDim};text-decoration:none">Instagram</a>&nbsp;<span style="color:${PAL.textFaint}">·</span>&nbsp;<span style="color:${PAL.textMuted}">Dubai</span>
         </div>
-        <div style="margin-top:8px;font-size:9.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:${COLOR.primary};line-height:1.3;text-shadow:0 0 8px ${COLOR.primaryDeep}">Discipline Today&nbsp;·&nbsp;Success Tomorrow</div>
-        <div style="margin-top:10px;font-size:10.5px;color:${COLOR.textDim};line-height:1.5">Sent by Youssef Ahmed | Elite Coaching · <a href="${escapeHtml(opts.websiteUrl)}" style="color:${COLOR.primary};text-decoration:none">${escapeHtml(BRAND.name)}</a></div>
+        <div style="margin-top:6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:9.5px;font-weight:400;letter-spacing:0.3px;color:${PAL.textFaint};line-height:1.4"><a href="${escapeHtml(opts.websiteUrl)}" style="color:${PAL.textFaint};text-decoration:none">${escapeHtml(BRAND.name)}</a></div>
       </td></tr>
 
     </table>
@@ -2025,15 +2040,16 @@ export function buildClientBookingConfirmationEmail(opts: {
       }
     : null;
 
+  void greeting;
   const html = compactBookingShellHtml({
     previewText: `${subject} — your session is confirmed.`,
-    statusEyebrow: "Booking Confirmed",
-    statusTitle: "Booking Confirmed",
-    subtitle: "Your session is locked in. Arrive 5–10 min early — stay ready.",
+    statusEyebrow: "Confirmed",
+    statusTitle: "Your session is set.",
+    subtitle: "Reserved on your calendar. Arrive five minutes early — focused, fed, ready to train.",
     pairs,
     progress,
     contactLine: null,
-    ctaLabel: "Open My Booking",
+    ctaLabel: "View Session",
     ctaHref: `${website}/dashboard`,
     websiteUrl: website,
   });
@@ -2304,9 +2320,9 @@ export function buildAdminBookingEmail(opts: {
 
   const html = compactBookingShellHtml({
     previewText: subject,
-    statusEyebrow: "New Session Booking",
+    statusEyebrow: "New Booking",
     statusTitle: d.clientName,
-    subtitle: "A new booking has been received.",
+    subtitle: `Reserved for ${d.date} · ${d.time12} (Dubai). Operational details below.`,
     pairs,
     progress,
     contactLine,
