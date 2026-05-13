@@ -2108,11 +2108,14 @@ export function dsInfoGridV2(rows: Array<{ label: string; value: string }>): str
   const C = DS_V2.color;
   const labelStyle = _ds_style(DS_V2.type.mono, C.inkLabel);
   const valueStyle = _ds_style(DS_V2.type.body, C.ink, "font-weight:600;");
-  const ROW_V = 12; // Phase 7: tighter vertical padding (was SP.sm = 16)
+  // Phase 8 — restore clearer business-email row rhythm: 14px vertical
+  // (between Phase 5's loose 16 and Phase 7's tight 12) + warmer dividers
+  // (hairline 5% → hairlineWarm 8%) for stronger structural clarity.
+  const ROW_V = 14;
   const inner = rows.map((r, i) => {
     const hairline = i === 0
       ? ""
-      : `<tr><td colspan="2" style="padding:0"><div style="height:1px;line-height:1px;font-size:0;background:${C.hairline}">&nbsp;</div></td></tr>`;
+      : `<tr><td colspan="2" style="padding:0"><div style="height:1px;line-height:1px;font-size:0;background:${C.hairlineWarm}">&nbsp;</div></td></tr>`;
     return `${hairline}
       <tr>
         <td valign="middle" style="padding:${ROW_V}px 16px ${ROW_V}px 0;${labelStyle}width:38%;vertical-align:middle">${escapeHtml(r.label)}</td>
@@ -2143,12 +2146,14 @@ export function dsMasterPanelV2(innerHtml: string): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
   const r = DS_V2.radius.soft;
+  // Phase 8 — slimmer horizontal padding (SP.lg→SP.md) so the inset info
+  // card breathes wider for clearer business-email information density.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.glowEdge}" style="background:${C.glowEdge};border-radius:${r}px">
     <tr><td style="padding:1px;border-radius:${r}px">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface1} 0%, ${C.surface0} 60%, ${C.canvas} 100%);border-radius:${r}px">
         <tr><td height="2" style="height:2px;line-height:2px;font-size:0;background:${C.glowEdgeBright};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
         <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.glow}">&nbsp;</td></tr>
-        <tr><td style="padding:${SP.lg}px ${SP.lg}px">${innerHtml}</td></tr>
+        <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
         <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.hairline};border-radius:0 0 ${r}px ${r}px">&nbsp;</td></tr>
       </table>
     </td></tr>
@@ -2174,7 +2179,7 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
     <tr><td bgcolor="${C.glowEdgeBright}" align="center" style="background:${C.glowEdgeBright};border-radius:${r}px">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:1px;border-radius:${r}px">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-          <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentBright} 0%, ${C.accent} 55%, ${C.accent} 100%);border-radius:${r}px">
+          <tr><td bgcolor="${C.accent}" align="center" style="background:${C.accent};background-image:linear-gradient(180deg, ${C.accentBright} 0%, ${C.accent} 40%, ${C.accentDeepTop} 100%);border-radius:${r}px">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
               <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
             </tr><tr>
@@ -2199,24 +2204,31 @@ export function dsCtaV2(opts: { label: string; href: string }): string {
 export function dsFooterV2(opts: { variant?: "client" | "admin"; explanation?: string | null } = {}): string {
   const C = DS_V2.color;
   const SP = DS_V2.space;
+  const r = DS_V2.radius.soft;
   const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
   const mail = `mailto:${BRAND.email}`;
-  const linkStyle = _ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.4px;text-decoration:none;");
-  const sep = `<span style="color:${C.accentSoft};margin:0 8px">·</span>`;
+  const linkStyle = _ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.4px;text-decoration:none;font-weight:600;");
+  const sep = `<span style="color:${C.accentSoft};margin:0 10px">·</span>`;
   const explanationHtml = opts.explanation
-    ? `<div style="margin-top:${SP.md}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
+    ? `<div style="margin-top:${SP.sm}px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.1px;line-height:1.65;font-weight:400;max-width:440px;")}">${escapeHtml(opts.explanation)}</div>`
     : "";
-  // Phase 6 — connect footer to ecosystem with a subtle dark band (surface0
-  // → canvas) and a small cyan dot before the brand line. Reads like a
-  // continuation of the panel system, not an unrelated text block.
-  const dot = `<span style="display:inline-block;width:6px;height:6px;background:${C.accent};border-radius:3px;margin-right:10px;vertical-align:middle"></span>`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas};background-image:linear-gradient(180deg, ${C.surface0} 0%, ${C.canvas} 100%);border-radius:${DS_V2.radius.soft}px">
-    <tr><td align="left" style="text-align:left;padding:${SP.md}px ${SP.md}px">
-      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;font-weight:600;")}">${dot}${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span>Dubai</div>
-      <div style="margin-top:${SP.sm}px;padding-left:16px">
-        <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
-      </div>
-      <div style="padding-left:16px">${explanationHtml}</div>
+  // Phase 8 — footer is now a CONTAINED CARD (was a band) — same framing
+  // language as the master panel above it but dimmer: 1px hairlineWarm
+  // border + 1px soft cyan top hairline + dim navy gradient surface.
+  // Matching architecture, lower hierarchy. Cyan dot still anchors brand.
+  const dot = `<span style="display:inline-block;width:6px;height:6px;background:${C.accent};border-radius:3px;margin-right:10px;vertical-align:middle;box-shadow:0 0 6px ${C.accentSoft}"></span>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.hairlineWarm}" style="background:${C.hairlineWarm};border-radius:${r}px">
+    <tr><td style="padding:1px;border-radius:${r}px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface0}" style="background:${C.surface0};background-image:linear-gradient(180deg, ${C.surface0} 0%, ${C.canvas} 100%);border-radius:${r}px">
+        <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.glow};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
+        <tr><td align="left" style="text-align:left;padding:${SP.md}px ${SP.md}px">
+          <div style="${_ds_style(DS_V2.type.caption, C.ink, "letter-spacing:0.6px;font-weight:700;")}">${dot}${escapeHtml(BRAND.name)}<span style="color:${C.accentSoft};margin:0 10px">·</span><span style="color:${C.inkSoft};font-weight:500">Dubai</span></div>
+          <div style="margin-top:${SP.sm}px;padding-left:16px">
+            <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
+          </div>
+          <div style="padding-left:16px">${explanationHtml}</div>
+        </td></tr>
+      </table>
     </td></tr>
   </table>`;
 }
