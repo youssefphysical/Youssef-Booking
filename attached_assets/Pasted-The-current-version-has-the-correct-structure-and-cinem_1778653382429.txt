@@ -1,0 +1,255 @@
+The current version has the correct structure and cinematic direction, but the typography is still too small and visually weak on real mobile devices.
+
+I need a FINAL premium TRON Legacy visual polish focused on:
+
+- readability
+- stronger hierarchy
+- luxury card aesthetics
+- richer TRON cinematic atmosphere
+- premium color composition
+- better visual balance on Gmail Android/iPhone
+
+Main issue:
+The email currently feels too thin and under-emphasized.
+The typography lacks confidence and the cards feel visually flat.
+
+This pass is NOT a restructure.
+Keep the same long premium composition and section order.
+
+Focus ONLY on:
+
+- typography scale
+- card styling
+- TRON color balance
+- spacing rhythm
+- visual depth
+- readability
+- premium luxury feel
+
+========================
+TYPOGRAPHY IMPROVEMENTS
+
+Increase readability significantly on mobile.
+
+Current problem:
+
+- labels too tiny
+- body text weak
+- hero paragraph too dim
+- footer too small
+- overall composition feels distant
+
+New typography rules:
+
+Hero title:
+
+- 38px serif desktop
+- 34px mobile
+- stronger weight
+- tighter line-height
+- brighter near-white
+- cinematic dominance
+
+Hero subtitle:
+
+- 15px
+- higher contrast
+- max-width ~420
+- premium editorial spacing
+
+Section eyebrow labels:
+
+- 10–11px
+- 3px tracking
+- brighter cyan
+- more visible
+
+Detail labels:
+
+- minimum 11px
+- medium weight
+- better contrast
+- muted cyan-gray
+
+Detail values:
+
+- 19–22px for primary values
+- 16–17px secondary
+- stronger weight
+- brighter color
+- more breathing room
+
+Footer:
+
+- increase readability
+- improve hierarchy
+- slightly larger spacing
+
+========================
+TRON LEGACY COLOR SYSTEM
+
+Current colors are too flat.
+
+I need a true premium TRON cinematic palette.
+
+Use:
+
+- deep navy-black backgrounds
+- layered blue-black surfaces
+- muted electric cyan accents
+- near-white typography
+- subtle cool gradients
+- restrained glow only
+
+Color direction:
+Surface:
+#040816
+#071120
+#0A1426
+#0D1830
+
+Accent cyan:
+#4FD8FF
+#3FCBFF
+#5BE7FF
+
+Text:
+#F3F8FF
+#D6E3F5
+#8EA3BF
+
+Borders:
+rgba(91,231,255,0.18)
+rgba(91,231,255,0.10)
+
+NO:
+
+- warm tones
+- purple glow
+- cheap neon
+- oversaturated cyan
+- gaming RGB look
+
+========================
+CARD LOOK REDESIGN
+
+The cards need stronger luxury styling.
+
+Current issue:
+Cards feel like flat blocks.
+
+Need:
+
+- layered Tesla/TRON surfaces
+- subtle inner shadows
+- premium top-edge cyan highlight
+- soft depth
+- thinner elegant borders
+- refined radius
+- stronger separation between cards and background
+
+Card style:
+
+- layered dark navy gradient
+- subtle cyan edge reflection
+- soft interior glow
+- premium depth
+- cinematic darkness
+
+Date/Time/Duration card:
+Make this feel like the centerpiece.
+
+Needs:
+
+- larger values
+- more dramatic spacing
+- premium symmetry
+- refined vertical dividers
+- subtle glow emphasis
+
+========================
+CTA REDESIGN
+
+Current CTA still lacks luxury impact.
+
+Need:
+
+- premium TRON capsule button
+- darker cyan fill
+- glossy top reflection
+- subtle edge lighting
+- deeper shadow
+- stronger typography
+- slightly taller
+- cinematic premium feel
+
+Button text:
+
+- darker navy
+- strong contrast
+- wider tracking
+- luxury automotive feeling
+
+Think:
+TRON Legacy × Tesla × luxury hospitality.
+
+========================
+FOOTER REFINEMENT
+
+Footer still feels visually detached.
+
+Need:
+
+- integrated signature composition
+- elegant centered hierarchy
+- refined spacing rhythm
+- more premium editorial feeling
+
+Make:
+“Youssef Ahmed”
+the visual anchor.
+
+Reduce:
+
+- clutter
+- tiny disconnected text rows
+
+Increase:
+
+- breathing rhythm
+- premium signature energy
+
+========================
+MOBILE EXPERIENCE
+
+This email must feel incredible on:
+
+- Gmail Android
+- Gmail iPhone
+
+Priority:
+mobile-first luxury readability.
+
+Avoid:
+
+- tiny typography
+- compressed sections
+- flat spacing
+- weak contrast
+
+========================
+IMPORTANT
+
+DO NOT:
+
+- change structure
+- redesign sections
+- touch booking logic
+- touch auth/db/routes/API
+- touch Vercel config
+- touch schema
+- touch session system
+
+EMAIL TEMPLATES ONLY.
+
+This is a FINAL CINEMATIC TRON LEGACY VISUAL POLISH PASS.
