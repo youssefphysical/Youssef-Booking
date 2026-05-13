@@ -1,0 +1,189 @@
+PHASE 2 — BUILD THE EMAIL VISUAL SYSTEM (NO FULL LAYOUT YET)
+
+You now completed the audit/reset phase.
+
+We are now building the NEW VISUAL SYSTEM for the booking emails from scratch.
+
+IMPORTANT:
+This phase is STILL NOT a full email redesign.
+
+DO NOT build the final email composition yet.
+DO NOT redesign the full structure yet.
+DO NOT focus on content blocks yet.
+
+This phase is ONLY about defining and implementing the NEW DESIGN SYSTEM FOUNDATION.
+
+--------------------------------------------------
+MISSION
+--------------------------------------------------
+
+Create a premium cinematic luxury visual system for the booking emails.
+
+The feeling should be:
+
+- luxury futuristic
+- cinematic
+- premium
+- emotionally elegant
+- calm but powerful
+- highly readable
+- modern elite coaching brand
+- mobile-first
+- Gmail-safe
+- refined and expensive
+
+Inspired by:
+- TRON Legacy mood only
+- Apple Wallet
+- Tesla UI
+- Rivian
+- Linear
+- Arc Browser
+- premium fintech interfaces
+
+IMPORTANT:
+TRON is ONLY a subtle mood/accent.
+NOT the full visual language.
+
+--------------------------------------------------
+CRITICAL DESIGN RULES
+--------------------------------------------------
+
+ABSOLUTELY AVOID:
+- gaming visuals
+- excessive glow
+- neon overload
+- cyan everywhere
+- dashboard feeling
+- spreadsheet layouts
+- developer aesthetics
+- flat cards
+- harsh borders
+- tiny labels
+- excessive uppercase
+- overly technical composition
+- over-detailed cards
+- visual clutter
+- equal visual weight everywhere
+
+The design must feel:
+- premium
+- calm
+- cinematic
+- intentional
+- luxurious
+- editorial
+- modern
+- expensive
+
+--------------------------------------------------
+YOUR TASK IN THIS PHASE
+--------------------------------------------------
+
+Build and implement ONLY the DESIGN SYSTEM:
+
+1. Typography System
+Define:
+- hero typography
+- headline typography
+- body typography
+- label typography
+- footer typography
+- tracking
+- line-height
+- contrast hierarchy
+- serif vs sans balance
+
+Typography should prioritize:
+- readability
+- elegance
+- emotional hierarchy
+- mobile rendering quality
+
+2. Color System
+Create a refined luxury palette:
+- deep cinematic navy/blacks
+- refined TRON cyan accents only
+- soft premium whites
+- muted secondary tones
+
+NO harsh neon cyan.
+
+3. Surface/Card System
+Build:
+- layered premium cards
+- subtle cinematic depth
+- soft gradients
+- refined edge lighting
+- elegant surface separation
+
+NO flat boxes.
+NO aggressive borders.
+
+4. CTA System
+Design a premium cinematic CTA behavior:
+- luxury button styling
+- premium depth
+- readable contrast
+- elegant proportions
+- visually dominant but calm
+
+The CTA should feel:
+- premium automotive UI
+- futuristic luxury product
+NOT SaaS dashboard button.
+
+5. Spacing System
+Create:
+- consistent breathing rhythm
+- editorial spacing logic
+- mobile-first spacing
+- elegant vertical pacing
+
+6. Divider / Hairline System
+Create subtle premium separators.
+NO spreadsheet divider feeling.
+
+7. Footer Identity System
+Design a luxury footer identity approach:
+- elegant signature feeling
+- premium brand closure
+- cinematic finish
+- calm hierarchy
+
+--------------------------------------------------
+IMPORTANT EXECUTION RULES
+--------------------------------------------------
+
+ALLOWED:
+- Modify email design system code
+- Create new style foundations
+- Rebuild visual tokens
+- Rebuild typography system
+- Rebuild card system
+- Rebuild CTA styling
+- Rebuild spacing logic
+
+NOT ALLOWED:
+- Full email composition redesign yet
+- Final layout rebuild yet
+- Adding excessive content sections
+- Deploying experimental visual chaos
+
+--------------------------------------------------
+DELIVERABLE
+--------------------------------------------------
+
+Return:
+1. What visual systems were rebuilt
+2. Typography system details
+3. Palette system
+4. Card/surface system
+5. CTA system
+6. Spacing philosophy
+7. Footer identity philosophy
+8. Before vs after design logic
+9. Render verification
+10. Mobile/Gmail safety verification
+
+Then STOP and wait for PHASE 3.

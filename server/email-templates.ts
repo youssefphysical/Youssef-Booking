@@ -1841,6 +1841,220 @@ export function formatPaymentStatus(s: string | null | undefined): string | null
 }
 
 // ---------------------------------------------------------------------------
+// =============================================================================
+// BOOKING EMAIL DESIGN SYSTEM v2 — "Editorial Cinema"  (Phase 2 — May 2026)
+// -----------------------------------------------------------------------------
+// New foundation built fresh per the Phase 1 audit. Tokens + reusable
+// primitives only. NOT yet wired into the live composition — the legacy
+// `compactBookingShellHtml` below continues to power production. Phase 3
+// will swap composers over to these primitives, then the legacy shell will
+// be removed.
+//
+// Philosophy:  one headline, one focal moment, one affordance, one signature.
+// Cyan is a spotlight (max 3 surfaces / email): brand mark accent, hero
+// eyebrow OR underline (not both), CTA. Every other separator is neutral
+// white at 5% opacity. Composition over containers — type + space + a
+// single ambient light field carry the design, not stacked cards.
+// =============================================================================
+
+export const DS_V2 = {
+  color: {
+    canvas:        "#04070D",                    // deeper cinematic black
+    ink:           "#F4F8FB",                    // primary white
+    inkSoft:       "#C9D6E1",                    // body
+    inkMuted:      "#8395A4",                    // captions / quiet labels
+    inkFaint:      "#5A6A78",                    // separators on type, dim dots
+    hairline:      "rgba(255,255,255,0.05)",     // neutral hairline (replaces cyan)
+    hairlineWarm:  "rgba(255,255,255,0.08)",     // stronger neutral break
+    surface1:      "#08111C",                    // rare premium card base
+    surface2:      "#0B1828",                    // rare card top of gradient
+    glow:          "rgba(94,231,255,0.06)",      // ambient cyan wash (hero)
+    glowEdge:      "rgba(94,231,255,0.18)",      // optional cyan underline
+    accent:        "#5EE7FF",                    // pure TRON cyan — sparingly
+    accentSoft:    "#7AEEFF",                    // headline accent tint
+    accentDeep:    "#2A8DAA",                    // CTA tone (calm teal)
+    accentDeepTop: "#3FB6D4",                    // CTA inner top light
+    ctaInk:        "#001019",                    // CTA label colour
+    ctaInnerLight: "rgba(255,255,255,0.10)",     // 1px subtle inner highlight
+  },
+  font: {
+    serif: "'Cormorant Garamond', Georgia, 'Times New Roman', serif",
+    sans:  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  },
+  // Three sizes only — kills the 16/18/22/24/28 middle-tier monotony.
+  type: {
+    hero:     { size: 40, weight: 500, lh: 1.05, ls: "-1px",   family: "serif" as const },
+    headline: { size: 28, weight: 500, lh: 1.10, ls: "-0.5px", family: "serif" as const },
+    body:     { size: 15, weight: 400, lh: 1.65, ls: "0",      family: "sans"  as const },
+    caption:  { size: 12, weight: 500, lh: 1.50, ls: "0.4px",  family: "sans"  as const, upper: false as const },
+    mono:     { size: 11, weight: 600, lh: 1.30, ls: "2.5px",  family: "sans"  as const, upper: true  as const },
+  },
+  // 8px grid, named editorially. Use SP.* everywhere — never raw pixels.
+  space:  { xs: 8, sm: 16, md: 24, lg: 32, xl: 48, xxl: 64, xxxl: 80 } as const,
+  radius: { none: 0, soft: 12, pill: 999 } as const,
+  // Composition canvas
+  layout: { maxWidth: 580, gutter: 16, contentMaxWidth: 480 } as const,
+} as const;
+
+type DSTypeToken = {
+  size: number; weight: number; lh: number; ls: string;
+  family: "serif" | "sans"; upper?: boolean;
+};
+
+function _ds_style(t: DSTypeToken, color: string, extra = ""): string {
+  const fam = t.family === "serif" ? DS_V2.font.serif : DS_V2.font.sans;
+  const upper = t.upper ? "text-transform:uppercase;" : "";
+  return `font-family:${fam};font-size:${t.size}px;font-weight:${t.weight};line-height:${t.lh};letter-spacing:${t.ls};color:${color};${upper}${extra}`;
+}
+
+/**
+ * Vertical spacer row. Use SP token values — never raw px.
+ * Returns a `<tr>`; only valid inside a `<table>`.
+ */
+export function dsSpacerV2(h: number): string {
+  return `<tr><td height="${h}" style="height:${h}px;line-height:${h}px;font-size:0">&nbsp;</td></tr>`;
+}
+
+/**
+ * Neutral hairline divider. Replaces cyan dividers everywhere.
+ * Returns a `<tr>`; only valid inside a `<table>`.
+ */
+export function dsHairlineV2(opts: { tone?: "soft" | "warm" } = {}): string {
+  const c = opts.tone === "warm" ? DS_V2.color.hairlineWarm : DS_V2.color.hairline;
+  return `<tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${c}">&nbsp;</td></tr>`;
+}
+
+/**
+ * Single ambient cyan wash band (gradient cell). Sits behind the hero only —
+ * NOT a card. Apple Mail / iOS Gmail render the gradient; Android falls back
+ * to flat dark canvas (acceptable progressive enhancement).
+ * Returns a standalone `<table>`.
+ */
+export function dsAmbientGlowV2(): string {
+  const C = DS_V2.color;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.canvas}" style="background:${C.canvas}">
+    <tr><td height="120" style="height:120px;line-height:0;font-size:0;background:${C.canvas};background-image:linear-gradient(180deg, ${C.glow} 0%, rgba(94,231,255,0) 100%)">&nbsp;</td></tr>
+  </table>`;
+}
+
+/**
+ * Slim brand mark — single editorial lockup, no chrome.
+ */
+export function dsBrandMarkV2(opts: { align?: "left" | "center" } = {}): string {
+  const C = DS_V2.color;
+  const align = opts.align ?? "left";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="${align}" style="text-align:${align};padding:0">
+      <div style="${_ds_style(DS_V2.type.headline, C.ink)}">${escapeHtml(BRAND.name)}</div>
+      <div style="margin-top:6px;${_ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.6px;")}">Personal Training&nbsp;·&nbsp;Dubai</div>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Editorial hero. Eyebrow (cyan) + serif title + dim sub. No card chrome.
+ * `variant="admin"` uses the smaller headline serif; client uses full hero.
+ */
+export function dsHeroV2(opts: {
+  eyebrow?: string | null;
+  title: string;
+  sub?: string | null;
+  variant?: "client" | "admin";
+}): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const titleType = opts.variant === "admin" ? DS_V2.type.headline : DS_V2.type.hero;
+  const eyebrowHtml = opts.eyebrow
+    ? `<div style="${_ds_style(DS_V2.type.mono, C.accentSoft)}">${escapeHtml(opts.eyebrow)}</div>
+       <div style="height:${SP.md}px;line-height:${SP.md}px;font-size:0">&nbsp;</div>`
+    : "";
+  const subHtml = opts.sub
+    ? `<div style="margin-top:${SP.md}px;${_ds_style(DS_V2.type.body, C.inkSoft, `max-width:${DS_V2.layout.contentMaxWidth - 100}px;`)}">${escapeHtml(opts.sub)}</div>`
+    : "";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="left" style="text-align:left;padding:0">
+      ${eyebrowHtml}
+      <div style="${_ds_style(titleType, C.ink)}">${escapeHtml(opts.title)}</div>
+      ${subHtml}
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Prose summary — replaces the 2-col label/value detail grid.
+ * Renders a single dim sentence in body type. Caller composes the prose.
+ * Accepts pre-escaped HTML (so callers can inline `<strong>` for emphasis);
+ * caller is responsible for escaping any user data they interpolate.
+ */
+export function dsProseSummaryV2(html: string): string {
+  const C = DS_V2.color;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="left" style="text-align:left;padding:0;${_ds_style(DS_V2.type.body, C.inkSoft, `max-width:${DS_V2.layout.contentMaxWidth}px;`)}">${html}</td></tr>
+  </table>`;
+}
+
+/**
+ * Rare premium card. Use ONLY when content genuinely groups (e.g. package
+ * progress strip). Single neutral hairline top + soft radius + subtle
+ * vertical surface gradient. NO cyan border, NO multiple hairlines.
+ */
+export function dsSurfaceV2(innerHtml: string): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const r = DS_V2.radius.soft;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.surface1}" style="background:${C.surface1};background-image:linear-gradient(180deg, ${C.surface2} 0%, ${C.surface1} 100%);border-radius:${r}px">
+    <tr><td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.hairline};border-radius:${r}px ${r}px 0 0">&nbsp;</td></tr>
+    <tr><td style="padding:${SP.lg}px ${SP.md}px">${innerHtml}</td></tr>
+  </table>`;
+}
+
+/**
+ * Premium CTA — single-tone deep cyan-teal pill with a subtle inner top
+ * highlight only. NO outer ring, NO bottom shadow row, NO 3-stop gloss.
+ * Calm, automotive, luxurious. Uppercase tracked label preserved.
+ */
+export function dsCtaV2(opts: { label: string; href: string }): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const r = DS_V2.radius.pill;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;border-collapse:separate">
+    <tr><td bgcolor="${C.accentDeep}" align="center" style="background:${C.accentDeep};background-image:linear-gradient(180deg, ${C.accentDeepTop} 0%, ${C.accentDeep} 100%);border-radius:${r}px">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+        <td height="1" style="height:1px;line-height:1px;font-size:0;background:${C.ctaInnerLight};border-radius:${r}px ${r}px 0 0">&nbsp;</td>
+      </tr><tr>
+        <td align="center" style="padding:0">
+          <a href="${escapeHtml(opts.href)}" style="display:inline-block;padding:${SP.sm}px ${SP.xl}px;font-family:${DS_V2.font.sans};font-size:12px;font-weight:700;letter-spacing:2.4px;text-transform:uppercase;color:${C.ctaInk};text-decoration:none;line-height:1;mso-line-height-rule:exactly">${escapeHtml(opts.label)}</a>
+        </td>
+      </tr></table>
+    </td></tr>
+  </table>`;
+}
+
+/**
+ * Two-line luxury signature footer. Drops the multi-deck stack
+ * (name + tag + motto + 4-link + tagline) for: brand line + contact line.
+ * Calm. Confident. Done.
+ */
+export function dsFooterV2(_opts: { variant?: "client" | "admin" } = {}): string {
+  const C = DS_V2.color;
+  const SP = DS_V2.space;
+  const wa = `https://wa.me/${BRAND.whatsapp.replace(/[^0-9]/g, "")}`;
+  const mail = `mailto:${BRAND.email}`;
+  const linkStyle = _ds_style(DS_V2.type.caption, C.inkMuted, "letter-spacing:0.4px;text-decoration:none;");
+  const sep = `<span style="color:${C.inkFaint};margin:0 8px">·</span>`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="left" style="text-align:left;padding:0">
+      <div style="${_ds_style(DS_V2.type.caption, C.inkSoft, "letter-spacing:0.6px;")}">${escapeHtml(BRAND.name)}<span style="color:${C.inkFaint};margin:0 10px">·</span>Dubai</div>
+      <div style="margin-top:${SP.xs}px">
+        <a href="${wa}" style="${linkStyle}">WhatsApp</a>${sep}<a href="${BRAND.instagramUrl}" style="${linkStyle}">Instagram</a>${sep}<a href="${mail}" style="${linkStyle}">Email</a>
+      </div>
+    </td></tr>
+  </table>`;
+}
+
+// =============================================================================
+// LEGACY BOOKING SHELL  (Phase 1 polish — still in production)
+// -----------------------------------------------------------------------------
 // LONG PREMIUM BOOKING SHELL — restored cinematic composition (Nov 2026):
 // brand header card → hero → primary highlight card (Date/Time/Duration) →
 // full details card with progress → arrival note → Tesla pill CTA →
@@ -1850,7 +2064,7 @@ export function formatPaymentStatus(s: string | null | undefined): string | null
 // Function name preserved (`compactBookingShellHtml`) so call sites elsewhere
 // in this module keep compiling — only the two booking composers below pass
 // the new structured options.
-// ---------------------------------------------------------------------------
+// =============================================================================
 function compactBookingShellHtml(opts: {
   previewText: string;
   statusEyebrow: string;        // "Booking Confirmed" / "New Session Booking"
