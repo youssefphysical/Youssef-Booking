@@ -1,0 +1,146 @@
+Excellent recovery analysis.
+
+You correctly identified the REAL failure:
+the cron entry surface itself does not exist.
+
+That is the correct priority inversion fix.
+
+==================================================
+IMPORTANT DIRECTION CORRECTION
+==================================================
+
+Do NOT over-expand the infrastructure yet.
+
+Right now the system needs:
+
+- stability
+- correctness
+- deterministic execution
+- operational clarity
+
+NOT enterprise sprawl.
+
+==================================================
+CURRENT PRIORITY
+==================================================
+
+We are still in:
+FOUNDATION STABILIZATION PHASE
+
+not
+FULL PLATFORM OPERATIONS PHASE.
+
+==================================================
+LOCK THE SCOPE
+==================================================
+
+For NOW implement ONLY:
+
+1. Valid cron entrypoint
+2. Env validation
+3. Structured logs
+4. Runtime phase separation
+5. Idempotency protection
+6. Overlap prevention
+7. Failure classification
+8. Safe admin summary
+9. Local reproducibility
+10. Stable GitHub Actions execution
+
+That’s enough.
+
+==================================================
+DO NOT ADD YET
+==================================================
+
+- dead-letter queues
+- retry orchestration frameworks
+- observability dashboards
+- analytics tables
+- distributed tracing
+- advanced metrics systems
+- queue abstractions
+- worker fleets
+- event buses
+- Kafka-style thinking
+- over-normalized operational schemas
+
+No premature platform engineering.
+
+==================================================
+REMEMBER THE PRODUCT SCALE
+==================================================
+
+This is a luxury PT SaaS product.
+
+The operational model should feel:
+lean, elegant, understandable, controllable.
+
+Stripe/Linear simplicity.
+Not AWS internal tooling.
+
+==================================================
+KEY ENGINEERING RULE
+==================================================
+
+Every added layer must justify:
+
+- operational necessity
+- measurable value
+- maintenance cost
+- debugging complexity
+- render/runtime impact
+
+If a feature does not materially improve reliability today,
+defer it.
+
+==================================================
+PREFERRED STRATEGY
+==================================================
+
+Phase 1:
+Make cron reliable.
+
+Phase 2:
+Make failures diagnosable.
+
+Phase 3:
+Make operations visible.
+
+Phase 4:
+ONLY THEN consider automation sophistication.
+
+==================================================
+VERY IMPORTANT
+==================================================
+
+I prefer:
+- fewer moving parts
+- fewer tables
+- fewer abstractions
+- fewer background systems
+
+with stronger guarantees.
+
+==================================================
+TARGET FEEL
+==================================================
+
+The infrastructure should feel:
+
+quiet
+predictable
+minimal
+high-signal
+production-safe
+easy to reason about
+
+not “impressively complex”.
+
+==================================================
+FINAL RULE
+==================================================
+
+If two architectures achieve the same reliability:
+
+choose the simpler one.

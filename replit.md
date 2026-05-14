@@ -81,7 +81,7 @@ Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed —
 
 In production, point any external scheduler at the URL with `Authorization: Bearer ${CRON_SECRET}`. Recommended:
 
-- **GitHub Actions** (`.github/workflows/reminders.yml`, `cron: '*/15 * * * *'`).
+- **GitHub Actions** (`.github/workflows/auto-complete.yml`, `cron: '*/15 * * * *'`). The workflow has zero code — it's a hardened curl wrapper that POSTs to `/api/cron/reminders` with `Authorization: Bearer ${CRON_SECRET}`. Repo secrets required: `PUBLIC_APP_URL`, `CRON_SECRET`. Local repro: `npx tsx scripts/cron-test.ts`.
 - **cron-job.org** / **EasyCron** (free, web UI).
 - **Vercel Pro** — re-enable the `crons` array in `vercel.json`.
 

@@ -1,14 +1,16 @@
-name: Booking auto-complete + reminders cron
+name: Cron · auto-complete + reminders
 
 # Hits /api/cron/reminders every 15 minutes. That endpoint runs:
+#   - validate-env + db-connect health gates
+#   - auto-complete pass for expired sessions (atomic claim, idempotent)
 #   - 24h + 1h booking reminder emails (idempotent via stamp columns)
 #   - package expiry warning notifications
 #   - missed weekly check-in notifications
-#   - auto-complete pass for expired sessions (atomic claim, idempotent)
 #
 # Vercel Hobby plans cap crons at once-per-day, which is why this lives
 # in GitHub Actions instead of vercel.json. The endpoint is idempotent —
-# safe to invoke at any frequency.
+# safe to invoke at any frequency, and protected against overlapping
+# ticks by an in-process lock (server/cron/runner.ts).
 #
 # Required repo secrets:
 #   - PUBLIC_APP_URL: e.g. https://youssef-booking.vercel.app
@@ -19,10 +21,24 @@ on:
     - cron: "*/15 * * * *"
   workflow_dispatch: {}
 
+# Minimum permissions — this job only fires an outbound HTTP request.
+permissions:
+  contents: read
+
+# Don't pile up overlapping runs if one tick is slow. cancel-in-progress=false
+# means a stuck run blocks the next tick instead of being killed mid-flight,
+# which matches the server-side overlap lock semantics.
+concurrency:
+  group: cron-reminders
+  cancel-in-progress: false
+
 jobs:
   trigger-cron:
+    # Job timeout must exceed worst-case curl behaviour:
+    #   --max-time 90 × (1 initial + 3 retries) + (2 × --retry-delay 5) = 370s
+    # Round up to 7 min to leave headroom for setup + log streaming.
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 7
     steps:
       - name: Hit /api/cron/reminders
         env:
@@ -30,16 +46,65 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
-          if [ -z "${APP_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "::error::Missing PUBLIC_APP_URL or CRON_SECRET repo secret"
+
+          # ---- env preflight (operator-clear errors) ----
+          if [ -z "${APP_URL:-}" ]; then
+            echo "::error title=Missing repo secret::PUBLIC_APP_URL is not set. Add it at Settings → Secrets and variables → Actions."
             exit 1
           fi
-          response=$(curl -sS -w "\nHTTP_CODE:%{http_code}" \
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error title=Missing repo secret::CRON_SECRET is not set. Add it at Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+          URL="${APP_URL%/}/api/cron/reminders"
+          BODY_FILE="$(mktemp)"
+
+          # curl flags:
+          #   --max-time / --connect-timeout — bound the request
+          #   --retry 3 with --retry-delay 5 + --retry-connrefused — survive
+          #     Vercel cold starts and brief network blips
+          #   -w writes only the HTTP code to stdout; body goes to BODY_FILE.
+          set +e
+          HTTP_CODE=$(curl \
+            --silent --show-error \
+            --max-time 90 --connect-timeout 15 \
+            --retry 3 --retry-delay 5 --retry-connrefused \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${APP_URL%/}/api/cron/reminders")
-          echo "$response"
-          code=$(echo "$response" | tail -n1 | sed 's/HTTP_CODE://')
-          if [ "$code" != "200" ]; then
-            echo "::error::Cron returned HTTP $code"
+            -X POST \
+            -o "$BODY_FILE" -w "%{http_code}" \
+            "$URL")
+          CURL_EXIT=$?
+          set -e
+
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error title=Cron transport error::curl exited with $CURL_EXIT (network / TLS / DNS). URL=${URL}"
+            cat "$BODY_FILE" || true
+            exit 1
+          fi
+
+          # Pretty-print JSON body if jq is available (it is on ubuntu-latest).
+          echo "::group::Cron response (HTTP $HTTP_CODE)"
+          if command -v jq >/dev/null && jq -e . "$BODY_FILE" >/dev/null 2>&1; then
+            jq . "$BODY_FILE"
+            TICK_ID=$(jq -r '.tickId // empty' "$BODY_FILE")
+            FAILURE_CODE=$(jq -r '.failureCode // empty' "$BODY_FILE")
+          else
+            cat "$BODY_FILE"
+            TICK_ID=""
+            FAILURE_CODE=""
+          fi
+          echo "::endgroup::"
+
+          if [ -n "$TICK_ID" ]; then
+            echo "tickId=${TICK_ID}  (cross-correlate with server logs: \`[cron] === tick start id=${TICK_ID} ===\`)"
+          fi
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            if [ -n "$FAILURE_CODE" ]; then
+              echo "::error title=Cron failed::HTTP ${HTTP_CODE} · failureCode=${FAILURE_CODE}"
+            else
+              echo "::error title=Cron failed::HTTP ${HTTP_CODE}"
+            fi
             exit 1
           fi

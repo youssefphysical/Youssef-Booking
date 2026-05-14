@@ -118,6 +118,7 @@ import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
+import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
 import { computeClientIntelligence } from "./services/clientIntelligence";
 import { optimizeImageFile } from "./image-utils";
 
@@ -4856,156 +4857,173 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.sendStatus(204);
   });
 
-  // ============== EMAIL CRON (24h + 1h booking reminders) ==============
-  // Vercel cron hits this every 15 minutes (see vercel.json crons). Scans
-  // upcoming bookings whose start time is ~24h or ~1h away and sends one
-  // reminder email each, deduped via reminder_24h_sent_at / reminder_1h_sent_at.
-  //
-  // Auth: in production we require Authorization: Bearer <CRON_SECRET>; in dev
-  // we accept unauthenticated calls so it's easy to trigger manually.
+  // ============== CRON ENTRYPOINT ==============
+  // Triggered every 15 min by .github/workflows/auto-complete.yml. The
+  // orchestration (env validate → db connect → auto-complete → reminders →
+  // expiry → checkin) lives in server/cron/runner.ts so production and the
+  // local repro script (scripts/cron-test.ts) share one code path.
+  // Auth: in production we require Authorization: Bearer <CRON_SECRET>;
+  // in dev we accept unauthenticated calls so it's easy to trigger manually.
+  // The HTTP body is the structured CronTickSummary (tickId + per-phase
+  // results + failureCode), which the GitHub Actions step pretty-prints.
+
+  // Reminder dispatch — extracted from the inline cron handler so the
+  // runner can wrap it as a single phase. Behaviour identical to the
+  // pre-refactor loop: 24h/1h windows, atomic per-recipient claim via the
+  // *_sent_at columns, partner fan-out, in-app mirror via notifyUserOnce,
+  // best-effort email via sendEmail. Adds a hard maxEmailsPerTick cap
+  // (cronGuards.maxEmailsPerTick) so one tick can never blast the whole
+  // user base if a misconfiguration causes the dedupe stamps to be wiped.
+  async function runReminderDispatch(): Promise<{
+    sent: number;
+    failed: number;
+    attempts: number;
+    capped: boolean;
+    cap: number;
+  }> {
+    const sent: Array<{ id: number; kind: "24h" | "1h" }> = [];
+    const failed: Array<{ id: number; kind: "24h" | "1h"; error: string }> = [];
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const tomorrowIso = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    // Storage call is OUTSIDE the per-recipient try/catch — if the bookings
+    // query itself fails (DB down, schema mismatch), let it throw so the
+    // runner classifies the phase as DB_FAILURE / QUERY_FAILURE rather
+    // than reporting a silent zero-sent success.
+    const all = await storage.getBookings({});
+    const now = Date.now();
+    const cap = cronGuards.maxEmailsPerTick;
+    let attempts = 0;
+    let capped = false;
+
+    for (const b of all) {
+      if (capped) break;
+      if (b.date !== todayIso && b.date !== tomorrowIso) continue;
+      if (!["upcoming", "confirmed"].includes(b.status)) continue;
+      const sessionAt = buildSessionDate(b.date, b.timeSlot).getTime();
+      const minsUntil = Math.round((sessionAt - now) / 60_000);
+      const want24 = minsUntil >= 22 * 60 && minsUntil <= 26 * 60;
+      const want1 = minsUntil >= 30 && minsUntil <= 90;
+      const bAny = b as any;
+
+      const dispatch = async (kind: "24h" | "1h", recipient: "owner" | "partner") => {
+        if (attempts >= cap) {
+          capped = true;
+          return;
+        }
+        attempts++;
+        try {
+          const userId = recipient === "owner" ? b.userId : (b as any).linkedPartnerUserId;
+          if (!userId) return;
+          const col =
+            recipient === "owner"
+              ? kind === "24h"
+                ? "reminder_24h_sent_at"
+                : "reminder_1h_sent_at"
+              : kind === "24h"
+                ? "linked_partner_reminder_24h_sent_at"
+                : "linked_partner_reminder_1h_sent_at";
+          const claim = await pool.query(
+            `UPDATE bookings SET ${col} = now() WHERE id = $1 AND ${col} IS NULL RETURNING id`,
+            [b.id],
+          );
+          if (claim.rowCount === 0) return; // already claimed by another worker
+
+          const recipientUser = await storage.getUser(userId).catch(() => undefined);
+          if (!recipientUser) return;
+          const recipientLang = (recipientUser as any).preferredLanguage || "en";
+          const built = buildSessionReminderEmail({
+            kind,
+            lang: recipientLang,
+            data: {
+              clientName: recipientUser.fullName || recipientUser.username || "Client",
+              date: b.date,
+              time12: formatTime12Server(b.timeSlot),
+              sessionFocusLabel: b.sessionFocus || null,
+              trainingGoalLabel: b.trainingGoal || null,
+            },
+          });
+          void notifyUserOnce(
+            userId,
+            "session_reminder",
+            `reminder-${b.id}-${kind}-${recipient}`,
+            kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
+            `${b.date} at ${formatTime12Server(b.timeSlot)}`,
+            { link: "/dashboard", meta: { bookingId: b.id, kind, recipient } },
+          );
+          if (!recipientUser.email) return;
+          const result = await sendEmail({
+            to: recipientUser.email,
+            subject: built.subject,
+            text: built.text,
+            html: built.html,
+            replyTo: trainerEmail(),
+          });
+          if (result.sent) sent.push({ id: b.id, kind });
+          else failed.push({ id: b.id, kind, error: result.error || "send returned false" });
+        } catch (e: any) {
+          // Per-recipient swallow is fine for individual provider errors,
+          // but a systemic DB / query failure means EVERY iteration will
+          // fail the same way and silently inflate `failed` while the phase
+          // returns ok. Re-throw classified DB/query errors so the runner
+          // surfaces the phase as DB_FAILURE / QUERY_FAILURE.
+          const code = classifyFailure(e);
+          if (code === "DB_FAILURE" || code === "QUERY_FAILURE") throw e;
+          failed.push({ id: b.id, kind, error: e?.message || "unknown" });
+        }
+      };
+
+      if (want24 && !bAny.reminder24hSentAt) await dispatch("24h", "owner");
+      if (want1 && !bAny.reminder1hSentAt) await dispatch("1h", "owner");
+      if (bAny.linkedPartnerUserId) {
+        if (want24 && !bAny.linkedPartnerReminder24hSentAt) await dispatch("24h", "partner");
+        if (want1 && !bAny.linkedPartnerReminder1hSentAt) await dispatch("1h", "partner");
+      }
+    }
+    if (capped) {
+      console.warn(
+        `[cron/reminders] hit maxEmailsPerTick=${cap} — remaining recipients deferred to next tick`,
+      );
+    }
+    return { sent: sent.length, failed: failed.length, attempts, capped, cap };
+  }
+
   app.all("/api/cron/reminders", async (req, res) => {
     const secret = process.env.CRON_SECRET;
-    if (process.env.NODE_ENV === "production" && secret) {
+    // Fail-closed in production: if CRON_SECRET is unset, refuse to serve
+    // even though the runner would later flag it as ENV_FAILURE — this
+    // prevents the cron endpoint from being publicly callable for the
+    // window between deploy and operator setting the secret.
+    if (process.env.NODE_ENV === "production") {
+      if (!secret) {
+        return res.status(503).json({
+          ok: false,
+          failureCode: "ENV_FAILURE",
+          error: "Server misconfigured: CRON_SECRET unset",
+        });
+      }
       const auth = req.get("authorization") || "";
       if (auth !== `Bearer ${secret}`) {
         return res.status(401).json({ ok: false, error: "Unauthorized" });
       }
     }
 
-    const sent: Array<{ id: number; kind: "24h" | "1h"; error?: string }> = [];
-    const failed: Array<{ id: number; kind: "24h" | "1h"; error: string }> = [];
-    try {
-      const todayIso = new Date().toISOString().slice(0, 10);
-      const tomorrowIso = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-      const all = await storage.getBookings({});
-      const now = Date.now();
+    const summary = await runCronTick({
+      reminders: runReminderDispatch,
+      expiry: runPackageExpiryNotifications,
+      checkin: runMissedCheckinNotifications,
+      autoComplete: async () => {
+        const r = await runAutoCompleteBookings("cron");
+        return { completed: r.completed, deducted: r.deducted, notified: r.notified };
+      },
+    });
 
-      for (const b of all) {
-        if (b.date !== todayIso && b.date !== tomorrowIso) continue;
-        if (!["upcoming", "confirmed"].includes(b.status)) continue;
-        const sessionAt = buildSessionDate(b.date, b.timeSlot).getTime();
-        const minsUntil = Math.round((sessionAt - now) / 60_000);
-
-        // 24h window: 22h–26h ahead
-        const want24 = minsUntil >= 22 * 60 && minsUntil <= 26 * 60;
-        // 1h window: 30min–90min ahead
-        const want1 = minsUntil >= 30 && minsUntil <= 90;
-        const bAny = b as any;
-
-        // Generalized dispatch: fans out to either the primary booking
-        // owner or the linked Duo partner. Each recipient has its own
-        // dedupe column (reminder_*_sent_at vs partner_reminder_*_sent_at)
-        // so the partner gets exactly one 24h / 1h email, independent of
-        // whether the primary's reminder has already fired.
-        const dispatch = async (
-          kind: "24h" | "1h",
-          recipient: "owner" | "partner",
-        ) => {
-          try {
-            const userId = recipient === "owner" ? b.userId : (b as any).linkedPartnerUserId;
-            if (!userId) return;
-            const col =
-              recipient === "owner"
-                ? kind === "24h"
-                  ? "reminder_24h_sent_at"
-                  : "reminder_1h_sent_at"
-                : kind === "24h"
-                  ? "linked_partner_reminder_24h_sent_at"
-                  : "linked_partner_reminder_1h_sent_at";
-            const claim = await pool.query(
-              `UPDATE bookings SET ${col} = now() WHERE id = $1 AND ${col} IS NULL RETURNING id`,
-              [b.id],
-            );
-            if (claim.rowCount === 0) return; // already claimed by another worker
-
-            const recipientUser = await storage.getUser(userId).catch(() => undefined);
-            if (!recipientUser) return;
-            const recipientLang = (recipientUser as any).preferredLanguage || "en";
-            const built = buildSessionReminderEmail({
-              kind,
-              lang: recipientLang,
-              data: {
-                clientName: recipientUser.fullName || recipientUser.username || "Client",
-                date: b.date,
-                time12: formatTime12Server(b.timeSlot),
-                sessionFocusLabel: b.sessionFocus || null,
-                trainingGoalLabel: b.trainingGoal || null,
-              },
-            });
-            // Mirror the reminder in-app FIRST — independent of the email
-            // channel. Recipient-scoped dedupe key so primary + partner
-            // each get their own in-app notification.
-            void notifyUserOnce(
-              userId,
-              "session_reminder",
-              `reminder-${b.id}-${kind}-${recipient}`,
-              kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
-              `${b.date} at ${formatTime12Server(b.timeSlot)}`,
-              { link: "/dashboard", meta: { bookingId: b.id, kind, recipient } },
-            );
-
-            if (!recipientUser.email) return;
-            const result = await sendEmail({
-              to: recipientUser.email,
-              subject: built.subject,
-              text: built.text,
-              html: built.html,
-              replyTo: trainerEmail(),
-            });
-            (result.sent ? sent : failed).push(
-              result.sent
-                ? { id: b.id, kind }
-                : { id: b.id, kind, error: result.error || "send returned false" },
-            );
-          } catch (e: any) {
-            failed.push({ id: b.id, kind, error: e?.message || "unknown" });
-          }
-        };
-
-        if (want24 && !bAny.reminder24hSentAt) await dispatch("24h", "owner");
-        if (want1 && !bAny.reminder1hSentAt) await dispatch("1h", "owner");
-        // Task #3: Fan out to the linked Duo partner (if any). Partner-
-        // scoped dedupe means the primary's claim above doesn't block
-        // the partner's email and vice-versa.
-        if (bAny.linkedPartnerUserId) {
-          if (want24 && !bAny.linkedPartnerReminder24hSentAt) await dispatch("24h", "partner");
-          if (want1 && !bAny.linkedPartnerReminder1hSentAt) await dispatch("1h", "partner");
-        }
-      }
-
-      // P5b: Package-expiry warnings. For every active package whose
-      // expiry falls within 7d / 3d / 1d of today, fire one in-app
-      // notification per (package, window). dedupeKey ensures the same
-      // window never re-fires across cron invocations.
-      // Missed-weekly-check-in: from Tuesday onward, any active client
-      // who hasn't logged a check-in for the current Mon-anchored week
-      // gets a single nudge.
-      try {
-        await runPackageExpiryNotifications();
-      } catch (e) {
-        console.warn("[cron/reminders] expiry pass failed:", e);
-      }
-      try {
-        await runMissedCheckinNotifications();
-      } catch (e) {
-        console.warn("[cron/reminders] checkin pass failed:", e);
-      }
-      // May 2026 booking-safety: auto-complete expired sessions in the
-      // same cron tick so a single external scheduler covers reminders +
-      // expiry + auto-completion. Best-effort — never poisons the
-      // reminder response.
-      let autoCompleteSummary: any = null;
-      try {
-        autoCompleteSummary = await runAutoCompleteBookings("cron");
-      } catch (e) {
-        console.warn("[cron/reminders] auto-complete pass failed:", e);
-      }
-
-      res.json({ ok: true, scanned: all.length, sent, failed, autoComplete: autoCompleteSummary });
-    } catch (e: any) {
-      console.error("[cron/reminders] failed", e);
-      res.status(500).json({ ok: false, error: e?.message || "unknown", sent, failed });
-    }
+    // HTTP status mirrors success: 200 on full success or only-activity-failures,
+    // 5xx on env / db-connect / overlap so the GitHub Actions step turns red.
+    const operatorFailure =
+      summary.failureCode === "ENV_FAILURE" ||
+      summary.failureCode === "DB_FAILURE" ||
+      summary.failureCode === "OVERLAP";
+    res.status(operatorFailure ? 503 : 200).json(summary);
   });
 
   // Admin-callable manual repair (May 2026 production fix). Lets the
