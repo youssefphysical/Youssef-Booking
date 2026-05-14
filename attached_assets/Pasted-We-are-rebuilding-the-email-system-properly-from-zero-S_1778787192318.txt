@@ -1,0 +1,184 @@
+We are rebuilding the email system properly from zero.
+
+STEP 1 ONLY:
+Create the complete Email Data + Logic Architecture.
+
+Do NOT design any email yet.
+Do NOT create visual templates yet.
+Do NOT add styling.
+Do NOT touch website UI.
+Do NOT change database schema unless you first explain why it is required.
+Do NOT deploy yet.
+
+Goal:
+Before building the design, define exactly what data each email needs, when each email is sent, what is mandatory, what is optional, and which sections should appear only when relevant.
+
+Brand context:
+Youssef Ahmed — Elite Coaching / Personal Training Dubai.
+The final visual direction later will be cinematic luxury, TRON Legacy inspired, dark black/navy with cyan accents, mobile-first, premium, clean, and responsive.
+But for this step, focus only on data, logic, and structure.
+
+Core rule:
+Each email must only show information related to its exact event.
+No irrelevant sections.
+No generic repeated blocks.
+No “N/A”.
+If data is missing or not relevant, hide that section completely.
+
+CLIENT EMAILS TO MAP:
+
+1. Welcome / Account Created
+2. Free Session Activated
+3. Session Confirmed
+4. Session Reminder
+5. Session Completed
+6. Progress / InBody Update
+7. Package Running Low
+8. Package Completed
+9. Payment Confirmed
+10. Session Cancelled
+11. Session Rescheduled
+12. Password Reset
+13. Account Verified
+
+ADMIN EMAILS TO MAP:
+
+1. New Client Registered
+2. New Session Booking
+3. Session Cancelled
+4. Session Rescheduled
+5. Payment Confirmed
+6. Progress / InBody Update
+7. Package Completed
+8. Package Running Low
+9. Client No-Show
+10. Emergency Cancellation Used
+11. Verification Submitted / Approved
+12. Free Trial Claimed
+13. Payment Pending / Failed
+14. Package Expired
+15. Inactive Client Alert
+
+Important location rule:
+City / Area / Gym Name / Full Location / View on Map should appear ONLY in session-related emails:
+
+- session confirmed
+- session reminder
+- session rescheduled
+- session cancelled
+- admin session booking alerts
+- no-show if related to a session
+
+Do NOT show gym/location data in:
+
+- welcome
+- payment
+- password reset
+- progress update
+- account verified
+- package completed
+  unless the email specifically involves a real session appointment.
+
+Session-related mandatory fields:
+
+- client name
+- session date
+- session time
+- duration
+- city
+- area
+- gym name
+- full location label
+- focus/body part
+- training goal
+- remaining sessions
+- package name
+- booking reference
+- timezone: Dubai Time / GST
+
+Payment-related mandatory fields:
+
+- client name
+- amount
+- package/service
+- payment status
+- payment method if available
+- sessions added or activated
+- expiry date if package-based
+- payment/reference ID if available
+
+Package-related mandatory fields:
+
+- package name
+- total sessions
+- remaining sessions
+- used sessions
+- expiry date
+- package status
+- renewal CTA logic
+
+Progress/InBody-related fields:
+
+- client name
+- assessment date
+- weight
+- body fat percentage
+- muscle mass
+- progress summary
+- previous vs current comparison if available
+- next focus/recommendation if available
+
+Password reset fields:
+
+- client name if available
+- reset link
+- link expiry time
+- security note
+- support contact
+
+Admin email style logic:
+Admin emails should be operational, fast-reading, and data-focused.
+No emotional marketing copy.
+Show the most important operational data first.
+CTA should go directly to the relevant admin page.
+
+Client email style logic:
+Client emails can have more premium/luxury wording, but still concise.
+Tone should feel like high-end concierge fitness coaching, not spam or gym-bro motivation.
+CTA should be specific to the event, not generic “Open Dashboard”.
+
+CTA rules:
+Use event-specific CTAs:
+
+- View Session
+- Open Directions
+- Manage Booking
+- Renew Package
+- View Progress Report
+- Reset Password
+- Review Payment
+- View Package
+- Contact Coach
+- Open Admin Bookings
+- Open Client Profile
+- Review Payment Proof
+
+Output required:
+Create a clear implementation plan/report with:
+
+1. Full list of email events
+2. Trigger timing for each email
+3. Recipient: client/admin/both
+4. Required data fields
+5. Optional data fields
+6. Conditional sections
+7. Correct CTA label and target page
+8. Subject line format
+9. Priority hierarchy for the email content
+10. Any missing data currently not available in the app
+11. Any database fields that may be needed later, but do not add them yet without approval
+
+Stop after this report.
+Do not build templates yet.
+Do not style anything yet.
+Wait for my approval before moving to the design system.

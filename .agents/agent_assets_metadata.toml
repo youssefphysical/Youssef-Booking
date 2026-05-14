@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "W53-NeDRooQU8-W3xkGZh"
@@ -12,3 +11,9 @@ id = "rmwOSmT--YkyDSawjjroq"
 uri = "file://client/public/og-premium.png"
 type = "image"
 title = "og-premium-luxury"
+
+[[outputs]]
+id = "rClXjRHbJcPRPwXsyhCW2"
+uri = "file://docs/email-architecture-step1.md"
+type = "text"
+title = "Email System Rebuild — Step 1: Data + Logic Architecture"
