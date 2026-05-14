@@ -1,0 +1,150 @@
+Excellent. The architectural direction is now aligned correctly.
+
+IMPORTANT:
+Before expanding into all email implementations, stabilize the FOUNDATION layer first.
+
+==================================================
+PRIORITY SHIFT — FOUNDATION BEFORE SCALE
+==================================================
+
+Do NOT rush into building every email type yet.
+
+First fully stabilize and validate:
+
+1. email-shell
+2. typography rhythm
+3. spacing rhythm
+4. CTA rendering
+5. severity rendering
+6. card stacking behavior
+7. mobile collapse behavior
+8. dark-mode rendering
+9. RTL rendering
+10. no-image rendering
+11. Outlook-safe rendering
+12. missing-data fallback behavior
+
+These systems are the CORE ENGINE.
+
+==================================================
+MANDATORY STABILIZATION PHASE
+==================================================
+
+Before mass email expansion:
+
+Create and validate only a SMALL controlled set:
+
+- one lightweight utility email
+- one medium transactional email
+- one heavy success email
+- one warning email
+- one admin operational email
+
+Use these as “golden reference emails”.
+
+Only after those render perfectly:
+- mobile
+- desktop
+- dark mode
+- RTL
+- Outlook
+- Gmail mobile
+- Apple Mail
+
+…then scale the system.
+
+==================================================
+DO NOT SCALE INSTABILITY
+==================================================
+
+If the foundation is unstable:
+- every future template becomes technical debt
+- visual drift multiplies
+- spacing inconsistencies spread
+- dark mode bugs spread
+- mobile bugs spread
+
+The foundation must become nearly immutable before scaling.
+
+==================================================
+VISUAL QA PRIORITY
+==================================================
+
+Audit carefully:
+- vertical rhythm
+- card spacing
+- CTA spacing
+- readability speed
+- thumb ergonomics
+- dark-mode contrast
+- header/footer balance
+- section density
+
+The system should feel:
+calm,
+fast,
+premium,
+intentional.
+
+==================================================
+OUTLOOK SAFETY
+==================================================
+
+Explicitly validate:
+- table nesting
+- padding rendering
+- border rendering
+- button rendering
+- font fallback behavior
+- divider rendering
+
+Avoid relying on:
+- unsupported CSS
+- margin tricks
+- modern layout assumptions
+
+==================================================
+NO-IMAGE MODE
+==================================================
+
+Simulate blocked-image environments.
+
+The system must still feel:
+premium,
+usable,
+clear,
+high-end.
+
+No layout should collapse if images fail.
+
+==================================================
+DESIGN LOCK RULE
+==================================================
+
+Once:
+- spacing system,
+- typography scale,
+- severity rendering,
+- CTA hierarchy,
+- shell layout
+
+are validated successfully…
+
+LOCK THEM.
+
+Do NOT allow visual drift afterward.
+
+New templates must inherit the system —
+not reinvent it.
+
+==================================================
+FINAL TARGET
+==================================================
+
+The user should subconsciously feel:
+
+“This platform is extremely premium, polished, and trustworthy.”
+
+without noticing the design system itself.
+
+Invisible quality is the goal.
