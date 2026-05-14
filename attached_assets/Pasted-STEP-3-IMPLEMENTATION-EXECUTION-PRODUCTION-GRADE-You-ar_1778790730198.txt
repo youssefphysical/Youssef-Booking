@@ -1,0 +1,362 @@
+STEP 3 — IMPLEMENTATION EXECUTION (PRODUCTION-GRADE)
+
+You are now approved to begin Step 3 implementation for the complete transactional email system rebuild.
+
+CRITICAL:
+This is NOT a prototype.
+This is NOT visual experimentation.
+This is NOT partial refactoring.
+
+This must be implemented as a production-grade scalable email architecture fully aligned with:
+- Step 1 architecture
+- Step 1B refinements
+- Step 2 design system blueprint
+
+No shortcuts.
+No temporary hacks.
+No duplicated logic.
+No inline random styling.
+No inconsistent spacing.
+No schema changes unless explicitly gated below.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+Build the final reusable transactional email infrastructure for the platform.
+
+This includes:
+- reusable email component system
+- email composer engine
+- shared design tokens
+- severity system
+- responsive layout system
+- email rendering pipeline
+- builder refactor
+- quiet-hours queue support
+- render-safe fallbacks
+- mobile-safe rendering
+- dark-mode protection
+- RTL support pipeline
+- dedupe-safe rendering structure
+
+Everything must follow the exact architectural hierarchy defined in Step 2.
+
+==================================================
+MANDATORY IMPLEMENTATION RULES
+==================================================
+
+1. MOBILE-FIRST ALWAYS
+- Emails must render perfectly on:
+  - Gmail mobile
+  - Apple Mail iPhone
+  - Outlook mobile
+  - Samsung Mail
+- Single-column collapse under 600px
+- Never rely on CSS grid
+- Use table-safe email layouts only
+
+2. DESIGN CONSISTENCY
+Use ONLY:
+- design tokens
+- shared spacing system
+- shared severity system
+- shared typography scale
+- shared CTA hierarchy
+
+No random values.
+No hardcoded colors.
+No inconsistent padding.
+
+3. COMPONENT SYSTEM
+Every email must be assembled using reusable components.
+
+DO NOT:
+- manually craft unique email layouts
+- duplicate card structures
+- duplicate spacing rules
+- duplicate severity rendering
+
+All emails must be composed through the shared composer.
+
+4. DARK MODE SAFETY
+Implement:
+- dark-safe backgrounds
+- protected text contrast
+- logo visibility protection
+- safe border rendering
+- safe CTA rendering
+
+Avoid:
+- transparent text
+- thin gray borders
+- washed-out contrast
+- invisible cards in dark mode
+
+5. EMAIL CLIENT SAFETY
+Support:
+- Gmail
+- Apple Mail
+- Outlook desktop/web
+- Yahoo Mail
+- Samsung Mail
+
+Do NOT use:
+- unsupported CSS tricks
+- animations
+- advanced selectors
+- CSS variables in raw email HTML
+
+6. PERFORMANCE
+Optimize:
+- render stability
+- reusable components
+- minimal duplicated markup
+- lightweight HTML structure
+
+Avoid:
+- bloated wrappers
+- deeply nested tables
+- unnecessary images
+
+==================================================
+IMPLEMENTATION SCOPE
+==================================================
+
+BUILD:
+
+1. Shared email-shell system
+2. Shared token system
+3. Shared typography system
+4. Shared spacing system
+5. Shared severity system
+6. Shared CTA system
+7. Shared card system
+8. Shared header/footer system
+9. Shared icon handling
+10. Shared renderer utilities
+11. Shared fallback renderer
+12. Shared mobile renderer
+13. Shared dark-mode overrides
+14. Shared RTL processor
+15. Shared email composer
+16. Shared render guards
+17. Shared queue-safe render pipeline
+
+==================================================
+REFACTOR EXISTING BUILDERS
+==================================================
+
+Refactor ALL existing email builders to use:
+- composer architecture
+- shared shell
+- reusable cards
+- severity-driven rendering
+- tokenized spacing
+
+Do NOT leave legacy isolated templates active.
+
+==================================================
+MISSING BUILDERS
+==================================================
+
+Implement all missing email builders identified in Step 1.
+
+All must follow:
+- shared composition rules
+- severity rules
+- CTA mapping rules
+- image intent rules
+- visual hierarchy system
+
+==================================================
+SEVERITY SYSTEM
+==================================================
+
+Implement exact severity hierarchy:
+
+1. SUCCESS
+2. INFORMATIONAL
+3. WARNING
+4. CRITICAL
+
+Severity controls:
+- accent color
+- icon treatment
+- border rendering
+- hero visibility
+- CTA prominence
+- email weight
+- visual urgency
+
+CRITICAL emails:
+- highest visibility
+- strongest borders
+- strongest CTA prominence
+- strongest icon emphasis
+- NEVER cartoonish
+
+==================================================
+COMPONENT RULES
+==================================================
+
+All components must:
+- degrade gracefully
+- render independently
+- support mobile collapse
+- support RTL
+- support dark mode
+- support missing data
+- support optional fields safely
+
+No component may crash render flow.
+
+==================================================
+RTL SUPPORT
+==================================================
+
+Implement:
+- applyRTL() processor
+- safe Arabic rendering
+- directional spacing flipping
+- RTL-safe alignment
+
+Do NOT break:
+- buttons
+- cards
+- icons
+- table alignment
+
+==================================================
+QUIET HOURS
+==================================================
+
+Implement quiet-hours infrastructure using:
+
+APPROVED:
+- scheduledFor column approach
+
+Do NOT implement separate queue tables.
+
+Respect:
+- quiet hours logic
+- defer-until scheduling
+- severity bypass rules
+
+==================================================
+SCHEMA GATES
+==================================================
+
+APPROVED FOR STEP 3:
+- scheduledFor column
+
+NOT APPROVED:
+- meetingLocation schema additions
+- suppression preferences table
+- notification_preferences system
+
+Keep architecture ready for future expansion.
+
+==================================================
+IMAGE RULES
+==================================================
+
+Use minimal imagery.
+
+Allowed:
+- lightweight hero illustrations
+- severity illustrations
+- simple branded graphics
+
+Avoid:
+- large banners
+- decorative clutter
+- marketing-heavy imagery
+- unnecessary image dependencies
+
+Emails must still look premium without images loading.
+
+==================================================
+SUBJECT LINE RULES
+==================================================
+
+Maintain:
+- sentence case
+- short structure
+- urgency hierarchy
+- no spammy formatting
+- no emoji overload
+
+Subject lines must align with severity system.
+
+==================================================
+ACCESSIBILITY
+==================================================
+
+Implement:
+- semantic hierarchy
+- alt text
+- button contrast
+- screen-reader-safe rendering
+- readable font sizes
+- mobile tap targets
+
+==================================================
+TESTING REQUIREMENTS
+==================================================
+
+Before completion verify:
+- Gmail mobile
+- Apple Mail iPhone
+- Outlook desktop
+- Outlook web
+- Gmail web
+- dark mode rendering
+- RTL rendering
+- missing-data fallback rendering
+- mobile collapse rendering
+
+==================================================
+DELIVERABLES REQUIRED
+==================================================
+
+By end of Step 3 provide:
+
+1. Full reusable component architecture
+2. Refactored builder system
+3. Email composer engine
+4. Shared token system
+5. Shared renderer utilities
+6. Mobile-safe rendering
+7. Dark-mode-safe rendering
+8. RTL-safe rendering
+9. Quiet-hours wiring
+10. Final production-ready email rendering pipeline
+
+==================================================
+IMPORTANT
+==================================================
+
+DO NOT:
+- redesign architecture
+- simplify hierarchy
+- remove severity logic
+- create random layouts
+- introduce inconsistent spacing
+- hardcode colors
+- use temporary structures
+
+This implementation must feel like:
+- premium SaaS infrastructure
+- enterprise-grade transactional system
+- luxury fitness brand quality
+- scalable long-term architecture
+
+Everything must remain:
+clean,
+minimal,
+premium,
+stable,
+fast,
+consistent,
+and production-ready.
