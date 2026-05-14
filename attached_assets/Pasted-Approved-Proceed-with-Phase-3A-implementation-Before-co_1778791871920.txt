@@ -1,0 +1,174 @@
+Approved. Proceed with Phase 3A implementation.
+
+Before coding further, lock these FINAL engineering constraints globally.
+
+==================================================
+FINAL ENGINEERING CONSTRAINTS
+==================================================
+
+1. TOKEN IMMUTABILITY
+==================================================
+
+The token system becomes the single source of truth.
+
+After Phase 3A:
+- no random spacing
+- no random colors
+- no random radius values
+- no random typography sizing
+- no component-local visual overrides
+
+Every visual decision must resolve through tokens.
+
+If a component needs a new value:
+DO NOT hardcode it.
+Evaluate whether the token system itself should evolve.
+
+Prevent token drift aggressively.
+
+==================================================
+2. OUTLOOK ISOLATION
+==================================================
+
+Contain Outlook-specific hacks strictly.
+
+DO NOT spread:
+- MSO conditionals
+- VML buttons
+- Outlook spacing fixes
+- Outlook table fixes
+
+across the component system.
+
+Instead:
+- isolate Outlook compatibility internally
+- keep component APIs clean
+- keep design primitives platform-agnostic
+
+The design system must remain elegant even if Outlook requires ugly internals.
+
+==================================================
+3. NO OVER-ENGINEERING
+==================================================
+
+Do not build abstractions that exceed current needs.
+
+Avoid:
+- deeply nested render pipelines
+- over-configurable components
+- unnecessary polymorphism
+- excessive variant systems
+- “future-proofing” everything
+
+Prefer:
+- clean primitives
+- predictable composition
+- minimal APIs
+- readable architecture
+- stable rendering
+
+This is premium infrastructure —
+not framework experimentation.
+
+==================================================
+4. COMPONENT RESPONSIBILITY
+==================================================
+
+Each component should own ONE responsibility.
+
+Examples:
+- EmailShell = layout scaffold
+- SeverityBanner = severity communication
+- CTAButton = action rendering
+- CardStack = spacing rhythm
+- Footer = legal + unsubscribe + support
+
+Avoid “god components”.
+
+==================================================
+5. VISUAL STABILITY > FLEXIBILITY
+==================================================
+
+Never sacrifice visual consistency for configurability.
+
+A slightly rigid premium system is BETTER than:
+- infinitely customizable chaos.
+
+Consistency builds trust.
+
+==================================================
+6. QA SCREENSHOT DISCIPLINE
+==================================================
+
+For the 5 golden emails:
+capture screenshots in:
+- Gmail mobile
+- Apple Mail iPhone
+- Outlook desktop
+- Gmail web
+- Dark mode
+- RTL
+- Image-blocked mode
+
+Compare them side-by-side.
+
+The system should still feel like:
+ONE PRODUCT.
+
+==================================================
+7. MOBILE DENSITY CONTROL
+==================================================
+
+Be extremely careful with:
+- stacked cards
+- vertical padding multiplication
+- CTA spacing accumulation
+- hero height
+- footer height
+
+Most transactional emails should fit important information:
+ABOVE THE FOLD on mobile.
+
+==================================================
+8. HTML WEIGHT CONTROL
+==================================================
+
+Keep rendered HTML lean.
+
+Avoid:
+- excessive wrappers
+- unnecessary nesting
+- repeated inline styles
+- duplicated structures
+
+Especially important for Gmail clipping limits.
+
+==================================================
+9. DESIGN LOCK ENFORCEMENT
+==================================================
+
+Once the 5 golden templates pass QA:
+- lock shell
+- lock spacing rhythm
+- lock CTA hierarchy
+- lock severity visuals
+- lock typography scale
+
+Future templates must inherit —
+not reinterpret.
+
+==================================================
+10. FINAL TARGET
+==================================================
+
+The system should ultimately feel like:
+
+“Enterprise-grade transactional infrastructure hidden inside a luxury fitness SaaS brand.”
+
+Premium,
+minimal,
+fast,
+stable,
+trustworthy,
+mobile-first,
+and visually calm.
