@@ -249,7 +249,7 @@ export function severityBanner({ severity, title, body }: SeverityBannerOptions)
   const tintClass = `email-sev-${severity}-tint`;
   const accentClass = `email-sev-${severity}-accent`;
   const bodyHtml = body
-    ? `<div style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:${SPACE.s2};" class="email-text-secondary">${esc(body)}</div>`
+    ? `<div dir="auto" style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:${SPACE.s2};" class="email-text-secondary">${esc(body)}</div>`
     : "";
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${tintClass}" style="background-color:${sev.tint};border-radius:${RADIUS.md};">`
     + `<tr><td style="padding:${SPACE.s4} ${SPACE.s5};border-${"left"}:3px solid ${sev.accent};" data-flip-padding-left="severity">`
@@ -317,9 +317,12 @@ export function keyValueList({ items }: KeyValueListOptions): string {
     .filter((it) => it.value !== null && it.value !== undefined && String(it.value).trim() !== "")
     .map((it, i) => {
       const top = i === 0 ? "0" : SPACE.s3;
+      // dir="auto" on the value lets mixed-content (phones, times, English
+      // package names) render correctly inside RTL documents without bidi
+      // reordering bugs (e.g. "+971 50…" becoming "…50 971+").
       return `<tr><td style="padding-top:${top};">`
         + `<div style="font-size:11px;line-height:1.3;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:${COLOR.text.tertiary};" class="email-text-tertiary">${esc(it.label)}</div>`
-        + `<div style="${typeStyle("body", COLOR.text.primary)}padding-top:2px;" class="email-text-primary">${esc(it.value as string)}</div>`
+        + `<div dir="auto" style="${typeStyle("body", COLOR.text.primary)}padding-top:2px;" class="email-text-primary">${esc(it.value as string)}</div>`
         + `</td></tr>`;
     })
     .join("");
@@ -343,19 +346,20 @@ export function metricGrid({ items }: MetricGridOptions): string {
   for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
   const html = rows
     .map((pair, ri) => {
+      // Inter-row gap: padding-top on <tr> is ignored — must live on cells.
+      const topGap = ri === 0 ? "0" : SPACE.s5;
       const cells = pair
         .map((it, ci) => {
           const padLeft = ci === 0 ? "0" : SPACE.s4;
-          return `<td valign="top" width="50%" style="padding-left:${padLeft};">`
+          return `<td valign="top" width="50%" style="padding-left:${padLeft};padding-top:${topGap};">`
             + `<div style="font-size:11px;line-height:1.3;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:${COLOR.text.tertiary};" class="email-text-tertiary">${esc(it.label)}</div>`
-            + `<div style="${typeStyle("metric", COLOR.text.primary)}padding-top:${SPACE.s1};" class="email-text-primary">${esc(it.value)}</div>`
+            + `<div dir="auto" style="${typeStyle("metric", COLOR.text.primary)}padding-top:${SPACE.s1};" class="email-text-primary">${esc(it.value)}</div>`
             + `</td>`;
         })
         .join("");
       // Pad orphan cell so grid stays balanced on desktop.
-      const padding = pair.length === 1 ? `<td width="50%">&nbsp;</td>` : "";
-      const topGap = ri === 0 ? "0" : SPACE.s5;
-      return `<tr class="email-stack-2col" style="padding-top:${topGap};">${cells}${padding}</tr>`;
+      const padding = pair.length === 1 ? `<td width="50%" style="padding-top:${topGap};">&nbsp;</td>` : "";
+      return `<tr class="email-stack-2col">${cells}${padding}</tr>`;
     })
     .join("");
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${html}</table>`;

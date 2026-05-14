@@ -1,0 +1,178 @@
+Excellent. This is now structurally approaching production-grade architecture.
+
+The pause here is correct.
+
+DO NOT expand further yet.
+
+==================================================
+NEXT PHASE PRIORITY:
+VISUAL + RENDER VALIDATION
+==================================================
+
+The architecture can still fail if:
+- spacing feels wrong
+- cards feel heavy
+- mobile rhythm breaks
+- dark mode loses hierarchy
+- Outlook alters spacing
+- RTL creates imbalance
+- no-image mode feels broken
+
+Now the system must prove itself VISUALLY.
+
+==================================================
+BUILD ONLY THE 5 GOLDEN REFERENCE EMAILS
+==================================================
+
+Do NOT build more.
+
+Only:
+
+1. Password reset
+2. Booking confirmation
+3. Package completed
+4. Package expiring in 3 days
+5. Admin new booking notification
+
+These 5 are enough to expose:
+- spacing flaws
+- hierarchy flaws
+- CTA problems
+- dark-mode problems
+- Outlook rendering problems
+- mobile density issues
+- component weaknesses
+
+==================================================
+STRICT QA EXPECTATIONS
+==================================================
+
+Audit the 5 references side-by-side for:
+
+- visual unity
+- identical rhythm
+- typography consistency
+- CTA consistency
+- card balance
+- mobile ergonomics
+- spacing calmness
+- dark-mode quality
+- admin/client tone separation
+
+The user should feel:
+“same platform, different context.”
+
+==================================================
+VERY IMPORTANT:
+ABOVE-THE-FOLD DISCIPLINE
+==================================================
+
+On mobile:
+the most important information + CTA
+should appear immediately.
+
+Avoid:
+- giant headers
+- oversized hero blocks
+- wasted vertical space
+- stacked fluff
+
+Especially:
+password reset,
+warnings,
+admin alerts.
+
+==================================================
+WATCH FOR THIS FAILURE MODE
+==================================================
+
+A common problem in premium systems:
+
+“beautiful components individually,
+heavy and exhausting when stacked.”
+
+Audit entire-email flow —
+not isolated components.
+
+==================================================
+DARK MODE REALITY TEST
+==================================================
+
+Dark mode must feel intentional —
+not “auto inverted”.
+
+Validate:
+- hierarchy survives
+- borders remain visible
+- buttons stay premium
+- muted text stays readable
+- cards separate correctly
+
+No muddy gray soup.
+
+==================================================
+OUTLOOK REALITY TEST
+==================================================
+
+Outlook is NOT a secondary concern.
+
+Validate:
+- buttons
+- spacing
+- dividers
+- table widths
+- footer rendering
+- VML fallback rendering
+
+Especially on:
+Outlook desktop Windows.
+
+==================================================
+RTL REALITY TEST
+==================================================
+
+Test REAL Arabic content.
+
+Not placeholder Arabic.
+
+Validate:
+- spacing flips correctly
+- button alignment
+- card rhythm
+- mixed English/Arabic rendering
+- number alignment
+- icon direction logic
+
+==================================================
+FINAL DESIGN LOCK CONDITION
+==================================================
+
+Only lock the foundation if ALL 5 references:
+- feel premium
+- feel unified
+- feel lightweight
+- feel calm
+- feel mobile-native
+- feel trustworthy
+
+If even one feels:
+- cramped
+- loud
+- legacy
+- corporate
+- inconsistent
+- too developer-oriented
+
+refactor BEFORE scaling.
+
+==================================================
+AFTER QA PASSES
+==================================================
+
+THEN:
+- lock foundation permanently
+- refactor remaining 18 builders
+- implement missing builders
+- scale safely
+
+No scaling before proof.

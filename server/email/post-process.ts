@@ -60,13 +60,30 @@ function buildDarkCss(): string {
     }`,
   );
 
-  // Gmail mobile (iOS/Android) auto-invert overrides.
+  // Gmail mobile (iOS/Android) auto-invert overrides — must MIRROR the
+  // prefers-color-scheme block above. If text inverts but tints/CTAs don't,
+  // we get unreadable contrast (white text on light cream banners, etc.).
   blocks.push(
     `[data-ogsc] body, [data-ogsc] .email-canvas { background-color: ${COLOR.bg.canvasDark} !important; }
      [data-ogsc] .email-surface { background-color: ${COLOR.bg.surfaceDark} !important; border-color: ${COLOR.border.subtleDark} !important; }
+     [data-ogsc] .email-surface-raised { background-color: ${COLOR.bg.surfaceRaisedDark} !important; }
      [data-ogsc] .email-text-primary { color: ${COLOR.text.primaryDark} !important; }
      [data-ogsc] .email-text-secondary { color: ${COLOR.text.secondaryDark} !important; }
-     [data-ogsc] .email-text-tertiary { color: ${COLOR.text.tertiaryDark} !important; }`,
+     [data-ogsc] .email-text-tertiary { color: ${COLOR.text.tertiaryDark} !important; }
+     [data-ogsc] .email-divider { border-color: ${COLOR.border.subtleDark} !important; background-color: ${COLOR.border.subtleDark} !important; }
+     [data-ogsc] .email-sev-success-accent { color: ${sevDark("success").accentDark} !important; }
+     [data-ogsc] .email-sev-info-accent    { color: ${sevDark("info").accentDark} !important; }
+     [data-ogsc] .email-sev-warning-accent { color: ${sevDark("warning").accentDark} !important; }
+     [data-ogsc] .email-sev-critical-accent{ color: ${sevDark("critical").accentDark} !important; }
+     [data-ogsc] .email-sev-success-tint   { background-color: ${sevDark("success").tintDark} !important; }
+     [data-ogsc] .email-sev-info-tint      { background-color: ${sevDark("info").tintDark} !important; }
+     [data-ogsc] .email-sev-warning-tint   { background-color: ${sevDark("warning").tintDark} !important; }
+     [data-ogsc] .email-sev-critical-tint  { background-color: ${sevDark("critical").tintDark} !important; }
+     [data-ogsc] .email-cta-success { background-color: ${sevDark("success").accentDark} !important; color: ${COLOR.text.onAccentDark} !important; }
+     [data-ogsc] .email-cta-info    { background-color: ${sevDark("info").accentDark} !important; color: ${COLOR.text.onAccentDark} !important; }
+     [data-ogsc] .email-cta-warning { background-color: ${sevDark("warning").accentDark} !important; color: ${COLOR.text.onAccentDark} !important; }
+     [data-ogsc] .email-cta-critical{ background-color: ${sevDark("critical").accentDark} !important; color: ${COLOR.text.onAccentDark} !important; }
+     [data-ogsc] .email-cta-brand   { background-color: ${COLOR.brand.cyanDark} !important; color: ${COLOR.text.onAccentDark} !important; }`,
   );
 
   return blocks.join("\n").replace(/\s+/g, " ");
