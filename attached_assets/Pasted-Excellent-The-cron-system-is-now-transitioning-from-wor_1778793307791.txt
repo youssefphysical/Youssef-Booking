@@ -1,0 +1,199 @@
+Excellent.
+
+The cron system is now transitioning from “working automation”
+to “production operations infrastructure”.
+
+Before adding more features,
+we must harden observability + operational resilience.
+
+==================================================
+NEXT PHASE:
+CRON OPERATIONS LAYER
+==================================================
+
+I do NOT want feature expansion yet.
+
+Focus on operational maturity.
+
+==================================================
+1. EXECUTION HISTORY
+==================================================
+
+Persist every cron execution:
+
+- startedAt
+- completedAt
+- duration
+- environment
+- git commit SHA
+- success/failure
+- failure phase
+- counts processed
+- emails sent
+- warnings
+- retries triggered
+
+This becomes the operational audit trail.
+
+==================================================
+2. FAILURE CLASSIFICATION
+==================================================
+
+Failures must be categorized:
+
+- ENV_FAILURE
+- DB_FAILURE
+- EMAIL_PROVIDER_FAILURE
+- QUERY_FAILURE
+- RATE_LIMIT
+- NETWORK_FAILURE
+- TIMEOUT
+- UNKNOWN_RUNTIME
+
+Never log generic “failed”.
+
+==================================================
+3. ALERT DEDUPLICATION
+==================================================
+
+If the same failure repeats:
+
+- suppress duplicate spam
+- aggregate occurrences
+- send summary instead
+
+Example:
+“DATABASE_URL missing occurred 14 times in last 2h”
+
+==================================================
+4. RETRY STRATEGY
+==================================================
+
+Implement intelligent retries ONLY for transient failures:
+
+Allowed retries:
+- network
+- timeout
+- rate limit
+- temporary email provider errors
+
+NO retries for:
+- missing env
+- invalid config
+- schema mismatch
+- code exceptions
+
+Retries must use:
+- capped attempts
+- exponential backoff
+- jitter
+
+==================================================
+5. DEAD LETTER QUEUE
+==================================================
+
+Failed email jobs should move to a dead-letter queue:
+
+Store:
+- recipient
+- template
+- payload
+- error
+- retryCount
+- createdAt
+
+Allow manual replay later.
+
+==================================================
+6. ADMIN OPERATIONS SUMMARY
+==================================================
+
+Create a compact operational summary email:
+
+- execution duration
+- bookings processed
+- reminders sent
+- failures count
+- retries count
+- skipped jobs
+- queue depth
+
+Tone:
+high-signal operational dashboard.
+No marketing language.
+
+==================================================
+7. HEALTH STATUS ENDPOINT
+==================================================
+
+Add internal health endpoint:
+
+/api/internal/cron-health
+
+Expose:
+- last successful run
+- last failure
+- queue backlog
+- retry backlog
+- dead-letter count
+- environment validity
+- cron latency
+
+Protected admin-only.
+
+==================================================
+8. IDEMPOTENCY HARDENING
+==================================================
+
+Verify ALL cron actions are idempotent:
+
+- reminder sends
+- package expiry emails
+- auto-complete logic
+- payment pending alerts
+- admin notifications
+
+No duplicate side effects under retries.
+
+==================================================
+9. RUNTIME GUARDS
+==================================================
+
+Add safeguards:
+
+- max emails per run
+- max runtime duration
+- emergency abort threshold
+- stuck-job detection
+- overlapping cron prevention
+
+Treat cron like financial infrastructure.
+
+==================================================
+10. FINAL GOAL
+==================================================
+
+The system should survive:
+
+- GitHub outages
+- partial DB failures
+- email provider instability
+- retries
+- duplicate triggers
+- dark-mode email rendering
+- mobile clients
+- missing optional data
+- timezone edge cases
+
+without human babysitting.
+
+==================================================
+IMPORTANT
+==================================================
+
+Do not increase visual/design complexity.
+
+Operational excellence > feature count.
+
+The system should feel:
+quiet, stable, trustworthy, invisible.
