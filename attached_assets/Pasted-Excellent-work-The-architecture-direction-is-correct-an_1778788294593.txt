@@ -1,0 +1,384 @@
+Excellent work. The architecture direction is correct and grounded in the real codebase.
+
+Now perform STEP 1B only:
+Refine and expand the Email Data + Logic Architecture before any design system work begins.
+
+Do NOT build templates yet.
+Do NOT style emails yet.
+Do NOT write frontend components yet.
+Do NOT deploy.
+Do NOT create visual mockups yet.
+
+Goal:
+Strengthen the architecture so the future email system becomes production-grade, scalable, responsive, contextual, and operationally correct.
+
+Important:
+This is still an architecture/documentation phase only.
+
+---
+
+1. SESSION LOCATION MODEL
+
+---
+
+Current architecture treats gym/area/location as optional.
+That is NOT correct for session-related emails.
+
+The app is currently a solo-trainer model, not a multi-gym platform.
+However:
+session-related bookings WILL contain a selectable training location.
+
+Create a lightweight “Booking Location Model” for session-related events only.
+
+Session-related emails MUST support:
+
+- city
+- area
+- gym name
+- full location label
+- optional map URL
+
+But ONLY for:
+
+- session confirmed
+- session reminder
+- session rescheduled
+- session cancelled
+- no-show
+- admin session booking alerts
+
+Do NOT apply location logic globally to all emails.
+
+Document:
+
+- which future fields are needed
+- where they should live logically
+- how the system should behave if a location is missing
+
+Do NOT implement schema changes yet.
+Only document the architecture correctly.
+
+---
+
+2. SPLIT SESSION REMINDERS
+
+---
+
+Create separate logic definitions for:
+
+- Reminder 24h before session
+- Reminder 1h before session
+
+They are NOT the same email.
+
+24h Reminder:
+
+- preparation-oriented
+- calmer tone
+- includes preparation/helpful info
+- can include add-to-calendar and reschedule policy
+
+1h Reminder:
+
+- concise
+- operational
+- quick-read
+- directions/location emphasis
+- “see you soon” style
+
+Document:
+
+- different data priorities
+- different CTA priorities
+- different content weight
+
+---
+
+3. WHATSAPP CTA STRATEGY
+
+---
+
+Add official CTA escalation logic.
+
+In some emails:
+WhatsApp should become the PRIMARY CTA instead of dashboard links.
+
+Examples:
+
+- package running low
+- cancellation
+- reschedule
+- support issue
+- payment problem
+- inactive client recovery
+
+Document:
+
+- which emails should prioritize WhatsApp
+- which should prioritize dashboard/app links
+- fallback behavior if WhatsApp link unavailable
+
+---
+
+4. EMAIL SEVERITY SYSTEM
+
+---
+
+Create an email severity classification layer.
+
+Required categories:
+
+- success
+- warning
+- critical
+- informational
+
+This will later control:
+
+- accent colors
+- glow intensity
+- icon style
+- CTA emphasis
+- urgency hierarchy
+
+Examples:
+Success:
+
+- payment confirmed
+- session booked
+
+Warning:
+
+- package running low
+- expiry approaching
+
+Critical:
+
+- payment failed
+- cancellation
+- account issue
+
+Informational:
+
+- progress update
+- account verified
+
+Document this architecture clearly.
+
+---
+
+5. IMAGE INTENT MAPPING
+
+---
+
+Add a visual-intent mapping section.
+
+Every email type should define:
+
+- the visual mood
+- image category
+- cinematic intent
+
+Examples:
+Reminder:
+
+- preparation scene
+- equipment close-up
+- anticipation
+
+Progress:
+
+- analytics
+- futuristic body scan
+- data-driven visuals
+
+Password reset:
+
+- minimal security visual
+- dark futuristic UI
+
+Package completed:
+
+- achievement atmosphere
+- next chapter feeling
+
+Admin alerts:
+
+- dashboard/control room visuals
+
+This is NOT image generation yet.
+Only visual-direction mapping.
+
+---
+
+6. NOTIFICATION TIMING MATRIX
+
+---
+
+Expand trigger timing rules into a formal matrix.
+
+Examples:
+
+Package Running Low:
+NOT only “3 sessions remaining”.
+Support:
+
+- fixed threshold
+- percentage threshold
+- optional expiry proximity
+
+Inactive Client:
+NOT only “X days passed”.
+Also support:
+
+- no bookings
+- no logins
+- no activity
+
+Document:
+
+- timing logic
+- edge cases
+- anti-spam logic
+- suppression rules
+
+---
+
+7. EMAIL WEIGHT CLASSIFICATION
+
+---
+
+Create classification for:
+
+- heavyweight emails
+- lightweight emails
+
+Heavyweight:
+larger structure allowed:
+
+- hero image
+- multiple cards
+- richer layout
+
+Examples:
+
+- welcome
+- progress update
+- package completed
+
+Lightweight:
+minimal structure:
+
+- password reset
+- 1h reminder
+- verification
+
+Document:
+
+- recommended content density
+- expected reading speed
+- mobile attention expectations
+
+---
+
+8. FALLBACK BEHAVIOR
+
+---
+
+Add fallback rules.
+
+Document system behavior when:
+
+- image unavailable
+- map unavailable
+- WhatsApp unavailable
+- optional data missing
+- location missing
+- payment metadata incomplete
+
+Rule:
+Never show broken UI or empty placeholders.
+
+Document:
+
+- hide section behavior
+- fallback CTA behavior
+- fallback copy behavior
+
+---
+
+9. SUBJECT LINE PHILOSOPHY
+
+---
+
+Create formal subject-line guidelines.
+
+Rules:
+
+- concise
+- premium
+- non-spammy
+- no excessive caps
+- no gym-bro language
+- no excessive emojis
+
+Document:
+
+- subject tone
+- ideal length
+- urgency handling
+- mobile inbox readability
+
+Include:
+good examples
+bad examples
+
+---
+
+10. REUSABLE COMPONENT STRATEGY
+
+---
+
+Before visual design begins:
+document the reusable email component system.
+
+Examples:
+
+- hero section
+- info cards
+- CTA buttons
+- status banners
+- metric rows
+- support blocks
+- footer
+- quick action rows
+- admin operational rows
+
+Goal:
+future templates should assemble from reusable blocks instead of duplicated custom layouts.
+
+Document:
+
+- which components are shared globally
+- which are client-only
+- which are admin-only
+
+---
+
+OUTPUT REQUIRED
+
+Update the architecture report with:
+
+- new sections
+- revised logic
+- architecture clarifications
+- missing-field analysis
+- reusable strategy
+- future scalability notes
+
+Still no visual design.
+Still no coding.
+Still no deployment.
+
+After updating the report:
+STOP and wait for approval before Step 2 (Email Design System Blueprint).
