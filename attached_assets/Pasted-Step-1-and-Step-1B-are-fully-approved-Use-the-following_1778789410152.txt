@@ -1,0 +1,313 @@
+Step 1 and Step 1B are fully approved.
+
+Use the following final architectural decisions before starting Step 2:
+
+Q8:
+Add Open Directions / map URL support ONLY for session-related emails.
+Do not use maps in generic account or payment emails.
+
+Q9:
+Session reminder cap must be:
+- One 24-hour reminder
+- One 1-hour reminder
+per session only.
+No duplicate reminders.
+
+Q10:
+Use quiet hours:
+10:00 PM → 7:00 AM
+Asia/Dubai timezone.
+
+During quiet hours:
+- Suppress non-critical reminder emails
+- Delay low-priority sends until morning
+- Critical transactional emails may bypass suppression if necessary
+
+Q11:
+Keep severity-driven visual classification documented now for future Step 3 implementation:
+- Success
+- Informational
+- Warning
+- Critical
+
+Do not fully design severity visuals yet.
+Only prepare the architecture and component strategy.
+
+Q12:
+Support/contact actions should include:
+- WhatsApp support
+- Contact Support
+where contextually relevant.
+
+Q13:
+Suppression logs and advanced suppression handling should be planned architecturally only.
+Do NOT build the backend implementation yet.
+
+--------------------------------------------------
+
+Now begin Step 2 ONLY:
+EMAIL DESIGN SYSTEM BLUEPRINT
+
+IMPORTANT:
+This step is planning + architecture + UI system definition only.
+
+DO NOT:
+- Build production templates yet
+- Send emails
+- Change database schema
+- Refactor backend logic
+- Deploy anything
+- Generate placeholder marketing content
+- Hardcode styles into templates
+
+--------------------------------------------------
+
+STEP 2 GOALS
+
+Create a complete scalable email design system for the entire platform.
+
+The system must support:
+- All 28 email types already defined in Step 1 + Step 1B
+- Client emails
+- Admin emails
+- Future multilingual support
+- Future dark mode compatibility
+- Future visual severity system
+- Future reusable component system
+
+--------------------------------------------------
+
+DELIVERABLES REQUIRED IN STEP 2
+
+1. GLOBAL EMAIL DESIGN LANGUAGE
+Define:
+- Typography system
+- Font hierarchy
+- Padding spacing scale
+- Border radius system
+- Card system
+- Container widths
+- Mobile responsiveness rules
+- CTA hierarchy
+- Visual density rules
+- White-space philosophy
+- Section separation rules
+- Iconography style direction
+- Animation/motion policy (if any)
+- Light/dark compatibility strategy
+
+The visual direction must feel:
+- Premium
+- Luxury fitness brand
+- Clean
+- Minimal
+- High-trust
+- Modern SaaS
+- Similar quality level to Stripe / Notion / Apple transactional emails
+NOT generic gym marketing spam.
+
+--------------------------------------------------
+
+2. DESIGN TOKENS
+Define centralized reusable tokens for:
+- Colors
+- Backgrounds
+- Borders
+- Text hierarchy
+- CTA states
+- Severity states
+- Shadows
+- Gradients
+- Spacing
+- Layout widths
+- Responsive breakpoints
+
+Document naming conventions clearly.
+
+--------------------------------------------------
+
+3. EMAIL LAYOUT ARCHITECTURE
+Design the global shell structure for all emails.
+
+Examples:
+- EmailShell
+- Header
+- Hero
+- Body
+- CardStack
+- CTA section
+- Footer
+- Legal area
+- Support area
+
+Define:
+- Maximum width
+- Mobile stacking behavior
+- Component ordering
+- Conditional rendering strategy
+- Fallback rendering strategy
+
+--------------------------------------------------
+
+4. COMPONENT LIBRARY PLAN
+Architect reusable email components.
+
+Include:
+- SessionCard
+- PackageStatusCard
+- PaymentCard
+- ProgressCard
+- ReminderCard
+- QuoteCard
+- AlertBanner
+- AdminMetricTable
+- CTAButton
+- WhatsAppButton
+- SeverityPill
+- LocationCard
+- Footer
+- Header
+- Divider
+- EmptyState
+
+For each component define:
+- Purpose
+- Used by which emails
+- Weight class
+- Optional fields
+- Required fields
+- Mobile behavior
+- Fallback behavior
+- Severity compatibility
+
+--------------------------------------------------
+
+5. VISUAL HIERARCHY SYSTEM
+Define:
+- Heavyweight emails
+- Medium emails
+- Lightweight emails
+
+Specify:
+- Max card count
+- Density rules
+- Visual intensity
+- Hero usage rules
+- When imagery is allowed
+- When icons only should be used
+- Which emails should stay ultra-light
+
+--------------------------------------------------
+
+6. EMAIL SEVERITY VISUAL SYSTEM
+Create architecture for:
+- Success
+- Informational
+- Warning
+- Critical
+
+Define:
+- Border treatments
+- Accent usage
+- Icon direction
+- CTA behavior
+- Emotional tone
+- Priority emphasis
+- Animation restrictions
+
+Do NOT overuse red/warning visuals.
+
+--------------------------------------------------
+
+7. MOBILE-FIRST STRATEGY
+The system must be optimized primarily for phones.
+
+Define:
+- One-column behavior
+- CTA sizing
+- Thumb reach considerations
+- Text truncation rules
+- Card collapse behavior
+- Mobile spacing
+- Font scaling
+- Outlook/Gmail compatibility concerns
+
+--------------------------------------------------
+
+8. DARK MODE STRATEGY
+Define future-proof dark mode architecture:
+- Inverted backgrounds
+- Logo handling
+- Border visibility
+- Shadow adjustments
+- CTA visibility
+- Contrast protection
+
+Do NOT fully implement yet.
+
+--------------------------------------------------
+
+9. IMAGE STRATEGY
+Define:
+- Which emails may contain images
+- Which must remain icon-only
+- Allowed image styles
+- Banner philosophy
+- Compression rules
+- CDN expectations
+- Alt text strategy
+
+No stock-gym spam visuals.
+
+--------------------------------------------------
+
+10. SUBJECT LINE VISUAL RELATION
+Ensure visual hierarchy aligns with subject philosophy from Step 1B.
+
+High urgency email visuals must align with:
+- Subject intensity
+- Severity classification
+- CTA prominence
+- Mobile preview behavior
+
+--------------------------------------------------
+
+11. ACCESSIBILITY
+Document:
+- Contrast standards
+- Font minimums
+- Button accessibility
+- Screen reader considerations
+- Alt text rules
+- Semantic structure strategy
+
+--------------------------------------------------
+
+12. OUTPUT FORMAT
+
+Create:
+- Structured markdown architecture document
+- Clear sections
+- Tables where useful
+- Reusable component maps
+- Visual hierarchy maps
+- Severity matrices
+- Mobile behavior definitions
+
+Save as:
+docs/email-design-system-step2.md
+
+--------------------------------------------------
+
+IMPORTANT FINAL RULES
+
+- This is architecture/design planning ONLY
+- No production implementation yet
+- No backend coding yet
+- No template rendering yet
+- No deployment
+- No schema migrations
+- No mockup screenshots
+- No random filler content
+
+The output must feel like a senior product designer + email systems architect wrote it for a production SaaS platform.

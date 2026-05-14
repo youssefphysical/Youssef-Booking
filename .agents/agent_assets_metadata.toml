@@ -17,3 +17,9 @@ id = "rClXjRHbJcPRPwXsyhCW2"
 uri = "file://docs/email-architecture-step1.md"
 type = "text"
 title = "Email Architecture — Step 1 + Step 1B (refined)"
+
+[[outputs]]
+id = "acfebNHtXgBOsxoukx1PS"
+uri = "file://docs/email-design-system-step2.md"
+type = "text"
+title = "Email Design System Blueprint — Step 2"
