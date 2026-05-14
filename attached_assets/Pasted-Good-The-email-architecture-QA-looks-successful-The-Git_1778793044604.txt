@@ -1,0 +1,167 @@
+Good.
+
+The email architecture QA looks successful.
+
+The GitHub Actions failure is now an infrastructure/runtime issue — not a design-system issue.
+
+Do NOT patch blindly.
+
+I want a proper production-grade root-cause audit.
+
+==================================================
+PRIORITY:
+IDENTIFY FAILURE LAYER
+==================================================
+
+Determine EXACTLY where the cron failed:
+
+1. Workflow trigger layer
+2. Environment boot layer
+3. Dependency/install layer
+4. Build/transpile layer
+5. DB connection layer
+6. Auth/env validation layer
+7. Runtime execution layer
+8. Notification pipeline layer
+
+No guessing.
+
+==================================================
+ADD STRUCTURED FAILURE LOGGING
+==================================================
+
+I want explicit logs for:
+
+- workflow started
+- env validated
+- database connected
+- scheduler started
+- reminders query started
+- reminders count
+- auto-complete count
+- email queue count
+- send success/failure
+- final completion
+
+Every stage should log clearly.
+
+==================================================
+VERY IMPORTANT:
+FAIL FAST
+==================================================
+
+If any required env is missing:
+
+- DATABASE_URL
+- RESEND_API_KEY
+- CRON_SECRET
+- APP_URL
+- etc
+
+The workflow should terminate immediately with a human-readable error.
+
+No silent failures.
+No generic crashes.
+
+==================================================
+ADD ENVIRONMENT VALIDATION LAYER
+==================================================
+
+Create a central validator:
+
+validateCronEnvironment()
+
+It should:
+- verify required envs
+- validate URL formats
+- verify numeric configs
+- output readable diagnostics
+
+before ANY cron logic executes.
+
+==================================================
+SEPARATE THE CRON PHASES
+==================================================
+
+Current cron should be isolated into phases:
+
+1. boot
+2. validate-env
+3. db-connect
+4. auto-complete
+5. reminders
+6. package-expiry
+7. email-dispatch
+8. cleanup
+9. summary-report
+
+Each phase independently logged.
+
+==================================================
+IMPORTANT:
+DO NOT SEND FAILURE EMAILS TOO EARLY
+==================================================
+
+If the workflow crashes before runtime initialization,
+avoid noisy admin alerts.
+
+Only send admin failure emails after:
+- env validated
+- runtime initialized
+- DB connected
+
+Otherwise GitHub email noise becomes useless.
+
+==================================================
+GITHUB ACTIONS HARDENING
+==================================================
+
+Audit:
+
+- workflow YAML
+- Node version
+- pnpm/npm consistency
+- tsx availability
+- path aliases
+- build cache
+- working-directory
+- secrets exposure
+- timeout handling
+
+Especially:
+cron runners are clean environments.
+
+Never assume local state exists.
+
+==================================================
+ADD LOCAL REPRODUCTION COMMAND
+==================================================
+
+I want ONE local command that reproduces cron behavior exactly.
+
+Example:
+
+pnpm cron:test
+
+or
+
+npm run cron:test
+
+This should simulate the GitHub environment locally.
+
+==================================================
+SUCCESS CONDITION
+==================================================
+
+The cron system is only considered stable when:
+
+- GitHub Actions passes consistently
+- logs are readable
+- failures are diagnosable
+- missing envs fail clearly
+- no silent exits occur
+- no duplicate emails occur
+- cron can run unattended safely
+
+Treat this like financial infrastructure,
+not a side utility.
