@@ -1,0 +1,253 @@
+Excellent progress. The architecture direction is now much closer to production-grade quality.
+
+Before continuing deeper into Step 3 implementation, apply the following STRICT refinements and enforcement rules globally across the entire email system.
+
+==================================================
+CRITICAL IMPLEMENTATION ENFORCEMENTS
+==================================================
+
+1. NO VISUAL DRIFT
+The entire system must visually feel like ONE unified product.
+
+Enforce globally:
+- identical card rhythm
+- identical padding logic
+- identical CTA spacing
+- identical border radius usage
+- identical section spacing
+- identical typography hierarchy
+
+I do NOT want:
+- one email feeling “marketing”
+- another feeling “system”
+- another feeling “dashboard”
+
+Everything must feel:
+minimal,
+premium,
+luxury SaaS,
+clean fitness-tech infrastructure.
+
+==================================================
+2. REMOVE “DEVELOPER LOOK”
+==================================================
+
+Current risk:
+Some transactional layouts may start feeling too technical or too admin-heavy.
+
+Reduce:
+- excessive outlines
+- excessive labels
+- stacked micro-sections
+- over-separated cards
+- too many dividers
+- over-dense layouts
+
+Prioritize:
+- breathing room
+- visual calmness
+- strong readability
+- smooth eye flow
+- premium whitespace
+
+Think:
+Apple,
+Stripe,
+Linear,
+Notion,
+modern luxury SaaS.
+
+NOT:
+legacy enterprise software.
+
+==================================================
+3. HERO USAGE RULES
+==================================================
+
+Hero sections must NOT appear everywhere.
+
+Allowed:
+- welcome
+- package completed
+- transformation milestone
+- payment confirmed (lightweight)
+- promotional onboarding
+
+Avoid hero sections in:
+- reminders
+- warnings
+- operational alerts
+- password reset
+- admin alerts
+
+Utility emails should feel focused and efficient.
+
+==================================================
+4. CTA DISCIPLINE
+==================================================
+
+Too many CTAs destroy clarity.
+
+Rules:
+- one primary CTA maximum
+- secondary CTA only if truly necessary
+- tertiary actions must become text links
+- emergency emails = single-action focus
+
+Buttons must feel:
+strong,
+minimal,
+luxury,
+clear.
+
+==================================================
+5. MOBILE RENDER PRIORITY
+==================================================
+
+Mobile rendering is MORE IMPORTANT than desktop.
+
+Prioritize:
+- thumb reach
+- readable spacing
+- large tap areas
+- compact but breathable layouts
+- proper vertical rhythm
+
+Never optimize desktop at the expense of mobile.
+
+==================================================
+6. DARK MODE HARDENING
+==================================================
+
+Be extremely careful with:
+- gray borders
+- muted text
+- transparent backgrounds
+- shadow-only separation
+
+In dark mode:
+- cards must still separate clearly
+- CTA buttons must remain obvious
+- icons must remain visible
+- contrast must remain premium
+
+No washed-out dark rendering.
+
+==================================================
+7. COMPONENT INTELLIGENCE
+==================================================
+
+Components must auto-adapt based on:
+- severity
+- missing data
+- compact mode
+- mobile mode
+- no-image mode
+- RTL mode
+
+Do NOT create duplicate versions manually.
+
+Components should intelligently degrade themselves.
+
+==================================================
+8. EMAIL WEIGHT CONTROL
+==================================================
+
+Do NOT let emails become visually heavy.
+
+Especially avoid:
+- giant hero images
+- massive headers
+- too many stacked cards
+- huge spacing blocks
+- long paragraphs
+- visual clutter
+
+Most emails should feel:
+fast,
+light,
+confident,
+focused.
+
+==================================================
+9. ADMIN EMAILS
+==================================================
+
+Admin emails should feel:
+operational,
+clean,
+high signal,
+fast to scan.
+
+NOT client-marketing style.
+
+Prioritize:
+- data hierarchy
+- quick scanning
+- severity visibility
+- operational action clarity
+
+==================================================
+10. CLIENT EMAILS
+==================================================
+
+Client emails should feel:
+premium,
+encouraging,
+human,
+professional,
+high-end.
+
+Avoid robotic SaaS feeling.
+
+The tone should match:
+high-end Dubai personal training brand.
+
+==================================================
+11. RENDER STABILITY
+==================================================
+
+No visual implementation should depend on:
+- image loading
+- external font loading
+- unsupported CSS
+- animation
+- CSS tricks
+
+Emails must still look premium when:
+- images fail
+- dark mode forces overrides
+- Outlook strips styles
+- Gmail rewrites HTML
+
+==================================================
+12. FINAL VISUAL TARGET
+==================================================
+
+The final system should feel like:
+
+“Luxury fitness-tech SaaS platform with enterprise-grade transactional infrastructure.”
+
+Combination of:
+- Stripe clarity
+- Apple calmness
+- Linear precision
+- premium fitness branding
+
+NOT generic template marketplaces.
+
+==================================================
+13. IMPORTANT FINAL RULE
+==================================================
+
+If ANY component feels:
+- visually loud
+- cramped
+- inconsistent
+- too technical
+- too “developer UI”
+- too marketing-heavy
+
+Refactor it immediately before expanding the system further.
+
+Stability + consistency are more important than speed.
