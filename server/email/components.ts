@@ -134,8 +134,12 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     // Mobile-scaled display headlines.
     `.email-display-xl{font-size:${TYPE.displayXlMobile.size} !important;line-height:${TYPE.displayXlMobile.lh} !important;letter-spacing:${TYPE.displayXlMobile.tracking} !important;}`,
     `.email-display{font-size:${TYPE.displayMobile.size} !important;line-height:${TYPE.displayMobile.lh} !important;}`,
-    // Mobile hero gets tighter vertical pad.
-    `.email-hero-pad{padding:${SPACE.s8} ${SPACE.s4} ${SPACE.s7} !important;}`,
+    // Mobile hero — tightened top pad post hero-blend-strip introduction.
+    // The 32px atmospheric haze + image-fade already supply breathing
+    // between the photo band and the type band, so an additional s8 (48px)
+    // top pad on mobile created a dead air gap. s6 (28px) keeps the hero
+    // composition reading as one cinematic moment on phone viewports.
+    `.email-hero-pad{padding:${SPACE.s6} ${SPACE.s4} ${SPACE.s7} !important;}`,
     `.email-cta-section-pad{padding:${SPACE.s8} ${SPACE.s4} !important;}`,
     `}`,
     // Remove default link blueing on iOS (phone numbers, addresses).
@@ -724,7 +728,7 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     // separation rather than a hard utility line. (ACCENT_RULE_GRADIENT
     // also degrades cleanly to a flat hairline in clients that drop
     // background-image.)
-    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};background-image:${ACCENT_RULE_GRADIENT};opacity:0.42;margin:${SPACE.s7} 0 ${SPACE.s6};">&nbsp;</div>`
+    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};background-image:${ACCENT_RULE_GRADIENT};opacity:0.55;margin:${SPACE.s7} 0 ${SPACE.s6};">&nbsp;</div>`
     // Reach-out section eyebrow
     + `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-align:center;text-transform:uppercase;padding-bottom:${SPACE.s4};" class="email-text-accent">${esc(reachLabel)}</div>`
     // Contact lockup

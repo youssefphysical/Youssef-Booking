@@ -246,10 +246,19 @@ export const FOOTER_GRADIENT =
  * Outlook desktop (which strips them) — the email remains complete and
  * on-brand without them.
  */
+/**
+ * Calibrated glow scale — every cyan opacity and white-inset highlight
+ * tuned against a single luxury-restraint axis so the system reads as
+ * "calibrated" not "decorative". card cyan ring 0.10 matches
+ * innerHighlight 0.10 so card-edge illumination is visually unified
+ * across every card surface. CTA inset gloss 0.24 (was 0.32 — too hot)
+ * keeps the button reading as expensive product chrome rather than a
+ * neon overlay.
+ */
 export const GLOW = {
-  card: "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.08)",
+  card: "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.10)",
   cardCyan: "0 16px 48px rgba(0,0,0,0.55), 0 0 32px rgba(0,229,255,0.12)",
-  cta: "0 0 32px rgba(0,229,255,0.42), 0 8px 28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.18)",
+  cta: "0 0 32px rgba(0,229,255,0.42), 0 8px 28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.18)",
   innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
   hero: "0 24px 64px rgba(0,0,0,0.8)",
 } as const;
