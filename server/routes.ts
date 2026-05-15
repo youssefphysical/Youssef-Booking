@@ -577,6 +577,8 @@ async function dispatchBookingNotifications(args: {
   };
 
   // ---- 2. Trainer email — NEW design system (server/email/builders) ----
+  // Diagnostic log so production logs prove which renderer fired.
+  console.log("[email-route] booking-notif → admin renderer = PREMIUM (buildAdminNewBookingEmail)");
   // Wired through the locked composer/components pipeline: brandHeader →
   // severity banner → keyValueList → ctaButton → footer. Dark-mode + RTL
   // post-process applied automatically by `compose()`. Falls back to the
@@ -608,7 +610,7 @@ async function dispatchBookingNotifications(args: {
         supportEmail: trainerEmail(),
       });
     } catch (newBuilderErr) {
-      console.warn("[notif] new admin builder failed, falling back to legacy:", newBuilderErr);
+      console.warn("[email-route] FALLBACK activated (admin) — premium builder threw:", newBuilderErr);
       trainerMsg = buildAdminBookingEmail({
         d: bookingDetails,
         clientEmail: user?.email ?? null,
@@ -632,6 +634,7 @@ async function dispatchBookingNotifications(args: {
   // package details, single primary CTA → /dashboard. Same fallback
   // pattern as admin: try-new, fall back to legacy on hard failure.
   if (user?.email) {
+    console.log("[email-route] booking-notif → client renderer = PREMIUM (buildBookingConfirmationEmail)");
     try {
       let clientMsg: { subject: string; html: string; text: string };
       try {
@@ -656,7 +659,7 @@ async function dispatchBookingNotifications(args: {
           supportEmail: trainerEmail(),
         });
       } catch (newBuilderErr) {
-        console.warn("[notif] new client builder failed, falling back to legacy:", newBuilderErr);
+        console.warn("[email-route] FALLBACK activated (client) — premium builder threw:", newBuilderErr);
         clientMsg = buildClientBookingConfirmationEmail({
           data: bookingDetails,
           lang,
@@ -2678,7 +2681,33 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           };
 
           if (partnerUser.email) {
-            const built = buildClientBookingConfirmationEmail({ data: details, lang: partnerLang });
+            // Migrated to the NEW design system. Same try/legacy-fallback
+            // pattern as the primary client + admin sites so a duo partner
+            // link can never silently revert to the plain template.
+            console.log("[email-route] duo-partner → renderer = PREMIUM (buildBookingConfirmationEmail)");
+            let built: { subject: string; html: string; text: string };
+            try {
+              const pLang: "en" | "ar" = partnerLang === "ar" ? "ar" : "en";
+              built = buildBookingConfirmationEmail({
+                lang: pLang,
+                recipientName: partnerName,
+                date: booking.date,
+                time12,
+                sessionFocus: sessionFocusLabel,
+                trainingGoal: trainingGoalLabel,
+                location: "Coach Youssef's studio, Dubai",
+                sessionType: sessionTypeLabel,
+                packageName: null,
+                clientEmail: partnerUser.email,
+                clientPhone: partnerUser.phone ?? null,
+                bookingUrl: ((process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "") || "") + "/dashboard",
+                rescheduleUrl: ((process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "") || "") + "/dashboard",
+                supportEmail: trainerEmail(),
+              });
+            } catch (newBuilderErr) {
+              console.warn("[email-route] FALLBACK activated (duo-partner) — premium builder threw:", newBuilderErr);
+              built = buildClientBookingConfirmationEmail({ data: details, lang: partnerLang });
+            }
             await sendEmail({
               to: partnerUser.email,
               subject: built.subject,
