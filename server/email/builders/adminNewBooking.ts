@@ -1,12 +1,17 @@
 /**
  * GOLDEN REFERENCE #5 — Admin new booking notification (operational).
  *
- * Hero discipline: NO hero (admin = operational, never marketing).
- * CTA discipline: ONE primary "Open in admin". No secondary action — admin
- *   emails are single-action by design.
+ * Cinematic v2 treatment (operational restraint):
+ *   - NO hero image (admin = elite control center, never marketing).
+ *   - Tight type-only anchor with cyan accent — reads as ops console.
+ *   - Card with info banner + key-value details.
+ *   - Single CTA inside the card (no billboard band — admin is single-action).
+ *   - Footer without unsubscribe (admin emails are internal-mandatory).
+ *
+ * Hero discipline: NO hero image (admin = operational, never marketing).
+ * CTA discipline: ONE primary "Open in admin". No secondary action.
  * Severity: info — operational notice, scannable.
  * Tone: high-signal, low-noise. No greeting fluff.
- * Footer: NO unsubscribe (admin emails are internal-mandatory).
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -15,6 +20,7 @@ import {
   card,
   ctaButton,
   footer,
+  hero,
   keyValueList,
   section,
   severityBanner,
@@ -58,8 +64,17 @@ export function buildAdminNewBookingEmail(input: AdminNewBookingInput): Composed
 
   const body = [
     brandHeader(),
+    // Operational hero: type-only, tight, reads as "control center".
+    hero({
+      eyebrow: "CONTROL CENTER",
+      title: "NEW",
+      accentWord: "BOOKING",
+      subtitle: `${clientName} · ${date} · ${time12}`,
+      trailingMeta: actionTimestamp ? `LOGGED · ${actionTimestamp.toUpperCase()}` : undefined,
+    }),
     section(
       card({
+        headerLabel: "BOOKING INTAKE",
         children: [
           severityBanner({
             severity: "info",
