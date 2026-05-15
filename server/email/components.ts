@@ -243,8 +243,11 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
   const eyebrowHtml = eyebrow
     ? `<div style="font-size:11px;line-height:1.2;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.brand.cyan};padding-bottom:${SPACE.s5};text-align:${align};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
+  // Accent cyan word — cinematic emotional impact moment. Inline padding
+  // gives the cyan word a subtle breath before/after its sibling white
+  // word, so it reads as a deliberate emphasis rather than a recolour.
   const accentHtml = accentWord
-    ? `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">&nbsp;${esc(accentWord)}</span>`
+    ? `<span style="color:${COLOR.brand.cyan};padding-left:0.08em;" class="email-text-accent">&nbsp;${esc(accentWord)}</span>`
     : "";
   const subtitleHtml = subtitle
     ? `<div style="${typeStyle("bodyLg", COLOR.text.secondary)}padding-top:${SPACE.s5};text-align:${align};max-width:520px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(subtitle)}</div>`
@@ -461,12 +464,15 @@ export function ctaButton({ href, label, variant = "brand" }: CtaButtonOptions):
   const bgGradient = variant === "brand" ? CTA_GRADIENT : `linear-gradient(180deg, ${SEVERITY[variant].accent} 0%, ${SEVERITY[variant].accent} 100%)`;
   const textColor = COLOR.text.onAccent;
   const ctaClass = variant === "brand" ? "email-cta-brand" : `email-cta-${variant}`;
-  // Outlook VML — contained internal hack so callers never see MSO/VML.
+  // CTA — luxury product proportions. 24/48 padding (taller, wider) +
+  // 0.22em tracking gives the button a deliberate cinematic weight that
+  // reads as expensive and tactile rather than template-like. VML mirrors
+  // the dimensions for Outlook desktop graceful degradation.
   const vml = [
     `<!--[if mso]>`,
-    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:60px;v-text-anchor:middle;width:300px;" arcsize="20%" stroke="f" fillcolor="${bg}">`,
+    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:64px;v-text-anchor:middle;width:320px;" arcsize="20%" stroke="f" fillcolor="${bg}">`,
     `<w:anchorlock/>`,
-    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;">${safeLabel}</center>`,
+    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;">${safeLabel}</center>`,
     `</v:roundrect>`,
     `<![endif]-->`,
   ].join("");
@@ -475,7 +481,7 @@ export function ctaButton({ href, label, variant = "brand" }: CtaButtonOptions):
     `<tr><td class="email-cta-cell" align="center" style="border-radius:${RADIUS.md};background-color:${bg};background-image:${bgGradient};box-shadow:${GLOW.cta};">`,
     vml,
     `<!--[if !mso]><!-- -->`,
-    `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:inline-block;padding:22px 40px;font-family:inherit;font-size:14px;line-height:1;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:${RADIUS.md};background-color:${bg};background-image:${bgGradient};mso-hide:all;">${safeLabel}</a>`,
+    `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:inline-block;padding:24px 48px;font-family:inherit;font-size:14px;line-height:1;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:${RADIUS.md};background-color:${bg};background-image:${bgGradient};mso-hide:all;">${safeLabel}</a>`,
     `<!--<![endif]-->`,
     `</td></tr></table>`,
   ].join("");
@@ -691,14 +697,17 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     );
   }
 
+  // Legal microcopy — clean undecorated links separated by atmospheric
+  // bullets. Underlines stripped so the closing rhythm reads as calm
+  // luxury minimalism rather than utility footer chrome.
   const legalLinks: string[] = [
-    `<a href="mailto:${esc(supportEmail)}" style="color:${COLOR.text.tertiary};text-decoration:none;border-bottom:1px solid ${COLOR.border.divider};padding-bottom:1px;">${supportLabel}</a>`,
+    `<a href="mailto:${esc(supportEmail)}" style="color:${COLOR.text.tertiary};text-decoration:none;">${supportLabel}</a>`,
   ];
   if (manageUrl) {
-    legalLinks.push(`<a href="${esc(manageUrl)}" style="color:${COLOR.text.tertiary};text-decoration:none;border-bottom:1px solid ${COLOR.border.divider};padding-bottom:1px;">${manageLabel}</a>`);
+    legalLinks.push(`<a href="${esc(manageUrl)}" style="color:${COLOR.text.tertiary};text-decoration:none;">${manageLabel}</a>`);
   }
   if (unsubscribeUrl) {
-    legalLinks.push(`<a href="${esc(unsubscribeUrl)}" style="color:${COLOR.text.tertiary};text-decoration:none;border-bottom:1px solid ${COLOR.border.divider};padding-bottom:1px;">${unsubLabel}</a>`);
+    legalLinks.push(`<a href="${esc(unsubscribeUrl)}" style="color:${COLOR.text.tertiary};text-decoration:none;">${unsubLabel}</a>`);
   }
 
   // Cinematic halo bar — editorial framing.
@@ -710,8 +719,12 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     + haloBar
     + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.16em;text-transform:uppercase;" class="email-text-primary">${esc(trainerLine)}</div>`
     + `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-align:center;text-transform:uppercase;padding-top:${SPACE.s2};" class="email-text-tertiary">${esc(trainerRole)}</div>`
-    // Hairline scratch divider
-    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};margin:${SPACE.s7} 0 ${SPACE.s6};">&nbsp;</div>`
+    // Atmospheric divider — gradient hairline that fades from transparent
+    // at the edges to a soft cyan-touched core. Reads as cinematic vapour
+    // separation rather than a hard utility line. (ACCENT_RULE_GRADIENT
+    // also degrades cleanly to a flat hairline in clients that drop
+    // background-image.)
+    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};background-image:${ACCENT_RULE_GRADIENT};opacity:0.42;margin:${SPACE.s7} 0 ${SPACE.s6};">&nbsp;</div>`
     // Reach-out section eyebrow
     + `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-align:center;text-transform:uppercase;padding-bottom:${SPACE.s4};" class="email-text-accent">${esc(reachLabel)}</div>`
     // Contact lockup
