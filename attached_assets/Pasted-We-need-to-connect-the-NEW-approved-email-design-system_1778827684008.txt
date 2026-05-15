@@ -1,0 +1,121 @@
+We need to connect the NEW approved email design system to the real production emails.
+
+Important context:
+The production booking system is already working. Do NOT break it.
+
+Confirmed working:
+- Vercel production deployment works.
+- GitHub Actions cron works.
+- CRON_SECRET and PUBLIC_APP_URL are configured.
+- /api/cron/auto-complete returns OK JSON.
+- Real booking creation works.
+- Client receives “Session confirmed” email.
+- Admin receives “New booking” email.
+- Database writes are working.
+- Resend sending is working.
+
+Current issue:
+The emails that are actually sent are still plain/minimal fallback emails.
+
+Important:
+Do NOT restore old stripped email templates.
+Do NOT redesign from scratch.
+Do NOT remove current working fields.
+Do NOT touch cron, GitHub workflow, env variables, database schema, auth, booking logic, or payment logic.
+
+What likely happened:
+The NEW email design work from yesterday exists in the codebase as:
+- email components
+- composer
+- design tokens
+- golden reference previews
+- dark mode / RTL / mobile-safe foundation
+
+But the real production send path for:
+1. Client “Session confirmed”
+2. Admin “New booking”
+
+is still using a simple fallback/plain builder instead of the new composer/components.
+
+Your task:
+Wire ONLY these two real production emails to the NEW approved email composer/components system.
+
+Required result:
+When a real booking is created in production:
+- Client confirmation email should use the new premium cinematic design.
+- Admin new booking email should use the new premium but operational/scannable admin design.
+
+Design target:
+- Premium dark cinematic “Youssef Elite Coaching” style
+- Cyan/blue brand accent
+- Clean luxury cards
+- Mobile-first
+- Gmail/Apple Mail/Outlook-safe HTML
+- Inline styles or email-safe CSS only
+- No heavy external CSS
+- No image dependency
+- Clear session details
+- Strong CTA button
+- Brand header
+- Footer with support/contact/WhatsApp
+- Client email should feel premium and motivational
+- Admin email should stay practical, fast-scannable, and operational
+
+Strict scope:
+Only modify the email rendering/wiring files needed for:
+- client booking confirmation email
+- admin new booking notification email
+
+Do NOT modify:
+- cron files
+- .github workflows
+- env variable names
+- database schema
+- auth/session logic
+- booking creation logic except the email-render function call if required
+- payment logic
+- package logic
+- admin dashboard routes
+- public routes
+
+Implementation rules:
+1. First identify the exact functions/files currently generating the plain emails.
+2. Replace only their HTML rendering with the new composer/components output.
+3. Preserve all existing data fields:
+   - client name
+   - email
+   - phone
+   - date
+   - time Dubai/GST
+   - session focus
+   - training goal
+   - session type
+   - payment status
+   - source
+   - logged time
+   - dashboard/admin links
+4. Preserve existing subjects unless improved safely.
+5. Preserve existing Resend send logic.
+6. Preserve text fallback if currently present.
+7. Add graceful fallback if the new composer fails, but do not silently send broken HTML.
+8. Keep output lightweight and email-client safe.
+
+Testing required:
+After wiring:
+- Render or preview client booking confirmation email.
+- Render or preview admin new booking email.
+- Confirm mobile layout is clean.
+- Confirm dark mode is clean.
+- Confirm CTA links work.
+- Confirm no backend/cron/database files changed.
+- Confirm TypeScript/build passes.
+
+Report back with:
+1. Exact files changed.
+2. Exact production send path now used.
+3. Confirmation that old/dead templates were not restored.
+4. Confirmation that cron/env/database/auth/payment were untouched.
+5. How to test with one new booking.
+6. Any risks or limitations.
+
+Stop after completing only this wiring + preview/testing. Do not expand to other email types yet.

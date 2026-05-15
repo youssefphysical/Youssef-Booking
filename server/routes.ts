@@ -93,6 +93,8 @@ import {
   fromAddress,
 } from "./email";
 import { promises as dns } from "node:dns";
+import { buildBookingConfirmationEmail } from "./email/builders/bookingConfirmation";
+import { buildAdminNewBookingEmail } from "./email/builders/adminNewBooking";
 import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
@@ -574,14 +576,46 @@ async function dispatchBookingNotifications(args: {
     }) + " GST",
   };
 
-  // ---- 2. Trainer email (premium English template, always to TRAINER_EMAIL) ----
+  // ---- 2. Trainer email — NEW design system (server/email/builders) ----
+  // Wired through the locked composer/components pipeline: brandHeader →
+  // severity banner → keyValueList → ctaButton → footer. Dark-mode + RTL
+  // post-process applied automatically by `compose()`. Falls back to the
+  // legacy stripped builder ONLY if the new builder throws (defence-in-
+  // depth — never silently send broken HTML).
+  const appUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
   try {
-    const trainerMsg = buildAdminBookingEmail({
-      d: bookingDetails,
-      clientEmail: user?.email ?? null,
-      clientPhone: user?.phone ?? null,
-      clientNotes: booking.clientNotes ?? null,
-    });
+    let trainerMsg: { subject: string; html: string; text: string };
+    try {
+      trainerMsg = buildAdminNewBookingEmail({
+        lang: "en", // admin emails are always English (operational)
+        clientName,
+        clientEmail: user?.email ?? null,
+        clientPhone: user?.phone ?? null,
+        date: booking.date,
+        time12,
+        sessionType: sessionTypeLabel,
+        packageName: bookingDetails.packageName ?? null,
+        sessionFocus: bookingDetails.sessionFocusLabel ?? null,
+        trainingGoal: bookingDetails.trainingGoalLabel ?? null,
+        notes: booking.clientNotes ?? null,
+        partnerName: bookingDetails.partnerFullName ?? null,
+        remainingSessions: bookingDetails.remainingSessions ?? null,
+        totalSessions: bookingDetails.totalSessions ?? null,
+        paymentStatus: bookingDetails.paymentStatus ?? null,
+        bookingSource: bookingDetails.bookingSource ?? null,
+        actionTimestamp: bookingDetails.actionTimestamp ?? null,
+        adminUrl: appUrl ? `${appUrl}/admin/bookings` : "/admin/bookings",
+        supportEmail: trainerEmail(),
+      });
+    } catch (newBuilderErr) {
+      console.warn("[notif] new admin builder failed, falling back to legacy:", newBuilderErr);
+      trainerMsg = buildAdminBookingEmail({
+        d: bookingDetails,
+        clientEmail: user?.email ?? null,
+        clientPhone: user?.phone ?? null,
+        clientNotes: booking.clientNotes ?? null,
+      });
+    }
     await sendEmail({
       to: trainerEmail(),
       subject: trainerMsg.subject,
@@ -593,13 +627,41 @@ async function dispatchBookingNotifications(args: {
     console.warn("[notif] trainer email failed:", e);
   }
 
-  // ---- 3. Client email (premium localized template) ----
+  // ---- 3. Client email — NEW design system (server/email/builders) ----
+  // Premium cinematic shell, success severity banner, full booking +
+  // package details, single primary CTA → /dashboard. Same fallback
+  // pattern as admin: try-new, fall back to legacy on hard failure.
   if (user?.email) {
     try {
-      const clientMsg = buildClientBookingConfirmationEmail({
-        data: bookingDetails,
-        lang,
-      });
+      let clientMsg: { subject: string; html: string; text: string };
+      try {
+        const clientLang: "en" | "ar" = lang === "ar" ? "ar" : "en";
+        clientMsg = buildBookingConfirmationEmail({
+          lang: clientLang,
+          recipientName: clientName,
+          date: booking.date,
+          time12,
+          sessionFocus: bookingDetails.sessionFocusLabel ?? null,
+          trainingGoal: bookingDetails.trainingGoalLabel ?? null,
+          location: "Coach Youssef's studio, Dubai",
+          sessionType: sessionTypeLabel,
+          packageName: bookingDetails.packageName ?? null,
+          remainingSessions: bookingDetails.remainingSessions ?? null,
+          totalSessions: bookingDetails.totalSessions ?? null,
+          paymentStatus: bookingDetails.paymentStatus ?? null,
+          clientEmail: user.email,
+          clientPhone: user?.phone ?? null,
+          bookingUrl: appUrl ? `${appUrl}/dashboard` : "/dashboard",
+          rescheduleUrl: appUrl ? `${appUrl}/dashboard` : "/dashboard",
+          supportEmail: trainerEmail(),
+        });
+      } catch (newBuilderErr) {
+        console.warn("[notif] new client builder failed, falling back to legacy:", newBuilderErr);
+        clientMsg = buildClientBookingConfirmationEmail({
+          data: bookingDetails,
+          lang,
+        });
+      }
       await sendEmail({
         to: user.email,
         subject: clientMsg.subject,

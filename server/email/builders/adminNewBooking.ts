@@ -34,12 +34,27 @@ export interface AdminNewBookingInput {
   notes: string | null;
   adminUrl: string;
   supportEmail: string;         // ops inbox
+  // Optional, additive — surfaced when present, auto-skipped otherwise.
+  // Keeps admin emails operationally complete without changing layout.
+  clientEmail?: string | null;
+  trainingGoal?: string | null;
+  paymentStatus?: string | null;     // "Paid" / "Pending"
+  bookingSource?: string | null;     // "Web booking" / "Admin entry" / "Trial signup"
+  actionTimestamp?: string | null;   // "13 May 2026, 02:14 PM GST"
+  partnerName?: string | null;       // for Duo bookings
+  remainingSessions?: number | null;
+  totalSessions?: number | null;
 }
 
 export function buildAdminNewBookingEmail(input: AdminNewBookingInput): ComposedEmail {
-  const { lang, clientName, clientPhone, date, time12, sessionType, packageName, sessionFocus, notes, adminUrl, supportEmail } = input;
+  const {
+    lang, clientName, clientPhone, date, time12, sessionType, packageName,
+    sessionFocus, notes, adminUrl, supportEmail,
+    clientEmail, trainingGoal, paymentStatus, bookingSource, actionTimestamp,
+    partnerName, remainingSessions, totalSessions,
+  } = input;
 
-  const subject = `New booking — ${clientName} · ${date} ${time12}`;
+  const subject = `New booking — ${clientName} | ${date} at ${time12}`;
   const preheader = `${sessionType}${packageName ? ` · ${packageName}` : ""}. Open the admin to confirm or adjust.`;
 
   const body = [
@@ -56,12 +71,27 @@ export function buildAdminNewBookingEmail(input: AdminNewBookingInput): Composed
           keyValueList({
             items: [
               { label: "Client", value: clientName },
+              { label: "Email", value: clientEmail ?? null },
               { label: "Phone", value: clientPhone },
               { label: "Date", value: date },
-              { label: "Time", value: time12 },
+              { label: "Time (Dubai · GST)", value: time12 },
               { label: "Type", value: sessionType },
+              { label: "Partner", value: partnerName ?? null },
               { label: "Package", value: packageName },
+              {
+                label: "Sessions remaining",
+                value:
+                  remainingSessions != null && totalSessions != null
+                    ? `${remainingSessions} of ${totalSessions}`
+                    : remainingSessions != null
+                      ? String(remainingSessions)
+                      : null,
+              },
               { label: "Focus", value: sessionFocus },
+              { label: "Goal", value: trainingGoal ?? null },
+              { label: "Payment", value: paymentStatus ?? null },
+              { label: "Source", value: bookingSource ?? null },
+              { label: "Logged", value: actionTimestamp ?? null },
               { label: "Client notes", value: notes },
             ],
           }),
