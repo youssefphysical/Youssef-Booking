@@ -1,162 +1,193 @@
 /**
- * Email design tokens — the single source of truth for every visual decision
- * across all 28 transactional emails.
+ * Email design tokens — cinematic edition.
  *
- * Hard rules (per Step 2 §1.12 + §2):
+ * This file is the single source of truth for the YOUSSEF ELITE COACHING
+ * cinematic email system. Every visual decision across every transactional
+ * email resolves through these tokens.
+ *
+ * Aesthetic: Tron Legacy + luxury performance club + dark cinematic gym.
+ * Discipline: dark-first (no light/dark dual mode); cyan is restrained,
+ * never decorative; spacing is rhythmic; typography is dominant.
+ *
+ * Hard rules:
  *   - Inline-safe values only (email clients strip CSS variables).
- *   - Light-mode default. Dark-mode pairs declared per token where relevant.
- *   - Severity classification controls accent + tint, never card background.
+ *   - Dark-first by design — `color-scheme: dark` is locked at the shell.
+ *   - Severity classification controls accent only, never card surface.
+ *   - Glow is a *decorative enhancement* — clients that strip box-shadow
+ *     (Outlook desktop) still get a complete, beautiful email.
  *   - All spacing on a 4px scale. No arbitrary pixel gaps anywhere.
- *
- * Components MUST consume from here. Hardcoded hex / px values inside any
- * component is a bug — call it out in code review.
  */
 
 export type Severity = "success" | "info" | "warning" | "critical";
-export type Weight = "heavy" | "medium" | "light";
 export type Lang = "en" | "ar";
 export type Direction = "ltr" | "rtl";
 
+/** Cinematic color palette per design brief §COLOR SYSTEM. */
 export const COLOR = {
   brand: {
-    cyan: "#0BB6CF",
-    cyanDark: "#5EE7FF",
-    ink: "#050505",
-    paper: "#FFFFFF",
+    cyan: "#00E5FF",          // Primary cyan
+    cyanSoft: "#21C7E8",      // Soft cyan
+    cyanMuted: "rgba(0,229,255,0.72)",
+    ink: "#030507",           // Outer canvas (deepest black)
+    paper: "#F4F7FA",         // White text
   },
   bg: {
-    canvas: "#F5F6F8",
-    canvasDark: "#050505",
-    surface: "#FFFFFF",
-    surfaceDark: "#101113",
-    surfaceRaised: "#FFFFFF",
-    surfaceRaisedDark: "#17181B",
+    canvas: "#030507",        // Outer email background
+    canvasTop: "#05070A",     // Top of vertical gradient
+    canvasBottom: "#020304",  // Bottom of vertical gradient
+    surface: "#0D1117",       // HUD card surface
+    surfaceTop: "rgba(13,17,23,0.96)",     // Card gradient top
+    surfaceBottom: "rgba(7,10,14,0.98)",   // Card gradient bottom
+    surfaceRaised: "#0B1C2A", // Deep panel blue (used for nested HUD)
+    secondary: "#080B0F",     // Secondary background
   },
   border: {
-    subtle: "#E5E7EB",
-    subtleDark: "#1F2125",
-    strong: "#CDD0D7",
-    strongDark: "#2C2F35",
+    cyan: "rgba(0,229,255,0.18)",   // Primary HUD edge
+    cyanSoft: "rgba(0,229,255,0.10)", // Quieter HUD edge
+    divider: "rgba(255,255,255,0.06)", // Hairline between rows
   },
   text: {
-    primary: "#0A0A0B",
-    primaryDark: "#F5F6F8",
-    secondary: "#4A4F58",
-    secondaryDark: "#B6BAC2",
-    tertiary: "#7A8090",
-    tertiaryDark: "#828896",
-    onAccent: "#FFFFFF",
-    onAccentDark: "#050505",
-    link: "#0BB6CF",
+    primary: "#F4F7FA",       // White
+    secondary: "#A7B0BA",     // Muted text
+    tertiary: "#6B7380",      // Even more muted (footer, fine print)
+    accent: "#00E5FF",        // Cyan emphasis word
+    onAccent: "#020304",      // Text on cyan CTA
+    link: "#00E5FF",
   },
   whatsapp: "#25D366",
+  warmHighlight: "rgba(255,214,153,0.12)", // cinematic warm light wash
 } as const;
 
+/**
+ * Severity accents — restrained palette designed for the cinematic dark
+ * canvas. Tints are dark+saturated (HUD-glass), accents are luminous.
+ */
 export const SEVERITY = {
   success: {
-    accent: "#0E8F6E",
-    accentDark: "#3DDCA8",
-    tint: "#E8F8F2",
-    tintDark: "#0F2A22",
-    icon: "✓",
-    label: "Success",
+    accent: "#3DDCA8",
+    tint: "rgba(61,220,168,0.10)",
+    border: "rgba(61,220,168,0.32)",
+    label: "Confirmed",
   },
   info: {
-    accent: "#1F6FEB",
-    accentDark: "#7AB7FF",
-    tint: "#EEF4FF",
-    tintDark: "#0E1B2E",
-    icon: "i",
-    label: "Information",
+    accent: "#7AB7FF",
+    tint: "rgba(122,183,255,0.10)",
+    border: "rgba(122,183,255,0.32)",
+    label: "Notice",
   },
   warning: {
-    accent: "#B86E00",
-    accentDark: "#FFB861",
-    tint: "#FFF6E6",
-    tintDark: "#2B1E07",
-    icon: "!",
+    accent: "#FFB861",
+    tint: "rgba(255,184,97,0.10)",
+    border: "rgba(255,184,97,0.32)",
     label: "Heads-up",
   },
   critical: {
-    accent: "#B42318",
-    accentDark: "#FF8A7A",
-    tint: "#FEEDEB",
-    tintDark: "#2C0F0C",
-    icon: "!!",
+    accent: "#FF8A7A",
+    tint: "rgba(255,138,122,0.10)",
+    border: "rgba(255,138,122,0.32)",
     label: "Action required",
   },
 } as const satisfies Record<Severity, {
   accent: string;
-  accentDark: string;
   tint: string;
-  tintDark: string;
-  icon: string;
+  border: string;
   label: string;
 }>;
 
-/** Spacing scale — 4px increments (§1.3). */
+/** Spacing scale — 4px increments. */
 export const SPACE = {
   s0: "0",
   s1: "4px",
   s2: "8px",
   s3: "12px",
   s4: "16px",
-  s5: "24px",
-  s6: "32px",
-  s7: "48px",
-  s8: "64px",
+  s5: "22px",
+  s6: "28px",
+  s7: "36px",
+  s8: "48px",
+  s9: "64px",
 } as const;
 
-/** Border radius (§1.4). */
+/** Border radius — HUD card shape. */
 export const RADIUS = {
   sm: "6px",
-  md: "10px",
-  lg: "14px",
+  md: "12px",
+  lg: "18px",      // Card default — per brief §CARD SYSTEM
+  xl: "22px",      // Card raised — per brief §CARD SYSTEM
   pill: "999px",
 } as const;
 
-/** Container widths (§1.5). */
+/** Container width per brief §CANVAS / STRUCTURE. */
 export const WIDTH = {
-  email: 600,
-  content: 552,
+  email: 680,      // Cinematic canvas — desktop max
+  content: 616,    // Inner content width (680 - 2*32)
 } as const;
 
-/** Typography scale (§1.2). Sizes in px, line-height unitless. */
+/**
+ * Typography scale.
+ *
+ * Brief §TYPOGRAPHY SYSTEM asks for HUGE display headlines (42-54px desktop
+ * / 30-38px mobile). We pick the conservative end of each band so that
+ * Outlook 2007/2010 desktop doesn't choke on 54px line-heights, but the
+ * cinematic dominance the brief asks for is preserved.
+ */
 export const TYPE = {
-  display: { size: "28px", lh: "1.2", weight: "600" },
-  h1: { size: "22px", lh: "1.3", weight: "600" },
-  h2: { size: "18px", lh: "1.35", weight: "600" },
-  h3: { size: "15px", lh: "1.4", weight: "600" },
-  body: { size: "15px", lh: "1.55", weight: "400" },
-  bodySm: { size: "13px", lh: "1.5", weight: "400" },
-  caption: { size: "12px", lh: "1.4", weight: "500" },
-  metric: { size: "24px", lh: "1.1", weight: "600" },
-  mono: {
-    size: "13px",
-    lh: "1.4",
-    weight: "500",
-    family: "ui-monospace, Menlo, Consolas, monospace",
+  display: { size: "42px", lh: "1.05", weight: "700", tracking: "-0.02em" },
+  displayMobile: { size: "30px", lh: "1.08", weight: "700", tracking: "-0.01em" },
+  h1: { size: "26px", lh: "1.2", weight: "700", tracking: "-0.01em" },
+  h2: { size: "20px", lh: "1.3", weight: "600", tracking: "0" },
+  h3: { size: "16px", lh: "1.4", weight: "600", tracking: "0" },
+  body: { size: "16px", lh: "1.55", weight: "400", tracking: "0" },
+  bodySm: { size: "14px", lh: "1.55", weight: "400", tracking: "0" },
+  caption: { size: "12px", lh: "1.4", weight: "500", tracking: "0" },
+  metric: { size: "26px", lh: "1.1", weight: "700", tracking: "-0.01em" },
+  micro: {
+    // Micro labels per brief §TYPOGRAPHY SYSTEM (DATE, TIME, LOCATION...)
+    size: "11px",
+    lh: "1.2",
+    weight: "600",
+    tracking: "0.18em",
   },
 } as const;
 
-/** Font stack — system fonts only. RTL appends Arabic system fonts. */
+/**
+ * Font stack — system stack for safety. Brief preferred Helvetica Neue,
+ * Helvetica, Arial — matches modern macOS/iOS perfectly and degrades to
+ * Arial on Windows. We append broader fallbacks for resilience.
+ */
 export const FONT_STACK = {
-  ltr: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif',
-  rtl: '"SF Arabic", "Tajawal", "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Arial, sans-serif',
+  ltr: '"Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, sans-serif',
+  rtl: '"SF Arabic", "Tajawal", "Cairo", "Helvetica Neue", Helvetica, Arial, sans-serif',
 } as const;
 
-/** Mobile breakpoint (§2.11). Email clients support exactly one cliff. */
-export const BREAKPOINT_MOBILE = 480;
-
-/** Brand-cyan whisper gradient for hero containers (§2.8). */
-export const HERO_GRADIENT =
-  "linear-gradient(180deg, rgba(11,182,207,0.06) 0%, rgba(11,182,207,0.00) 100%)";
+/** Mobile breakpoint — single cliff per email-client constraint. */
+export const BREAKPOINT_MOBILE = 600;
 
 /**
- * Resolve a severity to its accent + tint color pair. Caller chooses which
- * mode (light vs dark token) — composer always emits light values inline,
- * dark values are injected via prefers-color-scheme overrides at post-process.
+ * Hero gradient — vertical wash that anchors the cinematic top of the
+ * email. Image-free by design (Gmail strips remote images by default).
+ * Cinematic depth comes from typography + restrained cyan glow.
  */
+export const HERO_GRADIENT =
+  "linear-gradient(180deg, #06090E 0%, #04060A 60%, #030507 100%)";
+
+/** HUD card surface gradient per brief §CARD SYSTEM. */
+export const CARD_GRADIENT =
+  "linear-gradient(180deg, rgba(13,17,23,0.96) 0%, rgba(7,10,14,0.98) 100%)";
+
+/**
+ * Glow tokens per brief §GLOW SYSTEM. These are emitted as box-shadow
+ * declarations and degrade gracefully in clients that strip them
+ * (Outlook desktop): the email remains complete and on-brand without them.
+ */
+export const GLOW = {
+  card: "0 10px 34px rgba(0,0,0,0.42), 0 0 0 1px rgba(0,229,255,0.06)",
+  cardCyan: "0 10px 34px rgba(0,0,0,0.42), 0 0 24px rgba(0,229,255,0.10)",
+  cta: "0 0 24px rgba(0,229,255,0.32), 0 6px 20px rgba(0,0,0,0.5)",
+  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.04)",
+} as const;
+
+/** Resolve a severity to its accent + tint color pair. */
 export function severityTokens(sev: Severity) {
   return SEVERITY[sev];
 }

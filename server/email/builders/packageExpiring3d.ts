@@ -60,9 +60,9 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
       card({
         children: [
           severityBanner({ severity: "warning", title: bannerTitle, body: bannerBody }),
-          spacer("s5"),
+          spacer("s6"),
           textBlock({ text: intro, color: "secondary" }),
-          spacer("s4"),
+          spacer("s5"),
           keyValueList({
             items: [
               { label: t("Package", "الباقة"), value: packageName },
@@ -70,10 +70,10 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
               { label: t("Expires on", "تنتهي في"), value: expiryDate },
             ],
           }),
-          spacer("s6"),
+          spacer("s7"),
           ctaButton({ href: renewUrl, label: t("Renew package", "جدّد الباقة"), variant: "warning" }),
-          spacer("s4"),
-          ctaTextLink({ href: whatsappUrl, label: t("Need to extend? Message Youssef", "تحتاج تمديد؟ راسل يوسف") }),
+          spacer("s5"),
+          `<div style="text-align:center;">${ctaTextLink({ href: whatsappUrl, label: t("Message Youssef", "راسل يوسف") })}</div>`,
         ].join(""),
       }),
     ),

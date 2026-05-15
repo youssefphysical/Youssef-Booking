@@ -10,6 +10,9 @@ import {
   buildPasswordResetEmail,
   buildAdminNewClientEmail,
 } from "./email-templates";
+import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
+
+const TRAINER_WHATSAPP = "https://wa.me/971505394754";
 
 function publicWebsiteUrl(): string {
   return (
@@ -36,11 +39,28 @@ export async function sendWelcomeNotifications({
     return;
   }
   try {
-    const built = buildWelcomeEmail({
-      clientName,
-      lang: lang || "en",
-      websiteUrl: publicWebsiteUrl(),
-    });
+    const websiteUrl = publicWebsiteUrl();
+    const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
+    let built: { subject: string; text: string; html: string };
+    try {
+      // Premium cinematic welcome — preferred path.
+      built = buildWelcomeEmailPremium({
+        lang: langCode,
+        recipientName: clientName,
+        bookingUrl: `${websiteUrl}/book`,
+        whatsappUrl: TRAINER_WHATSAPP,
+        supportEmail: trainerEmail(),
+        trainerName: langCode === "ar" ? "المدرب يوسف" : "Coach Youssef",
+        studioLocation: langCode === "ar" ? "مرسى دبي" : "Dubai Marina studio",
+      });
+    } catch (premiumErr) {
+      console.warn("[notifications] premium welcome render failed, falling back to legacy:", premiumErr);
+      built = buildWelcomeEmail({
+        clientName,
+        lang: lang || "en",
+        websiteUrl,
+      });
+    }
     await sendEmail({
       to: email,
       subject: built.subject,

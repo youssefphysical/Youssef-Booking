@@ -1,8 +1,9 @@
 /**
  * GOLDEN REFERENCE #3 — Package completed (heavy success, milestone).
  *
- * Hero discipline: HERO ALLOWED — package-completed is one of the five
- * approved hero categories. Eyebrow + display title + warm subtitle.
+ * Hero discipline: HERO with accent word — package-completed is the
+ *   highest-emotional milestone in the system. Cinematic display headline
+ *   with cyan emphasis word.
  * CTA discipline: ONE primary "Renew or extend" + one text link.
  * Severity: success — celebratory, not just operational.
  * Mobile: hero copy stays compact; metrics stack 2-up → 1-up.
@@ -60,8 +61,9 @@ export function buildPackageCompletedEmail(input: PackageCompletedInput): Compos
   const body = [
     brandHeader(),
     hero({
-      eyebrow: t("MILESTONE", "إنجاز"),
-      title: t("Package complete.", "اكتملت الباقة."),
+      eyebrow: t("MILESTONE COMPLETE", "إنجاز مكتمل"),
+      title: t("PACKAGE", "اكتملت"),
+      accentWord: t("COMPLETE", "الباقة"),
       subtitle: t(
         "Consistency, not intensity, builds the body you want. You showed up.",
         "الاستمرار، وليس الشدة، هو ما يبني الجسد الذي تريده. لقد التزمت.",
@@ -71,7 +73,7 @@ export function buildPackageCompletedEmail(input: PackageCompletedInput): Compos
       card({
         children: [
           textBlock({ text: intro, color: "secondary" }),
-          spacer("s5"),
+          spacer("s6"),
           metricGrid({
             items: [
               { label: t("Sessions", "الجلسات"), value: String(sessionsCompleted) },
@@ -80,14 +82,14 @@ export function buildPackageCompletedEmail(input: PackageCompletedInput): Compos
               { label: t("Best streak", "أطول سلسلة"), value: `${streakWeeks}w` },
             ],
           }),
-          spacer("s5"),
+          spacer("s6"),
           divider(),
-          spacer("s5"),
+          spacer("s6"),
           textBlock({ text: next, color: "secondary" }),
-          spacer("s5"),
+          spacer("s7"),
           ctaButton({ href: renewUrl, label: t("Renew or extend", "جدّد أو مدّد"), variant: "brand" }),
-          spacer("s4"),
-          ctaTextLink({ href: historyUrl, label: t("View full package history", "عرض سجل الباقات") }),
+          spacer("s5"),
+          `<div style="text-align:center;">${ctaTextLink({ href: historyUrl, label: t("View full package history", "عرض سجل الباقات") })}</div>`,
         ].join(""),
       }),
     ),

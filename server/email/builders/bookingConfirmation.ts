@@ -1,10 +1,12 @@
 /**
- * GOLDEN REFERENCE #2 — Booking confirmation (transactional, medium).
+ * GOLDEN REFERENCE #2 — Booking confirmation (cinematic milestone).
  *
- * Hero discipline: NO hero (booking confirm is operational, not a milestone).
+ * Hero discipline: HERO ALLOWED — booking-confirmed is a moment of
+ *   commitment in the user's training journey. Cinematic treatment lifts
+ *   the operational confirmation into a brand experience.
  * CTA discipline: ONE primary "View booking" + secondary text link.
  * Severity: success banner — confirms the lock-in.
- * Above-the-fold: confirmation banner + key details must land first.
+ * Above-the-fold: hero headline + confirmation banner land first.
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -14,7 +16,7 @@ import {
   ctaButton,
   ctaTextLink,
   footer,
-  heading,
+  hero,
   keyValueList,
   section,
   severityBanner,
@@ -34,14 +36,12 @@ export interface BookingConfirmationInput {
   bookingUrl: string;
   rescheduleUrl: string;
   supportEmail: string;
-  // Optional, additive — additional ops fields surfaced in the details list
-  // when present. keyValueList already auto-skips null/empty rows so omitting
-  // any of these keeps the email visually identical to the golden reference.
-  sessionType?: string | null;       // e.g. "Package · 12 sessions" / "Trial" / "Single"
+  // Optional, additive — surfaced when present, auto-skipped otherwise.
+  sessionType?: string | null;
   packageName?: string | null;
-  remainingSessions?: number | null; // e.g. 7
-  totalSessions?: number | null;     // pairs with remaining for "7 of 12"
-  paymentStatus?: string | null;     // e.g. "Paid" / "Pending"
+  remainingSessions?: number | null;
+  totalSessions?: number | null;
+  paymentStatus?: string | null;
   clientEmail?: string | null;
   clientPhone?: string | null;
 }
@@ -62,31 +62,34 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
     `تم تأكيد جلستك مع المدرب يوسف. ${date} في ${time12}.`,
   );
 
-  const bannerTitle = t("Your session is confirmed", "تم تأكيد جلستك");
-  const bannerBody = t(
-    "We've added it to the calendar. You'll get a reminder 24 hours before, and again 1 hour before.",
-    "أضفناها إلى التقويم. ستصلك تذكير قبل 24 ساعة، ومرة أخرى قبل ساعة واحدة.",
+  const heroEyebrow = t("YOUR NEXT SESSION", "جلستك القادمة");
+  const heroTitle = t("SESSION", "تم تأكيد");
+  const heroAccent = t("CONFIRMED", "الجلسة");
+  const heroSubtitle = t(
+    "Locked in. Reminders 24 hours and 1 hour before. See you on the floor.",
+    "تم التأكيد. ستصلك تذكيرات قبل 24 ساعة وقبل ساعة. أراك في النادي.",
   );
-  const intro = t(
-    `Hi ${recipientName} — see you on the floor. Here are your session details:`,
-    `مرحباً ${recipientName} — أراك في النادي. تفاصيل الجلسة:`,
+
+  const bannerTitle = t(`${date} · ${time12}`, `${date} · ${time12}`);
+  const bannerBody = t(
+    `Hi ${recipientName} — your session with Coach Youssef is on the schedule.`,
+    `مرحباً ${recipientName} — جلستك مع المدرب يوسف مجدولة.`,
   );
   const ctaLabel = t("View booking", "عرض الحجز");
-  const rescheduleLabel = t("Need to reschedule?", "تحتاج إعادة جدولة؟");
+  const rescheduleLabel = t("Need to reschedule?", "إعادة جدولة");
 
   const body = [
     brandHeader(),
+    hero({ eyebrow: heroEyebrow, title: heroTitle, accentWord: heroAccent, subtitle: heroSubtitle }),
     section(
       card({
         children: [
           severityBanner({ severity: "success", title: bannerTitle, body: bannerBody }),
-          spacer("s5"),
-          textBlock({ text: intro, color: "secondary" }),
-          spacer("s4"),
+          spacer("s6"),
           keyValueList({
             items: [
               { label: t("Date", "التاريخ"), value: date },
-              { label: t("Time (Dubai · GST)", "الوقت (دبي · GST)"), value: time12 },
+              { label: t("Time · Dubai · GST", "الوقت · دبي · GST"), value: time12 },
               { label: t("Focus", "التركيز"), value: sessionFocus },
               { label: t("Goal", "الهدف"), value: trainingGoal },
               { label: t("Session type", "نوع الجلسة"), value: sessionType ?? null },
@@ -100,16 +103,18 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
                       ? String(remainingSessions)
                       : null,
               },
-              { label: t("Payment status", "حالة الدفع"), value: paymentStatus ?? null },
+              { label: t("Payment", "الدفع"), value: paymentStatus ?? null },
               { label: t("Location", "المكان"), value: location },
               { label: t("Email", "البريد الإلكتروني"), value: clientEmail ?? null },
               { label: t("Phone", "الهاتف"), value: clientPhone ?? null },
             ],
           }),
-          spacer("s6"),
+          spacer("s7"),
           ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
-          spacer("s4"),
-          ctaTextLink({ href: rescheduleUrl, label: rescheduleLabel }),
+          spacer("s5"),
+          textBlock({ text: t("Plans changed?", "تغيرت خططك؟"), size: "bodySm", color: "tertiary", align: "center" }),
+          spacer("s2"),
+          `<div style="text-align:center;">${ctaTextLink({ href: rescheduleUrl, label: rescheduleLabel })}</div>`,
         ].join(""),
       }),
     ),

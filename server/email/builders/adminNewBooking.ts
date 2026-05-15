@@ -3,7 +3,7 @@
  *
  * Hero discipline: NO hero (admin = operational, never marketing).
  * CTA discipline: ONE primary "Open in admin". No secondary action — admin
- *   emails are single-action by design (no reschedule/whatsapp from here).
+ *   emails are single-action by design.
  * Severity: info — operational notice, scannable.
  * Tone: high-signal, low-noise. No greeting fluff.
  * Footer: NO unsubscribe (admin emails are internal-mandatory).
@@ -28,20 +28,19 @@ export interface AdminNewBookingInput {
   clientPhone: string | null;
   date: string;
   time12: string;
-  sessionType: string;          // e.g. "Package" / "Single" / "Trial" / "Duo"
+  sessionType: string;
   packageName: string | null;
   sessionFocus: string | null;
   notes: string | null;
   adminUrl: string;
-  supportEmail: string;         // ops inbox
+  supportEmail: string;
   // Optional, additive — surfaced when present, auto-skipped otherwise.
-  // Keeps admin emails operationally complete without changing layout.
   clientEmail?: string | null;
   trainingGoal?: string | null;
-  paymentStatus?: string | null;     // "Paid" / "Pending"
-  bookingSource?: string | null;     // "Web booking" / "Admin entry" / "Trial signup"
-  actionTimestamp?: string | null;   // "13 May 2026, 02:14 PM GST"
-  partnerName?: string | null;       // for Duo bookings
+  paymentStatus?: string | null;
+  bookingSource?: string | null;
+  actionTimestamp?: string | null;
+  partnerName?: string | null;
   remainingSessions?: number | null;
   totalSessions?: number | null;
 }
@@ -67,14 +66,14 @@ export function buildAdminNewBookingEmail(input: AdminNewBookingInput): Composed
             title: `New booking — ${clientName}`,
             body: `${date} at ${time12} · ${sessionType}`,
           }),
-          spacer("s5"),
+          spacer("s6"),
           keyValueList({
             items: [
               { label: "Client", value: clientName },
               { label: "Email", value: clientEmail ?? null },
               { label: "Phone", value: clientPhone },
               { label: "Date", value: date },
-              { label: "Time (Dubai · GST)", value: time12 },
+              { label: "Time · Dubai · GST", value: time12 },
               { label: "Type", value: sessionType },
               { label: "Partner", value: partnerName ?? null },
               { label: "Package", value: packageName },
@@ -95,7 +94,7 @@ export function buildAdminNewBookingEmail(input: AdminNewBookingInput): Composed
               { label: "Client notes", value: notes },
             ],
           }),
-          spacer("s6"),
+          spacer("s7"),
           ctaButton({ href: adminUrl, label: "Open in admin", variant: "brand" }),
         ].join(""),
       }),

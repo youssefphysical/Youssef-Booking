@@ -50,7 +50,7 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
     `لأسباب أمنية، تنتهي صلاحية هذا الرابط خلال ${expiresInMinutes} دقيقة. إذا لم تطلب إعادة التعيين، يمكنك تجاهل هذه الرسالة.`,
   );
   const ctaLabel = t("Reset password", "إعادة تعيين");
-  const fallbackLabel = t("Or open this link manually", "أو افتح الرابط يدوياً");
+  const fallbackLabel = t("Open the link manually", "افتح الرابط يدوياً");
 
   const body = [
     brandHeader(),
@@ -60,11 +60,11 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
           heading({ level: 2, text: greeting }),
           spacer("s3"),
           textBlock({ text: intro, color: "secondary" }),
-          spacer("s5"),
+          spacer("s7"),
           ctaButton({ href: resetUrl, label: ctaLabel, variant: "brand" }),
-          spacer("s5"),
+          spacer("s6"),
           textBlock({ text: expiryNote, size: "bodySm", color: "tertiary" }),
-          spacer("s3"),
+          spacer("s4"),
           ctaTextLink({ href: resetUrl, label: fallbackLabel }),
         ].join(""),
       }),
