@@ -1,0 +1,717 @@
+We are no longer building generic “premium emails”.
+
+We are building a FULL CINEMATIC EMAIL DESIGN SYSTEM for an elite fitness coaching brand.
+
+This is NOT a coding task yet.
+This is a DESIGN ENGINEERING + VISUAL SYSTEM ARCHITECTURE task.
+
+You must think like:
+
+- a luxury cinematic product designer
+- a senior email UX engineer
+- a Tron Legacy visual director
+- a high-end fitness brand art director
+- an Apple/Nike-level spacing specialist
+- an email rendering engineer
+
+The final visual result must feel like:
+
+- Tron Legacy
+- futuristic luxury
+- elite performance coaching
+- cinematic cyber aesthetic
+- dark premium gym atmosphere
+- luxury transformation ecosystem
+
+NOT:
+
+- SaaS dashboard email
+- startup notification
+- generic transactional email
+- flat modern template
+- cheap neon cyberpunk
+- gaming RGB
+
+The emails must feel:
+minimal + cinematic + emotional + premium + futuristic.
+
+==================================================
+MASTER BRAND DIRECTION
+
+Brand name:
+YOUSSEF ELITE COACHING
+
+Visual identity:
+
+- elite
+- disciplined
+- cinematic
+- futuristic
+- premium
+- transformation-focused
+- masculine luxury
+- high-end performance coaching
+
+Brand emotional tone:
+“Your transformation journey exists inside a premium elite ecosystem.”
+
+The user must emotionally feel:
+
+- guided
+- elevated
+- motivated
+- premium
+- committed
+- part of an exclusive system
+
+==================================================
+GLOBAL DESIGN LANGUAGE
+
+The entire email system must share ONE unified cinematic DNA.
+
+ALL email types must visually feel from the same universe:
+
+- onboarding
+- booking confirmed
+- admin booking alert
+- payment confirmed
+- reminder emails
+- package activated
+- package expiring
+- package completed
+- consultation booked
+- cancellation
+- reschedule
+- VIP emails
+
+Different content.
+Same cinematic system.
+
+==================================================
+CANVAS / STRUCTURE
+
+Desktop canvas:
+
+- max width: 680px
+- centered
+- outer background: #030507
+- subtle vertical gradient:
+  top: #05070A
+  bottom: #020304
+
+Mobile:
+
+- full width responsive
+- preserve cinematic feel
+- preserve spacing rhythm
+- preserve hierarchy
+
+Outer padding:
+
+- desktop: 32px
+- mobile: 18px
+
+Section spacing:
+
+- desktop: 24px
+- mobile: 18px
+
+Internal card spacing:
+
+- desktop: 28–34px
+- mobile: 20–24px
+
+No random spacing.
+No giant empty gaps.
+No stacked cheap blocks.
+
+==================================================
+VISUAL ATMOSPHERE
+
+The atmosphere must feel:
+
+- dark luxury gym
+- cinematic shadows
+- premium reflections
+- controlled cyan glow
+- deep blacks
+- futuristic elegance
+- subtle energy
+- expensive minimalism
+
+Lighting inspiration:
+
+- Tron Legacy
+- luxury performance clubs
+- black marble + cyan edge lighting
+- matte black metals
+- premium gym reflections
+- cinematic sci-fi interiors
+
+DO NOT:
+
+- oversaturate cyan
+- use rainbow colors
+- use RGB gamer aesthetics
+- use playful gradients
+- use cartoon cyberpunk visuals
+
+==================================================
+COLOR SYSTEM
+
+Primary background:
+#030507
+
+Secondary background:
+#080B0F
+
+Card background:
+#0D1117
+
+Deep panel blue:
+#0B1C2A
+
+Primary cyan:
+#00E5FF
+
+Soft cyan:
+#21C7E8
+
+Muted cyan:
+rgba(0,229,255,0.72)
+
+White:
+#F4F7FA
+
+Muted text:
+#A7B0BA
+
+Divider:
+rgba(255,255,255,0.06)
+
+Border:
+rgba(0,229,255,0.18)
+
+Success:
+minimal only
+never dominant
+
+Warm cinematic lighting:
+rgba(255,214,153,0.12)
+
+==================================================
+TYPOGRAPHY SYSTEM
+
+Typography must feel:
+
+- futuristic
+- expensive
+- cinematic
+- controlled
+- disciplined
+
+No playful fonts.
+No rounded startup typography.
+
+Fallback-safe email fonts only.
+
+Preferred stack:
+
+- Helvetica Neue
+- Helvetica
+- Arial
+- sans-serif
+
+---
+
+HEADLINES
+
+Desktop:
+
+- 42–54px
+- weight 700
+- line-height 0.95–1.05
+- letter-spacing: -1px
+
+Mobile:
+
+- 30–38px
+
+Headline structure:
+white + cyan emphasis word
+
+Examples:
+
+- SESSION CONFIRMED
+- PAYMENT CONFIRMED
+- WELCOME TO ELITE COACHING
+
+The cyan word must visually dominate.
+
+---
+
+BODY TEXT
+
+Desktop:
+18–20px
+
+Mobile:
+15–17px
+
+Color:
+#F4F7FA
+
+Line height:
+1.45–1.6
+
+---
+
+MICRO LABELS
+
+Used for:
+DATE
+TIME
+LOCATION
+PACKAGE
+PAYMENT STATUS
+
+Style:
+
+- uppercase
+- 10–12px
+- tracking: 2–3px
+- muted cyan
+- weight 600
+
+==================================================
+HERO SYSTEM
+
+The HERO is the most important visual element.
+
+The hero must feel cinematic and dominant.
+
+Desktop height:
+280–340px
+
+Mobile height:
+220–260px
+
+Hero composition:
+LEFT SIDE:
+
+- logo
+- headline
+- emotional text
+
+RIGHT SIDE:
+
+- cinematic environment
+- premium gym atmosphere
+- reflective surfaces
+- luxury equipment
+- controlled lighting
+
+Lighting:
+
+- warm top-right lighting
+- cyan lower bounce
+- soft reflections
+- subtle volumetric atmosphere
+
+Overlay:
+65–78% dark overlay
+
+The hero must NOT feel:
+
+- flat
+- stock-photo-like
+- AI fantasy
+- busy
+- noisy
+
+The image must support the typography — not fight it.
+
+==================================================
+IMAGE DIRECTION
+
+Use cinematic premium gym imagery only.
+
+Image mood:
+
+- luxury gym
+- black environment
+- reflective dark surfaces
+- controlled cyan lighting
+- premium shadows
+- realistic atmosphere
+- empty/clean composition
+- elite coaching feel
+
+Allowed imagery:
+
+- gym benches
+- towels
+- shaker bottles
+- silhouettes
+- premium interiors
+- reflective floors
+- trophies
+- elite environments
+
+Avoid:
+
+- crowded gyms
+- bright commercial gyms
+- random fitness stock images
+- unrealistic AI anatomy
+- oversharpening
+- fake sci-fi elements
+
+==================================================
+CARD SYSTEM
+
+Cards must feel like:
+futuristic HUD panels.
+
+NOT flat cards.
+
+Cards need:
+
+- subtle depth
+- edge glow
+- layered blacks
+- glass feeling
+- cinematic shadows
+
+Card style:
+
+- radius: 18–22px
+- subtle cyan border
+- dark layered gradient
+- internal depth
+
+Card background:
+linear-gradient(
+180deg,
+rgba(13,17,23,0.96),
+rgba(7,10,14,0.98)
+)
+
+Border:
+1px solid rgba(0,229,255,0.14)
+
+Inner shadow:
+inset 0 1px 0 rgba(255,255,255,0.03)
+
+Outer shadow:
+0 10px 34px rgba(0,0,0,0.42)
+
+==================================================
+GLOW SYSTEM
+
+Glow must feel:
+
+- premium
+- restrained
+- cinematic
+- expensive
+
+NEVER:
+
+- glowing everywhere
+- gamer RGB
+- overpowered bloom
+
+Examples:
+
+Primary glow:
+0 0 24px rgba(0,229,255,0.18)
+
+Hover glow:
+0 0 38px rgba(0,229,255,0.28)
+
+Edge glow:
+subtle only
+
+==================================================
+GRID SYSTEM
+
+Desktop:
+2-column cinematic grid.
+
+Column split:
+50/50
+
+Gap:
+22px
+
+Cards align vertically.
+Consistent rhythm.
+
+Mobile:
+single-column stack.
+
+Preserve:
+
+- breathing room
+- hierarchy
+- dominance
+- balance
+
+==================================================
+DETAILS SECTIONS
+
+Information must be grouped visually.
+
+Examples:
+
+- Session Details
+- Payment Details
+- Package Overview
+- Trainer Information
+- Contact Information
+
+Each info row:
+
+- icon left
+- micro label
+- value text
+
+Rows must align perfectly.
+
+No random spacing.
+
+==================================================
+ICONS
+
+Icons must be:
+
+- thin line icons
+- cyan outline
+- minimalist
+- premium
+- consistent stroke width
+
+NOT:
+
+- emoji
+- filled icons
+- colorful icons
+- playful icons
+
+==================================================
+CTA SYSTEM
+
+Buttons are CRITICAL.
+
+Buttons must feel:
+
+- powerful
+- futuristic
+- premium
+- cinematic
+
+Desktop:
+260–320px width
+
+Height:
+52–58px
+
+Radius:
+10–14px
+
+Background:
+cyan gradient
+
+Example:
+linear-gradient(
+90deg,
+#00E5FF,
+#16B7E8
+)
+
+Text:
+
+- dark navy/black
+- uppercase
+- bold
+- centered
+
+Add:
+
+- subtle glow
+- breathing room around CTA
+- cinematic action panel
+
+==================================================
+FOOTER SYSTEM
+
+Footer must NOT feel abandoned.
+
+Include:
+
+- centered brand mark
+- muted premium styling
+- social icons
+- support links
+- WhatsApp
+- email
+- copyright
+
+Spacing:
+large but controlled
+
+Muted but elegant.
+
+==================================================
+EMOTIONAL ARCHITECTURE
+
+Every email has a different emotional state.
+
+---
+
+WELCOME EMAIL
+
+Feeling:
+
+- inspiring
+- aspirational
+- elite
+- exciting
+
+---
+
+BOOKING CONFIRMED
+
+Feeling:
+
+- energetic
+- premium
+- organized
+- motivating
+
+---
+
+PAYMENT CONFIRMED
+
+Feeling:
+
+- achievement
+- momentum
+- commitment
+- progress
+
+---
+
+REMINDER EMAIL
+
+Feeling:
+
+- focused
+- disciplined
+- athletic
+- serious
+
+---
+
+PACKAGE EXPIRING
+
+Feeling:
+
+- urgency
+- momentum protection
+- encouragement
+
+==================================================
+EMAIL ENGINEERING RULES
+
+This is EMAIL.
+Not a website.
+
+Must render properly in:
+
+- Gmail mobile
+- Gmail desktop
+- Apple Mail
+- Outlook (reasonable fallback)
+
+Use:
+
+- email-safe layouts
+- inline critical styles
+- table-safe structure
+- responsive fallbacks
+
+NO:
+
+- JS
+- video backgrounds
+- unsupported CSS tricks
+- unsafe positioning systems
+
+Background images must gracefully fallback.
+
+==================================================
+CONSISTENCY RULE
+
+Everything must feel like ONE cinematic operating system.
+
+Same:
+
+- spacing rhythm
+- typography DNA
+- glow system
+- shadows
+- borders
+- cyan language
+- cinematic atmosphere
+
+Different:
+
+- headline
+- hero image
+- message
+- CTA wording
+- emotional state
+
+==================================================
+YOUR TASK NOW
+
+DO NOT CODE YET.
+
+FIRST:
+Create a FULL DESIGN SPECIFICATION DOCUMENT.
+
+Include:
+
+- visual hierarchy maps
+- exact spacing system
+- exact component breakdown
+- exact card architecture
+- exact hero composition rules
+- exact mobile behavior
+- exact typography specs
+- exact glow system
+- exact icon usage
+- exact section structure
+- exact CTA structure
+- exact footer rules
+- exact responsive behavior
+- exact engineering limitations
+- exact file architecture plan
+- exact production-safe implementation strategy
+
+THEN:
+Create visual blueprint structures for:
+
+1. Welcome email
+2. Booking confirmation
+3. Payment confirmed
+4. Reminder email
+5. Admin booking alert
+
+Do NOT generate generic ideas.
+Do NOT simplify.
+Do NOT shorten.
+
+Think like a cinematic design systems engineer building a luxury futuristic fitness ecosystem.
