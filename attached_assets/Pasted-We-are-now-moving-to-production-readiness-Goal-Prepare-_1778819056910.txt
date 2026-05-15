@@ -1,0 +1,114 @@
+We are now moving to production readiness.
+
+Goal:
+Prepare the full project for real testing with GitHub, Vercel, Neon, onboarding, email system, cron, and production environment working together.
+
+Do NOT redesign anything.
+Do NOT refactor architecture unless required to fix a real production blocker.
+Do NOT add new features.
+Focus only on making the current system deployable, connected, stable, and testable.
+
+Tasks:
+
+1. GitHub readiness
+- Ensure all latest code is committed cleanly.
+- Verify no secrets are committed.
+- Verify .env files are ignored.
+- Ensure README / deployment notes are updated.
+- Confirm GitHub Actions workflow is valid.
+
+2. Neon database readiness
+- Verify Neon DATABASE_URL works in production.
+- Confirm schema is synced.
+- Run migrations safely.
+- Confirm tables required for users, bookings, sessions, packages, emails, cron, and auth exist.
+- Do not reset production data unless explicitly approved.
+
+3. Vercel deployment readiness
+- Prepare project for Vercel deployment.
+- Verify build command.
+- Verify install command.
+- Verify output/runtime compatibility.
+- Ensure all production env variables are documented.
+- Ensure routes work on Vercel without 404/API failures.
+
+4. Required production environment variables
+Audit and list all required env vars, including:
+- DATABASE_URL
+- RESEND_API_KEY
+- APP_URL
+- CRON_SECRET
+- AUTH_SECRET / SESSION_SECRET if used
+- Any email sender config
+- Any upload/storage config
+- Any OAuth/auth provider config if used
+
+Fail clearly if anything is missing.
+
+5. Email system production check
+- Verify email composer works in production.
+- Verify test emails can be rendered.
+- Verify Resend or email provider is connected.
+- Verify client/admin emails do not break if optional data is missing.
+- Verify dark mode, mobile, RTL, and no-image fallback still render safely.
+
+6. Cron production check
+- Verify cron entrypoint exists.
+- Verify GitHub Actions cron can call the correct production endpoint.
+- Verify CRON_SECRET is validated.
+- Verify cron logs are readable.
+- Verify no duplicate reminders are sent.
+- Verify auto-complete behavior works safely.
+- Verify local cron test command still works.
+
+7. Onboarding flow check
+Test real user flow:
+- registration
+- login
+- profile completion
+- free session activation if applicable
+- booking first session
+- email notification to client
+- email notification to admin
+- dashboard session display
+- remaining sessions display
+- cancellation/reschedule rules if already implemented
+
+8. Admin flow check
+- Verify admin role is correctly restricted.
+- Super admin must be tied to:
+youssef.physical@gmail.com
+- Normal users must not see admin/control panel.
+- Admin routes and admin APIs must reject unauthorized users.
+- No admin UI flicker for normal users.
+
+9. Security check
+- No secrets exposed in frontend.
+- No stack traces exposed to users.
+- Admin APIs protected.
+- Cron endpoint protected.
+- Uploads protected.
+- Auth persistence works after refresh.
+
+10. Final production test checklist
+Create a final report showing:
+- GitHub status
+- Vercel deployment status
+- Neon database status
+- Environment variables status
+- Email test status
+- Cron test status
+- Onboarding test status
+- Admin security status
+- Known issues
+- What is ready for real testing
+- What still needs manual setup
+
+Important:
+Do not deploy blindly if required env vars are missing.
+Do not guess secrets.
+If a manual step is needed in Vercel, GitHub, Neon, or Resend, clearly tell me exactly what to add and where.
+
+Final goal:
+The app should be ready for real live testing with:
+GitHub + Vercel + Neon + Email system + Cron + Onboarding fully connected.
