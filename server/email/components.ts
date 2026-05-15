@@ -124,23 +124,36 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     // Force dark color-scheme on every element so Gmail web stops proposing inversion.
     `:root { color-scheme: dark; supported-color-schemes: dark; }`,
     // Mobile cliff — single breakpoint per tokens.BREAKPOINT_MOBILE.
+    // Calibrated specifically for Gmail iOS / Gmail Android — the most
+    // common reading surfaces for transactional fitness mail.
     `@media only screen and (max-width:600px){`,
     `.email-shell{width:100% !important;}`,
-    `.email-pad{padding-left:18px !important;padding-right:18px !important;}`,
-    `.email-pad-tight{padding-left:14px !important;padding-right:14px !important;}`,
-    `.email-cta-cell a{display:block !important;width:auto !important;}`,
+    // Bumped from 18px → 22px so card content has real breathing space
+    // against the canvas edge on iPhone widths (was reading as cramped).
+    `.email-pad{padding-left:22px !important;padding-right:22px !important;}`,
+    `.email-pad-tight{padding-left:16px !important;padding-right:16px !important;}`,
+    // Card interior gets dedicated, more generous mobile padding so the
+    // glassmorphism panel reads as a luxury card, not a packed list.
+    `.email-card-pad{padding:${SPACE.s7} ${SPACE.s5} !important;}`,
+    // Larger CTA touch target — 56px height minimum per Apple HIG, with
+    // confident horizontal padding that survives narrow viewports.
+    `.email-cta-cell a{display:block !important;width:auto !important;padding:24px 32px !important;font-size:15px !important;letter-spacing:0.2em !important;}`,
     `.email-stack-2col>td{display:block !important;width:100% !important;}`,
     `.email-stack-2col>td+td{padding-top:${SPACE.s4} !important;padding-left:0 !important;}`,
-    // Mobile-scaled display headlines.
+    // Mobile-scaled display headlines (tokens drive both axes).
     `.email-display-xl{font-size:${TYPE.displayXlMobile.size} !important;line-height:${TYPE.displayXlMobile.lh} !important;letter-spacing:${TYPE.displayXlMobile.tracking} !important;}`,
     `.email-display{font-size:${TYPE.displayMobile.size} !important;line-height:${TYPE.displayMobile.lh} !important;}`,
+    // Mobile body + bodyLg overrides — Gmail iOS will not auto-scale
+    // inline 19px body copy, so we step it down lightly to stay
+    // proportional to the 22px page pad without losing readability.
+    `.email-body-lg{font-size:18px !important;line-height:1.55 !important;}`,
+    `.email-body{font-size:16px !important;line-height:1.65 !important;}`,
+    // Section heading mobile — keeps hierarchy crisp on narrow viewports.
+    `.email-h1{font-size:24px !important;line-height:1.22 !important;}`,
     // Mobile hero — tightened top pad post hero-blend-strip introduction.
-    // The 32px atmospheric haze + image-fade already supply breathing
-    // between the photo band and the type band, so an additional s8 (48px)
-    // top pad on mobile created a dead air gap. s6 (28px) keeps the hero
-    // composition reading as one cinematic moment on phone viewports.
-    `.email-hero-pad{padding:${SPACE.s6} ${SPACE.s4} ${SPACE.s7} !important;}`,
-    `.email-cta-section-pad{padding:${SPACE.s8} ${SPACE.s4} !important;}`,
+    // The 32px atmospheric haze + image-fade already supply breathing.
+    `.email-hero-pad{padding:${SPACE.s6} ${SPACE.s5} ${SPACE.s7} !important;}`,
+    `.email-cta-section-pad{padding:${SPACE.s9} ${SPACE.s5} !important;}`,
     `}`,
     // Remove default link blueing on iOS (phone numbers, addresses).
     `a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;}`,
@@ -321,10 +334,14 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
       + `</td></tr>`
     : "";
 
+  // Glassmorphism card padding bumped from s7/s6 (36/28) → s9/s8 (64/48).
+  // The brief explicitly called the previous spacing "cramped"; this gives
+  // the panel real luxury breathing space. email-card-pad mobile override
+  // tightens it back to s7/s5 (36/22) so phones don't waste viewport.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${GLOW.card},${GLOW.innerHighlight};">`
     + topAccent
     + headerStrip
-    + `<tr><td class="email-pad" style="padding:${SPACE.s7} ${SPACE.s6};">`
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s9} ${SPACE.s8};">`
     + children
     + `</td></tr></table>`;
 }
@@ -378,7 +395,10 @@ export interface HeadingOptions {
 export function heading({ level, text, align = "left", color = "primary" }: HeadingOptions): string {
   const typeKey: TypeKey = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
   const tag = `h${level}`;
-  return `<${tag} style="${typeStyle(typeKey, colorOf(color))}text-align:${align};" class="${TEXT_COLOR_CLASS[color]}">${esc(text)}</${tag}>`;
+  // Type class enables mobile size override (.email-h1) declared in shell.
+  const typeClass = level === 1 ? "email-h1" : "";
+  const cls = `${TEXT_COLOR_CLASS[color]}${typeClass ? " " + typeClass : ""}`;
+  return `<${tag} style="${typeStyle(typeKey, colorOf(color))}text-align:${align};" class="${cls}">${esc(text)}</${tag}>`;
 }
 
 export interface TextBlockOptions {
@@ -398,7 +418,11 @@ export function textBlock({
   raw = false,
 }: TextBlockOptions): string {
   const inner = raw ? text : esc(text);
-  return `<p style="${typeStyle(size, colorOf(color))}text-align:${align};" class="${TEXT_COLOR_CLASS[color]}">${inner}</p>`;
+  // Type class enables mobile size override (.email-body-lg, .email-body)
+  // declared in shell mobile CSS.
+  const typeClass = size === "bodyLg" ? "email-body-lg" : size === "body" ? "email-body" : "";
+  const cls = `${TEXT_COLOR_CLASS[color]}${typeClass ? " " + typeClass : ""}`;
+  return `<p style="${typeStyle(size, colorOf(color))}text-align:${align};" class="${cls}">${inner}</p>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -472,20 +496,26 @@ export function ctaButton({ href, label, variant = "brand" }: CtaButtonOptions):
   // 0.22em tracking gives the button a deliberate cinematic weight that
   // reads as expensive and tactile rather than template-like. VML mirrors
   // the dimensions for Outlook desktop graceful degradation.
+  // Premium luxury button proportions per cinematic redesign brief.
+  // Padding bumped 24/48 → 28/64 (taller, wider, more confident product
+  // chrome). Radius lg (22px) — softer corners. Glow stronger (cyan 0.55,
+  // 48px blur). Outlook VML mirrors the 360×72 footprint for graceful
+  // degradation. Mobile override (.email-cta-cell a) keeps it touch-safe
+  // on narrow viewports without sacrificing visual confidence.
   const vml = [
     `<!--[if mso]>`,
-    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:64px;v-text-anchor:middle;width:320px;" arcsize="20%" stroke="f" fillcolor="${bg}">`,
+    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:72px;v-text-anchor:middle;width:360px;" arcsize="30%" stroke="f" fillcolor="${bg}">`,
     `<w:anchorlock/>`,
-    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;">${safeLabel}</center>`,
+    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:15px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;">${safeLabel}</center>`,
     `</v:roundrect>`,
     `<![endif]-->`,
   ].join("");
   const html = [
     `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">`,
-    `<tr><td class="email-cta-cell" align="center" style="border-radius:${RADIUS.md};background-color:${bg};background-image:${bgGradient};box-shadow:${GLOW.cta};">`,
+    `<tr><td class="email-cta-cell" align="center" style="border-radius:${RADIUS.lg};background-color:${bg};background-image:${bgGradient};box-shadow:${GLOW.cta};">`,
     vml,
     `<!--[if !mso]><!-- -->`,
-    `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:inline-block;padding:24px 48px;font-family:inherit;font-size:14px;line-height:1;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:${RADIUS.md};background-color:${bg};background-image:${bgGradient};mso-hide:all;">${safeLabel}</a>`,
+    `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:inline-block;padding:28px 64px;font-family:inherit;font-size:15px;line-height:1;font-weight:800;letter-spacing:0.24em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:${RADIUS.lg};background-color:${bg};background-image:${bgGradient};mso-hide:all;">${safeLabel}</a>`,
     `<!--<![endif]-->`,
     `</td></tr></table>`,
   ].join("");
@@ -533,7 +563,7 @@ export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }:
   const haloBar = `<div style="width:56px;height:2px;background-color:${COLOR.brand.cyan};background-image:${ACCENT_RULE_GRADIENT};margin:0 auto ${SPACE.s6};font-size:0;line-height:2px;">&nbsp;</div>`;
 
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};border-top:1px solid ${COLOR.border.cyanSoft};border-bottom:1px solid ${COLOR.border.cyanSoft};">`
-    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s7};text-align:center;">`
+    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s11} ${SPACE.s7};text-align:center;">`
     + haloBar
     + eyebrowHtml
     + ctaHtml
@@ -557,17 +587,22 @@ export interface KeyValueListOptions {
 export function keyValueList({ items }: KeyValueListOptions): string {
   const filtered = items.filter((it) => it.value !== null && it.value !== undefined && String(it.value).trim() !== "");
   if (!filtered.length) return "";
+  // Cinematic redesign: row separation bumped to s5/s5 (22/22) for elegant
+  // editorial rhythm. Labels muted-cyan micro 11px; values bumped to bodyLg
+  // 19px (was body 16px) so the value/label disparity reads as intentional
+  // hierarchy — value dominant, label whispered. Hairline divider between
+  // rows is the brand "HUD grid" feel without clutter.
   const rows = filtered
     .map((it, i) => {
-      const top = i === 0 ? "0" : SPACE.s4;
+      const top = i === 0 ? "0" : SPACE.s5;
       const borderTop = i === 0 ? "" : `border-top:1px solid ${COLOR.border.divider};`;
-      const innerPadTop = i === 0 ? "0" : SPACE.s4;
+      const innerPadTop = i === 0 ? "0" : SPACE.s5;
       // dir="auto" on the value lets mixed-content (phones, times, English
       // package names) render correctly inside RTL documents.
       return `<tr><td style="padding-top:${top};${borderTop}">`
         + `<div style="padding-top:${innerPadTop};">`
         + `<div style="${typeStyle("micro", COLOR.brand.cyanMuted)}text-transform:uppercase;" class="email-text-accent">${esc(it.label)}</div>`
-        + `<div dir="auto" style="${typeStyle("body", COLOR.text.primary)}padding-top:6px;font-weight:500;" class="email-text-primary">${esc(it.value as string)}</div>`
+        + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:8px;font-weight:600;letter-spacing:-0.005em;" class="email-text-primary email-body-lg">${esc(it.value as string)}</div>`
         + `</div>`
         + `</td></tr>`;
     })
@@ -735,13 +770,14 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     + `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">`
     + contactRows.join("")
     + `</table>`
-    // Spacer
-    + `<div style="height:${SPACE.s7};line-height:${SPACE.s7};font-size:0;">&nbsp;</div>`
-    // Brand wordmark + tagline
-    + `<div style="font-family:inherit;font-size:11px;line-height:1;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.brand.cyanMuted};" class="email-text-accent">YOUSSEF AHMED</div>`
-    + `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-align:center;text-transform:uppercase;padding-top:${SPACE.s2};" class="email-text-tertiary">${esc(tagline)}</div>`
+    // Cinematic redesign: removed duplicate brand-wordmark + tagline block
+    // here. The brand identity is already established by brandHeader at
+    // the top of every email + the trainer signature lockup above. Showing
+    // it a third time created the "footer repeats visually" failure mode
+    // the user called out. Footer now closes with a single calm legal
+    // microcopy line — luxury minimalism, not utility chrome.
     // Legal microcopy
-    + `<div style="font-size:11px;line-height:1.6;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s5};" class="email-text-tertiary">${legalLinks.join(" &nbsp;·&nbsp; ")}</div>`
+    + `<div style="font-size:11px;line-height:1.7;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s8};letter-spacing:0.04em;" class="email-text-tertiary">${legalLinks.join(" &nbsp;·&nbsp; ")}</div>`
     + `</td></tr></table>`;
 }
 
