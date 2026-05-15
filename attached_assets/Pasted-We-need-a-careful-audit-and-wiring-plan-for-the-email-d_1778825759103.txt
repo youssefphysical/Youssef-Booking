@@ -1,0 +1,131 @@
+We need a careful audit and wiring plan for the email design system. Do NOT change code yet unless the issue is only a tiny wiring bug and you can prove it safely.
+
+Context:
+The production booking system is now technically working:
+- Vercel production is live.
+- GitHub Actions cron is working successfully.
+- CRON_SECRET and PUBLIC_APP_URL are configured correctly.
+- /api/cron/auto-complete returns OK JSON.
+- Real booking flow works.
+- Client receives “Session confirmed” email.
+- Admin receives “New session booking” email.
+
+Current problem:
+The emails being sent are plain/minimal, not the new premium cinematic design we planned.
+
+Important:
+Do NOT blindly restore the old stripped email templates.
+
+There was a recent commit named something like:
+“Strip all email visual design + remove dead email builders”
+This may have intentionally removed OLD/dead visual templates, not necessarily the NEW approved design system.
+
+After that, we worked on a NEW email design architecture:
+- Email design system blueprint
+- Foundation engine
+- email components
+- composer
+- design tokens
+- dark mode handling
+- RTL handling
+- mobile-first rendering
+- 5 golden reference emails
+- QA matrix / preview render files
+- premium/luxury fitness-tech visual language
+
+So the likely issue may be:
+The new design system/components/previews exist, but the real production send flow is still using a plain fallback template.
+
+Your task now is to audit and report, not redesign blindly.
+
+Inspect these areas:
+- server/email/components.ts
+- server/email/composer.ts
+- server/email/templates.ts
+- server/email/tokens.ts
+- server/email/post-process.ts
+- any email builder files
+- any resend/send email service
+- booking creation flow
+- admin notification flow
+- client session confirmation flow
+- _email_preview or preview output files
+- any deleted/unused legacy email builders only for reference, not restoration
+
+Answer these questions clearly:
+
+1. What exact file/function generated the real sent client email:
+   Subject: “Session confirmed — 2026-05-15 at 2:00 PM”
+
+2. What exact file/function generated the real sent admin email:
+   Subject: “New booking — Youssef Tarek Hashim Ahmed | 2026-05-15 at 2:00 PM”
+
+3. Are these two live emails using:
+   - the new composer/components system,
+   - or a simple/plain fallback builder,
+   - or an old stripped template?
+
+4. Do the new premium email components already exist in the codebase?
+
+5. Do the 5 golden reference emails exist?
+   If yes, where are they?
+   Are they only preview files, or real reusable builders?
+
+6. Why are real production emails plain although the new design work was completed?
+
+7. What is the safest minimal fix to make real booking/admin emails use the NEW approved design system without breaking:
+   - booking creation
+   - database writes
+   - Resend sending
+   - cron
+   - GitHub workflow
+   - env variables
+   - auth
+   - dashboard/admin links
+
+8. List the exact files that need to change.
+
+9. List the exact files that must NOT be touched.
+
+10. Confirm whether any schema/database migration is needed.
+    Expected answer should be no unless absolutely proven otherwise.
+
+Strict rules:
+- Do NOT change cron files.
+- Do NOT change GitHub workflow.
+- Do NOT change env variable names.
+- Do NOT change database schema.
+- Do NOT change booking logic.
+- Do NOT change auth/session logic.
+- Do NOT change payment logic.
+- Do NOT restore old dead email templates.
+- Do NOT remove current working fields from emails.
+- Do NOT make emails image-dependent.
+- Do NOT add heavy external CSS or webfont dependency.
+- Do NOT make the email spammy/heavy.
+
+Visual target for the final fix later:
+- Premium dark cinematic “Youssef Elite Coaching” look
+- Cyan/blue accents
+- Strong but clean cards
+- Mobile-first layout
+- Gmail/Apple Mail/Outlook-safe HTML
+- Inline styles or email-safe CSS only
+- CTA button
+- Brand header
+- Footer with support/contact/WhatsApp
+- Clear session details
+- Admin email should stay operational/scannable, not overly marketing-heavy
+- Client email should feel premium and motivational
+
+For this step, produce an audit report first with:
+- Current active send path
+- Current active templates
+- New design assets/components found
+- Why production output is plain
+- Minimal recommended wiring fix
+- Risk level
+- Exact files to modify in the next step
+- Exact files to avoid
+
+Stop after the report and wait for approval before implementing.
