@@ -119,12 +119,18 @@ export const SPACE = {
   s11: "96px",   // Hero pad ceiling
 } as const;
 
-/** Border radius — HUD card shape. */
+/**
+ * Border radius — softened across the system per the cinematic redesign
+ * brief ("softer corners, premium product feel"). Bumped values:
+ * md 12→16 (CTA + severity banners read as tactile product chrome),
+ * lg 18→22 (cards feel like glassmorphism panels not utility blocks),
+ * xl 22→28 (raised panels read as premium dashboards).
+ */
 export const RADIUS = {
   sm: "6px",
-  md: "12px",
-  lg: "18px",      // Card default
-  xl: "22px",      // Card raised
+  md: "16px",
+  lg: "22px",      // Card default
+  xl: "28px",      // Card raised
   pill: "999px",
 } as const;
 
@@ -143,18 +149,18 @@ export const WIDTH = {
  * hierarchy. micro labels are aggressively tracked uppercase tags.
  */
 export const TYPE = {
-  displayXl: { size: "56px", lh: "1.05", weight: "800", tracking: "-0.025em" },
-  displayXlMobile: { size: "38px", lh: "1.08", weight: "800", tracking: "-0.015em" },
-  display: { size: "42px", lh: "1.05", weight: "800", tracking: "-0.02em" },
-  displayMobile: { size: "30px", lh: "1.08", weight: "800", tracking: "-0.01em" },
-  h1: { size: "26px", lh: "1.2", weight: "700", tracking: "-0.01em" },
-  h2: { size: "20px", lh: "1.3", weight: "600", tracking: "0" },
-  h3: { size: "16px", lh: "1.4", weight: "600", tracking: "0" },
-  body: { size: "16px", lh: "1.65", weight: "400", tracking: "0" },
-  bodyLg: { size: "17px", lh: "1.6", weight: "400", tracking: "0" },
-  bodySm: { size: "14px", lh: "1.6", weight: "400", tracking: "0" },
+  displayXl: { size: "60px", lh: "1.04", weight: "800", tracking: "-0.028em" },
+  displayXlMobile: { size: "40px", lh: "1.06", weight: "800", tracking: "-0.02em" },
+  display: { size: "44px", lh: "1.04", weight: "800", tracking: "-0.022em" },
+  displayMobile: { size: "32px", lh: "1.06", weight: "800", tracking: "-0.012em" },
+  h1: { size: "30px", lh: "1.18", weight: "700", tracking: "-0.012em" },
+  h2: { size: "22px", lh: "1.3", weight: "600", tracking: "-0.005em" },
+  h3: { size: "18px", lh: "1.4", weight: "600", tracking: "0" },
+  body: { size: "17px", lh: "1.65", weight: "400", tracking: "0" },
+  bodyLg: { size: "19px", lh: "1.55", weight: "400", tracking: "-0.003em" },
+  bodySm: { size: "15px", lh: "1.6", weight: "400", tracking: "0" },
   caption: { size: "12px", lh: "1.4", weight: "500", tracking: "0" },
-  metric: { size: "30px", lh: "1.05", weight: "800", tracking: "-0.015em" },
+  metric: { size: "34px", lh: "1.05", weight: "800", tracking: "-0.018em" },
   micro: {
     // Micro labels (DATE, TIME, LOCATION...) — aggressively tracked
     size: "11px",
@@ -258,7 +264,7 @@ export const FOOTER_GRADIENT =
 export const GLOW = {
   card: "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.10)",
   cardCyan: "0 16px 48px rgba(0,0,0,0.55), 0 0 32px rgba(0,229,255,0.12)",
-  cta: "0 0 32px rgba(0,229,255,0.42), 0 8px 28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.18)",
+  cta: "0 0 48px rgba(0,229,255,0.55), 0 12px 36px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.22)",
   innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
   hero: "0 24px 64px rgba(0,0,0,0.8)",
 } as const;

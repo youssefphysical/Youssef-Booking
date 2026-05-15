@@ -1,0 +1,98 @@
+FULL EMAIL REDESIGN REQUIRED.
+
+Current email design looks outdated, compressed, flat, and developer-made.
+It does NOT match a luxury premium fitness brand.
+
+I want a COMPLETE cinematic redesign inspired by:
+- Tron Legacy
+- Tesla minimalism
+- Apple spacing system
+- Luxury fitness brands
+- High-end sports performance aesthetics
+
+CRITICAL PROBLEMS TO FIX:
+- spacing is inconsistent
+- typography hierarchy is weak
+- sections feel cramped
+- cards look like debug/admin panels
+- footer repeats visually
+- text sizes are unreadable on mobile
+- no premium cinematic feeling
+- glow effects are random
+- no visual rhythm
+- CTA button looks generic
+- information density is too aggressive
+- mobile rendering feels broken
+
+NEW DESIGN DIRECTION:
+
+GLOBAL STYLE:
+- ultra clean cinematic layout
+- more breathing space
+- dark luxury background
+- controlled cyan glow accents
+- stronger contrast hierarchy
+- premium email spacing system
+- responsive mobile-first rendering
+- expensive modern typography
+- remove clutter completely
+
+HEADER:
+- cleaner hero area
+- premium cinematic top image
+- subtle cyan line accents
+- better vertical spacing
+- no compressed content
+
+TITLE SECTION:
+- SESSION CONFIRMED / NEW BOOKING must feel impactful
+- large typography
+- luxury weight contrast
+- cyan accent only on key words
+- subtitle smaller and elegant
+
+DETAILS CARD:
+- transform into premium glassmorphism card
+- soft gradients
+- inner shadows
+- subtle borders
+- more padding
+- each row separated elegantly
+- labels tiny and muted
+- values larger and brighter
+
+BUTTON:
+- premium cyan luxury button
+- larger padding
+- softer corners
+- stronger glow
+- centered with breathing room
+
+FOOTER:
+- simplify heavily
+- remove duplicate visual sections
+- cleaner contact layout
+- social/professional feeling
+- less text
+- better spacing
+
+MOBILE EXPERIENCE:
+- optimize specifically for Gmail mobile app
+- fix tiny text
+- improve readability
+- prevent crushed spacing
+- larger touch-friendly CTA
+- improve responsive scaling
+
+IMPORTANT:
+This must feel like a premium Dubai personal training brand worth thousands AED/month.
+NOT like a default automated booking email.
+
+Target vibe:
+Cinematic.
+Minimal.
+Luxury.
+Athletic.
+Tron-inspired.
+Apple-level spacing.
+Tesla-style cleanliness.
