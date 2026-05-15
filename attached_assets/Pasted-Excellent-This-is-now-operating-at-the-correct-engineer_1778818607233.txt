@@ -1,0 +1,118 @@
+Excellent.
+
+This is now operating at the correct engineering maturity level.
+
+The system direction is approved.
+
+==================================================
+FINAL EXECUTION LOCK
+==================================================
+
+Do NOT evolve this into an infrastructure platform.
+
+This is a production cron runner for ONE product,
+not a generalized job framework.
+
+Keep it intentionally narrow.
+
+==================================================
+ABSOLUTE RULES
+==================================================
+
+1. NO additional architecture layers
+No:
+- job registry
+- plugin systems
+- adapters
+- providers
+- service containers
+- middleware chains
+- dependency injection
+- lifecycle hooks
+
+2. NO over-normalization
+Avoid splitting tiny logic into many files.
+
+3. NO “future-proof” abstractions
+Only build for:
+- current reminders
+- current auto-complete
+- current summary reporting
+
+Nothing speculative.
+
+==================================================
+PERFORMANCE RULE
+==================================================
+
+Do not optimize prematurely.
+
+This workload is tiny.
+
+Correctness and operational stability matter
+more than micro-performance.
+
+==================================================
+CRITICAL OPERATIONS RULE
+==================================================
+
+If something fails:
+- continue safely where possible
+- isolate the failed phase
+- preserve summary visibility
+- never silently die
+
+The admin summary is critical.
+
+==================================================
+CODE STYLE RULE
+==================================================
+
+The code should read like operational prose.
+
+A tired engineer at 3 AM should understand:
+- what happened
+- where
+- why
+- what failed
+- what was skipped
+
+within seconds.
+
+==================================================
+TESTING RULE
+==================================================
+
+The standalone cron-test.ts script becomes
+the source of truth for validation.
+
+Every major cron change should be reproducible
+without GitHub Actions.
+
+==================================================
+WORKFLOW RULE
+==================================================
+
+GitHub Actions should remain:
+- thin
+- declarative
+- boring
+
+The intelligence belongs in runner.ts,
+not YAML complexity.
+
+==================================================
+LONG-TERM MAINTENANCE RULE
+==================================================
+
+A smaller architecture that survives 2 years
+is better than a “perfect” architecture
+that becomes fragile after 2 months.
+
+==================================================
+FINAL TARGET
+==================================================
+
+The final feeling should be:
+
+“simple, stable, predictable, impossible to misunderstand.”
