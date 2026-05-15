@@ -172,8 +172,10 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 
 export function brandHeader(): string {
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s8} ${SPACE.s7} ${SPACE.s5};">`
-    // Cyan halo bar above wordmark (40px × 2px, gradient-faded, decorative)
+    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s8} ${SPACE.s7} ${SPACE.s2};">`
+    // Cyan halo bar above wordmark (48px × 1px, gradient-faded, decorative).
+    // Bottom pad is tight (s2) so the wordmark sits AGAINST the next
+    // section (hero image / type band) — luxury wordmark plate, not floating.
     + `<div style="width:48px;height:1px;background-color:${COLOR.brand.cyan};background-image:${ACCENT_RULE_GRADIENT};margin:0 auto ${SPACE.s4};font-size:0;line-height:1px;">&nbsp;</div>`
     + `<div style="font-family:inherit;font-size:11px;line-height:1;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.brand.cyan};" class="email-text-accent">YOUSSEF AHMED</div>`
     + `<div style="font-family:inherit;font-size:10px;line-height:1;font-weight:500;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:8px;" class="email-text-tertiary">ELITE PERSONAL TRAINING · DUBAI</div>`
@@ -224,11 +226,18 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
   // alt="" with role="presentation" so screen readers and image-blocked
   // clients don't show meaningless filename text. The fade-to-black bottom
   // edge of the photo blends into the type band gradient seamlessly.
+  //
+  // Cinematic blend strip: 32px atmospheric haze that sits BETWEEN the
+  // image bottom and the type band, using HERO_BLEND_GRADIENT (transparent
+  // → near-black → pure black). Kills the visible flat-edge break and
+  // gives the image a real cinematic dissolve into the type composition.
   const imageBand = imageUrl
     ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
       + `<tr><td style="font-size:0;line-height:0;background-color:${COLOR.bg.heroBackdrop};">`
       + `<img src="${esc(imageUrl)}" alt="${esc(imageAlt ?? "")}" width="${WIDTH.hero}" style="display:block;width:100%;max-width:${WIDTH.hero}px;height:auto;border:0;outline:none;text-decoration:none;" />`
-      + `</td></tr></table>`
+      + `</td></tr>`
+      + `<tr><td style="font-size:0;line-height:0;height:32px;background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_BLEND_GRADIENT};">&nbsp;</td></tr>`
+      + `</table>`
     : "";
 
   const eyebrowHtml = eyebrow
@@ -249,9 +258,15 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
   // Type band — gradient bg, generous vertical padding for cinematic
   // breathing room. Image band sits above; both share the same #000000
   // backdrop so they read as one composition.
+  //
+  // Top padding is RHYTHM-AWARE: when an image precedes the type band, the
+  // image's own fade-to-black + the 32px blend strip already supply the
+  // breathing room — so we tighten the top pad (s7) to bring the headline
+  // up into the cinematic moment. Type-only heroes keep the full s10 ceiling.
+  const typeTopPad = imageUrl ? SPACE.s7 : SPACE.s10;
   return imageBand
     + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_GRADIENT};">`
-    + `<tr><td class="email-pad email-hero-pad" align="${align}" style="padding:${SPACE.s10} ${SPACE.s7} ${SPACE.s9};text-align:${align};">`
+    + `<tr><td class="email-pad email-hero-pad" align="${align}" style="padding:${typeTopPad} ${SPACE.s7} ${SPACE.s9};text-align:${align};">`
     + haloBar
     + eyebrowHtml
     + `<h1 class="email-display-xl email-text-primary" style="${typeStyle("displayXl", COLOR.text.primary)}text-align:${align};text-transform:uppercase;">${esc(title)}${accentHtml}</h1>`
@@ -502,11 +517,13 @@ export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }:
   const linkHtml = supportingLink
     ? `<div style="text-align:center;padding-top:${SPACE.s4};">${ctaTextLink(supportingLink)}</div>`
     : "";
-  // Cinematic halo bar — subtle editorial framing above the eyebrow.
-  const haloBar = `<div style="width:40px;height:1px;background-color:${COLOR.brand.cyan};background-image:${ACCENT_RULE_GRADIENT};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;">&nbsp;</div>`;
+  // Cinematic halo bar — editorial framing above the eyebrow. Matches the
+  // hero halo (56px × 2px) so CTA moments share the brand grammar of the
+  // hero — billboard rhythm, not a different language.
+  const haloBar = `<div style="width:56px;height:2px;background-color:${COLOR.brand.cyan};background-image:${ACCENT_RULE_GRADIENT};margin:0 auto ${SPACE.s6};font-size:0;line-height:2px;">&nbsp;</div>`;
 
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};border-top:1px solid ${COLOR.border.cyanSoft};border-bottom:1px solid ${COLOR.border.cyanSoft};">`
-    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s7};text-align:center;">`
+    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s7};text-align:center;">`
     + haloBar
     + eyebrowHtml
     + ctaHtml

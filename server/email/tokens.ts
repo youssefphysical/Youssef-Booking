@@ -243,8 +243,8 @@ export const FOOTER_GRADIENT =
 export const GLOW = {
   card: "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.08)",
   cardCyan: "0 16px 48px rgba(0,0,0,0.55), 0 0 32px rgba(0,229,255,0.12)",
-  cta: "0 0 32px rgba(0,229,255,0.42), 0 8px 28px rgba(0,0,0,0.6)",
-  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.06)",
+  cta: "0 0 32px rgba(0,229,255,0.42), 0 8px 28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.18)",
+  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
   hero: "0 24px 64px rgba(0,0,0,0.8)",
 } as const;
 
