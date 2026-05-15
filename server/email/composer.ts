@@ -4,12 +4,13 @@
  * Builders call `compose({...})` with a pre-rendered body string built
  * from primitives in components.ts. The composer:
  *
- *   1. Wraps the body in the locked email shell.
- *   2. Runs post-process: dark-mode overrides + RTL flip.
+ *   1. Wraps the body in the locked cinematic shell.
+ *   2. Runs post-process: dark-lock overrides + RTL flip.
  *   3. Generates a plain-text fallback (or accepts an explicit one).
  *
  * Builders never touch the shell, never run post-process, and never emit
- * <html>/<body> tags themselves. This is the design lock boundary.
+ * <html>/<body> tags themselves. This is the design lock boundary that
+ * keeps every email visually identical at the system level.
  */
 
 import { emailShell } from "./components";
@@ -43,9 +44,6 @@ export interface ComposedEmail {
 export function compose(input: ComposeInput): ComposedEmail {
   const { subject, preheader, lang, bodyHtml, text } = input;
   const shellHtml = emailShell({ lang, preheader, bodyHtml });
-  // Post-process pipeline — order doesn't matter (both processors are
-  // idempotent and operate on disjoint markers), but we keep a stable
-  // sequence for debugging.
   const withDark = applyDarkOverrides(shellHtml);
   const finalHtml = applyRtl(withDark, lang);
   const finalText = text ?? deriveText(bodyHtml, preheader);
@@ -55,26 +53,19 @@ export function compose(input: ComposeInput): ComposedEmail {
 /**
  * Derive a plain-text fallback from rendered HTML. Conservative — turns
  * common block tags into newlines, strips the rest, collapses whitespace.
- * Good enough as a default; builders with real copy should pass their own
- * `text` field for tone control.
  */
 function deriveText(html: string, preheader: string): string {
   const stripped = html
-    // Drop hidden preheader spans — we re-prepend the preheader explicitly.
     .replace(/<div[^>]*display:none[\s\S]*?<\/div>/gi, "")
-    // Block tags → newlines.
     .replace(/<(br|p|div|tr|h1|h2|h3|h4|h5|h6|li)[^>]*>/gi, "\n")
     .replace(/<\/(p|div|tr|h1|h2|h3|h4|h5|h6|li)>/gi, "\n")
-    // Strip remaining tags.
     .replace(/<[^>]+>/g, "")
-    // Decode the small set of entities we emit.
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
-    // Collapse whitespace.
     .replace(/[ \t]+/g, " ")
     .replace(/\n[ \t]+/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

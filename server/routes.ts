@@ -95,6 +95,7 @@ import {
 import { promises as dns } from "node:dns";
 import { buildBookingConfirmationEmail } from "./email/builders/bookingConfirmation";
 import { buildAdminNewBookingEmail } from "./email/builders/adminNewBooking";
+import { buildSessionReminderEmail as buildSessionReminderEmailPremium } from "./email/builders/sessionReminder";
 import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
@@ -5022,17 +5023,40 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const recipientUser = await storage.getUser(userId).catch(() => undefined);
           if (!recipientUser) return;
           const recipientLang = (recipientUser as any).preferredLanguage || "en";
-          const built = buildSessionReminderEmail({
-            kind,
-            lang: recipientLang,
-            data: {
-              clientName: recipientUser.fullName || recipientUser.username || "Client",
+          const recipientName = recipientUser.fullName || recipientUser.username || "Client";
+          const time12Str = formatTime12Server(b.timeSlot);
+          const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
+          let built: { subject: string; text: string; html: string };
+          try {
+            // Premium cinematic reminder — preferred path.
+            built = buildSessionReminderEmailPremium({
+              kind,
+              lang: (recipientLang === "ar" ? "ar" : "en") as "en" | "ar",
+              recipientName,
               date: b.date,
-              time12: formatTime12Server(b.timeSlot),
-              sessionFocusLabel: b.sessionFocus || null,
-              trainingGoalLabel: b.trainingGoal || null,
-            },
-          });
+              time12: time12Str,
+              sessionFocus: b.sessionFocus || null,
+              location: recipientLang === "ar"
+                ? "استوديو المدرب يوسف، مرسى دبي"
+                : "Coach Youssef's studio, Dubai Marina",
+              bookingUrl: baseUrl ? `${baseUrl}/dashboard` : "/dashboard",
+              rescheduleUrl: baseUrl ? `${baseUrl}/book` : "/book",
+              supportEmail: trainerEmail(),
+            });
+          } catch (premiumErr) {
+            console.warn("[cron/reminders] premium render failed, falling back to legacy:", premiumErr);
+            built = buildSessionReminderEmail({
+              kind,
+              lang: recipientLang,
+              data: {
+                clientName: recipientName,
+                date: b.date,
+                time12: time12Str,
+                sessionFocusLabel: b.sessionFocus || null,
+                trainingGoalLabel: b.trainingGoal || null,
+              },
+            });
+          }
           void notifyUserOnce(
             userId,
             "session_reminder",
