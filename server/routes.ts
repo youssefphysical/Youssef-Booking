@@ -96,6 +96,7 @@ import { promises as dns } from "node:dns";
 import { buildBookingConfirmationEmail } from "./email/builders/bookingConfirmation";
 import { buildAdminNewBookingEmail } from "./email/builders/adminNewBooking";
 import { buildSessionReminderEmail as buildSessionReminderEmailPremium } from "./email/builders/sessionReminder";
+import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
 import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
@@ -2109,18 +2110,53 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     };
 
-    run("client.welcome", () =>
-      buildWelcomeEmail({ clientName: "Sara Khalil", lang: "en" }),
-    );
+    // Premium-with-legacy-fallback wrappers — mirror production wiring
+    // (server/notifications.ts welcome path, server/routes.ts cron
+    // reminders path) so the admin preview reflects what real recipients
+    // actually receive.
+    const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "") || "https://example.com";
+    const buildWelcomePreferPremium = (lang: "en" | "ar" = "en") => {
+      try {
+        return buildWelcomeEmailPremium({
+          lang,
+          recipientName: "Sara Khalil",
+          bookingUrl: `${baseUrl}/book`,
+          whatsappUrl: "https://wa.me/971505394754",
+          supportEmail: trainerEmail(),
+          trainerName: lang === "ar" ? "المدرب يوسف" : "Coach Youssef",
+          studioLocation: lang === "ar" ? "مرسى دبي" : "Dubai Marina studio",
+        });
+      } catch (e) {
+        console.warn("[email/preview] premium welcome failed, falling back to legacy:", e);
+        return buildWelcomeEmail({ clientName: "Sara Khalil", lang });
+      }
+    };
+    const buildReminderPreferPremium = (kind: "24h" | "1h", lang: "en" | "ar" = "en") => {
+      try {
+        return buildSessionReminderEmailPremium({
+          kind,
+          lang,
+          recipientName: "Sara Khalil",
+          date: sampleBooking.date,
+          time12: sampleBooking.time12,
+          sessionFocus: sampleBooking.sessionFocusLabel,
+          location: lang === "ar" ? "استوديو المدرب يوسف، مرسى دبي" : "Coach Youssef's studio, Dubai Marina",
+          bookingUrl: `${baseUrl}/dashboard`,
+          rescheduleUrl: `${baseUrl}/book`,
+          supportEmail: trainerEmail(),
+        });
+      } catch (e) {
+        console.warn(`[email/preview] premium reminder ${kind} failed, falling back to legacy:`, e);
+        return buildSessionReminderEmail({ data: sampleBooking, lang, kind });
+      }
+    };
+
+    run("client.welcome", () => buildWelcomePreferPremium("en"));
     run("client.bookingConfirmation", () =>
       buildClientBookingConfirmationEmail({ data: sampleBooking, lang: "en" }),
     );
-    run("client.reminder24h", () =>
-      buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "24h" }),
-    );
-    run("client.reminder1h", () =>
-      buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "1h" }),
-    );
+    run("client.reminder24h", () => buildReminderPreferPremium("24h", "en"));
+    run("client.reminder1h", () => buildReminderPreferPremium("1h", "en"));
     run("client.packageExpiring", () =>
       buildPackageExpiringEmail({
         clientName: "Sara Khalil",
@@ -2357,12 +2393,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       partnerEmail: null,
     };
 
+    // Premium-with-legacy-fallback for welcome + reminders so the admin
+    // bulk-send preview delivers what production actually dispatches.
+    const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "") || "https://example.com";
+    const previewWelcome = (lang: "en" | "ar" = "en") => {
+      try {
+        return buildWelcomeEmailPremium({
+          lang, recipientName: "Sara Khalil",
+          bookingUrl: `${baseUrl}/book`,
+          whatsappUrl: "https://wa.me/971505394754",
+          supportEmail: trainerEmail(),
+          trainerName: lang === "ar" ? "المدرب يوسف" : "Coach Youssef",
+          studioLocation: lang === "ar" ? "مرسى دبي" : "Dubai Marina studio",
+        });
+      } catch (e) {
+        console.warn("[email/send-preview] premium welcome failed, legacy fallback:", e);
+        return buildWelcomeEmail({ clientName: "Sara Khalil", lang });
+      }
+    };
+    const previewReminder = (kind: "24h" | "1h", lang: "en" | "ar" = "en") => {
+      try {
+        return buildSessionReminderEmailPremium({
+          kind, lang, recipientName: "Sara Khalil",
+          date: sampleBooking.date, time12: sampleBooking.time12,
+          sessionFocus: sampleBooking.sessionFocusLabel,
+          location: lang === "ar" ? "استوديو المدرب يوسف، مرسى دبي" : "Coach Youssef's studio, Dubai Marina",
+          bookingUrl: `${baseUrl}/dashboard`,
+          rescheduleUrl: `${baseUrl}/book`,
+          supportEmail: trainerEmail(),
+        });
+      } catch (e) {
+        console.warn(`[email/send-preview] premium reminder ${kind} failed, legacy fallback:`, e);
+        return buildSessionReminderEmail({ data: sampleBooking, lang, kind });
+      }
+    };
+
     type Job = { name: string; build: () => { subject: string; html: string; text: string } };
     const jobs: Job[] = [
-      { name: "client.welcome", build: () => buildWelcomeEmail({ clientName: "Sara Khalil", lang: "en" }) },
+      { name: "client.welcome", build: () => previewWelcome("en") },
       { name: "client.bookingConfirmation", build: () => buildClientBookingConfirmationEmail({ data: sampleBooking, lang: "en" }) },
-      { name: "client.reminder24h", build: () => buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "24h" }) },
-      { name: "client.reminder1h", build: () => buildSessionReminderEmail({ data: sampleBooking, lang: "en", kind: "1h" }) },
+      { name: "client.reminder24h", build: () => previewReminder("24h", "en") },
+      { name: "client.reminder1h", build: () => previewReminder("1h", "en") },
       { name: "client.packageExpiring", build: () => buildPackageExpiringEmail({ clientName: "Sara Khalil", lang: "en", remainingSessions: 2, daysUntilExpiry: 5, packageName: "Premium 12" }) },
       { name: "client.packageFinished", build: () => buildPackageFinishedEmail({ clientName: "Sara Khalil", lang: "en", packageName: "Premium 12" }) },
       { name: "client.passwordReset", build: () => buildPasswordResetEmail({ resetUrl: "https://example.com/reset-password?token=sample", lang: "en" }) },

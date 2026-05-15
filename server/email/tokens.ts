@@ -143,8 +143,8 @@ export const WIDTH = {
  * hierarchy. micro labels are aggressively tracked uppercase tags.
  */
 export const TYPE = {
-  displayXl: { size: "56px", lh: "1.02", weight: "800", tracking: "-0.025em" },
-  displayXlMobile: { size: "38px", lh: "1.05", weight: "800", tracking: "-0.015em" },
+  displayXl: { size: "56px", lh: "1.05", weight: "800", tracking: "-0.025em" },
+  displayXlMobile: { size: "38px", lh: "1.08", weight: "800", tracking: "-0.015em" },
   display: { size: "42px", lh: "1.05", weight: "800", tracking: "-0.02em" },
   displayMobile: { size: "30px", lh: "1.08", weight: "800", tracking: "-0.01em" },
   h1: { size: "26px", lh: "1.2", weight: "700", tracking: "-0.01em" },
@@ -206,9 +206,15 @@ export const HERO_GRADIENT =
 export const HERO_BLEND_GRADIENT =
   "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.95) 100%)";
 
-/** HUD card surface gradient. */
+/**
+ * HUD card surface gradient — matte black glass panel.
+ * Top sits at near-surface tone, bottom dissolves into pure black for
+ * the cinematic "panel floating in black depth" feeling. Combined with
+ * GLOW.innerHighlight (top-edge illumination), the card reads as a
+ * milled-glass surface rather than a flat dark rectangle.
+ */
 export const CARD_GRADIENT =
-  "linear-gradient(180deg, rgba(15,21,28,0.96) 0%, rgba(7,10,14,0.99) 100%)";
+  "linear-gradient(180deg, rgba(11,16,22,0.98) 0%, rgba(4,7,11,1) 100%)";
 
 /** Card header strip — subtle cyan wash to differentiate the chip area. */
 export const CARD_HEADER_GRADIENT =
