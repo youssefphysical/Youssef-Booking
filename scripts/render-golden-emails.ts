@@ -28,7 +28,11 @@ const OUT_DIR = resolve(process.cwd(), "client/public/_email_preview");
 mkdirSync(OUT_DIR, { recursive: true });
 
 const SUPPORT = "support@youssefahmed.training";
-const APP = "https://youssefahmed.training";
+// For local golden previews, use the dev server origin so the embedded
+// hero <img> tags resolve against the locally-served /email-assets/heroes
+// PNGs. In production, builders derive their base from PUBLIC_APP_URL via
+// the URLs already passed in (deriveBaseUrl) — no script change needed.
+const APP = "http://localhost:5000";
 const WHATSAPP = "https://wa.me/971500000000";
 
 function emit(name: string, html: string) {

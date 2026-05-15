@@ -1,10 +1,19 @@
 /**
- * GOLDEN REFERENCE #1 — Password reset (utility, lightweight).
+ * GOLDEN REFERENCE #1 — Password reset (utility, security primitive).
  *
- * Hero discipline: NO hero (security primitive, not a celebration).
+ * Cinematic v2 treatment (restrained):
+ *   - NO hero image (security flow stays direct, not celebratory).
+ *   - Type-only hero anchor for brand consistency.
+ *   - Card with greeting + intro + inline CTA + expiry note.
+ *   - Atmospheric footer.
+ *
+ * The password reset is a security utility — the brand consistency comes
+ * from the shell, brand header, type, and footer. The card stays tight
+ * so the action lands above the fold on mobile.
+ *
+ * Hero discipline: NO hero image (utility flow).
  * CTA discipline: ONE primary action. Token text-link as fallback.
- * Severity: info — but no banner needed; the heading carries the intent.
- * Above-the-fold: heading + CTA must land in first viewport on mobile.
+ * Severity: info — but no banner; the heading carries the intent.
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -15,6 +24,7 @@ import {
   ctaTextLink,
   footer,
   heading,
+  hero,
   section,
   spacer,
   textBlock,
@@ -54,6 +64,17 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
 
   const body = [
     brandHeader(),
+    // Type-only cinematic anchor — no image, no eyebrow, just the brand
+    // typographic discipline so the email feels like part of the world.
+    hero({
+      eyebrow: t("ACCOUNT SECURITY", "أمان الحساب"),
+      title: t("RESET", "إعادة تعيين"),
+      accentWord: t("PASSWORD", "كلمة المرور"),
+      subtitle: t(
+        "A secure link to set a new password.",
+        "رابط آمن لتعيين كلمة مرور جديدة.",
+      ),
+    }),
     section(
       card({
         children: [
@@ -65,7 +86,7 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
           spacer("s6"),
           textBlock({ text: expiryNote, size: "bodySm", color: "tertiary" }),
           spacer("s4"),
-          ctaTextLink({ href: resetUrl, label: fallbackLabel }),
+          `<div>${ctaTextLink({ href: resetUrl, label: fallbackLabel })}</div>`,
         ].join(""),
       }),
     ),

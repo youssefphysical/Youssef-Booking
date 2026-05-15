@@ -1,10 +1,17 @@
 /**
  * GOLDEN REFERENCE #4 — Package expiring in 3 days (warning).
  *
- * Hero discipline: NO hero (warning, not celebration).
- * CTA discipline: ONE primary "Renew" + one text link to WhatsApp Youssef.
+ * Cinematic v2 treatment:
+ *   - NO hero image — warning emails stay direct (image-free, banner-led).
+ *     The cinematic atmosphere lives in the type band of the existing
+ *     hero primitive, but we lean on a smaller "alert hero" without an
+ *     image so the warning banner reads first.
+ *   - Card with warning banner + key-value details.
+ *   - Billboard CTA section in warning variant.
+ *
+ * Hero discipline: NO hero image (warning, not celebration).
+ * CTA discipline: ONE primary "Renew" (warning variant) + WhatsApp text link.
  * Severity: warning banner leads — must surface above the fold.
- * Tone: helpful nudge, not alarm. Keep copy short.
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -12,8 +19,9 @@ import {
   brandHeader,
   card,
   ctaButton,
-  ctaTextLink,
+  ctaSection,
   footer,
+  hero,
   keyValueList,
   section,
   severityBanner,
@@ -56,8 +64,21 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
 
   const body = [
     brandHeader(),
+    // Lightweight type-only hero — no image, just cinematic typographic
+    // anchor for the warning. Keeps urgency front-and-center.
+    hero({
+      eyebrow: t("HEADS UP", "تنبيه"),
+      title: t("3 DAYS", "٣ أيام"),
+      accentWord: t("LEFT", "متبقية"),
+      subtitle: t(
+        `${sessionsRemaining} sessions remaining on your ${packageName}. Renew to keep training without a gap.`,
+        `تبقى ${sessionsRemaining} جلسة من ${packageName}. جدّد لتستمر في التدريب دون انقطاع.`,
+      ),
+      trailingMeta: t(`EXPIRES · ${expiryDate.toUpperCase()}`, `تنتهي · ${expiryDate}`),
+    }),
     section(
       card({
+        headerLabel: t("RENEWAL DETAILS", "تفاصيل التجديد"),
         children: [
           severityBanner({ severity: "warning", title: bannerTitle, body: bannerBody }),
           spacer("s6"),
@@ -70,14 +91,16 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
               { label: t("Expires on", "تنتهي في"), value: expiryDate },
             ],
           }),
-          spacer("s7"),
-          ctaButton({ href: renewUrl, label: t("Renew package", "جدّد الباقة"), variant: "warning" }),
-          spacer("s5"),
-          `<div style="text-align:center;">${ctaTextLink({ href: whatsappUrl, label: t("Message Youssef", "راسل يوسف") })}</div>`,
         ].join(""),
       }),
     ),
-    footer({ lang, supportEmail }),
+    spacer("s7"),
+    ctaSection({
+      eyebrow: t("RENEW NOW", "جدّد الآن"),
+      ctaHtml: ctaButton({ href: renewUrl, label: t("Renew package", "جدّد الباقة"), variant: "warning" }),
+      supportingLink: { href: whatsappUrl, label: t("Message Youssef", "راسل يوسف") },
+    }),
+    footer({ lang, supportEmail, whatsappUrl }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "warning", bodyHtml: body });

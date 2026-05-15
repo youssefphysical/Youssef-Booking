@@ -1,12 +1,17 @@
 /**
  * GOLDEN REFERENCE #6 — Welcome email (cinematic onboarding milestone).
  *
- * The first emotional touchpoint of the elite coaching ecosystem. Maximum
- * cinematic treatment — large hero with cyan accent word, an ecosystem
- * orientation card, and a single decisive primary CTA.
+ * The first emotional touchpoint of the elite coaching ecosystem.
+ * Cinematic v2 treatment:
+ *   - Real hero photograph (boutique gym at blue hour) — sets the world.
+ *   - Section eyebrow rhythm above the orientation list.
+ *   - Pull-quote: atmospheric statement of the brand promise.
+ *   - Billboard CTA section: "Book your first session" lives in its own
+ *     dedicated band, not as a button at the end of a card.
+ *   - Atmospheric footer with WhatsApp + studio contact lockup.
  *
- * Hero discipline: HERO with accent word — welcome is one of the highest-
- *   emotional moments in the brand journey.
+ * Hero discipline: HERO with image + accent word — welcome is the highest
+ *   emotional moment in the ecosystem.
  * CTA discipline: ONE primary "Book your first session" + WhatsApp text link.
  * Severity: info (no banner — the hero carries the welcome).
  */
@@ -16,15 +21,17 @@ import {
   brandHeader,
   card,
   ctaButton,
-  ctaTextLink,
+  ctaSection,
   footer,
   hero,
   keyValueList,
+  pullQuote,
   section,
+  sectionEyebrow,
   spacer,
   textBlock,
 } from "../components";
-import type { Lang } from "../tokens";
+import { deriveBaseUrl, heroImageUrl, type Lang } from "../tokens";
 
 export interface WelcomeInput {
   lang: Lang;
@@ -44,6 +51,7 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
   } = input;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
+  const base = deriveBaseUrl(bookingUrl, whatsappUrl);
 
   const subject = t(
     `Welcome to Youssef Ahmed Elite, ${recipientName}`,
@@ -59,11 +67,6 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
     `مرحباً ${recipientName} — أنت معنا. هذا ليس اشتراك نادٍ تقليدي. إنه نظام مدرَّب ومُقاس ومسؤول، مصمم لتحوّلك.`,
   );
 
-  const expectations = t(
-    "What happens next:",
-    "الخطوات التالية:",
-  );
-
   const body = [
     brandHeader(),
     hero({
@@ -74,14 +77,21 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
         "Elite coaching, premium training, measured progress. Your journey starts with one session.",
         "تدريب نخبوي، جلسات متميزة، تقدم مُقاس. رحلتك تبدأ بجلسة واحدة.",
       ),
+      trailingMeta: t("DUBAI · ELITE PERSONAL TRAINING", "دبي · تدريب شخصي متميز"),
+      imageUrl: heroImageUrl("welcome", base),
+      imageAlt: t(
+        "Boutique premium gym at blue hour, cinematic dark interior",
+        "نادي رياضي راقٍ في الساعة الزرقاء، أجواء داخلية سينمائية",
+      ),
     }),
     section(
       card({
+        headerLabel: t("ORIENTATION", "التوجيه"),
         children: [
-          textBlock({ text: intro, color: "secondary" }),
+          textBlock({ text: intro, color: "secondary", size: "bodyLg" }),
           spacer("s6"),
-          textBlock({ text: expectations, color: "primary", size: "bodySm" }),
-          spacer("s4"),
+          sectionEyebrow({ label: t("WHAT HAPPENS NEXT", "الخطوات التالية") }),
+          spacer("s5"),
           keyValueList({
             items: [
               {
@@ -109,16 +119,30 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
               { label: t("Location", "المكان"), value: studioLocation ?? null },
             ],
           }),
-          spacer("s7"),
-          ctaButton({ href: bookingUrl, label: t("Book first session", "احجز الجلسة الأولى"), variant: "brand" }),
-          spacer("s5"),
-          textBlock({ text: t("Questions before you book?", "لديك أسئلة قبل الحجز؟"), size: "bodySm", color: "tertiary", align: "center" }),
-          spacer("s2"),
-          `<div style="text-align:center;">${ctaTextLink({ href: whatsappUrl, label: t("Message Youssef on WhatsApp", "راسل يوسف على واتساب") })}</div>`,
+          spacer("s6"),
+          pullQuote({
+            text: t(
+              "Consistency, not intensity, builds the body you want.",
+              "الاستمرار، وليس الشدة، هو ما يبني الجسد الذي تريده.",
+            ),
+            attribution: t("COACH YOUSSEF", "المدرب يوسف"),
+          }),
         ].join(""),
       }),
     ),
-    footer({ lang, supportEmail }),
+    spacer("s7"),
+    // Billboard CTA — own architectural moment, dedicated band.
+    ctaSection({
+      eyebrow: t("READY?", "جاهز؟"),
+      ctaHtml: ctaButton({
+        href: bookingUrl,
+        label: t("Book first session", "احجز الجلسة الأولى"),
+        variant: "brand",
+      }),
+      supportingText: t("Questions before you book?", "لديك أسئلة قبل الحجز؟"),
+      supportingLink: { href: whatsappUrl, label: t("Message Youssef on WhatsApp", "راسل يوسف على واتساب") },
+    }),
+    footer({ lang, supportEmail, whatsappUrl, studioLocation: studioLocation ?? undefined }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "info", bodyHtml: body });

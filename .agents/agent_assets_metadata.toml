@@ -12,6 +12,36 @@ uri = "file://client/public/og-premium.png"
 type = "image"
 title = "og-premium-luxury"
 
+[[generated]]
+id = "NUYHnTx7EpVGFI2003CNe"
+uri = "file://client/public/email-assets/heroes/welcome_hero.png"
+type = "image"
+title = "welcome cinematic gym"
+
+[[generated]]
+id = "kbUOoaWsll8nPx4RUQhhq"
+uri = "file://client/public/email-assets/heroes/session_hero.png"
+type = "image"
+title = "session ready kettlebell"
+
+[[generated]]
+id = "E0lz_4eTeGKxBQxeD7iND"
+uri = "file://client/public/email-assets/heroes/discipline_hero.png"
+type = "image"
+title = "discipline shoes morning"
+
+[[generated]]
+id = "RWvBvylROijbG-MBXPAIt"
+uri = "file://client/public/email-assets/heroes/triumph_hero.png"
+type = "image"
+title = "triumph dumbbell rack dawn"
+
+[[generated]]
+id = "bu8gUOWwMd1ZvWg9uw1vi"
+uri = "file://attached_assets/generated_images/cinematic_photograph_of_an_50dc.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "rClXjRHbJcPRPwXsyhCW2"
 uri = "file://docs/email-architecture-step1.md"

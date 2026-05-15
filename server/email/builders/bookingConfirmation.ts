@@ -1,12 +1,18 @@
 /**
  * GOLDEN REFERENCE #2 — Booking confirmation (cinematic milestone).
  *
+ * Cinematic v2 treatment:
+ *   - Real hero photograph (single matte-black kettlebell, cyan rim) —
+ *     anticipation/preparation atmosphere.
+ *   - Card carries success banner + key-value details (no CTA inside).
+ *   - Billboard CTA section ("LOCKED IN") wraps the View-booking action
+ *     in its own atmospheric band.
+ *   - Atmospheric footer with WhatsApp/studio lockup.
+ *
  * Hero discipline: HERO ALLOWED — booking-confirmed is a moment of
- *   commitment in the user's training journey. Cinematic treatment lifts
- *   the operational confirmation into a brand experience.
+ *   commitment in the user's training journey.
  * CTA discipline: ONE primary "View booking" + secondary text link.
  * Severity: success banner — confirms the lock-in.
- * Above-the-fold: hero headline + confirmation banner land first.
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -14,7 +20,7 @@ import {
   brandHeader,
   card,
   ctaButton,
-  ctaTextLink,
+  ctaSection,
   footer,
   hero,
   keyValueList,
@@ -23,7 +29,7 @@ import {
   spacer,
   textBlock,
 } from "../components";
-import type { Lang } from "../tokens";
+import { deriveBaseUrl, heroImageUrl, type Lang } from "../tokens";
 
 export interface BookingConfirmationInput {
   lang: Lang;
@@ -55,6 +61,7 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
   } = input;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
+  const base = deriveBaseUrl(bookingUrl, rescheduleUrl);
 
   const subject = t(`Session confirmed — ${date} at ${time12}`, `تأكيد الجلسة — ${date} في ${time12}`);
   const preheader = t(
@@ -80,9 +87,21 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
 
   const body = [
     brandHeader(),
-    hero({ eyebrow: heroEyebrow, title: heroTitle, accentWord: heroAccent, subtitle: heroSubtitle }),
+    hero({
+      eyebrow: heroEyebrow,
+      title: heroTitle,
+      accentWord: heroAccent,
+      subtitle: heroSubtitle,
+      trailingMeta: t(`${date.toUpperCase()} · ${time12}`, `${date} · ${time12}`),
+      imageUrl: heroImageUrl("session", base),
+      imageAlt: t(
+        "Single matte black kettlebell in dark luxury gym, cyan rim light",
+        "كرة حديدية سوداء في نادٍ راقٍ، إضاءة سيان جانبية",
+      ),
+    }),
     section(
       card({
+        headerLabel: t("SESSION DETAILS", "تفاصيل الجلسة"),
         children: [
           severityBanner({ severity: "success", title: bannerTitle, body: bannerBody }),
           spacer("s6"),
@@ -109,16 +128,17 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
               { label: t("Phone", "الهاتف"), value: clientPhone ?? null },
             ],
           }),
-          spacer("s7"),
-          ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
-          spacer("s5"),
-          textBlock({ text: t("Plans changed?", "تغيرت خططك؟"), size: "bodySm", color: "tertiary", align: "center" }),
-          spacer("s2"),
-          `<div style="text-align:center;">${ctaTextLink({ href: rescheduleUrl, label: rescheduleLabel })}</div>`,
         ].join(""),
       }),
     ),
-    footer({ lang, supportEmail, manageUrl: rescheduleUrl }),
+    spacer("s7"),
+    ctaSection({
+      eyebrow: t("LOCKED IN", "تم التأكيد"),
+      ctaHtml: ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
+      supportingText: t("Plans changed?", "تغيرت خططك؟"),
+      supportingLink: { href: rescheduleUrl, label: rescheduleLabel },
+    }),
+    footer({ lang, supportEmail, manageUrl: rescheduleUrl, studioLocation: location }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "success", bodyHtml: body });

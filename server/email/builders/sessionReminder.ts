@@ -1,13 +1,18 @@
 /**
  * GOLDEN REFERENCE #7 — Session reminder (24h + 1h cadence).
  *
- * Hero discipline: NO hero (operational reminder, not a milestone).
+ * Cinematic v2 treatment:
+ *   - Real hero photograph (laced training shoes, dark concrete, morning
+ *     light) — discipline + cadence atmosphere.
+ *   - Card carries info banner + key-value details.
+ *   - Billboard CTA section: "ON THE CLOCK" / "ONE HOUR" framing per kind.
+ *   - Atmospheric footer.
+ *
+ * Hero discipline: HERO with image — both reminder kinds get the same
+ *   cinematic discipline-themed photograph (the brand reads as one
+ *   coherent ecosystem regardless of cadence).
  * CTA discipline: ONE primary "View booking" + text link to reschedule.
  * Severity: info — high-signal nudge, not alarm.
- * Tone: short, calm, premium. The clock matters more than the copy.
- *
- * The `kind` prop drives subject + banner copy. Both kinds share the same
- * cinematic structure so the user feels the same brand both times.
  */
 
 import { compose, type ComposedEmail } from "../composer";
@@ -15,15 +20,16 @@ import {
   brandHeader,
   card,
   ctaButton,
-  ctaTextLink,
+  ctaSection,
   footer,
+  hero,
   keyValueList,
   section,
   severityBanner,
   spacer,
   textBlock,
 } from "../components";
-import type { Lang } from "../tokens";
+import { deriveBaseUrl, heroImageUrl, type Lang } from "../tokens";
 
 export type ReminderKind = "24h" | "1h";
 
@@ -44,6 +50,7 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
   const { lang, kind, recipientName, date, time12, sessionFocus, location, bookingUrl, rescheduleUrl, supportEmail } = input;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
+  const base = deriveBaseUrl(bookingUrl, rescheduleUrl);
 
   const isOneHour = kind === "1h";
   const subject = isOneHour
@@ -52,6 +59,25 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
   const preheader = isOneHour
     ? t(`See you at ${time12}. Hydrate, warm up, show up.`, `أراك في ${time12}. اشرب الماء، سخّن، استعد.`)
     : t(`Quick heads-up — your session with Coach Youssef is tomorrow.`, `تذكير سريع — جلستك مع المدرب يوسف غداً.`);
+
+  const heroEyebrow = isOneHour
+    ? t("ONE HOUR", "ساعة واحدة")
+    : t("TOMORROW", "غداً");
+  const heroTitle = isOneHour
+    ? t("SHOW", "حان")
+    : t("ON THE", "على");
+  const heroAccent = isOneHour
+    ? t("UP", "وقت العرض")
+    : t("CLOCK", "الموعد");
+  const heroSubtitle = isOneHour
+    ? t(
+        "Hydrate. Warm up. Leave on time. The clock is set.",
+        "اشرب الماء. سخّن. اخرج في الوقت. الساعة جاهزة.",
+      )
+    : t(
+        "Final reminder ships 1 hour before the session. Reschedule below if anything changed.",
+        "ستصلك تذكير أخير قبل ساعة من الجلسة. أعد الجدولة أدناه إذا تغيّر شيء.",
+      );
 
   const bannerTitle = isOneHour
     ? t("Your session starts in 1 hour", "جلستك تبدأ خلال ساعة")
@@ -69,8 +95,21 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
 
   const body = [
     brandHeader(),
+    hero({
+      eyebrow: heroEyebrow,
+      title: heroTitle,
+      accentWord: heroAccent,
+      subtitle: heroSubtitle,
+      trailingMeta: t(`${date.toUpperCase()} · ${time12}`, `${date} · ${time12}`),
+      imageUrl: heroImageUrl("discipline", base),
+      imageAlt: t(
+        "Laced training shoes on dark polished concrete, morning light",
+        "حذاء تدريب على أرضية خرسانية داكنة، إضاءة الصباح",
+      ),
+    }),
     section(
       card({
+        headerLabel: t("SESSION SNAPSHOT", "ملخص الجلسة"),
         children: [
           severityBanner({ severity: "info", title: bannerTitle, body: bannerBody }),
           spacer("s6"),
@@ -84,14 +123,16 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
               { label: t("Location", "المكان"), value: location },
             ],
           }),
-          spacer("s7"),
-          ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
-          spacer("s5"),
-          `<div style="text-align:center;">${ctaTextLink({ href: rescheduleUrl, label: rescheduleLabel })}</div>`,
         ].join(""),
       }),
     ),
-    footer({ lang, supportEmail, manageUrl: rescheduleUrl }),
+    spacer("s7"),
+    ctaSection({
+      eyebrow: isOneHour ? t("THE CLOCK IS RUNNING", "الساعة تعمل") : t("STAY READY", "كن جاهزاً"),
+      ctaHtml: ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
+      supportingLink: { href: rescheduleUrl, label: rescheduleLabel },
+    }),
+    footer({ lang, supportEmail, manageUrl: rescheduleUrl, studioLocation: location }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "info", bodyHtml: body });
