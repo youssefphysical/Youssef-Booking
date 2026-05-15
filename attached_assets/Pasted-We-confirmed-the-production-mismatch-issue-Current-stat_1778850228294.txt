@@ -1,0 +1,75 @@
+We confirmed the production mismatch issue.
+
+Current state:
+
+- Replit contains the latest premium email system work and recent production fixes.
+- GitHub main and Vercel production are still behind.
+- Replit currently shows many local changes that are NOT pushed to remote yet.
+- We need a SAFE controlled production sync.
+
+DO NOT perform a blind push.
+
+Your task:
+
+1. Audit all local pending changes carefully.
+
+2. Keep ONLY production-safe and verified changes related to:
+   
+   - premium email design system
+   - booking confirmation email
+   - admin booking email
+   - reusable email components
+   - production email routing
+   - rendering fixes
+   - cron reliability/stability improvements already verified
+   - operational logging required for production debugging
+
+3. Exclude/remove from the push:
+   
+   - abandoned drafts
+   - duplicate email builders
+   - experimental code
+   - incomplete iterations
+   - temporary screenshots/assets
+   - dead files
+   - unrelated refactors
+   - unsafe diagnostics
+   - test-only logic
+
+4. Before pushing:
+   
+   - run git status
+   - review changed files
+   - ensure branch consistency
+   - verify build/typecheck passes if available
+   - verify no accidental database schema changes are included
+   - verify no environment variables are modified
+
+5. Create a CLEAN production-ready commit.
+
+6. Push ONLY the validated production-safe version to GitHub main.
+
+7. Confirm:
+   
+   - commit hash
+   - pushed files summary
+   - GitHub updated successfully
+   - Vercel production deployment triggered
+   - deployment status becomes READY
+
+8. After deployment:
+   
+   - tell me EXACTLY what production flows to test
+   - identify any remaining risks or fallback paths
+
+Strict rules:
+
+- DO NOT overwrite working production logic accidentally.
+- DO NOT deploy partial email systems.
+- DO NOT modify Neon database structure or production data.
+- DO NOT modify auth/payment logic.
+- DO NOT trigger mass real emails.
+- DO NOT remove required production integrations.
+
+Goal:
+Safely synchronize the verified Replit work to GitHub and Vercel production without breaking existing production systems.
