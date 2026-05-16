@@ -11,6 +11,8 @@ import {
   buildAdminNewClientEmail,
 } from "./email-templates";
 import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
+import { buildStripoWelcomeEmail } from "./email/builders/stripoWelcome";
+import { buildPaymentConfirmedEmail } from "./email/builders/paymentConfirmed";
 
 const TRAINER_WHATSAPP = "https://wa.me/971505394754";
 
@@ -43,23 +45,35 @@ export async function sendWelcomeNotifications({
     const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
     let built: { subject: string; text: string; html: string };
     try {
-      // Premium cinematic welcome — preferred path.
-      built = buildWelcomeEmailPremium({
-        lang: langCode,
-        recipientName: clientName,
-        bookingUrl: `${websiteUrl}/book`,
-        whatsappUrl: TRAINER_WHATSAPP,
-        supportEmail: trainerEmail(),
-        trainerName: langCode === "ar" ? "المدرب يوسف" : "Coach Youssef",
-        studioLocation: langCode === "ar" ? "مرسى دبي" : "Dubai Marina studio",
-      });
-    } catch (premiumErr) {
-      console.warn("[notifications] premium welcome render failed, falling back to legacy:", premiumErr);
-      built = buildWelcomeEmail({
+      // Stripo cinematic welcome — preferred path (production design).
+      // Single full-bleed image with 4 dynamic tokens; image acts as the
+      // dashboard CTA. See server/email/builders/stripoWelcome.ts.
+      built = buildStripoWelcomeEmail({
         clientName,
-        lang: lang || "en",
-        websiteUrl,
+        dashboardUrl: `${websiteUrl}/dashboard`,
+        supportWhatsappUrl: TRAINER_WHATSAPP,
+        supportEmail: trainerEmail(),
       });
+    } catch (stripoErr) {
+      console.warn("[notifications] stripo welcome render failed, trying premium:", stripoErr);
+      try {
+        built = buildWelcomeEmailPremium({
+          lang: langCode,
+          recipientName: clientName,
+          bookingUrl: `${websiteUrl}/book`,
+          whatsappUrl: TRAINER_WHATSAPP,
+          supportEmail: trainerEmail(),
+          trainerName: langCode === "ar" ? "المدرب يوسف" : "Coach Youssef",
+          studioLocation: langCode === "ar" ? "مرسى دبي" : "Dubai Marina studio",
+        });
+      } catch (premiumErr) {
+        console.warn("[notifications] premium welcome render failed, falling back to legacy:", premiumErr);
+        built = buildWelcomeEmail({
+          clientName,
+          lang: lang || "en",
+          websiteUrl,
+        });
+      }
     }
     await sendEmail({
       to: email,
@@ -106,6 +120,74 @@ export async function sendAdminNewClientEmail(opts: {
     });
   } catch (e) {
     console.warn("[notifications] admin new-client email failed:", e);
+  }
+}
+
+/**
+ * Send the client a payment confirmation email after a package payment
+ * reaches "paid". Never throws. Quietly no-ops when the recipient has no
+ * email on file.
+ */
+export async function sendPaymentConfirmedNotification({
+  email,
+  clientName,
+  lang,
+  amount,
+  paymentMethod,
+  paymentReference,
+  paymentDate,
+  packageName,
+  totalSessions,
+  validityLabel,
+  startDate,
+  packageUrl,
+  bookUrl,
+}: {
+  email?: string | null;
+  clientName: string;
+  lang?: string | null;
+  amount: string;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  paymentDate?: string | null;
+  packageName: string;
+  totalSessions?: number | null;
+  validityLabel?: string | null;
+  startDate?: string | null;
+  packageUrl: string;
+  bookUrl?: string | null;
+}) {
+  if (!email) {
+    console.info(`[notifications] payment-confirmed skipped — no email. client=${clientName}`);
+    return;
+  }
+  try {
+    const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
+    const built = buildPaymentConfirmedEmail({
+      lang: langCode,
+      recipientName: clientName,
+      amount,
+      paymentMethod: paymentMethod ?? null,
+      paymentReference: paymentReference ?? null,
+      paymentDate: paymentDate ?? null,
+      packageName,
+      totalSessions: totalSessions ?? null,
+      validityLabel: validityLabel ?? null,
+      startDate: startDate ?? null,
+      packageUrl,
+      bookUrl: bookUrl ?? null,
+      whatsappUrl: TRAINER_WHATSAPP,
+      supportEmail: trainerEmail(),
+    });
+    await sendEmail({
+      to: email,
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: trainerEmail(),
+    });
+  } catch (e) {
+    console.warn("[notifications] payment-confirmed email failed:", e);
   }
 }
 
