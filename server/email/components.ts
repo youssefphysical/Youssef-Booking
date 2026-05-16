@@ -97,7 +97,13 @@ function colorOf(key: TextColor): string {
     : COLOR.text.accent;
 }
 
-/** HUD corner bracket — small cyan L-shape that sits in card corners. */
+/** HUD corner bracket — small cyan L-shape that sits in card corners.
+ *
+ * Wrapped in `<!--[if !mso]><!-- -->` so Outlook desktop (which strips
+ * position:absolute and would otherwise render the &nbsp;-containing
+ * divs as stray inline blocks) never receives the markup at all.
+ * Gmail web/iOS/Android, Apple Mail, Yahoo, Samsung Internet all
+ * honor position:absolute inside table cells correctly. */
 function cornerBracket(corner: "tl" | "tr" | "bl" | "br"): string {
   const sz = 14;
   const th = 1;
@@ -106,13 +112,10 @@ function cornerBracket(corner: "tl" | "tr" | "bl" | "br"): string {
   const isLeft = corner === "tl" || corner === "bl";
   const top = isTop ? `top:${inset}px;` : `bottom:${inset}px;`;
   const side = isLeft ? `left:${inset}px;` : `right:${inset}px;`;
-  // Use absolute container with two thin lines (horizontal + vertical).
-  // Many email clients drop position:absolute — we keep it as a graceful
-  // decorative enhancement (its absence does not break layout).
-  return `<div style="position:absolute;${top}${side}width:${sz}px;height:${sz}px;pointer-events:none;">`
-    + `<div style="position:absolute;${isTop ? "top:0" : "bottom:0"};left:0;right:0;height:${th}px;background-color:${COLOR.brand.cyanDeep};">&nbsp;</div>`
-    + `<div style="position:absolute;${isLeft ? "left:0" : "right:0"};top:0;bottom:0;width:${th}px;background-color:${COLOR.brand.cyanDeep};">&nbsp;</div>`
-    + `</div>`;
+  return `<!--[if !mso]><!-- --><div style="position:absolute;${top}${side}width:${sz}px;height:${sz}px;pointer-events:none;mso-hide:all;">`
+    + `<div style="position:absolute;${isTop ? "top:0" : "bottom:0"};left:0;right:0;height:${th}px;background-color:${COLOR.brand.cyanDeep};font-size:0;line-height:1px;">&nbsp;</div>`
+    + `<div style="position:absolute;${isLeft ? "left:0" : "right:0"};top:0;bottom:0;width:${th}px;background-color:${COLOR.brand.cyanDeep};font-size:0;line-height:1px;">&nbsp;</div>`
+    + `</div><!--<![endif]-->`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -126,6 +129,10 @@ export interface ShellOptions {
 }
 
 export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string {
+  // Reset module-level section counter so each rendered email starts at 01.
+  // Critical for batch sends (e.g. cron loops dispatching N reminders in
+  // the same Node process) — otherwise numbering leaks between emails.
+  __sectionEyebrowCounter = 0;
   const dir = lang === "ar" ? "rtl" : "ltr";
   const family = fontStack(lang);
   return [
