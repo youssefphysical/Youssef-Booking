@@ -151,10 +151,12 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `.email-pad{padding-left:24px !important;padding-right:24px !important;}`,
     `.email-pad-tight{padding-left:18px !important;padding-right:18px !important;}`,
     // Card interior gets a slightly tighter gutter — keeps content room.
-    // Card interior — tighter mobile pad for content-rich readability.
-    `.email-card-pad{padding:32px 22px !important;}`,
+    // Card interior — tighter mobile pad for content density.
+    // Was 32×22; trimmed to 28×20 so cards stop feeling tall/narrow on
+    // Gmail iOS/Android while preserving the luxury breathing.
+    `.email-card-pad{padding:28px 20px !important;}`,
     // CTA — full-width touch target, refined luxury padding.
-    `.email-cta-cell a{display:block !important;width:auto !important;padding:22px 28px !important;font-size:13px !important;letter-spacing:0.24em !important;}`,
+    `.email-cta-cell a{display:block !important;width:auto !important;padding:20px 26px !important;font-size:13px !important;letter-spacing:0.22em !important;}`,
     // 2-col grid stacks.
     `.email-stack-2col>td{display:block !important;width:100% !important;}`,
     `.email-stack-2col>td+td{padding-top:24px !important;padding-left:0 !important;border-left:0 !important;}`,
@@ -167,12 +169,16 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `.email-body{font-size:17px !important;line-height:1.65 !important;}`,
     `.email-h1{font-size:24px !important;line-height:1.2 !important;}`,
     `.email-pull-quote{font-size:21px !important;line-height:1.35 !important;}`,
-    // Hero pad mobile — cinema breathing, tighter for mobile composition.
-    `.email-hero-pad{padding:40px 22px 48px !important;}`,
-    // Brand header pad mobile — anchors masthead closer to hero.
-    `.email-brand-pad{padding:36px 22px 8px !important;}`,
-    // CTA section pad mobile — premium stage, not stretched void.
-    `.email-cta-section-pad{padding:64px 22px !important;}`,
+    // Hero pad mobile — cinema breathing, tightened from 40/48 to 32/40
+    // so the type band hugs the image instead of floating below a void.
+    `.email-hero-pad{padding:32px 22px 40px !important;}`,
+    // Brand header pad mobile — masthead pulled closer to hero (28/22/6).
+    `.email-brand-pad{padding:28px 22px 6px !important;}`,
+    // CTA section pad mobile — premium stage, calmed from 64 → 48 vertical
+    // so the pill sits inside a focused chamber, not a tall empty room.
+    `.email-cta-section-pad{padding:48px 22px !important;}`,
+    // Footer pad mobile — sophisticated wrap (was 88/56/72 desktop).
+    `.email-footer-pad{padding:40px 22px 32px !important;}`,
     // KV grid — collapse the vertical rule on stacked rows.
     `.email-kv-rule{display:none !important;}`,
     // Footer 3-col masthead stacks.
@@ -221,10 +227,13 @@ export function brandHeader(): string {
     + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
     + `<td style="width:6px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.7;">&nbsp;</td>`
     + `</tr></table>`;
-  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
-  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.34em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:12px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
+  // Tracking calmed (0.32→0.26 on wordmark, 0.34→0.26 on subtitle) so
+  // the masthead reads as one composed lockup, not three wide-set lines.
+  // Subtitle padding-top 12px → 10px tightens the visual grouping.
+  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.26em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
+  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.26em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:10px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s3};">`
+    + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s7} ${SPACE.s8} ${SPACE.s2};">`
     + rgbAccent
     + wordmark
     + subtitle
@@ -299,12 +308,13 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
     ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s7};text-align:${align};letter-spacing:0.32em;" class="email-text-tertiary">${esc(trailingMeta)}</div>`
     : "";
 
-  // Top pad: when image precedes, the blend strip already carries the eye
-  // INTO the type band — keep it tight (s7) so the type sits inside the
-  // chamber, not floating below it. Type-only heroes use s12 for cover-page
-  // proportions; the radial halo gives the headline its own light.
-  const typeTopPad = imageUrl ? SPACE.s7 : SPACE.s12;
-  const typeBottomPad = imageUrl ? SPACE.s12 : SPACE.s11;
+  // Top pad refined: image-led heroes use s6 (was s7) — the blend strip
+  // already carries the eye INTO the type band, so the type can sit
+  // tighter inside the chamber. Type-only heroes use s10 (was s12) for
+  // calmer cover-page proportions. Bottom pad s10 (was s12 image / s11
+  // type) — eliminates the vertical-stretch the user flagged.
+  const typeTopPad = imageUrl ? SPACE.s6 : SPACE.s10;
+  const typeBottomPad = imageUrl ? SPACE.s10 : SPACE.s10;
 
   // Reference HERO_IMAGE_OVERLAY so future image-overlay work can use it
   // (Outlook/Gmail strip absolute-positioned overlays; the gradient is
@@ -356,11 +366,13 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
   const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.cyanGlow};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
   const bottomEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.magentaGlow};background-image:${CARD_BOTTOM_EDGE};border-bottom-left-radius:${radius};border-bottom-right-radius:${radius};">&nbsp;</td></tr>`;
 
-  // Card body row — TRON RGB-lit glass slab. s10 vertical / s9 horizontal.
-  // GLOW.card now layers cyan + magenta atmospheric halos.
+  // Card body row — TRON RGB-lit glass slab. Vertical pad tightened
+  // from s10 → s9 (96px → 72px) to fix the tall/narrow proportion the
+  // user flagged. Horizontal s9 preserves luxury content margins.
+  // GLOW.card layers cyan + magenta atmospheric halos.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
     + topEdge
-    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s10} ${SPACE.s9};">`
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s9} ${SPACE.s9};">`
     + headerStrip
     + children
     + `</td></tr>`
@@ -595,11 +607,12 @@ export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }:
     ? `<div style="text-align:center;padding-top:${SPACE.s5};">${ctaTextLink(supportingLink)}</div>`
     : "";
 
-  // Cinematic stage: deep s12 vertical pad (mobile cliff overrides to 80px).
-  // The radial halo backdrop + section accent + tight typographic lockup
-  // makes the CTA feel like a curated moment, not a button on a band.
+  // Cinematic stage refined: vertical pad s12 → s10 (128 → 96) so the
+  // CTA section reads as a focused chamber, not a stretched empty room.
+  // Mobile cliff already calmed to 48px. The RGB stage rig + tight
+  // typographic lockup carries presence; vertical void is dead weight.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};">`
-    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s12} ${SPACE.s8};text-align:center;">`
+    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8};text-align:center;">`
     + sectionAccent
     + eyebrowHtml
     + ctaHtml
@@ -753,7 +766,9 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     "Elite training. Composed for Dubai.",
     "تدريب نخبوي. مصمم لدبي.",
   );
-  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s7};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
+  // Tagline composition: bottom pad s7 → s5 so the tagline+accent+
+  // signature read as ONE composed sign-off block, not 3 stacked items.
+  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s5};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
 
   // Closing TRON 3-segment RGB accent — mirrors the masthead and CTA
   // section, so the email opens, climaxes, and closes with the same
@@ -773,16 +788,21 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     `© ${year} Youssef Ahmed · Dubai · All rights reserved.`,
     `© ${year} يوسف أحمد · دبي · جميع الحقوق محفوظة.`,
   );
-  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s7};" class="email-text-tertiary">${esc(copyText)}</div>`;
+  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.10em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s5};" class="email-text-tertiary">${esc(copyText)}</div>`;
 
+  // Footer composition refined:
+  //   - Desktop pad s11/s8/s10 → s9/s8/s8 (88/56/64 → 72/56/64). Less
+  //     stretched, the footer reads as a sealed sign-off.
+  //   - Wordmark tracking 0.26em → 0.22em — same composed lockup energy
+  //     as the masthead, but tighter visual grouping.
+  //   - Copy padding-top s7 → s5 (44 → 28) so copyright sits as the
+  //     final beat of the lockup, not as a separate microline.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
-    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s11} ${SPACE.s8} ${SPACE.s10};">`
+    + `<tr><td class="email-pad email-footer-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s8};">`
     + taglineHtml
     + closingAccent
-    // Composed signature lockup — tracking calmed (0.32em → 0.26em) and
-    // role anchored tight (s3 → s2) so name + role read as ONE block.
-    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
-    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s2};letter-spacing:0.05em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
+    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s2};letter-spacing:0.04em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
     + linkRow
     + copyHtml
     + `</td></tr></table>`;
