@@ -43,6 +43,7 @@ import {
   HERO_IMAGE_OVERLAY,
   CARD_GRADIENT,
   CARD_TOP_EDGE,
+  CARD_BOTTOM_EDGE,
   CARD_HEADER_GRADIENT,
   CTA_SECTION_GRADIENT,
   CTA_GRADIENT,
@@ -208,16 +209,23 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 // ────────────────────────────────────────────────────────────────────────
 
 export function brandHeader(): string {
-  // Anchored masthead lockup: the cyan accent hugs the wordmark (s4 gap)
-  // and the subtitle hugs the wordmark (12px) so the three lines read as
-  // ONE composed signature, not as floating elements. Tracking refined
-  // from 0.42em → 0.32em — still tracked, less wide-set / less SaaS-y.
-  const accent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s4};font-size:0;line-height:1px;opacity:0.85;">&nbsp;</div>`;
+  // TRON RGB masthead lockup. The accent is now a 3-segment RGB hairline
+  // (cyan primary + magenta + violet) — the brand's RGB DNA visible at
+  // first glance. Tracking 0.32em on wordmark, 0.34em on subtitle.
+  // Each segment is its own table cell so Outlook can't strip a gradient.
+  const rgbAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s4};">`
+    + `<tr>`
+    + `<td style="width:6px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.7;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:24px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:6px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.7;">&nbsp;</td>`
+    + `</tr></table>`;
   const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
   const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.34em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:12px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
     + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s3};">`
-    + accent
+    + rgbAccent
     + wordmark
     + subtitle
     + `</td></tr></table>`;
@@ -342,21 +350,22 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
     ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s7};letter-spacing:0.28em;" class="email-text-accent">${esc(headerLabel)}</div>`
     : "";
 
-  // Luminous cyan top edge — 1px gradient bevel that catches "room light".
-  // Reads as the lit edge of a glass slab, not as a decorative line. Gives
-  // the card real depth + a premium bevel signature without HUD noise.
-  const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.bg.surface};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
+  // TRON dual-edge bevel: bright cyan top (catches stage light) +
+  // faint magenta bottom (RGB triad complement). Outlook strips both
+  // gradients gracefully — the solid surface + 1px cyan border remain.
+  const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.cyanGlow};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
+  const bottomEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.magentaGlow};background-image:${CARD_BOTTOM_EDGE};border-bottom-left-radius:${radius};border-bottom-right-radius:${radius};">&nbsp;</td></tr>`;
 
-  // Card body row — refined proportions. s10 vertical (was s11) reduces
-  // tall/narrow feel without losing the luxury breathing. Horizontal s9
-  // keeps generous content margins. Mobile cliff (.email-card-pad)
-  // tightens further for handheld content density.
+  // Card body row — TRON RGB-lit glass slab. s10 vertical / s9 horizontal.
+  // GLOW.card now layers cyan + magenta atmospheric halos.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
     + topEdge
     + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s10} ${SPACE.s9};">`
     + headerStrip
     + children
-    + `</td></tr></table>`;
+    + `</td></tr>`
+    + bottomEdge
+    + `</table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -444,8 +453,11 @@ export function spacer(size: SpaceKey = "s4"): string {
 }
 
 export function divider(): string {
+  // TRON RGB hairline divider — cyan-dominant with magenta crossover
+  // near the right. Falls back to a calm white-04 border-top for clients
+  // that strip background-image (Outlook desktop, some Gmail variants).
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td class="email-divider" style="font-size:0;line-height:0;border-top:1px solid ${COLOR.border.divider};">&nbsp;</td></tr>`
+    + `<tr><td class="email-divider" style="font-size:0;line-height:1px;height:1px;border-top:1px solid ${COLOR.border.divider};background-image:${ACCENT_RULE_GRADIENT};">&nbsp;</td></tr>`
     + `</table>`;
 }
 
@@ -558,10 +570,17 @@ export interface CtaSectionOptions {
 }
 
 export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
-  // Single 32px cyan accent hairline above the eyebrow — anchored TIGHT
-  // (s5 vs prior s7) so it reads as part of the eyebrow lockup, not as
-  // an isolated punctuation mark floating in space.
-  const sectionAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+  // TRON 3-segment RGB stage accent — magenta + cyan + violet hairline
+  // anchored tight to the eyebrow lockup. Reads as the brand's RGB
+  // signature opening the curated CTA moment.
+  const sectionAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s5};">`
+    + `<tr>`
+    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:32px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
+    + `</tr></table>`;
 
   // Quiet uppercase eyebrow — tracking calmed (0.32em → 0.28em) and tight
   // breathing to CTA (s7 → s6). Eyebrow + button read as one sealed lockup.
@@ -736,9 +755,17 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
   );
   const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s7};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
 
-  // Closing 32px cyan hairline — anchored TIGHT to signature (s5 vs s7)
-  // so it reads as part of the lockup, not as isolated punctuation.
-  const closingAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+  // Closing TRON 3-segment RGB accent — mirrors the masthead and CTA
+  // section, so the email opens, climaxes, and closes with the same
+  // RGB brand signature. Anchored tight (s5) to the signature lockup.
+  const closingAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s5};">`
+    + `<tr>`
+    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:32px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
+    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
+    + `</tr></table>`;
 
   // Final copyright microline — completion mark, very quiet.
   const year = new Date().getFullYear();
