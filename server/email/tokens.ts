@@ -50,18 +50,23 @@ export const COLOR = {
     footer: "#000000",
   },
   border: {
-    cyan: "rgba(255,255,255,0.06)",
-    cyanSoft: "rgba(255,255,255,0.04)",
-    cyanStrong: "rgba(94,231,255,0.30)",
-    divider: "rgba(255,255,255,0.045)",
-    hairline: "rgba(255,255,255,0.03)",
+    // Card edge: a hint of cyan rather than pure white — adds atmospheric
+    // warmth to glass surfaces without becoming a "ring". 0.08 alpha is
+    // enough to feel intentional in the right light, invisible otherwise.
+    cyan: "rgba(94,231,255,0.10)",
+    cyanSoft: "rgba(255,255,255,0.05)",
+    cyanStrong: "rgba(94,231,255,0.34)",
+    divider: "rgba(255,255,255,0.05)",
+    hairline: "rgba(255,255,255,0.04)",
   },
   text: {
     primary: "#F4F7FA",
-    secondary: "#9DA6B2",       // Slightly cooler — editorial caption tone
-    tertiary: "#535C68",
+    // Warmer, more luminous secondary — body copy reads as human writing,
+    // not as a SaaS field label. Slightly higher luminance for premium feel.
+    secondary: "#B6BEC9",
+    tertiary: "#5C6571",
     accent: "#5EE7FF",
-    onAccent: "#00131A",        // Deep teal-black on cyan CTA
+    onAccent: "#00131A",
     link: "#5EE7FF",
   },
   whatsapp: "#25D366",
@@ -192,7 +197,7 @@ export const BREAKPOINT_MOBILE = 600;
  * composition floats on true black.
  */
 export const HERO_GRADIENT =
-  "linear-gradient(180deg, #050810 0%, #02040A 35%, #000000 100%)";
+  "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(94,231,255,0.07) 0%, rgba(94,231,255,0) 55%), linear-gradient(180deg, #050810 0%, #02040A 40%, #000000 100%)";
 
 /** Cinematic image-to-type dissolve gradient. */
 export const HERO_BLEND_GRADIENT =
@@ -204,7 +209,7 @@ export const HERO_BLEND_GRADIENT =
  * so the card reads as a floating pane, not a stamped rectangle.
  */
 export const CARD_GRADIENT =
-  "linear-gradient(180deg, rgba(13,18,26,0.98) 0%, rgba(5,8,12,1) 100%)";
+  "linear-gradient(180deg, rgba(18,24,34,1) 0%, rgba(11,15,22,1) 45%, rgba(5,8,12,1) 100%)";
 
 /** Card header strip — quiet cyan wash. */
 export const CARD_HEADER_GRADIENT =
@@ -212,7 +217,7 @@ export const CARD_HEADER_GRADIENT =
 
 /** CTA section atmospheric backdrop — radial cyan halo on near-black. */
 export const CTA_SECTION_GRADIENT =
-  "radial-gradient(ellipse at center, rgba(94,231,255,0.06) 0%, rgba(3,6,10,0) 60%), linear-gradient(180deg, #03060A 0%, #07101A 50%, #03060A 100%)";
+  "radial-gradient(ellipse 65% 70% at 50% 50%, rgba(94,231,255,0.11) 0%, rgba(94,231,255,0.04) 35%, rgba(3,6,10,0) 70%), linear-gradient(180deg, #03060A 0%, #08121E 50%, #03060A 100%)";
 
 /** CTA gradient — luminous cyan glint top → deep cyan bottom. */
 export const CTA_GRADIENT =
@@ -235,10 +240,15 @@ export const FOOTER_GRADIENT =
  * hero: deep cinema-projection drop shadow under the hero band.
  */
 export const GLOW = {
-  card: "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
-  cardCyan: "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
-  cta: "0 0 32px rgba(94,231,255,0.22), 0 12px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.24)",
-  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.06)",
+  // Card: deep drop + faint cyan halo for atmospheric warmth + luminous
+  // top edge highlight that reads as light catching a glass slab.
+  card: "0 24px 56px rgba(0,0,0,0.6), 0 0 32px rgba(94,231,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)",
+  cardCyan: "0 24px 56px rgba(0,0,0,0.6), 0 0 48px rgba(94,231,255,0.08), inset 0 1px 0 rgba(255,255,255,0.08)",
+  // CTA: restored elegant halo (48px, midway between flat and neon flare).
+  // The pill catches light from above (inset top glint) and casts a soft
+  // cyan presence — premium product chrome, not gaming UI flare.
+  cta: "0 0 48px rgba(94,231,255,0.32), 0 0 18px rgba(94,231,255,0.20), 0 14px 36px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.22)",
+  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.08)",
   hero: "0 32px 80px rgba(0,0,0,0.85)",
 } as const;
 
