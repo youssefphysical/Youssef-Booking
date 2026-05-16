@@ -23,6 +23,7 @@ import { buildAdminNewBookingEmail } from "../server/email/builders/adminNewBook
 import { buildWelcomeEmail } from "../server/email/builders/welcome";
 import { buildSessionReminderEmail } from "../server/email/builders/sessionReminder";
 import { buildPaymentConfirmedEmail } from "../server/email/builders/paymentConfirmed";
+import { buildStripoWelcomeEmail } from "../server/email/builders/stripoWelcome";
 import type { Lang } from "../server/email/tokens";
 
 const OUT_DIR = resolve(process.cwd(), "client/public/_email_preview");
@@ -208,6 +209,20 @@ const FRIENDLY: Record<string, string> = {
   "08_session_reminder_1h": "sessionReminder1h",
   "09_payment_confirmed": "paymentConfirmed",
 };
+
+// ─── Stripo welcome (production all-image template) ───────────────────
+// Single language, single variant — the Stripo design is locked and
+// has no AR/dark variants. Exposed at /_email_preview/stripoWelcome.html.
+{
+  const stripo = buildStripoWelcomeEmail({
+    clientName: "Sara Khalil",
+    dashboardUrl: `${APP}/dashboard`,
+    supportWhatsappUrl: WHATSAPP,
+    supportEmail: SUPPORT,
+  });
+  emit("stripoWelcome", stripo.html);
+  console.log("[golden] Stripo welcome → stripoWelcome.html");
+}
 
 console.log("[golden] EN");
 const enRendered = renderAll("en");

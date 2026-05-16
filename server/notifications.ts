@@ -11,6 +11,7 @@ import {
   buildAdminNewClientEmail,
 } from "./email-templates";
 import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
+import { buildStripoWelcomeEmail } from "./email/builders/stripoWelcome";
 import { buildPaymentConfirmedEmail } from "./email/builders/paymentConfirmed";
 
 const TRAINER_WHATSAPP = "https://wa.me/971505394754";
@@ -44,23 +45,35 @@ export async function sendWelcomeNotifications({
     const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
     let built: { subject: string; text: string; html: string };
     try {
-      // Premium cinematic welcome — preferred path.
-      built = buildWelcomeEmailPremium({
-        lang: langCode,
-        recipientName: clientName,
-        bookingUrl: `${websiteUrl}/book`,
-        whatsappUrl: TRAINER_WHATSAPP,
-        supportEmail: trainerEmail(),
-        trainerName: langCode === "ar" ? "المدرب يوسف" : "Coach Youssef",
-        studioLocation: langCode === "ar" ? "مرسى دبي" : "Dubai Marina studio",
-      });
-    } catch (premiumErr) {
-      console.warn("[notifications] premium welcome render failed, falling back to legacy:", premiumErr);
-      built = buildWelcomeEmail({
+      // Stripo cinematic welcome — preferred path (production design).
+      // Single full-bleed image with 4 dynamic tokens; image acts as the
+      // dashboard CTA. See server/email/builders/stripoWelcome.ts.
+      built = buildStripoWelcomeEmail({
         clientName,
-        lang: lang || "en",
-        websiteUrl,
+        dashboardUrl: `${websiteUrl}/dashboard`,
+        supportWhatsappUrl: TRAINER_WHATSAPP,
+        supportEmail: trainerEmail(),
       });
+    } catch (stripoErr) {
+      console.warn("[notifications] stripo welcome render failed, trying premium:", stripoErr);
+      try {
+        built = buildWelcomeEmailPremium({
+          lang: langCode,
+          recipientName: clientName,
+          bookingUrl: `${websiteUrl}/book`,
+          whatsappUrl: TRAINER_WHATSAPP,
+          supportEmail: trainerEmail(),
+          trainerName: langCode === "ar" ? "المدرب يوسف" : "Coach Youssef",
+          studioLocation: langCode === "ar" ? "مرسى دبي" : "Dubai Marina studio",
+        });
+      } catch (premiumErr) {
+        console.warn("[notifications] premium welcome render failed, falling back to legacy:", premiumErr);
+        built = buildWelcomeEmail({
+          clientName,
+          lang: lang || "en",
+          websiteUrl,
+        });
+      }
     }
     await sendEmail({
       to: email,
