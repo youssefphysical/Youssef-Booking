@@ -121,6 +121,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
+import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
 import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
 import { computeClientIntelligence } from "./services/clientIntelligence";
@@ -866,6 +867,63 @@ async function dispatchAdminPaymentEmail(opts: {
     await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
   } catch (e) {
     console.warn("[notif] admin payment email failed:", e);
+  }
+}
+
+// Client-facing payment confirmation — fires when a package transitions
+// into the "paid" state via either /payment (manual mark) or /add-payment
+// (running total reaches total_price). Best-effort, never throws.
+async function dispatchClientPaymentConfirmedEmail(opts: {
+  pkg: any;
+  amountReceived?: number | null;
+  paymentMethod?: string | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.pkg.userId).catch(() => undefined);
+    if (!user?.email) return;
+    const clientName = (user.fullName?.trim() || user.username || `Client #${opts.pkg.userId}`).trim();
+    const totalPrice = (opts.pkg as any).totalPrice ?? 0;
+    const amountNumber = opts.amountReceived ?? totalPrice;
+    const amount = `AED ${Number(amountNumber).toLocaleString()}`;
+    const paymentDate = new Date().toLocaleDateString("en-GB", {
+      weekday: "short", day: "numeric", month: "short", year: "numeric",
+    });
+    const startDate = opts.pkg.startDate
+      ? new Date(`${opts.pkg.startDate}T00:00:00+04:00`).toLocaleDateString("en-GB", {
+          weekday: "short", day: "numeric", month: "short", year: "numeric",
+        })
+      : null;
+    const expiry = opts.pkg.expiryDate
+      ? new Date(`${opts.pkg.expiryDate}T00:00:00+04:00`)
+      : null;
+    const start = opts.pkg.startDate
+      ? new Date(`${opts.pkg.startDate}T00:00:00+04:00`)
+      : null;
+    const validityLabel = expiry && start
+      ? `${Math.max(1, Math.round((expiry.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 7)))} weeks`
+      : null;
+    const base = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "")
+      || (process.env.NODE_ENV === "production"
+        ? "https://youssef-booking.vercel.app"
+        : `http://localhost:${process.env.PORT || 5000}`);
+    const userLang = ((user as any).preferredLanguage === "ar" ? "ar" : "en") as "en" | "ar";
+    await sendPaymentConfirmedNotification({
+      email: user.email,
+      clientName,
+      lang: userLang,
+      amount,
+      paymentMethod: opts.paymentMethod ?? null,
+      paymentReference: `PKG-${opts.pkg.id}-${Date.now().toString(36).toUpperCase()}`,
+      paymentDate,
+      packageName: opts.pkg.name ?? "Training package",
+      totalSessions: opts.pkg.totalSessions ?? null,
+      validityLabel,
+      startDate,
+      packageUrl: `${base}/dashboard`,
+      bookUrl: `${base}/book`,
+    });
+  } catch (e) {
+    console.warn("[notif] client payment-confirmed email failed:", e);
   }
 }
 
@@ -3841,6 +3899,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPaymentEmail({ pkg: updated });
+    // Only notify the client when the status actually transitions INTO
+    // "paid" — avoids resending on repeated "mark paid" no-ops.
+    if (status === "paid" && pkg.paymentStatus !== "paid") {
+      void dispatchClientPaymentConfirmedEmail({ pkg: updated, paymentMethod: parsed.data.note ?? null });
+    }
     res.json(updated);
   });
 
@@ -3886,6 +3949,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPaymentEmail({ pkg: updated, amountReceived: parsed.data.amount });
+    // Fire client payment-confirmed only on the receipt that pushes the
+    // running total over total_price (i.e. just-now reached "paid").
+    if (reachedFull && pkg.paymentStatus !== "paid") {
+      void dispatchClientPaymentConfirmedEmail({ pkg: updated, amountReceived: parsed.data.amount, paymentMethod: parsed.data.note ?? null });
+    }
     res.json(updated);
   });
 

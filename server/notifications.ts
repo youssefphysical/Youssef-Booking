@@ -11,6 +11,7 @@ import {
   buildAdminNewClientEmail,
 } from "./email-templates";
 import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
+import { buildPaymentConfirmedEmail } from "./email/builders/paymentConfirmed";
 
 const TRAINER_WHATSAPP = "https://wa.me/971505394754";
 
@@ -106,6 +107,74 @@ export async function sendAdminNewClientEmail(opts: {
     });
   } catch (e) {
     console.warn("[notifications] admin new-client email failed:", e);
+  }
+}
+
+/**
+ * Send the client a payment confirmation email after a package payment
+ * reaches "paid". Never throws. Quietly no-ops when the recipient has no
+ * email on file.
+ */
+export async function sendPaymentConfirmedNotification({
+  email,
+  clientName,
+  lang,
+  amount,
+  paymentMethod,
+  paymentReference,
+  paymentDate,
+  packageName,
+  totalSessions,
+  validityLabel,
+  startDate,
+  packageUrl,
+  bookUrl,
+}: {
+  email?: string | null;
+  clientName: string;
+  lang?: string | null;
+  amount: string;
+  paymentMethod?: string | null;
+  paymentReference?: string | null;
+  paymentDate?: string | null;
+  packageName: string;
+  totalSessions?: number | null;
+  validityLabel?: string | null;
+  startDate?: string | null;
+  packageUrl: string;
+  bookUrl?: string | null;
+}) {
+  if (!email) {
+    console.info(`[notifications] payment-confirmed skipped — no email. client=${clientName}`);
+    return;
+  }
+  try {
+    const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
+    const built = buildPaymentConfirmedEmail({
+      lang: langCode,
+      recipientName: clientName,
+      amount,
+      paymentMethod: paymentMethod ?? null,
+      paymentReference: paymentReference ?? null,
+      paymentDate: paymentDate ?? null,
+      packageName,
+      totalSessions: totalSessions ?? null,
+      validityLabel: validityLabel ?? null,
+      startDate: startDate ?? null,
+      packageUrl,
+      bookUrl: bookUrl ?? null,
+      whatsappUrl: TRAINER_WHATSAPP,
+      supportEmail: trainerEmail(),
+    });
+    await sendEmail({
+      to: email,
+      subject: built.subject,
+      text: built.text,
+      html: built.html,
+      replyTo: trainerEmail(),
+    });
+  } catch (e) {
+    console.warn("[notifications] payment-confirmed email failed:", e);
   }
 }
 

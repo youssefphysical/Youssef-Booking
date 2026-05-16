@@ -22,6 +22,7 @@ import { buildPackageExpiring3dEmail } from "../server/email/builders/packageExp
 import { buildAdminNewBookingEmail } from "../server/email/builders/adminNewBooking";
 import { buildWelcomeEmail } from "../server/email/builders/welcome";
 import { buildSessionReminderEmail } from "../server/email/builders/sessionReminder";
+import { buildPaymentConfirmedEmail } from "../server/email/builders/paymentConfirmed";
 import type { Lang } from "../server/email/tokens";
 
 const OUT_DIR = resolve(process.cwd(), "client/public/_email_preview");
@@ -153,6 +154,25 @@ function renderAll(lang: Lang): Array<{ name: string; html: string }> {
         location: lang === "ar" ? "استوديو المدرب يوسف، مرسى دبي" : "Coach Youssef's studio, Dubai Marina",
         bookingUrl: `${APP}/dashboard`,
         rescheduleUrl: `${APP}/book`,
+        supportEmail: SUPPORT,
+      }).html,
+    },
+    {
+      name: "09_payment_confirmed",
+      html: buildPaymentConfirmedEmail({
+        lang,
+        recipientName: lang === "ar" ? "أحمد" : "Ahmed",
+        amount: "AED 2,500",
+        paymentMethod: lang === "ar" ? "تحويل بنكي" : "Bank transfer",
+        paymentReference: "PAY-2026-0517-A1B2",
+        paymentDate: lang === "ar" ? "السبت، 17 مايو 2026" : "Sat, 17 May 2026",
+        packageName: lang === "ar" ? "باقة 12 جلسة بريميوم" : "12-Session Premium",
+        totalSessions: 12,
+        validityLabel: lang === "ar" ? "٨ أسابيع" : "8 weeks",
+        startDate: lang === "ar" ? "الاثنين، 19 مايو 2026" : "Mon, 19 May 2026",
+        packageUrl: `${APP}/packages`,
+        bookUrl: `${APP}/book`,
+        whatsappUrl: WHATSAPP,
         supportEmail: SUPPORT,
       }).html,
     },
