@@ -1,99 +1,96 @@
 /**
- * Email design tokens — cinematic edition v2 (luxury transformation ecosystem).
+ * Email design tokens — CINEMATIC v3 (editorial luxury rebuild).
  *
- * Single source of truth for the YOUSSEF AHMED ELITE COACHING email
- * system. Every visual decision across every transactional email
- * resolves through these tokens.
+ * Complete visual ground-up: the prior system felt template-shaped. This
+ * one reads as the masthead of a quarterly elite-coaching dossier — not
+ * a transactional notification.
  *
- * Aesthetic: Tron Legacy + luxury performance club + dark cinematic gym.
- * The user should feel they entered an elite transformation system, not
- * received a dark-themed notification.
+ * Aesthetic axis: Tron Legacy lighting + Equinox/Hermès editorial spacing
+ * + Tesla product chrome + Apple keynote rhythm.
  *
  * Discipline:
- *   - Pure-black canvas (#000000) for editorial luxury depth.
- *   - Real cinematic hero photography (with bulletproof image-off
- *     fallback — type band always carries the headline).
- *   - Cyan is restrained: edge accents, halo bars, CTAs, micro labels.
- *     Never decorative everywhere.
- *   - Spacing rhythmic on a 4px scale. Typography dominant.
- *   - Glow degrades gracefully (Outlook desktop strips box-shadow).
+ *   - Pure-black canvas with a soft top-vignette (luxury cinema curtain).
+ *   - Cyan is editorially restrained — hairlines, brackets, single accent
+ *     word, the CTA halo. Never decorative.
+ *   - Massive type dominance (displayXl 72/48). Numbers carry meaning.
+ *   - Spacing on a 4px grid, but living mostly in the s8–s12 range.
+ *   - Glow degrades cleanly (Outlook strips box-shadow safely).
+ *
+ * Public surface (function names + token keys) is preserved. Only values
+ * and visual semantics change — no builder needs to be re-touched.
  */
 
 export type Severity = "success" | "info" | "warning" | "critical";
 export type Lang = "en" | "ar";
 export type Direction = "ltr" | "rtl";
 
-/** Cinematic color palette — luxury transformation ecosystem. */
+/** Cinematic palette — editorial luxury. */
 export const COLOR = {
   brand: {
-    cyan: "#00E5FF",            // Primary cyan
-    cyanSoft: "#3FECFF",        // Brighter highlight cyan (CTA gradient top)
-    cyanDeep: "#00B4CC",        // Deeper cyan for borders & CTA bottom
-    cyanMuted: "rgba(0,229,255,0.72)",
-    cyanGlow: "rgba(0,229,255,0.18)",
-    ink: "#000000",             // Outer canvas — pure editorial black
-    paper: "#F4F7FA",           // White text
+    cyan: "#5EE7FF",            // Primary cyan (softer, more luxurious)
+    cyanSoft: "#8AF1FF",        // CTA gradient top — almost-white cyan glint
+    cyanDeep: "#00B8D4",        // CTA gradient bottom + bracket marks
+    cyanMuted: "rgba(94,231,255,0.78)",
+    cyanGlow: "rgba(94,231,255,0.16)",
+    ink: "#000000",
+    paper: "#F4F7FA",
   },
   bg: {
-    canvas: "#000000",          // Outer email background — pure black
-    canvasTop: "#020306",       // Top of vertical canvas gradient
-    canvasBottom: "#000000",    // Bottom — fades to pure black
-    surface: "#0B0F14",         // HUD card surface base
-    surfaceTop: "rgba(15,21,28,0.96)",      // Card gradient top
-    surfaceBottom: "rgba(7,10,14,0.99)",    // Card gradient bottom
-    surfaceRaised: "#0E1922",   // Deep panel blue (nested HUD)
-    surfaceHeader: "rgba(0,229,255,0.04)",  // Card header strip tint
-    secondary: "#06090C",       // Secondary background
-    heroBackdrop: "#000000",    // Hero image fallback
-    ctaSection: "#04070B",      // Billboard CTA wrapper bg
-    footer: "#000000",          // Atmospheric footer bg
+    canvas: "#000000",          // Outer body — pure black
+    canvasTop: "#040608",       // Top of vignette wash
+    canvasBottom: "#000000",    // Vignette returns to pure black
+    surface: "#0A0E13",         // Card surface
+    surfaceTop: "rgba(15,21,28,0.96)",
+    surfaceBottom: "rgba(5,8,11,0.99)",
+    surfaceRaised: "#0E1922",
+    surfaceHeader: "rgba(94,231,255,0.035)",
+    secondary: "#06090C",
+    heroBackdrop: "#000000",
+    ctaSection: "#03060A",
+    footer: "#000000",
   },
   border: {
-    cyan: "rgba(0,229,255,0.22)",     // Primary HUD edge
-    cyanSoft: "rgba(0,229,255,0.12)", // Quieter HUD edge
-    cyanStrong: "rgba(0,229,255,0.42)", // Accent rules / chips
-    divider: "rgba(255,255,255,0.06)",  // Hairline between rows
-    hairline: "rgba(255,255,255,0.04)", // Even quieter
+    cyan: "rgba(94,231,255,0.20)",
+    cyanSoft: "rgba(94,231,255,0.10)",
+    cyanStrong: "rgba(94,231,255,0.45)",
+    divider: "rgba(255,255,255,0.05)",
+    hairline: "rgba(255,255,255,0.035)",
   },
   text: {
-    primary: "#F4F7FA",         // White
-    secondary: "#A7B0BA",       // Muted text
-    tertiary: "#5A6370",        // Footer / fine print
-    accent: "#00E5FF",          // Cyan emphasis word
-    onAccent: "#020304",        // Text on cyan CTA
-    link: "#00E5FF",
+    primary: "#F4F7FA",
+    secondary: "#9DA6B2",       // Slightly cooler — editorial caption tone
+    tertiary: "#535C68",
+    accent: "#5EE7FF",
+    onAccent: "#00131A",        // Deep teal-black on cyan CTA
+    link: "#5EE7FF",
   },
   whatsapp: "#25D366",
-  warmHighlight: "rgba(255,200,140,0.06)", // Atmospheric warm wash
+  warmHighlight: "rgba(255,200,140,0.05)",
 } as const;
 
-/**
- * Severity accents — restrained palette for the cinematic dark canvas.
- * Tints are dark+saturated (HUD-glass), accents are luminous.
- */
 export const SEVERITY = {
   success: {
     accent: "#3DDCA8",
-    tint: "rgba(61,220,168,0.10)",
-    border: "rgba(61,220,168,0.32)",
+    tint: "rgba(61,220,168,0.08)",
+    border: "rgba(61,220,168,0.30)",
     label: "Confirmed",
   },
   info: {
     accent: "#7AB7FF",
-    tint: "rgba(122,183,255,0.10)",
-    border: "rgba(122,183,255,0.32)",
+    tint: "rgba(122,183,255,0.08)",
+    border: "rgba(122,183,255,0.30)",
     label: "Notice",
   },
   warning: {
     accent: "#FFB861",
-    tint: "rgba(255,184,97,0.10)",
-    border: "rgba(255,184,97,0.32)",
+    tint: "rgba(255,184,97,0.08)",
+    border: "rgba(255,184,97,0.30)",
     label: "Heads-up",
   },
   critical: {
     accent: "#FF8A7A",
-    tint: "rgba(255,138,122,0.10)",
-    border: "rgba(255,138,122,0.32)",
+    tint: "rgba(255,138,122,0.08)",
+    border: "rgba(255,138,122,0.30)",
     label: "Action required",
   },
 } as const satisfies Record<Severity, {
@@ -103,188 +100,149 @@ export const SEVERITY = {
   label: string;
 }>;
 
-/** Spacing scale — 4px increments. */
+/**
+ * Spacing scale — 4px grid. Living range bumped: most spacing now sits
+ * in s8–s12 (the editorial breathing tier). Tight values still exist
+ * for micro-rhythm inside type lockups.
+ */
 export const SPACE = {
   s0: "0",
   s1: "4px",
   s2: "8px",
   s3: "12px",
   s4: "16px",
-  s5: "22px",
-  s6: "28px",
-  s7: "36px",
-  s8: "48px",
-  s9: "64px",
-  s10: "80px",   // Hero pad (desktop)
-  s11: "96px",   // Hero pad ceiling
+  s5: "24px",
+  s6: "32px",
+  s7: "44px",
+  s8: "56px",
+  s9: "72px",
+  s10: "96px",
+  s11: "112px",
+  s12: "128px",   // Hero pad ceiling — editorial cinema breathing
 } as const;
 
 /**
- * Border radius — softened across the system per the cinematic redesign
- * brief ("softer corners, premium product feel"). Bumped values:
- * md 12→16 (CTA + severity banners read as tactile product chrome),
- * lg 18→22 (cards feel like glassmorphism panels not utility blocks),
- * xl 22→28 (raised panels read as premium dashboards).
+ * Border radius — softer luxury. Cards read as glass slabs, not chips.
+ * sm 6 → 8 (chips/brackets), md 16 → 18 (CTA + severity ribbon),
+ * lg 22 → 24 (card default), xl 28 → 32 (raised pane).
  */
 export const RADIUS = {
-  sm: "6px",
-  md: "16px",
-  lg: "22px",      // Card default
-  xl: "28px",      // Card raised
+  sm: "8px",
+  md: "18px",
+  lg: "24px",
+  xl: "32px",
   pill: "999px",
 } as const;
 
-/** Container width per brief §CANVAS. */
+/** Container width — kept at 680 for client-pane safety. */
 export const WIDTH = {
-  email: 680,      // Cinematic canvas — desktop max
-  content: 616,    // Inner content (680 - 2*32)
-  hero: 680,       // Hero image native width
+  email: 680,
+  content: 616,
+  hero: 680,
 } as const;
 
 /**
- * Typography scale — cinematic dominance.
- *
- * displayXl is the hero headline (56px desktop / 38px mobile, weight 800,
- * tight tracking). display is for in-card titles. h1-h3 carry section
- * hierarchy. micro labels are aggressively tracked uppercase tags.
+ * Typography scale — editorial dominance. displayXl is the cover
+ * headline (72px / 48px mobile, weight 900, ultra-tight tracking).
+ * h1 is now genuine section architecture, not hint-text.
  */
 export const TYPE = {
-  displayXl: { size: "60px", lh: "1.04", weight: "800", tracking: "-0.028em" },
-  displayXlMobile: { size: "40px", lh: "1.06", weight: "800", tracking: "-0.02em" },
-  display: { size: "44px", lh: "1.04", weight: "800", tracking: "-0.022em" },
-  displayMobile: { size: "32px", lh: "1.06", weight: "800", tracking: "-0.012em" },
-  h1: { size: "30px", lh: "1.18", weight: "700", tracking: "-0.012em" },
-  h2: { size: "22px", lh: "1.3", weight: "600", tracking: "-0.005em" },
-  h3: { size: "18px", lh: "1.4", weight: "600", tracking: "0" },
-  body: { size: "17px", lh: "1.65", weight: "400", tracking: "0" },
-  bodyLg: { size: "19px", lh: "1.55", weight: "400", tracking: "-0.003em" },
+  displayXl: { size: "72px", lh: "0.98", weight: "900", tracking: "-0.04em" },
+  displayXlMobile: { size: "48px", lh: "1.0", weight: "900", tracking: "-0.03em" },
+  display: { size: "52px", lh: "1.0", weight: "900", tracking: "-0.03em" },
+  displayMobile: { size: "36px", lh: "1.04", weight: "900", tracking: "-0.02em" },
+  h1: { size: "32px", lh: "1.16", weight: "800", tracking: "-0.018em" },
+  h2: { size: "24px", lh: "1.25", weight: "700", tracking: "-0.01em" },
+  h3: { size: "18px", lh: "1.4", weight: "700", tracking: "-0.005em" },
+  body: { size: "17px", lh: "1.7", weight: "400", tracking: "0" },
+  bodyLg: { size: "20px", lh: "1.55", weight: "400", tracking: "-0.005em" },
   bodySm: { size: "15px", lh: "1.6", weight: "400", tracking: "0" },
   caption: { size: "12px", lh: "1.4", weight: "500", tracking: "0" },
-  metric: { size: "34px", lh: "1.05", weight: "800", tracking: "-0.018em" },
+  metric: { size: "40px", lh: "1.0", weight: "900", tracking: "-0.025em" },
   micro: {
-    // Micro labels (DATE, TIME, LOCATION...) — aggressively tracked
     size: "11px",
     lh: "1.2",
     weight: "700",
-    tracking: "0.22em",
+    tracking: "0.28em",
   },
   microSm: {
-    // Footer + nano labels
     size: "10px",
     lh: "1.2",
-    weight: "600",
-    tracking: "0.32em",
+    weight: "700",
+    tracking: "0.36em",
   },
   pullQuote: {
-    // Atmospheric quote block
-    size: "22px",
-    lh: "1.35",
+    size: "30px",
+    lh: "1.3",
     weight: "500",
-    tracking: "-0.005em",
+    tracking: "-0.015em",
   },
 } as const;
 
-/**
- * Font stack — system stack for safety. Helvetica Neue is the brief
- * preference; degrades to Arial on Windows. RTL adds SF Arabic / Tajawal.
- */
 export const FONT_STACK = {
   ltr: '"Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, sans-serif',
   rtl: '"SF Arabic", "Tajawal", "Cairo", "Helvetica Neue", Helvetica, Arial, sans-serif',
 } as const;
 
-/** Mobile breakpoint — single cliff per email-client constraint. */
 export const BREAKPOINT_MOBILE = 600;
 
 /**
- * Hero gradient — vertical wash that anchors the type band beneath the
- * cinematic photograph. Top fades from near-black into pure black at the
- * bottom for seamless continuation into the canvas.
+ * Canvas vignette — soft top wash that gives the email a luxury cinema
+ * curtain feel. Returns to pure black quickly so the rest of the
+ * composition floats on true black.
  */
 export const HERO_GRADIENT =
-  "linear-gradient(180deg, #020306 0%, #04070B 45%, #000000 100%)";
+  "linear-gradient(180deg, #050810 0%, #02040A 35%, #000000 100%)";
 
-/**
- * Hero overlay gradient — sits between hero image and type band. Creates
- * the cinematic "fade-to-black" transition so the photo blends seamlessly
- * into the type composition below.
- */
+/** Cinematic image-to-type dissolve gradient. */
 export const HERO_BLEND_GRADIENT =
-  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.95) 100%)";
+  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.98) 100%)";
 
 /**
- * HUD card surface gradient — matte black glass panel.
- * Top sits at near-surface tone, bottom dissolves into pure black for
- * the cinematic "panel floating in black depth" feeling. Combined with
- * GLOW.innerHighlight (top-edge illumination), the card reads as a
- * milled-glass surface rather than a flat dark rectangle.
+ * Card surface — frosted glass slab. Top edge slightly luminous (the
+ * inner highlight glow handles that), bottom dissolves into deep black
+ * so the card reads as a floating pane, not a stamped rectangle.
  */
 export const CARD_GRADIENT =
-  "linear-gradient(180deg, rgba(11,16,22,0.98) 0%, rgba(4,7,11,1) 100%)";
+  "linear-gradient(180deg, rgba(13,18,26,0.98) 0%, rgba(5,8,12,1) 100%)";
 
-/** Card header strip — subtle cyan wash to differentiate the chip area. */
+/** Card header strip — quiet cyan wash. */
 export const CARD_HEADER_GRADIENT =
-  "linear-gradient(180deg, rgba(0,229,255,0.06) 0%, rgba(0,229,255,0.0) 100%)";
+  "linear-gradient(180deg, rgba(94,231,255,0.05) 0%, rgba(94,231,255,0.0) 100%)";
 
-/** Billboard CTA section background — atmospheric depth around the CTA. */
+/** CTA section atmospheric backdrop — radial cyan halo on near-black. */
 export const CTA_SECTION_GRADIENT =
-  "linear-gradient(180deg, #04070B 0%, #07101A 50%, #04070B 100%)";
+  "radial-gradient(ellipse at center, rgba(94,231,255,0.06) 0%, rgba(3,6,10,0) 60%), linear-gradient(180deg, #03060A 0%, #07101A 50%, #03060A 100%)";
 
-/** CTA button gradient — cyan top → cyanDeep bottom for premium product feel. */
+/** CTA gradient — luminous cyan glint top → deep cyan bottom. */
 export const CTA_GRADIENT =
-  "linear-gradient(180deg, #3FECFF 0%, #00E5FF 50%, #00B4CC 100%)";
+  "linear-gradient(180deg, #8AF1FF 0%, #5EE7FF 50%, #00B8D4 100%)";
 
-/**
- * Accent rule gradient — used for the cinematic halo bar above hero
- * eyebrows + as the cyan top accent on cards. Fades from transparent at
- * the edges into the brand cyan in the middle for an editorial framing
- * feel.
- */
+/** Accent rule — cyan editorial hairline that fades at the edges. */
 export const ACCENT_RULE_GRADIENT =
-  "linear-gradient(90deg, rgba(0,229,255,0) 0%, #00E5FF 50%, rgba(0,229,255,0) 100%)";
+  "linear-gradient(90deg, rgba(94,231,255,0) 0%, #5EE7FF 50%, rgba(94,231,255,0) 100%)";
 
-/** Atmospheric footer gradient. */
+/** Footer atmospheric vignette. */
 export const FOOTER_GRADIENT =
   "linear-gradient(180deg, #000000 0%, #02050A 50%, #000000 100%)";
 
 /**
- * Glow tokens — emitted as box-shadow declarations. Degrade gracefully in
- * Outlook desktop (which strips them) — the email remains complete and
- * on-brand without them.
- */
-/**
- * Calibrated glow scale — every cyan opacity and white-inset highlight
- * tuned against a single luxury-restraint axis so the system reads as
- * "calibrated" not "decorative". card cyan ring 0.10 matches
- * innerHighlight 0.10 so card-edge illumination is visually unified
- * across every card surface. CTA inset gloss 0.24 (was 0.32 — too hot)
- * keeps the button reading as expensive product chrome rather than a
- * neon overlay.
+ * Glow tokens — sophisticated layered system.
+ * card: deep drop + thin cyan ring + inner top highlight (glass slab).
+ * cardCyan: same + outer cyan halo (used by raised/hero panels).
+ * cta: triple-layer — wide cyan radial glow + drop shadow + inset glints.
+ * innerHighlight: top-edge bright line for glass surfaces.
+ * hero: deep cinema-projection drop shadow under the hero band.
  */
 export const GLOW = {
-  card: "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,229,255,0.10)",
-  cardCyan: "0 16px 48px rgba(0,0,0,0.55), 0 0 32px rgba(0,229,255,0.12)",
-  cta: "0 0 48px rgba(0,229,255,0.55), 0 12px 36px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(0,0,0,0.22)",
+  card: "0 24px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(94,231,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)",
+  cardCyan: "0 24px 64px rgba(0,0,0,0.65), 0 0 48px rgba(94,231,255,0.10), inset 0 1px 0 rgba(255,255,255,0.06)",
+  cta: "0 0 64px rgba(94,231,255,0.55), 0 0 24px rgba(94,231,255,0.35), 0 16px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.28)",
   innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
-  hero: "0 24px 64px rgba(0,0,0,0.8)",
+  hero: "0 32px 80px rgba(0,0,0,0.85)",
 } as const;
 
-/**
- * Hero image catalogue — keyed slugs that resolve to bulletproof URLs
- * served from `/email-assets/heroes/*.png` under PUBLIC_APP_URL.
- *
- * Each photograph is shot/composed with a fade-to-pure-black bottom edge
- * so the image flows seamlessly into the gradient type band beneath it.
- *
- *   welcome    — empty boutique gym at blue hour, squat rack silhouette.
- *                For onboarding & ecosystem-entry milestones.
- *   session    — close-up of a single matte black kettlebell, cyan rim.
- *                For confirmed/upcoming sessions.
- *   discipline — laced training shoes on dark concrete, morning light.
- *                For reminders + cadence/consistency moments.
- *   triumph    — racked dumbbells under warm spotlight at dawn.
- *                For milestone/package-completed moments.
- */
+/** Hero image catalogue. */
 export const HERO_IMAGES = {
   welcome: "/email-assets/heroes/welcome_hero.png",
   session: "/email-assets/heroes/session_hero.png",
@@ -294,22 +252,12 @@ export const HERO_IMAGES = {
 
 export type HeroImageKey = keyof typeof HERO_IMAGES;
 
-/**
- * Build a fully-qualified hero image URL from the catalogue. Returns
- * `null` when no `baseUrl` is provided so the hero primitive can skip the
- * image band entirely (graceful degradation).
- */
 export function heroImageUrl(key: HeroImageKey, baseUrl: string | null | undefined): string | null {
   if (!baseUrl) return null;
   const trimmed = baseUrl.replace(/\/+$/, "");
   return `${trimmed}${HERO_IMAGES[key]}`;
 }
 
-/**
- * Derive a base URL (protocol + host) from any of the URLs already passed
- * to a builder. Lets builders construct hero image URLs without requiring
- * a new `baseUrl` parameter — keeps the existing builder API stable.
- */
 export function deriveBaseUrl(...urls: Array<string | null | undefined>): string | null {
   for (const u of urls) {
     if (!u) continue;
@@ -317,23 +265,20 @@ export function deriveBaseUrl(...urls: Array<string | null | undefined>): string
       const url = new URL(u);
       return `${url.protocol}//${url.host}`;
     } catch {
-      // Not an absolute URL — skip.
+      // Not absolute — skip.
     }
   }
   return null;
 }
 
-/** Resolve a severity to its accent + tint color pair. */
 export function severityTokens(sev: Severity) {
   return SEVERITY[sev];
 }
 
-/** Resolve direction from a language code. */
 export function dirFromLang(lang: Lang): Direction {
   return lang === "ar" ? "rtl" : "ltr";
 }
 
-/** Pick the right font stack for the language. */
 export function fontStack(lang: Lang): string {
   return lang === "ar" ? FONT_STACK.rtl : FONT_STACK.ltr;
 }
