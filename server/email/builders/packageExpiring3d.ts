@@ -44,6 +44,7 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
 
   const body = [
     hero({
+      lang,
       title: t("3 DAYS", "٣ أيام"),
       accentWord: t("LEFT", "متبقية"),
       subtitle: t(

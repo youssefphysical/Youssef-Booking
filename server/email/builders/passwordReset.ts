@@ -51,6 +51,7 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
 
   const body = [
     hero({
+      lang,
       title: t("RESET", "إعادة تعيين"),
       accentWord: t("PASSWORD", "كلمة المرور"),
       subtitle: t(

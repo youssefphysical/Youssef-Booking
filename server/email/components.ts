@@ -25,6 +25,7 @@ import {
   HERO_GRADIENT,
   HERO_BLEND_GRADIENT,
   HERO_IMAGE_OVERLAY,
+  HERO_IMAGE_OVERLAY_RTL,
   CARD_GRADIENT,
   CARD_TOP_EDGE,
   CARD_BOTTOM_EDGE,
@@ -177,13 +178,19 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `.email-stack-2col>td+td{padding-top:18px !important;padding-left:0 !important;border-left:0 !important;}`,
     `.email-hero-split>td{display:block !important;width:100% !important;}`,
     `.email-hero-img{height:200px !important;width:100% !important;}`,
+    // Full-bleed hero — keywords column collapses on mobile so the
+    // headline + photo overlay retain their cinematic density.
+    `.email-hero-keywords{display:none !important;}`,
+    `.email-hero-row>td{display:block !important;width:100% !important;}`,
     `.email-display-xl{font-size:${TYPE.displayXlMobile.size} !important;line-height:${TYPE.displayXlMobile.lh} !important;letter-spacing:${TYPE.displayXlMobile.tracking} !important;}`,
     `.email-display{font-size:${TYPE.displayMobile.size} !important;line-height:${TYPE.displayMobile.lh} !important;}`,
     `.email-body-lg{font-size:16px !important;line-height:1.55 !important;}`,
     `.email-body{font-size:15px !important;line-height:1.6 !important;}`,
     `.email-h1{font-size:22px !important;line-height:1.25 !important;}`,
     `.email-pull-quote{font-size:18px !important;line-height:1.4 !important;}`,
-    `.email-hero-pad{padding:26px 18px 30px !important;}`,
+    // Hero pad mobile — bigger top pad so the brand lockup breathes,
+    // bigger bottom so the headline doesn't crash into the next card.
+    `.email-hero-pad{padding:48px 24px 56px !important;}`,
     `.email-brand-pad{padding:22px 18px 4px !important;}`,
     `.email-cta-section-pad{padding:28px 18px !important;}`,
     `.email-footer-pad{padding:30px 18px 26px !important;}`,
@@ -256,35 +263,92 @@ export interface HeroOptions {
   align?: Align;
   /** Pull the brand lockup into the hero (default true). */
   withBrand?: boolean;
+  /**
+   * Right-side keyword stack (frame 1: DISCIPLINE / FOCUS / CONSISTENCY /
+   * RESULTS). Renders as a vertical cyan-eyebrow list over the photo.
+   */
+  keywords?: string[];
+  /**
+   * Language hint. Arabic flips the overlay fade so the dark side
+   * anchors the text on the RIGHT (where applyRtl moves Arabic).
+   */
+  lang?: Lang;
 }
 
+/**
+ * Hero — full-bleed photo with dark-to-clear gradient overlay and
+ * stacked title on the LEFT. Matches the approved Figma frames.
+ *
+ * Render pipeline (email-safe):
+ *   1. VML <v:rect> with <v:fill type="frame"> for Outlook desktop —
+ *      the only Outlook-safe way to render a background image.
+ *   2. <table background="…"> attribute + CSS background-image for Apple
+ *      Mail, Gmail web/iOS, Yahoo, etc.
+ *   3. Solid #0c0c10 fallback for Gmail Android (strips bg-image) — the
+ *      dark overlay still produces a luxury text-on-dark composition.
+ */
 export function hero({
   eyebrow, title, accentWord, subtitle, trailingMeta,
-  imageUrl, imageAlt, align = "left", withBrand = true,
+  imageUrl, imageAlt, align = "left", withBrand = true, keywords, lang = "en",
 }: HeroOptions): string {
   void trailingMeta;
+  void HERO_BLEND_GRADIENT;
+  void align;
+
   const brand = withBrand
-    ? `<div style="padding-bottom:${SPACE.s7};">${brandLockup("left", "sm")}</div>`
+    ? `<div style="padding-bottom:${SPACE.s8};">${brandLockup("left", "sm")}</div>`
     : "";
 
   const eyebrowHtml = eyebrow
     ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s4};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
-  // The cyan accent rule UNDER the headline — matches the frames.
-  const accentRule = `<div style="width:48px;height:3px;background-color:${COLOR.brand.cyan};margin:${SPACE.s4} 0 ${SPACE.s5};font-size:0;line-height:0;">&nbsp;</div>`;
+  const accentRule = `<div style="width:64px;height:3px;background-color:${COLOR.brand.cyan};margin:${SPACE.s4} 0 ${SPACE.s5};font-size:0;line-height:0;box-shadow:0 0 16px rgba(94,231,255,0.45);">&nbsp;</div>`;
 
   const titleHtml = `<div class="email-display-xl email-text-primary" style="${typeStyle("displayXl", COLOR.text.primary)}text-transform:uppercase;">${esc(title)}</div>`;
   const accentHtml = accentWord
-    ? `<div class="email-display-xl email-text-accent" style="${typeStyle("displayXl", COLOR.brand.cyan)}text-transform:uppercase;padding-top:6px;">${esc(accentWord)}</div>`
+    ? `<div class="email-display-xl email-text-accent" style="${typeStyle("displayXl", COLOR.brand.cyan)}text-transform:uppercase;padding-top:4px;">${esc(accentWord)}</div>`
     : "";
 
   const subtitleHtml = subtitle
-    ? `<div style="${typeStyle("body", COLOR.text.secondary)}padding-top:${SPACE.s5};max-width:320px;" class="email-text-secondary email-body">${esc(subtitle)}</div>`
+    ? `<div style="${typeStyle("body", COLOR.text.secondary)}padding-top:${SPACE.s5};max-width:340px;" class="email-text-secondary email-body">${esc(subtitle)}</div>`
     : "";
 
+  // Right-side keyword column — vertical stack of cyan-eyebrow words
+  // (DISCIPLINE / FOCUS / CONSISTENCY / RESULTS in frame 1). Sits over
+  // the photo on desktop; hidden on mobile to preserve photo density.
+  const keywordsHtml = keywords && keywords.length
+    ? `<td valign="middle" align="right" width="38%" class="email-hero-keywords" style="padding:${SPACE.s7} ${SPACE.s7} ${SPACE.s7} 0;" data-flip-text-align="hero-kw">`
+      + keywords
+        .map(
+          (k) =>
+            `<div style="${typeStyle("micro", COLOR.brand.cyanSoft)}text-transform:uppercase;letter-spacing:0.30em;font-weight:700;padding:6px 0;text-align:right;" class="email-text-accent" data-flip-text-align="hero-kw">${esc(k)}</div>`,
+        )
+        .join("")
+      + `</td>`
+    : "";
+
+  const heroWidth = WIDTH.hero;
+  const heroHeight = 420;
+  const safeImage = imageUrl ? esc(imageUrl) : "";
+
+  // VML for Outlook desktop. Outlook strips CSS bg-image but renders
+  // <v:rect type="frame"> with the source image scaled to cover.
+  const vmlOpen = imageUrl
+    ? [
+        `<!--[if gte mso 9]>`,
+        `<v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:${heroWidth}px;height:${heroHeight}px;mso-position-horizontal:center;">`,
+        `<v:fill type="frame" src="${safeImage}" color="${COLOR.bg.heroBackdrop}" />`,
+        `<v:textbox inset="0,0,0,0"><div>`,
+        `<![endif]-->`,
+      ].join("")
+    : "";
+  const vmlClose = imageUrl ? `<!--[if gte mso 9]></div></v:textbox></v:rect><![endif]-->` : "";
+
+  // Inner content table (text overlay). When the hero has no image,
+  // the keywords column collapses and the text cell takes 100%.
   const textCell =
-    `<td valign="top" align="left" class="email-pad email-hero-pad" style="padding:${SPACE.s9} ${SPACE.s7} ${SPACE.s9};background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_GRADIENT};" data-flip-text-align="hero" width="${imageUrl ? "55%" : "100%"}">`
+    `<td valign="middle" align="left" class="email-pad email-hero-pad" style="padding:${SPACE.s10} ${SPACE.s9} ${SPACE.s10};" data-flip-text-align="hero" width="${keywordsHtml ? "62%" : "100%"}">`
     + brand
     + eyebrowHtml
     + titleHtml
@@ -293,21 +357,35 @@ export function hero({
     + subtitleHtml
     + `</td>`;
 
-  void HERO_IMAGE_OVERLAY;
-  void HERO_BLEND_GRADIENT;
-
-  const imageCell = imageUrl
-    ? `<td valign="middle" align="center" width="45%" class="email-hero-img" style="background-color:${COLOR.bg.heroBackdrop};font-size:0;line-height:0;padding:0;">`
-      + `<img src="${esc(imageUrl)}" alt="${esc(imageAlt ?? "")}" width="306" style="display:block;width:100%;max-width:306px;height:100%;min-height:280px;object-fit:cover;border:0;outline:none;" />`
-      + `</td>`
-    : "";
-
-  void align;
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
-    + `<tr class="email-hero-split">`
+  // Pick the correct l-to-r vs r-to-l fade for the active language so
+  // the dark anchor sits UNDER the headline copy (left for EN, right
+  // for AR after applyRtl moves the text). Empty-image admin heroes
+  // skip the overlay entirely — they don't need the photo-anchor fade.
+  const overlay = imageUrl
+    ? (lang === "ar" ? HERO_IMAGE_OVERLAY_RTL : HERO_IMAGE_OVERLAY)
+    : "none";
+  const overlayTable =
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:transparent;background-image:${overlay};min-height:${heroHeight}px;">`
+    + `<tr class="email-hero-row">`
     + textCell
-    + imageCell
+    + keywordsHtml
     + `</tr></table>`;
+
+  // Outer cell — carries the photo via background attribute + CSS, with
+  // the solid charcoal fallback. The min-height + valign keep the
+  // composition cinematic when text wraps short.
+  const bgAttr = imageUrl ? ` background="${safeImage}"` : "";
+  const bgCss = imageUrl
+    ? `background-image:url('${safeImage}'),${HERO_GRADIENT};background-position:center center;background-size:cover;background-repeat:no-repeat;`
+    : `background-image:${HERO_GRADIENT};`;
+
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
+    + `<tr><td align="center" valign="top"${bgAttr} style="background-color:${COLOR.bg.heroBackdrop};${bgCss}min-height:${heroHeight}px;padding:0;">`
+    + (imageAlt ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;overflow:hidden;color:transparent;">${esc(imageAlt)}</div>` : "")
+    + vmlOpen
+    + overlayTable
+    + vmlClose
+    + `</td></tr></table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────

@@ -59,14 +59,22 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
 
   const body = [
     hero({
-      title: t("WELCOME TO ELITE", "أهلاً بك في"),
-      accentWord: t("COACHING", "إيليت كوتشينج"),
+      lang,
+      title: t("WELCOME TO", "أهلاً بك في"),
+      accentWord: t("ELITE COACHING", "إيليت كوتشينج"),
       subtitle: t(
         "You've just taken the first step towards transforming your life. We're here to guide, support and push you towards becoming the strongest version of yourself.",
         "لقد اتخذت أول خطوة نحو تحويل حياتك. نحن هنا لنرشدك وندعمك ونحفّزك لتصبح أقوى نسخة من نفسك.",
       ),
       imageUrl: heroImageUrl("welcome", base),
       imageAlt: t("Athlete walking through dark gym corridor", "رياضي يمشي في ممر صالة رياضية"),
+      // Frame 1 right-side keyword stack — atmospheric brand pillars.
+      keywords: [
+        t("DISCIPLINE", "انضباط"),
+        t("FOCUS", "تركيز"),
+        t("CONSISTENCY", "استمرارية"),
+        t("RESULTS", "نتائج"),
+      ],
     }),
     section(
       featureGrid({

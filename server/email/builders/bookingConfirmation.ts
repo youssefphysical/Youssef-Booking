@@ -76,6 +76,7 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
 
   const body = [
     hero({
+      lang,
       title: t("SESSION", "تم تأكيد"),
       accentWord: t("CONFIRMED", "الجلسة"),
       subtitle: t(

@@ -63,6 +63,7 @@ export function buildPaymentConfirmedEmail(input: PaymentConfirmedInput): Compos
 
   const body = [
     hero({
+      lang,
       title: t("PAYMENT", "تم تأكيد"),
       accentWord: t("CONFIRMED!", "الدفع!"),
       subtitle: t(

@@ -72,6 +72,7 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
 
   const body = [
     hero({
+      lang,
       title: isOneHour ? t("ONE HOUR", "ساعة واحدة") : t("SESSION", "تذكير"),
       accentWord: isOneHour ? t("TO GO", "متبقية") : t("TOMORROW", "بالجلسة"),
       subtitle: isOneHour

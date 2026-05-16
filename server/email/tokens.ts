@@ -107,8 +107,10 @@ export const WIDTH = {
  * displayXl 48 / 36 mobile (was 72 / 48).
  */
 export const TYPE = {
-  displayXl: { size: "48px", lh: "1.04", weight: "800", tracking: "-0.02em" },
-  displayXlMobile: { size: "36px", lh: "1.06", weight: "800", tracking: "-0.015em" },
+  // Frame-match: massive stacked headlines (WELCOME TO / ELITE COACHING,
+  // PAYMENT / CONFIRMED!) read at 60px on desktop, 42px mobile.
+  displayXl: { size: "60px", lh: "1.02", weight: "800", tracking: "-0.025em" },
+  displayXlMobile: { size: "42px", lh: "1.04", weight: "800", tracking: "-0.02em" },
   display: { size: "40px", lh: "1.05", weight: "800", tracking: "-0.018em" },
   displayMobile: { size: "30px", lh: "1.1", weight: "800", tracking: "-0.012em" },
   h1: { size: "28px", lh: "1.2", weight: "700", tracking: "-0.012em" },
@@ -142,9 +144,18 @@ export const HERO_GRADIENT =
 export const HERO_BLEND_GRADIENT =
   "linear-gradient(180deg, rgba(12,12,16,0) 0%, rgba(12,12,16,0.55) 60%, rgba(12,12,16,1) 100%)";
 
-/** Image overlay — restrained vignette over hero photos. */
+/**
+ * Image overlay — left-to-right dark fade over a full-bleed hero photo.
+ * Anchors readability of the white/cyan headline (left third) while
+ * letting the photographic atmosphere (right two thirds) carry the
+ * cinematic feel from the approved frames.
+ */
 export const HERO_IMAGE_OVERLAY =
-  "linear-gradient(90deg, rgba(12,12,16,0.85) 0%, rgba(12,12,16,0.20) 45%, rgba(12,12,16,0) 100%)";
+  "linear-gradient(90deg, rgba(8,10,14,0.94) 0%, rgba(8,10,14,0.78) 38%, rgba(8,10,14,0.40) 62%, rgba(8,10,14,0.10) 100%)";
+
+/** RTL mirror — same fade flipped for Arabic hero composition. */
+export const HERO_IMAGE_OVERLAY_RTL =
+  "linear-gradient(270deg, rgba(8,10,14,0.94) 0%, rgba(8,10,14,0.78) 38%, rgba(8,10,14,0.40) 62%, rgba(8,10,14,0.10) 100%)";
 
 /** Card surface — solid #0f1014 (matches the frames). */
 export const CARD_GRADIENT = "linear-gradient(180deg, #11131a 0%, #0f1014 100%)";

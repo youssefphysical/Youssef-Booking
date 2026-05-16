@@ -49,6 +49,7 @@ export function buildPackageCompletedEmail(input: PackageCompletedInput): Compos
 
   const body = [
     hero({
+      lang,
       title: t("PACKAGE", "اكتملت"),
       accentWord: t("COMPLETE", "الباقة"),
       subtitle: t(
