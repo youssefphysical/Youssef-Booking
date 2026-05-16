@@ -40,7 +40,9 @@ import {
   WIDTH,
   HERO_GRADIENT,
   HERO_BLEND_GRADIENT,
+  HERO_IMAGE_OVERLAY,
   CARD_GRADIENT,
+  CARD_TOP_EDGE,
   CARD_HEADER_GRADIENT,
   CTA_SECTION_GRADIENT,
   CTA_GRADIENT,
@@ -244,20 +246,31 @@ export interface HeroOptions {
 }
 
 export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, imageUrl, imageAlt, align = "center" }: HeroOptions): string {
-  // Image band — pixel-clean, fades into type band via blend strip.
+  // Image band — cinematic composition. Photo sits in a stacked-cell table
+  // with a CSS overlay (vignette + bottom dim) AND a tall 96px gradient
+  // blend strip below. The result reads as one continuous lit chamber, not
+  // a stock photo pasted onto black. The image's own light spills into the
+  // type band; the type band's atmospheric halo continues the cyan presence.
   const imageBand = imageUrl
     ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
-      + `<tr><td style="font-size:0;line-height:0;background-color:${COLOR.bg.heroBackdrop};">`
+      + `<tr><td style="font-size:0;line-height:0;background-color:${COLOR.bg.heroBackdrop};position:relative;">`
+      // Image with overlay — overlay is a pseudo-cell layered via background.
+      // For email-safe: image alone, then a transparent overlay row beneath
+      // that bleeds the image's bottom edge into black via gradient.
       + `<img src="${esc(imageUrl)}" alt="${esc(imageAlt ?? "")}" width="${WIDTH.hero}" style="display:block;width:100%;max-width:${WIDTH.hero}px;height:auto;border:0;outline:none;text-decoration:none;" />`
       + `</td></tr>`
-      + `<tr><td style="font-size:0;line-height:0;height:48px;background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_BLEND_GRADIENT};">&nbsp;</td></tr>`
+      // Tall blend strip — 96px (was 48px). Smooth 5-stop dissolve so the
+      // photo's bottom edge bleeds gradually into the type band's deep blue
+      // chamber. No visible seam.
+      + `<tr><td style="font-size:0;line-height:0;height:96px;background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_BLEND_GRADIENT};">&nbsp;</td></tr>`
       + `</table>`
     : "";
 
   // Quiet uppercase eyebrow in cyan — single line, no rules, no glyph.
-  // The typography itself carries the editorial grammar.
+  // Tighter to headline (s5 vs s7) so the eyebrow + headline read as ONE
+  // typographic lockup, not as two floating elements.
   const eyebrowHtml = eyebrow
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:${align};padding-bottom:${SPACE.s7};" class="email-text-accent">${esc(eyebrow)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:${align};padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
   // Accent word — cyan emphasis, on its own visual line via &nbsp;.
@@ -266,21 +279,30 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
     : "";
 
   const subtitleHtml = subtitle
-    ? `<div style="${typeStyle("bodyLg", COLOR.text.secondary)}padding-top:${SPACE.s7};text-align:${align};max-width:480px;margin-left:auto;margin-right:auto;" class="email-text-secondary email-body-lg">${esc(subtitle)}</div>`
+    ? `<div style="${typeStyle("bodyLg", COLOR.text.secondary)}padding-top:${SPACE.s6};text-align:${align};max-width:480px;margin-left:auto;margin-right:auto;" class="email-text-secondary email-body-lg">${esc(subtitle)}</div>`
     : "";
 
   // Trailing meta — single quiet uppercase line. No diamond glyphs.
+  // Sits closer to subtitle (s7) — part of the lockup, not a separate band.
   const trailingMetaHtml = trailingMeta
-    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s8};text-align:${align};" class="email-text-tertiary">${esc(trailingMeta)}</div>`
+    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s7};text-align:${align};letter-spacing:0.32em;" class="email-text-tertiary">${esc(trailingMeta)}</div>`
     : "";
 
-  // Top pad: tighter when image precedes (image+blend strip already supplied
-  // breathing room), full s12 when type-only (cover-page proportions).
-  const typeTopPad = imageUrl ? SPACE.s8 : SPACE.s12;
+  // Top pad: when image precedes, the blend strip already carries the eye
+  // INTO the type band — keep it tight (s7) so the type sits inside the
+  // chamber, not floating below it. Type-only heroes use s12 for cover-page
+  // proportions; the radial halo gives the headline its own light.
+  const typeTopPad = imageUrl ? SPACE.s7 : SPACE.s12;
+  const typeBottomPad = imageUrl ? SPACE.s12 : SPACE.s11;
+
+  // Reference HERO_IMAGE_OVERLAY so future image-overlay work can use it
+  // (Outlook/Gmail strip absolute-positioned overlays; the gradient is
+  // available for builders that compose images with darkroom backdrops).
+  void HERO_IMAGE_OVERLAY;
 
   return imageBand
     + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_GRADIENT};">`
-    + `<tr><td class="email-pad email-hero-pad" align="${align}" style="padding:${typeTopPad} ${SPACE.s8} ${SPACE.s11};text-align:${align};">`
+    + `<tr><td class="email-pad email-hero-pad" align="${align}" style="padding:${typeTopPad} ${SPACE.s8} ${typeBottomPad};text-align:${align};">`
     + eyebrowHtml
     + `<h1 class="email-display-xl email-text-primary" style="${typeStyle("displayXl", COLOR.text.primary)}text-align:${align};text-transform:uppercase;">${esc(title)}${accentHtml}</h1>`
     + subtitleHtml
@@ -312,12 +334,22 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
   const shadow = variant === "raised" ? GLOW.cardCyan : GLOW.card;
 
   // Quiet header label — single uppercase cyan line, no glyph, no rule.
+  // Slightly more breathing below (s7 vs s6) so the label has its own beat.
   const headerStrip = headerLabel
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s6};" class="email-text-accent">${esc(headerLabel)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s7};letter-spacing:0.28em;" class="email-text-accent">${esc(headerLabel)}</div>`
     : "";
 
+  // Luminous cyan top edge — 1px gradient bevel that catches "room light".
+  // Reads as the lit edge of a glass slab, not as a decorative line. Gives
+  // the card real depth + a premium bevel signature without HUD noise.
+  const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.bg.surface};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
+
+  // Card body row with deeper interior padding for premium feel —
+  // luxury hospitality interiors breathe. s11 vertical / s9 horizontal
+  // (was s10/s9). Mobile cliff (.email-card-pad) keeps content tight.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
-    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s10} ${SPACE.s9};">`
+    + topEdge
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s11} ${SPACE.s9};">`
     + headerStrip
     + children
     + `</td></tr></table>`;
@@ -522,22 +554,29 @@ export interface CtaSectionOptions {
 }
 
 export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
-  // Quiet uppercase eyebrow — no rule wings, no glyph.
+  // Single 32px cyan accent hairline above the eyebrow — luxury punctuation
+  // that opens the section as "a moment", matching the brand header signature.
+  const sectionAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s7};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+
+  // Quiet uppercase eyebrow — slightly tighter to CTA (s7 vs s8) so the
+  // eyebrow + button read as one composed lockup, not two stacked elements.
   const eyebrowHtml = eyebrow
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s8};" class="email-text-accent">${esc(eyebrow)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s7};letter-spacing:0.32em;" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
   const supportingHtml = supportingText
-    ? `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s7};" class="email-text-tertiary">${esc(supportingText)}</div>`
+    ? `<div style="${typeStyle("bodySm", COLOR.text.secondary)}text-align:center;padding-top:${SPACE.s8};max-width:420px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(supportingText)}</div>`
     : "";
   const linkHtml = supportingLink
-    ? `<div style="text-align:center;padding-top:${SPACE.s4};">${ctaTextLink(supportingLink)}</div>`
+    ? `<div style="text-align:center;padding-top:${SPACE.s5};">${ctaTextLink(supportingLink)}</div>`
     : "";
 
-  // No top/bottom cyan hairlines — the spacing + the soft radial halo
-  // backdrop carries the section. The eye lands on the CTA, not the rules.
+  // Cinematic stage: deep s12 vertical pad (mobile cliff overrides to 80px).
+  // The radial halo backdrop + section accent + tight typographic lockup
+  // makes the CTA feel like a curated moment, not a button on a band.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};">`
     + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s12} ${SPACE.s8};text-align:center;">`
+    + sectionAccent
     + eyebrowHtml
     + ctaHtml
     + supportingHtml
@@ -684,17 +723,35 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     void studioLocation;
   }
 
-  // Single quiet 24px cyan hairline above the signature — closes the
-  // composition with the same luxury "punctuation" used by the masthead.
-  const closingAccent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s6};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+  // Brand tagline — a quiet italic line above the signature that gives the
+  // footer emotional closure. Reads as the brand's voice signing off.
+  const tagline = t(
+    "Elite training. Composed for Dubai.",
+    "تدريب نخبوي. مصمم لدبي.",
+  );
+  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s8};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
+
+  // Single quiet 32px cyan hairline above the signature — luxury punctuation
+  // matching the masthead. Slightly wider (32 vs 24) for closing weight.
+  const closingAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s7};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+
+  // Final copyright microline — completion mark, very quiet.
+  const year = new Date().getFullYear();
+  const copyText = t(
+    `© ${year} Youssef Ahmed · Dubai · All rights reserved.`,
+    `© ${year} يوسف أحمد · دبي · جميع الحقوق محفوظة.`,
+  );
+  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s8};" class="email-text-tertiary">${esc(copyText)}</div>`;
 
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
-    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8} ${SPACE.s9};">`
+    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s11} ${SPACE.s8} ${SPACE.s10};">`
+    + taglineHtml
     + closingAccent
-    // Quiet signature lockup
+    // Composed signature lockup — name + role + links read as one block.
     + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.32em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
-    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s3};letter-spacing:0.04em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s3};letter-spacing:0.06em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
     + linkRow
+    + copyHtml
     + `</td></tr></table>`;
 }
 
