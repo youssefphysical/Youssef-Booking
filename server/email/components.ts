@@ -104,18 +104,11 @@ function colorOf(key: TextColor): string {
  * divs as stray inline blocks) never receives the markup at all.
  * Gmail web/iOS/Android, Apple Mail, Yahoo, Samsung Internet all
  * honor position:absolute inside table cells correctly. */
-function cornerBracket(corner: "tl" | "tr" | "bl" | "br"): string {
-  const sz = 14;
-  const th = 1;
-  const inset = 10;
-  const isTop = corner === "tl" || corner === "tr";
-  const isLeft = corner === "tl" || corner === "bl";
-  const top = isTop ? `top:${inset}px;` : `bottom:${inset}px;`;
-  const side = isLeft ? `left:${inset}px;` : `right:${inset}px;`;
-  return `<!--[if !mso]><!-- --><div style="position:absolute;${top}${side}width:${sz}px;height:${sz}px;pointer-events:none;mso-hide:all;">`
-    + `<div style="position:absolute;${isTop ? "top:0" : "bottom:0"};left:0;right:0;height:${th}px;background-color:${COLOR.brand.cyanDeep};font-size:0;line-height:1px;">&nbsp;</div>`
-    + `<div style="position:absolute;${isLeft ? "left:0" : "right:0"};top:0;bottom:0;width:${th}px;background-color:${COLOR.brand.cyanDeep};font-size:0;line-height:1px;">&nbsp;</div>`
-    + `</div><!--<![endif]-->`;
+function cornerBracket(_corner: "tl" | "tr" | "bl" | "br"): string {
+  // Removed in luxury-minimalism revision — HUD brackets read as gaming UI.
+  // Cards now stand on spacing + soft borders alone. Function kept as a
+  // no-op so call sites in card() / metricGrid() don't need restructuring.
+  return "";
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -211,18 +204,14 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 // ────────────────────────────────────────────────────────────────────────
 
 export function brandHeader(): string {
-  const ruleTop = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;">&nbsp;</div>`;
-  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:800;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
-  const masthead = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:700;letter-spacing:0.5em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:14px;" class="email-text-tertiary">`
-    + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">№</span>`
-    + ` &nbsp;ELITE PERSONAL TRAINING&nbsp; `
-    + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">DUBAI</span>`
-    + `</div>`;
+  // Two restrained lines: tracked wordmark + a single quiet subtitle.
+  // No cyan rules, no glyphs, no DUBAI accent. Reads as a Hermès header.
+  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
+  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:12px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
     + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s3};">`
-    + ruleTop
     + wordmark
-    + masthead
+    + subtitle
     + `</td></tr></table>`;
 }
 
@@ -262,23 +251,10 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
       + `</table>`
     : "";
 
-  // Editorial №-numbered eyebrow lockup. Pattern:
-  //   ─── № YOUR NEXT SESSION ───
-  // The cyan hairline + cyan № glyph give the eyebrow magazine
-  // grammar instead of a generic uppercase tag.
+  // Quiet uppercase eyebrow in cyan — single line, no rules, no glyph.
+  // The typography itself carries the editorial grammar.
   const eyebrowHtml = eyebrow
-    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s7};">`
-      + `<tr>`
-      + `<td valign="middle" style="padding-right:${SPACE.s4};">`
-      + `<div style="width:36px;height:1px;background-color:${COLOR.brand.cyan};font-size:0;line-height:1px;">&nbsp;</div>`
-      + `</td>`
-      + `<td valign="middle" style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;white-space:nowrap;" class="email-text-accent">`
-      + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">№ </span>${esc(eyebrow)}`
-      + `</td>`
-      + `<td valign="middle" style="padding-left:${SPACE.s4};">`
-      + `<div style="width:36px;height:1px;background-color:${COLOR.brand.cyan};font-size:0;line-height:1px;">&nbsp;</div>`
-      + `</td>`
-      + `</tr></table>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:${align};padding-bottom:${SPACE.s7};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
   // Accent word — cyan emphasis, on its own visual line via &nbsp;.
@@ -290,12 +266,9 @@ export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, image
     ? `<div style="${typeStyle("bodyLg", COLOR.text.secondary)}padding-top:${SPACE.s7};text-align:${align};max-width:480px;margin-left:auto;margin-right:auto;" class="email-text-secondary email-body-lg">${esc(subtitle)}</div>`
     : "";
 
-  // Trailing meta lockup — split with a thin cyan diamond for editorial
-  // rhythm (e.g. "SAT, 17 MAY 2026  ◆  10:00 AM").
+  // Trailing meta — single quiet uppercase line. No diamond glyphs.
   const trailingMetaHtml = trailingMeta
-    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s8};text-align:${align};" class="email-text-tertiary">`
-      + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">◆</span> ${esc(trailingMeta)} <span style="color:${COLOR.brand.cyan};" class="email-text-accent">◆</span>`
-      + `</div>`
+    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s8};text-align:${align};" class="email-text-tertiary">${esc(trailingMeta)}</div>`
     : "";
 
   // Top pad: tighter when image precedes (image+blend strip already supplied
@@ -335,29 +308,13 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
   const radius = variant === "raised" ? RADIUS.xl : RADIUS.lg;
   const shadow = variant === "raised" ? GLOW.cardCyan : GLOW.card;
 
-  // Inline editorial chip (replaces the tinted header strip). Sits inside
-  // the card body so the glass surface reads as one continuous pane.
+  // Quiet header label — single uppercase cyan line, no glyph, no rule.
   const headerStrip = headerLabel
-    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 ${SPACE.s7};">`
-      + `<tr>`
-      + `<td valign="middle" style="padding-right:${SPACE.s3};">`
-      + `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyanDeep};font-size:0;line-height:1px;">&nbsp;</div>`
-      + `</td>`
-      + `<td valign="middle" style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;white-space:nowrap;" class="email-text-accent">`
-      + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">№ </span>${esc(headerLabel)}`
-      + `</td>`
-      + `</tr></table>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s6};" class="email-text-accent">${esc(headerLabel)}</div>`
     : "";
 
-  // The container <td> is position:relative so the corner brackets can
-  // anchor to it. Outlook ignores position:relative gracefully — the
-  // brackets simply fall back into normal flow as decorative dots.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
-    + `<tr><td class="email-pad email-card-pad" style="position:relative;padding:${SPACE.s10} ${SPACE.s9};">`
-    + cornerBracket("tl")
-    + cornerBracket("tr")
-    + cornerBracket("bl")
-    + cornerBracket("br")
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s10} ${SPACE.s9};">`
     + headerStrip
     + children
     + `</td></tr></table>`;
@@ -368,18 +325,12 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
 // Reads as a magazine section opener (e.g. "01 ─── WHAT'S NEXT").
 // ────────────────────────────────────────────────────────────────────────
 
+// Auto-counter retained as no-op for backwards-compat with emailShell reset.
 let __sectionEyebrowCounter = 0;
 export function sectionEyebrow({ label }: { label: string }): string {
-  __sectionEyebrowCounter = (__sectionEyebrowCounter + 1) % 100;
-  const numeral = String(__sectionEyebrowCounter).padStart(2, "0");
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr>`
-    + `<td valign="middle" width="auto" style="white-space:nowrap;padding-right:${SPACE.s4};" data-flip-padding-right="sectionEyebrow">`
-    + `<span style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;" class="email-text-accent">${numeral}</span>`
-    + `<span style="${typeStyle("micro", COLOR.text.primary)}text-transform:uppercase;padding-left:${SPACE.s3};" class="email-text-primary">${esc(label)}</span>`
-    + `</td>`
-    + `<td width="100%" style="font-size:0;line-height:0;height:1px;background-color:${COLOR.border.cyanSoft};background-image:${ACCENT_RULE_GRADIENT};">&nbsp;</td>`
-    + `</tr></table>`;
+  // Quiet single-line uppercase eyebrow in cyan. No numerals, no rule.
+  // Spacing + the eyebrow itself separates sections.
+  return `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;" class="email-text-accent">${esc(label)}</div>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -388,15 +339,14 @@ export function sectionEyebrow({ label }: { label: string }): string {
 // ────────────────────────────────────────────────────────────────────────
 
 export function pullQuote({ text, attribution }: { text: string; attribution?: string }): string {
+  // Quiet italic quote, no oversized glyph, no thick rule.
+  // The quotation marks are part of the text itself for restraint.
   const attribHtml = attribution
     ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s5};" class="email-text-tertiary">— ${esc(attribution)}</div>`
     : "";
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td style="padding:${SPACE.s6} 0 ${SPACE.s5};">`
-    + `<div style="font-size:64px;line-height:0.8;color:${COLOR.brand.cyan};font-weight:900;padding-bottom:${SPACE.s4};font-family:Georgia,serif;" class="email-text-accent">&ldquo;</div>`
-    + `<div class="email-pull-quote email-text-primary" style="${typeStyle("pullQuote", COLOR.text.primary)}font-style:italic;">${esc(text)}</div>`
-    // Thick cyan editorial rule beneath the quote.
-    + `<div style="width:48px;height:2px;background-color:${COLOR.brand.cyan};margin-top:${SPACE.s5};font-size:0;line-height:2px;">&nbsp;</div>`
+    + `<tr><td style="padding:${SPACE.s5} 0;">`
+    + `<div class="email-pull-quote email-text-primary" style="${typeStyle("pullQuote", COLOR.text.primary)}font-style:italic;">&ldquo;${esc(text)}&rdquo;</div>`
     + attribHtml
     + `</td></tr></table>`;
 }
@@ -566,19 +516,9 @@ export interface CtaSectionOptions {
 }
 
 export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
+  // Quiet uppercase eyebrow — no rule wings, no glyph.
   const eyebrowHtml = eyebrow
-    ? `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s8};">`
-      + `<tr>`
-      + `<td valign="middle" style="padding-right:${SPACE.s4};">`
-      + `<div style="width:36px;height:1px;background-color:${COLOR.brand.cyan};font-size:0;line-height:1px;">&nbsp;</div>`
-      + `</td>`
-      + `<td valign="middle" style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;white-space:nowrap;" class="email-text-accent">`
-      + `<span style="color:${COLOR.brand.cyan};" class="email-text-accent">№ </span>${esc(eyebrow)}`
-      + `</td>`
-      + `<td valign="middle" style="padding-left:${SPACE.s4};">`
-      + `<div style="width:36px;height:1px;background-color:${COLOR.brand.cyan};font-size:0;line-height:1px;">&nbsp;</div>`
-      + `</td>`
-      + `</tr></table>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s8};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
   const supportingHtml = supportingText
@@ -588,19 +528,15 @@ export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }:
     ? `<div style="text-align:center;padding-top:${SPACE.s4};">${ctaTextLink(supportingLink)}</div>`
     : "";
 
-  // Top + bottom cyan hairlines (fade at edges via gradient).
-  const ruleTop = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.border.cyanSoft};background-image:${ACCENT_RULE_GRADIENT};">&nbsp;</td></tr>`;
-  const ruleBottom = ruleTop;
-
+  // No top/bottom cyan hairlines — the spacing + the soft radial halo
+  // backdrop carries the section. The eye lands on the CTA, not the rules.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};">`
-    + ruleTop
     + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s12} ${SPACE.s8};text-align:center;">`
     + eyebrowHtml
     + ctaHtml
     + supportingHtml
     + linkHtml
     + `</td></tr>`
-    + ruleBottom
     + `</table>`;
 }
 
@@ -633,11 +569,11 @@ export function keyValueList({ items }: KeyValueListOptions): string {
       const innerPadTop = ri === 0 ? "0" : SPACE.s6;
 
       const cell = (it: typeof pair[number], ci: number): string => {
+        // No vertical hairline between columns — pure spacing carries the grid.
         const padLeft = ci === 0 ? "0" : SPACE.s7;
-        const borderLeft = ci === 0 ? "" : `border-left:1px solid ${COLOR.border.divider};`;
-        return `<td valign="top" width="50%" class="email-kv-cell" style="padding:${innerPadTop} 0 0 ${padLeft};${borderLeft}" data-flip-padding-left="kv" data-flip-border-left="kv">`
-          + `<div style="${typeStyle("micro", COLOR.brand.cyanMuted)}text-transform:uppercase;" class="email-text-accent">${esc(it.label)}</div>`
-          + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:10px;font-weight:600;letter-spacing:-0.005em;" class="email-text-primary email-body-lg">${esc(it.value as string)}</div>`
+        return `<td valign="top" width="50%" class="email-kv-cell" style="padding:${innerPadTop} 0 0 ${padLeft};" data-flip-padding-left="kv">`
+          + `<div style="${typeStyle("micro", COLOR.text.tertiary)}text-transform:uppercase;" class="email-text-tertiary">${esc(it.label)}</div>`
+          + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:10px;font-weight:500;letter-spacing:-0.005em;" class="email-text-primary email-body-lg">${esc(it.value as string)}</div>`
           + `</td>`;
       };
 
@@ -717,80 +653,37 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
 
-  const trainerLine = t("COACH YOUSSEF AHMED", "المدرب يوسف أحمد");
-  const trainerRole = t("CERTIFIED PERSONAL TRAINER", "مدرب شخصي معتمد");
+  const trainerLine = t("YOUSSEF AHMED", "يوسف أحمد");
+  const trainerRole = t("Personal Trainer · Dubai", "مدرب شخصي · دبي");
 
-  const reachLabel = t("REACH", "للتواصل");
-  const studioLabelText = t("STUDIO", "الاستوديو");
-  const legalLabel = t("LEGAL", "قانوني");
-
-  const supportLabel = t("Support", "الدعم");
-  const unsubLabel = t("Unsubscribe", "إلغاء الاشتراك");
-  const manageLabel = t("Manage notifications", "إدارة الإشعارات");
-  const whatsappLabel = t("WhatsApp", "واتساب");
-
-  // Halo bar above signature.
-  const haloBar = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;">&nbsp;</div>`;
-
-  // Reach column — WhatsApp + email links.
-  const reachLines: string[] = [];
+  // Quiet single-row link list. No 3-column masthead, no column hairlines,
+  // no atmospheric rules. Spacing carries the structure.
+  const links: string[] = [];
+  const linkStyle = `color:${COLOR.text.secondary};text-decoration:none;font-size:12px;line-height:1.5;letter-spacing:0.02em;`;
   if (whatsappUrl) {
-    reachLines.push(`<a href="${esc(whatsappUrl)}" style="color:${COLOR.text.secondary};text-decoration:none;display:block;padding:4px 0;font-size:11px;line-height:1.4;letter-spacing:0.04em;">${whatsappLabel} ↗</a>`);
+    links.push(`<a href="${esc(whatsappUrl)}" style="${linkStyle}">${t("WhatsApp", "واتساب")}</a>`);
   }
-  reachLines.push(`<a href="mailto:${esc(supportEmail)}" style="color:${COLOR.text.secondary};text-decoration:none;display:block;padding:4px 0;font-size:11px;line-height:1.4;letter-spacing:0.04em;word-break:break-word;">${esc(supportEmail)}</a>`);
-
-  // Studio column — location.
-  const studioLines: string[] = [];
-  if (studioLocation) {
-    studioLines.push(`<div style="color:${COLOR.text.secondary};font-size:11px;line-height:1.4;letter-spacing:0.04em;padding:4px 0;">${esc(studioLocation)}</div>`);
-  } else {
-    studioLines.push(`<div style="color:${COLOR.text.secondary};font-size:11px;line-height:1.4;letter-spacing:0.04em;padding:4px 0;">${t("Dubai", "دبي")}</div>`);
-  }
-  studioLines.push(`<div style="color:${COLOR.text.tertiary};font-size:10px;line-height:1.4;letter-spacing:0.18em;text-transform:uppercase;padding-top:4px;">${t("By appointment", "بموعد مسبق")}</div>`);
-
-  // Legal column — manage / unsubscribe / support.
-  const legalLines: string[] = [];
-  legalLines.push(`<a href="mailto:${esc(supportEmail)}" style="color:${COLOR.text.secondary};text-decoration:none;display:block;padding:4px 0;font-size:11px;line-height:1.4;letter-spacing:0.04em;">${supportLabel}</a>`);
+  links.push(`<a href="mailto:${esc(supportEmail)}" style="${linkStyle}word-break:break-word;">${esc(supportEmail)}</a>`);
   if (manageUrl) {
-    legalLines.push(`<a href="${esc(manageUrl)}" style="color:${COLOR.text.secondary};text-decoration:none;display:block;padding:4px 0;font-size:11px;line-height:1.4;letter-spacing:0.04em;">${manageLabel}</a>`);
+    links.push(`<a href="${esc(manageUrl)}" style="${linkStyle}">${t("Manage notifications", "إدارة الإشعارات")}</a>`);
   }
   if (unsubscribeUrl) {
-    legalLines.push(`<a href="${esc(unsubscribeUrl)}" style="color:${COLOR.text.secondary};text-decoration:none;display:block;padding:4px 0;font-size:11px;line-height:1.4;letter-spacing:0.04em;">${unsubLabel}</a>`);
+    links.push(`<a href="${esc(unsubscribeUrl)}" style="${linkStyle}">${t("Unsubscribe", "إلغاء الاشتراك")}</a>`);
+  }
+  // Use a quiet middle-dot separator (renders cleanly across clients).
+  const sep = `<span style="color:${COLOR.text.tertiary};padding:0 10px;font-size:12px;">·</span>`;
+  const linkRow = `<div style="text-align:center;padding-top:${SPACE.s4};">${links.join(sep)}</div>`;
+
+  if (studioLocation) {
+    void studioLocation;
   }
 
-  const columnHeader = (label: string): string =>
-    `<div style="${typeStyle("microSm", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s4};" class="email-text-accent">${esc(label)}</div>`;
-
-  const masthead = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr>`
-    + `<td valign="top" width="33%" class="email-footer-col" style="padding-right:${SPACE.s5};text-align:left;" data-flip-padding-right="footerCol">`
-    + columnHeader(reachLabel)
-    + reachLines.join("")
-    + `</td>`
-    + `<td valign="top" width="34%" class="email-footer-col" style="padding:0 ${SPACE.s5};border-left:1px solid ${COLOR.border.divider};border-right:1px solid ${COLOR.border.divider};text-align:left;">`
-    + columnHeader(studioLabelText)
-    + studioLines.join("")
-    + `</td>`
-    + `<td valign="top" width="33%" class="email-footer-col" style="padding-left:${SPACE.s5};text-align:left;" data-flip-padding-left="footerCol">`
-    + columnHeader(legalLabel)
-    + legalLines.join("")
-    + `</td>`
-    + `</tr></table>`;
-
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
-    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8} ${SPACE.s8};">`
-    // Trainer signature
-    + haloBar
-    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.18em;text-transform:uppercase;" class="email-text-primary">${esc(trainerLine)}</div>`
-    + `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-align:center;text-transform:uppercase;padding-top:${SPACE.s2};" class="email-text-tertiary">${esc(trainerRole)}</div>`
-    // Atmospheric divider
-    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};background-image:${ACCENT_RULE_GRADIENT};opacity:0.6;margin:${SPACE.s8} 0 ${SPACE.s7};">&nbsp;</div>`
-    // 3-column masthead
-    + masthead
-    // Atmospheric closing divider
-    + `<div style="height:1px;line-height:1px;font-size:0;background-color:${COLOR.border.hairline};margin:${SPACE.s7} 0 ${SPACE.s5};">&nbsp;</div>`
-    // Brand wordmark closing line
-    + `<div style="text-align:center;font-size:9px;line-height:1.4;font-weight:700;letter-spacing:0.5em;text-transform:uppercase;color:${COLOR.text.tertiary};" class="email-text-tertiary">YOUSSEF AHMED · ELITE PERSONAL TRAINING · DUBAI</div>`
+    + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8} ${SPACE.s9};">`
+    // Quiet signature lockup
+    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.32em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s3};letter-spacing:0.04em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
+    + linkRow
     + `</td></tr></table>`;
 }
 

@@ -50,11 +50,11 @@ export const COLOR = {
     footer: "#000000",
   },
   border: {
-    cyan: "rgba(94,231,255,0.20)",
-    cyanSoft: "rgba(94,231,255,0.10)",
-    cyanStrong: "rgba(94,231,255,0.45)",
-    divider: "rgba(255,255,255,0.05)",
-    hairline: "rgba(255,255,255,0.035)",
+    cyan: "rgba(255,255,255,0.06)",
+    cyanSoft: "rgba(255,255,255,0.04)",
+    cyanStrong: "rgba(94,231,255,0.30)",
+    divider: "rgba(255,255,255,0.045)",
+    hairline: "rgba(255,255,255,0.03)",
   },
   text: {
     primary: "#F4F7FA",
@@ -235,10 +235,10 @@ export const FOOTER_GRADIENT =
  * hero: deep cinema-projection drop shadow under the hero band.
  */
 export const GLOW = {
-  card: "0 24px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(94,231,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)",
-  cardCyan: "0 24px 64px rgba(0,0,0,0.65), 0 0 48px rgba(94,231,255,0.10), inset 0 1px 0 rgba(255,255,255,0.06)",
-  cta: "0 0 64px rgba(94,231,255,0.55), 0 0 24px rgba(94,231,255,0.35), 0 16px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.28)",
-  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
+  card: "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+  cardCyan: "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+  cta: "0 0 32px rgba(94,231,255,0.22), 0 12px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.24)",
+  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.06)",
   hero: "0 32px 80px rgba(0,0,0,0.85)",
 } as const;
 
