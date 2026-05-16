@@ -486,36 +486,34 @@ export function setupAuth(app: Express) {
       // freezes the lambda mid-request — the Resend HTTP call never
       // completes and the email is silently lost. We must AWAIT both
       // notification dispatches so the lambda stays alive until Resend
-      // returns. Cost is one extra HTTP round-trip (~300–800 ms) which
-      // is well within an acceptable signup latency budget. Each call
-      // is internally try/catched and never throws.
-      try {
-        await sendWelcomeNotifications({
+      // returns. We run them CONCURRENTLY via Promise.allSettled so
+      // total signup latency stays bounded by the slower of the two
+      // (≈300–800 ms, not 2×). Each call is internally try/catched
+      // and never throws; allSettled is belt-and-braces.
+      let pkgInfo: { name: string | null; price: number | null } = { name: null, price: null };
+      if (!isSuperAdminSignup && snapshotPkgId) {
+        try {
+          const pkg = await storage.getPackage(snapshotPkgId);
+          if (pkg) {
+            pkgInfo = {
+              name: (pkg as any).name ?? `${pkg.type} (${pkg.totalSessions} sessions)`,
+              price: (pkg as any).totalPrice ?? null,
+            };
+          }
+        } catch { /* ignore */ }
+      }
+      const notifyStartedAt = Date.now();
+      const tasks: Promise<unknown>[] = [
+        sendWelcomeNotifications({
           clientName: user.fullName,
           email: user.email,
           phone: user.phone,
           lang: reqLang,
-        });
-      } catch (e) {
-        console.warn("[auth] welcome notifications failed:", e);
-      }
-
-      // Best-effort admin "new client signup" email to the trainer mailbox.
+        }),
+      ];
       if (!isSuperAdminSignup) {
-        let pkgInfo: { name: string | null; price: number | null } = { name: null, price: null };
-        if (snapshotPkgId) {
-          try {
-            const pkg = await storage.getPackage(snapshotPkgId);
-            if (pkg) {
-              pkgInfo = {
-                name: (pkg as any).name ?? `${pkg.type} (${pkg.totalSessions} sessions)`,
-                price: (pkg as any).totalPrice ?? null,
-              };
-            }
-          } catch { /* ignore */ }
-        }
-        try {
-          await sendAdminNewClientEmail({
+        tasks.push(
+          sendAdminNewClientEmail({
             clientName: user.fullName,
             email: user.email,
             phone: user.phone,
@@ -524,11 +522,18 @@ export function setupAuth(app: Express) {
             area: user.area,
             packageName: pkgInfo.name,
             packagePrice: pkgInfo.price,
-          });
-        } catch (e) {
-          console.warn("[auth] admin new-client email failed:", e);
-        }
+          }),
+        );
       }
+      const settled = await Promise.allSettled(tasks);
+      settled.forEach((s, i) => {
+        if (s.status === "rejected") {
+          console.warn(`[auth] signup notification #${i} rejected:`, s.reason);
+        }
+      });
+      console.info(
+        `[auth/register] notifications complete in ${Date.now() - notifyStartedAt}ms (${settled.length} task${settled.length === 1 ? "" : "s"})`,
+      );
 
       req.login(user, async (err) => {
         if (err) return next(err);
