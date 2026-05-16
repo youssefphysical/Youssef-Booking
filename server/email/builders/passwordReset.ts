@@ -1,28 +1,16 @@
 /**
- * GOLDEN REFERENCE #1 — Password reset (utility, security primitive).
+ * Password reset — utility security flow.
  *
- * Cinematic v2 treatment (restrained):
- *   - NO hero image (security flow stays direct, not celebratory).
- *   - Type-only hero anchor for brand consistency.
- *   - Card with greeting + intro + inline CTA + expiry note.
- *   - Atmospheric footer.
- *
- * The password reset is a security utility — the brand consistency comes
- * from the shell, brand header, type, and footer. The card stays tight
- * so the action lands above the fold on mobile.
- *
- * Hero discipline: NO hero image (utility flow).
- * CTA discipline: ONE primary action. Token text-link as fallback.
- * Severity: info — but no banner; the heading carries the intent.
+ * Composition: text-only hero, card with greeting + intro + solid cyan
+ * CTA + expiry note, footer. No photo (security flow stays direct).
  */
 
 import { compose, type ComposedEmail } from "../composer";
 import {
-  brandHeader,
   card,
   ctaButton,
   ctaTextLink,
-  footer,
+  emailFooter,
   heading,
   hero,
   section,
@@ -37,10 +25,11 @@ export interface PasswordResetInput {
   resetUrl: string;
   expiresInMinutes: number;
   supportEmail: string;
+  whatsappUrl?: string | null;
 }
 
 export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmail {
-  const { lang, recipientName, resetUrl, expiresInMinutes, supportEmail } = input;
+  const { lang, recipientName, resetUrl, expiresInMinutes, supportEmail, whatsappUrl } = input;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
 
@@ -59,15 +48,10 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
     `For security, this link expires in ${expiresInMinutes} minutes. If you didn't request a reset, you can safely ignore this email.`,
     `لأسباب أمنية، تنتهي صلاحية هذا الرابط خلال ${expiresInMinutes} دقيقة. إذا لم تطلب إعادة التعيين، يمكنك تجاهل هذه الرسالة.`,
   );
-  const ctaLabel = t("Reset password", "إعادة تعيين");
-  const fallbackLabel = t("Open the link manually", "افتح الرابط يدوياً");
 
   const body = [
-    brandHeader(),
-    // Type-only cinematic anchor — no image, no eyebrow, just the brand
-    // typographic discipline so the email feels like part of the world.
     hero({
-      eyebrow: t("ACCOUNT SECURITY", "أمان الحساب"),
+      lang,
       title: t("RESET", "إعادة تعيين"),
       accentWord: t("PASSWORD", "كلمة المرور"),
       subtitle: t(
@@ -81,16 +65,17 @@ export function buildPasswordResetEmail(input: PasswordResetInput): ComposedEmai
           heading({ level: 2, text: greeting }),
           spacer("s3"),
           textBlock({ text: intro, color: "secondary" }),
-          spacer("s7"),
-          ctaButton({ href: resetUrl, label: ctaLabel, variant: "brand" }),
           spacer("s6"),
+          ctaButton({ href: resetUrl, label: t("Reset password", "إعادة تعيين") }),
+          spacer("s5"),
           textBlock({ text: expiryNote, size: "bodySm", color: "tertiary" }),
-          spacer("s4"),
-          `<div>${ctaTextLink({ href: resetUrl, label: fallbackLabel })}</div>`,
+          spacer("s3"),
+          `<div>${ctaTextLink({ href: resetUrl, label: t("Open the link manually", "افتح الرابط يدوياً") })}</div>`,
         ].join(""),
       }),
     ),
-    footer({ lang, supportEmail }),
+    spacer("s5"),
+    emailFooter({ lang, whatsappUrl: whatsappUrl ?? undefined, supportEmail }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "info", bodyHtml: body });

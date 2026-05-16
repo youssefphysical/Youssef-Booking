@@ -1,32 +1,21 @@
 /**
- * GOLDEN REFERENCE #4 — Package expiring in 3 days (warning).
+ * Package expiring in 3 days — practical warning, image-free hero.
  *
- * Cinematic v2 treatment:
- *   - NO hero image — warning emails stay direct (image-free, banner-led).
- *     The cinematic atmosphere lives in the type band of the existing
- *     hero primitive, but we lean on a smaller "alert hero" without an
- *     image so the warning banner reads first.
- *   - Card with warning banner + key-value details.
- *   - Billboard CTA section in warning variant.
- *
- * Hero discipline: NO hero image (warning, not celebration).
- * CTA discipline: ONE primary "Renew" (warning variant) + WhatsApp text link.
- * Severity: warning banner leads — must surface above the fold.
+ * Composition matches the new system: dark hero (text only), 2-col
+ * infoCard, solid cyan CTA, support row, centred footer.
  */
 
 import { compose, type ComposedEmail } from "../composer";
 import {
-  brandHeader,
   card,
   ctaButton,
-  ctaSection,
-  footer,
+  emailFooter,
   hero,
-  keyValueList,
+  infoCard,
   section,
   severityBanner,
   spacer,
-  textBlock,
+  supportRow,
 } from "../components";
 import type { Lang } from "../tokens";
 
@@ -35,7 +24,7 @@ export interface PackageExpiring3dInput {
   recipientName: string;
   packageName: string;
   sessionsRemaining: number;
-  expiryDate: string;          // e.g. "Sun, 18 May 2026"
+  expiryDate: string;
   renewUrl: string;
   whatsappUrl: string;
   supportEmail: string;
@@ -43,6 +32,7 @@ export interface PackageExpiring3dInput {
 
 export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): ComposedEmail {
   const { lang, recipientName, packageName, sessionsRemaining, expiryDate, renewUrl, whatsappUrl, supportEmail } = input;
+  void recipientName;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
 
@@ -52,55 +42,63 @@ export function buildPackageExpiring3dEmail(input: PackageExpiring3dInput): Comp
     `تبقى ${sessionsRemaining} جلسة. جدّد للحفاظ على استمراريتك.`,
   );
 
-  const bannerTitle = t("Package expires in 3 days", "تنتهي الباقة خلال 3 أيام");
-  const bannerBody = t(
-    "Renew now to lock in your next block at the same rate. Unused sessions don't roll over.",
-    "جدّد الآن للحفاظ على نفس السعر للمرحلة التالية. الجلسات غير المستخدمة لا تُرحَّل.",
-  );
-  const intro = t(
-    `Hi ${recipientName} — heads-up before your current block wraps:`,
-    `مرحباً ${recipientName} — تنبيه قبل انتهاء باقتك الحالية:`,
-  );
-
   const body = [
-    brandHeader(),
-    // Lightweight type-only hero — no image, just cinematic typographic
-    // anchor for the warning. Keeps urgency front-and-center.
     hero({
-      eyebrow: t("HEADS UP", "تنبيه"),
+      lang,
       title: t("3 DAYS", "٣ أيام"),
       accentWord: t("LEFT", "متبقية"),
       subtitle: t(
         `${sessionsRemaining} sessions remaining on your ${packageName}. Renew to keep training without a gap.`,
         `تبقى ${sessionsRemaining} جلسة من ${packageName}. جدّد لتستمر في التدريب دون انقطاع.`,
       ),
-      trailingMeta: t(`EXPIRES · ${expiryDate.toUpperCase()}`, `تنتهي · ${expiryDate}`),
     }),
     section(
       card({
         headerLabel: t("RENEWAL DETAILS", "تفاصيل التجديد"),
-        children: [
-          severityBanner({ severity: "warning", title: bannerTitle, body: bannerBody }),
-          spacer("s6"),
-          textBlock({ text: intro, color: "secondary" }),
-          spacer("s5"),
-          keyValueList({
-            items: [
-              { label: t("Package", "الباقة"), value: packageName },
-              { label: t("Sessions remaining", "الجلسات المتبقية"), value: String(sessionsRemaining) },
-              { label: t("Expires on", "تنتهي في"), value: expiryDate },
-            ],
-          }),
-        ].join(""),
+        children: severityBanner({
+          severity: "warning",
+          title: t("Package expires in 3 days", "تنتهي الباقة خلال 3 أيام"),
+          body: t(
+            "Renew now to lock in your next block at the same rate. Unused sessions don't roll over.",
+            "جدّد الآن للحفاظ على نفس السعر للمرحلة التالية. الجلسات غير المستخدمة لا تُرحَّل.",
+          ),
+        }),
       }),
     ),
-    spacer("s7"),
-    ctaSection({
-      eyebrow: t("RENEW NOW", "جدّد الآن"),
-      ctaHtml: ctaButton({ href: renewUrl, label: t("Renew package", "جدّد الباقة"), variant: "warning" }),
-      supportingLink: { href: whatsappUrl, label: t("Message Youssef", "راسل يوسف") },
-    }),
-    footer({ lang, supportEmail, whatsappUrl }),
+    spacer("s5"),
+    section(
+      infoCard({
+        leftItems: [
+          { icon: "package", label: t("Package", "الباقة"), value: packageName },
+          { icon: "dumbbell", label: t("Sessions remaining", "الجلسات المتبقية"), value: String(sessionsRemaining) },
+          { icon: "calendar", label: t("Expires on", "تنتهي في"), value: expiryDate },
+        ],
+      }),
+    ),
+    spacer("s6"),
+    section(ctaButton({ href: renewUrl, label: t("Renew package", "جدّد الباقة") })),
+    spacer("s6"),
+    section(
+      supportRow({
+        left: {
+          icon: "headset",
+          title: t("Need help?", "تحتاج مساعدة؟"),
+          body: t("Email us at", "راسلنا على"),
+          href: `mailto:${supportEmail}`,
+          linkLabel: supportEmail,
+        },
+        right: {
+          icon: "whatsapp",
+          iconColor: "#25D366",
+          title: t("Message Youssef", "راسل يوسف"),
+          body: t("Reach Coach Youssef on", "تواصل مع المدرب يوسف على"),
+          href: whatsappUrl,
+          linkLabel: t("WhatsApp", "واتساب"),
+        },
+      }),
+    ),
+    spacer("s5"),
+    emailFooter({ lang, whatsappUrl, supportEmail }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "warning", bodyHtml: body });

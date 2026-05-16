@@ -59,6 +59,7 @@ export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
 
   const body = [
     hero({
+      lang,
       title: t("WELCOME TO", "أهلاً بك في"),
       accentWord: t("ELITE COACHING", "إيليت كوتشينج"),
       subtitle: t(

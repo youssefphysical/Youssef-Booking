@@ -25,6 +25,7 @@ import {
   HERO_GRADIENT,
   HERO_BLEND_GRADIENT,
   HERO_IMAGE_OVERLAY,
+  HERO_IMAGE_OVERLAY_RTL,
   CARD_GRADIENT,
   CARD_TOP_EDGE,
   CARD_BOTTOM_EDGE,
@@ -267,6 +268,11 @@ export interface HeroOptions {
    * RESULTS). Renders as a vertical cyan-eyebrow list over the photo.
    */
   keywords?: string[];
+  /**
+   * Language hint. Arabic flips the overlay fade so the dark side
+   * anchors the text on the RIGHT (where applyRtl moves Arabic).
+   */
+  lang?: Lang;
 }
 
 /**
@@ -283,7 +289,7 @@ export interface HeroOptions {
  */
 export function hero({
   eyebrow, title, accentWord, subtitle, trailingMeta,
-  imageUrl, imageAlt, align = "left", withBrand = true, keywords,
+  imageUrl, imageAlt, align = "left", withBrand = true, keywords, lang = "en",
 }: HeroOptions): string {
   void trailingMeta;
   void HERO_BLEND_GRADIENT;
@@ -351,8 +357,15 @@ export function hero({
     + subtitleHtml
     + `</td>`;
 
+  // Pick the correct l-to-r vs r-to-l fade for the active language so
+  // the dark anchor sits UNDER the headline copy (left for EN, right
+  // for AR after applyRtl moves the text). Empty-image admin heroes
+  // skip the overlay entirely — they don't need the photo-anchor fade.
+  const overlay = imageUrl
+    ? (lang === "ar" ? HERO_IMAGE_OVERLAY_RTL : HERO_IMAGE_OVERLAY)
+    : "none";
   const overlayTable =
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:transparent;background-image:${HERO_IMAGE_OVERLAY};min-height:${heroHeight}px;">`
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:transparent;background-image:${overlay};min-height:${heroHeight}px;">`
     + `<tr class="email-hero-row">`
     + textCell
     + keywordsHtml

@@ -1,48 +1,39 @@
 /**
- * GOLDEN REFERENCE #2 — Booking confirmation (cinematic milestone).
+ * Booking confirmation — matches PNG reference frame 1.
  *
- * Cinematic v2 treatment:
- *   - TRON athletic hero (cyan grid floor + rim-lit power rack) —
- *     anticipation/preparation atmosphere.
- *   - Card carries success banner + key-value details (no CTA inside).
- *   - Billboard CTA section ("LOCKED IN") wraps the View-booking action
- *     in its own atmospheric band.
- *   - Atmospheric footer with WhatsApp/studio lockup.
- *
- * Hero discipline: HERO ALLOWED — booking-confirmed is a moment of
- *   commitment in the user's training journey.
- * CTA discipline: ONE primary "View booking" + secondary text link.
- * Severity: success banner — confirms the lock-in.
+ * Composition:
+ *   - Split hero "SESSION / CONFIRMED" with gym photo on the right.
+ *   - 2-column infoCard with Date / Time on left, Location / Trainer on right.
+ *   - "What to bring" icon row (Water, Towel, Training shoes).
+ *   - Solid cyan CTA: "VIEW BOOKING DETAILS".
+ *   - Support row (Need help? · WhatsApp) inside a card.
+ *   - Centred footer.
  */
 
 import { compose, type ComposedEmail } from "../composer";
 import {
-  brandHeader,
-  card,
   ctaButton,
-  ctaSection,
-  footer,
+  emailFooter,
   hero,
-  keyValueList,
+  infoCard,
   section,
-  severityBanner,
   spacer,
-  textBlock,
+  supportRow,
+  whatToBring,
 } from "../components";
 import { deriveBaseUrl, heroImageUrl, type Lang } from "../tokens";
 
 export interface BookingConfirmationInput {
   lang: Lang;
   recipientName: string;
-  date: string;            // e.g. "Sat, 17 May 2026"
-  time12: string;          // e.g. "10:00 AM"
+  date: string;
+  time12: string;
   sessionFocus: string | null;
   trainingGoal: string | null;
-  location: string;        // e.g. "Coach Youssef's studio, Dubai Marina"
+  location: string;
   bookingUrl: string;
   rescheduleUrl: string;
   supportEmail: string;
-  // Optional, additive — surfaced when present, auto-skipped otherwise.
   sessionType?: string | null;
   packageName?: string | null;
   remainingSessions?: number | null;
@@ -50,18 +41,23 @@ export interface BookingConfirmationInput {
   paymentStatus?: string | null;
   clientEmail?: string | null;
   clientPhone?: string | null;
+  trainerName?: string | null;
+  whatsappUrl?: string | null;
+  sessionDurationLabel?: string | null;
 }
 
 export function buildBookingConfirmationEmail(input: BookingConfirmationInput): ComposedEmail {
   const {
-    lang, recipientName, date, time12, sessionFocus, trainingGoal, location,
+    lang, recipientName, date, time12, sessionFocus, location,
     bookingUrl, rescheduleUrl, supportEmail,
-    sessionType, packageName, remainingSessions, totalSessions, paymentStatus,
-    clientEmail, clientPhone,
+    trainerName, whatsappUrl, sessionDurationLabel,
+    packageName, remainingSessions, totalSessions, sessionType,
   } = input;
+  void recipientName;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
   const base = deriveBaseUrl(bookingUrl, rescheduleUrl);
+  const whatsHref = whatsappUrl || "https://wa.me/971505394754";
 
   const subject = t(`Session confirmed — ${date} at ${time12}`, `تأكيد الجلسة — ${date} في ${time12}`);
   const preheader = t(
@@ -69,76 +65,79 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
     `تم تأكيد جلستك مع المدرب يوسف. ${date} في ${time12}.`,
   );
 
-  const heroEyebrow = t("YOUR NEXT SESSION", "جلستك القادمة");
-  const heroTitle = t("SESSION", "تم تأكيد");
-  const heroAccent = t("CONFIRMED", "الجلسة");
-  const heroSubtitle = t(
-    "Locked in. Reminders 24 hours and 1 hour before. See you on the floor.",
-    "تم التأكيد. ستصلك تذكيرات قبل 24 ساعة وقبل ساعة. أراك في النادي.",
-  );
-
-  const bannerTitle = t(`${date} · ${time12}`, `${date} · ${time12}`);
-  const bannerBody = t(
-    `Hi ${recipientName} — your session with Coach Youssef is on the schedule.`,
-    `مرحباً ${recipientName} — جلستك مع المدرب يوسف مجدولة.`,
-  );
-  const ctaLabel = t("View booking", "عرض الحجز");
-  const rescheduleLabel = t("Need to reschedule?", "إعادة جدولة");
+  const trainer = trainerName || t("Youssef Ahmed", "يوسف أحمد");
+  const duration = sessionDurationLabel || t("60 minutes", "٦٠ دقيقة");
+  const focus = sessionFocus || t("Strength & conditioning", "قوة ولياقة");
+  const pkgLabel = packageName || t("Standard 1-on-1", "خاص 1-إلى-1");
+  const sessionsLabel = (remainingSessions != null && totalSessions != null)
+    ? `${remainingSessions} / ${totalSessions}`
+    : (remainingSessions != null ? String(remainingSessions) : t("—", "—"));
+  const typeLabel = sessionType || t("1-on-1 personal training", "تدريب شخصي خاص");
 
   const body = [
-    brandHeader(),
     hero({
-      eyebrow: heroEyebrow,
-      title: heroTitle,
-      accentWord: heroAccent,
-      subtitle: heroSubtitle,
-      trailingMeta: t(`${date.toUpperCase()} · ${time12}`, `${date} · ${time12}`),
-      imageUrl: heroImageUrl("session", base),
-      imageAlt: t(
-        "Futuristic luxury gym in TRON aesthetic — cyan grid floor with rim-lit matte black power rack",
-        "نادٍ رياضي مستقبلي بطراز ترون — أرضية شبكية سيان مع رف طاقة أسود مضاء بحواف نيون",
+      lang,
+      title: t("SESSION", "تم تأكيد"),
+      accentWord: t("CONFIRMED", "الجلسة"),
+      subtitle: t(
+        "Your session is locked in. Reminders ship 24 hours and 1 hour before. See you on the floor.",
+        "تم تأكيد جلستك. ستصلك تذكيرات قبل 24 ساعة وقبل ساعة. أراك في النادي.",
       ),
+      imageUrl: heroImageUrl("session", base),
+      imageAlt: t("Athlete training in a premium gym studio", "رياضي يتدرب في استوديو راقٍ"),
     }),
     section(
-      card({
+      infoCard({
         headerLabel: t("SESSION DETAILS", "تفاصيل الجلسة"),
-        children: [
-          severityBanner({ severity: "success", title: bannerTitle, body: bannerBody }),
-          spacer("s6"),
-          keyValueList({
-            items: [
-              { label: t("Date", "التاريخ"), value: date },
-              { label: t("Time · Dubai · GST", "الوقت · دبي · GST"), value: time12 },
-              { label: t("Focus", "التركيز"), value: sessionFocus },
-              { label: t("Goal", "الهدف"), value: trainingGoal },
-              { label: t("Session type", "نوع الجلسة"), value: sessionType ?? null },
-              { label: t("Package", "الباقة"), value: packageName ?? null },
-              {
-                label: t("Sessions remaining", "الجلسات المتبقية"),
-                value:
-                  remainingSessions != null && totalSessions != null
-                    ? `${remainingSessions} ${t("of", "من")} ${totalSessions}`
-                    : remainingSessions != null
-                      ? String(remainingSessions)
-                      : null,
-              },
-              { label: t("Payment", "الدفع"), value: paymentStatus ?? null },
-              { label: t("Location", "المكان"), value: location },
-              { label: t("Email", "البريد الإلكتروني"), value: clientEmail ?? null },
-              { label: t("Phone", "الهاتف"), value: clientPhone ?? null },
-            ],
-          }),
-        ].join(""),
+        leftItems: [
+          { icon: "calendar", label: t("Date", "التاريخ"), value: date },
+          { icon: "clock", label: t("Time", "الوقت"), value: time12 },
+          { icon: "stopwatch", label: t("Duration", "المدة"), value: duration },
+          { icon: "dumbbell", label: t("Focus", "التركيز"), value: focus },
+        ],
+        rightItems: [
+          { icon: "location", label: t("Location", "المكان"), value: location },
+          { icon: "person", label: t("Trainer", "المدرب"), value: trainer },
+          { icon: "package", label: t("Package", "الباقة"), value: pkgLabel },
+          { icon: "target", label: t("Remaining sessions", "الجلسات المتبقية"), value: sessionsLabel },
+        ],
       }),
     ),
-    spacer("s7"),
-    ctaSection({
-      eyebrow: t("LOCKED IN", "تم التأكيد"),
-      ctaHtml: ctaButton({ href: bookingUrl, label: ctaLabel, variant: "brand" }),
-      supportingText: t("Plans changed?", "تغيرت خططك؟"),
-      supportingLink: { href: rescheduleUrl, label: rescheduleLabel },
-    }),
-    footer({ lang, supportEmail, manageUrl: rescheduleUrl, studioLocation: location }),
+    spacer("s5"),
+    section(
+      whatToBring({
+        headerLabel: t("WHAT TO BRING", "ماذا تحضر"),
+        items: [
+          { icon: "waterBottle", label: t("Water bottle", "زجاجة ماء") },
+          { icon: "towel", label: t("Towel", "منشفة") },
+          { icon: "shoe", label: t("Training shoes", "حذاء تدريب") },
+        ],
+      }),
+    ),
+    spacer("s6"),
+    section(ctaButton({ href: bookingUrl, label: t("Add to calendar", "أضف إلى التقويم") })),
+    spacer("s6"),
+    section(
+      supportRow({
+        left: {
+          icon: "headset",
+          title: t("Need help?", "تحتاج مساعدة؟"),
+          body: t("Email us at", "راسلنا على"),
+          href: `mailto:${supportEmail}`,
+          linkLabel: supportEmail,
+        },
+        right: {
+          icon: "whatsapp",
+          iconColor: "#25D366",
+          title: t("WhatsApp", "واتساب"),
+          body: t("Reach Coach Youssef on", "تواصل مع المدرب يوسف على"),
+          href: whatsHref,
+          linkLabel: t("WhatsApp", "واتساب"),
+        },
+      }),
+    ),
+    spacer("s5"),
+    emailFooter({ lang, whatsappUrl: whatsHref, supportEmail }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "success", bodyHtml: body });
