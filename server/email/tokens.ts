@@ -24,14 +24,26 @@ export type Severity = "success" | "info" | "warning" | "critical";
 export type Lang = "en" | "ar";
 export type Direction = "ltr" | "rtl";
 
-/** Cinematic palette — editorial luxury. */
+/**
+ * TRON RGB palette — futuristic athletic interface.
+ * Triad: electric cyan (primary action) + magenta (energy accent) +
+ * violet (atmospheric depth). Used for dual-edge cards, multi-color
+ * glows, and section dividers. Magenta/violet are NEVER used for
+ * primary actions or text — only for atmospheric edges and glows.
+ */
 export const COLOR = {
   brand: {
-    cyan: "#5EE7FF",            // Primary cyan (softer, more luxurious)
+    cyan: "#5EE7FF",            // Primary cyan — actions, primary accent
     cyanSoft: "#8AF1FF",        // CTA gradient top — almost-white cyan glint
-    cyanDeep: "#00B8D4",        // CTA gradient bottom + bracket marks
+    cyanDeep: "#00B8D4",        // CTA gradient bottom
     cyanMuted: "rgba(94,231,255,0.78)",
     cyanGlow: "rgba(94,231,255,0.16)",
+    // RGB energy accents — atmospheric only, never primary action.
+    magenta: "#FF3DDA",         // Hot magenta — bottom card edge, glow
+    magentaGlow: "rgba(255,61,218,0.18)",
+    magentaDeep: "rgba(213,40,180,0.5)",
+    violet: "#9D4EDD",          // Violet — distant atmospheric backlight
+    violetGlow: "rgba(157,78,221,0.12)",
     ink: "#000000",
     paper: "#F4F7FA",
   },
@@ -192,17 +204,17 @@ export const FONT_STACK = {
 export const BREAKPOINT_MOBILE = 600;
 
 /**
- * Hero canvas — cinematic atmospheric chamber. Layered light:
- *   1. Strong cyan halo at top-center (stage spotlight, 0.14 alpha) —
- *      gives the headline luminous architecture, not a flat backdrop.
- *   2. Wider, softer cyan wash continuing 65% down — the headline sits
- *      INSIDE the light, not above a void.
- *   3. Subtle warm vignette on the right (off-axis key light, 0.04
- *      amber) — reads as cinematography, not a graphic gradient.
- *   4. Linear deep-blue → black floor that anchors the composition.
+ * Hero canvas — TRON Legacy atmospheric chamber. RGB triad lighting:
+ *   1. Strong cyan halo at top-center (0.18 alpha) — headline stage.
+ *   2. Magenta off-axis backlight on the right (0.10 alpha) — RGB energy.
+ *   3. Violet atmospheric haze bottom-left (0.08) — depth dimension.
+ *   4. Linear deep-blue → near-black floor for cinematic anchor.
+ * Reads as a futuristic athletic facility lit by RGB stage rig, not a
+ * flat backdrop. Cyan dominates (80% of presence), magenta + violet are
+ * atmospheric whispers — exactly the TRON Legacy color discipline.
  */
 export const HERO_GRADIENT =
-  "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(94,231,255,0.14) 0%, rgba(94,231,255,0.06) 30%, rgba(94,231,255,0) 65%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(255,180,120,0.04) 0%, rgba(255,180,120,0) 70%), linear-gradient(180deg, #060B14 0%, #03060C 45%, #000000 100%)";
+  "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(94,231,255,0.18) 0%, rgba(94,231,255,0.07) 30%, rgba(94,231,255,0) 65%), radial-gradient(ellipse 55% 70% at 88% 35%, rgba(255,61,218,0.10) 0%, rgba(255,61,218,0) 70%), radial-gradient(ellipse 60% 75% at 12% 75%, rgba(157,78,221,0.08) 0%, rgba(157,78,221,0) 65%), linear-gradient(180deg, #060B14 0%, #02050B 45%, #000000 100%)";
 
 /**
  * Cinematic image-to-type dissolve. Smooth 4-stop fade so the photo
@@ -230,32 +242,55 @@ export const CARD_GRADIENT =
 /**
  * Card top edge — 1px luminous cyan line that catches light. Sits as
  * a separate row at the top of the card to read as a glass bevel.
+ * Brightened (0.45 → 0.65) for stronger TRON edge presence.
  */
 export const CARD_TOP_EDGE =
-  "linear-gradient(90deg, rgba(94,231,255,0) 0%, rgba(94,231,255,0.45) 50%, rgba(94,231,255,0) 100%)";
+  "linear-gradient(90deg, rgba(94,231,255,0) 0%, rgba(94,231,255,0.65) 50%, rgba(94,231,255,0) 100%)";
+
+/**
+ * Card BOTTOM edge — 1px magenta hairline (RGB triad complement).
+ * Faint (0.32) so it reads as an atmospheric undertone, not a second
+ * primary edge. Cyan top + magenta bottom = TRON dual-edge signature.
+ */
+export const CARD_BOTTOM_EDGE =
+  "linear-gradient(90deg, rgba(255,61,218,0) 0%, rgba(255,61,218,0.32) 50%, rgba(255,61,218,0) 100%)";
 
 /** Card header strip — quiet cyan wash. */
 export const CARD_HEADER_GRADIENT =
   "linear-gradient(180deg, rgba(94,231,255,0.05) 0%, rgba(94,231,255,0.0) 100%)";
 
 /**
- * CTA section atmospheric stage — wider, deeper cyan halo at center
- * with a luminous floor highlight. The CTA lives inside the light.
+ * CTA section TRON stage — RGB triad halo composition.
+ *   1. Strong cyan central halo (0.22) — primary stage spotlight.
+ *   2. Magenta luminous floor (0.10 at 50% 100%) — RGB undertone.
+ *   3. Violet ceiling whisper (0.06 at 50% 0%) — atmospheric depth.
+ *   4. Deep navy-blue radial canvas — TRON sky.
+ * The CTA pill lives at the center of an RGB stage rig, not a button
+ * on a band. Reads as the climax of a futuristic athletic interface.
  */
 export const CTA_SECTION_GRADIENT =
-  "radial-gradient(ellipse 75% 80% at 50% 50%, rgba(94,231,255,0.18) 0%, rgba(94,231,255,0.07) 40%, rgba(3,6,10,0) 80%), radial-gradient(ellipse 100% 30% at 50% 100%, rgba(94,231,255,0.06) 0%, rgba(94,231,255,0) 100%), linear-gradient(180deg, #03060A 0%, #0A1622 50%, #03060A 100%)";
+  "radial-gradient(ellipse 75% 80% at 50% 50%, rgba(94,231,255,0.22) 0%, rgba(94,231,255,0.08) 40%, rgba(3,6,10,0) 80%), radial-gradient(ellipse 100% 35% at 50% 100%, rgba(255,61,218,0.10) 0%, rgba(255,61,218,0) 100%), radial-gradient(ellipse 100% 25% at 50% 0%, rgba(157,78,221,0.06) 0%, rgba(157,78,221,0) 100%), linear-gradient(180deg, #03060A 0%, #0A1622 50%, #03060A 100%)";
 
 /** CTA gradient — luminous cyan glint top → deep cyan bottom. */
 export const CTA_GRADIENT =
   "linear-gradient(180deg, #8AF1FF 0%, #5EE7FF 50%, #00B8D4 100%)";
 
-/** Accent rule — cyan editorial hairline that fades at the edges. */
+/**
+ * Accent rule — TRON RGB hairline. Cyan-dominant with a soft magenta
+ * crossover near the right edge. Reads as a futuristic light bar, not
+ * a generic divider. Falls back gracefully (Outlook strips gradients
+ * → pure cyan border-top defined inline at call sites).
+ */
 export const ACCENT_RULE_GRADIENT =
-  "linear-gradient(90deg, rgba(94,231,255,0) 0%, #5EE7FF 50%, rgba(94,231,255,0) 100%)";
+  "linear-gradient(90deg, rgba(94,231,255,0) 0%, #5EE7FF 35%, #8AF1FF 55%, #FF3DDA 90%, rgba(255,61,218,0) 100%)";
 
-/** Footer atmospheric vignette. */
+/**
+ * Footer TRON atmospheric vignette — cyan ceiling halo + magenta floor
+ * undertone. Continues the RGB stage language from the CTA section into
+ * the closing footer so the email reads as one continuous lit chamber.
+ */
 export const FOOTER_GRADIENT =
-  "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(94,231,255,0.04) 0%, rgba(94,231,255,0) 60%), linear-gradient(180deg, #000000 0%, #03060B 50%, #000000 100%)";
+  "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(94,231,255,0.06) 0%, rgba(94,231,255,0) 60%), radial-gradient(ellipse 80% 40% at 50% 100%, rgba(255,61,218,0.05) 0%, rgba(255,61,218,0) 70%), linear-gradient(180deg, #000000 0%, #03060B 50%, #000000 100%)";
 
 /**
  * Glow tokens — sophisticated layered system.
@@ -266,13 +301,14 @@ export const FOOTER_GRADIENT =
  * hero: deep cinema-projection drop shadow under the hero band.
  */
 export const GLOW = {
-  // Card: deeper drop shadow for premium weight + faint cyan atmospheric
-  // halo + bright inset top edge (light catching the glass bevel).
-  card: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 48px rgba(94,231,255,0.06), inset 0 1px 0 rgba(255,255,255,0.10)",
-  cardCyan: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 64px rgba(94,231,255,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
-  // CTA: cinematic chrome — wider stage halo (64px) + tight 22px inner
-  // ring + deeper drop. The pill catches light, casts a luminous footprint.
-  cta: "0 0 64px rgba(94,231,255,0.40), 0 0 22px rgba(94,231,255,0.28), 0 18px 44px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -2px 4px rgba(0,0,0,0.25)",
+  // Card: TRON dual-color glow — cyan primary halo + faint magenta
+  // undertone + deep drop. Reads as a glass slab lit by RGB stage rig.
+  card: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 56px rgba(94,231,255,0.10), 0 0 32px rgba(255,61,218,0.05), inset 0 1px 0 rgba(255,255,255,0.10)",
+  cardCyan: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 72px rgba(94,231,255,0.18), 0 0 40px rgba(255,61,218,0.08), inset 0 1px 0 rgba(255,255,255,0.12)",
+  // CTA: TRON disc — wide cyan stage halo (72px) + magenta secondary
+  // glow (40px) + tight cyan inner ring + deep drop. The pill reads as
+  // a TRON identity disc casting RGB light, not a generic button.
+  cta: "0 0 72px rgba(94,231,255,0.45), 0 0 40px rgba(255,61,218,0.22), 0 0 22px rgba(94,231,255,0.32), 0 18px 44px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -2px 4px rgba(0,0,0,0.28)",
   innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
   hero: "0 32px 80px rgba(0,0,0,0.85)",
 } as const;

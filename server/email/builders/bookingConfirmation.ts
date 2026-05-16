@@ -2,7 +2,7 @@
  * GOLDEN REFERENCE #2 — Booking confirmation (cinematic milestone).
  *
  * Cinematic v2 treatment:
- *   - Real hero photograph (single matte-black kettlebell, cyan rim) —
+ *   - TRON athletic hero (cyan grid floor + rim-lit power rack) —
  *     anticipation/preparation atmosphere.
  *   - Card carries success banner + key-value details (no CTA inside).
  *   - Billboard CTA section ("LOCKED IN") wraps the View-booking action
@@ -95,8 +95,8 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
       trailingMeta: t(`${date.toUpperCase()} · ${time12}`, `${date} · ${time12}`),
       imageUrl: heroImageUrl("session", base),
       imageAlt: t(
-        "Single matte black kettlebell in dark luxury gym, cyan rim light",
-        "كرة حديدية سوداء في نادٍ راقٍ، إضاءة سيان جانبية",
+        "Futuristic luxury gym in TRON aesthetic — cyan grid floor with rim-lit matte black power rack",
+        "نادٍ رياضي مستقبلي بطراز ترون — أرضية شبكية سيان مع رف طاقة أسود مضاء بحواف نيون",
       ),
     }),
     section(
