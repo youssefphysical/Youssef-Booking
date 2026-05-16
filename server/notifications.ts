@@ -36,12 +36,16 @@ export async function sendWelcomeNotifications({
   phone?: string | null;
   lang?: string | null;
 }) {
+  console.info(
+    `[notifications/welcome] BEGIN client=${JSON.stringify(clientName)} email=${JSON.stringify(email)} phone=${JSON.stringify(phone)} lang=${JSON.stringify(lang)}`,
+  );
   if (!email) {
-    console.info(`[notifications] welcome skipped — no email. client=${clientName}`);
+    console.warn(`[notifications/welcome] SKIPPED — no email on the user record. client=${clientName}`);
     return;
   }
   try {
     const websiteUrl = publicWebsiteUrl();
+    console.info(`[notifications/welcome] resolved websiteUrl=${websiteUrl}`);
     const langCode = (lang === "ar" ? "ar" : "en") as "en" | "ar";
     let built: { subject: string; text: string; html: string };
     try {
@@ -75,15 +79,30 @@ export async function sendWelcomeNotifications({
         });
       }
     }
-    await sendEmail({
+    console.info(
+      `[notifications/welcome] dispatching subject=${JSON.stringify(built.subject)} to=${email} from-trainer=${trainerEmail()}`,
+    );
+    const result = await sendEmail({
       to: email,
       subject: built.subject,
       text: built.text,
       html: built.html,
       replyTo: trainerEmail(),
     });
-  } catch (e) {
-    console.warn("[notifications] welcome email failed:", e);
+    if (result.sent) {
+      console.info(
+        `[notifications/welcome] SENT provider=${result.provider} id=${result.id} to=${email}`,
+      );
+    } else {
+      console.error(
+        `[notifications/welcome] FAILED provider=${result.provider} to=${email} error=${JSON.stringify(result.error)}`,
+      );
+    }
+  } catch (e: any) {
+    console.error(
+      `[notifications/welcome] EXCEPTION to=${email}`,
+      e?.stack || e?.message || e,
+    );
   }
 
   // SMS / WhatsApp — only sends if a provider is configured. Stubbed.

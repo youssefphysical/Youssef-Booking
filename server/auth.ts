@@ -482,12 +482,23 @@ export function setupAuth(app: Express) {
         (req.body?.lang as string | undefined) ||
         (req.get("accept-language") || "").split(",")[0]?.split("-")[0] ||
         "en";
-      sendWelcomeNotifications({
-        clientName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        lang: reqLang,
-      }).catch((e) => console.warn("[auth] welcome notifications failed:", e));
+      // IMPORTANT: on Vercel serverless, fire-and-forget after res.json()
+      // freezes the lambda mid-request — the Resend HTTP call never
+      // completes and the email is silently lost. We must AWAIT both
+      // notification dispatches so the lambda stays alive until Resend
+      // returns. Cost is one extra HTTP round-trip (~300–800 ms) which
+      // is well within an acceptable signup latency budget. Each call
+      // is internally try/catched and never throws.
+      try {
+        await sendWelcomeNotifications({
+          clientName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          lang: reqLang,
+        });
+      } catch (e) {
+        console.warn("[auth] welcome notifications failed:", e);
+      }
 
       // Best-effort admin "new client signup" email to the trainer mailbox.
       if (!isSuperAdminSignup) {
@@ -503,16 +514,20 @@ export function setupAuth(app: Express) {
             }
           } catch { /* ignore */ }
         }
-        sendAdminNewClientEmail({
-          clientName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          primaryGoal: user.primaryGoal,
-          weeklyFrequency: user.weeklyFrequency ?? null,
-          area: user.area,
-          packageName: pkgInfo.name,
-          packagePrice: pkgInfo.price,
-        }).catch((e) => console.warn("[auth] admin new-client email failed:", e));
+        try {
+          await sendAdminNewClientEmail({
+            clientName: user.fullName,
+            email: user.email,
+            phone: user.phone,
+            primaryGoal: user.primaryGoal,
+            weeklyFrequency: user.weeklyFrequency ?? null,
+            area: user.area,
+            packageName: pkgInfo.name,
+            packagePrice: pkgInfo.price,
+          });
+        } catch (e) {
+          console.warn("[auth] admin new-client email failed:", e);
+        }
       }
 
       req.login(user, async (err) => {
