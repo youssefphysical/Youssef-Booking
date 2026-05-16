@@ -150,9 +150,10 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `.email-pad{padding-left:24px !important;padding-right:24px !important;}`,
     `.email-pad-tight{padding-left:18px !important;padding-right:18px !important;}`,
     // Card interior gets a slightly tighter gutter — keeps content room.
-    `.email-card-pad{padding:36px 24px !important;}`,
-    // CTA — full-width touch target, large luxury padding.
-    `.email-cta-cell a{display:block !important;width:auto !important;padding:24px 32px !important;font-size:14px !important;letter-spacing:0.26em !important;}`,
+    // Card interior — tighter mobile pad for content-rich readability.
+    `.email-card-pad{padding:32px 22px !important;}`,
+    // CTA — full-width touch target, refined luxury padding.
+    `.email-cta-cell a{display:block !important;width:auto !important;padding:22px 28px !important;font-size:13px !important;letter-spacing:0.24em !important;}`,
     // 2-col grid stacks.
     `.email-stack-2col>td{display:block !important;width:100% !important;}`,
     `.email-stack-2col>td+td{padding-top:24px !important;padding-left:0 !important;border-left:0 !important;}`,
@@ -160,16 +161,17 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `.email-display-xl{font-size:${TYPE.displayXlMobile.size} !important;line-height:${TYPE.displayXlMobile.lh} !important;letter-spacing:${TYPE.displayXlMobile.tracking} !important;}`,
     `.email-display{font-size:${TYPE.displayMobile.size} !important;line-height:${TYPE.displayMobile.lh} !important;}`,
     // Body type mobile cliff (Gmail iOS doesn't auto-scale inline px).
-    `.email-body-lg{font-size:18px !important;line-height:1.6 !important;}`,
-    `.email-body{font-size:16px !important;line-height:1.7 !important;}`,
-    `.email-h1{font-size:26px !important;line-height:1.2 !important;}`,
-    `.email-pull-quote{font-size:22px !important;line-height:1.35 !important;}`,
-    // Hero pad mobile — cinema breathing.
-    `.email-hero-pad{padding:48px 24px 56px !important;}`,
-    // Brand header pad mobile.
-    `.email-brand-pad{padding:48px 24px 12px !important;}`,
-    // CTA section pad mobile.
-    `.email-cta-section-pad{padding:80px 24px !important;}`,
+    // Slight readability lift: body 17, lh 1.65 for editorial flow.
+    `.email-body-lg{font-size:18px !important;line-height:1.55 !important;}`,
+    `.email-body{font-size:17px !important;line-height:1.65 !important;}`,
+    `.email-h1{font-size:24px !important;line-height:1.2 !important;}`,
+    `.email-pull-quote{font-size:21px !important;line-height:1.35 !important;}`,
+    // Hero pad mobile — cinema breathing, tighter for mobile composition.
+    `.email-hero-pad{padding:40px 22px 48px !important;}`,
+    // Brand header pad mobile — anchors masthead closer to hero.
+    `.email-brand-pad{padding:36px 22px 8px !important;}`,
+    // CTA section pad mobile — premium stage, not stretched void.
+    `.email-cta-section-pad{padding:64px 22px !important;}`,
     // KV grid — collapse the vertical rule on stacked rows.
     `.email-kv-rule{display:none !important;}`,
     // Footer 3-col masthead stacks.
@@ -206,12 +208,13 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 // ────────────────────────────────────────────────────────────────────────
 
 export function brandHeader(): string {
-  // Three restrained elements: a single 24px cyan hairline, the tracked
-  // wordmark, and a quiet subtitle. The lone hairline gives the masthead
-  // a luxury "punctuation mark" — restraint with intention, not decoration.
-  const accent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.85;">&nbsp;</div>`;
-  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
-  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:14px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
+  // Anchored masthead lockup: the cyan accent hugs the wordmark (s4 gap)
+  // and the subtitle hugs the wordmark (12px) so the three lines read as
+  // ONE composed signature, not as floating elements. Tracking refined
+  // from 0.42em → 0.32em — still tracked, less wide-set / less SaaS-y.
+  const accent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s4};font-size:0;line-height:1px;opacity:0.85;">&nbsp;</div>`;
+  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.32em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
+  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.34em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:12px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
     + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s3};">`
     + accent
@@ -344,12 +347,13 @@ export function card({ children, variant = "default", headerLabel }: CardOptions
   // the card real depth + a premium bevel signature without HUD noise.
   const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.bg.surface};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
 
-  // Card body row with deeper interior padding for premium feel —
-  // luxury hospitality interiors breathe. s11 vertical / s9 horizontal
-  // (was s10/s9). Mobile cliff (.email-card-pad) keeps content tight.
+  // Card body row — refined proportions. s10 vertical (was s11) reduces
+  // tall/narrow feel without losing the luxury breathing. Horizontal s9
+  // keeps generous content margins. Mobile cliff (.email-card-pad)
+  // tightens further for handheld content density.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
     + topEdge
-    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s11} ${SPACE.s9};">`
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s10} ${SPACE.s9};">`
     + headerStrip
     + children
     + `</td></tr></table>`;
@@ -554,14 +558,15 @@ export interface CtaSectionOptions {
 }
 
 export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
-  // Single 32px cyan accent hairline above the eyebrow — luxury punctuation
-  // that opens the section as "a moment", matching the brand header signature.
-  const sectionAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s7};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+  // Single 32px cyan accent hairline above the eyebrow — anchored TIGHT
+  // (s5 vs prior s7) so it reads as part of the eyebrow lockup, not as
+  // an isolated punctuation mark floating in space.
+  const sectionAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
 
-  // Quiet uppercase eyebrow — slightly tighter to CTA (s7 vs s8) so the
-  // eyebrow + button read as one composed lockup, not two stacked elements.
+  // Quiet uppercase eyebrow — tracking calmed (0.32em → 0.28em) and tight
+  // breathing to CTA (s7 → s6). Eyebrow + button read as one sealed lockup.
   const eyebrowHtml = eyebrow
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s7};letter-spacing:0.32em;" class="email-text-accent">${esc(eyebrow)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s6};letter-spacing:0.28em;" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
   const supportingHtml = supportingText
@@ -729,11 +734,11 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     "Elite training. Composed for Dubai.",
     "تدريب نخبوي. مصمم لدبي.",
   );
-  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s8};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
+  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s7};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
 
-  // Single quiet 32px cyan hairline above the signature — luxury punctuation
-  // matching the masthead. Slightly wider (32 vs 24) for closing weight.
-  const closingAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s7};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+  // Closing 32px cyan hairline — anchored TIGHT to signature (s5 vs s7)
+  // so it reads as part of the lockup, not as isolated punctuation.
+  const closingAccent = `<div style="width:32px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
 
   // Final copyright microline — completion mark, very quiet.
   const year = new Date().getFullYear();
@@ -741,15 +746,16 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     `© ${year} Youssef Ahmed · Dubai · All rights reserved.`,
     `© ${year} يوسف أحمد · دبي · جميع الحقوق محفوظة.`,
   );
-  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s8};" class="email-text-tertiary">${esc(copyText)}</div>`;
+  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s7};" class="email-text-tertiary">${esc(copyText)}</div>`;
 
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
     + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s11} ${SPACE.s8} ${SPACE.s10};">`
     + taglineHtml
     + closingAccent
-    // Composed signature lockup — name + role + links read as one block.
-    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.32em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
-    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s3};letter-spacing:0.06em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
+    // Composed signature lockup — tracking calmed (0.32em → 0.26em) and
+    // role anchored tight (s3 → s2) so name + role read as ONE block.
+    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.26em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s2};letter-spacing:0.05em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
     + linkRow
     + copyHtml
     + `</td></tr></table>`;

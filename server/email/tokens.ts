@@ -61,9 +61,9 @@ export const COLOR = {
   },
   text: {
     primary: "#F4F7FA",
-    // Warmer, more luminous secondary — body copy reads as human writing,
-    // not as a SaaS field label. Slightly higher luminance for premium feel.
-    secondary: "#B6BEC9",
+    // Body luminance — readability lift while staying calm against pure
+    // black. Reads as composed editorial prose, not as muted helper text.
+    secondary: "#C5CCD6",
     tertiary: "#5C6571",
     accent: "#5EE7FF",
     onAccent: "#00131A",
