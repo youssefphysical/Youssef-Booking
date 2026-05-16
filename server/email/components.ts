@@ -204,12 +204,15 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 // ────────────────────────────────────────────────────────────────────────
 
 export function brandHeader(): string {
-  // Two restrained lines: tracked wordmark + a single quiet subtitle.
-  // No cyan rules, no glyphs, no DUBAI accent. Reads as a Hermès header.
+  // Three restrained elements: a single 24px cyan hairline, the tracked
+  // wordmark, and a quiet subtitle. The lone hairline gives the masthead
+  // a luxury "punctuation mark" — restraint with intention, not decoration.
+  const accent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s5};font-size:0;line-height:1px;opacity:0.85;">&nbsp;</div>`;
   const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
-  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:12px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
+  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.42em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:14px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
     + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s3};">`
+    + accent
     + wordmark
     + subtitle
     + `</td></tr></table>`;
@@ -339,13 +342,16 @@ export function sectionEyebrow({ label }: { label: string }): string {
 // ────────────────────────────────────────────────────────────────────────
 
 export function pullQuote({ text, attribution }: { text: string; attribution?: string }): string {
-  // Quiet italic quote, no oversized glyph, no thick rule.
-  // The quotation marks are part of the text itself for restraint.
+  // Italic quote with a single 2px cyan vertical accent bar on the leading
+  // edge — restrained luxury punctuation that gives the block presence and
+  // emotional weight without resorting to a 64px serif glyph.
   const attribHtml = attribution
     ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s5};" class="email-text-tertiary">— ${esc(attribution)}</div>`
     : "";
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td style="padding:${SPACE.s5} 0;">`
+    + `<tr>`
+    + `<td valign="top" width="2" style="width:2px;padding:${SPACE.s5} 0;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;" class="email-pull-quote-bar">&nbsp;</td>`
+    + `<td style="padding:${SPACE.s5} 0 ${SPACE.s5} ${SPACE.s6};">`
     + `<div class="email-pull-quote email-text-primary" style="${typeStyle("pullQuote", COLOR.text.primary)}font-style:italic;">&ldquo;${esc(text)}&rdquo;</div>`
     + attribHtml
     + `</td></tr></table>`;
@@ -678,8 +684,13 @@ export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsapp
     void studioLocation;
   }
 
+  // Single quiet 24px cyan hairline above the signature — closes the
+  // composition with the same luxury "punctuation" used by the masthead.
+  const closingAccent = `<div style="width:24px;height:1px;background-color:${COLOR.brand.cyan};margin:0 auto ${SPACE.s6};font-size:0;line-height:1px;opacity:0.7;">&nbsp;</div>`;
+
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
     + `<tr><td class="email-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8} ${SPACE.s9};">`
+    + closingAccent
     // Quiet signature lockup
     + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.32em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
     + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s3};letter-spacing:0.04em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
