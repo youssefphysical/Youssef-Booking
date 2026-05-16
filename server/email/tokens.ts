@@ -192,32 +192,58 @@ export const FONT_STACK = {
 export const BREAKPOINT_MOBILE = 600;
 
 /**
- * Canvas vignette — soft top wash that gives the email a luxury cinema
- * curtain feel. Returns to pure black quickly so the rest of the
- * composition floats on true black.
+ * Hero canvas — cinematic atmospheric chamber. Layered light:
+ *   1. Strong cyan halo at top-center (stage spotlight, 0.14 alpha) —
+ *      gives the headline luminous architecture, not a flat backdrop.
+ *   2. Wider, softer cyan wash continuing 65% down — the headline sits
+ *      INSIDE the light, not above a void.
+ *   3. Subtle warm vignette on the right (off-axis key light, 0.04
+ *      amber) — reads as cinematography, not a graphic gradient.
+ *   4. Linear deep-blue → black floor that anchors the composition.
  */
 export const HERO_GRADIENT =
-  "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(94,231,255,0.07) 0%, rgba(94,231,255,0) 55%), linear-gradient(180deg, #050810 0%, #02040A 40%, #000000 100%)";
-
-/** Cinematic image-to-type dissolve gradient. */
-export const HERO_BLEND_GRADIENT =
-  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.98) 100%)";
+  "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(94,231,255,0.14) 0%, rgba(94,231,255,0.06) 30%, rgba(94,231,255,0) 65%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(255,180,120,0.04) 0%, rgba(255,180,120,0) 70%), linear-gradient(180deg, #060B14 0%, #03060C 45%, #000000 100%)";
 
 /**
- * Card surface — frosted glass slab. Top edge slightly luminous (the
- * inner highlight glow handles that), bottom dissolves into deep black
- * so the card reads as a floating pane, not a stamped rectangle.
+ * Cinematic image-to-type dissolve. Smooth 4-stop fade so the photo
+ * BLEEDS into the type band over a tall band — never a hard line.
+ */
+export const HERO_BLEND_GRADIENT =
+  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.20) 25%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.85) 80%, rgba(0,0,0,1) 100%)";
+
+/**
+ * Image overlay — sits ON TOP of the hero image to bleed it into the
+ * surrounding canvas. Vignettes the corners and dims the bottom 40%
+ * so the image reads as cinematography, not a stock photo crop.
+ */
+export const HERO_IMAGE_OVERLAY =
+  "radial-gradient(ellipse 120% 90% at 50% 30%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%), linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%)";
+
+/**
+ * Card surface — frosted glass slab. Stronger top luminance so the
+ * card reads as glass catching light from above. 4-stop gradient: bright
+ * top (catches the room light), warm mid, deep mid, near-black bottom.
  */
 export const CARD_GRADIENT =
-  "linear-gradient(180deg, rgba(18,24,34,1) 0%, rgba(11,15,22,1) 45%, rgba(5,8,12,1) 100%)";
+  "linear-gradient(180deg, rgba(22,29,40,1) 0%, rgba(15,21,30,1) 30%, rgba(9,13,19,1) 65%, rgba(4,6,10,1) 100%)";
+
+/**
+ * Card top edge — 1px luminous cyan line that catches light. Sits as
+ * a separate row at the top of the card to read as a glass bevel.
+ */
+export const CARD_TOP_EDGE =
+  "linear-gradient(90deg, rgba(94,231,255,0) 0%, rgba(94,231,255,0.45) 50%, rgba(94,231,255,0) 100%)";
 
 /** Card header strip — quiet cyan wash. */
 export const CARD_HEADER_GRADIENT =
   "linear-gradient(180deg, rgba(94,231,255,0.05) 0%, rgba(94,231,255,0.0) 100%)";
 
-/** CTA section atmospheric backdrop — radial cyan halo on near-black. */
+/**
+ * CTA section atmospheric stage — wider, deeper cyan halo at center
+ * with a luminous floor highlight. The CTA lives inside the light.
+ */
 export const CTA_SECTION_GRADIENT =
-  "radial-gradient(ellipse 65% 70% at 50% 50%, rgba(94,231,255,0.11) 0%, rgba(94,231,255,0.04) 35%, rgba(3,6,10,0) 70%), linear-gradient(180deg, #03060A 0%, #08121E 50%, #03060A 100%)";
+  "radial-gradient(ellipse 75% 80% at 50% 50%, rgba(94,231,255,0.18) 0%, rgba(94,231,255,0.07) 40%, rgba(3,6,10,0) 80%), radial-gradient(ellipse 100% 30% at 50% 100%, rgba(94,231,255,0.06) 0%, rgba(94,231,255,0) 100%), linear-gradient(180deg, #03060A 0%, #0A1622 50%, #03060A 100%)";
 
 /** CTA gradient — luminous cyan glint top → deep cyan bottom. */
 export const CTA_GRADIENT =
@@ -229,7 +255,7 @@ export const ACCENT_RULE_GRADIENT =
 
 /** Footer atmospheric vignette. */
 export const FOOTER_GRADIENT =
-  "linear-gradient(180deg, #000000 0%, #02050A 50%, #000000 100%)";
+  "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(94,231,255,0.04) 0%, rgba(94,231,255,0) 60%), linear-gradient(180deg, #000000 0%, #03060B 50%, #000000 100%)";
 
 /**
  * Glow tokens — sophisticated layered system.
@@ -240,15 +266,14 @@ export const FOOTER_GRADIENT =
  * hero: deep cinema-projection drop shadow under the hero band.
  */
 export const GLOW = {
-  // Card: deep drop + faint cyan halo for atmospheric warmth + luminous
-  // top edge highlight that reads as light catching a glass slab.
-  card: "0 24px 56px rgba(0,0,0,0.6), 0 0 32px rgba(94,231,255,0.04), inset 0 1px 0 rgba(255,255,255,0.07)",
-  cardCyan: "0 24px 56px rgba(0,0,0,0.6), 0 0 48px rgba(94,231,255,0.08), inset 0 1px 0 rgba(255,255,255,0.08)",
-  // CTA: restored elegant halo (48px, midway between flat and neon flare).
-  // The pill catches light from above (inset top glint) and casts a soft
-  // cyan presence — premium product chrome, not gaming UI flare.
-  cta: "0 0 48px rgba(94,231,255,0.32), 0 0 18px rgba(94,231,255,0.20), 0 14px 36px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 0 rgba(0,0,0,0.22)",
-  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.08)",
+  // Card: deeper drop shadow for premium weight + faint cyan atmospheric
+  // halo + bright inset top edge (light catching the glass bevel).
+  card: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 48px rgba(94,231,255,0.06), inset 0 1px 0 rgba(255,255,255,0.10)",
+  cardCyan: "0 32px 72px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), 0 0 64px rgba(94,231,255,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
+  // CTA: cinematic chrome — wider stage halo (64px) + tight 22px inner
+  // ring + deeper drop. The pill catches light, casts a luminous footprint.
+  cta: "0 0 64px rgba(94,231,255,0.40), 0 0 22px rgba(94,231,255,0.28), 0 18px 44px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.34), inset 0 -2px 4px rgba(0,0,0,0.25)",
+  innerHighlight: "inset 0 1px 0 rgba(255,255,255,0.10)",
   hero: "0 32px 80px rgba(0,0,0,0.85)",
 } as const;
 
