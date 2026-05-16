@@ -1,35 +1,28 @@
 /**
- * GOLDEN REFERENCE #6 — Welcome email (cinematic onboarding milestone).
+ * Welcome email — matches PNG reference frame 3.
  *
- * The first emotional touchpoint of the elite coaching ecosystem.
- * Cinematic v2 treatment:
- *   - Real hero photograph (boutique gym at blue hour) — sets the world.
- *   - Section eyebrow rhythm above the orientation list.
- *   - Pull-quote: atmospheric statement of the brand promise.
- *   - Billboard CTA section: "Book your first session" lives in its own
- *     dedicated band, not as a button at the end of a card.
- *   - Atmospheric footer with WhatsApp + studio contact lockup.
- *
- * Hero discipline: HERO with image + accent word — welcome is the highest
- *   emotional moment in the ecosystem.
- * CTA discipline: ONE primary "Book your first session" + WhatsApp text link.
- * Severity: info (no banner — the hero carries the welcome).
+ * Composition:
+ *   - Split hero (text left + gym photo right), "WELCOME TO" white,
+ *     "ELITE / COACHING" cyan accent.
+ *   - 4-column feature grid (Personalized Coaching, Expert Trainers,
+ *     Track & Progress, Support & Accountability).
+ *   - "YOUR NEXT STEPS" steps card with 3 chevron-rows.
+ *   - Solid cyan CTA: "GO TO DASHBOARD".
+ *   - Pull quote attributed to Youssef.
+ *   - Centred footer with social icons.
  */
 
 import { compose, type ComposedEmail } from "../composer";
 import {
-  brandHeader,
   card,
   ctaButton,
-  ctaSection,
-  footer,
+  emailFooter,
+  featureGrid,
   hero,
-  keyValueList,
   pullQuote,
   section,
-  sectionEyebrow,
   spacer,
-  textBlock,
+  stepsCard,
 } from "../components";
 import { deriveBaseUrl, heroImageUrl, type Lang } from "../tokens";
 
@@ -39,110 +32,81 @@ export interface WelcomeInput {
   bookingUrl: string;
   whatsappUrl: string;
   supportEmail: string;
-  /** Optional first-session orientation details. */
   studioLocation?: string | null;
   trainerName?: string | null;
+  dashboardUrl?: string | null;
+  instagramUrl?: string | null;
 }
 
 export function buildWelcomeEmail(input: WelcomeInput): ComposedEmail {
   const {
     lang, recipientName, bookingUrl, whatsappUrl, supportEmail,
-    studioLocation, trainerName,
+    dashboardUrl, instagramUrl,
   } = input;
   const isAr = lang === "ar";
   const t = (en: string, ar: string) => (isAr ? ar : en);
   const base = deriveBaseUrl(bookingUrl, whatsappUrl);
+  const dashHref = dashboardUrl || bookingUrl;
 
   const subject = t(
-    `Welcome to Youssef Ahmed Elite, ${recipientName}`,
-    `أهلاً بك في يوسف أحمد إيليت، ${recipientName}`,
+    `Welcome to Elite Coaching, ${recipientName}`,
+    `أهلاً بك في إيليت كوتشينج، ${recipientName}`,
   );
   const preheader = t(
-    "Your transformation journey starts here. Book your first session and meet the system.",
-    "رحلة التحول تبدأ هنا. احجز جلستك الأولى وتعرّف على النظام.",
-  );
-
-  const intro = t(
-    `Hi ${recipientName} — you're in. This isn't a generic gym membership. It's a coached, measured, accountable system designed around your transformation.`,
-    `مرحباً ${recipientName} — أنت معنا. هذا ليس اشتراك نادٍ تقليدي. إنه نظام مدرَّب ومُقاس ومسؤول، مصمم لتحوّلك.`,
+    "You've taken the first step. Let's start the transformation.",
+    "لقد اتخذت الخطوة الأولى. لنبدأ التحول.",
   );
 
   const body = [
-    brandHeader(),
     hero({
-      eyebrow: t("YOU'RE IN", "أنت معنا"),
-      title: t("WELCOME TO THE", "أهلاً بك في"),
-      accentWord: t("ECOSYSTEM", "النظام"),
+      title: t("WELCOME TO", "أهلاً بك في"),
+      accentWord: t("ELITE COACHING", "إيليت كوتشينج"),
       subtitle: t(
-        "Elite coaching, premium training, measured progress. Your journey starts with one session.",
-        "تدريب نخبوي، جلسات متميزة، تقدم مُقاس. رحلتك تبدأ بجلسة واحدة.",
+        "You've just taken the first step towards transforming your life. We're here to guide, support and push you towards becoming the strongest version of yourself.",
+        "لقد اتخذت أول خطوة نحو تحويل حياتك. نحن هنا لنرشدك وندعمك ونحفّزك لتصبح أقوى نسخة من نفسك.",
       ),
-      trailingMeta: t("DUBAI · ELITE PERSONAL TRAINING", "دبي · تدريب شخصي متميز"),
       imageUrl: heroImageUrl("welcome", base),
-      imageAlt: t(
-        "Boutique premium gym at blue hour, cinematic dark interior",
-        "نادي رياضي راقٍ في الساعة الزرقاء، أجواء داخلية سينمائية",
-      ),
+      imageAlt: t("Athlete walking through dark gym corridor", "رياضي يمشي في ممر صالة رياضية"),
+      // Frame 1 right-side keyword stack — atmospheric brand pillars.
+      keywords: [
+        t("DISCIPLINE", "انضباط"),
+        t("FOCUS", "تركيز"),
+        t("CONSISTENCY", "استمرارية"),
+        t("RESULTS", "نتائج"),
+      ],
     }),
     section(
-      card({
-        headerLabel: t("ORIENTATION", "التوجيه"),
-        children: [
-          textBlock({ text: intro, color: "secondary", size: "bodyLg" }),
-          spacer("s6"),
-          sectionEyebrow({ label: t("WHAT HAPPENS NEXT", "الخطوات التالية") }),
-          spacer("s5"),
-          keyValueList({
-            items: [
-              {
-                label: t("01 · BOOK", "01 · احجز"),
-                value: t(
-                  "Pick a slot in the calendar — InBody scan + intake on day one.",
-                  "اختر موعداً من التقويم — جلسة InBody واستشارة في اليوم الأول.",
-                ),
-              },
-              {
-                label: t("02 · MEET", "02 · قابل"),
-                value: t(
-                  "We'll set baseline measurements, training goal, and your weekly cadence.",
-                  "سنحدد القياسات الأساسية، الهدف التدريبي، وإيقاعك الأسبوعي.",
-                ),
-              },
-              {
-                label: t("03 · TRAIN", "03 · تدرّب"),
-                value: t(
-                  "Coached sessions, tracked progress, monthly check-ins. Show up; we handle the rest.",
-                  "جلسات بإشراف مباشر، تتبع للتقدم، مراجعات شهرية. كن حاضراً، ونحن نتولى الباقي.",
-                ),
-              },
-              { label: t("Trainer", "المدرب"), value: trainerName ?? null },
-              { label: t("Location", "المكان"), value: studioLocation ?? null },
-            ],
-          }),
-          spacer("s6"),
-          pullQuote({
-            text: t(
-              "Consistency, not intensity, builds the body you want.",
-              "الاستمرار، وليس الشدة، هو ما يبني الجسد الذي تريده.",
-            ),
-            attribution: t("COACH YOUSSEF", "المدرب يوسف"),
-          }),
-        ].join(""),
+      featureGrid({
+        items: [
+          { icon: "person", title: t("Personalized Coaching", "تدريب شخصي"), body: t("Tailored training & nutrition plans just for you.", "خطط تدريب وتغذية مصممة لك.") },
+          { icon: "dumbbell", title: t("Expert Trainers", "مدربون خبراء"), body: t("Learn from the best. Always by your side.", "تعلّم من الأفضل، دائماً معك.") },
+          { icon: "trendUp", title: t("Track & Progress", "تتبع وتقدّم"), body: t("We track what matters so you see real results.", "نتتبع ما يهم لترى نتائج حقيقية.") },
+          { icon: "shield", title: t("Support & Accountability", "دعم ومسؤولية"), body: t("We're with you every step of the way.", "معك في كل خطوة.") },
+        ],
       }),
     ),
-    spacer("s7"),
-    // Billboard CTA — own architectural moment, dedicated band.
-    ctaSection({
-      eyebrow: t("READY?", "جاهز؟"),
-      ctaHtml: ctaButton({
-        href: bookingUrl,
-        label: t("Book first session", "احجز الجلسة الأولى"),
-        variant: "brand",
+    spacer("s5"),
+    section(
+      stepsCard({
+        headerLabel: t("YOUR NEXT STEPS", "خطواتك التالية"),
+        items: [
+          { icon: "clipboard", title: t("Complete your InBody assessment", "أكمل تقييم InBody"), body: t("Help us understand your baseline.", "ساعدنا في فهم نقطة البداية.") },
+          { icon: "calendar", title: t("Book your first session", "احجز جلستك الأولى"), body: t("Let's get you started.", "لنبدأ معاً.") },
+          { icon: "target", title: t("Follow your personalized plan", "اتبع خطتك الشخصية"), body: t("Stay consistent and trust the process.", "كن ملتزماً وثق بالعملية.") },
+        ],
       }),
-      supportingText: t("Questions before you book?", "لديك أسئلة قبل الحجز؟"),
-      supportingLink: { href: whatsappUrl, label: t("Message Youssef on WhatsApp", "راسل يوسف على واتساب") },
-    }),
-    footer({ lang, supportEmail, whatsappUrl, studioLocation: studioLocation ?? undefined }),
+    ),
+    spacer("s5"),
+    section(ctaButton({ href: dashHref, label: t("Go to dashboard", "اذهب إلى لوحة التحكم") })),
+    spacer("s6"),
+    section(card({
+      children: pullQuote({
+        text: t("The body achieves what the mind believes.", "الجسد يحقق ما يؤمن به العقل."),
+        attribution: t("Youssef · Elite Coaching Team", "يوسف · فريق إيليت كوتشينج"),
+      }),
+    })),
+    spacer("s5"),
+    emailFooter({ lang, whatsappUrl, instagramUrl: instagramUrl ?? undefined, supportEmail }),
   ].join("");
 
   return compose({ subject, preheader, lang, severity: "info", bodyHtml: body });

@@ -1,34 +1,18 @@
 /**
- * Email primitives — YOUSSEF AHMED ELITE editorial engine v3.
+ * Email primitives — PNG FRAME MATCH v4.
  *
- * COMPLETE VISUAL REBUILD. Every primitive's internal HTML has been
- * re-architected to read as the masthead of a quarterly elite-coaching
- * dossier — magazine grammar, viewfinder HUD chrome, sophisticated glow.
+ * Rebuilt to match the four approved reference frames. Each primitive
+ * renders practical luxury composition: dark charcoal canvas, photo
+ * heroes, 2-column data cards with icon rows, solid cyan CTA pills, and
+ * a clean centred footer with social icons.
  *
- * Public API (function signatures + named exports) is preserved so all
- * 7 builders work untouched. Only the rendered HTML language changed.
- *
- * New visual grammar:
- *   - Editorial №-numbered eyebrows (masthead numerals)
- *   - HUD corner brackets at all 4 corners of every card (cyan viewfinder)
- *   - Asymmetric section dividers (numeral + rule running off-edge)
- *   - 72px display headlines, weight 900, ultra-tight tracking
- *   - Dual-layer CTA: cyan halo ring frame + gradient pill core
- *   - 3-column editorial footer masthead
- *   - Severity ribbon (corner-tab badge), not full panel border
- *   - KeyValueList as 2-column HUD grid with vertical hairline
- *   - Pull quote: 30px italic with cyan opening glyph + thick rule
- *   - Vignette canvas + radial cyan halos behind hero
- *
- * Hard contract:
- *   1. Every visual value resolves through tokens.ts.
- *   2. Outlook hacks (VML, MSO conditionals) are CONTAINED inside the
- *      single primitive that needs them (ctaButton).
- *   3. Each primitive owns ONE responsibility.
- *   4. APIs are rigid — visual stability wins over flexibility.
- *   5. Every primitive is table-based, inline-styled, and degrades
- *      gracefully when images, webfonts, glow, or gradients are stripped.
- *   6. Hero photography is OPTIONAL — type band carries the headline.
+ * Public API is broadly preserved so every builder, route, and preview
+ * script keeps working. New primitives have been added:
+ *   - infoCard()        — 2-column data card with icon rows.
+ *   - whatToBring()     — horizontal 3-item icon row inside a card.
+ *   - supportRow()      — 2-column "Need help?" / "WhatsApp" band.
+ *   - commitmentBanner()— dark band with check icon + CTA (payment email).
+ *   - emailFooter()     — Y logo, wordmark, social icons, copyright.
  */
 
 import {
@@ -49,6 +33,7 @@ import {
   CTA_GRADIENT,
   ACCENT_RULE_GRADIENT,
   FOOTER_GRADIENT,
+  CARD_DIVIDER,
   GLOW,
   fontStack,
   type Lang,
@@ -56,7 +41,7 @@ import {
 } from "./tokens";
 
 // ────────────────────────────────────────────────────────────────────────
-// Internal helpers
+// Helpers
 // ────────────────────────────────────────────────────────────────────────
 
 export function esc(s: string | number | null | undefined): string {
@@ -100,22 +85,63 @@ function colorOf(key: TextColor): string {
     : COLOR.text.accent;
 }
 
-/** HUD corner bracket — small cyan L-shape that sits in card corners.
- *
- * Wrapped in `<!--[if !mso]><!-- -->` so Outlook desktop (which strips
- * position:absolute and would otherwise render the &nbsp;-containing
- * divs as stray inline blocks) never receives the markup at all.
- * Gmail web/iOS/Android, Apple Mail, Yahoo, Samsung Internet all
- * honor position:absolute inside table cells correctly. */
-function cornerBracket(_corner: "tl" | "tr" | "bl" | "br"): string {
-  // Removed in luxury-minimalism revision — HUD brackets read as gaming UI.
-  // Cards now stand on spacing + soft borders alone. Function kept as a
-  // no-op so call sites in card() / metricGrid() don't need restructuring.
-  return "";
+// ────────────────────────────────────────────────────────────────────────
+// Icon library — small inline SVGs encoded as data URIs.
+// Rendered via <img src="data:image/svg+xml;utf8,...">. Falls back to a
+// blank space on clients that block data URIs (Outlook desktop). The
+// labels remain legible without the glyph.
+// ────────────────────────────────────────────────────────────────────────
+
+type IconKey =
+  | "calendar" | "clock" | "stopwatch" | "location" | "person"
+  | "dumbbell" | "package" | "check" | "creditCard" | "box"
+  | "headset" | "whatsapp" | "instagram" | "envelope"
+  | "waterBottle" | "towel" | "shoe" | "shield" | "trendUp"
+  | "clipboard" | "target" | "chevron" | "arrow" | "logoY";
+
+function svg(body: string, size: number = 22, color: string = COLOR.brand.cyan, fill: "none" | "solid" = "none"): string {
+  const stroke = `stroke='${encodeURIComponent(color)}' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='${fill === "solid" ? encodeURIComponent(color) : "none"}'`;
+  const xml = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${size}' height='${size}' ${stroke}>${body}</svg>`;
+  return `data:image/svg+xml;utf8,${xml}`;
+}
+
+function iconUri(key: IconKey, color: string = COLOR.brand.cyan, size = 22): string {
+  switch (key) {
+    case "calendar": return svg(`<rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 9h18M8 3v4M16 3v4'/>`, size, color);
+    case "clock": return svg(`<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>`, size, color);
+    case "stopwatch": return svg(`<circle cx='12' cy='13' r='8'/><path d='M12 9v4l2 2M9 2h6M12 5V2'/>`, size, color);
+    case "location": return svg(`<path d='M12 22s7-7.5 7-13a7 7 0 1 0-14 0c0 5.5 7 13 7 13z'/><circle cx='12' cy='9' r='2.5'/>`, size, color);
+    case "person": return svg(`<circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/>`, size, color);
+    case "dumbbell": return svg(`<path d='M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12'/>`, size, color);
+    case "package": return svg(`<path d='M3 8l9-5 9 5v8l-9 5-9-5z'/><path d='M3 8l9 5 9-5M12 13v10'/>`, size, color);
+    case "box": return svg(`<rect x='3' y='5' width='18' height='14' rx='2'/><path d='M3 9h18M9 5v4'/>`, size, color);
+    case "check": return svg(`<circle cx='12' cy='12' r='9'/><path d='M8 12.5l3 3 5-6'/>`, size, color);
+    case "creditCard": return svg(`<rect x='3' y='6' width='18' height='12' rx='2'/><path d='M3 10h18M7 15h3'/>`, size, color);
+    case "headset": return svg(`<path d='M4 14v-2a8 8 0 0 1 16 0v2'/><rect x='3' y='14' width='4' height='6' rx='1'/><rect x='17' y='14' width='4' height='6' rx='1'/>`, size, color);
+    case "whatsapp": return svg(`<path d='M20 12a8 8 0 1 1-3.4-6.5L20 4l-1.5 3.4A7.97 7.97 0 0 1 20 12z'/><path d='M9 10c.5 2 2 3.5 4 4l1.5-1.5 2 1-.5 2c-3 0-7-2-8-7l2-.5z'/>`, size, color);
+    case "instagram": return svg(`<rect x='3' y='3' width='18' height='18' rx='5'/><circle cx='12' cy='12' r='4'/><circle cx='17.5' cy='6.5' r='1' fill='${encodeURIComponent(color)}'/>`, size, color);
+    case "envelope": return svg(`<rect x='3' y='5' width='18' height='14' rx='2'/><path d='M3 7l9 7 9-7'/>`, size, color);
+    case "waterBottle": return svg(`<path d='M9 2h6v3l1 2v12a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3V7l1-2z'/><path d='M9 11h6'/>`, size, color);
+    case "towel": return svg(`<rect x='4' y='5' width='16' height='14' rx='2'/><path d='M8 5v14M4 9h4'/>`, size, color);
+    case "shoe": return svg(`<path d='M2 17c0 2 1 3 3 3h14c2 0 3-1 3-3v-1c0-1-1-2-2-2h-4l-2-4-4 2-3-1-4 1-1 2v3z'/>`, size, color);
+    case "shield": return svg(`<path d='M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z'/><path d='M9 12l2 2 4-4'/>`, size, color);
+    case "trendUp": return svg(`<path d='M3 17l6-6 4 4 8-8'/><path d='M14 7h7v7'/>`, size, color);
+    case "clipboard": return svg(`<rect x='6' y='4' width='12' height='17' rx='2'/><rect x='9' y='2' width='6' height='4' rx='1'/><path d='M9 11h6M9 15h4'/>`, size, color);
+    case "target": return svg(`<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1.5' fill='${encodeURIComponent(color)}'/>`, size, color);
+    case "chevron": return svg(`<path d='M9 6l6 6-6 6'/>`, size, color);
+    case "arrow": return svg(`<path d='M5 12h14M13 6l6 6-6 6'/>`, size, color);
+    case "logoY": return svg(`<path d='M4 4l8 10v6M20 4l-8 10' stroke-width='2.4'/><circle cx='12' cy='12' r='10' stroke-width='1.2'/>`, size, color);
+  }
+}
+
+function iconImg(key: IconKey, opts: { color?: string; size?: number; alt?: string } = {}): string {
+  const size = opts.size ?? 22;
+  const color = opts.color ?? COLOR.brand.cyan;
+  return `<img src="${iconUri(key, color, size)}" width="${size}" height="${size}" alt="${esc(opts.alt ?? "")}" style="display:inline-block;width:${size}px;height:${size}px;border:0;outline:none;vertical-align:middle;" />`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Shell — locked dark canvas, vignette wash.
+// Shell — locked dark canvas.
 // ────────────────────────────────────────────────────────────────────────
 
 export interface ShellOptions {
@@ -125,9 +151,6 @@ export interface ShellOptions {
 }
 
 export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string {
-  // Reset module-level section counter so each rendered email starts at 01.
-  // Critical for batch sends (e.g. cron loops dispatching N reminders in
-  // the same Node process) — otherwise numbering leaks between emails.
   __sectionEyebrowCounter = 0;
   const dir = lang === "ar" ? "rtl" : "ltr";
   const family = fontStack(lang);
@@ -144,45 +167,34 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->`,
     `<style type="text/css">`,
     `:root { color-scheme: dark; supported-color-schemes: dark; }`,
-    // Editorial mobile cliff — Samsung Internet, Gmail iOS, Gmail Android.
     `@media only screen and (max-width:600px){`,
     `.email-shell{width:100% !important;}`,
-    // Generous canvas-edge gutter on mobile.
-    `.email-pad{padding-left:24px !important;padding-right:24px !important;}`,
-    `.email-pad-tight{padding-left:18px !important;padding-right:18px !important;}`,
-    // Card interior gets a slightly tighter gutter — keeps content room.
-    // Card interior — tighter mobile pad for content density.
-    // Was 32×22; trimmed to 28×20 so cards stop feeling tall/narrow on
-    // Gmail iOS/Android while preserving the luxury breathing.
-    `.email-card-pad{padding:28px 20px !important;}`,
-    // CTA — full-width touch target, refined luxury padding.
-    `.email-cta-cell a{display:block !important;width:auto !important;padding:20px 26px !important;font-size:13px !important;letter-spacing:0.22em !important;}`,
-    // 2-col grid stacks.
+    `.email-pad{padding-left:18px !important;padding-right:18px !important;}`,
+    `.email-pad-tight{padding-left:14px !important;padding-right:14px !important;}`,
+    `.email-card-pad{padding:22px 18px !important;}`,
+    `.email-cta-cell a{display:block !important;width:auto !important;padding:18px 22px !important;font-size:13px !important;letter-spacing:0.18em !important;}`,
     `.email-stack-2col>td{display:block !important;width:100% !important;}`,
-    `.email-stack-2col>td+td{padding-top:24px !important;padding-left:0 !important;border-left:0 !important;}`,
-    // Display headline mobile cliff.
+    `.email-stack-2col>td+td{padding-top:18px !important;padding-left:0 !important;border-left:0 !important;}`,
+    `.email-hero-split>td{display:block !important;width:100% !important;}`,
+    `.email-hero-img{height:200px !important;width:100% !important;}`,
+    // Full-bleed hero — keywords column collapses on mobile so the
+    // headline + photo overlay retain their cinematic density.
+    `.email-hero-keywords{display:none !important;}`,
+    `.email-hero-row>td{display:block !important;width:100% !important;}`,
     `.email-display-xl{font-size:${TYPE.displayXlMobile.size} !important;line-height:${TYPE.displayXlMobile.lh} !important;letter-spacing:${TYPE.displayXlMobile.tracking} !important;}`,
     `.email-display{font-size:${TYPE.displayMobile.size} !important;line-height:${TYPE.displayMobile.lh} !important;}`,
-    // Body type mobile cliff (Gmail iOS doesn't auto-scale inline px).
-    // Slight readability lift: body 17, lh 1.65 for editorial flow.
-    `.email-body-lg{font-size:18px !important;line-height:1.55 !important;}`,
-    `.email-body{font-size:17px !important;line-height:1.65 !important;}`,
-    `.email-h1{font-size:24px !important;line-height:1.2 !important;}`,
-    `.email-pull-quote{font-size:21px !important;line-height:1.35 !important;}`,
-    // Hero pad mobile — cinema breathing, tightened from 40/48 to 32/40
-    // so the type band hugs the image instead of floating below a void.
-    `.email-hero-pad{padding:32px 22px 40px !important;}`,
-    // Brand header pad mobile — masthead pulled closer to hero (28/22/6).
-    `.email-brand-pad{padding:28px 22px 6px !important;}`,
-    // CTA section pad mobile — premium stage, calmed from 64 → 48 vertical
-    // so the pill sits inside a focused chamber, not a tall empty room.
-    `.email-cta-section-pad{padding:48px 22px !important;}`,
-    // Footer pad mobile — sophisticated wrap (was 88/56/72 desktop).
-    `.email-footer-pad{padding:40px 22px 32px !important;}`,
-    // KV grid — collapse the vertical rule on stacked rows.
+    `.email-body-lg{font-size:16px !important;line-height:1.55 !important;}`,
+    `.email-body{font-size:15px !important;line-height:1.6 !important;}`,
+    `.email-h1{font-size:22px !important;line-height:1.25 !important;}`,
+    `.email-pull-quote{font-size:18px !important;line-height:1.4 !important;}`,
+    // Hero pad mobile — bigger top pad so the brand lockup breathes,
+    // bigger bottom so the headline doesn't crash into the next card.
+    `.email-hero-pad{padding:48px 24px 56px !important;}`,
+    `.email-brand-pad{padding:22px 18px 4px !important;}`,
+    `.email-cta-section-pad{padding:28px 18px !important;}`,
+    `.email-footer-pad{padding:30px 18px 26px !important;}`,
     `.email-kv-rule{display:none !important;}`,
-    // Footer 3-col masthead stacks.
-    `.email-footer-col{display:block !important;width:100% !important;text-align:center !important;padding:18px 0 !important;border-left:0 !important;}`,
+    `.email-footer-col{display:block !important;width:100% !important;text-align:center !important;padding:14px 0 !important;border-left:0 !important;}`,
     `}`,
     `a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;}`,
     `table { border-collapse: collapse; }`,
@@ -192,9 +204,8 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
     `</head>`,
     `<body style="margin:0;padding:0;background-color:${COLOR.bg.canvas};font-family:${family};color:${COLOR.text.primary};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;" class="email-canvas">`,
     `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;color:transparent;">${esc(preheader)}</div>`,
-    // Outer canvas with vignette wash.
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.canvas};background-image:linear-gradient(180deg, ${COLOR.bg.canvasTop} 0%, ${COLOR.bg.canvasBottom} 100%);" class="email-canvas">`,
-    `<tr><td align="center" style="padding:${SPACE.s8} 0;">`,
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.canvas};" class="email-canvas">`,
+    `<tr><td align="center" style="padding:${SPACE.s5} 0;">`,
     `<table role="presentation" width="${WIDTH.email}" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width:${WIDTH.email}px;max-width:100%;">`,
     `<tr><td>`,
     bodyHtml,
@@ -207,51 +218,37 @@ export function emailShell({ lang, preheader, bodyHtml }: ShellOptions): string 
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Brand header — editorial 3-line masthead.
-//   line 1: thin cyan ▔ rule (40px, centered)
-//   line 2: WORDMARK (white, tracked)
-//   line 3: division eyebrow ─ cyan (left) │ ELITE PT (white) │ DUBAI cyan (right)
-// Reads as a magazine masthead, not a centered logo blob.
+// Brand header — small "Y" mark + "YOUSSEF / ELITE COACHING" lockup.
+// Sits ABOVE the hero band (top-left), matches all 4 frames.
 // ────────────────────────────────────────────────────────────────────────
 
-export function brandHeader(): string {
-  // TRON RGB masthead lockup. The accent is now a 3-segment RGB hairline
-  // (cyan primary + magenta + violet) — the brand's RGB DNA visible at
-  // first glance. Tracking 0.32em on wordmark, 0.34em on subtitle.
-  // Each segment is its own table cell so Outlook can't strip a gradient.
-  const rgbAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s4};">`
+function brandLockup(align: "left" | "center" = "left", size: "sm" | "md" = "sm"): string {
+  const iconSize = size === "md" ? 30 : 24;
+  const wordmarkSize = size === "md" ? 16 : 14;
+  const subSize = size === "md" ? 9 : 8;
+  const tdAlign = align === "center" ? "center" : "left";
+  const wrapAlign = align === "center" ? "0 auto" : "0";
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="${align}" style="margin:${wrapAlign};">`
     + `<tr>`
-    + `<td style="width:6px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.7;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:24px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:6px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.7;">&nbsp;</td>`
+    + `<td valign="middle" align="${tdAlign}" style="padding-right:10px;" data-flip-padding-right="brand">${iconImg("logoY", { size: iconSize, alt: "Y" })}</td>`
+    + `<td valign="middle" align="${tdAlign}">`
+    + `<div style="font-family:inherit;font-size:${wordmarkSize}px;line-height:1;font-weight:700;letter-spacing:0.18em;color:${COLOR.text.primary};text-transform:uppercase;" class="email-text-primary">YOUSSEF</div>`
+    + `<div style="font-family:inherit;font-size:${subSize}px;line-height:1;font-weight:600;letter-spacing:0.32em;color:${COLOR.brand.cyan};padding-top:5px;text-transform:uppercase;" class="email-text-accent">ELITE COACHING</div>`
+    + `</td>`
     + `</tr></table>`;
-  // Tracking calmed (0.32→0.26 on wordmark, 0.34→0.26 on subtitle) so
-  // the masthead reads as one composed lockup, not three wide-set lines.
-  // Subtitle padding-top 12px → 10px tightens the visual grouping.
-  const wordmark = `<div style="font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.26em;text-transform:uppercase;color:${COLOR.text.primary};" class="email-text-primary">YOUSSEF&nbsp;&nbsp;AHMED</div>`;
-  const subtitle = `<div style="font-family:inherit;font-size:9px;line-height:1;font-weight:600;letter-spacing:0.26em;text-transform:uppercase;color:${COLOR.text.tertiary};padding-top:10px;" class="email-text-tertiary">PERSONAL&nbsp;&nbsp;TRAINING&nbsp;&nbsp;·&nbsp;&nbsp;DUBAI</div>`;
+}
+
+export function brandHeader(): string {
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td class="email-pad email-brand-pad" align="center" style="padding:${SPACE.s7} ${SPACE.s8} ${SPACE.s2};">`
-    + rgbAccent
-    + wordmark
-    + subtitle
+    + `<tr><td class="email-pad email-brand-pad" align="left" style="padding:${SPACE.s7} ${SPACE.s7} ${SPACE.s2};" data-flip-text-align="brand-header">`
+    + brandLockup("left", "sm")
     + `</td></tr></table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Cinematic Hero — editorial cover page.
-//
-// Composition (v3):
-//   - Optional cinematic image band (full-width photo, fade-to-black bottom).
-//   - Type band: pure-black backdrop with vignette gradient.
-//       · Horizontal cyan hairline (aligned with halo bar)
-//       · Editorial №-numbered eyebrow on its own line (cyan)
-//       · MASSIVE display headline (72px / 48px mobile, weight 900)
-//       · Optional cyan accent word
-//       · Optional subtitle (constrained, secondary text)
-//       · Optional trailing meta lockup
+// Hero — split layout. Text on the left, optional gym photo on the right.
+// Brand lockup sits in the top-left corner of the text cell.
+// On mobile, the image stacks above the text.
 // ────────────────────────────────────────────────────────────────────────
 
 export interface HeroOptions {
@@ -263,83 +260,123 @@ export interface HeroOptions {
   imageUrl?: string | null;
   imageAlt?: string;
   align?: Align;
+  /** Pull the brand lockup into the hero (default true). */
+  withBrand?: boolean;
+  /**
+   * Right-side keyword stack (frame 1: DISCIPLINE / FOCUS / CONSISTENCY /
+   * RESULTS). Renders as a vertical cyan-eyebrow list over the photo.
+   */
+  keywords?: string[];
 }
 
-export function hero({ eyebrow, title, accentWord, subtitle, trailingMeta, imageUrl, imageAlt, align = "center" }: HeroOptions): string {
-  // Image band — cinematic composition. Photo sits in a stacked-cell table
-  // with a CSS overlay (vignette + bottom dim) AND a tall 96px gradient
-  // blend strip below. The result reads as one continuous lit chamber, not
-  // a stock photo pasted onto black. The image's own light spills into the
-  // type band; the type band's atmospheric halo continues the cyan presence.
-  const imageBand = imageUrl
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
-      + `<tr><td style="font-size:0;line-height:0;background-color:${COLOR.bg.heroBackdrop};position:relative;">`
-      // Image with overlay — overlay is a pseudo-cell layered via background.
-      // For email-safe: image alone, then a transparent overlay row beneath
-      // that bleeds the image's bottom edge into black via gradient.
-      + `<img src="${esc(imageUrl)}" alt="${esc(imageAlt ?? "")}" width="${WIDTH.hero}" style="display:block;width:100%;max-width:${WIDTH.hero}px;height:auto;border:0;outline:none;text-decoration:none;" />`
-      + `</td></tr>`
-      // Tall blend strip — 96px (was 48px). Smooth 5-stop dissolve so the
-      // photo's bottom edge bleeds gradually into the type band's deep blue
-      // chamber. No visible seam.
-      + `<tr><td style="font-size:0;line-height:0;height:96px;background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_BLEND_GRADIENT};">&nbsp;</td></tr>`
-      + `</table>`
+/**
+ * Hero — full-bleed photo with dark-to-clear gradient overlay and
+ * stacked title on the LEFT. Matches the approved Figma frames.
+ *
+ * Render pipeline (email-safe):
+ *   1. VML <v:rect> with <v:fill type="frame"> for Outlook desktop —
+ *      the only Outlook-safe way to render a background image.
+ *   2. <table background="…"> attribute + CSS background-image for Apple
+ *      Mail, Gmail web/iOS, Yahoo, etc.
+ *   3. Solid #0c0c10 fallback for Gmail Android (strips bg-image) — the
+ *      dark overlay still produces a luxury text-on-dark composition.
+ */
+export function hero({
+  eyebrow, title, accentWord, subtitle, trailingMeta,
+  imageUrl, imageAlt, align = "left", withBrand = true, keywords,
+}: HeroOptions): string {
+  void trailingMeta;
+  void HERO_BLEND_GRADIENT;
+  void align;
+
+  const brand = withBrand
+    ? `<div style="padding-bottom:${SPACE.s8};">${brandLockup("left", "sm")}</div>`
     : "";
 
-  // Quiet uppercase eyebrow in cyan — single line, no rules, no glyph.
-  // Tighter to headline (s5 vs s7) so the eyebrow + headline read as ONE
-  // typographic lockup, not as two floating elements.
   const eyebrowHtml = eyebrow
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:${align};padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(eyebrow)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s4};" class="email-text-accent">${esc(eyebrow)}</div>`
     : "";
 
-  // Accent word — cyan emphasis, on its own visual line via &nbsp;.
+  const accentRule = `<div style="width:64px;height:3px;background-color:${COLOR.brand.cyan};margin:${SPACE.s4} 0 ${SPACE.s5};font-size:0;line-height:0;box-shadow:0 0 16px rgba(94,231,255,0.45);">&nbsp;</div>`;
+
+  const titleHtml = `<div class="email-display-xl email-text-primary" style="${typeStyle("displayXl", COLOR.text.primary)}text-transform:uppercase;">${esc(title)}</div>`;
   const accentHtml = accentWord
-    ? `<span style="color:${COLOR.brand.cyan};padding-left:0.12em;" class="email-text-accent">&nbsp;${esc(accentWord)}</span>`
+    ? `<div class="email-display-xl email-text-accent" style="${typeStyle("displayXl", COLOR.brand.cyan)}text-transform:uppercase;padding-top:4px;">${esc(accentWord)}</div>`
     : "";
 
   const subtitleHtml = subtitle
-    ? `<div style="${typeStyle("bodyLg", COLOR.text.secondary)}padding-top:${SPACE.s6};text-align:${align};max-width:480px;margin-left:auto;margin-right:auto;" class="email-text-secondary email-body-lg">${esc(subtitle)}</div>`
+    ? `<div style="${typeStyle("body", COLOR.text.secondary)}padding-top:${SPACE.s5};max-width:340px;" class="email-text-secondary email-body">${esc(subtitle)}</div>`
     : "";
 
-  // Trailing meta — single quiet uppercase line. No diamond glyphs.
-  // Sits closer to subtitle (s7) — part of the lockup, not a separate band.
-  const trailingMetaHtml = trailingMeta
-    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s7};text-align:${align};letter-spacing:0.32em;" class="email-text-tertiary">${esc(trailingMeta)}</div>`
+  // Right-side keyword column — vertical stack of cyan-eyebrow words
+  // (DISCIPLINE / FOCUS / CONSISTENCY / RESULTS in frame 1). Sits over
+  // the photo on desktop; hidden on mobile to preserve photo density.
+  const keywordsHtml = keywords && keywords.length
+    ? `<td valign="middle" align="right" width="38%" class="email-hero-keywords" style="padding:${SPACE.s7} ${SPACE.s7} ${SPACE.s7} 0;" data-flip-text-align="hero-kw">`
+      + keywords
+        .map(
+          (k) =>
+            `<div style="${typeStyle("micro", COLOR.brand.cyanSoft)}text-transform:uppercase;letter-spacing:0.30em;font-weight:700;padding:6px 0;text-align:right;" class="email-text-accent" data-flip-text-align="hero-kw">${esc(k)}</div>`,
+        )
+        .join("")
+      + `</td>`
     : "";
 
-  // Top pad refined: image-led heroes use s6 (was s7) — the blend strip
-  // already carries the eye INTO the type band, so the type can sit
-  // tighter inside the chamber. Type-only heroes use s10 (was s12) for
-  // calmer cover-page proportions. Bottom pad s10 (was s12 image / s11
-  // type) — eliminates the vertical-stretch the user flagged.
-  const typeTopPad = imageUrl ? SPACE.s6 : SPACE.s10;
-  const typeBottomPad = imageUrl ? SPACE.s10 : SPACE.s10;
+  const heroWidth = WIDTH.hero;
+  const heroHeight = 420;
+  const safeImage = imageUrl ? esc(imageUrl) : "";
 
-  // Reference HERO_IMAGE_OVERLAY so future image-overlay work can use it
-  // (Outlook/Gmail strip absolute-positioned overlays; the gradient is
-  // available for builders that compose images with darkroom backdrops).
-  void HERO_IMAGE_OVERLAY;
+  // VML for Outlook desktop. Outlook strips CSS bg-image but renders
+  // <v:rect type="frame"> with the source image scaled to cover.
+  const vmlOpen = imageUrl
+    ? [
+        `<!--[if gte mso 9]>`,
+        `<v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:${heroWidth}px;height:${heroHeight}px;mso-position-horizontal:center;">`,
+        `<v:fill type="frame" src="${safeImage}" color="${COLOR.bg.heroBackdrop}" />`,
+        `<v:textbox inset="0,0,0,0"><div>`,
+        `<![endif]-->`,
+      ].join("")
+    : "";
+  const vmlClose = imageUrl ? `<!--[if gte mso 9]></div></v:textbox></v:rect><![endif]-->` : "";
 
-  return imageBand
-    + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};background-image:${HERO_GRADIENT};">`
-    + `<tr><td class="email-pad email-hero-pad" align="${align}" style="padding:${typeTopPad} ${SPACE.s8} ${typeBottomPad};text-align:${align};">`
+  // Inner content table (text overlay). When the hero has no image,
+  // the keywords column collapses and the text cell takes 100%.
+  const textCell =
+    `<td valign="middle" align="left" class="email-pad email-hero-pad" style="padding:${SPACE.s10} ${SPACE.s9} ${SPACE.s10};" data-flip-text-align="hero" width="${keywordsHtml ? "62%" : "100%"}">`
+    + brand
     + eyebrowHtml
-    + `<h1 class="email-display-xl email-text-primary" style="${typeStyle("displayXl", COLOR.text.primary)}text-align:${align};text-transform:uppercase;">${esc(title)}${accentHtml}</h1>`
+    + titleHtml
+    + accentHtml
+    + accentRule
     + subtitleHtml
-    + trailingMetaHtml
+    + `</td>`;
+
+  const overlayTable =
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:transparent;background-image:${HERO_IMAGE_OVERLAY};min-height:${heroHeight}px;">`
+    + `<tr class="email-hero-row">`
+    + textCell
+    + keywordsHtml
+    + `</tr></table>`;
+
+  // Outer cell — carries the photo via background attribute + CSS, with
+  // the solid charcoal fallback. The min-height + valign keep the
+  // composition cinematic when text wraps short.
+  const bgAttr = imageUrl ? ` background="${safeImage}"` : "";
+  const bgCss = imageUrl
+    ? `background-image:url('${safeImage}'),${HERO_GRADIENT};background-position:center center;background-size:cover;background-repeat:no-repeat;`
+    : `background-image:${HERO_GRADIENT};`;
+
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.heroBackdrop};">`
+    + `<tr><td align="center" valign="top"${bgAttr} style="background-color:${COLOR.bg.heroBackdrop};${bgCss}min-height:${heroHeight}px;padding:0;">`
+    + (imageAlt ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;overflow:hidden;color:transparent;">${esc(imageAlt)}</div>` : "")
+    + vmlOpen
+    + overlayTable
+    + vmlClose
     + `</td></tr></table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// HUD Card — editorial glass slab with corner brackets.
-//
-// Composition (v3):
-//   - Outer cyan-rim glow (graceful in Outlook)
-//   - 4 HUD corner brackets (cyan L-marks at all 4 corners)
-//   - Optional header label as inline editorial chip (─── № LABEL ───)
-//     — sits naturally in the body, not as a tinted strip
-//   - Body content (frosted gradient surface)
+// Card — dark rounded surface (#0f1014) with a soft cyan top hairline.
 // ────────────────────────────────────────────────────────────────────────
 
 export interface CardOptions {
@@ -351,71 +388,371 @@ export interface CardOptions {
 export function card({ children, variant = "default", headerLabel }: CardOptions): string {
   const surfaceClass = variant === "raised" ? "email-surface-raised" : "email-surface";
   const bg = variant === "raised" ? COLOR.bg.surfaceRaised : COLOR.bg.surface;
-  const radius = variant === "raised" ? RADIUS.xl : RADIUS.lg;
+  const radius = RADIUS.lg;
   const shadow = variant === "raised" ? GLOW.cardCyan : GLOW.card;
 
-  // Quiet header label — single uppercase cyan line, no glyph, no rule.
-  // Slightly more breathing below (s7 vs s6) so the label has its own beat.
   const headerStrip = headerLabel
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s7};letter-spacing:0.28em;" class="email-text-accent">${esc(headerLabel)}</div>`
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(headerLabel)}</div>`
     : "";
 
-  // TRON dual-edge bevel: bright cyan top (catches stage light) +
-  // faint magenta bottom (RGB triad complement). Outlook strips both
-  // gradients gracefully — the solid surface + 1px cyan border remain.
   const topEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.cyanGlow};background-image:${CARD_TOP_EDGE};border-top-left-radius:${radius};border-top-right-radius:${radius};">&nbsp;</td></tr>`;
-  const bottomEdge = `<tr><td style="font-size:0;line-height:0;height:1px;background-color:${COLOR.brand.magentaGlow};background-image:${CARD_BOTTOM_EDGE};border-bottom-left-radius:${radius};border-bottom-right-radius:${radius};">&nbsp;</td></tr>`;
+  void CARD_BOTTOM_EDGE;
 
-  // Card body row — TRON RGB-lit glass slab. Vertical pad tightened
-  // from s10 → s9 (96px → 72px) to fix the tall/narrow proportion the
-  // user flagged. Horizontal s9 preserves luxury content margins.
-  // GLOW.card layers cyan + magenta atmospheric halos.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${surfaceClass}" style="background-color:${bg};background-image:${CARD_GRADIENT};border:1px solid ${COLOR.border.cyan};border-radius:${radius};box-shadow:${shadow};">`
     + topEdge
-    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s9} ${SPACE.s9};">`
+    + `<tr><td class="email-pad email-card-pad" style="padding:${SPACE.s7} ${SPACE.s7};">`
     + headerStrip
     + children
     + `</td></tr>`
-    + bottomEdge
     + `</table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Section eyebrow — asymmetric numeral + rule running off-edge.
-// Reads as a magazine section opener (e.g. "01 ─── WHAT'S NEXT").
+// Info card — 2-column data grid with icon + label + value rows.
+// Each item: { icon, label, value }. Rows separated by 1px hairlines.
 // ────────────────────────────────────────────────────────────────────────
 
-// Auto-counter retained as no-op for backwards-compat with emailShell reset.
+export interface InfoCardItem {
+  icon: IconKey;
+  label: string;
+  value: string;
+}
+
+export interface InfoCardOptions {
+  headerLabel?: string;
+  /** Optional eyebrow above the right column. When set, the card renders
+   *  two distinct column headers (e.g. "Payment Details" + "Package
+   *  Overview" in the payment-confirmed frame). */
+  rightHeaderLabel?: string;
+  leftItems: InfoCardItem[];
+  rightItems?: InfoCardItem[];
+}
+
+function renderInfoRows(items: InfoCardItem[]): string {
+  const rows = items.filter((i) => i.value && String(i.value).trim() !== "");
+  if (!rows.length) return "&nbsp;";
+  return rows
+    .map((it, idx) => {
+      const borderTop = idx === 0 ? "" : `border-top:1px solid ${CARD_DIVIDER};`;
+      const padTop = idx === 0 ? "0" : SPACE.s5;
+      return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="${borderTop}"><tr>`
+        + `<td valign="top" width="28" style="padding:${padTop} 12px 0 0;" data-flip-padding-right="info-icon">${iconImg(it.icon, { size: 22 })}</td>`
+        + `<td valign="top" style="padding-top:${padTop};">`
+        + `<div style="${typeStyle("micro", COLOR.text.tertiary)}text-transform:uppercase;letter-spacing:0.16em;font-weight:600;" class="email-text-tertiary">${esc(it.label)}</div>`
+        + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:4px;font-weight:600;" class="email-text-primary email-body-lg">${esc(it.value)}</div>`
+        + `</td></tr></table>`
+        + (idx === rows.length - 1 ? "" : `<div style="height:${SPACE.s5};font-size:0;line-height:0;">&nbsp;</div>`);
+    })
+    .join("");
+}
+
+export function infoCard({ headerLabel, rightHeaderLabel, leftItems, rightItems }: InfoCardOptions): string {
+  const eyebrow = (label?: string) => label
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(label)}</div>`
+    : "";
+  const sectionLabel = eyebrow(headerLabel);
+  const rightSectionLabel = eyebrow(rightHeaderLabel);
+  const hasTwoCols = !!rightItems && rightItems.length > 0;
+  const hasDualHeaders = hasTwoCols && !!rightHeaderLabel;
+
+  if (hasDualHeaders) {
+    // Side-by-side layout with a distinct eyebrow above each column.
+    const leftCell = `<td valign="top" width="50%" style="padding:0;">${sectionLabel}${renderInfoRows(leftItems)}</td>`;
+    const rightCell = `<td valign="top" width="50%" style="padding-left:${SPACE.s7};" data-flip-padding-left="info-col">${rightSectionLabel}${renderInfoRows(rightItems!)}</td>`;
+    const inner = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr class="email-stack-2col">${leftCell}${rightCell}</tr></table>`;
+    return card({ children: inner });
+  }
+
+  const leftCell = `<td valign="top" width="${hasTwoCols ? "50%" : "100%"}" style="padding:0;">`
+    + (hasTwoCols ? "" : sectionLabel)
+    + renderInfoRows(leftItems)
+    + `</td>`;
+  const rightCell = hasTwoCols
+    ? `<td valign="top" width="50%" style="padding-left:${SPACE.s7};" data-flip-padding-left="info-col">${renderInfoRows(rightItems!)}</td>`
+    : "";
+  const inner = hasTwoCols
+    ? sectionLabel + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr class="email-stack-2col">${leftCell}${rightCell}</tr></table>`
+    : sectionLabel + renderInfoRows(leftItems);
+
+  return card({ children: inner });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// What to bring — horizontal icon row inside a card.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface WhatToBringOptions {
+  headerLabel?: string;
+  items: Array<{ icon: IconKey; label: string }>;
+}
+
+export function whatToBring({ headerLabel, items }: WhatToBringOptions): string {
+  const label = headerLabel ?? "WHAT TO BRING";
+  const cells = items
+    .map((it) =>
+      `<td valign="middle" align="center" width="33%" style="padding:0 ${SPACE.s3};">`
+      + `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center"><tr>`
+      + `<td valign="middle" style="padding-right:10px;" data-flip-padding-right="wtb">${iconImg(it.icon, { size: 22 })}</td>`
+      + `<td valign="middle" style="${typeStyle("body", COLOR.text.primary)}font-weight:600;" class="email-text-primary">${esc(it.label)}</td>`
+      + `</tr></table>`
+      + `</td>`,
+    )
+    .join("");
+  const inner = `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(label)}</div>`
+    + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>${cells}</tr></table>`;
+  return card({ children: inner });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// CTA Button — solid cyan pill with right arrow, full content width.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface CtaButtonOptions {
+  href: string;
+  label: string;
+  variant?: "brand" | Severity;
+  /** Render as full-width block (default) or auto inline-block. */
+  fullWidth?: boolean;
+}
+
+export function ctaButton({ href, label, variant = "brand", fullWidth = true }: CtaButtonOptions): string {
+  const safeHref = esc(href);
+  const safeLabel = esc(label);
+  const bg = variant === "brand" ? COLOR.brand.cyan : SEVERITY[variant].accent;
+  const textColor = COLOR.text.onAccent;
+  const ctaClass = variant === "brand" ? "email-cta-brand" : `email-cta-${variant}`;
+  void CTA_GRADIENT;
+
+  const arrow = `<span style="display:inline-block;margin-left:10px;font-weight:700;" data-flip-margin-left="cta">→</span>`;
+  const vml = [
+    `<!--[if mso]>`,
+    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:54px;v-text-anchor:middle;width:${fullWidth ? "440" : "260"}px;" arcsize="14%" stroke="f" fillcolor="${bg}">`,
+    `<w:anchorlock/>`,
+    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:700;letter-spacing:0.20em;text-transform:uppercase;">${safeLabel}</center>`,
+    `</v:roundrect>`,
+    `<![endif]-->`,
+  ].join("");
+
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="${fullWidth ? "100%" : ""}" style="margin:0 auto;${fullWidth ? "width:100%;" : ""}">`
+    + `<tr><td class="email-cta-cell" align="center" style="border-radius:10px;background-color:${bg};">`
+    + vml
+    + `<!--[if !mso]><!-- -->`
+    + `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:block;padding:18px 28px;font-family:inherit;font-size:13px;line-height:1;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:10px;background-color:${bg};text-align:center;mso-hide:all;">${safeLabel}${arrow}</a>`
+    + `<!--<![endif]-->`
+    + `</td></tr></table>`;
+}
+
+export function ctaTextLink({ href, label }: { href: string; label: string }): string {
+  return `<a href="${esc(href)}" target="_blank" rel="noopener" style="font-size:12px;line-height:1.5;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:${COLOR.brand.cyan};text-decoration:none;border-bottom:1px solid ${COLOR.border.cyanStrong};padding-bottom:2px;" class="email-text-accent">${esc(label)} →</a>`;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// CTA Section — flat band wrapping a CTA + optional support text/link.
+// Kept for builders that prefer the dedicated billboard composition.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface CtaSectionOptions {
+  eyebrow?: string;
+  ctaHtml: string;
+  supportingText?: string;
+  supportingLink?: { href: string; label: string };
+}
+
+export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
+  const eyebrowHtml = eyebrow
+    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(eyebrow)}</div>`
+    : "";
+  const supportingHtml = supportingText
+    ? `<div style="${typeStyle("bodySm", COLOR.text.secondary)}text-align:center;padding-top:${SPACE.s5};max-width:420px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(supportingText)}</div>`
+    : "";
+  const linkHtml = supportingLink
+    ? `<div style="text-align:center;padding-top:${SPACE.s4};">${ctaTextLink(supportingLink)}</div>`
+    : "";
+
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};">`
+    + `<tr><td class="email-pad email-cta-section-pad" align="center" style="padding:${SPACE.s6} ${SPACE.s7};text-align:center;">`
+    + eyebrowHtml
+    + ctaHtml
+    + supportingHtml
+    + linkHtml
+    + `</td></tr></table>`;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Support Row — 2-col band with circular icon + bold label + body + link.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface SupportColumn {
+  icon: IconKey;
+  title: string;
+  body: string;
+  href: string;
+  linkLabel: string;
+  /** Tint the icon (e.g. WhatsApp green). */
+  iconColor?: string;
+}
+
+export interface SupportRowOptions {
+  left: SupportColumn;
+  right: SupportColumn;
+}
+
+function supportColumn(col: SupportColumn): string {
+  const iconColor = col.iconColor ?? COLOR.brand.cyan;
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>`
+    + `<td valign="top" width="48" style="padding-right:14px;" data-flip-padding-right="support">`
+    + `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>`
+    + `<td valign="middle" align="center" width="44" height="44" style="background-color:rgba(94,231,255,0.08);border:1px solid ${COLOR.border.cyan};border-radius:999px;width:44px;height:44px;">${iconImg(col.icon, { color: iconColor, size: 22 })}</td>`
+    + `</tr></table>`
+    + `</td>`
+    + `<td valign="top">`
+    + `<div style="${typeStyle("body", COLOR.text.primary)}font-weight:600;" class="email-text-primary">${esc(col.title)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:2px;" class="email-text-secondary">${esc(col.body)} <a href="${esc(col.href)}" target="_blank" rel="noopener" style="color:${COLOR.brand.cyan};text-decoration:underline;font-weight:600;" class="email-text-accent">${esc(col.linkLabel)}</a></div>`
+    + `</td>`
+    + `</tr></table>`;
+}
+
+export function supportRow({ left, right }: SupportRowOptions): string {
+  const inner = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr class="email-stack-2col">`
+    + `<td valign="top" width="50%" style="padding:0 ${SPACE.s4} 0 0;" data-flip-padding-right="support-col">${supportColumn(left)}</td>`
+    + `<td valign="top" width="50%" style="padding:0 0 0 ${SPACE.s4};" data-flip-padding-left="support-col">${supportColumn(right)}</td>`
+    + `</tr></table>`;
+  return card({ children: inner });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Commitment Banner — used in the payment-confirmed email.
+// Check icon (left) + motivational text (centre) + CTA pill (right).
+// ────────────────────────────────────────────────────────────────────────
+
+export interface CommitmentBannerOptions {
+  title: string;
+  body: string;
+  ctaHref: string;
+  ctaLabel: string;
+}
+
+export function commitmentBanner({ title, body, ctaHref, ctaLabel }: CommitmentBannerOptions): string {
+  const checkCell = `<td valign="middle" width="64" style="padding-right:${SPACE.s5};" data-flip-padding-right="commit">`
+    + `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>`
+    + `<td valign="middle" align="center" width="56" height="56" style="background-color:rgba(94,231,255,0.10);border:1px solid ${COLOR.brand.cyan};border-radius:999px;width:56px;height:56px;">${iconImg("check", { size: 30 })}</td>`
+    + `</tr></table>`
+    + `</td>`;
+  const textCell = `<td valign="middle">`
+    + `<div style="${typeStyle("body", COLOR.text.primary)}font-weight:700;" class="email-text-primary">${esc(title)}</div>`
+    + `<div style="${typeStyle("bodySm", COLOR.brand.cyan)}padding-top:4px;" class="email-text-accent">${esc(body)}</div>`
+    + `</td>`;
+  const ctaCell = `<td valign="middle" align="right" style="padding-left:${SPACE.s5};" data-flip-padding-left="commit-cta" data-flip-text-align="commit-cta">`
+    + ctaButton({ href: ctaHref, label: ctaLabel, fullWidth: false })
+    + `</td>`;
+
+  const inner = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr class="email-stack-2col">${checkCell}${textCell}${ctaCell}</tr></table>`;
+  return card({ children: inner });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Email Footer — centred Y logo + ELITE COACHING wordmark + social icons.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface EmailFooterOptions {
+  lang: Lang;
+  whatsappUrl?: string;
+  instagramUrl?: string;
+  supportEmail?: string;
+  large?: boolean;
+}
+
+export const DEFAULT_INSTAGRAM_URL = "https://instagram.com/youssefahmed.training";
+export const DEFAULT_WHATSAPP_URL = "https://wa.me/971505394754";
+
+export function emailFooter({ lang, whatsappUrl, instagramUrl, supportEmail, large = false }: EmailFooterOptions): string {
+  const isAr = lang === "ar";
+  const t = (en: string, ar: string) => (isAr ? ar : en);
+
+  // Frame-spec: the footer ALWAYS surfaces all three reach-out channels
+  // (WhatsApp, Instagram, Email). Builders may override the URLs, but
+  // the row composition is fixed.
+  const whatsHref = whatsappUrl || DEFAULT_WHATSAPP_URL;
+  const igHref = instagramUrl || DEFAULT_INSTAGRAM_URL;
+  const iconSize = large ? 26 : 22;
+  const socials: string[] = [
+    `<a href="${esc(whatsHref)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:0 14px;">${iconImg("whatsapp", { color: COLOR.text.secondary, size: iconSize, alt: "WhatsApp" })}</a>`,
+    `<a href="${esc(igHref)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:0 14px;">${iconImg("instagram", { color: COLOR.text.secondary, size: iconSize, alt: "Instagram" })}</a>`,
+  ];
+  if (supportEmail) {
+    socials.push(`<a href="mailto:${esc(supportEmail)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:0 14px;">${iconImg("envelope", { color: COLOR.text.secondary, size: iconSize, alt: "Email" })}</a>`);
+  }
+  const socialRow = socials.length
+    ? `<div style="text-align:center;padding-top:${SPACE.s5};">${socials.join("")}</div>`
+    : "";
+
+  const year = new Date().getFullYear();
+  const copy = t(
+    `© ${year} Youssef Elite Coaching. All rights reserved.`,
+    `© ${year} يوسف إيليت كوتشينج. جميع الحقوق محفوظة.`,
+  );
+
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
+    + `<tr><td class="email-pad email-footer-pad" align="center" style="padding:${SPACE.s8} ${SPACE.s7} ${SPACE.s7};text-align:center;">`
+    + `<div style="text-align:center;">${brandLockup("center", large ? "md" : "sm")}</div>`
+    + socialRow
+    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s5};" class="email-text-tertiary">${esc(copy)}</div>`
+    + `</td></tr></table>`;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Legacy footer (kept for builders that still pass FooterOptions).
+// Delegates to emailFooter under the new design.
+// ────────────────────────────────────────────────────────────────────────
+
+export interface FooterOptions {
+  lang: Lang;
+  supportEmail: string;
+  unsubscribeUrl?: string;
+  manageUrl?: string;
+  whatsappUrl?: string;
+  studioLocation?: string;
+}
+
+export function footer(opts: FooterOptions): string {
+  void opts.unsubscribeUrl;
+  void opts.manageUrl;
+  void opts.studioLocation;
+  return emailFooter({
+    lang: opts.lang,
+    whatsappUrl: opts.whatsappUrl,
+    supportEmail: opts.supportEmail,
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Section eyebrow — quiet uppercase cyan single line.
+// ────────────────────────────────────────────────────────────────────────
+
 let __sectionEyebrowCounter = 0;
 export function sectionEyebrow({ label }: { label: string }): string {
-  // Quiet single-line uppercase eyebrow in cyan. No numerals, no rule.
-  // Spacing + the eyebrow itself separates sections.
+  void __sectionEyebrowCounter;
   return `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;" class="email-text-accent">${esc(label)}</div>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Pull quote — editorial atmospheric statement.
-// Cyan opening glyph + thick cyan rule beneath the quote.
+// Pull quote — italic with cyan opening glyph + attribution.
 // ────────────────────────────────────────────────────────────────────────
 
 export function pullQuote({ text, attribution }: { text: string; attribution?: string }): string {
-  // Italic quote with a single 2px cyan vertical accent bar on the leading
-  // edge — restrained luxury punctuation that gives the block presence and
-  // emotional weight without resorting to a 64px serif glyph.
   const attribHtml = attribution
-    ? `<div style="${typeStyle("microSm", COLOR.text.tertiary)}text-transform:uppercase;padding-top:${SPACE.s5};" class="email-text-tertiary">— ${esc(attribution)}</div>`
+    ? `<div style="text-align:center;padding-top:${SPACE.s3};"><span style="${typeStyle("bodySm", COLOR.brand.cyan)}font-weight:700;" class="email-text-accent">— ${esc(attribution)}</span></div>`
     : "";
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr>`
-    + `<td valign="top" width="2" style="width:2px;padding:${SPACE.s5} 0;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;" class="email-pull-quote-bar">&nbsp;</td>`
-    + `<td style="padding:${SPACE.s5} 0 ${SPACE.s5} ${SPACE.s6};">`
-    + `<div class="email-pull-quote email-text-primary" style="${typeStyle("pullQuote", COLOR.text.primary)}font-style:italic;">&ldquo;${esc(text)}&rdquo;</div>`
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>`
+    + `<td align="center" style="padding:${SPACE.s5} ${SPACE.s4};text-align:center;" data-flip-text-align="pull-quote">`
+    + `<div style="text-align:center;"><span style="font-size:22px;font-weight:900;color:${COLOR.brand.cyan};padding-right:6px;" class="email-text-accent">&ldquo;</span>`
+    + `<span class="email-pull-quote email-text-primary" style="${typeStyle("pullQuote", COLOR.text.primary)}font-style:italic;">${esc(text)}</span></div>`
     + attribHtml
     + `</td></tr></table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Typography primitives.
+// Headings + text blocks.
 // ────────────────────────────────────────────────────────────────────────
 
 export interface HeadingOptions {
@@ -442,11 +779,7 @@ export interface TextBlockOptions {
 }
 
 export function textBlock({
-  text,
-  size = "body",
-  color = "secondary",
-  align = "left",
-  raw = false,
+  text, size = "body", color = "secondary", align = "left", raw = false,
 }: TextBlockOptions): string {
   const inner = raw ? text : esc(text);
   const typeClass = size === "bodyLg" ? "email-body-lg" : size === "body" ? "email-body" : "";
@@ -455,7 +788,7 @@ export function textBlock({
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Spacer & divider.
+// Spacer / divider.
 // ────────────────────────────────────────────────────────────────────────
 
 export type SpaceKey = keyof typeof SPACE;
@@ -465,20 +798,13 @@ export function spacer(size: SpaceKey = "s4"): string {
 }
 
 export function divider(): string {
-  // TRON RGB hairline divider — cyan-dominant with magenta crossover
-  // near the right. Falls back to a calm white-04 border-top for clients
-  // that strip background-image (Outlook desktop, some Gmail variants).
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
     + `<tr><td class="email-divider" style="font-size:0;line-height:1px;height:1px;border-top:1px solid ${COLOR.border.divider};background-image:${ACCENT_RULE_GRADIENT};">&nbsp;</td></tr>`
     + `</table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Severity ribbon — corner-tab badge (NOT a left-border panel).
-//
-// Composition (v3): a small corner-anchored cyan/severity tab at the
-// top-left, then the title + body sit on a quiet tinted slab. Reads
-// as an editorial advisory chip, not a panicky alert box.
+// Severity banner (kept for backward compat with packageExpiring3d).
 // ────────────────────────────────────────────────────────────────────────
 
 export interface SeverityBannerOptions {
@@ -494,14 +820,10 @@ export function severityBanner({ severity, title, body }: SeverityBannerOptions)
   const bodyHtml = body
     ? `<div dir="auto" style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:${SPACE.s3};" class="email-text-secondary">${esc(body)}</div>`
     : "";
-  // Corner ribbon — small severity chip in the top-left corner.
-  // The chip sits in its own row above the title/body so the tab feels
-  // anchored, not pasted on. RTL flips via data-flip-* on the chip cell.
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="${tintClass}" style="background-color:${sev.tint};border:1px solid ${sev.border};border-radius:${RADIUS.md};">`
-    + `<tr><td style="padding:${SPACE.s6} ${SPACE.s6} ${SPACE.s6};" data-flip-padding-left="severity">`
-    // Ribbon chip — uppercase tracked label on a stronger severity wash.
-    + `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 ${SPACE.s4};"><tr>`
-    + `<td style="background-color:${sev.accent};color:${COLOR.text.onAccent};padding:6px 12px;border-radius:${RADIUS.sm};${typeStyle("microSm", COLOR.text.onAccent)}text-transform:uppercase;" class="${accentClass}">${esc(sev.label)}</td>`
+    + `<tr><td style="padding:${SPACE.s5} ${SPACE.s5};" data-flip-padding-left="severity">`
+    + `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 ${SPACE.s3};"><tr>`
+    + `<td style="background-color:${sev.accent};color:${COLOR.text.onAccent};padding:4px 10px;border-radius:${RADIUS.sm};${typeStyle("microSm", COLOR.text.onAccent)}text-transform:uppercase;" class="${accentClass}">${esc(sev.label)}</td>`
     + `</tr></table>`
     + `<div style="${typeStyle("h2", COLOR.text.primary)}" class="email-text-primary">${esc(title)}</div>`
     + bodyHtml
@@ -509,127 +831,7 @@ export function severityBanner({ severity, title, body }: SeverityBannerOptions)
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// CTA button — dual-layer luxury chrome.
-//
-// Composition (v3):
-//   - Outer cyan halo glow (radial, scattered)
-//   - Inner gradient pill core (cyanSoft → cyan → cyanDeep)
-//   - Hairline cyan ring frame on the surface (1px luminous edge)
-//   - Generous padding, tight letter-spacing
-//   - VML fallback for Outlook desktop
-// ────────────────────────────────────────────────────────────────────────
-
-export interface CtaButtonOptions {
-  href: string;
-  label: string;
-  variant?: "brand" | Severity;
-}
-
-export function ctaButton({ href, label, variant = "brand" }: CtaButtonOptions): string {
-  const safeHref = esc(href);
-  const safeLabel = esc(label);
-  const bg = variant === "brand" ? COLOR.brand.cyan : SEVERITY[variant].accent;
-  const bgGradient = variant === "brand" ? CTA_GRADIENT : `linear-gradient(180deg, ${SEVERITY[variant].accent} 0%, ${SEVERITY[variant].accent} 100%)`;
-  const textColor = COLOR.text.onAccent;
-  const ctaClass = variant === "brand" ? "email-cta-brand" : `email-cta-${variant}`;
-  // Outlook VML — keeps the button rendered as a proper rounded rect on
-  // Outlook desktop. arcsize 50% ensures the pill shape; size matches
-  // the live HTML footprint (380×76).
-  const vml = [
-    `<!--[if mso]>`,
-    `<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:76px;v-text-anchor:middle;width:380px;" arcsize="50%" stroke="f" fillcolor="${bg}">`,
-    `<w:anchorlock/>`,
-    `<center style="color:${textColor};font-family:Arial,sans-serif;font-size:14px;font-weight:900;letter-spacing:0.26em;text-transform:uppercase;">${safeLabel}</center>`,
-    `</v:roundrect>`,
-    `<![endif]-->`,
-  ].join("");
-  // Live HTML — pill-shaped, gradient core, tight tracking, glow halo.
-  // pill radius (999px) is more luxurious than RADIUS.lg here: it reads
-  // as product chrome, not as a "rounded rectangle button".
-  const html = [
-    `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">`,
-    `<tr><td class="email-cta-cell" align="center" style="border-radius:999px;background-color:${bg};background-image:${bgGradient};box-shadow:${GLOW.cta};">`,
-    vml,
-    `<!--[if !mso]><!-- -->`,
-    `<a href="${safeHref}" target="_blank" rel="noopener" class="${ctaClass}" style="display:inline-block;padding:26px 56px;font-family:inherit;font-size:14px;line-height:1;font-weight:900;letter-spacing:0.28em;text-transform:uppercase;color:${textColor};text-decoration:none;border-radius:999px;background-color:${bg};background-image:${bgGradient};mso-hide:all;">${safeLabel}</a>`,
-    `<!--<![endif]-->`,
-    `</td></tr></table>`,
-  ].join("");
-  return html;
-}
-
-/** Secondary text link — max one per email. */
-export function ctaTextLink({ href, label }: { href: string; label: string }): string {
-  return `<a href="${esc(href)}" target="_blank" rel="noopener" style="font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:${COLOR.brand.cyan};text-decoration:none;border-bottom:1px solid ${COLOR.border.cyanStrong};padding-bottom:2px;" class="email-text-accent">${esc(label)} →</a>`;
-}
-
-// ────────────────────────────────────────────────────────────────────────
-// CTA Section — billboard wrapper.
-//
-// Composition (v3):
-//   - Atmospheric radial cyan halo backdrop
-//   - Top + bottom hairline cyan rules (full-width, fade at edges)
-//   - Editorial №-numbered eyebrow above the button (optional)
-//   - The CTA button itself
-//   - Supporting microcopy + secondary text link below (optional)
-// ────────────────────────────────────────────────────────────────────────
-
-export interface CtaSectionOptions {
-  eyebrow?: string;
-  ctaHtml: string;
-  supportingText?: string;
-  supportingLink?: { href: string; label: string };
-}
-
-export function ctaSection({ eyebrow, ctaHtml, supportingText, supportingLink }: CtaSectionOptions): string {
-  // TRON 3-segment RGB stage accent — magenta + cyan + violet hairline
-  // anchored tight to the eyebrow lockup. Reads as the brand's RGB
-  // signature opening the curated CTA moment.
-  const sectionAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s5};">`
-    + `<tr>`
-    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:32px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
-    + `</tr></table>`;
-
-  // Quiet uppercase eyebrow — tracking calmed (0.32em → 0.28em) and tight
-  // breathing to CTA (s7 → s6). Eyebrow + button read as one sealed lockup.
-  const eyebrowHtml = eyebrow
-    ? `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;text-align:center;padding-bottom:${SPACE.s6};letter-spacing:0.28em;" class="email-text-accent">${esc(eyebrow)}</div>`
-    : "";
-
-  const supportingHtml = supportingText
-    ? `<div style="${typeStyle("bodySm", COLOR.text.secondary)}text-align:center;padding-top:${SPACE.s8};max-width:420px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(supportingText)}</div>`
-    : "";
-  const linkHtml = supportingLink
-    ? `<div style="text-align:center;padding-top:${SPACE.s5};">${ctaTextLink(supportingLink)}</div>`
-    : "";
-
-  // Cinematic stage refined: vertical pad s12 → s10 (128 → 96) so the
-  // CTA section reads as a focused chamber, not a stretched empty room.
-  // Mobile cliff already calmed to 48px. The RGB stage rig + tight
-  // typographic lockup carries presence; vertical void is dead weight.
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.ctaSection};background-image:${CTA_SECTION_GRADIENT};">`
-    + `<tr><td class="email-cta-section-pad" align="center" style="padding:${SPACE.s10} ${SPACE.s8};text-align:center;">`
-    + sectionAccent
-    + eyebrowHtml
-    + ctaHtml
-    + supportingHtml
-    + linkHtml
-    + `</td></tr>`
-    + `</table>`;
-}
-
-// ────────────────────────────────────────────────────────────────────────
-// Key-value list — editorial 2-column HUD grid.
-//
-// Composition (v3):
-//   - 2-column desktop grid (label/value pairs) with a vertical hairline
-//     between columns — reads as a HUD readout.
-//   - Stacks to single column on mobile.
-//   - Cyan uppercase micro labels above white values.
+// Key-value list (kept for backward compat).
 // ────────────────────────────────────────────────────────────────────────
 
 export interface KeyValueListOptions {
@@ -639,45 +841,33 @@ export interface KeyValueListOptions {
 export function keyValueList({ items }: KeyValueListOptions): string {
   const filtered = items.filter((it) => it.value !== null && it.value !== undefined && String(it.value).trim() !== "");
   if (!filtered.length) return "";
-
-  // Pair up items into 2-column rows. Last odd item gets the full row width.
   const pairs: Array<typeof filtered> = [];
   for (let i = 0; i < filtered.length; i += 2) pairs.push(filtered.slice(i, i + 2));
-
   const rows = pairs
     .map((pair, ri) => {
-      const topGap = ri === 0 ? "0" : SPACE.s6;
+      const topGap = ri === 0 ? "0" : SPACE.s5;
       const borderTop = ri === 0 ? "" : `border-top:1px solid ${COLOR.border.divider};`;
-      const innerPadTop = ri === 0 ? "0" : SPACE.s6;
-
+      const innerPadTop = ri === 0 ? "0" : SPACE.s5;
       const cell = (it: typeof pair[number], ci: number): string => {
-        // No vertical hairline between columns — pure spacing carries the grid.
-        const padLeft = ci === 0 ? "0" : SPACE.s7;
+        const padLeft = ci === 0 ? "0" : SPACE.s6;
         return `<td valign="top" width="50%" class="email-kv-cell" style="padding:${innerPadTop} 0 0 ${padLeft};" data-flip-padding-left="kv">`
           + `<div style="${typeStyle("micro", COLOR.text.tertiary)}text-transform:uppercase;" class="email-text-tertiary">${esc(it.label)}</div>`
-          + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:10px;font-weight:500;letter-spacing:-0.005em;" class="email-text-primary email-body-lg">${esc(it.value as string)}</div>`
+          + `<div dir="auto" style="${typeStyle("bodyLg", COLOR.text.primary)}padding-top:6px;font-weight:600;" class="email-text-primary email-body-lg">${esc(it.value as string)}</div>`
           + `</td>`;
       };
-
-      // For odd-length pair, render the second cell as &nbsp; placeholder
-      // so the desktop grid stays balanced.
       const c1 = cell(pair[0], 0);
       const c2 = pair[1]
         ? cell(pair[1], 1)
         : `<td valign="top" width="50%" class="email-kv-cell" style="padding-top:${innerPadTop};">&nbsp;</td>`;
-
       return `<tr class="email-stack-2col"><td colspan="2" style="padding-top:${topGap};${borderTop}font-size:0;line-height:0;">&nbsp;</td></tr>`
         + `<tr class="email-stack-2col">${c1}${c2}</tr>`;
     })
     .join("");
-
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${rows}</table>`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Metric grid — 2-up HUD tiles.
-// Editorial v3: each tile gets corner brackets at top-left/right, larger
-// metric value (40px), and a quieter background that lets the value lead.
+// Metric grid (kept for packageCompleted).
 // ────────────────────────────────────────────────────────────────────────
 
 export interface MetricGridOptions {
@@ -690,15 +880,13 @@ export function metricGrid({ items }: MetricGridOptions): string {
   for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
   const html = rows
     .map((pair, ri) => {
-      const topGap = ri === 0 ? "0" : SPACE.s5;
+      const topGap = ri === 0 ? "0" : SPACE.s4;
       const cells = pair
         .map((it, ci) => {
           const padLeft = ci === 0 ? "0" : SPACE.s4;
           return `<td valign="top" width="50%" style="padding-left:${padLeft};padding-top:${topGap};" data-flip-padding-left="metric">`
             + `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.secondary};border:1px solid ${COLOR.border.cyanSoft};border-radius:${RADIUS.md};">`
-            + `<tr><td style="padding:${SPACE.s6} ${SPACE.s5};position:relative;">`
-            + cornerBracket("tl")
-            + cornerBracket("tr")
+            + `<tr><td style="padding:${SPACE.s6} ${SPACE.s5};">`
             + `<div style="${typeStyle("micro", COLOR.brand.cyanMuted)}text-transform:uppercase;" class="email-text-accent">${esc(it.label)}</div>`
             + `<div dir="auto" style="${typeStyle("metric", COLOR.text.primary)}padding-top:${SPACE.s3};" class="email-text-primary">${esc(it.value)}</div>`
             + `</td></tr></table>`
@@ -713,108 +901,69 @@ export function metricGrid({ items }: MetricGridOptions): string {
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Editorial Footer — 3-column magazine masthead.
-//
-// Composition (v3):
-//   - Top: cyan halo divider + trainer signature lockup (centered)
-//   - Middle: 3-column masthead — REACH | STUDIO | LEGAL — with vertical
-//             hairlines between columns, stacks on mobile
-//   - Bottom: brand wordmark + tagline (single calm line)
+// Feature grid — 4-column icon row (used in welcome).
 // ────────────────────────────────────────────────────────────────────────
 
-export interface FooterOptions {
-  lang: Lang;
-  supportEmail: string;
-  unsubscribeUrl?: string;
-  manageUrl?: string;
-  whatsappUrl?: string;
-  studioLocation?: string;
+export interface FeatureGridOptions {
+  items: Array<{ icon: IconKey; title: string; body: string }>;
 }
 
-export function footer({ lang, supportEmail, unsubscribeUrl, manageUrl, whatsappUrl, studioLocation }: FooterOptions): string {
-  const isAr = lang === "ar";
-  const t = (en: string, ar: string) => (isAr ? ar : en);
-
-  const trainerLine = t("YOUSSEF AHMED", "يوسف أحمد");
-  const trainerRole = t("Personal Trainer · Dubai", "مدرب شخصي · دبي");
-
-  // Quiet single-row link list. No 3-column masthead, no column hairlines,
-  // no atmospheric rules. Spacing carries the structure.
-  const links: string[] = [];
-  const linkStyle = `color:${COLOR.text.secondary};text-decoration:none;font-size:12px;line-height:1.5;letter-spacing:0.02em;`;
-  if (whatsappUrl) {
-    links.push(`<a href="${esc(whatsappUrl)}" style="${linkStyle}">${t("WhatsApp", "واتساب")}</a>`);
-  }
-  links.push(`<a href="mailto:${esc(supportEmail)}" style="${linkStyle}word-break:break-word;">${esc(supportEmail)}</a>`);
-  if (manageUrl) {
-    links.push(`<a href="${esc(manageUrl)}" style="${linkStyle}">${t("Manage notifications", "إدارة الإشعارات")}</a>`);
-  }
-  if (unsubscribeUrl) {
-    links.push(`<a href="${esc(unsubscribeUrl)}" style="${linkStyle}">${t("Unsubscribe", "إلغاء الاشتراك")}</a>`);
-  }
-  // Use a quiet middle-dot separator (renders cleanly across clients).
-  const sep = `<span style="color:${COLOR.text.tertiary};padding:0 10px;font-size:12px;">·</span>`;
-  const linkRow = `<div style="text-align:center;padding-top:${SPACE.s4};">${links.join(sep)}</div>`;
-
-  if (studioLocation) {
-    void studioLocation;
-  }
-
-  // Brand tagline — a quiet italic line above the signature that gives the
-  // footer emotional closure. Reads as the brand's voice signing off.
-  const tagline = t(
-    "Elite training. Composed for Dubai.",
-    "تدريب نخبوي. مصمم لدبي.",
-  );
-  // Tagline composition: bottom pad s7 → s5 so the tagline+accent+
-  // signature read as ONE composed sign-off block, not 3 stacked items.
-  const taglineHtml = `<div style="font-family:inherit;font-size:14px;line-height:1.5;font-style:italic;font-weight:400;letter-spacing:0.02em;color:${COLOR.text.secondary};text-align:center;padding-bottom:${SPACE.s5};max-width:380px;margin-left:auto;margin-right:auto;" class="email-text-secondary">${esc(tagline)}</div>`;
-
-  // Closing TRON 3-segment RGB accent — mirrors the masthead and CTA
-  // section, so the email opens, climaxes, and closes with the same
-  // RGB brand signature. Anchored tight (s5) to the signature lockup.
-  const closingAccent = `<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto ${SPACE.s5};">`
-    + `<tr>`
-    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.violet};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:32px;height:2px;background-color:${COLOR.brand.cyan};font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:4px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="width:8px;height:2px;background-color:${COLOR.brand.magenta};font-size:0;line-height:0;opacity:0.65;">&nbsp;</td>`
-    + `</tr></table>`;
-
-  // Final copyright microline — completion mark, very quiet.
-  const year = new Date().getFullYear();
-  const copyText = t(
-    `© ${year} Youssef Ahmed · Dubai · All rights reserved.`,
-    `© ${year} يوسف أحمد · دبي · جميع الحقوق محفوظة.`,
-  );
-  const copyHtml = `<div style="font-family:inherit;font-size:10px;line-height:1.6;font-weight:500;letter-spacing:0.10em;text-transform:uppercase;color:${COLOR.text.tertiary};text-align:center;padding-top:${SPACE.s5};" class="email-text-tertiary">${esc(copyText)}</div>`;
-
-  // Footer composition refined:
-  //   - Desktop pad s11/s8/s10 → s9/s8/s8 (88/56/64 → 72/56/64). Less
-  //     stretched, the footer reads as a sealed sign-off.
-  //   - Wordmark tracking 0.26em → 0.22em — same composed lockup energy
-  //     as the masthead, but tighter visual grouping.
-  //   - Copy padding-top s7 → s5 (44 → 28) so copyright sits as the
-  //     final beat of the lockup, not as a separate microline.
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:${COLOR.bg.footer};background-image:${FOOTER_GRADIENT};">`
-    + `<tr><td class="email-pad email-footer-pad" align="center" style="padding:${SPACE.s9} ${SPACE.s8} ${SPACE.s8};">`
-    + taglineHtml
-    + closingAccent
-    + `<div style="${typeStyle("h3", COLOR.text.primary)}text-align:center;letter-spacing:0.22em;text-transform:uppercase;font-weight:600;" class="email-text-primary">${esc(trainerLine)}</div>`
-    + `<div style="${typeStyle("bodySm", COLOR.text.tertiary)}text-align:center;padding-top:${SPACE.s2};letter-spacing:0.04em;" class="email-text-tertiary">${esc(trainerRole)}</div>`
-    + linkRow
-    + copyHtml
-    + `</td></tr></table>`;
+export function featureGrid({ items }: FeatureGridOptions): string {
+  const cells = items
+    .map((it) =>
+      `<td valign="top" align="center" width="25%" style="padding:0 ${SPACE.s2};text-align:center;">`
+      + `<div style="text-align:center;padding-bottom:${SPACE.s3};">${iconImg(it.icon, { size: 26 })}</div>`
+      + `<div style="${typeStyle("micro", COLOR.text.primary)}text-transform:uppercase;letter-spacing:0.14em;font-weight:700;" class="email-text-primary">${esc(it.title)}</div>`
+      + `<div style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:6px;" class="email-text-secondary">${esc(it.body)}</div>`
+      + `</td>`,
+    )
+    .join("");
+  const inner = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr class="email-stack-2col">${cells}</tr></table>`;
+  return card({ children: inner });
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Section wrapper — applies horizontal page padding consistently.
+// Steps card — chevron list of next actions (used in welcome).
+// ────────────────────────────────────────────────────────────────────────
+
+export interface StepsCardOptions {
+  headerLabel: string;
+  items: Array<{ icon: IconKey; title: string; body: string }>;
+}
+
+export function stepsCard({ headerLabel, items }: StepsCardOptions): string {
+  const rows = items
+    .map((it, idx) => {
+      const borderTop = idx === 0 ? "" : `border-top:1px solid ${CARD_DIVIDER};`;
+      const padTop = idx === 0 ? "0" : SPACE.s4;
+      return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="${borderTop}"><tr>`
+        + `<td valign="middle" width="50" style="padding:${padTop} 14px ${idx === items.length - 1 ? "0" : SPACE.s4} 0;" data-flip-padding-right="step-icon">`
+        + `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>`
+        + `<td valign="middle" align="center" width="44" height="44" style="background-color:rgba(94,231,255,0.08);border:1px solid ${COLOR.border.cyan};border-radius:999px;width:44px;height:44px;">${iconImg(it.icon, { size: 22 })}</td>`
+        + `</tr></table>`
+        + `</td>`
+        + `<td valign="middle" style="padding:${padTop} 0 ${idx === items.length - 1 ? "0" : SPACE.s4};">`
+        + `<div style="${typeStyle("body", COLOR.text.primary)}font-weight:700;" class="email-text-primary">${esc(it.title)}</div>`
+        + `<div style="${typeStyle("bodySm", COLOR.text.secondary)}padding-top:2px;" class="email-text-secondary">${esc(it.body)}</div>`
+        + `</td>`
+        + `<td valign="middle" width="22" align="right" style="padding:${padTop} 0 ${idx === items.length - 1 ? "0" : SPACE.s4};" data-flip-text-align="step-chev">${iconImg("chevron", { color: COLOR.text.tertiary, size: 18 })}</td>`
+        + `</tr></table>`;
+    })
+    .join("");
+  const inner = `<div style="${typeStyle("micro", COLOR.brand.cyan)}text-transform:uppercase;padding-bottom:${SPACE.s5};" class="email-text-accent">${esc(headerLabel)}</div>${rows}`;
+  return card({ children: inner });
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Section wrapper — applies consistent horizontal page padding.
 // ────────────────────────────────────────────────────────────────────────
 
 export function section(children: string, opts?: { topGap?: SpaceKey }): string {
-  const top = opts?.topGap ? SPACE[opts.topGap] : SPACE.s7;
+  const top = opts?.topGap ? SPACE[opts.topGap] : SPACE.s6;
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">`
-    + `<tr><td class="email-pad" style="padding:${top} ${SPACE.s8} 0;">${children}</td></tr>`
+    + `<tr><td class="email-pad" style="padding:${top} ${SPACE.s7} 0;">${children}</td></tr>`
     + `</table>`;
 }
+
+// Re-export for builders that referenced CARD_HEADER_GRADIENT.
+void CARD_HEADER_GRADIENT;
