@@ -121,6 +121,7 @@ import {
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce } from "./services/notifications";
+import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
 import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
 import { computeClientIntelligence } from "./services/clientIntelligence";
@@ -866,6 +867,63 @@ async function dispatchAdminPaymentEmail(opts: {
     await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
   } catch (e) {
     console.warn("[notif] admin payment email failed:", e);
+  }
+}
+
+// Client-facing payment confirmation — fires when a package transitions
+// into the "paid" state via either /payment (manual mark) or /add-payment
+// (running total reaches total_price). Best-effort, never throws.
+async function dispatchClientPaymentConfirmedEmail(opts: {
+  pkg: any;
+  amountReceived?: number | null;
+  paymentMethod?: string | null;
+}): Promise<void> {
+  try {
+    const user = await storage.getUser(opts.pkg.userId).catch(() => undefined);
+    if (!user?.email) return;
+    const clientName = (user.fullName?.trim() || user.username || `Client #${opts.pkg.userId}`).trim();
+    const totalPrice = (opts.pkg as any).totalPrice ?? 0;
+    const amountNumber = opts.amountReceived ?? totalPrice;
+    const amount = `AED ${Number(amountNumber).toLocaleString()}`;
+    const paymentDate = new Date().toLocaleDateString("en-GB", {
+      weekday: "short", day: "numeric", month: "short", year: "numeric",
+    });
+    const startDate = opts.pkg.startDate
+      ? new Date(`${opts.pkg.startDate}T00:00:00+04:00`).toLocaleDateString("en-GB", {
+          weekday: "short", day: "numeric", month: "short", year: "numeric",
+        })
+      : null;
+    const expiry = opts.pkg.expiryDate
+      ? new Date(`${opts.pkg.expiryDate}T00:00:00+04:00`)
+      : null;
+    const start = opts.pkg.startDate
+      ? new Date(`${opts.pkg.startDate}T00:00:00+04:00`)
+      : null;
+    const validityLabel = expiry && start
+      ? `${Math.max(1, Math.round((expiry.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 7)))} weeks`
+      : null;
+    const base = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "")
+      || (process.env.NODE_ENV === "production"
+        ? "https://youssef-booking.vercel.app"
+        : `http://localhost:${process.env.PORT || 5000}`);
+    const userLang = ((user as any).preferredLanguage === "ar" ? "ar" : "en") as "en" | "ar";
+    await sendPaymentConfirmedNotification({
+      email: user.email,
+      clientName,
+      lang: userLang,
+      amount,
+      paymentMethod: opts.paymentMethod ?? null,
+      paymentReference: `PKG-${opts.pkg.id}-${Date.now().toString(36).toUpperCase()}`,
+      paymentDate,
+      packageName: opts.pkg.name ?? "Training package",
+      totalSessions: opts.pkg.totalSessions ?? null,
+      validityLabel,
+      startDate,
+      packageUrl: `${base}/dashboard`,
+      bookUrl: `${base}/book`,
+    });
+  } catch (e) {
+    console.warn("[notif] client payment-confirmed email failed:", e);
   }
 }
 
@@ -1851,6 +1909,92 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       replyTo: trainerEmail(),
     });
     res.json({ to, ...result, config: emailConfigStatus() });
+  });
+
+  // POST /api/admin/test-welcome-email — sends the EXACT Stripo welcome
+  // email that a real signup triggers, to an arbitrary address, and
+  // returns the raw Resend response. This is the single-shot test for
+  // "did my welcome trigger actually work". Mirrors the build+send used
+  // inside sendWelcomeNotifications() but returns the result directly
+  // so the trainer sees the message id (success) or error string (fail).
+  app.post("/api/admin/test-welcome-email", requireAdmin, async (req, res) => {
+    const email = String(req.body?.email ?? "").trim();
+    const name = String(req.body?.name ?? "Test User").trim() || "Test User";
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Provide a valid `email`." });
+    }
+    const lang = (req.body?.lang === "ar" ? "ar" : "en") as "en" | "ar";
+    const cfg = emailConfigStatus();
+    console.info(
+      `[admin/test-welcome-email] BEGIN to=${email} name=${JSON.stringify(name)} lang=${lang} keyPresent=${cfg.hasApiKey} from=${cfg.from}`,
+    );
+
+    // Build the Stripo welcome with the exact same builder used by the
+    // production signup flow. If for any reason it throws, surface that
+    // — we want zero silent swallowing in this test path.
+    let built: { subject: string; text: string; html: string };
+    try {
+      const { buildStripoWelcomeEmail } = await import(
+        "./email/builders/stripoWelcome"
+      );
+      const websiteBase =
+        process.env.PUBLIC_APP_URL?.replace(/\/+$/, "") ||
+        "https://youssef-ahmed.fit";
+      built = buildStripoWelcomeEmail({
+        clientName: name,
+        dashboardUrl: `${websiteBase}/dashboard`,
+        supportWhatsappUrl: "https://wa.me/971505394754",
+        supportEmail: trainerEmail(),
+      });
+    } catch (e: any) {
+      console.error("[admin/test-welcome-email] builder threw:", e);
+      return res.status(500).json({
+        ok: false,
+        stage: "build",
+        error: e?.message || String(e),
+      });
+    }
+
+    // Send via the same pipeline (Resend HTTP + retry + ring buffer).
+    let result;
+    try {
+      result = await sendEmail({
+        to: email,
+        subject: built.subject,
+        text: built.text,
+        html: built.html,
+        replyTo: trainerEmail(),
+      });
+    } catch (e: any) {
+      console.error("[admin/test-welcome-email] sendEmail threw:", e);
+      return res.status(500).json({
+        ok: false,
+        stage: "send",
+        error: e?.message || String(e),
+        config: cfg,
+      });
+    }
+
+    console.info(
+      `[admin/test-welcome-email] DONE to=${email} sent=${result.sent} provider=${result.provider} id=${result.id ?? "—"} error=${JSON.stringify(result.error ?? null)}`,
+    );
+
+    res.json({
+      ok: result.sent === true,
+      functionCalled: true,
+      to: email,
+      from: cfg.from,
+      subject: built.subject,
+      resend: {
+        sent: result.sent,
+        provider: result.provider ?? null,
+        messageId: result.id ?? null,
+        error: result.error ?? null,
+      },
+      config: cfg,
+    });
   });
 
   // GET /api/admin/email/dns — resolves SPF / DKIM / DMARC for the
@@ -3841,6 +3985,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPaymentEmail({ pkg: updated });
+    // Only notify the client when the status actually transitions INTO
+    // "paid" — avoids resending on repeated "mark paid" no-ops.
+    if (status === "paid" && pkg.paymentStatus !== "paid") {
+      void dispatchClientPaymentConfirmedEmail({ pkg: updated, paymentMethod: parsed.data.note ?? null });
+    }
     res.json(updated);
   });
 
@@ -3886,6 +4035,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPaymentEmail({ pkg: updated, amountReceived: parsed.data.amount });
+    // Fire client payment-confirmed only on the receipt that pushes the
+    // running total over total_price (i.e. just-now reached "paid").
+    if (reachedFull && pkg.paymentStatus !== "paid") {
+      void dispatchClientPaymentConfirmedEmail({ pkg: updated, amountReceived: parsed.data.amount, paymentMethod: parsed.data.note ?? null });
+    }
     res.json(updated);
   });
 
