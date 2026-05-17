@@ -1911,6 +1911,92 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ to, ...result, config: emailConfigStatus() });
   });
 
+  // POST /api/admin/test-welcome-email — sends the EXACT Stripo welcome
+  // email that a real signup triggers, to an arbitrary address, and
+  // returns the raw Resend response. This is the single-shot test for
+  // "did my welcome trigger actually work". Mirrors the build+send used
+  // inside sendWelcomeNotifications() but returns the result directly
+  // so the trainer sees the message id (success) or error string (fail).
+  app.post("/api/admin/test-welcome-email", requireAdmin, async (req, res) => {
+    const email = String(req.body?.email ?? "").trim();
+    const name = String(req.body?.name ?? "Test User").trim() || "Test User";
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Provide a valid `email`." });
+    }
+    const lang = (req.body?.lang === "ar" ? "ar" : "en") as "en" | "ar";
+    const cfg = emailConfigStatus();
+    console.info(
+      `[admin/test-welcome-email] BEGIN to=${email} name=${JSON.stringify(name)} lang=${lang} keyPresent=${cfg.hasApiKey} from=${cfg.from}`,
+    );
+
+    // Build the Stripo welcome with the exact same builder used by the
+    // production signup flow. If for any reason it throws, surface that
+    // — we want zero silent swallowing in this test path.
+    let built: { subject: string; text: string; html: string };
+    try {
+      const { buildStripoWelcomeEmail } = await import(
+        "./email/builders/stripoWelcome"
+      );
+      const websiteBase =
+        process.env.PUBLIC_APP_URL?.replace(/\/+$/, "") ||
+        "https://youssef-ahmed.fit";
+      built = buildStripoWelcomeEmail({
+        clientName: name,
+        dashboardUrl: `${websiteBase}/dashboard`,
+        supportWhatsappUrl: "https://wa.me/971505394754",
+        supportEmail: trainerEmail(),
+      });
+    } catch (e: any) {
+      console.error("[admin/test-welcome-email] builder threw:", e);
+      return res.status(500).json({
+        ok: false,
+        stage: "build",
+        error: e?.message || String(e),
+      });
+    }
+
+    // Send via the same pipeline (Resend HTTP + retry + ring buffer).
+    let result;
+    try {
+      result = await sendEmail({
+        to: email,
+        subject: built.subject,
+        text: built.text,
+        html: built.html,
+        replyTo: trainerEmail(),
+      });
+    } catch (e: any) {
+      console.error("[admin/test-welcome-email] sendEmail threw:", e);
+      return res.status(500).json({
+        ok: false,
+        stage: "send",
+        error: e?.message || String(e),
+        config: cfg,
+      });
+    }
+
+    console.info(
+      `[admin/test-welcome-email] DONE to=${email} sent=${result.sent} provider=${result.provider} id=${result.id ?? "—"} error=${JSON.stringify(result.error ?? null)}`,
+    );
+
+    res.json({
+      ok: result.sent === true,
+      functionCalled: true,
+      to: email,
+      from: cfg.from,
+      subject: built.subject,
+      resend: {
+        sent: result.sent,
+        provider: result.provider ?? null,
+        messageId: result.id ?? null,
+        error: result.error ?? null,
+      },
+      config: cfg,
+    });
+  });
+
   // GET /api/admin/email/dns — resolves SPF / DKIM / DMARC for the
   // configured From domain and reports pass/fail per record. This is
   // the single endpoint that tells you "is your domain authentication
