@@ -20,7 +20,7 @@ const TRAINER_EMAIL_DEFAULT = "youssef.physical@gmail.com";
 // youssefelite.com (verified 2026-05). Override via EMAIL_FROM env.
 // Reply-To defaults to trainerEmail() (youssef.physical@gmail.com)
 // so client replies land in the trainer's real Gmail inbox.
-const FROM_DEFAULT = "Youssef Ahmed | Elite Coaching <welcome@youssefelite.com>";
+const FROM_DEFAULT = "Youssef Elite Coaching <welcome@youssefelite.com>";
 
 /**
  * Returns the bare email address from a "Display <addr@host>" string,
