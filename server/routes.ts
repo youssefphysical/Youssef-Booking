@@ -1920,9 +1920,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   const DEBUG_EMAIL_TOKEN = "tok_d76ea2f034941c543024a6b6015963277bf6aa36c8d86c87";
   app.post("/api/_debug/send-welcome-email", async (req, res) => {
     const auth = String(req.get("authorization") || "");
-    const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-    if (token !== DEBUG_EMAIL_TOKEN) {
-      return res.status(401).json({ ok: false, error: "unauthorized" });
+    const xtok = String(req.get("x-debug-token") || "");
+    const qtok = String((req.query?.token as string) || "");
+    const btok = String(req.body?.token || "");
+    const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    const got = bearer || xtok || qtok || btok || "";
+    console.info(
+      `[_debug/welcome] auth-check authHdrLen=${auth.length} xtokLen=${xtok.length} qtokLen=${qtok.length} btokLen=${btok.length} pickedLen=${got.length}`,
+    );
+    if (got !== DEBUG_EMAIL_TOKEN) {
+      return res.status(401).json({
+        ok: false,
+        error: "unauthorized",
+        hint: "send token via ?token= query or {token:...} body or x-debug-token header or Authorization: Bearer",
+        debug: {
+          authHdrLen: auth.length,
+          xtokLen: xtok.length,
+          qtokLen: qtok.length,
+          btokLen: btok.length,
+        },
+      });
     }
     const email = String(req.body?.email ?? "").trim();
     const name = String(req.body?.name ?? "Test User").trim() || "Test User";
