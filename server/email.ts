@@ -8,7 +8,7 @@
  *
  * Configure via env:
  *   RESEND_API_KEY            (required to actually send)
- *   EMAIL_FROM                (default: "Youssef Fitness <bookings@youssef-ahmed.fit>")
+ *   EMAIL_FROM                (default: "Youssef Ahmed | Elite Coaching <welcome@youssefelite.com>")
  *   TRAINER_EMAIL             (default: "youssef.physical@gmail.com")
  */
 
@@ -16,10 +16,11 @@ const TRAINER_EMAIL_DEFAULT = "youssef.physical@gmail.com";
 // Display name uses the elite-coaching brand identity — inboxes show
 // "Youssef Ahmed | Elite Coaching" for premium client perception. The
 // address half MUST live on a domain that is fully verified in Resend
-// (SPF + DKIM + DMARC). Override via EMAIL_FROM. Reply-To defaults to
-// trainerEmail() (youssef.physical@gmail.com) so client replies land
-// in the trainer's real Gmail inbox.
-const FROM_DEFAULT = "Youssef Ahmed | Elite Coaching <bookings@youssef-ahmed.fit>";
+// (SPF + DKIM + DMARC). The current production sender lives on
+// youssefelite.com (verified 2026-05). Override via EMAIL_FROM env.
+// Reply-To defaults to trainerEmail() (youssef.physical@gmail.com)
+// so client replies land in the trainer's real Gmail inbox.
+const FROM_DEFAULT = "Youssef Ahmed | Elite Coaching <welcome@youssefelite.com>";
 
 /**
  * Returns the bare email address from a "Display <addr@host>" string,
