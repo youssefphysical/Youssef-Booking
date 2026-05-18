@@ -79,37 +79,38 @@ function esc(v: string): string {
 /**
  * Bulletproof button — table + MSO VML so it renders as a solid
  * cyan pill in every client (including Outlook 2007–2019 desktop).
+ *
+ * NOTE: callers must pass already-escaped `href` and a static literal
+ * `label`. We do NOT escape here — escaping twice would turn `&` in a
+ * query string into `&amp;amp;` and break the link.
  */
-function ctaButton(label: string, href: string): string {
-  const safeHref = esc(href);
-  const safeLabel = esc(label);
+function ctaButton(label: string, escapedHref: string): string {
   // VML width/height tuned for the 600px container; height 50 keeps
   // tap-target ≥ 44pt on iOS (Apple HIG).
   return `
   <!--[if mso]>
-  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:50px;v-text-anchor:middle;width:280px;" arcsize="60%" stroke="f" fillcolor="${BORDER_CYAN}">
+  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapedHref}" style="height:50px;v-text-anchor:middle;width:280px;" arcsize="60%" stroke="f" fillcolor="${BORDER_CYAN}">
     <w:anchorlock/>
-    <center style="color:#05070B;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1px;">${safeLabel}</center>
+    <center style="color:#05070B;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1px;">${label}</center>
   </v:roundrect>
   <![endif]-->
   <!--[if !mso]><!-- -->
-  <a href="${safeHref}" target="_blank" rel="noopener" style="background-color:${BORDER_CYAN};border-radius:30px;color:#05070B;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1.5px;line-height:50px;text-align:center;text-decoration:none;width:280px;-webkit-text-size-adjust:none;mso-hide:all;">${safeLabel}</a>
+  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BORDER_CYAN};border-radius:30px;color:#05070B;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1.5px;line-height:50px;text-align:center;text-decoration:none;width:280px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
   <!--<![endif]-->`;
 }
 
-/** Secondary outline button (cyan border, transparent fill). */
-function outlineButton(label: string, href: string): string {
-  const safeHref = esc(href);
-  const safeLabel = esc(label);
+/** Secondary outline button (cyan border, transparent fill). Same
+ *  escaping contract as ctaButton — pass an already-escaped href. */
+function outlineButton(label: string, escapedHref: string): string {
   return `
   <!--[if mso]>
-  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeHref}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="60%" strokecolor="${BORDER_CYAN}" fillcolor="${BG_DEEP}">
+  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapedHref}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="60%" strokecolor="${BORDER_CYAN}" fillcolor="${BG_DEEP}">
     <w:anchorlock/>
-    <center style="color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">${safeLabel}</center>
+    <center style="color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">${label}</center>
   </v:roundrect>
   <![endif]-->
   <!--[if !mso]><!-- -->
-  <a href="${safeHref}" target="_blank" rel="noopener" style="background-color:${BG_DEEP};border:2px solid ${BORDER_CYAN};border-radius:28px;color:${BORDER_CYAN};display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;line-height:44px;text-align:center;text-decoration:none;width:256px;-webkit-text-size-adjust:none;mso-hide:all;">${safeLabel}</a>
+  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BG_DEEP};border:2px solid ${BORDER_CYAN};border-radius:28px;color:${BORDER_CYAN};display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;line-height:44px;text-align:center;text-decoration:none;width:256px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
   <!--<![endif]-->`;
 }
 
@@ -159,16 +160,18 @@ function buildHtml(v: {
   </xml>
   <![endif]-->
   <style type="text/css">
-    /* Mobile overrides — Gmail strips most <style>, but honours @media. */
+    /* Mobile overrides — Gmail strips most <style>, but honours @media.
+       Only selectors that actually appear in the markup below are listed
+       here; dead selectors were intentionally removed. The fixed-width
+       (280/256px) buttons already fit a 320px viewport so no override
+       is required. The next-step cards keep their horizontal layout
+       (60px badge + flexible body) which also fits 320px cleanly. */
     @media only screen and (max-width:620px) {
       .container { width:100% !important; }
       .px { padding-left:20px !important; padding-right:20px !important; }
       .h1 { font-size:28px !important; line-height:34px !important; }
       .h2 { font-size:18px !important; line-height:24px !important; }
       .hero { width:100% !important; height:auto !important; }
-      .cta, .cta2 { width:100% !important; max-width:320px !important; }
-      .stack td { display:block !important; width:100% !important; padding:0 0 12px 0 !important; text-align:center !important; }
-      .stack .num { margin:0 auto !important; }
     }
     /* Outlook.com / Yahoo dark-bg fix */
     body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
