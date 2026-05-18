@@ -1,0 +1,361 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Welcome to Youssef Elite Coaching</title>
+    <style type="text/css">
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+        table { border-collapse: collapse !important; }
+        body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #000000; }
+        
+        @media screen and (max-width: 600px) {
+            .email-container { width: 100% !important; max-width: 100% !important; }
+            .hero-right { display: none !important; }
+            .hero-left { width: 100% !important; padding-right: 20px !important; }
+            .feature-col { display: block !important; width: 100% !important; border-right: none !important; border-bottom: 1px solid #111a1e !important; padding: 20px 10px !important; }
+            .feature-col-last { border-bottom: none !important; }
+            .padding-mobile { padding-left: 20px !important; padding-right: 20px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000;">
+    <center style="width: 100%; background-color: #000000;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" max-width="700" class="email-container" style="max-width: 700px; margin: 0 auto; background-color: #000000; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+            
+            <tr>
+                <td style="padding: 15px 25px; background-color: #000000;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td align="left" style="color: #888888; font-size: 11px; font-weight: 400; letter-spacing: 0.5px;">
+                                Elite training. Personalized for you.
+                            </td>
+                            <td align="right" style="font-size: 11px;">
+                                <a href="https://www.youssefelite.com" target="_blank" style="color: #00b4d8; text-decoration: underline; font-weight: 500;">View in browser</a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td background="https://i.postimg.cc/0jXqg0z4/hero-bg-dark.jpg" bgcolor="#000000" align="left" valign="top" style="background-image: url('https://i.postimg.cc/0jXqg0z4/hero-bg-dark.jpg'); background-size: cover; background-position: center top; background-repeat: no-repeat; padding: 35px 35px 60px 35px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td align="left" style="padding-bottom: 50px;">
+                                <img src="https://i.postimg.cc/MGMfByCj/youssef-logo-top.png" width="160" alt="YOUSSEF ELITE COACHING" style="display: block; border: 0; width: 160px; max-width: 160px; height: auto;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td class="hero-left" width="55%" align="left" valign="top" style="padding-right: 10px;">
+                                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: 1.5px; line-height: 1.2;">WELCOME TO</h1>
+                                            <h1 style="margin: 5px 0 0 0; color: #00b4d8; font-size: 38px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.1;">ELITE<br />COACHING</h1>
+                                            
+                                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+                                                <tr>
+                                                    <td bgcolor="#00b4d8" height="2" width="40" style="font-size: 0px; line-height: 0px;">&nbsp;</td>
+                                                </tr>
+                                            </table>
+
+                                            <p style="margin: 0 0 20px 0; color: #ffffff; font-size: 15px; line-height: 1.6; font-weight: 400; letter-spacing: 0.3px;">
+                                                You've just taken the first step towards transforming your life.
+                                            </p>
+                                            <p style="margin: 0 0 35px 0; color: #b0b0b0; font-size: 15px; line-height: 1.6; font-weight: 400; letter-spacing: 0.3px;">
+                                                We're here to guide, support and push you towards becoming the strongest version of yourself.
+                                            </p>
+
+                                            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td align="center" style="border: 2px solid #00b4d8; border-radius: 4px; padding: 13px 28px;">
+                                                        <a href="https://www.youssefelite.com/sign-up" target="_blank" style="color: #00b4d8; font-size: 14px; font-weight: 700; text-decoration: none; letter-spacing: 1.5px; display: inline-block;">
+                                                            LET'S GET STARTED &nbsp;<span style="font-size: 15px;">&rarr;</span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td class="hero-right" width="45%" align="right" valign="top" style="padding-top: 40px; padding-right: 15px;">
+                                            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                <tr>
+                                                    <td align="right" style="color: #ffffff; font-size: 16px; font-weight: 700; letter-spacing: 3px; line-height: 2.2; text-align: right; opacity: 0.9;">
+                                                        DISCIPLINE<br />
+                                                        FOCUS<br />
+                                                        CONSISTENCY<br />
+                                                        RESULTS
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                    </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 0 25px 40px 25px; background-color: #000000;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #111a1e; border-radius: 6px; background-color: #030708;">
+                        <tr>
+                            <td class="feature-col" width="25%" valign="top" align="center" style="padding: 30px 12px; border-right: 1px solid #111a1e;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                                    <tr>
+                                        <td align="center" style="padding-bottom: 15px;">
+                                            <img src="https://i.postimg.cc/mD8zQxCr/icon-profile.png" width="28" alt="" style="display: block; width: 28px; height: auto;" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1px; line-height: 1.4; padding-bottom: 12px; height: 32px; vertical-align: top;">
+                                            PERSONALIZED<br />COACHING
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #8a9296; font-size: 11px; line-height: 1.5; font-weight: 400;">
+                                            Tailored training &amp; nutrition plans just for you.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td class="feature-col" width="25%" valign="top" align="center" style="padding: 30px 12px; border-right: 1px solid #111a1e;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                                    <tr>
+                                        <td align="center" style="padding-bottom: 15px;">
+                                            <img src="https://i.postimg.cc/RhWb766X/icon-dumbbell.png" width="28" alt="" style="display: block; width: 28px; height: auto;" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1px; line-height: 1.4; padding-bottom: 12px; height: 32px; vertical-align: top;">
+                                            EXPERT<br />TRAINERS
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #8a9296; font-size: 11px; line-height: 1.5; font-weight: 400;">
+                                            Learn from the best. Always by your side.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td class="feature-col" width="25%" valign="top" align="center" style="padding: 30px 12px; border-right: 1px solid #111a1e;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                                    <tr>
+                                        <td align="center" style="padding-bottom: 15px;">
+                                            <img src="https://i.postimg.cc/8PZ8S66b/icon-chart.png" width="28" alt="" style="display: block; width: 28px; height: auto;" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1px; line-height: 1.4; padding-bottom: 12px; height: 32px; vertical-align: top;">
+                                            TRACK &amp;<br />PROGRESS
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #8a9296; font-size: 11px; line-height: 1.5; font-weight: 400;">
+                                            We track what matters so you see real results.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                            <td class="feature-col feature-col-last" width="25%" valign="top" align="center" style="padding: 30px 12px;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                                    <tr>
+                                        <td align="center" style="padding-bottom: 15px;">
+                                            <img src="https://i.postimg.cc/D0m4mX9L/icon-shield.png" width="28" alt="" style="display: block; width: 28px; height: auto;" />
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #ffffff; font-size: 11px; font-weight: 700; letter-spacing: 1px; line-height: 1.4; padding-bottom: 12px; height: 32px; vertical-align: top;">
+                                            SUPPORT &amp;<br />ACCOUNTABILITY
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="color: #8a9296; font-size: 11px; line-height: 1.5; font-weight: 400;">
+                                            We're with you every step of the way.
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 0 25px 40px 25px; background-color: #000000;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #111a1e; border-radius: 8px; background-color: #030708; padding: 30px 25px;">
+                        <tr>
+                            <td align="left" style="color: #00b4d8; font-size: 14px; font-weight: 700; letter-spacing: 1px; padding-bottom: 20px;">
+                                YOUR NEXT STEPS
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="border-bottom: 1px solid #111a1e; padding: 16px 0;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td width="40" valign="middle" align="left">
+                                            <img src="https://i.postimg.cc/vH0HwP4F/step-clipboard.png" width="32" alt="" style="display: block; width: 32px; height: auto;" />
+                                        </td>
+                                        <td valign="middle" align="left" style="padding-left: 15px;">
+                                            <div style="color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 3px;">Complete your InBody assessment</div>
+                                            <div style="color: #8a9296; font-size: 12px;">Help us understand your baseline.</div>
+                                        </td>
+                                        <td width="30" valign="middle" align="right" style="color: #555555; font-size: 16px; font-weight: bold;">
+                                            <span style="color: #8a9296;">&rsaquo;</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="border-bottom: 1px solid #111a1e; padding: 16px 0;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td width="40" valign="middle" align="left">
+                                            <img src="https://i.postimg.cc/pT5n3zZ6/step-calendar.png" width="32" alt="" style="display: block; width: 32px; height: auto;" />
+                                        </td>
+                                        <td valign="middle" align="left" style="padding-left: 15px;">
+                                            <div style="color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 3px;">Book your first session</div>
+                                            <div style="color: #8a9296; font-size: 12px;">Let's get you started.</div>
+                                        </td>
+                                        <td width="30" valign="middle" align="right" style="color: #555555; font-size: 16px; font-weight: bold;">
+                                            <span style="color: #8a9296;">&rsaquo;</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding: 16px 0 35px 0;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td width="40" valign="middle" align="left">
+                                            <img src="https://i.postimg.cc/9F4P6kH4/step-target.png" width="32" alt="" style="display: block; width: 32px; height: auto;" />
+                                        </td>
+                                        <td valign="middle" align="left" style="padding-left: 15px;">
+                                            <div style="color: #ffffff; font-size: 14px; font-weight: 600; margin-bottom: 3px;">Follow your personalized plan</div>
+                                            <div style="color: #8a9296; font-size: 12px;">Stay consistent and trust the process.</div>
+                                        </td>
+                                        <td width="30" valign="middle" align="right" style="color: #555555; font-size: 16px; font-weight: bold;">
+                                            <span style="color: #8a9296;">&rsaquo;</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td align="center">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td align="center" bgcolor="#00b4d8" style="border-radius: 4px; padding: 14px; background-color: #00b4d8;">
+                                            <a href="https://www.youssefelite.com/dashboard" target="_blank" style="color: #000000; font-size: 14px; font-weight: 700; text-decoration: none; letter-spacing: 1px; display: block; width: 100%;">
+                                                GO TO DASHBOARD &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rarr;
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 0 25px 50px 25px; background-color: #000000;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #111a1e; border-radius: 8px; background: #030708 url('https://i.postimg.cc/L5vP8g9z/dubai-skyline.png') right bottom no-repeat; background-size: contain;">
+                        <tr>
+                            <td align="left" valign="top" style="padding: 35px 30px; width: 60%;">
+                                <img src="https://i.postimg.cc/bJZvK7v8/quote-icon.png" width="30" alt="" style="display: block; width: 30px; margin-bottom: 15px;" />
+                                <p style="margin: 0 0 15px 0; color: #ffffff; font-size: 18px; font-style: italic; line-height: 1.5; font-weight: 500; letter-spacing: 0.3px;">
+                                    The body achieves what<br />the mind believes.
+                                </p>
+                                <p style="margin: 0; color: #00b4d8; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+                                    &ndash; Youssef
+                                </p>
+                                <p style="margin: 2px 0 0 0; color: #8a9296; font-size: 12px; font-weight: 400;">
+                                    Elite Coaching Team
+                                </p>
+                            </td>
+                            <td width="40%" class="hero-right">&nbsp;</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr>
+                <td align="center" style="padding: 0 25px 40px 25px; background-color: #000000; border-top: 1px solid #111a1e;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td align="center" style="padding: 40px 0 20px 0;">
+                                <img src="https://i.postimg.cc/MGMfByCj/youssef-logo-top.png" width="150" alt="YOUSSEF ELITE COACHING" style="display: block; width: 150px; height: auto;" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="color: #666666; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; padding-bottom: 20px;">
+                                STAY CONNECTED
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="padding-bottom: 40px;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center">
+                                    <tr>
+                                        <td style="padding: 0 12px;">
+                                            <a href="https://wa.me/971505394754" target="_blank"><img src="https://i.postimg.cc/fThgXpLz/sm-whatsapp.png" width="22" alt="WhatsApp" style="display: block; width: 22px; height: auto; border: 0;" /></a>
+                                        </td>
+                                        <td style="padding: 0 12px;">
+                                            <a href="https://instagram.com/youssef.fitness" target="_blank"><img src="https://i.postimg.cc/gJ0zXf87/sm-instagram.png" width="22" alt="Instagram" style="display: block; width: 22px; height: auto; border: 0;" /></a>
+                                        </td>
+                                        <td style="padding: 0 12px;">
+                                            <a href="#" target="_blank"><img src="https://i.postimg.cc/v86W1FMC/sm-youtube.png" width="22" alt="YouTube" style="display: block; width: 22px; height: auto; border: 0;" /></a>
+                                        </td>
+                                        <td style="padding: 0 12px;">
+                                            <a href="mailto:youssef.physical@gmail.com"><img src="https://i.postimg.cc/8cmmCWhB/sm-email.png" width="22" alt="Email" style="display: block; width: 22px; height: auto; border: 0;" /></a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td bgcolor="#111a1e" height="1" style="font-size: 0px; line-height: 0px; padding: 0; background-color: #111a1e;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 25px;">
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <tr>
+                                        <td class="padding-mobile" align="left" style="color: #666666; font-size: 12px; font-weight: 400;">
+                                            Need help? We're here for you.
+                                        </td>
+                                        <td class="padding-mobile" align="right" style="font-size: 12px;">
+                                            <a href="https://wa.me/971505394754" target="_blank" style="color: #00b4d8; text-decoration: none; font-weight: 600; letter-spacing: 0.5px;">
+                                                <img src="https://i.postimg.cc/9MspZp8v/icon-support-bubble.png" width="14" alt="" style="display: inline-block; vertical-align: middle; margin-right: 5px; width: 14px;" />
+                                                <span style="vertical-align: middle;">CONTACT SUPPORT</span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="color: #444444; font-size: 11px; font-weight: 400; padding-top: 30px;">
+                                &copy; 2025 Youssef Elite Coaching. All rights reserved.
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+        </table>
+        
+        </center>
+</body>
+</html>

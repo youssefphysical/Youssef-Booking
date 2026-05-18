@@ -80,51 +80,59 @@ function esc(v: string): string {
  * Bulletproof button — table + MSO VML so it renders as a solid
  * cyan pill in every client (including Outlook 2007–2019 desktop).
  *
- * NOTE: callers must pass already-escaped `href` and a static literal
- * `label`. We do NOT escape here — escaping twice would turn `&` in a
- * query string into `&amp;amp;` and break the link.
+ * Pro-grade arrow alignment: the label and the trailing arrow sit
+ * inside the same anchor with a fixed-width inline-block spacer
+ * (single character entity, NOT a wall of &nbsp;). This avoids the
+ * "fake spacing" pattern and renders identically in Gmail (web +
+ * Android + iOS), Yahoo, Apple Mail, and Outlook (VML branch).
+ *
+ * NOTE: callers must pass already-escaped `href`. Labels are static
+ * literals so no escaping needed.
  */
 function ctaButton(label: string, escapedHref: string): string {
   // VML width/height tuned for the 600px container; height 50 keeps
-  // tap-target ≥ 44pt on iOS (Apple HIG).
+  // tap-target ≥ 44pt on iOS (Apple HIG). Arrow appended in both
+  // VML and !mso branches so it appears in Outlook too.
+  const arrowSpacer = `<span style="display:inline-block;width:10px;mso-hide:all;">&nbsp;</span>`;
   return `
   <!--[if mso]>
   <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapedHref}" style="height:50px;v-text-anchor:middle;width:280px;" arcsize="60%" stroke="f" fillcolor="${BORDER_CYAN}">
     <w:anchorlock/>
-    <center style="color:#05070B;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1px;">${label}</center>
+    <center style="color:#05070B;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1px;">${label} &rarr;</center>
   </v:roundrect>
   <![endif]-->
   <!--[if !mso]><!-- -->
-  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BORDER_CYAN};border-radius:30px;color:#05070B;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1.5px;line-height:50px;text-align:center;text-decoration:none;width:280px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
+  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BORDER_CYAN};border-radius:30px;color:#05070B;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;letter-spacing:1.5px;line-height:50px;text-align:center;text-decoration:none;width:280px;-webkit-text-size-adjust:none;mso-hide:all;">${label}${arrowSpacer}<span style="font-weight:bold;">&rarr;</span></a>
   <!--<![endif]-->`;
 }
 
 /** Secondary outline button (cyan border, transparent fill). Same
  *  escaping contract as ctaButton — pass an already-escaped href. */
 function outlineButton(label: string, escapedHref: string): string {
+  const arrowSpacer = `<span style="display:inline-block;width:10px;mso-hide:all;">&nbsp;</span>`;
   return `
   <!--[if mso]>
   <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapedHref}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="60%" strokecolor="${BORDER_CYAN}" fillcolor="${BG_DEEP}">
     <w:anchorlock/>
-    <center style="color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">${label}</center>
+    <center style="color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1px;">${label} &rarr;</center>
   </v:roundrect>
   <![endif]-->
   <!--[if !mso]><!-- -->
-  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BG_DEEP};border:2px solid ${BORDER_CYAN};border-radius:28px;color:${BORDER_CYAN};display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;line-height:44px;text-align:center;text-decoration:none;width:256px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
+  <a href="${escapedHref}" target="_blank" rel="noopener" style="background-color:${BG_DEEP};border:2px solid ${BORDER_CYAN};border-radius:28px;color:${BORDER_CYAN};display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:1.5px;line-height:44px;text-align:center;text-decoration:none;width:256px;-webkit-text-size-adjust:none;mso-hide:all;">${label}${arrowSpacer}<span style="font-weight:bold;">&rarr;</span></a>
   <!--<![endif]-->`;
 }
 
 /** A single "Next Steps" card row. */
 function nextStepCard(num: string, title: string, body: string): string {
   return `
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${BG_PANEL};border:1px solid #1A2230;border-radius:8px;margin:0 0 12px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${BG_PANEL}" style="background-color:${BG_PANEL};border:1px solid #1A2230;border-radius:8px;margin:0 0 12px 0;">
     <tr>
       <td valign="top" align="center" width="60" style="padding:18px 0 18px 18px;">
         <div style="width:38px;height:38px;line-height:38px;border-radius:50%;background-color:${BG_DEEP};border:1.5px solid ${BORDER_CYAN};color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;text-align:center;">${num}</div>
       </td>
       <td valign="top" style="padding:16px 18px 18px 14px;">
-        <div style="color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:0.3px;margin:0 0 4px 0;">${title}</div>
-        <div style="color:${TEXT_MUTED};font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;">${body}</div>
+        <div class="card-title" style="color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;letter-spacing:0.3px;line-height:20px;margin:0 0 4px 0;">${title}</div>
+        <div class="card-body" style="color:${TEXT_MUTED};font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:20px;">${body}</div>
       </td>
     </tr>
   </table>`;
@@ -161,35 +169,50 @@ function buildHtml(v: {
   <![endif]-->
   <style type="text/css">
     /* Mobile overrides — Gmail strips most <style>, but honours @media.
-       Only selectors that actually appear in the markup below are listed
-       here; dead selectors were intentionally removed. The fixed-width
-       (280/256px) buttons already fit a 320px viewport so no override
-       is required. The next-step cards keep their horizontal layout
-       (60px badge + flexible body) which also fits 320px cleanly. */
+       Vertical paddings tightened on phones to avoid oversized gaps. */
     @media only screen and (max-width:620px) {
       .container { width:100% !important; }
       .px { padding-left:20px !important; padding-right:20px !important; }
+      .pt-32 { padding-top:24px !important; }
+      .pt-36 { padding-top:24px !important; }
+      .pt-40 { padding-top:28px !important; }
+      .pt-28 { padding-top:20px !important; }
+      .pb-36 { padding-bottom:24px !important; }
       .h1 { font-size:28px !important; line-height:34px !important; }
       .h2 { font-size:18px !important; line-height:24px !important; }
-      .hero { width:100% !important; height:auto !important; }
+      .hero { width:100% !important; height:auto !important; max-width:100% !important; }
+      .intro { font-size:14px !important; line-height:23px !important; }
+      .card-title { font-size:14px !important; }
+      .card-body { font-size:12px !important; line-height:19px !important; }
     }
-    /* Outlook.com / Yahoo dark-bg fix */
+    /* Outlook.com / Yahoo dark-bg fixes */
     body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
-    img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; }
+    img { -ms-interpolation-mode:bicubic; border:0; outline:none; text-decoration:none; display:block; }
     a { text-decoration:none; }
+    /* Lock against Gmail / Outlook.com dark-mode auto-inversion. */
+    [data-ogsc] body, [data-ogsc] .body { background:#05070B !important; color:#F5F7FA !important; }
+    [data-ogsb] body, [data-ogsb] .body { background:#05070B !important; color:#F5F7FA !important; }
   </style>
+  <!--[if !mso]><!-- -->
+  <style type="text/css">
+    :root { color-scheme: dark; supported-color-schemes: dark; }
+  </style>
+  <!--<![endif]-->
 </head>
-<body style="margin:0;padding:0;background-color:${BG_DEEP};color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;">
+<body class="body" bgcolor="#05070B" style="margin:0;padding:0;background-color:#05070B;color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;">
   <!-- Preheader (inbox preview line; invisible in body) -->
   <div style="display:none;font-size:1px;color:${BG_DEEP};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
     ${v.clientName}, welcome to Elite Coaching — your transformation starts now.
   </div>
 
-  <!-- 100% outer wrapper for the dark background -->
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${BG_DEEP};">
+  <!-- 100% outer wrapper for the dark background. bgcolor attr +
+       inline style + center wrapper triple-lock against Outlook /
+       Yahoo / Gmail dark-mode inversions. -->
+  <center style="width:100%;background-color:#05070B;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#05070B" style="background-color:#05070B;">
     <tr>
-      <td align="center" style="padding:0;">
+      <td align="center" bgcolor="#05070B" style="padding:0;background-color:#05070B;">
 
         <!-- View in browser bar -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
@@ -224,14 +247,14 @@ function buildHtml(v: {
         <!-- Welcome heading + intro -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td align="center" class="px" style="padding:32px 32px 0 32px;">
+            <td align="center" class="px pt-32" style="padding:32px 32px 0 32px;">
               <div class="h1" style="color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;font-size:32px;font-weight:bold;line-height:38px;letter-spacing:0.5px;margin:0;">
                 Welcome, ${v.clientName}.
               </div>
               <div style="color:${BORDER_CYAN};font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;margin:14px 0 0 0;">
                 Your transformation starts now
               </div>
-              <p style="color:${TEXT_MUTED};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;margin:18px 0 0 0;">
+              <p class="intro" style="color:${TEXT_MUTED};font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:26px;margin:18px 0 0 0;">
                 You've just joined an elite circle of clients who refuse to settle for ordinary.
                 Over the coming weeks, we'll build the strongest, leanest, most disciplined
                 version of you — one session at a time.
@@ -243,7 +266,7 @@ function buildHtml(v: {
         <!-- Primary CTA -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td align="center" style="padding:28px 24px 8px 24px;">
+            <td align="center" class="pt-28" style="padding:28px 24px 8px 24px;">
               ${ctaButton("LET'S GET STARTED", v.signupUrl)}
             </td>
           </tr>
@@ -252,8 +275,8 @@ function buildHtml(v: {
         <!-- Your Next Steps section -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td class="px" style="padding:36px 24px 0 24px;">
-              <div class="h2" style="color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold;letter-spacing:0.5px;text-align:center;margin:0 0 6px 0;">
+            <td class="px pt-36" style="padding:36px 24px 0 24px;">
+              <div class="h2" style="color:${TEXT_PRIMARY};font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:bold;letter-spacing:0.5px;line-height:26px;text-align:center;margin:0 0 6px 0;">
                 Your Next Steps
               </div>
               <div style="color:${TEXT_DIM};font-family:Arial,Helvetica,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;text-align:center;margin:0 0 20px 0;">
@@ -278,8 +301,8 @@ function buildHtml(v: {
         <!-- Quote section -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td class="px" style="padding:40px 32px 0 32px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:${BG_PANEL};border-left:3px solid ${BORDER_CYAN};border-radius:6px;">
+            <td class="px pt-40" style="padding:40px 32px 0 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${BG_PANEL}" style="background-color:${BG_PANEL};border-left:3px solid ${BORDER_CYAN};border-radius:6px;">
                 <tr>
                   <td style="padding:24px 28px;">
                     <div style="color:${TEXT_PRIMARY};font-family:Georgia,'Times New Roman',serif;font-size:18px;font-style:italic;line-height:28px;">
@@ -298,7 +321,7 @@ function buildHtml(v: {
         <!-- Social icons row -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td align="center" style="padding:40px 24px 0 24px;">
+            <td align="center" class="pt-40" style="padding:40px 24px 0 24px;">
               <div style="color:${TEXT_DIM};font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">
                 Stay Connected
               </div>
@@ -337,7 +360,7 @@ function buildHtml(v: {
         <!-- Footer -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="container" style="width:600px;max-width:600px;">
           <tr>
-            <td align="center" class="px" style="padding:36px 32px 36px 32px;">
+            <td align="center" class="px pb-36" style="padding:36px 32px 36px 32px;">
               <div style="color:${TEXT_DIM};font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:18px;letter-spacing:0.5px;">
                 Youssef Elite Coaching · Dubai, United Arab Emirates<br>
                 You're receiving this because you created an account at
@@ -350,6 +373,7 @@ function buildHtml(v: {
       </td>
     </tr>
   </table>
+  </center>
 </body>
 </html>`;
 }
