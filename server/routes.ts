@@ -1911,6 +1911,93 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ to, ...result, config: emailConfigStatus() });
   });
 
+  // POST /api/_debug/send-welcome-email — bearer-token-protected one-shot
+  // welcome email tester for production debugging. Identical pipeline to
+  // sendWelcomeNotifications() but returns the raw Resend response.
+  // Token is hardcoded (not an env var) so we can hit it from outside
+  // without admin session. Safe blast radius: only sends one welcome
+  // email; no data exposure. Remove after debugging is complete.
+  const DEBUG_EMAIL_TOKEN = "tok_d76ea2f034941c543024a6b6015963277bf6aa36c8d86c87";
+  app.post("/api/_debug/send-welcome-email", async (req, res) => {
+    const auth = String(req.get("authorization") || "");
+    const xtok = String(req.get("x-debug-token") || "");
+    const qtok = String((req.query?.token as string) || "");
+    const btok = String(req.body?.token || "");
+    const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    const got = bearer || xtok || qtok || btok || "";
+    console.info(
+      `[_debug/welcome] auth-check authHdrLen=${auth.length} xtokLen=${xtok.length} qtokLen=${qtok.length} btokLen=${btok.length} pickedLen=${got.length}`,
+    );
+    if (got !== DEBUG_EMAIL_TOKEN) {
+      return res.status(401).json({
+        ok: false,
+        error: "unauthorized",
+        hint: "send token via ?token= query or {token:...} body or x-debug-token header or Authorization: Bearer",
+        debug: {
+          authHdrLen: auth.length,
+          xtokLen: xtok.length,
+          qtokLen: qtok.length,
+          btokLen: btok.length,
+        },
+      });
+    }
+    const email = String(req.body?.email ?? "").trim();
+    const name = String(req.body?.name ?? "Test User").trim() || "Test User";
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ ok: false, error: "invalid email" });
+    }
+    const cfg = emailConfigStatus();
+    console.info(
+      `[_debug/welcome] BEGIN to=${email} keyPresent=${cfg.hasApiKey} from=${cfg.from}`,
+    );
+    try {
+      const { buildStripoWelcomeEmail } = await import(
+        "./email/builders/stripoWelcome"
+      );
+      const base =
+        process.env.PUBLIC_APP_URL?.replace(/\/+$/, "") ||
+        "https://youssef-ahmed.fit";
+      const built = buildStripoWelcomeEmail({
+        clientName: name,
+        dashboardUrl: `${base}/dashboard`,
+        supportWhatsappUrl: "https://wa.me/971505394754",
+        supportEmail: trainerEmail(),
+      });
+      const result = await sendEmail({
+        to: email,
+        subject: built.subject,
+        text: built.text,
+        html: built.html,
+        replyTo: trainerEmail(),
+      });
+      console.info(
+        `[_debug/welcome] DONE to=${email} sent=${result.sent} id=${result.id ?? "-"} error=${JSON.stringify(result.error ?? null)}`,
+      );
+      return res.json({
+        ok: result.sent === true,
+        functionCalled: true,
+        to: email,
+        from: cfg.from,
+        subject: built.subject,
+        resend: {
+          sent: result.sent,
+          provider: result.provider ?? null,
+          messageId: result.id ?? null,
+          error: result.error ?? null,
+        },
+        config: cfg,
+      });
+    } catch (e: any) {
+      console.error("[_debug/welcome] EXCEPTION:", e?.stack || e?.message || e);
+      return res.status(500).json({
+        ok: false,
+        error: e?.message || String(e),
+        stack: e?.stack || null,
+        config: cfg,
+      });
+    }
+  });
+
   // POST /api/admin/test-welcome-email — sends the EXACT Stripo welcome
   // email that a real signup triggers, to an arbitrary address, and
   // returns the raw Resend response. This is the single-shot test for
