@@ -201,6 +201,9 @@ export const users = pgTable("users", {
   leadStatusManualOverride: boolean("lead_status_manual_override").notNull().default(false),
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Client Data Center — bumped by storage.updateUser() so the admin
+  // export reflects the last time any field on the user row changed.
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // =============================

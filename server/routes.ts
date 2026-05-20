@@ -7648,6 +7648,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     },
   );
 
+  // ===========================================================
+  // Client Data Center (admin-only) — flat dataset for the table
+  // view, filter UI, and export buttons on /admin/data-center.
+  // Every new client registration is auto-included because the
+  // query joins live against the users table; no caching layer.
+  // ===========================================================
+  app.get("/api/admin/data-center", requireAdmin, async (_req, res) => {
+    try {
+      const rows = await storage.getClientDataCenter();
+      res.json({ rows, generatedAt: new Date().toISOString(), count: rows.length });
+    } catch (err) {
+      console.error("[data-center] failed", err);
+      res.status(500).json({ message: "Failed to load client data center" });
+    }
+  });
+
   // ============== SEED ==============
   await seedDatabase();
 

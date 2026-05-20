@@ -137,6 +137,12 @@ export interface IStorage {
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<void>;
   getAllClients(): Promise<User[]>;
+  /**
+   * Client Data Center dataset — one denormalised row per client with
+   * latest active package, default training location, nutrition flag,
+   * recovery counts, and last completed session. Admin-only.
+   */
+  getClientDataCenter(): Promise<Array<Record<string, any>>>;
   getAllAdmins(): Promise<User[]>;
   /**
    * Federated admin search across users (clients), bookings, packages,
@@ -584,8 +590,83 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updates: Partial<User>) {
-    const [u] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    // Client Data Center: bump updated_at on every mutation so the admin
+    // export reflects the last time this client record changed.
+    const [u] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() } as Partial<User>)
+      .where(eq(users.id, id))
+      .returning();
     return u;
+  }
+
+  // ===========================================================
+  // Client Data Center — single dataset used by the admin export
+  // (`/api/admin/data-center`). Joins each client row to its most
+  // recently purchased active package, default training location,
+  // nutrition-plan flag, active recovery-request count, and the
+  // last completed session. Single round-trip via raw SQL.
+  // ===========================================================
+  async getClientDataCenter(): Promise<Array<Record<string, any>>> {
+    const sqlText = `
+      SELECT
+        u.id, u.full_name, u.phone, u.email, u.username,
+        u.area, u.primary_goal, u.fitness_goal, u.training_goal, u.training_level,
+        u.emergency_contact_name, u.emergency_contact_phone,
+        u.injuries, u.medical_notes, u.notes,
+        u.admin_notes, u.coach_notes, u.goal_notes, u.communication_notes,
+        u.lead_source, u.lead_status, u.client_status, u.vip_tier,
+        u.weekly_frequency, u.no_show_count, u.archived_at,
+        u.created_at, u.updated_at,
+        tl.label  AS tl_label,
+        tl.kind   AS tl_kind,
+        tl.gym_name AS tl_gym,
+        tl.address  AS tl_address,
+        tl.building_name AS tl_building,
+        tl.room_number   AS tl_room,
+        p.name        AS pkg_name,
+        p.type        AS pkg_type,
+        p.total_sessions AS pkg_total,
+        p.used_sessions  AS pkg_used,
+        p.start_date     AS pkg_start,
+        p.expiry_date    AS pkg_expiry,
+        p.status         AS pkg_status,
+        p.is_active      AS pkg_is_active,
+        p.frozen         AS pkg_frozen,
+        EXISTS (
+          SELECT 1 FROM nutrition_plans np
+          WHERE np.user_id = u.id AND np.is_active = true
+        ) AS has_nutrition,
+        (
+          SELECT COUNT(*)::int FROM recovery_requests rr
+          WHERE rr.user_id = u.id AND rr.status IN ('pending','scheduled')
+        ) AS recovery_active_count,
+        (
+          SELECT COUNT(*)::int FROM recovery_requests rr
+          WHERE rr.user_id = u.id
+        ) AS recovery_total_count,
+        (
+          SELECT MAX(b.completed_at) FROM bookings b
+          WHERE b.user_id = u.id AND b.completed_at IS NOT NULL
+        ) AS last_session_at
+      FROM users u
+      LEFT JOIN LATERAL (
+        SELECT * FROM training_locations
+        WHERE user_id = u.id AND archived_at IS NULL
+        ORDER BY is_default DESC, created_at DESC
+        LIMIT 1
+      ) tl ON true
+      LEFT JOIN LATERAL (
+        SELECT * FROM packages
+        WHERE user_id = u.id AND is_active = true
+        ORDER BY purchased_at DESC NULLS LAST
+        LIMIT 1
+      ) p ON true
+      WHERE u.role = 'client'
+      ORDER BY u.created_at DESC NULLS LAST
+    `;
+    const result = await pool.query(sqlText);
+    return result.rows;
   }
 
   async getAllClients() {

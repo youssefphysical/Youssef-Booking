@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
   Users,
+  Database,
   Calendar,
   Apple,
   UtensilsCrossed,
@@ -79,7 +80,14 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           href: "/admin/clients",
           label: t("nav.clients"),
           icon: <Users size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/clients"),
+          isActive: (loc) =>
+            loc === "/admin/clients" || /^\/admin\/clients\//.test(loc),
+        },
+        {
+          href: "/admin/data-center",
+          label: t("nav.dataCenter", "Client Data Center"),
+          icon: <Database size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/data-center"),
         },
       ],
     },

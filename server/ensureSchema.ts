@@ -32,7 +32,8 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS no_show_count integer NOT NULL DEFAULT 0,
       ADD COLUMN IF NOT EXISTS admin_notes text,
       ADD COLUMN IF NOT EXISTS password_reset_token text,
-      ADD COLUMN IF NOT EXISTS password_reset_expires timestamp;
+      ADD COLUMN IF NOT EXISTS password_reset_expires timestamp,
+      ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now();
 
     ALTER TABLE IF EXISTS packages
       ADD COLUMN IF NOT EXISTS start_date date,
