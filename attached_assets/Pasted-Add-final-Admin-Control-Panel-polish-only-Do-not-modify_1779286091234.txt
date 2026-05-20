@@ -1,0 +1,113 @@
+Add final Admin Control Panel polish only.
+
+Do not modify booking logic, package logic, nutrition logic, recovery logic, registration, auth, or existing client flows.
+
+Add these admin-only improvements:
+
+1. Admin Permission Levels:
+- Super Admin
+- Manager
+- Trainer
+- Viewer
+Super Admin has full access.
+Trainer can only see assigned clients if assignment exists.
+Viewer is read-only.
+Do not remove existing super admin behavior for youssef.physical@gmail.com.
+
+2. Bulk Actions:
+On admin client tables:
+- Select multiple clients
+- Export selected
+- Add tag
+- Mark inactive
+- Archive selected
+- Create follow-up task
+
+3. Admin To-do List:
+Create internal admin tasks:
+- Task title
+- Related client optional
+- Priority
+- Due date
+- Status: open / done / archived
+- Notes
+
+4. Internal Client Tags:
+Allow admin to tag clients:
+- VIP
+- High Priority
+- Needs Follow-up
+- Injury
+- Nutrition Lead
+- Fitness Zone
+- Hotel Client
+- Custom tag
+
+5. Saved Filters:
+Allow admin to save common filters:
+- Expiring this week
+- Fitness Zone pending
+- Nutrition renewals
+- Inactive 14 days
+- Recovery requests
+
+6. Admin Activity Log Page:
+Create a visible admin page showing audit logs:
+- Who did what
+- Entity affected
+- Date/time
+- Previous value
+- New value
+- Reason if available
+
+7. Admin Notification Preferences:
+Allow admin to choose alerts for:
+- New client registered
+- Pending verification
+- Package expiring
+- Nutrition expiring
+- Failed emails
+- Recovery requests
+- Inactive clients
+
+8. Manual Override With Reason:
+For sensitive admin actions, require a reason:
+- Remove session
+- Change expiry
+- Archive package
+- Override cancellation charge
+- Manual package correction
+
+9. View As Client:
+Super Admin only.
+Allow read-only “View as client” mode to inspect client experience.
+No data mutation allowed while viewing as client.
+
+10. Admin Policy Reference:
+Create a small internal reference page with:
+- Cancellation policy
+- Emergency cancel rules
+- Fitness Zone package rules
+- Nutrition disclaimer
+- Recovery disclaimer
+- Duo package rules
+
+Design:
+- Premium Tron Legacy admin style
+- Clean, fast, not cluttered
+- Desktop sidebar
+- Mobile cards
+- No excessive neon
+
+Security:
+- Admin only
+- Server-side permission checks
+- Audit logs for admin actions
+- No secrets exposed
+- No stack traces
+
+Verification:
+- npm run check
+- npm run build
+- Admin APIs protected
+- Existing flows unaffected
