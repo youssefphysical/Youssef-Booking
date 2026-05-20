@@ -123,14 +123,41 @@ import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
 import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
+import { WhatsNext } from "@/components/dashboard/WhatsNext";
+import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { Pill, LineChart as LineChartIcon, HeartPulse } from "lucide-react";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
 import { useFeatureFlag } from "@/lib/featureFlags";
 
 function RecoveryDashboardTile() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const enabled = useFeatureFlag("recovery_enabled", true);
+  // Status-aware: query the client's own recovery requests so the tile
+  // can surface the most relevant pending/scheduled status instead of a
+  // generic "explore recovery" CTA. 404 / unauthenticated falls back to
+  // the empty array, keeping the legacy CTA behavior.
+  const { data: requests = [] } = useQuery<any[]>({
+    queryKey: ["/api/recovery-requests"],
+    enabled: enabled && !!user && user.role === "client",
+    staleTime: 60_000,
+  });
   if (!enabled) return null;
+
+  // Surface the highest-priority active request. "scheduled" beats
+  // "pending", anything older/declined falls back to the empty CTA.
+  const active = (requests as any[])
+    .filter((r) => r?.status === "scheduled" || r?.status === "pending")
+    .sort((a, b) =>
+      a.status === b.status ? 0 : a.status === "scheduled" ? -1 : 1,
+    )[0];
+
+  const statusLabel = active
+    ? active.status === "scheduled"
+      ? t("recovery.statusScheduled", "Session scheduled")
+      : t("recovery.statusPending", "Awaiting confirmation")
+    : null;
+
   return (
     <Link
       href="/recovery"
@@ -145,10 +172,18 @@ function RecoveryDashboardTile() {
           <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300/80 font-semibold">
             {t("recovery.eyebrow", "Recovery & Mobility")}
           </p>
-          <p className="text-sm text-foreground/80 truncate">
-            {t("recovery.title", "Move better. Recover faster.")}
+          <p className="text-sm text-foreground/80 truncate" data-testid="text-recovery-status">
+            {statusLabel ?? t("recovery.title", "Move better. Recover faster.")}
           </p>
         </div>
+        {active && (
+          <span
+            className="shrink-0 rounded-full bg-cyan-500/15 text-cyan-200 text-[10px] uppercase tracking-wider px-2 py-0.5 border border-cyan-400/30"
+            data-testid="badge-recovery-status"
+          >
+            {active.status}
+          </span>
+        )}
       </div>
     </Link>
   );
@@ -231,6 +266,7 @@ export default function ClientDashboard() {
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
       <ProfileHero user={user} />
+      <WhatsNext />
       <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />
 
@@ -251,29 +287,33 @@ export default function ClientDashboard() {
 
       <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
         <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
+          {/* Brief §36 section labels — tabs map 1:1 to the required
+              section model (My Training, My Package, Nutrition (=
+              Supplements + plan summary surfaced via WhatsNext), Body,
+              Check-ins, InBody, Progress, History). */}
           <TabsTrigger value="bookings" data-testid="tab-bookings">
-            <Calendar size={14} className="mr-1.5" /> {t("dashboard.tabBookings")}
+            <Calendar size={14} className="mr-1.5" /> {t("dashboard.section.myTraining", "My Training")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-packages">
-            <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.tabPackages")}
+            <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.section.myPackage", "My Package")}
           </TabsTrigger>
           <TabsTrigger value="supplements" data-testid="tab-supplements">
-            <Pill size={14} className="mr-1.5" /> {t("dashboard.tabSupplements", "Supplements")}
+            <Pill size={14} className="mr-1.5" /> {t("dashboard.section.nutrition", "Nutrition")}
           </TabsTrigger>
           <TabsTrigger value="body" data-testid="tab-body">
-            <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.tabBody", "Body")}
+            <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.section.body", "Body")}
           </TabsTrigger>
           <TabsTrigger value="checkins" data-testid="tab-checkins">
-            <ClipboardCheck size={14} className="mr-1.5" /> {t("dashboard.tabCheckins", "Check-ins")}
+            <ClipboardCheck size={14} className="mr-1.5" /> {t("dashboard.section.checkins", "Check-ins")}
           </TabsTrigger>
           <TabsTrigger value="inbody" data-testid="tab-inbody">
-            <Activity size={14} className="mr-1.5" /> {t("dashboard.tabInbody")}
+            <Activity size={14} className="mr-1.5" /> {t("dashboard.section.inbody", "InBody")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">
-            <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.tabProgress")}
+            <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.section.progress", "Progress")}
           </TabsTrigger>
           <TabsTrigger value="activity" data-testid="tab-activity">
-            <Activity size={14} className="mr-1.5" /> {t("dashboard.tabActivity", "Activity")}
+            <Activity size={14} className="mr-1.5" /> {t("dashboard.section.history", "History")}
           </TabsTrigger>
         </TabsList>
 
@@ -503,13 +543,13 @@ function BookingsTab({ userId }: { userId: number }) {
         title={t("dashboard.sectionUpcoming")}
         count={upcoming.length}
         empty={
-          <EmptyState
+          <PremiumEmptyState
+            icon={<Calendar size={20} />}
             title={t("dashboard.noUpcoming")}
-            cta={
-              <Link href="/book">
-                <Button className="rounded-xl mt-4">{t("dashboard.bookSessionCta")}</Button>
-              </Link>
-            }
+            body={t("emptyState.noBookings.body")}
+            ctaLabel={t("dashboard.bookSessionCta")}
+            ctaHref="/book"
+            testId="empty-upcoming-bookings"
           />
         }
       >
@@ -537,7 +577,7 @@ function BookingsTab({ userId }: { userId: number }) {
       <Section
         title={t("dashboard.sectionPast")}
         count={past.length}
-        empty={<EmptyState title={t("dashboard.noPast")} />}
+        empty={<PremiumEmptyState title={t("dashboard.noPast")} testId="empty-past-bookings" />}
       >
         {past.slice(0, 25).map((b) => (
           <BookingCard
@@ -1005,13 +1045,11 @@ function PackagesTab({ userId }: { userId: number }) {
       </div>
 
       {list.length === 0 ? (
-        <EmptyState
+        <PremiumEmptyState
+          icon={<PackageIcon size={20} />}
           title={t("dashboard.packagesNone")}
-          cta={
-            <p className="text-xs text-muted-foreground mt-3 max-w-sm mx-auto">
-              {t("dashboard.packagesEmptyDesc")}
-            </p>
-          }
+          body={t("emptyState.verificationPending.body")}
+          testId="empty-packages"
         />
       ) : (
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
@@ -1672,7 +1710,14 @@ function InbodyTab({ userId }: { userId: number }) {
       {isLoading && <SkeletonCards />}
 
       {!isLoading && list.length === 0 && !upload.isPending && (
-        <EmptyState title={t("dashboard.inbodyEmpty")} />
+        <PremiumEmptyState
+          icon={<Activity size={20} />}
+          title={t("dashboard.inbodyEmpty")}
+          body={t("emptyState.noInbody.body")}
+          ctaLabel={t("dashboard.uploadScan")}
+          ctaOnClick={() => fileRef.current?.click()}
+          testId="empty-inbody"
+        />
       )}
 
       {latest && (
@@ -1876,7 +1921,14 @@ function ProgressTab({ userId }: { userId: number }) {
 
       {isLoading && <SkeletonCards />}
 
-      {!isLoading && sorted.length === 0 && <EmptyState title={t("dashboard.progressEmpty")} />}
+      {!isLoading && sorted.length === 0 && (
+        <PremiumEmptyState
+          icon={<ImageIcon size={20} />}
+          title={t("dashboard.progressEmpty")}
+          body={t("emptyState.noProgress.body", "Upload your first progress photo to start tracking your transformation.")}
+          testId="empty-progress"
+        />
+      )}
 
       {!isLoading && sorted.length > 0 && view === "compare" && (
         <BeforeAfterCompare photos={sorted} />
@@ -1939,15 +1991,24 @@ function Section({
   );
 }
 
-function EmptyState({ title, cta }: { title: string; cta?: React.ReactNode }) {
+// Local empty state — delegates to the shared <PremiumEmptyState />
+// (Task #32) so every "nothing here yet" surface across the dashboard
+// uses the same tron-card shell + premium copy treatment.
+function EmptyState({
+  title,
+  cta,
+  icon,
+}: {
+  title: string;
+  cta?: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-card/40 backdrop-blur-md p-8 sm:p-10 text-center">
-      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20">
-        <Calendar size={20} />
-      </div>
-      <p className="text-sm text-muted-foreground">{title}</p>
-      {cta && <div className="mt-4">{cta}</div>}
-    </div>
+    <PremiumEmptyState
+      title={title}
+      icon={icon ?? <Calendar size={20} />}
+      cta={cta}
+    />
   );
 }
 

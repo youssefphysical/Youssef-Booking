@@ -82,7 +82,16 @@ export function whatsappClientUrl(
 // Keep "Youssef Ahmed" and "WhatsApp" in Latin per brand rules, but the
 // surrounding language follows the client's UI language so the message
 // is readable to both client and trainer in the channel they prefer.
-export type WhatsAppKind = "requestRenewal" | "requestExtension" | "contactCoach";
+export type WhatsAppKind =
+  | "requestRenewal"
+  | "requestExtension"
+  | "contactCoach"
+  // Context tags from brief §15 — used by public site CTAs.
+  | "pt"
+  | "nutrition"
+  | "recovery"
+  | "trial"
+  | "verification";
 
 export interface WhatsAppContext {
   clientName?: string | null;
@@ -111,6 +120,11 @@ type Phrasebook = {
   extensionDays: (n: number) => string;
   extensionReason: (r: string) => string;
   contact: string;
+  contextPt?: (pkg: string) => string;
+  contextNutrition?: string;
+  contextRecovery?: string;
+  contextTrial?: string;
+  contextVerification?: (pkg: string) => string;
 };
 
 const PHRASES: Record<string, Phrasebook> = {
@@ -126,6 +140,16 @@ const PHRASES: Record<string, Phrasebook> = {
     extensionReason: (r) => `\n\nReason: ${r}`,
     contact:
       "I'd like to ask a quick question about my training. When you have a moment, please let me know.",
+    contextPt: (pkg) =>
+      `I'm interested in your personal training packages${pkg}. Could you share the details and how to get started?`,
+    contextNutrition:
+      "I'm interested in your nutrition coaching. Could you share what's included and the next steps?",
+    contextRecovery:
+      "I'd like to learn more about your recovery & mobility services. Could you share the available options?",
+    contextTrial:
+      "I'd like to book a free trial session. When is the next available slot?",
+    contextVerification: (pkg) =>
+      `I've purchased a Fitness Zone PT package${pkg} and would like to submit verification so I can start booking.`,
   },
   ar: {
     greetingNamed: (name) => `مرحبًا كوتش يوسف، أنا ${name}.`,
@@ -139,6 +163,16 @@ const PHRASES: Record<string, Phrasebook> = {
     extensionReason: (r) => `\n\nالسبب: ${r}`,
     contact:
       "لدي سؤال سريع بخصوص تدريبي. عندما يكون لديك وقت، أرجو إعلامي.",
+    contextPt: (pkg) =>
+      `أنا مهتم/مهتمة بباقات التدريب الشخصي${pkg}. هل يمكنك مشاركة التفاصيل وخطوات البدء؟`,
+    contextNutrition:
+      "أنا مهتم/مهتمة بكوتشينج التغذية. ما الذي يتضمنه وكيف نبدأ؟",
+    contextRecovery:
+      "أرغب في معرفة المزيد عن خدمات الاستشفاء والمرونة. ما الخيارات المتاحة؟",
+    contextTrial:
+      "أرغب في حجز جلسة تجريبية مجانية. متى أقرب موعد متاح؟",
+    contextVerification: (pkg) =>
+      `قمت بشراء باقة تدريب شخصي من Fitness Zone${pkg} وأود تقديم التحقق لبدء الحجز.`,
   },
   fa: {
     greetingNamed: (name) => `سلام مربی یوسف، من ${name} هستم.`,
@@ -664,9 +698,39 @@ export function buildWhatsappMessage(kind: WhatsAppKind, ctx: WhatsAppContext = 
       const reason = ctx.reason ? p.extensionReason(ctx.reason) : "";
       return `${greeting}\n\n${p.extension(pkgRef, days, reason)}\n\n${p.closing}`;
     }
+    case "pt": {
+      const pkg = ctx.packageLabel ? ` (${ctx.packageLabel})` : "";
+      const fn = p.contextPt ?? PHRASES.en.contextPt!;
+      return `${greeting}\n\n${fn(pkg)}\n\n${p.closing}`;
+    }
+    case "nutrition": {
+      const body = p.contextNutrition ?? PHRASES.en.contextNutrition!;
+      return `${greeting}\n\n${body}\n\n${p.closing}`;
+    }
+    case "recovery": {
+      const body = p.contextRecovery ?? PHRASES.en.contextRecovery!;
+      return `${greeting}\n\n${body}\n\n${p.closing}`;
+    }
+    case "trial": {
+      const body = p.contextTrial ?? PHRASES.en.contextTrial!;
+      return `${greeting}\n\n${body}\n\n${p.closing}`;
+    }
+    case "verification": {
+      const pkg = ctx.packageLabel ? ` (${ctx.packageLabel})` : "";
+      const fn = p.contextVerification ?? PHRASES.en.contextVerification!;
+      return `${greeting}\n\n${fn(pkg)}\n\n${p.closing}`;
+    }
     case "contactCoach":
     default: {
       return `${greeting}\n\n${p.contact}\n\n${p.closing}`;
     }
   }
+}
+
+/** Convenience wrapper for public-site CTAs. */
+export function buildContextMessage(
+  kind: WhatsAppKind,
+  ctx: WhatsAppContext = {},
+): string {
+  return buildWhatsappMessage(kind, ctx);
 }

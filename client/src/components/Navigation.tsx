@@ -241,6 +241,7 @@ export function Navigation() {
           {recoveryEnabled && (
             <TopNavLink href="/recovery" label={t("nav.recovery", "Recovery")} testKey="recovery" active={location === "/recovery"} />
           )}
+          <TopNavLink href="/faq" label={t("nav.faq", "FAQ")} testKey="faq" active={location === "/faq"} />
           <TopNavLink href="/policy" label={t("nav.policy")} testKey="policy" active={location === "/policy"} />
           {user?.role === "client" && (
             <TopNavLink href="/dashboard" label={t("nav.mySessions")} testKey="my-sessions" active={location.startsWith("/dashboard")} />

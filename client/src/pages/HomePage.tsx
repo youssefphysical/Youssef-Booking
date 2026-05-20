@@ -30,6 +30,11 @@ import { Footer } from "@/components/Footer";
 import { HeroSlider } from "@/components/HeroSlider";
 import { Transformations } from "@/components/Transformations";
 import { useTranslation } from "@/i18n";
+import { lazy, Suspense } from "react";
+import { Salad, HeartPulse, Gift, HelpCircle } from "lucide-react";
+import { buildContextMessage } from "@/lib/whatsapp";
+const PricingCards = lazy(() => import("@/components/public/PricingCards").then(m => ({ default: m.PricingCards })));
+const FaqAccordion = lazy(() => import("@/components/public/FaqAccordion").then(m => ({ default: m.FaqAccordion })));
 
 const TRAIN_KEYS = [
   "trains.adults",
@@ -132,7 +137,7 @@ export default function HomePage() {
   // is consumed lower in the page. The bio, however, no longer depends
   // on it (see About section comment).
   const { data: settings } = useSettings();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   // INSTANT-RENDER ABOUT BIO (v8.4 — May 2026):
   // Per spec "ABOUT TEXT INSTANT RENDER", the About bio MUST appear
   // on first paint with NO loading delay (same strategy as the
@@ -417,12 +422,101 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PACKAGES — admin-managed catalogue. Renders nothing when empty. */}
-      <PublicPackages />
+      {/* PERSONAL TRAINING — primary service overview (brief §14). */}
+      <ServiceCallout
+        id="personal-training"
+        eyebrow="home.personalTraining.eyebrow"
+        title="home.personalTraining.title"
+        body="home.personalTraining.body"
+        ctaKey="home.personalTraining.cta"
+        whatsappKind="pt"
+        icon={<Dumbbell size={22} />}
+        secondaryHref="/book"
+        secondaryKey="home.personalTraining.book"
+      />
+
+      {/* NUTRITION COACHING — service overview (brief §14). */}
+      <ServiceCallout
+        id="nutrition"
+        eyebrow="home.nutrition.eyebrow"
+        title="home.nutrition.title"
+        body="home.nutrition.body"
+        ctaKey="home.nutrition.cta"
+        whatsappKind="nutrition"
+        icon={<Salad size={22} />}
+      />
+
+      {/* RECOVERY & MOBILITY — service overview (brief §14). */}
+      <ServiceCallout
+        id="recovery"
+        eyebrow="home.recovery.eyebrow"
+        title="home.recovery.title"
+        body="home.recovery.body"
+        ctaKey="home.recovery.cta"
+        whatsappKind="recovery"
+        icon={<HeartPulse size={22} />}
+        secondaryHref="/recovery"
+        secondaryKey="home.recovery.learnMore"
+      />
+
+      {/* PRICING — "From AED" cards, Fitness-Zone-aware. */}
+      <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="pricing">
+        <SectionHeader
+          eyebrow={t("home.pricing.eyebrow")}
+          title={t("home.pricing.title")}
+          subtitle={t("home.pricing.subtitle")}
+        />
+        <Suspense fallback={<div className="admin-shimmer h-[340px] rounded-2xl" />}>
+          <PricingCards />
+        </Suspense>
+      </section>
 
       {/* TRANSFORMATIONS — admin-managed before/after cards.
           Renders nothing until at least one active row exists. */}
       <Transformations />
+
+      {/* FREE TRIAL — single CTA card (brief §14). */}
+      <section className="max-w-5xl mx-auto px-5 py-14 md:py-20" id="trial">
+        <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-12 text-center flex flex-col items-center gap-4">
+          <div className="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center">
+            <Gift size={22} />
+          </div>
+          <p className="tron-eyebrow text-xs">{t("home.trial.eyebrow")}</p>
+          <h2 className="text-3xl md:text-4xl font-display font-bold">
+            {t("home.trial.title")}
+          </h2>
+          <p className="text-muted-foreground max-w-prose">
+            {t("home.trial.body")}
+          </p>
+          <WhatsAppButton
+            label={t("home.trial.cta")}
+            message={buildContextMessage("trial", { lang })}
+            testId="button-trial-whatsapp"
+            className="mt-2"
+          />
+        </div>
+      </section>
+
+      {/* FAQ — 5-question preview, full list at /faq. */}
+      <section className="max-w-3xl mx-auto px-5 py-14 md:py-20" id="faq">
+        <SectionHeader
+          eyebrow={t("faq.eyebrow")}
+          title={t("faq.title")}
+          subtitle={t("faq.subtitle")}
+        />
+        <Suspense fallback={<div className="admin-shimmer h-[400px] rounded-2xl" />}>
+          <FaqAccordion limit={5} />
+        </Suspense>
+        <div className="mt-6 flex justify-center">
+          <Link
+            href="/faq"
+            className="text-sm text-primary/85 hover:text-primary inline-flex items-center gap-1.5 transition-colors"
+            data-testid="link-faq-see-all"
+          >
+            {t("faq.seeAll")} <ArrowRight size={14} />
+          </Link>
+        </div>
+      </section>
 
       {/* WHY TRAIN WITH YOUSSEF — premium conversion section */}
       <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="why">
@@ -647,6 +741,69 @@ function PublicPackages() {
             </motion.div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+// =====================================================================
+// SERVICE CALLOUT — generic two-column public service section used for
+// the Nutrition and Recovery overviews (Task #32, brief §14). Keeps the
+// homepage code dry: pass the i18n keys and the WhatsApp context tag.
+// =====================================================================
+function ServiceCallout({
+  id,
+  eyebrow,
+  title,
+  body,
+  ctaKey,
+  whatsappKind,
+  icon,
+  secondaryHref,
+  secondaryKey,
+}: {
+  id: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  ctaKey: string;
+  whatsappKind: "nutrition" | "recovery" | "trial" | "pt";
+  icon: React.ReactNode;
+  secondaryHref?: string;
+  secondaryKey?: string;
+}) {
+  const { t, lang } = useTranslation();
+  return (
+    <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id={id}>
+      <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-10 grid md:grid-cols-[auto,1fr,auto] gap-5 md:gap-6 items-center">
+        <div className="size-14 rounded-2xl bg-primary/10 border border-primary/30 text-primary grid place-items-center shrink-0">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="tron-eyebrow text-[11px] mb-1.5">{t(eyebrow)}</p>
+          <h2 className="text-2xl md:text-3xl font-display font-bold leading-tight">
+            {t(title)}
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-prose">
+            {t(body)}
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row md:flex-col gap-2 md:gap-2.5 shrink-0">
+          <WhatsAppButton
+            label={t(ctaKey)}
+            message={buildContextMessage(whatsappKind, { lang })}
+            testId={`button-${id}-whatsapp`}
+          />
+          {secondaryHref && secondaryKey && (
+            <Link
+              href={secondaryHref}
+              className="inline-flex items-center justify-center gap-2 h-12 px-4 rounded-xl border border-white/10 text-sm font-semibold text-foreground hover:border-primary/40 hover:text-primary transition-colors"
+              data-testid={`link-${id}-secondary`}
+            >
+              {t(secondaryKey)}
+            </Link>
+          )}
+        </div>
       </div>
     </section>
   );
