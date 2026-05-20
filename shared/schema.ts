@@ -2210,11 +2210,17 @@ export const BOOKING_STATUS_LABELS: Record<string, string> = {
 // The single super admin email — auto-promoted to super_admin on login or seed.
 export const SUPER_ADMIN_EMAIL = "youssef.physical@gmail.com";
 
-export const ADMIN_ROLES = ["super_admin", "manager", "viewer"] as const;
+export const ADMIN_ROLES = [
+  "super_admin",
+  "manager",
+  "trainer",
+  "viewer",
+] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: "Super Admin",
   manager: "Manager",
+  trainer: "Trainer",
   viewer: "Viewer",
 };
 
@@ -2299,9 +2305,23 @@ const managerDefault: Record<AdminPermissionKey, boolean> = ADMIN_PERMISSION_KEY
   return acc;
 }, {} as Record<AdminPermissionKey, boolean>);
 
+// Trainer: view + edit own assigned clients, view + add bookings,
+// view sessions/packages/inbody/progress. No delete, no settings.
+const trainerDefault: Record<AdminPermissionKey, boolean> = ADMIN_PERMISSION_KEYS.reduce((acc, k) => {
+  if (k.endsWith(".delete")) acc[k] = false;
+  else if (k === "settings.edit") acc[k] = false;
+  else if (k === "clients.edit") acc[k] = true;
+  else if (k === "bookings.cancel") acc[k] = false;
+  else if (k === "packages.editBalance" || k === "packages.assign") acc[k] = false;
+  else if (k === "payments.edit") acc[k] = false;
+  else acc[k] = true;
+  return acc;
+}, {} as Record<AdminPermissionKey, boolean>);
+
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<AdminRole, Record<AdminPermissionKey, boolean>> = {
   super_admin: allTrue,
   manager: managerDefault,
+  trainer: trainerDefault,
   viewer: viewerOnly,
 };
 
@@ -3454,3 +3474,107 @@ export const applyStackToClientSchema = z.object({
   startDate: z.string().nullish(),
 });
 export type ApplyStackToClientInput = z.infer<typeof applyStackToClientSchema>;
+
+// =============================
+// ADMIN CONTROL PANEL (Task #43)
+// =============================
+// Five additive tables for the admin polish wave. All optional /
+// nullable / defaulted so adding them on prod cannot affect existing
+// rows. Reads/writes are isolated to /api/admin/control-panel/* —
+// no existing booking/package/nutrition/recovery handler reads or
+// writes these tables.
+
+export const ADMIN_TASK_PRIORITIES = ['low', 'medium', 'high'] as const;
+export type AdminTaskPriority = (typeof ADMIN_TASK_PRIORITIES)[number];
+export const ADMIN_TASK_STATUSES = ['open', 'done', 'archived'] as const;
+export type AdminTaskStatus = (typeof ADMIN_TASK_STATUSES)[number];
+
+export const adminTasks = pgTable('admin_tasks', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  relatedUserId: integer('related_user_id'),
+  priority: text('priority').notNull().default('medium'),
+  dueDate: text('due_date'),
+  status: text('status').notNull().default('open'),
+  notes: text('notes'),
+  createdByUserId: integer('created_by_user_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export const insertAdminTaskSchema = createInsertSchema(adminTasks)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    title: z.string().min(1).max(240),
+    priority: z.enum(ADMIN_TASK_PRIORITIES).default('medium'),
+    status: z.enum(ADMIN_TASK_STATUSES).default('open'),
+    relatedUserId: z.number().int().positive().nullish(),
+    dueDate: z.string().nullish(),
+    notes: z.string().max(4000).nullish(),
+  });
+export type AdminTask = typeof adminTasks.$inferSelect;
+export type InsertAdminTask = z.infer<typeof insertAdminTaskSchema>;
+export const updateAdminTaskSchema = insertAdminTaskSchema.partial().omit({ createdByUserId: true });
+export type UpdateAdminTask = z.infer<typeof updateAdminTaskSchema>;
+
+export const clientTags = pgTable('client_tags', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull(),
+  label: text('label').notNull(),
+  color: text('color'),
+  createdByUserId: integer('created_by_user_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertClientTagSchema = createInsertSchema(clientTags)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    userId: z.number().int().positive(),
+    label: z.string().min(1).max(60),
+    color: z.string().max(20).nullish(),
+  });
+export type ClientTag = typeof clientTags.$inferSelect;
+export type InsertClientTag = z.infer<typeof insertClientTagSchema>;
+
+export const ADMIN_NOTIFICATION_KEYS = [
+  'client_registered',
+  'pending_verification',
+  'package_expiring',
+  'nutrition_expiring',
+  'failed_emails',
+  'recovery_request',
+  'inactive_client',
+] as const;
+export type AdminNotificationKey = (typeof ADMIN_NOTIFICATION_KEYS)[number];
+
+export const adminNotificationPrefs = pgTable('admin_notification_prefs', {
+  adminUserId: integer('admin_user_id').primaryKey(),
+  prefs: jsonb('prefs').notNull().default({}),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export type AdminNotificationPrefRow = typeof adminNotificationPrefs.$inferSelect;
+
+export const adminSavedFilters = pgTable('admin_saved_filters', {
+  id: serial('id').primaryKey(),
+  ownerUserId: integer('owner_user_id').notNull(),
+  name: text('name').notNull(),
+  page: text('page').notNull(),
+  queryJson: jsonb('query_json').notNull().default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertSavedFilterSchema = createInsertSchema(adminSavedFilters)
+  .omit({ id: true, createdAt: true, ownerUserId: true })
+  .extend({
+    name: z.string().min(1).max(120),
+    page: z.string().min(1).max(60),
+    queryJson: z.record(z.any()).default({}),
+  });
+export type AdminSavedFilter = typeof adminSavedFilters.$inferSelect;
+export type InsertSavedFilter = z.infer<typeof insertSavedFilterSchema>;
+
+export const trainerAssignments = pgTable('trainer_assignments', {
+  id: serial('id').primaryKey(),
+  trainerUserId: integer('trainer_user_id').notNull(),
+  clientUserId: integer('client_user_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export type TrainerAssignment = typeof trainerAssignments.$inferSelect;
+

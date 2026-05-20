@@ -116,6 +116,20 @@ import {
   type RecoveryRequest,
   type InsertRecoveryRequest,
   type UpdateRecoveryRequest,
+  // Task #43 — Admin Control Panel
+  adminTasks,
+  clientTags,
+  adminNotificationPrefs,
+  adminSavedFilters,
+  trainerAssignments,
+  type AdminTask,
+  type InsertAdminTask,
+  type UpdateAdminTask,
+  type ClientTag,
+  type InsertClientTag,
+  type AdminSavedFilter,
+  type InsertSavedFilter,
+  type TrainerAssignment,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -3950,6 +3964,129 @@ declare module "./storage" {
     .from(weeklyCheckins)
     .where(sql`${weeklyCheckins.coachResponse} IS NULL`)
     .orderBy(desc(weeklyCheckins.weekStart), desc(weeklyCheckins.id));
+};
+
+// =====================================================================
+// Task #43 — Admin Control Panel storage methods
+// Isolated from main IStorage to keep blast radius zero. Callers reach
+// these via `(storage as any).methodName(...)` or via the concrete class
+// (which DatabaseStorage exposes inherently).
+// =====================================================================
+(DatabaseStorage.prototype as any).listAdminTasks = async function (
+  filters?: { status?: string; relatedUserId?: number },
+): Promise<AdminTask[]> {
+  const conds = [] as any[];
+  if (filters?.status) conds.push(eq(adminTasks.status, filters.status));
+  if (filters?.relatedUserId) conds.push(eq(adminTasks.relatedUserId, filters.relatedUserId));
+  const q = db.select().from(adminTasks);
+  const rows = conds.length ? await q.where(and(...conds)).orderBy(desc(adminTasks.createdAt))
+                            : await q.orderBy(desc(adminTasks.createdAt));
+  return rows;
+};
+(DatabaseStorage.prototype as any).createAdminTask = async function (
+  data: InsertAdminTask,
+): Promise<AdminTask> {
+  const [row] = await db.insert(adminTasks).values(data).returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).updateAdminTask = async function (
+  id: number,
+  patch: UpdateAdminTask,
+): Promise<AdminTask | undefined> {
+  const [row] = await db
+    .update(adminTasks)
+    .set({ ...patch, updatedAt: new Date() } as any)
+    .where(eq(adminTasks.id, id))
+    .returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).deleteAdminTask = async function (id: number): Promise<boolean> {
+  const r = await db.delete(adminTasks).where(eq(adminTasks.id, id)).returning({ id: adminTasks.id });
+  return r.length > 0;
+};
+
+(DatabaseStorage.prototype as any).listClientTags = async function (userId?: number): Promise<ClientTag[]> {
+  const q = db.select().from(clientTags);
+  return userId ? await q.where(eq(clientTags.userId, userId)).orderBy(asc(clientTags.label))
+                : await q.orderBy(asc(clientTags.userId), asc(clientTags.label));
+};
+(DatabaseStorage.prototype as any).addClientTag = async function (data: InsertClientTag): Promise<ClientTag | null> {
+  try {
+    const [row] = await db.insert(clientTags).values(data).returning();
+    return row;
+  } catch (err: any) {
+    // unique violation — tag already exists for that user; treat as idempotent no-op
+    if (err?.code === '23505') return null;
+    throw err;
+  }
+};
+(DatabaseStorage.prototype as any).removeClientTag = async function (id: number): Promise<boolean> {
+  const r = await db.delete(clientTags).where(eq(clientTags.id, id)).returning({ id: clientTags.id });
+  return r.length > 0;
+};
+
+(DatabaseStorage.prototype as any).getAdminNotificationPrefs = async function (adminUserId: number) {
+  const [row] = await db.select().from(adminNotificationPrefs).where(eq(adminNotificationPrefs.adminUserId, adminUserId));
+  return row?.prefs ?? {};
+};
+(DatabaseStorage.prototype as any).setAdminNotificationPrefs = async function (
+  adminUserId: number,
+  prefs: Record<string, boolean>,
+) {
+  await db.execute(sql`
+    INSERT INTO admin_notification_prefs (admin_user_id, prefs, updated_at)
+    VALUES (${adminUserId}, ${JSON.stringify(prefs)}::jsonb, now())
+    ON CONFLICT (admin_user_id) DO UPDATE
+      SET prefs = EXCLUDED.prefs, updated_at = now()
+  `);
+  return prefs;
+};
+
+(DatabaseStorage.prototype as any).listSavedFilters = async function (
+  ownerId: number,
+  page?: string,
+): Promise<AdminSavedFilter[]> {
+  const conds = [eq(adminSavedFilters.ownerUserId, ownerId)];
+  if (page) conds.push(eq(adminSavedFilters.page, page));
+  return db.select().from(adminSavedFilters).where(and(...conds)).orderBy(desc(adminSavedFilters.createdAt));
+};
+(DatabaseStorage.prototype as any).createSavedFilter = async function (
+  ownerId: number,
+  data: InsertSavedFilter,
+): Promise<AdminSavedFilter> {
+  const [row] = await db.insert(adminSavedFilters).values({ ...data, ownerUserId: ownerId } as any).returning();
+  return row;
+};
+(DatabaseStorage.prototype as any).deleteSavedFilter = async function (id: number, ownerId: number): Promise<boolean> {
+  const r = await db
+    .delete(adminSavedFilters)
+    .where(and(eq(adminSavedFilters.id, id), eq(adminSavedFilters.ownerUserId, ownerId)))
+    .returning({ id: adminSavedFilters.id });
+  return r.length > 0;
+};
+
+(DatabaseStorage.prototype as any).listTrainerAssignments = async function (trainerUserId?: number): Promise<TrainerAssignment[]> {
+  const q = db.select().from(trainerAssignments);
+  return trainerUserId
+    ? await q.where(eq(trainerAssignments.trainerUserId, trainerUserId)).orderBy(desc(trainerAssignments.createdAt))
+    : await q.orderBy(desc(trainerAssignments.createdAt));
+};
+(DatabaseStorage.prototype as any).addTrainerAssignment = async function (trainerUserId: number, clientUserId: number) {
+  try {
+    const [row] = await db.insert(trainerAssignments).values({ trainerUserId, clientUserId }).returning();
+    return row;
+  } catch (err: any) {
+    if (err?.code === '23505') return null;
+    throw err;
+  }
+};
+(DatabaseStorage.prototype as any).removeTrainerAssignment = async function (id: number): Promise<boolean> {
+  const r = await db.delete(trainerAssignments).where(eq(trainerAssignments.id, id)).returning({ id: trainerAssignments.id });
+  return r.length > 0;
+};
+
+(DatabaseStorage.prototype as any).listAdminAuditEntries = async function (limit = 200): Promise<AdminAuditLogEntry[]> {
+  return db.select().from(adminAuditLog).orderBy(desc(adminAuditLog.createdAt)).limit(limit);
 };
 
 export const storage = new DatabaseStorage();

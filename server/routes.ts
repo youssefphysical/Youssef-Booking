@@ -7700,6 +7700,322 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ============== SEED ==============
   await seedDatabase();
 
+  // ===================================================================
+  // Task #43 — Admin Control Panel
+  // Umbrella admin tooling under /api/admin/control-panel/*.
+  // Scope: RBAC (super-admin only mutations), audit log read,
+  // client tags, admin tasks, notification prefs, saved filters,
+  // trainer assignments, manual-override audit, view-as-client snapshot,
+  // bulk actions, policy reference. No existing handler is modified.
+  // ===================================================================
+  {
+    const cp = "/api/admin/control-panel";
+    const s = storage as any;
+
+    // Overview — current admin + counts. Cheap roll-up.
+    app.get(`${cp}/me`, requireAdmin, async (req, res) => {
+      const u = req.user as User;
+      const [tasks, tags, audit, prefs] = await Promise.all([
+        s.listAdminTasks({ status: "open" }),
+        s.listClientTags(),
+        s.listAdminAuditEntries(25),
+        s.getAdminNotificationPrefs(u.id),
+      ]);
+      res.json({
+        admin: {
+          id: u.id,
+          email: u.email,
+          adminRole: (u as any).adminRole ?? "super_admin",
+          isSuperAdmin: isEffectiveSuperAdmin(u),
+        },
+        counts: {
+          openTasks: tasks.length,
+          totalTags: tags.length,
+          auditEntries: audit.length,
+        },
+        recentAudit: audit.slice(0, 10),
+        notificationPrefs: prefs,
+      });
+    });
+
+    // ---- Admin tasks ----
+    app.get(`${cp}/tasks`, requireAdmin, async (req, res) => {
+      const status = typeof req.query.status === "string" ? req.query.status : undefined;
+      const relatedUserId = req.query.userId ? Number(req.query.userId) : undefined;
+      const rows = await s.listAdminTasks({ status, relatedUserId });
+      res.json(rows);
+    });
+    app.post(`${cp}/tasks`, requireAdmin, async (req, res) => {
+      try {
+        const { insertAdminTaskSchema } = await import("@shared/schema");
+        const parsed = insertAdminTaskSchema.parse({
+          ...req.body,
+          createdByUserId: (req.user as User).id,
+        });
+        const row = await s.createAdminTask(parsed);
+        await storage.recordAuditLog({
+          performedByUserId: (req.user as User).id,
+          action: "task.create",
+          entityType: "admin_task",
+          entityId: row.id,
+          newValue: { title: row.title },
+        });
+        res.status(201).json(row);
+      } catch (err: any) {
+        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid task" });
+      }
+    });
+    app.patch(`${cp}/tasks/:id`, requireAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const { updateAdminTaskSchema } = await import("@shared/schema");
+        const patch = updateAdminTaskSchema.parse(req.body);
+        const row = await s.updateAdminTask(id, patch);
+        if (!row) return res.status(404).json({ error: "NotFound" });
+        res.json(row);
+      } catch (err: any) {
+        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid patch" });
+      }
+    });
+    app.delete(`${cp}/tasks/:id`, requireAdmin, async (req, res) => {
+      const ok = await s.deleteAdminTask(Number(req.params.id));
+      res.json({ ok });
+    });
+
+    // ---- Client tags ----
+    app.get(`${cp}/tags`, requireAdmin, async (req, res) => {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      res.json(await s.listClientTags(userId));
+    });
+    app.post(`${cp}/tags`, requireAdmin, async (req, res) => {
+      try {
+        const { insertClientTagSchema } = await import("@shared/schema");
+        const parsed = insertClientTagSchema.parse({
+          ...req.body,
+          createdByUserId: (req.user as User).id,
+        });
+        const row = await s.addClientTag(parsed);
+        res.status(row ? 201 : 200).json(row ?? { ok: true, duplicate: true });
+      } catch (err: any) {
+        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid tag" });
+      }
+    });
+    app.delete(`${cp}/tags/:id`, requireAdmin, async (req, res) => {
+      const ok = await s.removeClientTag(Number(req.params.id));
+      res.json({ ok });
+    });
+
+    // ---- Audit log (read-only) ----
+    app.get(`${cp}/audit-log`, requireAdmin, async (req, res) => {
+      const limit = Math.min(Number(req.query.limit) || 200, 1000);
+      res.json(await s.listAdminAuditEntries(limit));
+    });
+
+    // ---- Notification prefs (per-admin) ----
+    app.get(`${cp}/notification-prefs`, requireAdmin, async (req, res) => {
+      res.json(await s.getAdminNotificationPrefs((req.user as User).id));
+    });
+    app.put(`${cp}/notification-prefs`, requireAdmin, async (req, res) => {
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const clean: Record<string, boolean> = {};
+      for (const [k, v] of Object.entries(body)) clean[k] = !!v;
+      const saved = await s.setAdminNotificationPrefs((req.user as User).id, clean);
+      res.json(saved);
+    });
+
+    // ---- Saved filters ----
+    app.get(`${cp}/saved-filters`, requireAdmin, async (req, res) => {
+      const page = typeof req.query.page === "string" ? req.query.page : undefined;
+      res.json(await s.listSavedFilters((req.user as User).id, page));
+    });
+    app.post(`${cp}/saved-filters`, requireAdmin, async (req, res) => {
+      try {
+        const { insertSavedFilterSchema } = await import("@shared/schema");
+        const parsed = insertSavedFilterSchema.parse(req.body);
+        const row = await s.createSavedFilter((req.user as User).id, parsed);
+        res.status(201).json(row);
+      } catch (err: any) {
+        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid filter" });
+      }
+    });
+    app.delete(`${cp}/saved-filters/:id`, requireAdmin, async (req, res) => {
+      const ok = await s.deleteSavedFilter(Number(req.params.id), (req.user as User).id);
+      res.json({ ok });
+    });
+
+    // ---- Manual override audit (records intent + reason) ----
+    app.post(`${cp}/overrides`, requireAdmin, async (req, res) => {
+      const { action, entityType, entityId, reason, metadata } = req.body || {};
+      if (!action || !entityType || !reason || String(reason).trim().length < 5) {
+        return res.status(400).json({ error: "BadRequest", message: "action, entityType, and reason (>=5 chars) required" });
+      }
+      const eid = entityId != null && entityId !== "" ? Number(entityId) : null;
+      const row = await storage.recordAuditLog({
+        performedByUserId: (req.user as User).id,
+        action: `manual_override:${action}`,
+        entityType: String(entityType),
+        entityId: Number.isFinite(eid as number) ? (eid as number) : null,
+        reason: String(reason).slice(0, 2000),
+        newValue: metadata && typeof metadata === "object" ? metadata : null,
+      });
+      res.status(201).json(row);
+    });
+
+    // ---- Admin roster + role assignment (super-admin only mutations) ----
+    app.get(`${cp}/admins`, requireAdmin, async (_req, res) => {
+      const admins = await storage.getAllAdmins();
+      res.json(admins.map((a: any) => ({
+        id: a.id,
+        email: a.email,
+        firstName: a.firstName,
+        lastName: a.lastName,
+        adminRole: a.adminRole ?? "super_admin",
+        isActive: a.isActive !== false,
+      })));
+    });
+    app.patch(`${cp}/admins/:id/role`, requireSuperAdmin, async (req, res) => {
+      try {
+        const id = Number(req.params.id);
+        const role = String(req.body?.role || "");
+        const { ADMIN_ROLES } = await import("@shared/schema");
+        if (!ADMIN_ROLES.includes(role as any)) {
+          return res.status(400).json({ error: "BadRequest", message: "Invalid role" });
+        }
+        await storage.updateUser(id, { adminRole: role as any });
+        await storage.recordAuditLog({
+          performedByUserId: (req.user as User).id,
+          action: "admin.role.update",
+          entityType: "admin_user",
+          entityId: id,
+          newValue: { role },
+        });
+        res.json({ ok: true });
+      } catch (err: any) {
+        res.status(400).json({ error: "BadRequest", message: err?.message || "Failed" });
+      }
+    });
+
+    // ---- Trainer assignments (super-admin only writes) ----
+    app.get(`${cp}/trainer-assignments`, requireAdmin, async (req, res) => {
+      const trainerId = req.query.trainerId ? Number(req.query.trainerId) : undefined;
+      res.json(await s.listTrainerAssignments(trainerId));
+    });
+    app.post(`${cp}/trainer-assignments`, requireSuperAdmin, async (req, res) => {
+      const trainerId = Number(req.body?.trainerUserId);
+      const clientId = Number(req.body?.clientUserId);
+      if (!trainerId || !clientId) {
+        return res.status(400).json({ error: "BadRequest", message: "trainerUserId and clientUserId required" });
+      }
+      const row = await s.addTrainerAssignment(trainerId, clientId);
+      res.status(row ? 201 : 200).json(row ?? { ok: true, duplicate: true });
+    });
+    app.delete(`${cp}/trainer-assignments/:id`, requireSuperAdmin, async (req, res) => {
+      const ok = await s.removeTrainerAssignment(Number(req.params.id));
+      res.json({ ok });
+    });
+
+    // ---- Bulk actions ----
+    app.post(`${cp}/bulk/tag`, requireAdmin, async (req, res) => {
+      const ids: number[] = Array.isArray(req.body?.clientIds) ? req.body.clientIds.map(Number).filter(Boolean) : [];
+      const label = String(req.body?.label || "").trim();
+      const color = req.body?.color ? String(req.body.color) : null;
+      if (ids.length === 0 || !label) {
+        return res.status(400).json({ error: "BadRequest", message: "clientIds[] and label required" });
+      }
+      let applied = 0;
+      for (const id of ids) {
+        const row = await s.addClientTag({
+          userId: id, label, color,
+          createdByUserId: (req.user as User).id,
+        });
+        if (row) applied++;
+      }
+      await storage.recordAuditLog({
+        performedByUserId: (req.user as User).id,
+        action: "bulk.tag",
+        entityType: "users",
+        entityId: null,
+        newValue: { label, count: ids.length, applied },
+      });
+      res.json({ ok: true, applied, requested: ids.length });
+    });
+
+    app.post(`${cp}/bulk/archive`, requireAdmin, async (req, res) => {
+      // Records audit trail only — does not modify users. The
+      // manual-override pattern: admin acknowledges + explains, then
+      // performs the action via the standard client-detail UI.
+      const ids: number[] = Array.isArray(req.body?.clientIds) ? req.body.clientIds.map(Number).filter(Boolean) : [];
+      const reason = String(req.body?.reason || "").trim();
+      if (ids.length === 0 || reason.length < 5) {
+        return res.status(400).json({ error: "BadRequest", message: "clientIds[] and reason (>=5 chars) required" });
+      }
+      await storage.recordAuditLog({
+        performedByUserId: (req.user as User).id,
+        action: "bulk.archive.intent",
+        entityType: "users",
+        entityId: null,
+        reason: reason.slice(0, 2000),
+        newValue: { ids, count: ids.length },
+      });
+      res.json({ ok: true, recorded: ids.length });
+    });
+
+    // ---- View-as-client (read-only snapshot) ----
+    app.get(`${cp}/view-as/:userId`, requireAdmin, async (req, res) => {
+      try {
+        const userId = Number(req.params.userId);
+        const user = await storage.getUser(userId);
+        if (!user || user.role !== "user") {
+          return res.status(404).json({ error: "NotFound" });
+        }
+        const [pkg, bookings, bodyRows, photos, tags] = await Promise.all([
+          storage.getActivePackageForUser(userId).catch(() => null),
+          storage.getBookings({ userId }).catch(() => [] as any[]),
+          (storage as any).listBodyMetrics(userId, { limit: 1 }).catch(() => [] as any[]),
+          storage.getProgressPhotos({ userId }).catch(() => [] as any[]),
+          s.listClientTags(userId),
+        ]);
+        const body = Array.isArray(bodyRows) && bodyRows.length > 0 ? bodyRows[0] : null;
+        await storage.recordAuditLog({
+          performedByUserId: (req.user as User).id,
+          action: "view_as_client",
+          entityType: "user",
+          entityId: userId,
+        });
+        res.json({
+          user: sanitizeUser(user),
+          activePackage: pkg,
+          bookings: Array.isArray(bookings) ? bookings.slice(0, 50) : [],
+          latestBodyMetrics: body,
+          progressPhotos: Array.isArray(photos) ? photos.slice(0, 20) : [],
+          tags,
+        });
+      } catch (err) {
+        console.error("[view-as] failed", err);
+        res.status(500).json({ error: "InternalError" });
+      }
+    });
+
+    // ---- Policy reference (static) ----
+    app.get(`${cp}/policies`, requireAdmin, async (_req, res) => {
+      res.json({
+        cancellationWindowHours: 12,
+        rescheduleWindowHours: 12,
+        sameDayAdjustWindowHours: 2,
+        packageExpiryGraceDays: 3,
+        currency: "AED",
+        timezone: "Asia/Dubai",
+        manualOverridePolicy: "All overrides require a written reason (>=5 chars) and are recorded to the admin audit log forever.",
+        notes: [
+          "All package renewals/extensions are confirmed manually by Youssef via WhatsApp — no online payments.",
+          "Cancellations within 12h of session start require a manual override with reason.",
+          "Photo uploads cap at 20 per session; oldest auto-pruned.",
+          "Trainer role can view + edit assigned clients only. No deletes, no settings.",
+        ],
+      });
+    });
+  }
+
   return httpServer;
 }
 

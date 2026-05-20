@@ -50,6 +50,7 @@ const AdminDataCenter = lazy(() => import("@/pages/AdminDataCenter"));
 const AdminManagementAnalysis = lazy(
   () => import("@/pages/AdminManagementAnalysis"),
 );
+const AdminControlPanel = lazy(() => import("@/pages/AdminControlPanel"));
 const AdminClientDetail = lazy(() => import("@/pages/AdminClientDetail"));
 const AdminPackages = lazy(() => import("@/pages/AdminPackages"));
 const AdminPackageBuilder = lazy(() => import("@/pages/AdminPackageBuilder"));
@@ -218,6 +219,9 @@ function Router() {
           </Route>
           <Route path="/admin/data-center">
             <ProtectedRoute component={AdminDataCenter} adminOnly />
+          </Route>
+          <Route path="/admin/control-panel">
+            <ProtectedRoute component={AdminControlPanel} adminOnly />
           </Route>
           <Route path="/admin/management-analysis">
             <ProtectedRoute component={AdminManagementAnalysis} adminOnly />

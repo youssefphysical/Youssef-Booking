@@ -840,6 +840,63 @@ async function run(): Promise<void> {
       ON CONFLICT (key) DO NOTHING;
     `);
 
+    // ===== Admin Control Panel (Task #43) =====
+    // Five additive tables for the polish wave + admin_role default.
+    // Idempotent CREATE IF NOT EXISTS — safe to re-run forever.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_tasks (
+        id serial PRIMARY KEY,
+        title text NOT NULL,
+        related_user_id integer,
+        priority text NOT NULL DEFAULT 'medium',
+        due_date text,
+        status text NOT NULL DEFAULT 'open',
+        notes text,
+        created_by_user_id integer NOT NULL,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS admin_tasks_status_idx ON admin_tasks(status);
+      CREATE INDEX IF NOT EXISTS admin_tasks_related_user_idx ON admin_tasks(related_user_id);
+
+      CREATE TABLE IF NOT EXISTS client_tags (
+        id serial PRIMARY KEY,
+        user_id integer NOT NULL,
+        label text NOT NULL,
+        color text,
+        created_by_user_id integer NOT NULL,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS client_tags_user_label_uq
+        ON client_tags(user_id, lower(label));
+
+      CREATE TABLE IF NOT EXISTS admin_notification_prefs (
+        admin_user_id integer PRIMARY KEY,
+        prefs jsonb NOT NULL DEFAULT '{}'::jsonb,
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS admin_saved_filters (
+        id serial PRIMARY KEY,
+        owner_user_id integer NOT NULL,
+        name text NOT NULL,
+        page text NOT NULL,
+        query_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS admin_saved_filters_owner_idx
+        ON admin_saved_filters(owner_user_id, page);
+
+      CREATE TABLE IF NOT EXISTS trainer_assignments (
+        id serial PRIMARY KEY,
+        trainer_user_id integer NOT NULL,
+        client_user_id integer NOT NULL,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS trainer_assignments_uq
+        ON trainer_assignments(trainer_user_id, client_user_id);
+    `);
+
     console.log("[ensureSchema] OK");
   } catch (err) {
     console.error("[ensureSchema] FAILED — server will still try to boot:", err);
