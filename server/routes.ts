@@ -7664,6 +7664,39 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ===========================================================
+  // Management & Analysis Center (admin-only) — aggregated KPIs
+  // across clients/packages/bookings/nutrition/recovery/leads plus
+  // a coach action list. All sub-queries are server-side aggregates;
+  // the response is small enough for a short in-memory cache.
+  // ===========================================================
+  const managementAnalysisCache = new Map<
+    string,
+    { at: number; payload: any }
+  >();
+  const MGMT_TTL_MS = 30_000;
+  app.get(
+    "/api/admin/management-analysis",
+    requireAdmin,
+    async (_req, res) => {
+      try {
+        const now = Date.now();
+        const cached = managementAnalysisCache.get("all");
+        if (cached && now - cached.at < MGMT_TTL_MS) {
+          return res.json(cached.payload);
+        }
+        const payload = await storage.getManagementAnalysis();
+        managementAnalysisCache.set("all", { at: now, payload });
+        res.json(payload);
+      } catch (err) {
+        console.error("[management-analysis] failed", err);
+        res
+          .status(500)
+          .json({ message: "Failed to load management analysis" });
+      }
+    },
+  );
+
   // ============== SEED ==============
   await seedDatabase();
 

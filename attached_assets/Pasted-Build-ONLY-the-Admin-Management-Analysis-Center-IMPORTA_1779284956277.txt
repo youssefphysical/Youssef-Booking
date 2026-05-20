@@ -1,0 +1,224 @@
+Build ONLY the Admin Management & Analysis Center.
+
+IMPORTANT:
+Do not modify authentication.
+Do not modify registration.
+Do not modify booking logic.
+Do not modify package logic.
+Do not modify nutrition logic.
+Do not modify recovery logic.
+Do not modify existing Client Data Center.
+Do not modify existing admin protection.
+Do not create duplicate dashboards.
+Do not change public design globally.
+Use existing data only.
+Read-only analytics only, except existing navigation/action links.
+Admin-only.
+
+Goal:
+Create one premium admin section called “Management & Analysis Center” to help Coach Youssef manage clients, packages, bookings, nutrition, recovery, leads, and business follow-up actions.
+
+Design:
+- Premium Tron Legacy theme.
+- Dark background.
+- Soft cyan/electric-blue accents.
+- Clean cards.
+- No excessive neon.
+- No gaming look.
+- Desktop grid layout.
+- Mobile card layout.
+- Fast loading.
+- Skeleton states.
+- Empty states.
+- Friendly errors.
+- Keep UI consistent with existing admin design.
+
+Admin Navigation:
+Add one admin menu item:
+Management & Analysis
+
+Route:
+/admin/management-analysis
+
+API:
+/admin/management-analysis
+
+Security:
+- requireAdmin on all routes.
+- Unauthenticated users must receive 401 JSON.
+- Normal clients must not access it.
+- No stack traces.
+- No sensitive secrets exposed.
+
+Sections:
+
+1. Executive Overview
+Show cards:
+- Total clients
+- Active clients
+- New clients this month
+- Inactive clients
+- Today’s sessions
+- This week’s sessions
+- Pending verifications
+- Packages expiring soon
+- Nutrition expiring soon
+- Recovery requests pending
+
+2. Client Management Analysis
+Show:
+- Active clients
+- Inactive clients
+- Clients with no bookings
+- Clients needing follow-up
+- VIP clients if data exists
+- Clients by lead source
+- Clients by training location
+- Clients by goal
+- Recently registered clients
+- Recently active clients
+
+3. Package Management Analysis
+Show:
+- Active packages
+- Expiring in 7 days
+- Expiring in 14 days
+- Frozen packages
+- Expired packages
+- Low remaining sessions
+- Average sessions remaining
+- Renewal opportunities
+- Fitness Zone packages
+- Youssef Fitness direct packages
+- Duo packages
+
+4. Booking Management Analysis
+Show:
+- Sessions today
+- Sessions this week
+- Sessions this month
+- Completed sessions
+- Cancelled sessions
+- Late cancellations if data exists
+- No-shows if data exists
+- Peak booking times if data exists
+- Low-demand times if data exists
+
+5. Nutrition Management Analysis
+Show:
+- Active nutrition clients
+- Nutrition-only clients
+- Pending nutrition requests
+- Nutrition plans expiring in 7 days
+- Nutrition plans expiring in 14 days
+- Missing check-ins if data exists
+- Nutrition renewal opportunities
+
+6. Recovery Management Analysis
+Show:
+- Pending recovery requests
+- Scheduled recovery requests
+- Active recovery clients
+- Mobility/stretching demand
+
+7. Lead & Conversion Analysis
+Show:
+- New leads
+- Trial requested
+- Trial completed
+- Trial-to-package conversion if data exists
+- Pending Fitness Zone verifications
+- Leads needing action
+- Lead source performance
+- Clients registered but never booked
+
+8. Coach Action List
+This is the most important part.
+Create actionable cards:
+- Follow up inactive client
+- Verify Fitness Zone package
+- Renew expiring package
+- Contact nutrition client
+- Reactivate inactive client
+- Review recovery request
+- Contact client with no bookings
+- Follow up pending lead
+
+Each action card should include:
+- Client name
+- Reason
+- Priority: High / Medium / Low
+- Related service: PT / Nutrition / Recovery / Package / Lead
+- Suggested action
+- Link to client profile or relevant admin page
+
+9. Filters
+Add filters:
+- Today
+- This week
+- This month
+- Last 3 months
+- All time
+- Fitness Zone clients
+- External clients
+- Nutrition clients
+- Recovery clients
+- Leads
+- Active
+- Inactive
+- Expiring soon
+
+10. Export
+Add:
+- Export analytics summary CSV
+- Export action list CSV
+
+Do not build Excel export here if Client Data Center already handles Excel.
+CSV only is enough for this analysis center.
+
+11. Performance
+- Use aggregated queries.
+- Do not load all clients unnecessarily.
+- Avoid heavy charts.
+- Avoid expensive client-side processing.
+- Cache short-term if existing pattern supports it.
+- Keep dashboard fast.
+
+12. Charts
+Only add simple lightweight visual elements if already available in the project.
+If no chart library exists, do not install a new heavy chart library.
+Use cards, bars, small indicators, and clean tables instead.
+
+13. Data Rules
+Use existing tables and fields.
+If a field does not exist, skip that metric gracefully.
+Never crash if some data is missing.
+Show “No data available yet” empty state.
+
+14. Audit / Logging
+This section is read-only.
+No audit log needed unless export/download action logging already exists.
+Do not write new business data from this dashboard.
+
+15. Final Verification
+After implementation, verify:
+- npm run check passes
+- npm run build passes
+- /api/admin/management-analysis returns 401 JSON when unauthenticated
+- Admin page redirects unauthenticated users to login
+- Existing admin pages still work
+- Existing Client Data Center still works
+- No auth regression
+- No booking regression
+- No package regression
+- No dashboard regression
+- Mobile layout works
+- Desktop layout works
+
+Return:
+1. Files changed
+2. API routes added
+3. Metrics implemented
+4. Metrics skipped due to missing data
+5. Tests performed
+6. Any risks

@@ -143,6 +143,13 @@ export interface IStorage {
    * recovery counts, and last completed session. Admin-only.
    */
   getClientDataCenter(): Promise<Array<Record<string, any>>>;
+  /**
+   * Management & Analysis Center — aggregated KPIs across clients,
+   * packages, bookings, nutrition, recovery, and leads, plus a coach
+   * action list. All sub-queries run in parallel against indexed
+   * aggregates; no full-table scans. Admin-only.
+   */
+  getManagementAnalysis(): Promise<Record<string, any>>;
   getAllAdmins(): Promise<User[]>;
   /**
    * Federated admin search across users (clients), bookings, packages,
@@ -675,6 +682,446 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.role, "client"))
       .orderBy(desc(users.createdAt));
+  }
+
+  // ===========================================================
+  // Management & Analysis Center — single entry point used by the
+  // admin page at /admin/management-analysis. Runs ~10 lightweight
+  // aggregated queries in parallel; no full-table loads. Every
+  // sub-query is wrapped in try/catch so a missing column never
+  // crashes the whole payload (the UI shows "no data" for that bucket).
+  // ===========================================================
+  async getManagementAnalysis(): Promise<Record<string, any>> {
+    const safe = async <T>(p: Promise<T>, fallback: T): Promise<T> => {
+      try {
+        return await p;
+      } catch (err) {
+        console.warn("[management-analysis] sub-query failed", err);
+        return fallback;
+      }
+    };
+    const q = (text: string, params: any[] = []) => pool.query(text, params);
+
+    // All time windows use Asia/Dubai (UTC+4, no DST) to match the
+    // booking model.
+    const TZ = "Asia/Dubai";
+
+    const [
+      execRow,
+      clientsByStatusRows,
+      clientsBySourceRows,
+      clientsByLocationRows,
+      clientsByGoalRows,
+      recentRegisteredRows,
+      recentActiveRows,
+      noBookingsCountRow,
+      packageRows,
+      packageTypeRows,
+      bookingRows,
+      bookingHourRows,
+      nutritionRows,
+      recoveryRows,
+      leadRows,
+      leadSourceRows,
+      actionsRows,
+    ] = await Promise.all([
+      // ---------- Executive overview ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(*) FROM users WHERE role='client')::int AS total_clients,
+             (SELECT COUNT(*) FROM users WHERE role='client' AND client_status='active')::int AS active_clients,
+             (SELECT COUNT(*) FROM users
+                WHERE role='client'
+                  AND created_at >= date_trunc('month', (now() AT TIME ZONE $1))
+             )::int AS new_this_month,
+             (SELECT COUNT(*) FROM users
+                WHERE role='client'
+                  AND client_status IN ('expired','cancelled','completed','incomplete')
+             )::int AS inactive_clients,
+             (SELECT COUNT(*) FROM bookings
+                WHERE date = (now() AT TIME ZONE $1)::date
+                  AND status IN ('upcoming','confirmed')
+             )::int AS sessions_today,
+             (SELECT COUNT(*) FROM bookings
+                WHERE date >= date_trunc('week', (now() AT TIME ZONE $1))::date
+                  AND date <  date_trunc('week', (now() AT TIME ZONE $1))::date + INTERVAL '7 days'
+                  AND status IN ('upcoming','confirmed','completed')
+             )::int AS sessions_this_week,
+             (SELECT COUNT(*) FROM packages
+                WHERE is_active=true
+                  AND admin_approved=false
+                  AND verification_attachments IS NOT NULL
+             )::int AS pending_verifications,
+             (SELECT COUNT(*) FROM packages
+                WHERE is_active=true
+                  AND expiry_date IS NOT NULL
+                  AND expiry_date <= ((now() AT TIME ZONE $1)::date + INTERVAL '7 days')
+                  AND expiry_date >= (now() AT TIME ZONE $1)::date
+             )::int AS packages_expiring_soon,
+             (SELECT COUNT(*) FROM nutrition_plans
+                WHERE status='active'
+                  AND review_date IS NOT NULL
+                  AND review_date::date <= ((now() AT TIME ZONE $1)::date + INTERVAL '7 days')
+                  AND review_date::date >= (now() AT TIME ZONE $1)::date
+             )::int AS nutrition_expiring_soon,
+             (SELECT COUNT(*) FROM recovery_requests WHERE status='pending')::int AS recovery_pending
+          `,
+          [TZ],
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      // ---------- Client breakdowns ----------
+      safe(
+        q(
+          `SELECT COALESCE(client_status,'unknown') AS k, COUNT(*)::int AS c
+             FROM users WHERE role='client'
+             GROUP BY 1 ORDER BY c DESC`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT COALESCE(NULLIF(lead_source,''),'unknown') AS k, COUNT(*)::int AS c
+             FROM users WHERE role='client'
+             GROUP BY 1 ORDER BY c DESC LIMIT 20`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT COALESCE(tl.kind,'unassigned') AS k, COUNT(DISTINCT u.id)::int AS c
+             FROM users u
+             LEFT JOIN training_locations tl
+               ON tl.user_id=u.id AND tl.is_default=true AND tl.archived_at IS NULL
+            WHERE u.role='client'
+            GROUP BY 1 ORDER BY c DESC LIMIT 20`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT COALESCE(NULLIF(primary_goal,''), NULLIF(fitness_goal,''),'unspecified') AS k,
+                  COUNT(*)::int AS c
+             FROM users WHERE role='client'
+             GROUP BY 1 ORDER BY c DESC LIMIT 20`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT id, full_name, created_at, lead_source
+             FROM users WHERE role='client'
+             ORDER BY created_at DESC NULLS LAST LIMIT 10`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT u.id, u.full_name, MAX(b.completed_at) AS last_at
+             FROM users u
+             JOIN bookings b ON b.user_id=u.id AND b.completed_at IS NOT NULL
+            WHERE u.role='client'
+            GROUP BY u.id, u.full_name
+            ORDER BY last_at DESC NULLS LAST LIMIT 10`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      safe(
+        q(
+          `SELECT COUNT(*)::int AS c FROM users u
+             WHERE u.role='client'
+               AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.user_id=u.id)`,
+        ).then((r) => r.rows[0]?.c ?? 0),
+        0,
+      ),
+      // ---------- Package management ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(*) FROM packages WHERE is_active=true)::int AS active_count,
+             (SELECT COUNT(*) FROM packages
+                WHERE is_active=true AND expiry_date IS NOT NULL
+                  AND expiry_date >= (now() AT TIME ZONE $1)::date
+                  AND expiry_date <= (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+             )::int AS expiring_7d,
+             (SELECT COUNT(*) FROM packages
+                WHERE is_active=true AND expiry_date IS NOT NULL
+                  AND expiry_date >  (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+                  AND expiry_date <= (now() AT TIME ZONE $1)::date + INTERVAL '14 days'
+             )::int AS expiring_14d,
+             (SELECT COUNT(*) FROM packages WHERE frozen=true)::int AS frozen_count,
+             (SELECT COUNT(*) FROM packages
+                WHERE expiry_date IS NOT NULL
+                  AND expiry_date < (now() AT TIME ZONE $1)::date
+             )::int AS expired_count,
+             (SELECT COUNT(*) FROM packages
+                WHERE is_active=true
+                  AND total_sessions IS NOT NULL
+                  AND (total_sessions - COALESCE(used_sessions,0)) <= 3
+                  AND (total_sessions - COALESCE(used_sessions,0)) > 0
+             )::int AS low_remaining,
+             (SELECT COALESCE(AVG(NULLIF(total_sessions,0) - COALESCE(used_sessions,0)),0)
+                FROM packages WHERE is_active=true
+             )::numeric(10,1) AS avg_remaining,
+             (SELECT COUNT(*) FROM packages
+                WHERE expiry_date IS NOT NULL
+                  AND expiry_date < (now() AT TIME ZONE $1)::date
+                  AND expiry_date >= (now() AT TIME ZONE $1)::date - INTERVAL '60 days'
+             )::int AS renewal_opportunities
+          `,
+          [TZ],
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      safe(
+        q(
+          `SELECT COALESCE(NULLIF(type,''),'unknown') AS k, COUNT(*)::int AS c
+             FROM packages WHERE is_active=true
+             GROUP BY 1 ORDER BY c DESC LIMIT 20`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      // ---------- Booking management ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(*) FROM bookings
+                WHERE date = (now() AT TIME ZONE $1)::date
+             )::int AS today_total,
+             (SELECT COUNT(*) FROM bookings
+                WHERE date >= date_trunc('week', (now() AT TIME ZONE $1))::date
+                  AND date <  date_trunc('week', (now() AT TIME ZONE $1))::date + INTERVAL '7 days'
+             )::int AS this_week,
+             (SELECT COUNT(*) FROM bookings
+                WHERE date >= date_trunc('month', (now() AT TIME ZONE $1))::date
+                  AND date <  date_trunc('month', (now() AT TIME ZONE $1))::date + INTERVAL '1 month'
+             )::int AS this_month,
+             (SELECT COUNT(*) FROM bookings WHERE status='completed')::int AS completed_total,
+             (SELECT COUNT(*) FROM bookings WHERE status='cancelled')::int AS cancelled_total,
+             (SELECT COUNT(*) FROM bookings WHERE is_emergency_cancel=true)::int AS late_cancellations
+          `,
+          [TZ],
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      safe(
+        q(
+          `SELECT time_slot AS k, COUNT(*)::int AS c
+             FROM bookings
+            WHERE status IN ('completed','upcoming','confirmed')
+              AND date >= (now() AT TIME ZONE $1)::date - INTERVAL '90 days'
+              AND time_slot IS NOT NULL
+            GROUP BY 1 ORDER BY c DESC LIMIT 24`,
+          [TZ],
+        ).then((r) => r.rows),
+        [],
+      ),
+      // ---------- Nutrition ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(DISTINCT user_id) FROM nutrition_plans WHERE status='active')::int AS active_clients,
+             (SELECT COUNT(*) FROM nutrition_plans WHERE status='active')::int AS active_plans,
+             (SELECT COUNT(*) FROM nutrition_plans WHERE status='draft')::int AS draft_plans,
+             (SELECT COUNT(*) FROM nutrition_plans
+                WHERE status='active' AND review_date IS NOT NULL
+                  AND review_date::date >= (now() AT TIME ZONE $1)::date
+                  AND review_date::date <= (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+             )::int AS expiring_7d,
+             (SELECT COUNT(*) FROM nutrition_plans
+                WHERE status='active' AND review_date IS NOT NULL
+                  AND review_date::date >  (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+                  AND review_date::date <= (now() AT TIME ZONE $1)::date + INTERVAL '14 days'
+             )::int AS expiring_14d,
+             (SELECT COUNT(*) FROM nutrition_plans
+                WHERE status='active' AND review_date IS NOT NULL
+                  AND review_date::date < (now() AT TIME ZONE $1)::date
+             )::int AS renewal_opportunities,
+             (SELECT COUNT(DISTINCT np.user_id) FROM nutrition_plans np
+                WHERE np.status='active'
+                  AND NOT EXISTS (
+                    SELECT 1 FROM packages p
+                     WHERE p.user_id=np.user_id AND p.is_active=true
+                  )
+             )::int AS nutrition_only
+          `,
+          [TZ],
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      // ---------- Recovery ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(*) FROM recovery_requests WHERE status='pending')::int AS pending,
+             (SELECT COUNT(*) FROM recovery_requests WHERE status='scheduled')::int AS scheduled,
+             (SELECT COUNT(DISTINCT user_id) FROM recovery_requests WHERE status IN ('pending','scheduled'))::int AS active_clients,
+             (SELECT json_agg(t) FROM (
+                SELECT service_type AS k, COUNT(*)::int AS c
+                  FROM recovery_requests
+                  WHERE status IN ('pending','scheduled')
+                  GROUP BY 1 ORDER BY c DESC
+             ) t) AS by_type
+          `,
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      // ---------- Leads ----------
+      safe(
+        q(
+          `SELECT
+             (SELECT COUNT(*) FROM users WHERE role='client' AND lead_status='lead')::int AS new_leads,
+             (SELECT COUNT(*) FROM users WHERE role='client' AND lead_status='trial_requested')::int AS trial_requested,
+             (SELECT COUNT(*) FROM users WHERE role='client' AND lead_status='trial_completed')::int AS trial_completed,
+             (SELECT COUNT(*) FROM users WHERE role='client' AND lead_status='package_verification_pending')::int AS pending_verification,
+             (SELECT COUNT(*) FROM users WHERE role='client' AND lead_status IN ('lead','trial_requested','registered'))::int AS needing_action,
+             (SELECT COUNT(*) FROM users u
+                WHERE u.role='client'
+                  AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.user_id=u.id)
+             )::int AS registered_never_booked
+          `,
+        ).then((r) => r.rows[0] ?? {}),
+        {} as any,
+      ),
+      safe(
+        q(
+          `SELECT
+             COALESCE(NULLIF(u.lead_source,''),'unknown') AS k,
+             COUNT(*)::int AS leads,
+             COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM packages p WHERE p.user_id=u.id))::int AS converted
+            FROM users u
+           WHERE u.role='client'
+           GROUP BY 1
+           ORDER BY leads DESC LIMIT 10`,
+        ).then((r) => r.rows),
+        [],
+      ),
+      // ---------- Coach action list ----------
+      // Union of follow-up triggers, capped per category, ranked by priority.
+      safe(
+        q(
+          `WITH
+           expiring AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'renew_package'::text AS kind,
+                    'high'::text AS priority,
+                    'Package' AS service,
+                    'Expires ' || to_char(p.expiry_date,'YYYY-MM-DD') AS reason,
+                    'Reach out for renewal' AS suggested
+               FROM packages p JOIN users u ON u.id=p.user_id
+              WHERE p.is_active=true
+                AND p.expiry_date IS NOT NULL
+                AND p.expiry_date >= (now() AT TIME ZONE $1)::date
+                AND p.expiry_date <= (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+              ORDER BY p.expiry_date ASC LIMIT 20
+           ),
+           verify AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'verify_fitness_zone'::text AS kind,
+                    'high'::text AS priority,
+                    'Package' AS service,
+                    'Fitness Zone package awaiting verification' AS reason,
+                    'Open package and confirm' AS suggested
+               FROM packages p JOIN users u ON u.id=p.user_id
+              WHERE p.is_active=true
+                AND p.admin_approved=false
+                AND p.verification_attachments IS NOT NULL
+              LIMIT 20
+           ),
+           recovery AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'review_recovery'::text AS kind,
+                    'medium'::text AS priority,
+                    'Recovery' AS service,
+                    'Recovery request pending' AS reason,
+                    'Schedule or respond' AS suggested
+               FROM recovery_requests r JOIN users u ON u.id=r.user_id
+              WHERE r.status='pending'
+              ORDER BY r.created_at ASC LIMIT 20
+           ),
+           leads AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'follow_lead'::text AS kind,
+                    'medium'::text AS priority,
+                    'Lead' AS service,
+                    'Lead status: ' || lead_status AS reason,
+                    'Follow up via WhatsApp' AS suggested
+               FROM users u
+              WHERE u.role='client'
+                AND lead_status IN ('lead','trial_requested','registered')
+              ORDER BY u.created_at DESC LIMIT 20
+           ),
+           inactive AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'reactivate_inactive'::text AS kind,
+                    'low'::text AS priority,
+                    'PT' AS service,
+                    'Status: ' || COALESCE(u.client_status,'unknown') AS reason,
+                    'Send reactivation message' AS suggested
+               FROM users u
+              WHERE u.role='client'
+                AND u.client_status IN ('expired','cancelled','completed')
+              LIMIT 15
+           ),
+           never_booked AS (
+             SELECT u.id AS user_id, u.full_name,
+                    'no_bookings'::text AS kind,
+                    'medium'::text AS priority,
+                    'PT' AS service,
+                    'Registered but never booked' AS reason,
+                    'Send booking nudge' AS suggested
+               FROM users u
+              WHERE u.role='client'
+                AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.user_id=u.id)
+                AND u.created_at >= (now() AT TIME ZONE $1) - INTERVAL '60 days'
+              ORDER BY u.created_at DESC LIMIT 15
+           ),
+           nutri AS (
+             SELECT np.user_id, u.full_name,
+                    'contact_nutrition'::text AS kind,
+                    'medium'::text AS priority,
+                    'Nutrition' AS service,
+                    'Nutrition review due ' || COALESCE(to_char(np.review_date::date,'YYYY-MM-DD'),'soon') AS reason,
+                    'Check in on nutrition progress' AS suggested
+               FROM nutrition_plans np JOIN users u ON u.id=np.user_id
+              WHERE np.status='active'
+                AND np.review_date IS NOT NULL
+                AND np.review_date::date <= (now() AT TIME ZONE $1)::date + INTERVAL '7 days'
+              LIMIT 15
+           )
+           SELECT * FROM expiring
+           UNION ALL SELECT * FROM verify
+           UNION ALL SELECT * FROM recovery
+           UNION ALL SELECT * FROM leads
+           UNION ALL SELECT * FROM inactive
+           UNION ALL SELECT * FROM never_booked
+           UNION ALL SELECT * FROM nutri`,
+          [TZ],
+        ).then((r) => r.rows),
+        [],
+      ),
+    ]);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      executive: execRow,
+      clients: {
+        byStatus: clientsByStatusRows,
+        bySource: clientsBySourceRows,
+        byLocation: clientsByLocationRows,
+        byGoal: clientsByGoalRows,
+        recentRegistered: recentRegisteredRows,
+        recentActive: recentActiveRows,
+        noBookings: noBookingsCountRow,
+      },
+      packages: { ...packageRows, byType: packageTypeRows },
+      bookings: { ...bookingRows, peakHours: bookingHourRows },
+      nutrition: nutritionRows,
+      recovery: { ...recoveryRows, byType: (recoveryRows as any)?.by_type ?? [] },
+      leads: { ...leadRows, bySource: leadSourceRows },
+      actions: actionsRows,
+    };
   }
 
   async searchAdmin(q: string, perCategory: number = 5) {

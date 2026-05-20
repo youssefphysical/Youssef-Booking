@@ -70,6 +70,12 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           icon: <BarChart3 size={18} />,
           isActive: (loc) => loc.startsWith("/admin/analytics"),
         },
+        {
+          href: "/admin/management-analysis",
+          label: t("nav.managementAnalysis", "Management & Analysis"),
+          icon: <BarChart3 size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/management-analysis"),
+        },
       ],
     },
     {
