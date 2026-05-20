@@ -100,6 +100,18 @@ import {
   type UpdateClientSupplement,
   type ApplyStackToClientInput,
   type StackItemInput,
+  // Task #27 foundation
+  adminAuditLog,
+  featureFlags,
+  trainingLocations,
+  agreements,
+  FEATURE_FLAG_DEFAULTS,
+  type AdminAuditLogEntry,
+  type InsertAdminAuditLogEntry,
+  type FeatureFlag,
+  type TrainingLocation,
+  type Agreement,
+  type InsertAgreement,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -326,6 +338,22 @@ export interface IStorage {
 
   // Attendance helper
   incrementUserNoShow(userId: number): Promise<void>;
+
+  // ===== Task #27 — Foundation helpers =====
+  // Audit log, feature flags, training locations, agreements.
+  // Routes are NOT wired in task #27; the helpers are unit-callable
+  // and consumed by the downstream tracks (#3 / #4).
+  recordAuditLog(entry: InsertAdminAuditLogEntry): Promise<AdminAuditLogEntry>;
+  getFeatureFlag(key: string): Promise<FeatureFlag | undefined>;
+  isFeatureEnabled(key: string): Promise<boolean>;
+  listFeatureFlags(): Promise<FeatureFlag[]>;
+  setFeatureFlag(
+    key: string,
+    enabled: boolean,
+    userId: number | null,
+  ): Promise<FeatureFlag>;
+  getUserTrainingLocations(userId: number): Promise<TrainingLocation[]>;
+  recordAgreement(input: InsertAgreement): Promise<Agreement>;
 
   // ===== Nutrition OS — Phase 2: Food Library =====
   // Searchable + paginated catalogue. Designed for thousands of rows
@@ -2412,6 +2440,110 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return rows;
     });
+  }
+
+  // ===== Task #27 — Foundation helpers (audit log, flags, locations, agreements) =====
+  async recordAuditLog(entry: InsertAdminAuditLogEntry): Promise<AdminAuditLogEntry> {
+    const [row] = await db
+      .insert(adminAuditLog)
+      .values({
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId ?? null,
+        previousValue: (entry.previousValue ?? null) as any,
+        newValue: (entry.newValue ?? null) as any,
+        performedByUserId: entry.performedByUserId ?? null,
+        reason: entry.reason ?? null,
+      })
+      .returning();
+    return row;
+  }
+
+  async getFeatureFlag(key: string): Promise<FeatureFlag | undefined> {
+    const [row] = await db
+      .select()
+      .from(featureFlags)
+      .where(eq(featureFlags.key, key));
+    return row;
+  }
+
+  async isFeatureEnabled(key: string): Promise<boolean> {
+    const row = await this.getFeatureFlag(key);
+    if (row) return row.enabled;
+    // Fall back to the seeded default so callers behave correctly even if
+    // the seed insert hasn't run yet on a freshly-provisioned DB.
+    return (FEATURE_FLAG_DEFAULTS as any)[key] ?? false;
+  }
+
+  async listFeatureFlags(): Promise<FeatureFlag[]> {
+    return db.select().from(featureFlags).orderBy(asc(featureFlags.key));
+  }
+
+  async setFeatureFlag(
+    key: string,
+    enabled: boolean,
+    userId: number | null,
+  ): Promise<FeatureFlag> {
+    const [row] = await db
+      .insert(featureFlags)
+      .values({
+        key,
+        enabled,
+        updatedByUserId: userId ?? null,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: featureFlags.key,
+        set: {
+          enabled,
+          updatedByUserId: userId ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return row;
+  }
+
+  async getUserTrainingLocations(userId: number): Promise<TrainingLocation[]> {
+    return db
+      .select()
+      .from(trainingLocations)
+      .where(
+        and(
+          eq(trainingLocations.userId, userId),
+          isNull(trainingLocations.archivedAt),
+        ),
+      )
+      .orderBy(desc(trainingLocations.isDefault), asc(trainingLocations.id));
+  }
+
+  async recordAgreement(input: InsertAgreement): Promise<Agreement> {
+    const [row] = await db
+      .insert(agreements)
+      .values({
+        userId: input.userId,
+        agreementType: input.agreementType,
+        version: input.version,
+        ip: input.ip ?? null,
+        userAgent: input.userAgent ?? null,
+      })
+      .onConflictDoNothing({
+        target: [agreements.userId, agreements.agreementType, agreements.version],
+      })
+      .returning();
+    if (row) return row;
+    // Idempotent: return the existing record when the unique index blocks the insert.
+    const [existing] = await db
+      .select()
+      .from(agreements)
+      .where(
+        and(
+          eq(agreements.userId, input.userId),
+          eq(agreements.agreementType, input.agreementType),
+          eq(agreements.version, input.version),
+        ),
+      );
+    return existing;
   }
 }
 

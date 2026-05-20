@@ -620,6 +620,88 @@ async function run(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS client_notifications_dedupe_uq
       ON client_notifications (user_id, kind, dedupe_key)
       WHERE dedupe_key IS NOT NULL;
+
+    -- Task #27 (May 2026): foundation for the parallel feature tracks.
+    -- Additive nullable columns + four new tables. No backfill in this
+    -- task — task #3 handles legacy packages.source backfill.
+    ALTER TABLE IF EXISTS packages
+      ADD COLUMN IF NOT EXISTS source text,
+      ADD COLUMN IF NOT EXISTS payment_source text,
+      ADD COLUMN IF NOT EXISTS verified_by_admin_id integer REFERENCES users(id),
+      ADD COLUMN IF NOT EXISTS verified_at timestamp,
+      ADD COLUMN IF NOT EXISTS freeze_start_date date,
+      ADD COLUMN IF NOT EXISTS freeze_end_date date,
+      ADD COLUMN IF NOT EXISTS freeze_reason text;
+
+    ALTER TABLE IF EXISTS users
+      ADD COLUMN IF NOT EXISTS lead_status text,
+      ADD COLUMN IF NOT EXISTS lead_source text,
+      ADD COLUMN IF NOT EXISTS archived_at timestamp;
+
+    CREATE TABLE IF NOT EXISTS training_locations (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      kind text NOT NULL,
+      label text,
+      address text,
+      building_name text,
+      room_number text,
+      parking_notes text,
+      equipment_notes text,
+      gym_name text,
+      guest_access text,
+      access_notes text,
+      is_default boolean NOT NULL DEFAULT false,
+      created_at timestamp NOT NULL DEFAULT now(),
+      archived_at timestamp
+    );
+    CREATE INDEX IF NOT EXISTS training_locations_user_idx
+      ON training_locations (user_id);
+
+    ALTER TABLE IF EXISTS bookings
+      ADD COLUMN IF NOT EXISTS training_location_id integer
+        REFERENCES training_locations(id);
+    CREATE INDEX IF NOT EXISTS bookings_training_location_idx
+      ON bookings (training_location_id);
+
+    CREATE TABLE IF NOT EXISTS admin_audit_log (
+      id serial PRIMARY KEY,
+      action text NOT NULL,
+      entity_type text NOT NULL,
+      entity_id integer,
+      previous_value jsonb,
+      new_value jsonb,
+      performed_by_user_id integer REFERENCES users(id),
+      reason text,
+      created_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS admin_audit_log_entity_idx
+      ON admin_audit_log (entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS admin_audit_log_performed_by_idx
+      ON admin_audit_log (performed_by_user_id);
+    CREATE INDEX IF NOT EXISTS admin_audit_log_created_at_idx
+      ON admin_audit_log (created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS agreements (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      agreement_type text NOT NULL,
+      version text NOT NULL,
+      accepted_at timestamp NOT NULL DEFAULT now(),
+      ip text,
+      user_agent text
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS agreements_user_type_version_uq
+      ON agreements (user_id, agreement_type, version);
+
+    CREATE TABLE IF NOT EXISTS feature_flags (
+      id serial PRIMARY KEY,
+      key text NOT NULL UNIQUE,
+      enabled boolean NOT NULL DEFAULT true,
+      description text,
+      updated_at timestamp NOT NULL DEFAULT now(),
+      updated_by_user_id integer REFERENCES users(id)
+    );
   `;
 
   try {
@@ -702,6 +784,20 @@ async function run(): Promise<void> {
         ('Technical Movement Assessment', 'custom', 1, 0, 1, 0, 0, 30, 'days',
          'Free introductory movement screen for new clients — posture, mobility, stability, lift mechanics.', true, 70)
       ON CONFLICT (name) DO NOTHING;
+    `);
+
+    // Task #27 — seed feature_flags with safe defaults. ON CONFLICT
+    // (key) DO NOTHING preserves any admin-tweaked enabled values.
+    await pool.query(`
+      INSERT INTO feature_flags (key, enabled, description) VALUES
+        ('nutrition_enabled',        true,  'Master switch for the nutrition module.'),
+        ('recovery_enabled',         true,  'Master switch for the recovery / mobility module.'),
+        ('referral_enabled',         true,  'Enables the referral program.'),
+        ('public_pricing_enabled',   true,  'Shows package pricing on the public site.'),
+        ('whatsapp_cta_enabled',     true,  'Renders the WhatsApp call-to-action across the app.'),
+        ('maintenance_mode',         false, 'When true, locks the app behind a maintenance screen.'),
+        ('payment_gateway_enabled',  false, 'Reserved for a future online payment gateway.')
+      ON CONFLICT (key) DO NOTHING;
     `);
 
     console.log("[ensureSchema] OK");

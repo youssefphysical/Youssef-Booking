@@ -16,6 +16,72 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // =============================
+// TASK #27 — FOUNDATION ENUM CONSTANTS
+// Declared up-front so the table + zod definitions below can reference them.
+// =============================
+export const PACKAGE_SOURCES = [
+  "fitness_zone",
+  "youssef_direct",
+  "complimentary",
+  "corporate",
+  "manual",
+] as const;
+export type PackageSource = (typeof PACKAGE_SOURCES)[number];
+
+export const LEAD_SOURCES = [
+  "fitness_zone",
+  "website",
+  "instagram",
+  "referral",
+  "hotel",
+  "other",
+] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
+
+export const TRAINING_LOCATION_KINDS = [
+  "fitness_zone",
+  "home",
+  "building",
+  "hotel",
+  "other_gym",
+] as const;
+export type TrainingLocationKind = (typeof TRAINING_LOCATION_KINDS)[number];
+
+export const AGREEMENT_TYPES = [
+  "training_waiver",
+  "nutrition_disclaimer",
+  "recovery_disclaimer",
+  "cancellation_policy",
+  "emergency_cancel_policy",
+  "privacy_policy",
+  "media_consent",
+] as const;
+export type AgreementType = (typeof AGREEMENT_TYPES)[number];
+
+export const FEATURE_FLAG_KEYS = [
+  "nutrition_enabled",
+  "recovery_enabled",
+  "referral_enabled",
+  "public_pricing_enabled",
+  "whatsapp_cta_enabled",
+  "maintenance_mode",
+  "payment_gateway_enabled",
+] as const;
+export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
+
+// Defaults applied on first seed. Keep current behavior: all on except
+// maintenance_mode + payment_gateway_enabled.
+export const FEATURE_FLAG_DEFAULTS: Record<FeatureFlagKey, boolean> = {
+  nutrition_enabled: true,
+  recovery_enabled: true,
+  referral_enabled: true,
+  public_pricing_enabled: true,
+  whatsapp_cta_enabled: true,
+  maintenance_mode: false,
+  payment_gateway_enabled: false,
+};
+
+// =============================
 // USERS (Admin & Clients)
 // =============================
 export const users = pgTable("users", {
@@ -92,6 +158,11 @@ export const users = pgTable("users", {
   // Server NEVER returns these fields to the client.
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
+  // Task #27 foundation — lead pipeline + soft delete. All nullable;
+  // no behavior change until #4 wires these into admin UI.
+  leadStatus: text("lead_status"),
+  leadSource: text("lead_source"), // see LEAD_SOURCES
+  archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -183,6 +254,15 @@ export const packages = pgTable("packages", {
   // this package being expiring / finished so we never spam them.
   expiringNotifiedAt: timestamp("expiring_notified_at"),
   finishedNotifiedAt: timestamp("finished_notified_at"),
+  // Task #27 foundation — additive nullable provenance + freeze + admin
+  // verification fields. No behavior change in this task; #2/#3 wire them up.
+  source: text("source"), // see PACKAGE_SOURCES
+  paymentSource: text("payment_source"),
+  verifiedByAdminId: integer("verified_by_admin_id").references(() => users.id),
+  verifiedAt: timestamp("verified_at"),
+  freezeStartDate: date("freeze_start_date"),
+  freezeEndDate: date("freeze_end_date"),
+  freezeReason: text("freeze_reason"),
 });
 
 // =============================
@@ -204,6 +284,52 @@ export const packageSessionHistory = pgTable("package_session_history", {
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// =============================
+// TRAINING LOCATIONS (Task #27)
+// =============================
+// A profile of where a client trains. Created from the registration wizard
+// in #2 — this task just lands the schema. Multiple per client; one default.
+// Declared BEFORE `bookings` so `bookings.training_location_id` can hold a
+// real Drizzle FK reference (no schema drift vs. ensureSchema.ts).
+export const trainingLocations = pgTable("training_locations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(), // see TRAINING_LOCATION_KINDS
+  label: text("label"),
+  address: text("address"),
+  buildingName: text("building_name"),
+  roomNumber: text("room_number"),
+  parkingNotes: text("parking_notes"),
+  equipmentNotes: text("equipment_notes"),
+  gymName: text("gym_name"),
+  guestAccess: text("guest_access"),
+  accessNotes: text("access_notes"),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  archivedAt: timestamp("archived_at"),
+});
+
+export const insertTrainingLocationSchema = createInsertSchema(trainingLocations)
+  .omit({ id: true, createdAt: true, archivedAt: true })
+  .extend({
+    kind: z.enum(TRAINING_LOCATION_KINDS),
+    label: z.string().max(120).nullish(),
+    address: z.string().max(500).nullish(),
+    buildingName: z.string().max(200).nullish(),
+    roomNumber: z.string().max(60).nullish(),
+    parkingNotes: z.string().max(500).nullish(),
+    equipmentNotes: z.string().max(1000).nullish(),
+    gymName: z.string().max(200).nullish(),
+    guestAccess: z.string().max(200).nullish(),
+    accessNotes: z.string().max(500).nullish(),
+    isDefault: z.boolean().optional(),
+  });
+
+export type TrainingLocation = typeof trainingLocations.$inferSelect;
+export type InsertTrainingLocation = z.infer<typeof insertTrainingLocationSchema>;
 
 // =============================
 // BOOKINGS
@@ -309,9 +435,111 @@ export const bookings = pgTable("bookings", {
   // independent of whether the primary client's reminder has fired.
   linkedPartnerReminder24hSentAt: timestamp("linked_partner_reminder_24h_sent_at"),
   linkedPartnerReminder1hSentAt: timestamp("linked_partner_reminder_1h_sent_at"),
+  // Task #27 foundation — anchor each booking to a known location profile.
+  // Nullable; legacy bookings remain unanchored until backfilled.
+  trainingLocationId: integer("training_location_id").references(
+    () => trainingLocations.id,
+  ),
   createdAt: timestamp("created_at").defaultNow(),
   cancelledAt: timestamp("cancelled_at"),
 });
+
+// =============================
+// ADMIN AUDIT LOG (Task #27)
+// =============================
+// Append-only. Storage layer never updates / deletes from this table.
+// Wired into route handlers in #3.
+export const adminAuditLog = pgTable("admin_audit_log", {
+  id: serial("id").primaryKey(),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id"),
+  previousValue: jsonb("previous_value"),
+  newValue: jsonb("new_value"),
+  performedByUserId: integer("performed_by_user_id")
+    .references(() => users.id),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertAdminAuditLogSchema = createInsertSchema(adminAuditLog)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    action: z.string().min(1).max(120),
+    entityType: z.string().min(1).max(80),
+    entityId: z.number().int().nullish(),
+    previousValue: z.any().nullish(),
+    newValue: z.any().nullish(),
+    performedByUserId: z.number().int().nullish(),
+    reason: z.string().max(2000).nullish(),
+  });
+
+export type AdminAuditLogEntry = typeof adminAuditLog.$inferSelect;
+export type InsertAdminAuditLogEntry = z.infer<typeof insertAdminAuditLogSchema>;
+
+// =============================
+// AGREEMENTS (Task #27)
+// =============================
+// Versioned consent records. Distinct from `consent_records` (legacy)
+// because this table is keyed by agreement_type+version and supports
+// re-acceptance when a new version ships.
+export const agreements = pgTable(
+  "agreements",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    agreementType: text("agreement_type").notNull(), // see AGREEMENT_TYPES
+    version: text("version").notNull(),
+    acceptedAt: timestamp("accepted_at").notNull().defaultNow(),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+  },
+  (t) => ({
+    userTypeVersionUq: uniqueIndex("agreements_user_type_version_uq").on(
+      t.userId,
+      t.agreementType,
+      t.version,
+    ),
+  }),
+);
+
+export const insertAgreementSchema = createInsertSchema(agreements)
+  .omit({ id: true, acceptedAt: true })
+  .extend({
+    agreementType: z.enum(AGREEMENT_TYPES),
+    version: z.string().min(1).max(40),
+    ip: z.string().max(80).nullish(),
+    userAgent: z.string().max(500).nullish(),
+  });
+
+export type Agreement = typeof agreements.$inferSelect;
+export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
+
+// =============================
+// FEATURE FLAGS (Task #27)
+// =============================
+export const featureFlags = pgTable("feature_flags", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  enabled: boolean("enabled").notNull().default(true),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedByUserId: integer("updated_by_user_id").references(() => users.id),
+});
+
+export const insertFeatureFlagSchema = createInsertSchema(featureFlags)
+  .omit({ id: true, updatedAt: true })
+  .extend({
+    key: z.string().min(1).max(80),
+    enabled: z.boolean(),
+    description: z.string().max(500).nullish(),
+    updatedByUserId: z.number().int().nullish(),
+  });
+
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;
 
 export const COACH_NOTE_FIELDS = [
   "sessionEnergy",
@@ -819,6 +1047,9 @@ export const PACKAGE_STATUSES = [
   "expiring_soon",
   "expired",
   "completed",
+  "pending_verification",
+  "frozen",
+  "archived",
 ] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
