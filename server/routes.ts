@@ -9,21 +9,6 @@ import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import { pool } from "./db";
 import {
-  canUserBook,
-  canBookDuo,
-  canCancelWithoutCharge,
-  canModifyBooking,
-  isValidBookingSlot,
-} from "./rules/booking";
-import {
-  canActivatePackage,
-  canBookFromPackage,
-  canFreezePackage,
-  canUnfreezePackage,
-  canArchivePackage,
-  isDuoPackage,
-} from "./rules/packages";
-import {
   insertBookingSchema,
   updateBookingSchema,
   updateSettingsSchema,
@@ -87,13 +72,8 @@ import {
   adjustPackageSessionsSchema,
   expirationToDays,
   approvePackageSchema,
-  insertTrainingLocationSchema,
-  packageVerificationRequestSchema,
-  packageVerificationDecisionSchema,
-  TRAINING_LOCATION_KINDS,
   evaluateBookingEligibility,
   CLIENT_STATUSES,
-  LEAD_STATUSES,
   PACKAGE_DEFINITIONS,
   PACKAGE_TYPES,
   type User,
@@ -1600,35 +1580,54 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const targetUserId = me.role === "admin" && parsed.data.userId ? parsed.data.userId : me.id;
 
-    // Task #29: rules engine. Duo partner snapshot + slot validity are
-    // pure-function checks owned by server/rules/booking.ts.
-    {
-      const duoVerdict = canBookDuo({
-        sessionType: parsed.data.sessionType ?? "package",
-        partnerFullName: parsed.data.partnerFullName,
-        isAdmin: me.role === "admin",
+    // Duo bookings must include a partner full name (snapshot, not an account).
+    // Admins booking on behalf of clients may omit it. Phone/email stay optional.
+    if (
+      parsed.data.sessionType === "duo" &&
+      me.role !== "admin" &&
+      (!parsed.data.partnerFullName || parsed.data.partnerFullName.trim().length < 2)
+    ) {
+      return res.status(400).json({
+        message: "Training partner full name is required for a Duo session.",
       });
-      if (!duoVerdict.ok) {
-        return res.status(400).json({ message: duoVerdict.message, code: duoVerdict.code });
-      }
     }
 
     const sessionAt = buildSessionDate(parsed.data.date, parsed.data.timeSlot);
-    {
-      const slotVerdict = isValidBookingSlot({
-        sessionAt,
-        timeSlot: parsed.data.timeSlot,
-        isAdmin: me.role === "admin",
-        leadTimeCutoffMs: bookingCutoffMs(),
+    if (isNaN(sessionAt.getTime())) {
+      return res.status(400).json({ message: "Invalid date or time" });
+    }
+    if (me.role !== "admin" && !ALLOWED_BOOKING_HOURS.has(parsed.data.timeSlot)) {
+      return res.status(400).json({
+        message: "Sessions can only be booked between 06:00 AM and 10:00 PM.",
       });
-      if (!slotVerdict.ok) {
-        if (slotVerdict.code === "slot_in_past" || slotVerdict.code === "lead_time_too_short") {
-          console.warn("[booking:anomaly]", JSON.stringify({
-            kind: slotVerdict.code, userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
-          }));
-        }
-        return res.status(400).json({ message: slotVerdict.message, code: slotVerdict.code });
-      }
+    }
+    // Past-slot guard. Server-authoritative — protects against stale
+    // browser tabs where the slot was selectable on page load but has
+    // since slipped into the past, and any client bypassing the UI
+    // (curl/Postman). Friendly message matches the user-spec wording.
+    if (me.role !== "admin" && sessionAt.getTime() <= Date.now()) {
+      // Anomaly log: stale browser tab or curl bypass attempt. Single
+      // structured line per event so we can grep frequency without log
+      // volume blowing up.
+      console.warn("[booking:anomaly]", JSON.stringify({
+        kind: "past_slot", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+      }));
+      return res.status(400).json({
+        message: "This time is no longer available. Please choose a future slot.",
+        code: "slot_in_past",
+      });
+    }
+    if (
+      sessionAt.getTime() < bookingCutoffMs()
+    ) {
+      console.warn("[booking:anomaly]", JSON.stringify({
+        kind: "lead_time_too_short", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+      }));
+      return res.status(400).json({
+        message:
+          "Bookings must be made at least 6 hours in advance so the trainer can prepare and arrive on time.",
+        code: "lead_time_too_short",
+      });
     }
 
     const blocked = await storage.getBlockedSlots();
@@ -1693,41 +1692,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     }
 
-    // Task #29: pending-verification + IDOR + lifecycle gate, all funnelled
-    // through the rules engine. Single read of the linked package so we
-    // can pass it to canUserBook without a second roundtrip.
-    let linkedPkgForRules: Awaited<ReturnType<typeof storage.getPackage>> | null = null;
+    // Block bookings on expired or completed packages (clients only).
+    // Admin-overridden bookings can still go through for manual catch-up.
+    if (me.role !== "admin" && packageId) {
+      const linkedPkg = await storage.getPackage(packageId).catch(() => undefined);
+      // SECURITY (IDOR): a client must only be able to book against their own
+      // package. Without this, supplying another client's packageId would
+      // consume their session credits at attendance reconciliation.
+      if (linkedPkg && linkedPkg.userId !== targetUserId) {
+        return res.status(403).json({ message: "You cannot book against this package." });
+      }
+      if (linkedPkg) {
+        const status = computePackageStatus(linkedPkg);
+        if (status === "expired") {
+          return res.status(400).json({
+            message:
+              "Your package has expired. Please request a renewal or an extension to continue booking.",
+            packageStatus: "expired",
+          });
+        }
+        if (status === "completed") {
+          return res.status(400).json({
+            message:
+              "Your package is fully used. Please request a renewal to continue booking.",
+            packageStatus: "completed",
+          });
+        }
+      }
+    }
+
+    // Client-lifecycle + package-eligibility gate (clients only).
+    // Trial sessions skip the package half (no package needed); the client
+    // half (clientStatus / profile completion) still applies.
     if (me.role !== "admin") {
-      if (packageId) {
-        linkedPkgForRules = (await storage.getPackage(packageId).catch(() => undefined)) ?? null;
-        // SECURITY (IDOR): a client must only be able to book against their own
-        // package. Without this, supplying another client's packageId would
-        // consume their session credits at attendance reconciliation.
-        if (linkedPkgForRules && linkedPkgForRules.userId !== targetUserId) {
-          return res.status(403).json({ message: "You cannot book against this package.", code: "forbidden" });
-        }
-      }
-
-      // Pending-verification gate (Task #28). If the client has a pending
-      // request and no usable active package, block the booking.
-      if (sessionType === "package" || sessionType === "duo") {
-        try {
-          const pending = await storage.getUserPendingVerificationPackages(targetUserId);
-          const hasUsableActive = !!(linkedPkgForRules && linkedPkgForRules.isActive && (linkedPkgForRules as any).status !== "pending_verification");
-          if (pending.length > 0 && !hasUsableActive) {
-            return res.status(400).json({
-              message: "Your package is awaiting verification. You'll be able to book once approved.",
-              code: "pending_verification",
-            });
-          }
-        } catch (e) {
-          console.warn("[bookings] pending-verification gate failed:", e);
-        }
-      }
-
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) return res.status(404).json({ message: "Client not found" });
-      const verdict = canUserBook(targetUser, linkedPkgForRules ?? null, sessionType as any);
+      const linkedPkg =
+        sessionType === "trial" || sessionType === "single"
+          ? null
+          : packageId
+          ? await storage.getPackage(packageId).catch(() => undefined)
+          : null;
+      const verdict = evaluateBookingEligibility(targetUser, linkedPkg ?? null);
       if (!verdict.ok) {
         return res.status(400).json({ message: verdict.message, code: verdict.code });
       }
@@ -1784,34 +1790,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const partnerEmail = isDuoBooking
         ? (parsed.data.partnerEmail?.trim() || null)
         : null;
-      // Task #29: atomic booking. `createBookingWithPackageLock` opens a
-      // db.transaction, SELECT … FOR UPDATE on packages, re-runs the rule
-      // canBookFromPackage with the locked row, then inserts the booking.
-      // Closes the race where two concurrent POSTs both pass the cached
-      // remaining-balance check.
-      booking = await storage.createBookingWithPackageLock(
-        {
-          userId: targetUserId,
-          packageId: packageId ?? null,
-          date: parsed.data.date,
-          timeSlot: parsed.data.timeSlot,
-          sessionType,
-          paymentStatus: paymentStatus as any,
-          workoutCategory: (parsed.data.workoutCategory ?? null) as any,
-          notes: parsed.data.notes ?? null,
-          adminNotes: null,
-          clientNotes: parsed.data.clientNotes ?? null,
-          sessionFocus: parsed.data.sessionFocus ?? null,
-          trainingGoal: parsed.data.trainingGoal ?? null,
-          partnerFullName,
-          partnerPhone,
-          partnerEmail,
-        },
-        {
-          packageId: me.role === "admin" ? null : packageId ?? null,
-          checkPackageRule: me.role === "admin" ? undefined : canBookFromPackage,
-        },
-      );
+      booking = await storage.createBooking({
+        userId: targetUserId,
+        packageId: packageId ?? null,
+        date: parsed.data.date,
+        timeSlot: parsed.data.timeSlot,
+        sessionType,
+        paymentStatus: paymentStatus as any,
+        workoutCategory: (parsed.data.workoutCategory ?? null) as any,
+        notes: parsed.data.notes ?? null,
+        adminNotes: null,
+        clientNotes: parsed.data.clientNotes ?? null,
+        sessionFocus: parsed.data.sessionFocus ?? null,
+        trainingGoal: parsed.data.trainingGoal ?? null,
+        partnerFullName,
+        partnerPhone,
+        partnerEmail,
+      });
     } catch (err: any) {
       if (err?.code === "SLOT_TAKEN") {
         // Race-collision telemetry. If this fires often we know to add
@@ -1820,9 +1815,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           kind: "slot_race", userId: targetUserId, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
         }));
         return res.status(409).json({ message: err.message, code: "slot_taken" });
-      }
-      if (err?.code === "RULE_BLOCKED") {
-        return res.status(err.status ?? 400).json({ message: err.message, code: err.ruleCode });
       }
       throw err;
     }
@@ -3086,13 +3078,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
 
     const settings = await storage.getSettings();
+    const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
     const sessionAt = buildSessionDate(booking.date, booking.timeSlot);
-    // Task #29: 6h lockout via the rules engine — single canonical impl.
-    const cancelVerdict = canCancelWithoutCharge({
-      sessionAt,
-      cutoffHours: settings.cancellationCutoffHours ?? 6,
-    });
-    const isWithinCutoff = !cancelVerdict.ok;
+    const msUntil = sessionAt.getTime() - Date.now();
+    const isWithinCutoff = msUntil < cutoffMs;
 
     let newStatus: string;
     let usedProtected = false;
@@ -3956,124 +3945,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid package" });
     }
-    // Task #29: rules engine owns Duo / activation validation. Partner-client
-    // existence stays a route-level concern (DB lookup) — the rules layer is
-    // pure functions only.
-    const verdict = canActivatePackage({
-      type: parsed.data.type,
-      partnerUserId: parsed.data.partnerUserId ?? null,
-      totalSessions: parsed.data.totalSessions,
-      partnerFullName: null,
-    } as any);
-    if (!verdict.ok) {
-      return res.status(400).json({ message: verdict.message, code: verdict.code });
-    }
-    if (parsed.data.partnerUserId) {
+    // Validate partner if duo (legacy "duo30" or new template type "duo")
+    if (parsed.data.type === "duo30" || parsed.data.type === "duo") {
+      if (!parsed.data.partnerUserId) {
+        return res.status(400).json({ message: "Duo packages require a partner client" });
+      }
       const partner = await storage.getUser(parsed.data.partnerUserId);
       if (!partner || partner.role !== "client") {
-        return res.status(400).json({ message: "Partner must be a registered client", code: "partner_not_client" });
+        return res.status(400).json({ message: "Partner must be a registered client" });
       }
     }
     const created = await storage.createPackage(parsed.data);
-    const me = req.user as User;
-    // Audit-log is MANDATORY per Task #29 critical constraints. If the audit
-    // write fails, surface a 500 instead of letting the package change happen
-    // silently — the package row stays (best-effort cleanup is out of scope),
-    // but the operator sees the failure and can retry.
     try {
       await storage.createPackageSessionHistory({
         packageId: created.id,
         userId: created.userId,
         action: "package_created",
         sessionsDelta: created.totalSessions ?? 0,
-        performedByUserId: me.id,
+        performedByUserId: (req.user as User).id,
         reason: created.name ?? null,
       } as any);
-    } catch (e) {
-      console.warn("[task29] session history failed (non-blocking):", e);
-    }
-    await storage.recordAuditLog({
-      action: "package.create",
-      entityType: "package",
-      entityId: created.id,
-      previousValue: null,
-      newValue: created,
-      performedByUserId: me.id,
-      reason: created.name ?? null,
-    } as any);
+    } catch {/* ignore */}
     void dispatchAdminPackageActivatedEmail({ pkg: created, source: "new" });
     res.status(201).json(created);
   });
 
-  // Task #29: legacy free-form PATCH is funnelled through the same rules +
-  // audit pipeline as the new admin actions. A package field can never
-  // change silently — the audit write is not best-effort here.
   app.patch("/api/packages/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const parsed = updatePackageSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
     }
-    const existing = await storage.getPackage(id);
-    if (!existing) return res.status(404).json({ message: "Package not found" });
-    const me = req.user as User;
-    // Re-validate against rules if the patch could change activation-affecting
-    // fields. We synthesize a "preview" package for the check.
-    const previewType = (parsed.data as any).type ?? existing.type;
-    const previewPartner = (parsed.data as any).partnerUserId !== undefined
-      ? (parsed.data as any).partnerUserId
-      : existing.partnerUserId;
-    const previewTotal = (parsed.data as any).totalSessions ?? existing.totalSessions;
-    const verdict = canActivatePackage({
-      type: previewType,
-      partnerUserId: previewPartner ?? null,
-      totalSessions: previewTotal,
-      partnerFullName: null,
-    } as any);
-    if (!verdict.ok) {
-      return res.status(400).json({ message: verdict.message, code: verdict.code });
-    }
     const updated = await storage.updatePackage(id, parsed.data as any);
-    await storage.recordAuditLog({
-      action: "package.update",
-      entityType: "package",
-      entityId: id,
-      previousValue: existing,
-      newValue: updated,
-      performedByUserId: me.id,
-      reason: null,
-    } as any);
     res.json(updated);
   });
 
   app.delete("/api/packages/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const pkg = await storage.getPackage(id).catch(() => undefined);
-    if (!pkg) return res.sendStatus(204);
     await storage.deletePackage(id);
-    const me = req.user as User | undefined;
-    try {
-      await storage.createPackageSessionHistory({
-        packageId: pkg.id,
-        userId: pkg.userId,
-        action: "package_deleted",
-        sessionsDelta: -(pkg.totalSessions - pkg.usedSessions),
-        performedByUserId: me?.id ?? null,
-        reason: "Package deleted by admin",
-      } as any);
-    } catch (e) {
-      console.warn("[task29] session history failed (non-blocking):", e);
+    if (pkg) {
+      try {
+        await storage.createPackageSessionHistory({
+          packageId: pkg.id,
+          userId: pkg.userId,
+          action: "package_deleted",
+          sessionsDelta: -(pkg.totalSessions - pkg.usedSessions),
+          performedByUserId: (req.user as User | undefined)?.id ?? null,
+          reason: "Package deleted by admin",
+        } as any);
+      } catch {/* best-effort audit */}
     }
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.delete",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: pkg,
-      newValue: null,
-      performedByUserId: me?.id ?? null,
-      reason: "Package deleted by admin",
-    } as any);
     res.sendStatus(204);
   });
 
@@ -4103,16 +4025,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: parsed.data.reason ?? null,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: parsed.data.frozen ? "package.freeze" : "package.unfreeze",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { frozen: pkg.frozen, frozenReason: (pkg as any).frozenReason ?? null },
-      newValue: { frozen: parsed.data.frozen, frozenReason: parsed.data.reason ?? null },
-      performedByUserId: me.id,
-      reason: parsed.data.reason ?? null,
-    } as any);
     res.json(updated);
   });
 
@@ -4159,16 +4071,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `${status}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.payment_update",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { paymentStatus: pkg.paymentStatus, amountPaid: (pkg as any).amountPaid },
-      newValue: { paymentStatus: status, amountPaid: nextAmountPaid ?? (pkg as any).amountPaid },
-      performedByUserId: me.id,
-      reason: parsed.data.note ?? null,
-    } as any);
     void dispatchAdminPaymentEmail({ pkg: updated });
     // Only notify the client when the status actually transitions INTO
     // "paid" — avoids resending on repeated "mark paid" no-ops.
@@ -4219,16 +4121,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `AED ${parsed.data.amount.toLocaleString()}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.add_payment",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { amountPaid: (pkg as any).amountPaid ?? 0 },
-      newValue: { amountPaid: ((pkg as any).amountPaid ?? 0) + parsed.data.amount, delta: parsed.data.amount },
-      performedByUserId: me.id,
-      reason: parsed.data.note ?? null,
-    } as any);
     void dispatchAdminPaymentEmail({ pkg: updated, amountReceived: parsed.data.amount });
     // Fire client payment-confirmed only on the receipt that pushes the
     // running total over total_price (i.e. just-now reached "paid").
@@ -4290,16 +4182,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `Converted to ${tmpl.name} (${tmpl.totalSessions} sessions, AED ${tmpl.totalPrice.toLocaleString()})`,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.convert_trial",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: pkg,
-      newValue: updated,
-      performedByUserId: me.id,
-      reason: `Converted to ${tmpl.name}`,
-    } as any);
     void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "converted_trial" });
     res.json(updated);
   });
@@ -4336,16 +4218,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: delta > 0 ? "package.add_session" : "package.remove_session",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { totalSessions: pkg.totalSessions, usedSessions: pkg.usedSessions },
-      newValue: { totalSessions: updated.totalSessions, usedSessions: updated.usedSessions, delta },
-      performedByUserId: me.id,
-      reason,
-    } as any);
     res.json(updated);
   });
 
@@ -4376,557 +4248,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : parsed.data.note ?? "Approval revoked",
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.approve",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { adminApproved: pkg.adminApproved },
-      newValue: { adminApproved: parsed.data.approved },
-      performedByUserId: me.id,
-      reason: parsed.data.note ?? null,
-    } as any);
     res.json(updated);
   });
-
-  // ============================================================
-  // Task #29 — Unified package admin actions (activate + quick ops)
-  // ============================================================
-  // Every action below writes BOTH `package_session_history` (timeline)
-  // AND `admin_audit_log` (cross-entity audit). A package field can never
-  // change silently — if there's no audit row, the mutation didn't happen.
-  const writeAuditDualLog = async (args: {
-    pkg: Package;
-    me: User;
-    historyAction: any;
-    auditAction: string;
-    sessionsDelta?: number;
-    previousValue?: any;
-    newValue?: any;
-    reason?: string | null;
-  }) => {
-    const { pkg, me, historyAction, auditAction, sessionsDelta, previousValue, newValue, reason } = args;
-    // Session history is a UX timeline — best-effort.
-    try {
-      await storage.createPackageSessionHistory({
-        packageId: pkg.id,
-        userId: pkg.userId,
-        action: historyAction,
-        sessionsDelta: sessionsDelta ?? 0,
-        performedByUserId: me.id,
-        reason: reason ?? null,
-      } as any);
-    } catch (e) {
-      console.warn("[task29] session history write failed:", e);
-    }
-    // Task #29 critical constraint: admin audit log is MANDATORY. Surface
-    // failures so a package field can never change without an audit trail.
-    await storage.recordAuditLog({
-      action: auditAction,
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: previousValue ?? null,
-      newValue: newValue ?? null,
-      performedByUserId: me.id,
-      reason: reason ?? null,
-    } as any);
-  };
-
-  // POST /api/admin/packages/:id/activate — "Activate / Verify" panel.
-  // Accepts a partial patch of every admin-editable field. Runs through
-  // `canActivatePackage` (rules engine) before persisting. Sets
-  // status='active', isActive=true, and stamps the verifier.
-  app.post("/api/admin/packages/:id/activate", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    const pkg = await storage.getPackage(id);
-    if (!pkg) return res.status(404).json({ message: "Package not found" });
-    const me = req.user as User;
-
-    const body = req.body ?? {};
-    const patch: Record<string, unknown> = {};
-    // Whitelisted fields the activate panel can mutate.
-    const fields: Array<[string, (v: any) => any]> = [
-      ["name", (v) => (typeof v === "string" ? v : undefined)],
-      ["type", (v) => (typeof v === "string" ? v : undefined)],
-      ["source", (v) => (typeof v === "string" ? v : undefined)],
-      ["paymentSource", (v) => (typeof v === "string" ? v : undefined)],
-      ["paidSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["bonusSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["totalSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["pricePerSession", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["totalPrice", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["amountPaid", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
-      ["paymentStatus", (v) => (typeof v === "string" ? v : undefined)],
-      ["paymentApproved", (v) => (typeof v === "boolean" ? v : undefined)],
-      ["paymentNote", (v) => (typeof v === "string" ? v : undefined)],
-      ["startDate", (v) => (typeof v === "string" ? v : undefined)],
-      ["expiryDate", (v) => (typeof v === "string" ? v : undefined)],
-      ["partnerUserId", (v) => (Number.isFinite(v) ? Number(v) : v === null ? null : undefined)],
-      ["notes", (v) => (typeof v === "string" ? v : undefined)],
-    ];
-    for (const [k, coerce] of fields) {
-      const v = coerce((body as any)[k]);
-      if (v !== undefined) patch[k] = v;
-    }
-
-    // Auto-recompute totalSessions when paid/bonus supplied without total.
-    const paid = (patch.paidSessions as number | undefined) ?? pkg.paidSessions ?? 0;
-    const bonus = (patch.bonusSessions as number | undefined) ?? pkg.bonusSessions ?? 0;
-    if (patch.totalSessions === undefined && (patch.paidSessions !== undefined || patch.bonusSessions !== undefined)) {
-      patch.totalSessions = paid + bonus;
-    }
-
-    const previewType = (patch.type as string | undefined) ?? pkg.type;
-    const previewPartnerId =
-      patch.partnerUserId !== undefined ? (patch.partnerUserId as number | null) : pkg.partnerUserId;
-    const verdict = canActivatePackage({
-      type: previewType,
-      partnerUserId: previewPartnerId ?? null,
-      totalSessions: (patch.totalSessions as number | undefined) ?? pkg.totalSessions,
-      partnerFullName: typeof body.partnerFullName === "string" ? body.partnerFullName : null,
-    } as any);
-    if (!verdict.ok) {
-      return res.status(400).json({ message: verdict.message, code: verdict.code });
-    }
-
-    // Stamp activation metadata.
-    patch.status = "active";
-    patch.isActive = true;
-    patch.adminApproved = true;
-    patch.adminApprovedAt = new Date();
-    patch.adminApprovedByUserId = me.id;
-    patch.verifiedByAdminId = me.id;
-    patch.verifiedAt = new Date();
-    if (patch.paymentApproved === true) {
-      patch.paymentApprovedAt = new Date();
-      patch.paymentApprovedByUserId = me.id;
-    }
-
-    const updated = await storage.updatePackage(id, patch as any);
-    await writeAuditDualLog({
-      pkg,
-      me,
-      historyAction: "package_activated",
-      auditAction: "package.activate",
-      sessionsDelta: (updated.totalSessions ?? 0) - (pkg.totalSessions ?? 0),
-      previousValue: pkg,
-      newValue: updated,
-      reason: typeof body.reason === "string" ? body.reason : null,
-    });
-    void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "approved" });
-    res.json(updated);
-  });
-
-  // -------- QUICK ACTIONS --------
-  const quickAction = (
-    suffix: string,
-    historyAction: any,
-    auditAction: string,
-    mutate: (pkg: Package, body: any, me: User) => Promise<{
-      patch: Record<string, unknown>;
-      sessionsDelta?: number;
-      reason?: string | null;
-      ruleVerdict?: { ok: true } | { ok: false; code: string; message: string };
-    }>,
-  ) => {
-    app.post(`/api/admin/packages/:id/${suffix}`, requireAdmin, async (req, res) => {
-      const id = Number(req.params.id);
-      const pkg = await storage.getPackage(id);
-      if (!pkg) return res.status(404).json({ message: "Package not found" });
-      const me = req.user as User;
-      let plan;
-      try {
-        plan = await mutate(pkg, req.body ?? {}, me);
-      } catch (e: any) {
-        return res.status(400).json({ message: e?.message || "Invalid request" });
-      }
-      if (plan.ruleVerdict && !plan.ruleVerdict.ok) {
-        return res.status(400).json({ message: plan.ruleVerdict.message, code: plan.ruleVerdict.code });
-      }
-      const updated = await storage.updatePackage(id, plan.patch as any);
-      await writeAuditDualLog({
-        pkg,
-        me,
-        historyAction,
-        auditAction,
-        sessionsDelta: plan.sessionsDelta ?? 0,
-        previousValue: pkg,
-        newValue: updated,
-        reason: plan.reason ?? null,
-      });
-      res.json(updated);
-    });
-  };
-
-  quickAction("add-session", "session_added_manual", "package.add_session", async (pkg, body) => {
-    const delta = Math.max(1, Number(body.count ?? 1));
-    return {
-      patch: { totalSessions: (pkg.totalSessions ?? 0) + delta },
-      sessionsDelta: delta,
-      reason: typeof body.reason === "string" ? body.reason : `+${delta} session(s)`,
-    };
-  });
-
-  quickAction("remove-session", "session_removed_manual", "package.remove_session", async (pkg, body) => {
-    const delta = Math.max(1, Number(body.count ?? 1));
-    const newUsed = Math.min(pkg.totalSessions ?? 0, (pkg.usedSessions ?? 0) + delta);
-    return {
-      patch: { usedSessions: newUsed },
-      sessionsDelta: -delta,
-      reason: typeof body.reason === "string" ? body.reason : `-${delta} session(s)`,
-    };
-  });
-
-  quickAction("add-bonus", "bonus_added", "package.add_bonus", async (pkg, body) => {
-    const delta = Math.max(1, Number(body.count ?? 1));
-    return {
-      patch: {
-        bonusSessions: (pkg.bonusSessions ?? 0) + delta,
-        totalSessions: (pkg.totalSessions ?? 0) + delta,
-      },
-      sessionsDelta: delta,
-      reason: typeof body.reason === "string" ? body.reason : `+${delta} bonus session(s)`,
-    };
-  });
-
-  quickAction("extend-expiry", "package_extended", "package.extend_expiry", async (pkg, body) => {
-    const addDays = Math.max(1, Math.min(365, Number(body.addDays ?? 7)));
-    const base = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
-    const next = new Date(base);
-    next.setDate(next.getDate() + addDays);
-    return {
-      patch: { expiryDate: next.toISOString().slice(0, 10) as any, isActive: true },
-      reason: typeof body.reason === "string" ? body.reason : `+${addDays} day(s)`,
-    };
-  });
-
-  quickAction("freeze-now", "package_frozen", "package.freeze", async (pkg, body) => {
-    const verdict = canFreezePackage(pkg);
-    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
-    return {
-      patch: {
-        frozen: true,
-        frozenAt: new Date(),
-        frozenReason: typeof body.reason === "string" ? body.reason : null,
-        status: "frozen" as any,
-      },
-      reason: typeof body.reason === "string" ? body.reason : null,
-    };
-  });
-
-  quickAction("unfreeze-now", "package_unfrozen", "package.unfreeze", async (pkg, body) => {
-    const verdict = canUnfreezePackage(pkg);
-    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
-    return {
-      patch: {
-        frozen: false,
-        frozenAt: null,
-        frozenReason: null,
-        status: "active" as any,
-      },
-      reason: typeof body.reason === "string" ? body.reason : null,
-    };
-  });
-
-  // "Change" — generic edit; whitelisted fields only. Use for renaming /
-  // re-tagging a package after activation. Triggers a package_changed
-  // ledger entry rather than approve / payment so the timeline stays clear.
-  quickAction("change", "package_changed", "package.change", async (_pkg, body) => {
-    const patch: Record<string, unknown> = {};
-    for (const k of ["name", "type", "notes", "paymentNote", "source", "paymentSource"]) {
-      if (typeof (body as any)[k] === "string") patch[k] = (body as any)[k];
-    }
-    if (Object.keys(patch).length === 0) {
-      throw new Error("Provide at least one field to change.");
-    }
-    return { patch, reason: typeof body.reason === "string" ? body.reason : null };
-  });
-
-  quickAction("archive", "package_archived", "package.archive", async (pkg, body) => {
-    const verdict = canArchivePackage(pkg);
-    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
-    return {
-      patch: { status: "archived" as any, isActive: false },
-      reason: typeof body.reason === "string" ? body.reason : "Archived by admin",
-    };
-  });
-
-  quickAction("mark-completed", "package_completed", "package.mark_completed", async (pkg, body) => ({
-    patch: {
-      status: "completed" as any,
-      usedSessions: pkg.totalSessions ?? 0,
-    },
-    reason: typeof body.reason === "string" ? body.reason : "Marked completed",
-  }));
-
-  quickAction("mark-expired", "package_expired", "package.mark_expired", async (_pkg, body) => ({
-    patch: {
-      status: "expired" as any,
-      isActive: false,
-    },
-    reason: typeof body.reason === "string" ? body.reason : "Marked expired",
-  }));
-
-  quickAction("add-note", "package_note_added", "package.add_note", async (pkg, body) => {
-    const note = typeof body.note === "string" ? body.note.trim() : "";
-    if (!note) throw new Error("Note text is required.");
-    const merged = [pkg.notes ?? "", note].filter(Boolean).join("\n— ");
-    return { patch: { notes: merged }, reason: note };
-  });
-
-  // =====================================================================
-  // Task #28 — TRAINING LOCATIONS (post-signup wizard)
-  // =====================================================================
-  // A client's Location Profile (Fitness Zone / Home / Other Gym).
-  // Multiple rows allowed; one is `isDefault=true`. Wizard creates the
-  // first row on first /book or /dashboard/package visit.
-  app.get("/api/training-locations", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const targetUserId =
-      me.role === "admin" && req.query.userId
-        ? Number(req.query.userId)
-        : me.id;
-    const rows = await storage.getUserTrainingLocations(targetUserId);
-    res.json(rows);
-  });
-
-  app.post("/api/training-locations", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const targetUserId =
-      me.role === "admin" && req.body?.userId
-        ? Number(req.body.userId)
-        : me.id;
-    const parsed = insertTrainingLocationSchema.safeParse({
-      ...req.body,
-      userId: targetUserId,
-    });
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ message: parsed.error.errors[0]?.message || "Invalid location" });
-    }
-    const created = await storage.createTrainingLocation(parsed.data);
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/training-locations/:id", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const id = Number(req.params.id);
-    const existing = await storage.getTrainingLocation(id);
-    if (!existing) return res.status(404).json({ message: "Not found" });
-    if (me.role !== "admin" && existing.userId !== me.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    const allowed = (({
-      kind,
-      label,
-      address,
-      buildingName,
-      roomNumber,
-      parkingNotes,
-      equipmentNotes,
-      gymName,
-      guestAccess,
-      accessNotes,
-      isDefault,
-      archivedAt,
-    }: any) => ({
-      ...(kind !== undefined && { kind }),
-      ...(label !== undefined && { label }),
-      ...(address !== undefined && { address }),
-      ...(buildingName !== undefined && { buildingName }),
-      ...(roomNumber !== undefined && { roomNumber }),
-      ...(parkingNotes !== undefined && { parkingNotes }),
-      ...(equipmentNotes !== undefined && { equipmentNotes }),
-      ...(gymName !== undefined && { gymName }),
-      ...(guestAccess !== undefined && { guestAccess }),
-      ...(accessNotes !== undefined && { accessNotes }),
-      ...(isDefault !== undefined && { isDefault: Boolean(isDefault) }),
-      ...(me.role === "admin" && archivedAt !== undefined ? { archivedAt } : {}),
-    }))(req.body || {});
-    if (allowed.kind && !TRAINING_LOCATION_KINDS.includes(allowed.kind)) {
-      return res.status(400).json({ message: "Invalid training-location kind" });
-    }
-    const updated = await storage.updateTrainingLocation(id, allowed as any);
-    res.json(updated);
-  });
-
-  // =====================================================================
-  // Task #28 — PACKAGE VERIFICATION REQUESTS (Fitness Zone clients)
-  // =====================================================================
-  // Client submits a receipt; server stamps a `packages` row with
-  // status='pending_verification'. Admin approves/rejects from the
-  // verification queue, which sets status='active' (or 'archived').
-  app.post("/api/package-verification-requests", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const parsed = packageVerificationRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ message: parsed.error.errors[0]?.message || "Invalid request" });
-    }
-    // Disallow stacking: a client may only have ONE pending verification
-    // outstanding at a time. They can resubmit after admin decides.
-    const existingPending = await storage.getUserPendingVerificationPackages(me.id);
-    if (existingPending.length > 0) {
-      return res.status(409).json({
-        message:
-          "You already have a package verification request in review. Please wait for Youssef's reply.",
-        code: "verification_already_pending",
-      });
-    }
-    const guessedSessions =
-      parsed.data.requestedType === "ten"
-        ? 10
-        : parsed.data.requestedType === "twenty"
-          ? 20
-          : parsed.data.requestedType === "twentyfive"
-            ? 25
-            : parsed.data.requestedType === "duo30"
-              ? 30
-              : 0;
-    const created = await storage.createPackage({
-      userId: me.id,
-      type: parsed.data.requestedType === "duo30" ? "duo" : "standard",
-      totalSessions: Math.max(guessedSessions, 1),
-      usedSessions: 0,
-      isActive: false,
-      status: "pending_verification" as any,
-      source: "fitness_zone",
-      paymentSource: "paid_via_fitness_zone",
-      paymentStatus: "complimentary",
-      paymentApproved: false,
-      adminApproved: false,
-      frozen: false,
-      verificationAttachments: parsed.data.receiptDataUrl,
-      verificationRequestPayload: {
-        requestedType: parsed.data.requestedType,
-        purchaseDate: parsed.data.purchaseDate,
-        notes: parsed.data.notes ?? null,
-        submittedAt: new Date().toISOString(),
-      } as any,
-    } as any);
-    try {
-      await storage.createAdminNotification({
-        kind: "system",
-        title: `Package verification request — ${me.fullName}`,
-        body: `Fitness Zone client submitted a receipt awaiting review.`,
-        userId: me.id,
-        bookingId: null as any,
-      } as any);
-    } catch (e) {
-      console.warn("[verification] admin notification failed:", e);
-    }
-    // Task #31: lift the lead pipeline to package_verification_pending.
-    try {
-      await storage.setLeadStatusAuto(me.id, "package_verification_pending");
-    } catch {/* ignore */}
-    res.status(201).json(created);
-  });
-
-  app.get(
-    "/api/admin/package-verification-requests",
-    requireAdmin,
-    async (_req, res) => {
-      const rows = await storage.getPendingVerificationPackages();
-      const out: any[] = [];
-      for (const r of rows) {
-        const u = await storage.getUser(r.userId);
-        out.push({ ...r, user: u ? sanitizeUser(u) : null });
-      }
-      res.json(out);
-    },
-  );
-
-  app.patch(
-    "/api/admin/package-verification-requests/:id",
-    requireAdmin,
-    async (req, res) => {
-      const id = Number(req.params.id);
-      const parsed = packageVerificationDecisionSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res
-          .status(400)
-          .json({ message: parsed.error.errors[0]?.message || "Invalid decision" });
-      }
-      const pkg = await storage.getPackage(id);
-      if (!pkg) return res.status(404).json({ message: "Request not found" });
-      if (pkg.status !== "pending_verification") {
-        return res.status(409).json({ message: "Request is no longer pending" });
-      }
-      const me = req.user as User;
-      if (parsed.data.decision === "approve") {
-        const startDate = new Date();
-        const total = parsed.data.totalSessions ?? pkg.totalSessions;
-        const bonus = parsed.data.bonusSessions ?? pkg.bonusSessions ?? 0;
-        const expiry = parsed.data.expiryDate
-          ? new Date(parsed.data.expiryDate)
-          : new Date(startDate.getTime() + 60 * 86_400_000);
-        const updated = await storage.updatePackage(id, {
-          name: parsed.data.name ?? pkg.name ?? "Fitness Zone Package",
-          totalSessions: total,
-          bonusSessions: bonus,
-          paidSessions: total - (bonus ?? 0),
-          startDate: startDate.toISOString().slice(0, 10) as any,
-          expiryDate: expiry.toISOString().slice(0, 10) as any,
-          status: "active" as any,
-          isActive: true,
-          adminApproved: true,
-          adminApprovedAt: new Date(),
-          adminApprovedByUserId: me.id,
-          verifiedByAdminId: me.id,
-          verifiedAt: new Date(),
-        } as any);
-        try {
-          await storage.createPackageSessionHistory({
-            packageId: id,
-            userId: pkg.userId,
-            action: "package_approved",
-            sessionsDelta: total,
-            performedByUserId: me.id,
-            reason: parsed.data.note ?? "Fitness Zone verification approved",
-          } as any);
-        } catch {/* ignore */}
-        void notifyUserOnce(
-          pkg.userId,
-          "system",
-          `verify-approve-${id}`,
-          "Your package is approved",
-          "Your Fitness Zone package has been verified. You can book sessions now.",
-        );
-        // Task #31: package is now live — promote pipeline to PT Active.
-        try {
-          await storage.setLeadStatusAuto(pkg.userId, "pt_active");
-        } catch {/* ignore */}
-        return res.json(updated);
-      }
-      // Reject
-      const updated = await storage.updatePackage(id, {
-        status: "archived" as any,
-        isActive: false,
-        notes: parsed.data.note ?? "Verification rejected",
-      } as any);
-      try {
-        await storage.createPackageSessionHistory({
-          packageId: id,
-          userId: pkg.userId,
-          action: "package_rejected",
-          sessionsDelta: 0,
-          performedByUserId: me.id,
-          reason: parsed.data.note ?? "Verification rejected",
-        } as any);
-      } catch {/* ignore */}
-      void notifyUserOnce(
-        pkg.userId,
-        "system",
-        `verify-reject-${id}`,
-        "Package verification needs attention",
-        parsed.data.note ??
-          "Youssef couldn't verify your Fitness Zone receipt. Please re-submit or contact him via WhatsApp.",
-      );
-      res.json(updated);
-    },
-  );
 
   // Read the audit trail for a single client (used by the Sessions tab).
   // P4e: Activity feed (admin scoping a specific client).
@@ -5488,12 +4811,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const me = req.user as User;
     const { days, ...plan } = parsed.data;
     const created = await storage.createNutritionPlan(plan, days, me.id);
-    // Task #31: if the plan is created already-active, lift pipeline.
-    if ((created as any).status === "active") {
-      try {
-        await storage.setLeadStatusAuto((created as any).userId, "nutrition_active");
-      } catch {/* ignore */}
-    }
     res.status(201).json(created);
   });
 
@@ -5511,12 +4828,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!existing) return res.status(404).json({ message: "Plan not found" });
     const { days, userId: _ignore, ...rest } = parsed.data as any;
     const updated = await storage.updateNutritionPlan(id, rest, days);
-    // Task #31: nutrition activation lifts the pipeline.
-    if (updated && (updated as any).status === "active" && existing.status !== "active") {
-      try {
-        await storage.setLeadStatusAuto((updated as any).userId, "nutrition_active");
-      } catch {/* ignore */}
-    }
     res.json(updated);
   });
 
@@ -7112,18 +6423,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : `Extended by ${parsed.data.addDays ?? 7} days → ${newExpiryStr}`,
       } as any);
     } catch {/* ignore */}
-    // Task #29 critical constraint: admin audit log is MANDATORY.
-    await storage.recordAuditLog({
-      action: "package.extend_expiry",
-      entityType: "package",
-      entityId: pkg.id,
-      previousValue: { expiryDate: previousExpiry },
-      newValue: { expiryDate: newExpiryStr, daysAdded },
-      performedByUserId: (req.user as User).id,
-      reason: parsed.data.newExpiryDate
-        ? `Expiry set to ${newExpiryStr}`
-        : `+${daysAdded} day(s)`,
-    } as any);
     void dispatchAdminPackageExtendedEmail({
       pkg: updated,
       daysAdded,
@@ -7409,787 +6708,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     },
   );
 
-  // ============== TASK #30 — Recovery + Agreements + Feature flags ==============
-  const { insertRecoveryRequestSchema, updateRecoveryRequestSchema, AGREEMENT_TYPES, AGREEMENT_VERSIONS, FEATURE_FLAG_DEFAULTS } = await import("@shared/schema");
-  const { z: zod } = await import("zod");
-
-  // Public read of feature flags (booleans only). Lets the client know if
-  // gated surfaces should render. Falls back to defaults when a key is unseen.
-  app.get("/api/feature-flags", async (_req, res) => {
-    try {
-      const rows = await storage.listFeatureFlags();
-      const map: Record<string, boolean> = { ...(FEATURE_FLAG_DEFAULTS as any) };
-      for (const r of rows) map[r.key] = r.enabled;
-      res.json(map);
-    } catch (err: any) {
-      console.error("[GET /api/feature-flags] failed", err);
-      res.json({ ...(FEATURE_FLAG_DEFAULTS as any) });
-    }
-  });
-
-  app.get("/api/agreements/versions", (_req, res) => {
-    res.json({ types: AGREEMENT_TYPES, versions: AGREEMENT_VERSIONS });
-  });
-
-  app.get("/api/agreements", requireAuth, async (req, res) => {
-    const uid = (req.user as any).id as number;
-    const rows = await storage.getUserAgreements(uid);
-    res.json(rows);
-  });
-
-  const acceptAgreementSchema = zod.object({
-    agreementType: zod.enum(AGREEMENT_TYPES),
-    version: zod.string().min(1).max(40),
-  });
-
-  app.post("/api/agreements", requireAuth, async (req, res) => {
-    const parsed = acceptAgreementSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid agreement payload", errors: parsed.error.flatten() });
-    }
-    const uid = (req.user as any).id as number;
-    // Prefer Express's `req.ip` (honors `trust proxy`); fall back to the
-    // first XFF hop only if it's missing. Never throw — store NULL.
-    let ip: string | null = null;
-    try {
-      if (req.ip) {
-        ip = req.ip;
-      } else {
-        const xff = req.headers["x-forwarded-for"];
-        const xffStr = Array.isArray(xff) ? xff[0] : (xff as string | undefined);
-        ip = xffStr?.split(",")[0]?.trim() || null;
-      }
-    } catch { ip = null; }
-    const ua = (req.headers["user-agent"] as string | undefined) ?? null;
-    try {
-      const row = await storage.recordAgreement({
-        userId: uid,
-        agreementType: parsed.data.agreementType,
-        version: parsed.data.version,
-        ip: ip ?? null,
-        userAgent: ua,
-      } as any);
-      res.status(201).json(row);
-    } catch (err: any) {
-      console.error("[POST /api/agreements] failed", err);
-      res.status(500).json({ message: "Failed to record agreement" });
-    }
-  });
-
-  // ----- Recovery requests -----
-  async function ensureRecoveryEnabled(res: Response): Promise<boolean> {
-    const on = await storage.isFeatureEnabled("recovery_enabled");
-    if (!on) {
-      res.status(404).json({ message: "Recovery module is disabled" });
-      return false;
-    }
-    return true;
-  }
-
-  app.get("/api/recovery-requests", requireAuth, async (req, res) => {
-    if (!(await ensureRecoveryEnabled(res))) return;
-    const u = req.user as any;
-    if (u.role === "admin") {
-      const status = typeof req.query.status === "string" ? (req.query.status as string) : undefined;
-      const rows = await storage.listRecoveryRequests(status ? { status } : undefined);
-      return res.json(rows);
-    }
-    const rows = await storage.listRecoveryRequestsForUser(u.id as number);
-    res.json(rows);
-  });
-
-  app.post("/api/recovery-requests", requireAuth, async (req, res) => {
-    if (!(await ensureRecoveryEnabled(res))) return;
-    const parsed = insertRecoveryRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid recovery request", errors: parsed.error.flatten() });
-    }
-    const uid = (req.user as any).id as number;
-    try {
-      const row = await storage.createRecoveryRequest({
-        userId: uid,
-        serviceType: parsed.data.serviceType,
-        notes: parsed.data.notes ?? null,
-      } as any);
-      // Best-effort audit (admin queue context). Failure is swallowed —
-      // the client write must always succeed.
-      try {
-        await storage.recordAuditLog({
-          action: "recovery_request.create",
-          entityType: "recovery_request",
-          entityId: row.id,
-          newValue: { serviceType: row.serviceType, status: row.status } as any,
-          performedByUserId: uid,
-        } as any);
-      } catch {/* ignore */}
-      res.status(201).json(row);
-    } catch (err: any) {
-      console.error("[POST /api/recovery-requests] failed", err);
-      res.status(500).json({ message: "Failed to create recovery request" });
-    }
-  });
-
-  app.patch("/api/admin/recovery-requests/:id", requireAdmin, async (req, res) => {
-    if (!(await ensureRecoveryEnabled(res))) return;
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateRecoveryRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
-    }
-    const existing = await storage.getRecoveryRequest(id);
-    if (!existing) return res.status(404).json({ message: "Recovery request not found" });
-    const adminId = (req.user as any).id as number;
-    const patch: any = { ...parsed.data };
-    // If admin is transitioning to scheduled but didn't claim it, assign to themselves.
-    if (parsed.data.status === "scheduled" && existing.assignedAdminId == null && patch.assignedAdminId == null) {
-      patch.assignedAdminId = adminId;
-    }
-    const updated = await storage.updateRecoveryRequest(id, patch);
-    try {
-      await storage.recordAuditLog({
-        action: "recovery_request.update",
-        entityType: "recovery_request",
-        entityId: id,
-        previousValue: {
-          status: existing.status,
-          scheduledFor: existing.scheduledFor,
-          assignedAdminId: existing.assignedAdminId,
-        } as any,
-        newValue: {
-          status: updated?.status,
-          scheduledFor: updated?.scheduledFor,
-          assignedAdminId: updated?.assignedAdminId,
-        } as any,
-        performedByUserId: adminId,
-      } as any);
-    } catch {/* ignore */}
-    res.json(updated);
-  });
-
-  // ===================================================================
-  // Task #31 — Admin Command Center, Lead Pipeline, Integrity Checker
-  // ===================================================================
-  // All routes are admin-gated; lead-status mutations write to
-  // admin_audit_log via storage.setLeadStatus.
-
-  // In-memory 30s cache per admin id. The payload is small (~11 ints)
-  // so this is < 1KB per admin. The route hits ~11 parallel COUNT(*)
-  // queries — caching avoids hammering when an admin tab-switches.
-  const commandCenterCache = new Map<
-    number,
-    { at: number; payload: any }
-  >();
-  const COMMAND_CENTER_CACHE_MS = 30_000;
-
-  app.get("/api/admin/command-center", requireAdmin, async (req, res) => {
-    const me = req.user as User;
-    const cached = commandCenterCache.get(me.id);
-    const now = Date.now();
-    if (cached && now - cached.at < COMMAND_CENTER_CACHE_MS) {
-      return res.json({ ...cached.payload, cached: true });
-    }
-    try {
-      const counts = await storage.getCommandCenterCounts();
-      const payload = { ...counts, generatedAt: new Date().toISOString() };
-      commandCenterCache.set(me.id, { at: now, payload });
-      res.json({ ...payload, cached: false });
-    } catch (err) {
-      console.error("[command-center] failed", err);
-      res.status(500).json({ message: "Failed to load command center" });
-    }
-  });
-
-  app.get("/api/admin/integrity", requireAdmin, async (_req, res) => {
-    try {
-      const warnings = await storage.getIntegrityWarnings();
-      res.json({ warnings, generatedAt: new Date().toISOString() });
-    } catch (err) {
-      console.error("[integrity] failed", err);
-      res.status(500).json({ message: "Failed to load integrity report" });
-    }
-  });
-
-  app.get("/api/admin/leads", requireAdmin, async (req, res) => {
-    const leadStatus = typeof req.query.leadStatus === "string" ? req.query.leadStatus : undefined;
-    const leadSource = typeof req.query.leadSource === "string" ? req.query.leadSource : undefined;
-    try {
-      const rows = await storage.getLeadPipeline({ leadStatus, leadSource });
-      res.json(rows.map((u: any) => sanitizeUserAdminView(u)));
-    } catch (err) {
-      console.error("[leads] failed", err);
-      res.status(500).json({ message: "Failed to load lead pipeline" });
-    }
-  });
-
-  app.patch(
-    "/api/admin/clients/:id/lead-status",
-    requireAdmin,
-    async (req, res) => {
-      const id = Number(req.params.id);
-      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-      const schema = z.object({
-        leadStatus: z.enum(LEAD_STATUSES),
-        manualOverride: z.boolean().optional(),
-        reason: z.string().max(2000).optional(),
-      });
-      const parsed = schema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
-      }
-      const me = req.user as User;
-      const updated = await storage.setLeadStatus(id, parsed.data.leadStatus, me.id, {
-        manualOverride: parsed.data.manualOverride ?? true,
-        reason: parsed.data.reason,
-      });
-      if (!updated) return res.status(404).json({ message: "Client not found" });
-      commandCenterCache.clear();
-      res.json(sanitizeUserAdminView(updated as any));
-    },
-  );
-
-  // ===========================================================
-  // Client Data Center (admin-only) — flat dataset for the table
-  // view, filter UI, and export buttons on /admin/data-center.
-  // Every new client registration is auto-included because the
-  // query joins live against the users table; no caching layer.
-  // ===========================================================
-  app.get("/api/admin/data-center", requireAdmin, async (_req, res) => {
-    try {
-      const rows = await storage.getClientDataCenter();
-      res.json({ rows, generatedAt: new Date().toISOString(), count: rows.length });
-    } catch (err) {
-      console.error("[data-center] failed", err);
-      res.status(500).json({ message: "Failed to load client data center" });
-    }
-  });
-
-  // ===========================================================
-  // Management & Analysis Center (admin-only) — aggregated KPIs
-  // across clients/packages/bookings/nutrition/recovery/leads plus
-  // a coach action list. All sub-queries are server-side aggregates;
-  // the response is small enough for a short in-memory cache.
-  // ===========================================================
-  const managementAnalysisCache = new Map<
-    string,
-    { at: number; payload: any }
-  >();
-  const MGMT_TTL_MS = 30_000;
-  app.get(
-    "/api/admin/management-analysis",
-    requireAdmin,
-    async (_req, res) => {
-      try {
-        const now = Date.now();
-        const cached = managementAnalysisCache.get("all");
-        if (cached && now - cached.at < MGMT_TTL_MS) {
-          return res.json(cached.payload);
-        }
-        const payload = await storage.getManagementAnalysis();
-        managementAnalysisCache.set("all", { at: now, payload });
-        res.json(payload);
-      } catch (err) {
-        console.error("[management-analysis] failed", err);
-        res
-          .status(500)
-          .json({ message: "Failed to load management analysis" });
-      }
-    },
-  );
-
   // ============== SEED ==============
   await seedDatabase();
-
-  // ===================================================================
-  // Task #43 — Admin Control Panel
-  // Umbrella admin tooling under /api/admin/control-panel/*.
-  // Scope: RBAC (super-admin only mutations), audit log read,
-  // client tags, admin tasks, notification prefs, saved filters,
-  // trainer assignments, manual-override audit, view-as-client snapshot,
-  // bulk actions, policy reference. No existing handler is modified.
-  // ===================================================================
-  {
-    const cp = "/api/admin/control-panel";
-    const s = storage as any;
-
-    // Overview — current admin + counts. Cheap roll-up.
-    app.get(`${cp}/me`, requireAdmin, async (req, res) => {
-      const u = req.user as User;
-      const [tasks, tags, audit, prefs] = await Promise.all([
-        s.listAdminTasks({ status: "open" }),
-        s.listClientTags(),
-        s.listAdminAuditEntries(25),
-        s.getAdminNotificationPrefs(u.id),
-      ]);
-      res.json({
-        admin: {
-          id: u.id,
-          email: u.email,
-          adminRole: (u as any).adminRole ?? "super_admin",
-          isSuperAdmin: isEffectiveSuperAdmin(u),
-        },
-        counts: {
-          openTasks: tasks.length,
-          totalTags: tags.length,
-          auditEntries: audit.length,
-        },
-        recentAudit: audit.slice(0, 10),
-        notificationPrefs: prefs,
-      });
-    });
-
-    // ---- Admin tasks ----
-    app.get(`${cp}/tasks`, requireAdmin, async (req, res) => {
-      const status = typeof req.query.status === "string" ? req.query.status : undefined;
-      const relatedUserId = req.query.userId ? Number(req.query.userId) : undefined;
-      const rows = await s.listAdminTasks({ status, relatedUserId });
-      res.json(rows);
-    });
-    app.post(`${cp}/tasks`, requireAdmin, async (req, res) => {
-      try {
-        const { insertAdminTaskSchema } = await import("@shared/schema");
-        const parsed = insertAdminTaskSchema.parse({
-          ...req.body,
-          createdByUserId: (req.user as User).id,
-        });
-        const row = await s.createAdminTask(parsed);
-        await storage.recordAuditLog({
-          performedByUserId: (req.user as User).id,
-          action: "task.create",
-          entityType: "admin_task",
-          entityId: row.id,
-          newValue: { title: row.title },
-        });
-        res.status(201).json(row);
-      } catch (err: any) {
-        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid task" });
-      }
-    });
-    app.patch(`${cp}/tasks/:id`, requireAdmin, async (req, res) => {
-      try {
-        const id = Number(req.params.id);
-        const { updateAdminTaskSchema } = await import("@shared/schema");
-        const patch = updateAdminTaskSchema.parse(req.body);
-        const row = await s.updateAdminTask(id, patch);
-        if (!row) return res.status(404).json({ error: "NotFound" });
-        res.json(row);
-      } catch (err: any) {
-        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid patch" });
-      }
-    });
-    app.delete(`${cp}/tasks/:id`, requireAdmin, async (req, res) => {
-      const ok = await s.deleteAdminTask(Number(req.params.id));
-      res.json({ ok });
-    });
-
-    // ---- Client tags ----
-    app.get(`${cp}/tags`, requireAdmin, async (req, res) => {
-      const userId = req.query.userId ? Number(req.query.userId) : undefined;
-      res.json(await s.listClientTags(userId));
-    });
-    app.post(`${cp}/tags`, requireAdmin, async (req, res) => {
-      try {
-        const { insertClientTagSchema } = await import("@shared/schema");
-        const parsed = insertClientTagSchema.parse({
-          ...req.body,
-          createdByUserId: (req.user as User).id,
-        });
-        const row = await s.addClientTag(parsed);
-        res.status(row ? 201 : 200).json(row ?? { ok: true, duplicate: true });
-      } catch (err: any) {
-        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid tag" });
-      }
-    });
-    app.delete(`${cp}/tags/:id`, requireAdmin, async (req, res) => {
-      const ok = await s.removeClientTag(Number(req.params.id));
-      res.json({ ok });
-    });
-
-    // ---- Audit log (read-only) ----
-    app.get(`${cp}/audit-log`, requireAdmin, async (req, res) => {
-      const limit = Math.min(Number(req.query.limit) || 200, 1000);
-      res.json(await s.listAdminAuditEntries(limit));
-    });
-
-    // ---- Notification prefs (per-admin) ----
-    app.get(`${cp}/notification-prefs`, requireAdmin, async (req, res) => {
-      res.json(await s.getAdminNotificationPrefs((req.user as User).id));
-    });
-    app.put(`${cp}/notification-prefs`, requireAdmin, async (req, res) => {
-      const body = req.body && typeof req.body === "object" ? req.body : {};
-      const clean: Record<string, boolean> = {};
-      for (const [k, v] of Object.entries(body)) clean[k] = !!v;
-      const saved = await s.setAdminNotificationPrefs((req.user as User).id, clean);
-      res.json(saved);
-    });
-
-    // ---- Saved filters ----
-    app.get(`${cp}/saved-filters`, requireAdmin, async (req, res) => {
-      const page = typeof req.query.page === "string" ? req.query.page : undefined;
-      res.json(await s.listSavedFilters((req.user as User).id, page));
-    });
-    app.post(`${cp}/saved-filters`, requireAdmin, async (req, res) => {
-      try {
-        const { insertSavedFilterSchema } = await import("@shared/schema");
-        const parsed = insertSavedFilterSchema.parse(req.body);
-        const row = await s.createSavedFilter((req.user as User).id, parsed);
-        res.status(201).json(row);
-      } catch (err: any) {
-        res.status(400).json({ error: "BadRequest", message: err?.message || "Invalid filter" });
-      }
-    });
-    app.delete(`${cp}/saved-filters/:id`, requireAdmin, async (req, res) => {
-      const ok = await s.deleteSavedFilter(Number(req.params.id), (req.user as User).id);
-      res.json({ ok });
-    });
-
-    // ---- Manual override audit (records intent + reason) ----
-    app.post(`${cp}/overrides`, requireAdmin, async (req, res) => {
-      const { action, entityType, entityId, reason, metadata } = req.body || {};
-      if (!action || !entityType || !reason || String(reason).trim().length < 5) {
-        return res.status(400).json({ error: "BadRequest", message: "action, entityType, and reason (>=5 chars) required" });
-      }
-      const eid = entityId != null && entityId !== "" ? Number(entityId) : null;
-      const row = await storage.recordAuditLog({
-        performedByUserId: (req.user as User).id,
-        action: `manual_override:${action}`,
-        entityType: String(entityType),
-        entityId: Number.isFinite(eid as number) ? (eid as number) : null,
-        reason: String(reason).slice(0, 2000),
-        newValue: metadata && typeof metadata === "object" ? metadata : null,
-      });
-      res.status(201).json(row);
-    });
-
-    // ---- Admin roster + role assignment (super-admin only mutations) ----
-    app.get(`${cp}/admins`, requireAdmin, async (_req, res) => {
-      const admins = await storage.getAllAdmins();
-      res.json(admins.map((a: any) => ({
-        id: a.id,
-        email: a.email,
-        firstName: a.firstName,
-        lastName: a.lastName,
-        adminRole: a.adminRole ?? "super_admin",
-        isActive: a.isActive !== false,
-      })));
-    });
-    app.patch(`${cp}/admins/:id/role`, requireSuperAdmin, async (req, res) => {
-      try {
-        const id = Number(req.params.id);
-        const role = String(req.body?.role || "");
-        const { ADMIN_ROLES } = await import("@shared/schema");
-        if (!ADMIN_ROLES.includes(role as any)) {
-          return res.status(400).json({ error: "BadRequest", message: "Invalid role" });
-        }
-        await storage.updateUser(id, { adminRole: role as any });
-        await storage.recordAuditLog({
-          performedByUserId: (req.user as User).id,
-          action: "admin.role.update",
-          entityType: "admin_user",
-          entityId: id,
-          newValue: { role },
-        });
-        res.json({ ok: true });
-      } catch (err: any) {
-        res.status(400).json({ error: "BadRequest", message: err?.message || "Failed" });
-      }
-    });
-
-    // ---- Trainer assignments (super-admin only writes) ----
-    app.get(`${cp}/trainer-assignments`, requireAdmin, async (req, res) => {
-      const trainerId = req.query.trainerId ? Number(req.query.trainerId) : undefined;
-      res.json(await s.listTrainerAssignments(trainerId));
-    });
-    app.post(`${cp}/trainer-assignments`, requireSuperAdmin, async (req, res) => {
-      const trainerId = Number(req.body?.trainerUserId);
-      const clientId = Number(req.body?.clientUserId);
-      if (!trainerId || !clientId) {
-        return res.status(400).json({ error: "BadRequest", message: "trainerUserId and clientUserId required" });
-      }
-      const row = await s.addTrainerAssignment(trainerId, clientId);
-      res.status(row ? 201 : 200).json(row ?? { ok: true, duplicate: true });
-    });
-    app.delete(`${cp}/trainer-assignments/:id`, requireSuperAdmin, async (req, res) => {
-      const ok = await s.removeTrainerAssignment(Number(req.params.id));
-      res.json({ ok });
-    });
-
-    // ---- Bulk actions ----
-    app.post(`${cp}/bulk/tag`, requireAdmin, async (req, res) => {
-      const ids: number[] = Array.isArray(req.body?.clientIds) ? req.body.clientIds.map(Number).filter(Boolean) : [];
-      const label = String(req.body?.label || "").trim();
-      const color = req.body?.color ? String(req.body.color) : null;
-      if (ids.length === 0 || !label) {
-        return res.status(400).json({ error: "BadRequest", message: "clientIds[] and label required" });
-      }
-      let applied = 0;
-      for (const id of ids) {
-        const row = await s.addClientTag({
-          userId: id, label, color,
-          createdByUserId: (req.user as User).id,
-        });
-        if (row) applied++;
-      }
-      await storage.recordAuditLog({
-        performedByUserId: (req.user as User).id,
-        action: "bulk.tag",
-        entityType: "users",
-        entityId: null,
-        newValue: { label, count: ids.length, applied },
-      });
-      res.json({ ok: true, applied, requested: ids.length });
-    });
-
-    app.post(`${cp}/bulk/archive`, requireAdmin, async (req, res) => {
-      // Records audit trail only — does not modify users. The
-      // manual-override pattern: admin acknowledges + explains, then
-      // performs the action via the standard client-detail UI.
-      const ids: number[] = Array.isArray(req.body?.clientIds) ? req.body.clientIds.map(Number).filter(Boolean) : [];
-      const reason = String(req.body?.reason || "").trim();
-      if (ids.length === 0 || reason.length < 5) {
-        return res.status(400).json({ error: "BadRequest", message: "clientIds[] and reason (>=5 chars) required" });
-      }
-      await storage.recordAuditLog({
-        performedByUserId: (req.user as User).id,
-        action: "bulk.archive.intent",
-        entityType: "users",
-        entityId: null,
-        reason: reason.slice(0, 2000),
-        newValue: { ids, count: ids.length },
-      });
-      res.json({ ok: true, recorded: ids.length });
-    });
-
-    // ---- View-as-client (read-only snapshot) ----
-    // Task #44: super-admin only per security policy.
-    app.get(`${cp}/view-as/:userId`, requireSuperAdmin, async (req, res) => {
-      try {
-        const userId = Number(req.params.userId);
-        const user = await storage.getUser(userId);
-        if (!user || user.role !== "user") {
-          return res.status(404).json({ error: "NotFound" });
-        }
-        const [pkg, bookings, bodyRows, photos, tags] = await Promise.all([
-          storage.getActivePackageForUser(userId).catch(() => null),
-          storage.getBookings({ userId }).catch(() => [] as any[]),
-          (storage as any).listBodyMetrics(userId, { limit: 1 }).catch(() => [] as any[]),
-          storage.getProgressPhotos({ userId }).catch(() => [] as any[]),
-          s.listClientTags(userId),
-        ]);
-        const body = Array.isArray(bodyRows) && bodyRows.length > 0 ? bodyRows[0] : null;
-        await storage.recordAuditLog({
-          performedByUserId: (req.user as User).id,
-          action: "view_as_client",
-          entityType: "user",
-          entityId: userId,
-        });
-        res.json({
-          user: sanitizeUser(user),
-          activePackage: pkg,
-          bookings: Array.isArray(bookings) ? bookings.slice(0, 50) : [],
-          latestBodyMetrics: body,
-          progressPhotos: Array.isArray(photos) ? photos.slice(0, 20) : [],
-          tags,
-        });
-      } catch (err) {
-        console.error("[view-as] failed", err);
-        res.status(500).json({ error: "InternalError" });
-      }
-    });
-
-    // ====================================================================
-    // Task #44 — Enterprise Security & Operations
-    // System Health, Incident Center, Emergency Admin controls.
-    // All routes admin-only; mutations require super admin.
-    // ====================================================================
-
-    // Aggregated system-health snapshot. Cheap counts only — never
-    // returns secret values, only presence/absence.
-    app.get(`${cp}/system-health`, requireAdmin, async (_req, res) => {
-      try {
-        const requiredEnvs = [
-          "DATABASE_URL", "JWT_SECRET", "SESSION_SECRET",
-          "RESEND_API_KEY", "PUBLIC_APP_URL", "OPENAI_API_KEY", "CRON_SECRET",
-        ];
-        const envStatus = requiredEnvs.map(name => ({
-          name,
-          present: !!process.env[name],
-        }));
-        const missingEnvs = envStatus.filter(e => !e.present).map(e => e.name);
-
-        const environment = process.env.NODE_ENV === "production" ? "production"
-          : process.env.NODE_ENV === "staging" ? "staging"
-          : "development";
-
-        const emailCfg = emailConfigStatus();
-        const recentEmails = getRecentEmailSends(50);
-        const failedEmails = recentEmails.filter(e => !e.sent).length;
-        const sentEmails = recentEmails.filter(e => e.sent).length;
-
-        // Cron status — surfaced if the auto-complete service tracks it.
-        let cronLastRunAt: number | null = null;
-        try {
-          const mod = await import("./services/autoCompleteBookings");
-          cronLastRunAt = (mod as any).getLastCronRunAt?.() ?? null;
-        } catch { /* ignore */ }
-
-        // Active admin session count (best-effort; depends on session table).
-        let activeAdminSessions: number | null = null;
-        try {
-          const r = await pool.query(`
-            SELECT COUNT(*)::int AS n
-            FROM session
-            WHERE expire > now()
-              AND (sess->'passport'->>'user') IS NOT NULL
-          `);
-          activeAdminSessions = r.rows?.[0]?.n ?? null;
-        } catch { /* table might not exist with this shape */ }
-
-        // Light integrity probes — counts only, never PII.
-        const [adminCountR, userCountR, orphanBookingsR] = await Promise.all([
-          pool.query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND COALESCE(is_active,true)=true`).catch(() => ({ rows: [{ n: null }] })),
-          pool.query(`SELECT COUNT(*)::int AS n FROM users WHERE role='user'`).catch(() => ({ rows: [{ n: null }] })),
-          pool.query(`SELECT COUNT(*)::int AS n FROM bookings b LEFT JOIN users u ON u.id = b.user_id WHERE u.id IS NULL`).catch(() => ({ rows: [{ n: null }] })),
-        ]);
-
-        res.json({
-          environment,
-          envStatus,
-          missingEnvs,
-          email: {
-            ready: emailCfg.ready,
-            from: emailCfg.from ?? null,
-            recentSent: sentEmails,
-            recentFailed: failedEmails,
-          },
-          cron: {
-            lastRunAt: cronLastRunAt,
-            stale: cronLastRunAt == null ? null : (Date.now() - cronLastRunAt) > 1000 * 60 * 60,
-          },
-          sessions: { activeAdminSessions },
-          integrity: {
-            activeAdmins: adminCountR.rows?.[0]?.n,
-            totalClients: userCountR.rows?.[0]?.n,
-            orphanBookings: orphanBookingsR.rows?.[0]?.n,
-          },
-          mfa: {
-            enabled: false,
-            recommendation: "MFA recommended for super admin accounts. Backend placeholder ready; not enforced.",
-          },
-          backup: {
-            managed: "Neon platform-managed point-in-time recovery.",
-            recommendation: "Verify retention window in Neon console weekly.",
-          },
-          notes: [
-            "Audit log is append-only — no UI or storage path exposes update/delete.",
-            "All sensitive admin mutations require requireSuperAdmin server-side.",
-            "Manual overrides require a written reason (>=5 chars).",
-          ],
-        });
-      } catch (err) {
-        console.error("[system-health] failed", err);
-        res.status(500).json({ error: "InternalError" });
-      }
-    });
-
-    // Incident Center — recent failed jobs (read-only).
-    app.get(`${cp}/incidents`, requireAdmin, async (_req, res) => {
-      const recent = getRecentEmailSends(100);
-      const failedEmails = recent.filter(e => !e.sent).slice(0, 50);
-      let recentAuditErrors: any[] = [];
-      try {
-        recentAuditErrors = await (storage as any).listAdminAuditEntries(50);
-        recentAuditErrors = recentAuditErrors.filter((e: any) =>
-          /^manual_override:|disable_admin|force_logout/.test(e.action),
-        );
-      } catch { /* ignore */ }
-      res.json({
-        failedEmails,
-        sensitiveActions: recentAuditErrors,
-        notes: [
-          "Failed emails are read from the in-memory recent-sends ring buffer (last 100).",
-          "Sensitive actions are pulled from the immutable admin_audit_log.",
-        ],
-      });
-    });
-
-    // Emergency: force-logout a user by destroying their sessions.
-    app.post(`${cp}/emergency/force-logout/:userId`, requireSuperAdmin, async (req, res) => {
-      try {
-        const userId = Number(req.params.userId);
-        if (!Number.isFinite(userId) || userId <= 0) {
-          return res.status(400).json({ error: "BadRequest" });
-        }
-        const r = await pool.query(
-          `DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1`,
-          [userId],
-        );
-        await storage.recordAuditLog({
-          performedByUserId: (req.user as User).id,
-          action: "force_logout",
-          entityType: "user",
-          entityId: userId,
-          newValue: { deletedSessions: r.rowCount ?? 0 },
-        });
-        res.json({ ok: true, deletedSessions: r.rowCount ?? 0 });
-      } catch (err: any) {
-        console.error("[force-logout] failed", err);
-        res.status(500).json({ error: "InternalError" });
-      }
-    });
-
-    // Emergency: disable an admin (cannot disable youssef.physical@gmail.com).
-    app.post(`${cp}/emergency/disable-admin/:userId`, requireSuperAdmin, async (req, res) => {
-      try {
-        const userId = Number(req.params.userId);
-        const reason = String(req.body?.reason || "").trim();
-        if (reason.length < 5) {
-          return res.status(400).json({ error: "BadRequest", message: "Reason (>=5 chars) required" });
-        }
-        const u = await storage.getUser(userId);
-        if (!u || u.role !== "admin") return res.status(404).json({ error: "NotFound" });
-        if ((u.email || "").toLowerCase() === "youssef.physical@gmail.com") {
-          return res.status(403).json({ error: "Forbidden", message: "Permanent super admin cannot be disabled." });
-        }
-        await storage.updateUser(userId, { isActive: false } as any);
-        // Also force-logout their sessions.
-        await pool.query(
-          `DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1`,
-          [userId],
-        ).catch(() => {});
-        await storage.recordAuditLog({
-          performedByUserId: (req.user as User).id,
-          action: "disable_admin",
-          entityType: "admin_user",
-          entityId: userId,
-          reason,
-        });
-        res.json({ ok: true });
-      } catch (err: any) {
-        console.error("[disable-admin] failed", err);
-        res.status(500).json({ error: "InternalError" });
-      }
-    });
-
-    // ---- Policy reference (static) ----
-    app.get(`${cp}/policies`, requireAdmin, async (_req, res) => {
-      res.json({
-        cancellationWindowHours: 12,
-        rescheduleWindowHours: 12,
-        sameDayAdjustWindowHours: 2,
-        packageExpiryGraceDays: 3,
-        currency: "AED",
-        timezone: "Asia/Dubai",
-        manualOverridePolicy: "All overrides require a written reason (>=5 chars) and are recorded to the admin audit log forever.",
-        notes: [
-          "All package renewals/extensions are confirmed manually by Youssef via WhatsApp — no online payments.",
-          "Cancellations within 12h of session start require a manual override with reason.",
-          "Photo uploads cap at 20 per session; oldest auto-pruned.",
-          "Trainer role can view + edit assigned clients only. No deletes, no settings.",
-        ],
-      });
-    });
-  }
 
   return httpServer;
 }

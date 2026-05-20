@@ -878,6 +878,7 @@ export const insertClientSchema = createInsertSchema(users)
       .min(1, "Choose your preferred weekly training frequency")
       .max(6),
     notes: z.string().optional(),
+    packageTemplateId: z.number().int().positive().optional(),
   });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
