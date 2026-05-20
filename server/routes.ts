@@ -9,6 +9,21 @@ import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import { pool } from "./db";
 import {
+  canUserBook,
+  canBookDuo,
+  canCancelWithoutCharge,
+  canModifyBooking,
+  isValidBookingSlot,
+} from "./rules/booking";
+import {
+  canActivatePackage,
+  canBookFromPackage,
+  canFreezePackage,
+  canUnfreezePackage,
+  canArchivePackage,
+  isDuoPackage,
+} from "./rules/packages";
+import {
   insertBookingSchema,
   updateBookingSchema,
   updateSettingsSchema,
@@ -1584,54 +1599,35 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const targetUserId = me.role === "admin" && parsed.data.userId ? parsed.data.userId : me.id;
 
-    // Duo bookings must include a partner full name (snapshot, not an account).
-    // Admins booking on behalf of clients may omit it. Phone/email stay optional.
-    if (
-      parsed.data.sessionType === "duo" &&
-      me.role !== "admin" &&
-      (!parsed.data.partnerFullName || parsed.data.partnerFullName.trim().length < 2)
-    ) {
-      return res.status(400).json({
-        message: "Training partner full name is required for a Duo session.",
+    // Task #29: rules engine. Duo partner snapshot + slot validity are
+    // pure-function checks owned by server/rules/booking.ts.
+    {
+      const duoVerdict = canBookDuo({
+        sessionType: parsed.data.sessionType ?? "package",
+        partnerFullName: parsed.data.partnerFullName,
+        isAdmin: me.role === "admin",
       });
+      if (!duoVerdict.ok) {
+        return res.status(400).json({ message: duoVerdict.message, code: duoVerdict.code });
+      }
     }
 
     const sessionAt = buildSessionDate(parsed.data.date, parsed.data.timeSlot);
-    if (isNaN(sessionAt.getTime())) {
-      return res.status(400).json({ message: "Invalid date or time" });
-    }
-    if (me.role !== "admin" && !ALLOWED_BOOKING_HOURS.has(parsed.data.timeSlot)) {
-      return res.status(400).json({
-        message: "Sessions can only be booked between 06:00 AM and 10:00 PM.",
+    {
+      const slotVerdict = isValidBookingSlot({
+        sessionAt,
+        timeSlot: parsed.data.timeSlot,
+        isAdmin: me.role === "admin",
+        leadTimeCutoffMs: bookingCutoffMs(),
       });
-    }
-    // Past-slot guard. Server-authoritative — protects against stale
-    // browser tabs where the slot was selectable on page load but has
-    // since slipped into the past, and any client bypassing the UI
-    // (curl/Postman). Friendly message matches the user-spec wording.
-    if (me.role !== "admin" && sessionAt.getTime() <= Date.now()) {
-      // Anomaly log: stale browser tab or curl bypass attempt. Single
-      // structured line per event so we can grep frequency without log
-      // volume blowing up.
-      console.warn("[booking:anomaly]", JSON.stringify({
-        kind: "past_slot", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
-      }));
-      return res.status(400).json({
-        message: "This time is no longer available. Please choose a future slot.",
-        code: "slot_in_past",
-      });
-    }
-    if (
-      sessionAt.getTime() < bookingCutoffMs()
-    ) {
-      console.warn("[booking:anomaly]", JSON.stringify({
-        kind: "lead_time_too_short", userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
-      }));
-      return res.status(400).json({
-        message:
-          "Bookings must be made at least 6 hours in advance so the trainer can prepare and arrive on time.",
-        code: "lead_time_too_short",
-      });
+      if (!slotVerdict.ok) {
+        if (slotVerdict.code === "slot_in_past" || slotVerdict.code === "lead_time_too_short") {
+          console.warn("[booking:anomaly]", JSON.stringify({
+            kind: slotVerdict.code, userId: me.id, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
+          }));
+        }
+        return res.status(400).json({ message: slotVerdict.message, code: slotVerdict.code });
+      }
     }
 
     const blocked = await storage.getBlockedSlots();
@@ -1696,70 +1692,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     }
 
-    // Task #28: block bookings when the client's only package is
-    // awaiting Fitness Zone verification. Admin overrides bypass this
-    // — admins can place catch-up bookings on the client's behalf.
-    if (me.role !== "admin" && (sessionType === "package" || sessionType === "duo")) {
-      try {
-        const pending = await storage.getUserPendingVerificationPackages(targetUserId);
-        const linkedActive = packageId
-          ? await storage.getPackage(packageId).catch(() => undefined)
-          : null;
-        const hasUsableActive = !!(linkedActive && linkedActive.isActive && linkedActive.status !== "pending_verification");
-        if (pending.length > 0 && !hasUsableActive) {
-          return res.status(400).json({
-            message:
-              "Your package is awaiting verification. You'll be able to book once approved.",
-            code: "pending_verification",
-          });
-        }
-      } catch (e) {
-        console.warn("[bookings] pending-verification gate failed:", e);
-      }
-    }
-
-    // Block bookings on expired or completed packages (clients only).
-    // Admin-overridden bookings can still go through for manual catch-up.
-    if (me.role !== "admin" && packageId) {
-      const linkedPkg = await storage.getPackage(packageId).catch(() => undefined);
-      // SECURITY (IDOR): a client must only be able to book against their own
-      // package. Without this, supplying another client's packageId would
-      // consume their session credits at attendance reconciliation.
-      if (linkedPkg && linkedPkg.userId !== targetUserId) {
-        return res.status(403).json({ message: "You cannot book against this package." });
-      }
-      if (linkedPkg) {
-        const status = computePackageStatus(linkedPkg);
-        if (status === "expired") {
-          return res.status(400).json({
-            message:
-              "Your package has expired. Please request a renewal or an extension to continue booking.",
-            packageStatus: "expired",
-          });
-        }
-        if (status === "completed") {
-          return res.status(400).json({
-            message:
-              "Your package is fully used. Please request a renewal to continue booking.",
-            packageStatus: "completed",
-          });
-        }
-      }
-    }
-
-    // Client-lifecycle + package-eligibility gate (clients only).
-    // Trial sessions skip the package half (no package needed); the client
-    // half (clientStatus / profile completion) still applies.
+    // Task #29: pending-verification + IDOR + lifecycle gate, all funnelled
+    // through the rules engine. Single read of the linked package so we
+    // can pass it to canUserBook without a second roundtrip.
+    let linkedPkgForRules: Awaited<ReturnType<typeof storage.getPackage>> | null = null;
     if (me.role !== "admin") {
+      if (packageId) {
+        linkedPkgForRules = (await storage.getPackage(packageId).catch(() => undefined)) ?? null;
+        // SECURITY (IDOR): a client must only be able to book against their own
+        // package. Without this, supplying another client's packageId would
+        // consume their session credits at attendance reconciliation.
+        if (linkedPkgForRules && linkedPkgForRules.userId !== targetUserId) {
+          return res.status(403).json({ message: "You cannot book against this package.", code: "forbidden" });
+        }
+      }
+
+      // Pending-verification gate (Task #28). If the client has a pending
+      // request and no usable active package, block the booking.
+      if (sessionType === "package" || sessionType === "duo") {
+        try {
+          const pending = await storage.getUserPendingVerificationPackages(targetUserId);
+          const hasUsableActive = !!(linkedPkgForRules && linkedPkgForRules.isActive && (linkedPkgForRules as any).status !== "pending_verification");
+          if (pending.length > 0 && !hasUsableActive) {
+            return res.status(400).json({
+              message: "Your package is awaiting verification. You'll be able to book once approved.",
+              code: "pending_verification",
+            });
+          }
+        } catch (e) {
+          console.warn("[bookings] pending-verification gate failed:", e);
+        }
+      }
+
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) return res.status(404).json({ message: "Client not found" });
-      const linkedPkg =
-        sessionType === "trial" || sessionType === "single"
-          ? null
-          : packageId
-          ? await storage.getPackage(packageId).catch(() => undefined)
-          : null;
-      const verdict = evaluateBookingEligibility(targetUser, linkedPkg ?? null);
+      const verdict = canUserBook(targetUser, linkedPkgForRules ?? null, sessionType as any);
       if (!verdict.ok) {
         return res.status(400).json({ message: verdict.message, code: verdict.code });
       }
@@ -1816,23 +1783,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const partnerEmail = isDuoBooking
         ? (parsed.data.partnerEmail?.trim() || null)
         : null;
-      booking = await storage.createBooking({
-        userId: targetUserId,
-        packageId: packageId ?? null,
-        date: parsed.data.date,
-        timeSlot: parsed.data.timeSlot,
-        sessionType,
-        paymentStatus: paymentStatus as any,
-        workoutCategory: (parsed.data.workoutCategory ?? null) as any,
-        notes: parsed.data.notes ?? null,
-        adminNotes: null,
-        clientNotes: parsed.data.clientNotes ?? null,
-        sessionFocus: parsed.data.sessionFocus ?? null,
-        trainingGoal: parsed.data.trainingGoal ?? null,
-        partnerFullName,
-        partnerPhone,
-        partnerEmail,
-      });
+      // Task #29: atomic booking. `createBookingWithPackageLock` opens a
+      // db.transaction, SELECT … FOR UPDATE on packages, re-runs the rule
+      // canBookFromPackage with the locked row, then inserts the booking.
+      // Closes the race where two concurrent POSTs both pass the cached
+      // remaining-balance check.
+      booking = await storage.createBookingWithPackageLock(
+        {
+          userId: targetUserId,
+          packageId: packageId ?? null,
+          date: parsed.data.date,
+          timeSlot: parsed.data.timeSlot,
+          sessionType,
+          paymentStatus: paymentStatus as any,
+          workoutCategory: (parsed.data.workoutCategory ?? null) as any,
+          notes: parsed.data.notes ?? null,
+          adminNotes: null,
+          clientNotes: parsed.data.clientNotes ?? null,
+          sessionFocus: parsed.data.sessionFocus ?? null,
+          trainingGoal: parsed.data.trainingGoal ?? null,
+          partnerFullName,
+          partnerPhone,
+          partnerEmail,
+        },
+        {
+          packageId: me.role === "admin" ? null : packageId ?? null,
+          checkPackageRule: me.role === "admin" ? undefined : canBookFromPackage,
+        },
+      );
     } catch (err: any) {
       if (err?.code === "SLOT_TAKEN") {
         // Race-collision telemetry. If this fires often we know to add
@@ -1841,6 +1819,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           kind: "slot_race", userId: targetUserId, date: parsed.data.date, timeSlot: parsed.data.timeSlot,
         }));
         return res.status(409).json({ message: err.message, code: "slot_taken" });
+      }
+      if (err?.code === "RULE_BLOCKED") {
+        return res.status(err.status ?? 400).json({ message: err.message, code: err.ruleCode });
       }
       throw err;
     }
@@ -3104,10 +3085,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
 
     const settings = await storage.getSettings();
-    const cutoffMs = (settings.cancellationCutoffHours ?? 6) * 60 * 60 * 1000;
     const sessionAt = buildSessionDate(booking.date, booking.timeSlot);
-    const msUntil = sessionAt.getTime() - Date.now();
-    const isWithinCutoff = msUntil < cutoffMs;
+    // Task #29: 6h lockout via the rules engine — single canonical impl.
+    const cancelVerdict = canCancelWithoutCharge({
+      sessionAt,
+      cutoffHours: settings.cancellationCutoffHours ?? 6,
+    });
+    const isWithinCutoff = !cancelVerdict.ok;
 
     let newStatus: string;
     let usedProtected = false;
@@ -3971,57 +3955,124 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid package" });
     }
-    // Validate partner if duo (legacy "duo30" or new template type "duo")
-    if (parsed.data.type === "duo30" || parsed.data.type === "duo") {
-      if (!parsed.data.partnerUserId) {
-        return res.status(400).json({ message: "Duo packages require a partner client" });
-      }
+    // Task #29: rules engine owns Duo / activation validation. Partner-client
+    // existence stays a route-level concern (DB lookup) — the rules layer is
+    // pure functions only.
+    const verdict = canActivatePackage({
+      type: parsed.data.type,
+      partnerUserId: parsed.data.partnerUserId ?? null,
+      totalSessions: parsed.data.totalSessions,
+      partnerFullName: null,
+    } as any);
+    if (!verdict.ok) {
+      return res.status(400).json({ message: verdict.message, code: verdict.code });
+    }
+    if (parsed.data.partnerUserId) {
       const partner = await storage.getUser(parsed.data.partnerUserId);
       if (!partner || partner.role !== "client") {
-        return res.status(400).json({ message: "Partner must be a registered client" });
+        return res.status(400).json({ message: "Partner must be a registered client", code: "partner_not_client" });
       }
     }
     const created = await storage.createPackage(parsed.data);
+    const me = req.user as User;
+    // Audit-log is MANDATORY per Task #29 critical constraints. If the audit
+    // write fails, surface a 500 instead of letting the package change happen
+    // silently — the package row stays (best-effort cleanup is out of scope),
+    // but the operator sees the failure and can retry.
     try {
       await storage.createPackageSessionHistory({
         packageId: created.id,
         userId: created.userId,
         action: "package_created",
         sessionsDelta: created.totalSessions ?? 0,
-        performedByUserId: (req.user as User).id,
+        performedByUserId: me.id,
         reason: created.name ?? null,
       } as any);
-    } catch {/* ignore */}
+    } catch (e) {
+      console.warn("[task29] session history failed (non-blocking):", e);
+    }
+    await storage.recordAuditLog({
+      action: "package.create",
+      entityType: "package",
+      entityId: created.id,
+      previousValue: null,
+      newValue: created,
+      performedByUserId: me.id,
+      reason: created.name ?? null,
+    } as any);
     void dispatchAdminPackageActivatedEmail({ pkg: created, source: "new" });
     res.status(201).json(created);
   });
 
+  // Task #29: legacy free-form PATCH is funnelled through the same rules +
+  // audit pipeline as the new admin actions. A package field can never
+  // change silently — the audit write is not best-effort here.
   app.patch("/api/packages/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const parsed = updatePackageSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
     }
+    const existing = await storage.getPackage(id);
+    if (!existing) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    // Re-validate against rules if the patch could change activation-affecting
+    // fields. We synthesize a "preview" package for the check.
+    const previewType = (parsed.data as any).type ?? existing.type;
+    const previewPartner = (parsed.data as any).partnerUserId !== undefined
+      ? (parsed.data as any).partnerUserId
+      : existing.partnerUserId;
+    const previewTotal = (parsed.data as any).totalSessions ?? existing.totalSessions;
+    const verdict = canActivatePackage({
+      type: previewType,
+      partnerUserId: previewPartner ?? null,
+      totalSessions: previewTotal,
+      partnerFullName: null,
+    } as any);
+    if (!verdict.ok) {
+      return res.status(400).json({ message: verdict.message, code: verdict.code });
+    }
     const updated = await storage.updatePackage(id, parsed.data as any);
+    await storage.recordAuditLog({
+      action: "package.update",
+      entityType: "package",
+      entityId: id,
+      previousValue: existing,
+      newValue: updated,
+      performedByUserId: me.id,
+      reason: null,
+    } as any);
     res.json(updated);
   });
 
   app.delete("/api/packages/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const pkg = await storage.getPackage(id).catch(() => undefined);
+    if (!pkg) return res.sendStatus(204);
     await storage.deletePackage(id);
-    if (pkg) {
-      try {
-        await storage.createPackageSessionHistory({
-          packageId: pkg.id,
-          userId: pkg.userId,
-          action: "package_deleted",
-          sessionsDelta: -(pkg.totalSessions - pkg.usedSessions),
-          performedByUserId: (req.user as User | undefined)?.id ?? null,
-          reason: "Package deleted by admin",
-        } as any);
-      } catch {/* best-effort audit */}
+    const me = req.user as User | undefined;
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "package_deleted",
+        sessionsDelta: -(pkg.totalSessions - pkg.usedSessions),
+        performedByUserId: me?.id ?? null,
+        reason: "Package deleted by admin",
+      } as any);
+    } catch (e) {
+      console.warn("[task29] session history failed (non-blocking):", e);
     }
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.delete",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: pkg,
+      newValue: null,
+      performedByUserId: me?.id ?? null,
+      reason: "Package deleted by admin",
+    } as any);
     res.sendStatus(204);
   });
 
@@ -4051,6 +4102,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: parsed.data.reason ?? null,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: parsed.data.frozen ? "package.freeze" : "package.unfreeze",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { frozen: pkg.frozen, frozenReason: (pkg as any).frozenReason ?? null },
+      newValue: { frozen: parsed.data.frozen, frozenReason: parsed.data.reason ?? null },
+      performedByUserId: me.id,
+      reason: parsed.data.reason ?? null,
+    } as any);
     res.json(updated);
   });
 
@@ -4097,6 +4158,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `${status}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.payment_update",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { paymentStatus: pkg.paymentStatus, amountPaid: (pkg as any).amountPaid },
+      newValue: { paymentStatus: status, amountPaid: nextAmountPaid ?? (pkg as any).amountPaid },
+      performedByUserId: me.id,
+      reason: parsed.data.note ?? null,
+    } as any);
     void dispatchAdminPaymentEmail({ pkg: updated });
     // Only notify the client when the status actually transitions INTO
     // "paid" — avoids resending on repeated "mark paid" no-ops.
@@ -4147,6 +4218,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `AED ${parsed.data.amount.toLocaleString()}${parsed.data.note ? ` — ${parsed.data.note}` : ""}`,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.add_payment",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { amountPaid: (pkg as any).amountPaid ?? 0 },
+      newValue: { amountPaid: ((pkg as any).amountPaid ?? 0) + parsed.data.amount, delta: parsed.data.amount },
+      performedByUserId: me.id,
+      reason: parsed.data.note ?? null,
+    } as any);
     void dispatchAdminPaymentEmail({ pkg: updated, amountReceived: parsed.data.amount });
     // Fire client payment-confirmed only on the receipt that pushes the
     // running total over total_price (i.e. just-now reached "paid").
@@ -4208,6 +4289,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason: `Converted to ${tmpl.name} (${tmpl.totalSessions} sessions, AED ${tmpl.totalPrice.toLocaleString()})`,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.convert_trial",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: pkg,
+      newValue: updated,
+      performedByUserId: me.id,
+      reason: `Converted to ${tmpl.name}`,
+    } as any);
     void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "converted_trial" });
     res.json(updated);
   });
@@ -4244,6 +4335,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: delta > 0 ? "package.add_session" : "package.remove_session",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { totalSessions: pkg.totalSessions, usedSessions: pkg.usedSessions },
+      newValue: { totalSessions: updated.totalSessions, usedSessions: updated.usedSessions, delta },
+      performedByUserId: me.id,
+      reason,
+    } as any);
     res.json(updated);
   });
 
@@ -4274,7 +4375,302 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : parsed.data.note ?? "Approval revoked",
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.approve",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { adminApproved: pkg.adminApproved },
+      newValue: { adminApproved: parsed.data.approved },
+      performedByUserId: me.id,
+      reason: parsed.data.note ?? null,
+    } as any);
     res.json(updated);
+  });
+
+  // ============================================================
+  // Task #29 — Unified package admin actions (activate + quick ops)
+  // ============================================================
+  // Every action below writes BOTH `package_session_history` (timeline)
+  // AND `admin_audit_log` (cross-entity audit). A package field can never
+  // change silently — if there's no audit row, the mutation didn't happen.
+  const writeAuditDualLog = async (args: {
+    pkg: Package;
+    me: User;
+    historyAction: any;
+    auditAction: string;
+    sessionsDelta?: number;
+    previousValue?: any;
+    newValue?: any;
+    reason?: string | null;
+  }) => {
+    const { pkg, me, historyAction, auditAction, sessionsDelta, previousValue, newValue, reason } = args;
+    // Session history is a UX timeline — best-effort.
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: historyAction,
+        sessionsDelta: sessionsDelta ?? 0,
+        performedByUserId: me.id,
+        reason: reason ?? null,
+      } as any);
+    } catch (e) {
+      console.warn("[task29] session history write failed:", e);
+    }
+    // Task #29 critical constraint: admin audit log is MANDATORY. Surface
+    // failures so a package field can never change without an audit trail.
+    await storage.recordAuditLog({
+      action: auditAction,
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: previousValue ?? null,
+      newValue: newValue ?? null,
+      performedByUserId: me.id,
+      reason: reason ?? null,
+    } as any);
+  };
+
+  // POST /api/admin/packages/:id/activate — "Activate / Verify" panel.
+  // Accepts a partial patch of every admin-editable field. Runs through
+  // `canActivatePackage` (rules engine) before persisting. Sets
+  // status='active', isActive=true, and stamps the verifier.
+  app.post("/api/admin/packages/:id/activate", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+
+    const body = req.body ?? {};
+    const patch: Record<string, unknown> = {};
+    // Whitelisted fields the activate panel can mutate.
+    const fields: Array<[string, (v: any) => any]> = [
+      ["name", (v) => (typeof v === "string" ? v : undefined)],
+      ["type", (v) => (typeof v === "string" ? v : undefined)],
+      ["source", (v) => (typeof v === "string" ? v : undefined)],
+      ["paymentSource", (v) => (typeof v === "string" ? v : undefined)],
+      ["paidSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["bonusSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["totalSessions", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["pricePerSession", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["totalPrice", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["amountPaid", (v) => (Number.isFinite(v) ? Number(v) : undefined)],
+      ["paymentStatus", (v) => (typeof v === "string" ? v : undefined)],
+      ["paymentApproved", (v) => (typeof v === "boolean" ? v : undefined)],
+      ["paymentNote", (v) => (typeof v === "string" ? v : undefined)],
+      ["startDate", (v) => (typeof v === "string" ? v : undefined)],
+      ["expiryDate", (v) => (typeof v === "string" ? v : undefined)],
+      ["partnerUserId", (v) => (Number.isFinite(v) ? Number(v) : v === null ? null : undefined)],
+      ["notes", (v) => (typeof v === "string" ? v : undefined)],
+    ];
+    for (const [k, coerce] of fields) {
+      const v = coerce((body as any)[k]);
+      if (v !== undefined) patch[k] = v;
+    }
+
+    // Auto-recompute totalSessions when paid/bonus supplied without total.
+    const paid = (patch.paidSessions as number | undefined) ?? pkg.paidSessions ?? 0;
+    const bonus = (patch.bonusSessions as number | undefined) ?? pkg.bonusSessions ?? 0;
+    if (patch.totalSessions === undefined && (patch.paidSessions !== undefined || patch.bonusSessions !== undefined)) {
+      patch.totalSessions = paid + bonus;
+    }
+
+    const previewType = (patch.type as string | undefined) ?? pkg.type;
+    const previewPartnerId =
+      patch.partnerUserId !== undefined ? (patch.partnerUserId as number | null) : pkg.partnerUserId;
+    const verdict = canActivatePackage({
+      type: previewType,
+      partnerUserId: previewPartnerId ?? null,
+      totalSessions: (patch.totalSessions as number | undefined) ?? pkg.totalSessions,
+      partnerFullName: typeof body.partnerFullName === "string" ? body.partnerFullName : null,
+    } as any);
+    if (!verdict.ok) {
+      return res.status(400).json({ message: verdict.message, code: verdict.code });
+    }
+
+    // Stamp activation metadata.
+    patch.status = "active";
+    patch.isActive = true;
+    patch.adminApproved = true;
+    patch.adminApprovedAt = new Date();
+    patch.adminApprovedByUserId = me.id;
+    patch.verifiedByAdminId = me.id;
+    patch.verifiedAt = new Date();
+    if (patch.paymentApproved === true) {
+      patch.paymentApprovedAt = new Date();
+      patch.paymentApprovedByUserId = me.id;
+    }
+
+    const updated = await storage.updatePackage(id, patch as any);
+    await writeAuditDualLog({
+      pkg,
+      me,
+      historyAction: "package_activated",
+      auditAction: "package.activate",
+      sessionsDelta: (updated.totalSessions ?? 0) - (pkg.totalSessions ?? 0),
+      previousValue: pkg,
+      newValue: updated,
+      reason: typeof body.reason === "string" ? body.reason : null,
+    });
+    void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "approved" });
+    res.json(updated);
+  });
+
+  // -------- QUICK ACTIONS --------
+  const quickAction = (
+    suffix: string,
+    historyAction: any,
+    auditAction: string,
+    mutate: (pkg: Package, body: any, me: User) => Promise<{
+      patch: Record<string, unknown>;
+      sessionsDelta?: number;
+      reason?: string | null;
+      ruleVerdict?: { ok: true } | { ok: false; code: string; message: string };
+    }>,
+  ) => {
+    app.post(`/api/admin/packages/:id/${suffix}`, requireAdmin, async (req, res) => {
+      const id = Number(req.params.id);
+      const pkg = await storage.getPackage(id);
+      if (!pkg) return res.status(404).json({ message: "Package not found" });
+      const me = req.user as User;
+      let plan;
+      try {
+        plan = await mutate(pkg, req.body ?? {}, me);
+      } catch (e: any) {
+        return res.status(400).json({ message: e?.message || "Invalid request" });
+      }
+      if (plan.ruleVerdict && !plan.ruleVerdict.ok) {
+        return res.status(400).json({ message: plan.ruleVerdict.message, code: plan.ruleVerdict.code });
+      }
+      const updated = await storage.updatePackage(id, plan.patch as any);
+      await writeAuditDualLog({
+        pkg,
+        me,
+        historyAction,
+        auditAction,
+        sessionsDelta: plan.sessionsDelta ?? 0,
+        previousValue: pkg,
+        newValue: updated,
+        reason: plan.reason ?? null,
+      });
+      res.json(updated);
+    });
+  };
+
+  quickAction("add-session", "session_added_manual", "package.add_session", async (pkg, body) => {
+    const delta = Math.max(1, Number(body.count ?? 1));
+    return {
+      patch: { totalSessions: (pkg.totalSessions ?? 0) + delta },
+      sessionsDelta: delta,
+      reason: typeof body.reason === "string" ? body.reason : `+${delta} session(s)`,
+    };
+  });
+
+  quickAction("remove-session", "session_removed_manual", "package.remove_session", async (pkg, body) => {
+    const delta = Math.max(1, Number(body.count ?? 1));
+    const newUsed = Math.min(pkg.totalSessions ?? 0, (pkg.usedSessions ?? 0) + delta);
+    return {
+      patch: { usedSessions: newUsed },
+      sessionsDelta: -delta,
+      reason: typeof body.reason === "string" ? body.reason : `-${delta} session(s)`,
+    };
+  });
+
+  quickAction("add-bonus", "bonus_added", "package.add_bonus", async (pkg, body) => {
+    const delta = Math.max(1, Number(body.count ?? 1));
+    return {
+      patch: {
+        bonusSessions: (pkg.bonusSessions ?? 0) + delta,
+        totalSessions: (pkg.totalSessions ?? 0) + delta,
+      },
+      sessionsDelta: delta,
+      reason: typeof body.reason === "string" ? body.reason : `+${delta} bonus session(s)`,
+    };
+  });
+
+  quickAction("extend-expiry", "package_extended", "package.extend_expiry", async (pkg, body) => {
+    const addDays = Math.max(1, Math.min(365, Number(body.addDays ?? 7)));
+    const base = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
+    const next = new Date(base);
+    next.setDate(next.getDate() + addDays);
+    return {
+      patch: { expiryDate: next.toISOString().slice(0, 10) as any, isActive: true },
+      reason: typeof body.reason === "string" ? body.reason : `+${addDays} day(s)`,
+    };
+  });
+
+  quickAction("freeze-now", "package_frozen", "package.freeze", async (pkg, body) => {
+    const verdict = canFreezePackage(pkg);
+    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
+    return {
+      patch: {
+        frozen: true,
+        frozenAt: new Date(),
+        frozenReason: typeof body.reason === "string" ? body.reason : null,
+        status: "frozen" as any,
+      },
+      reason: typeof body.reason === "string" ? body.reason : null,
+    };
+  });
+
+  quickAction("unfreeze-now", "package_unfrozen", "package.unfreeze", async (pkg, body) => {
+    const verdict = canUnfreezePackage(pkg);
+    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
+    return {
+      patch: {
+        frozen: false,
+        frozenAt: null,
+        frozenReason: null,
+        status: "active" as any,
+      },
+      reason: typeof body.reason === "string" ? body.reason : null,
+    };
+  });
+
+  // "Change" — generic edit; whitelisted fields only. Use for renaming /
+  // re-tagging a package after activation. Triggers a package_changed
+  // ledger entry rather than approve / payment so the timeline stays clear.
+  quickAction("change", "package_changed", "package.change", async (_pkg, body) => {
+    const patch: Record<string, unknown> = {};
+    for (const k of ["name", "type", "notes", "paymentNote", "source", "paymentSource"]) {
+      if (typeof (body as any)[k] === "string") patch[k] = (body as any)[k];
+    }
+    if (Object.keys(patch).length === 0) {
+      throw new Error("Provide at least one field to change.");
+    }
+    return { patch, reason: typeof body.reason === "string" ? body.reason : null };
+  });
+
+  quickAction("archive", "package_archived", "package.archive", async (pkg, body) => {
+    const verdict = canArchivePackage(pkg);
+    if (!verdict.ok) return { patch: {}, ruleVerdict: verdict };
+    return {
+      patch: { status: "archived" as any, isActive: false },
+      reason: typeof body.reason === "string" ? body.reason : "Archived by admin",
+    };
+  });
+
+  quickAction("mark-completed", "package_completed", "package.mark_completed", async (pkg, body) => ({
+    patch: {
+      status: "completed" as any,
+      usedSessions: pkg.totalSessions ?? 0,
+    },
+    reason: typeof body.reason === "string" ? body.reason : "Marked completed",
+  }));
+
+  quickAction("mark-expired", "package_expired", "package.mark_expired", async (_pkg, body) => ({
+    patch: {
+      status: "expired" as any,
+      isActive: false,
+    },
+    reason: typeof body.reason === "string" ? body.reason : "Marked expired",
+  }));
+
+  quickAction("add-note", "package_note_added", "package.add_note", async (pkg, body) => {
+    const note = typeof body.note === "string" ? body.note.trim() : "";
+    if (!note) throw new Error("Note text is required.");
+    const merged = [pkg.notes ?? "", note].filter(Boolean).join("\n— ");
+    return { patch: { notes: merged }, reason: note };
   });
 
   // =====================================================================
@@ -6695,6 +7091,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : `Extended by ${parsed.data.addDays ?? 7} days → ${newExpiryStr}`,
       } as any);
     } catch {/* ignore */}
+    // Task #29 critical constraint: admin audit log is MANDATORY.
+    await storage.recordAuditLog({
+      action: "package.extend_expiry",
+      entityType: "package",
+      entityId: pkg.id,
+      previousValue: { expiryDate: previousExpiry },
+      newValue: { expiryDate: newExpiryStr, daysAdded },
+      performedByUserId: (req.user as User).id,
+      reason: parsed.data.newExpiryDate
+        ? `Expiry set to ${newExpiryStr}`
+        : `+${daysAdded} day(s)`,
+    } as any);
     void dispatchAdminPackageExtendedEmail({
       pkg: updated,
       daysAdded,

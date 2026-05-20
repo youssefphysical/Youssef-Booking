@@ -635,6 +635,14 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS verification_attachments text,
       ADD COLUMN IF NOT EXISTS verification_request_payload jsonb;
 
+    -- Task #29: backfill legacy packages with manual provenance so the
+    -- unified architecture has non-null source / payment_source for every
+    -- row. Idempotent — only updates rows whose source is NULL.
+    UPDATE packages SET source = 'manual' WHERE source IS NULL;
+    UPDATE packages SET payment_source = 'manual'
+      WHERE payment_source IS NULL AND payment_approved = true;
+    UPDATE packages SET payment_source = 'manual' WHERE payment_source IS NULL;
+
     ALTER TABLE IF EXISTS users
       ADD COLUMN IF NOT EXISTS lead_status text,
       ADD COLUMN IF NOT EXISTS lead_source text,

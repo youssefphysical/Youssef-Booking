@@ -3,6 +3,40 @@ import { api, buildUrl, type CreateBookingInput, type UpdateBookingInput } from 
 import type { Booking, BookingWithUser } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { TRANSLATIONS, DEFAULT_LANGUAGE, type LanguageCode } from "@/i18n/translations";
+
+// Task #29: rules-engine codes → i18n keys + English fallbacks. The map
+// mirrors RULE_CODE_I18N_KEYS in server/rules/packages.ts. Callers pass the
+// server's `code` (e.g. "slot_taken") and the server's terse `message` as a
+// last-resort fallback if the code is unknown.
+const RULE_CODE_FALLBACK: Record<string, { key: string; fallback: string }> = {
+  slot_taken: { key: "booking.error.slot_taken", fallback: "This time slot was just booked by someone else. Please pick another." },
+  slot_in_past: { key: "booking.error.slot_in_past", fallback: "This time has already passed. Please pick a future slot." },
+  lead_time_too_short: { key: "booking.error.lead_time_too_short", fallback: "Bookings need to be made at least 6 hours in advance." },
+  pending_verification: { key: "booking.error.pending_verification", fallback: "Your package is awaiting verification. You'll be able to book once approved." },
+  package_expired: { key: "booking.error.package_expired", fallback: "Your package has expired. Please request a renewal or extension." },
+  package_completed: { key: "booking.error.package_completed", fallback: "Your package is fully used. Please request a renewal." },
+  package_frozen: { key: "booking.error.package_frozen", fallback: "Your package is currently frozen. Contact your coach to unfreeze it." },
+  duo_partner_required: { key: "booking.error.duo_partner_required", fallback: "Please add your training partner's full name to book a Duo session." },
+  no_remaining_sessions: { key: "booking.error.no_remaining_sessions", fallback: "No sessions remaining on this package." },
+  no_active_package: { key: "booking.error.no_active_package", fallback: "You don't have an active package. Please choose one before booking." },
+  forbidden: { key: "booking.error.forbidden", fallback: "You can't book against this package." },
+};
+
+function translateRuleCode(code: string, serverMessage: string): string {
+  const entry = RULE_CODE_FALLBACK[code];
+  if (!entry) return serverMessage;
+  // Resolve against the active language. I18nProvider sets
+  // `<html lang="...">` so we read it directly — this helper is called from
+  // mutation onError callbacks (non-component context), so the React
+  // useTranslation() hook isn't available here.
+  const docLang =
+    (typeof document !== "undefined" ? document.documentElement.lang : "") ||
+    DEFAULT_LANGUAGE;
+  const lang = (docLang in TRANSLATIONS ? docLang : DEFAULT_LANGUAGE) as LanguageCode;
+  const dict = TRANSLATIONS[lang] ?? TRANSLATIONS[DEFAULT_LANGUAGE];
+  return dict[entry.key] ?? entry.fallback;
+}
 
 export function useBookings(opts?: { userId?: number; includeUser?: boolean; from?: string }) {
   const params = new URLSearchParams();
@@ -68,7 +102,15 @@ export function useCreateBooking() {
       });
     },
     onError: (err: Error) => {
-      toast({ title: "Booking failed", description: err.message, variant: "destructive" });
+      // Task #29: rules-engine codes mapped to i18n keys. The English
+      // fallback is the same copy as before so behaviour is unchanged when
+      // translations are missing. Server's terse `message` is used as the
+      // final fallback for any unmapped code.
+      const code = (err as any).code as string | undefined;
+      const description = code
+        ? translateRuleCode(code, err.message)
+        : err.message;
+      toast({ title: "Booking failed", description, variant: "destructive" });
     },
   });
 }

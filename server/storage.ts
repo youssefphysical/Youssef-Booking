@@ -739,6 +739,69 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Task #29: atomic booking insert that re-reads the linked package with
+  // SELECT … FOR UPDATE so two simultaneous clients sharing one package
+  // can't both pass the remaining-sessions check. `checkPackageRule` is the
+  // rule layer's `canBookFromPackage` — the storage layer is rule-agnostic,
+  // but it accepts the callback so the lock window covers BOTH the
+  // remaining-balance recheck AND the slot insert.
+  async createBookingWithPackageLock(
+    booking: InsertBooking,
+    opts: {
+      packageId: number | null;
+      checkPackageRule?: (pkg: Package) => { ok: true } | { ok: false; code: string; message: string };
+    },
+  ) {
+    return db.transaction(async (tx) => {
+      if (opts.packageId) {
+        const locked = await tx.execute(
+          sql`SELECT * FROM packages WHERE id = ${opts.packageId} FOR UPDATE`,
+        );
+        const row = (locked as any).rows?.[0];
+        if (!row) {
+          const e: any = new Error("Package not found.");
+          e.code = "PACKAGE_NOT_FOUND";
+          e.status = 404;
+          throw e;
+        }
+        // Reshape DB snake_case row into the Package camelCase shape the
+        // rule layer expects. We only need fields used by canBookFromPackage.
+        const pkg: any = {
+          id: row.id,
+          userId: row.user_id,
+          totalSessions: row.total_sessions,
+          usedSessions: row.used_sessions,
+          isActive: row.is_active,
+          frozen: row.frozen,
+          status: row.status,
+          expiryDate: row.expiry_date,
+        };
+        if (opts.checkPackageRule) {
+          const verdict = opts.checkPackageRule(pkg as Package);
+          if (!verdict.ok) {
+            const e: any = new Error(verdict.message);
+            e.code = "RULE_BLOCKED";
+            e.ruleCode = verdict.code;
+            e.status = 400;
+            throw e;
+          }
+        }
+      }
+      try {
+        const [b] = await tx.insert(bookings).values(booking).returning();
+        return b;
+      } catch (err: any) {
+        if (err?.code === "23505" && /uniq_booking_active_slot/.test(String(err?.constraint || err?.detail || ""))) {
+          const e: any = new Error("This slot was just booked. Please choose another time.");
+          e.code = "SLOT_TAKEN";
+          e.status = 409;
+          throw e;
+        }
+        throw err;
+      }
+    });
+  }
+
   async updateBooking(id: number, updates: Partial<Booking>) {
     const [b] = await db.update(bookings).set(updates).where(eq(bookings.id, id)).returning();
     return b;

@@ -1181,6 +1181,14 @@ export const SESSION_HISTORY_ACTIONS = [
   "session_removed_manual",
   "package_deleted",
   "package_rejected",
+  // Task #29 — unified package architecture
+  "package_activated",
+  "package_archived",
+  "package_completed",
+  "package_expired",
+  "package_changed",
+  "package_note_added",
+  "bonus_added",
 ] as const;
 export type SessionHistoryAction = (typeof SESSION_HISTORY_ACTIONS)[number];
 
@@ -1200,6 +1208,13 @@ export const SESSION_HISTORY_ACTION_LABELS: Record<SessionHistoryAction, string>
   session_removed_manual: "Manual session removed",
   package_deleted: "Package deleted",
   package_rejected: "Package rejected",
+  package_activated: "Package activated",
+  package_archived: "Package archived",
+  package_completed: "Package completed",
+  package_expired: "Package expired",
+  package_changed: "Package changed",
+  package_note_added: "Note added",
+  bonus_added: "Bonus sessions added",
 };
 
 // English labels for trainer notifications.

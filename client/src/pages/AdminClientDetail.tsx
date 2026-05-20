@@ -2434,6 +2434,29 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
     onSuccess: () => { invalidate(); toast({ title: "Trial converted" }); },
     onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
+  // Task #29: unified Activate / Verify endpoint. Accepts a partial patch of
+  // every admin-editable field and validates through the rules engine before
+  // flipping status='active'.
+  const activateMut = useMutation({
+    mutationFn: async (vars: Record<string, unknown>) => {
+      const r = await apiRequest("POST", `/api/admin/packages/${pkg.id}/activate`, vars);
+      return r.json();
+    },
+    onSuccess: () => { invalidate(); toast({ title: "Package activated" }); },
+    onError: (e: Error) => toast({ title: "Activation blocked", description: e.message, variant: "destructive" }),
+  });
+
+  const [activateOpen, setActivateOpen] = useState(false);
+  const [actName, setActName] = useState<string>((pkg as any).name ?? "");
+  const [actPaid, setActPaid] = useState<number>(pkg.paidSessions ?? 0);
+  const [actBonus, setActBonus] = useState<number>(pkg.bonusSessions ?? 0);
+  const [actTotalPrice, setActTotalPrice] = useState<number>((pkg as any).totalPrice ?? 0);
+  const [actExpiry, setActExpiry] = useState<string>(
+    (pkg.expiryDate ? String(pkg.expiryDate).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+  );
+  const [actPaymentSource, setActPaymentSource] = useState<string>((pkg as any).paymentSource ?? "manual");
+  const [actPaymentConfirmed, setActPaymentConfirmed] = useState<boolean>(!!(pkg as any).paymentApproved);
+  const [actNotes, setActNotes] = useState<string>((pkg as any).notes ?? "");
 
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjDelta, setAdjDelta] = useState<number>(1);
@@ -2710,6 +2733,107 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
           <BadgeCheck size={12} className="mr-1" />
           {adminApproved ? "Revoke approval" : "Approve"}
         </Button>
+
+        {/* Task #29 — unified Activate / Verify panel. */}
+        <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
+          <DialogTrigger asChild>
+            <Button
+              size="sm"
+              className="h-8 text-xs rounded-lg bg-cyan-500/15 text-cyan-200 border border-cyan-400/40 hover:bg-cyan-500/25"
+              data-testid={`button-activate-${pkg.id}`}
+            >
+              <BadgeCheck size={12} className="mr-1" />
+              Activate / Verify
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Activate / Verify package</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Package name</label>
+                <Input value={actName} onChange={(e) => setActName(e.target.value)} className="bg-white/5 border-white/10" data-testid="input-activate-name" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Paid</label>
+                  <Input type="number" value={actPaid} onChange={(e) => setActPaid(Number(e.target.value) || 0)} className="bg-white/5 border-white/10" data-testid="input-activate-paid" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Bonus</label>
+                  <Input type="number" value={actBonus} onChange={(e) => setActBonus(Number(e.target.value) || 0)} className="bg-white/5 border-white/10" data-testid="input-activate-bonus" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Total</label>
+                  <Input type="number" value={actPaid + actBonus} readOnly className="bg-white/5 border-white/10 opacity-60" data-testid="input-activate-total" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Total price (AED)</label>
+                  <Input type="number" value={actTotalPrice} onChange={(e) => setActTotalPrice(Number(e.target.value) || 0)} className="bg-white/5 border-white/10" data-testid="input-activate-price" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Expiry</label>
+                  <Input type="date" value={actExpiry} onChange={(e) => setActExpiry(e.target.value)} className="bg-white/5 border-white/10" data-testid="input-activate-expiry" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 items-end">
+                <div>
+                  <label className="text-xs text-muted-foreground">Payment source</label>
+                  <Select value={actPaymentSource} onValueChange={setActPaymentSource}>
+                    <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-activate-payment-source"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual (cash / transfer)</SelectItem>
+                      <SelectItem value="fitness_zone">Fitness Zone</SelectItem>
+                      <SelectItem value="complimentary">Complimentary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground pb-2">
+                  <input
+                    type="checkbox"
+                    checked={actPaymentConfirmed}
+                    onChange={(e) => setActPaymentConfirmed(e.target.checked)}
+                    data-testid="checkbox-activate-payment-confirmed"
+                  />
+                  Payment confirmed
+                </label>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Internal notes</label>
+                <Input value={actNotes} onChange={(e) => setActNotes(e.target.value)} className="bg-white/5 border-white/10" data-testid="input-activate-notes" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() =>
+                  activateMut.mutate(
+                    {
+                      name: actName,
+                      paidSessions: actPaid,
+                      bonusSessions: actBonus,
+                      totalSessions: actPaid + actBonus,
+                      totalPrice: actTotalPrice,
+                      expiryDate: actExpiry,
+                      paymentSource: actPaymentSource,
+                      source: actPaymentSource,
+                      paymentApproved: actPaymentConfirmed,
+                      paymentStatus: actPaymentConfirmed ? "paid" : "pending",
+                      notes: actNotes,
+                    },
+                    { onSuccess: () => setActivateOpen(false) },
+                  )
+                }
+                disabled={activateMut.isPending}
+                data-testid="button-submit-activate"
+              >
+                {activateMut.isPending && <Loader2 size={12} className="animate-spin mr-1" />} Activate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={adjustOpen} onOpenChange={setAdjustOpen}>
           <DialogTrigger asChild>
