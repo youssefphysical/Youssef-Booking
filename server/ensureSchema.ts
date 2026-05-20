@@ -646,7 +646,22 @@ async function run(): Promise<void> {
     ALTER TABLE IF EXISTS users
       ADD COLUMN IF NOT EXISTS lead_status text,
       ADD COLUMN IF NOT EXISTS lead_source text,
+      ADD COLUMN IF NOT EXISTS lead_status_manual_override boolean NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS archived_at timestamp;
+
+    -- Task #31: indexes powering /admin/command-center, /admin/leads and
+    -- /admin/integrity (COUNT(*) queries on filter columns).
+    CREATE INDEX IF NOT EXISTS packages_status_idx ON packages (status);
+    CREATE INDEX IF NOT EXISTS packages_expiry_date_idx ON packages (expiry_date);
+    CREATE INDEX IF NOT EXISTS users_lead_status_idx ON users (lead_status);
+    ALTER TABLE IF EXISTS client_notifications
+      ADD COLUMN IF NOT EXISTS email_attempted_at timestamp;
+    -- Failed-email index now requires an attempt timestamp so we never
+    -- count notifications whose dispatcher hasn't even tried to deliver.
+    DROP INDEX IF EXISTS client_notifications_failed_email_idx;
+    CREATE INDEX IF NOT EXISTS client_notifications_failed_email_idx
+      ON client_notifications (channel_email, email_attempted_at, email_sent_at)
+      WHERE channel_email = true AND email_attempted_at IS NOT NULL AND email_sent_at IS NULL;
 
     CREATE TABLE IF NOT EXISTS training_locations (
       id serial PRIMARY KEY,

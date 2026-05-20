@@ -38,6 +38,40 @@ export const LEAD_SOURCES = [
 ] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
+// Lead pipeline statuses (Task #31). Auto-derived by the storage layer
+// on register / verification / package-active / nutrition-active hooks,
+// but admins may pin a status with `leadStatusManualOverride=true`.
+export const LEAD_STATUSES = [
+  "lead",
+  "registered",
+  "trial_requested",
+  "trial_booked",
+  "trial_completed",
+  "package_verification_pending",
+  "pt_active",
+  "nutrition_active",
+  "recovery_active",
+  "vip",
+  "inactive",
+  "archived",
+] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  lead: "Lead",
+  registered: "Registered",
+  trial_requested: "Trial Requested",
+  trial_booked: "Trial Booked",
+  trial_completed: "Trial Completed",
+  package_verification_pending: "Package Verification Pending",
+  pt_active: "PT Active",
+  nutrition_active: "Nutrition Active",
+  recovery_active: "Recovery Active",
+  vip: "VIP",
+  inactive: "Inactive",
+  archived: "Archived",
+};
+
 export const TRAINING_LOCATION_KINDS = [
   "fitness_zone",
   "home",
@@ -162,6 +196,9 @@ export const users = pgTable("users", {
   // no behavior change until #4 wires these into admin UI.
   leadStatus: text("lead_status"),
   leadSource: text("lead_source"), // see LEAD_SOURCES
+  // When true, lifecycle auto-derivers leave leadStatus alone (mirrors
+  // the vipTierManualOverride pattern). Admin sets via lead-status PATCH.
+  leadStatusManualOverride: boolean("lead_status_manual_override").notNull().default(false),
   archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -1079,6 +1116,10 @@ export const clientNotifications = pgTable(
     channelPush: boolean("channel_push").notNull().default(false),
     channelEmail: boolean("channel_email").notNull().default(false),
     pushSentAt: timestamp("push_sent_at"),
+    // Stamped when the email dispatcher first attempts delivery. Combined
+    // with `emailSentAt` this gives us a clean "failed" definition:
+    // `channel_email = true AND email_attempted_at IS NOT NULL AND email_sent_at IS NULL`.
+    emailAttemptedAt: timestamp("email_attempted_at"),
     emailSentAt: timestamp("email_sent_at"),
     // null = unread, set on first read.
     readAt: timestamp("read_at"),
@@ -1102,7 +1143,7 @@ export const clientNotifications = pgTable(
 );
 
 export const insertClientNotificationSchema = createInsertSchema(clientNotifications)
-  .omit({ id: true, createdAt: true, readAt: true, pushSentAt: true, emailSentAt: true })
+  .omit({ id: true, createdAt: true, readAt: true, pushSentAt: true, emailAttemptedAt: true, emailSentAt: true })
   .extend({
     kind: z.enum(NOTIFICATION_KINDS),
     title: z.string().min(1).max(200),

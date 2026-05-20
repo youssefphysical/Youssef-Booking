@@ -367,6 +367,37 @@ export interface IStorage {
   getUserAgreements(userId: number): Promise<Agreement[]>;
   hasUserAcceptedAgreement(userId: number, agreementType: string, version: string): Promise<boolean>;
 
+  // ===== Task #31 — Command Center / Lead Pipeline / Integrity =====
+  getCommandCenterCounts(): Promise<{
+    sessionsToday: number;
+    pendingFitnessZoneVerifications: number;
+    pendingNutritionRequests: number;
+    pendingRecoveryRequests: number;
+    expiringPackages: number;
+    expiringNutritionPlans: number;
+    frozenPackages: number;
+    failedEmails: number;
+    inactiveClients: number;
+    leadsNeedingFollowUp: number;
+    integrityWarnings: number;
+  }>;
+  getLeadPipeline(filters?: { leadStatus?: string; leadSource?: string }): Promise<User[]>;
+  setLeadStatus(
+    userId: number,
+    nextStatus: string,
+    adminId: number,
+    options?: { manualOverride?: boolean; reason?: string },
+  ): Promise<User | undefined>;
+  setLeadStatusAuto(userId: number, nextStatus: string): Promise<void>;
+  getIntegrityWarnings(): Promise<Array<{
+    category: string;
+    severity: "info" | "warning" | "critical";
+    count: number;
+    samples: Array<{ id: number; label: string; link: string }>;
+    showAllLink?: string | null;
+  }>>;
+  markEmailAttempted(notificationId: number): Promise<void>;
+
   // ===== Task #30 — Recovery requests =====
   createRecoveryRequest(input: InsertRecoveryRequest & { userId: number }): Promise<RecoveryRequest>;
   getRecoveryRequest(id: number): Promise<RecoveryRequest | undefined>;
@@ -2676,6 +2707,416 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(packages.purchasedAt));
   }
+
+  // ===== Task #31 — Command Center / Lead Pipeline / Integrity =====
+  // All COUNT(*) queries run in parallel. Each query hits an indexed
+  // column (see ensureSchema task#31 indexes). Returns a flat counts
+  // payload the /admin/command-center widget grid renders.
+  async getCommandCenterCounts() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const in7 = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const ago21 = new Date(Date.now() - 21 * 86_400_000).toISOString().slice(0, 10);
+
+    const q = (text: string, params: any[] = []) =>
+      pool.query<{ c: string }>(text, params).then((r) => Number(r.rows[0]?.c ?? 0));
+
+    const [
+      sessionsToday,
+      pendingFitnessZoneVerifications,
+      pendingNutritionRequests,
+      pendingRecoveryRequests,
+      expiringPackages,
+      expiringNutritionPlans,
+      frozenPackages,
+      failedEmails,
+      inactiveClients,
+      leadsNeedingFollowUp,
+      integrityWarnings,
+    ] = await Promise.all([
+      q(`SELECT COUNT(*)::text c FROM bookings WHERE date = $1 AND status IN ('upcoming','confirmed','completed')`, [todayStr]),
+      q(`SELECT COUNT(*)::text c FROM packages WHERE status = 'pending_verification'`),
+      // No dedicated nutrition-request table — count draft nutrition plans
+      // pending publish. Treats `status='draft'` as a queue item.
+      q(`SELECT COUNT(*)::text c FROM nutrition_plans WHERE status = 'draft'`),
+      q(`SELECT COUNT(*)::text c FROM recovery_requests WHERE status = 'pending'`),
+      q(`SELECT COUNT(*)::text c FROM packages
+           WHERE is_active = true
+             AND status IN ('active','expiring_soon')
+             AND expiry_date IS NOT NULL
+             AND expiry_date::date <= $1::date
+             AND expiry_date::date >= $2::date`, [in7, todayStr]),
+      q(`SELECT COUNT(*)::text c FROM nutrition_plans
+           WHERE status = 'active'
+             AND review_date IS NOT NULL
+             AND review_date::date <= $1::date
+             AND review_date::date >= $2::date`, [in7, todayStr]),
+      q(`SELECT COUNT(*)::text c FROM packages WHERE status = 'frozen' OR frozen = true`),
+      q(`SELECT COUNT(*)::text c FROM client_notifications
+           WHERE channel_email = true
+             AND email_attempted_at IS NOT NULL
+             AND email_sent_at IS NULL`),
+      // Inactive client = active package + no booking in last 21 days.
+      q(`SELECT COUNT(DISTINCT u.id)::text c FROM users u
+           JOIN packages p ON p.user_id = u.id AND p.is_active = true
+            AND COALESCE(p.status,'active') IN ('active','expiring_soon')
+           WHERE u.role = 'client'
+             AND u.archived_at IS NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM bookings b
+                WHERE b.user_id = u.id AND b.date >= $1
+             )`, [ago21]),
+      q(`SELECT COUNT(*)::text c FROM users
+           WHERE role = 'client'
+             AND archived_at IS NULL
+             AND lead_status IN ('lead','registered','trial_requested','trial_booked','trial_completed','package_verification_pending')`),
+      // Cheap proxy: sum of three high-signal integrity queries. The full
+      // breakdown ships from /api/admin/integrity (more expensive but
+      // also cached client-side via React Query).
+      q(`SELECT (
+            (SELECT COUNT(*) FROM packages WHERE used_sessions > total_sessions) +
+            (SELECT COUNT(*) FROM packages p WHERE p.status = 'expired' AND EXISTS (
+                SELECT 1 FROM bookings b WHERE b.package_id = p.id AND b.date >= CURRENT_DATE
+                  AND b.status IN ('upcoming','confirmed')
+            )) +
+            (SELECT COUNT(*) FROM packages WHERE type = 'duo' AND partner_user_id IS NULL AND is_active = true)
+          )::text c`),
+    ]);
+
+    return {
+      sessionsToday,
+      pendingFitnessZoneVerifications,
+      pendingNutritionRequests,
+      pendingRecoveryRequests,
+      expiringPackages,
+      expiringNutritionPlans,
+      frozenPackages,
+      failedEmails,
+      inactiveClients,
+      leadsNeedingFollowUp,
+      integrityWarnings,
+    };
+  }
+
+  async getLeadPipeline(filters?: { leadStatus?: string; leadSource?: string }) {
+    // The 'inactive' filter is *derived* — it has no persisted equivalent
+    // (auto-derive intentionally never downgrades to it). Surface it
+    // here via SQL so the widget link and the page query agree.
+    if (filters?.leadStatus === "inactive") {
+      const ago21 = new Date(Date.now() - 21 * 86_400_000).toISOString().slice(0, 10);
+      const params: any[] = [ago21];
+      let sourceClause = "";
+      if (filters?.leadSource) {
+        params.push(filters.leadSource);
+        sourceClause = ` AND u.lead_source = $${params.length}`;
+      }
+      const r = await pool.query<any>(
+        `SELECT DISTINCT u.*
+           FROM users u
+           JOIN packages p ON p.user_id = u.id AND p.is_active = true
+            AND COALESCE(p.status,'active') IN ('active','expiring_soon')
+          WHERE u.role = 'client'
+            AND u.archived_at IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM bookings b WHERE b.user_id = u.id AND b.date >= $1
+            )${sourceClause}
+          ORDER BY u.created_at DESC
+          LIMIT 500`,
+        params,
+      );
+      // Map snake_case rows to the Drizzle camelCase shape expected by the UI.
+      return r.rows.map((row: any) => ({
+        ...row,
+        fullName: row.full_name,
+        leadStatus: row.lead_status,
+        leadSource: row.lead_source,
+        leadStatusManualOverride: row.lead_status_manual_override,
+        createdAt: row.created_at,
+        archivedAt: row.archived_at,
+      })) as any;
+    }
+    const conds: any[] = [eq(users.role, "client"), isNull(users.archivedAt)];
+    if (filters?.leadStatus) conds.push(eq(users.leadStatus, filters.leadStatus));
+    if (filters?.leadSource) conds.push(eq(users.leadSource, filters.leadSource));
+    return db
+      .select()
+      .from(users)
+      .where(and(...conds))
+      .orderBy(desc(users.createdAt))
+      .limit(500);
+  }
+
+  async markEmailAttempted(notificationId: number): Promise<void> {
+    await pool.query(
+      `UPDATE client_notifications
+          SET email_attempted_at = COALESCE(email_attempted_at, now())
+        WHERE id = $1`,
+      [notificationId],
+    );
+  }
+
+  async setLeadStatus(
+    userId: number,
+    nextStatus: string,
+    adminId: number,
+    options?: { manualOverride?: boolean; reason?: string },
+  ) {
+    const existing = await this.getUser(userId);
+    if (!existing) return undefined;
+    const previousStatus = existing.leadStatus ?? null;
+    const manualOverride = options?.manualOverride ?? true;
+    const [updated] = await db
+      .update(users)
+      .set({
+        leadStatus: nextStatus,
+        leadStatusManualOverride: manualOverride,
+      } as any)
+      .where(eq(users.id, userId))
+      .returning();
+    try {
+      await this.recordAuditLog({
+        action: "client.lead_status.update",
+        entityType: "user",
+        entityId: userId,
+        previousValue: { leadStatus: previousStatus } as any,
+        newValue: { leadStatus: nextStatus, manualOverride } as any,
+        performedByUserId: adminId,
+        reason: options?.reason ?? null,
+      } as any);
+    } catch {/* swallow — audit is best-effort */}
+    return updated;
+  }
+
+  // Auto-derivation hook. No-op when:
+  //  • admin has pinned a manual override
+  //  • user is archived
+  //  • next status would be equal to the current status
+  // The status is also never *downgraded* automatically (e.g. once a
+  // user reaches `pt_active`, registering a new device or resubmitting
+  // a verification never knocks them back to `registered`).
+  async setLeadStatusAuto(userId: number, nextStatus: string): Promise<void> {
+    const u = await this.getUser(userId);
+    if (!u) return;
+    if (u.leadStatusManualOverride) return;
+    if (u.archivedAt) return;
+    if (u.leadStatus === nextStatus) return;
+    const RANK: Record<string, number> = {
+      lead: 0,
+      registered: 10,
+      trial_requested: 20,
+      trial_booked: 30,
+      trial_completed: 40,
+      package_verification_pending: 45,
+      pt_active: 60,
+      nutrition_active: 60,
+      recovery_active: 55,
+      vip: 70,
+      inactive: -5,
+      archived: -10,
+    };
+    const cur = u.leadStatus ? RANK[u.leadStatus] ?? 0 : 0;
+    const nxt = RANK[nextStatus] ?? 0;
+    if (nxt < cur) return;
+    await db
+      .update(users)
+      .set({ leadStatus: nextStatus } as any)
+      .where(eq(users.id, userId));
+    try {
+      await this.recordAuditLog({
+        action: "client.lead_status.auto",
+        entityType: "user",
+        entityId: userId,
+        previousValue: { leadStatus: u.leadStatus ?? null } as any,
+        newValue: { leadStatus: nextStatus, auto: true } as any,
+        performedByUserId: null,
+      } as any);
+    } catch {/* swallow */}
+  }
+
+  // Ten checks. Each category runs an unbounded COUNT(*) for the true
+  // total plus a separate LIMIT 50 query for sample rows so the admin
+  // sees real numbers (not capped at 50) and can still click through.
+  async getIntegrityWarnings() {
+    const runCheck = async (
+      category: string,
+      severity: "info" | "warning" | "critical",
+      countSql: string,
+      sampleSql: string,
+      params: any[] = [],
+      showAllLink: string | null = null,
+    ) => {
+      const [cRes, sRes] = await Promise.all([
+        pool.query<{ c: string }>(countSql, params),
+        pool.query<any>(sampleSql, params),
+      ]);
+      const count = Number(cRes.rows[0]?.c ?? 0);
+      if (count === 0) return null;
+      const samples = (sRes.rows ?? []).map((row: any) => ({
+        id: Number(row.id),
+        label: String(row.label ?? `#${row.id}`),
+        link: String(row.link ?? `/admin/clients/${row.user_id ?? row.id}`),
+      }));
+      return { category, severity, count, samples, showAllLink };
+    };
+
+    const results = await Promise.all([
+      runCheck(
+        "Packages with used_sessions > total_sessions",
+        "critical",
+        `SELECT COUNT(*)::text c FROM packages WHERE used_sessions > total_sessions`,
+        `SELECT p.id, ('Package #' || p.id || ' — ' || COALESCE(u.full_name,'?')) AS label,
+                ('/admin/clients/' || p.user_id) AS link, p.user_id
+           FROM packages p LEFT JOIN users u ON u.id = p.user_id
+          WHERE p.used_sessions > p.total_sessions
+          ORDER BY p.id DESC LIMIT 50`,
+        [],
+        "/admin/packages",
+      ),
+      runCheck(
+        "Expired packages with future bookings",
+        "warning",
+        `SELECT COUNT(*)::text c FROM packages p WHERE p.status = 'expired' AND EXISTS (
+            SELECT 1 FROM bookings b WHERE b.package_id = p.id
+              AND b.date >= CURRENT_DATE AND b.status IN ('upcoming','confirmed')
+          )`,
+        `SELECT p.id, ('Package #' || p.id || ' — ' || COALESCE(u.full_name,'?')) AS label,
+                ('/admin/clients/' || p.user_id) AS link, p.user_id
+           FROM packages p LEFT JOIN users u ON u.id = p.user_id
+          WHERE p.status = 'expired' AND EXISTS (
+            SELECT 1 FROM bookings b WHERE b.package_id = p.id
+              AND b.date >= CURRENT_DATE AND b.status IN ('upcoming','confirmed')
+          )
+          ORDER BY p.id DESC LIMIT 50`,
+        [],
+        "/admin/packages?status=expired",
+      ),
+      runCheck(
+        "Duo packages with no partner assigned",
+        "warning",
+        `SELECT COUNT(*)::text c FROM packages
+          WHERE type = 'duo' AND partner_user_id IS NULL AND is_active = true`,
+        `SELECT p.id, ('Duo package #' || p.id || ' — ' || COALESCE(u.full_name,'?')) AS label,
+                ('/admin/clients/' || p.user_id) AS link, p.user_id
+           FROM packages p LEFT JOIN users u ON u.id = p.user_id
+          WHERE p.type = 'duo' AND p.partner_user_id IS NULL AND p.is_active = true
+          ORDER BY p.id DESC LIMIT 50`,
+        [],
+        "/admin/packages?type=duo",
+      ),
+      runCheck(
+        "Active nutrition plans with no review date",
+        "info",
+        `SELECT COUNT(*)::text c FROM nutrition_plans
+          WHERE status = 'active' AND (review_date IS NULL OR review_date = '')`,
+        `SELECT np.id, ('Plan #' || np.id || ' — ' || COALESCE(u.full_name,'?')) AS label,
+                ('/admin/nutrition/plans/' || np.id) AS link, np.user_id
+           FROM nutrition_plans np LEFT JOIN users u ON u.id = np.user_id
+          WHERE np.status = 'active' AND (np.review_date IS NULL OR np.review_date = '')
+          ORDER BY np.id DESC LIMIT 50`,
+        [],
+        "/admin/nutrition/plans",
+      ),
+      runCheck(
+        "Fitness Zone clients with no verified package",
+        "warning",
+        `SELECT COUNT(*)::text c FROM users u
+          WHERE u.role = 'client' AND u.lead_source = 'fitness_zone' AND u.archived_at IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM packages p
+               WHERE p.user_id = u.id AND p.source = 'fitness_zone' AND p.verified_at IS NOT NULL
+            )`,
+        `SELECT u.id, u.full_name AS label, ('/admin/clients/' || u.id) AS link
+           FROM users u
+          WHERE u.role = 'client' AND u.lead_source = 'fitness_zone' AND u.archived_at IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM packages p
+               WHERE p.user_id = u.id AND p.source = 'fitness_zone' AND p.verified_at IS NOT NULL
+            )
+          ORDER BY u.id DESC LIMIT 50`,
+        [],
+        "/admin/leads?leadSource=fitness_zone",
+      ),
+      runCheck(
+        "Bookings with broken package link",
+        "critical",
+        `SELECT COUNT(*)::text c FROM bookings b
+          WHERE b.package_id IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.id = b.package_id)`,
+        `SELECT b.id, ('Booking #' || b.id || ' (' || b.date || ')') AS label,
+                ('/admin/bookings') AS link, b.user_id
+           FROM bookings b
+          WHERE b.package_id IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.id = b.package_id)
+          ORDER BY b.id DESC LIMIT 50`,
+        [],
+        "/admin/bookings",
+      ),
+      runCheck(
+        "Packages with mismatched session totals",
+        "warning",
+        `SELECT COUNT(*)::text c FROM packages p
+          WHERE p.paid_sessions IS NOT NULL AND p.bonus_sessions IS NOT NULL
+            AND (COALESCE(p.paid_sessions,0) + COALESCE(p.bonus_sessions,0)) <> p.total_sessions`,
+        `SELECT p.id, ('Package #' || p.id || ' — ' || COALESCE(u.full_name,'?')) AS label,
+                ('/admin/clients/' || p.user_id) AS link, p.user_id
+           FROM packages p LEFT JOIN users u ON u.id = p.user_id
+          WHERE p.paid_sessions IS NOT NULL AND p.bonus_sessions IS NOT NULL
+            AND (COALESCE(p.paid_sessions,0) + COALESCE(p.bonus_sessions,0)) <> p.total_sessions
+          ORDER BY p.id DESC LIMIT 50`,
+        [],
+        "/admin/packages",
+      ),
+      runCheck(
+        "Orphaned consent records",
+        "info",
+        `SELECT COUNT(*)::text c FROM consent_records c
+          WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = c.user_id)`,
+        `SELECT c.id, ('Consent #' || c.id) AS label, '/admin/clients' AS link
+           FROM consent_records c
+          WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = c.user_id)
+          ORDER BY c.id DESC LIMIT 50`,
+        [],
+        null,
+      ),
+      runCheck(
+        "Orphaned agreement rows",
+        "info",
+        `SELECT COUNT(*)::text c FROM agreements a
+          WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = a.user_id)`,
+        `SELECT a.id, ('Agreement #' || a.id) AS label, '/admin/clients' AS link
+           FROM agreements a
+          WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = a.user_id)
+          ORDER BY a.id DESC LIMIT 50`,
+        [],
+        null,
+      ),
+      runCheck(
+        "Failed email notifications",
+        "warning",
+        `SELECT COUNT(*)::text c FROM client_notifications n
+          WHERE n.channel_email = true
+            AND n.email_attempted_at IS NOT NULL
+            AND n.email_sent_at IS NULL`,
+        `SELECT n.id, ('Notification #' || n.id || ' — ' || n.title) AS label,
+                ('/admin/clients/' || n.user_id) AS link, n.user_id
+           FROM client_notifications n
+          WHERE n.channel_email = true
+            AND n.email_attempted_at IS NOT NULL
+            AND n.email_sent_at IS NULL
+          ORDER BY n.created_at DESC LIMIT 50`,
+        [],
+        "/admin/integrity?category=failed-emails",
+      ),
+    ]);
+
+    return results.filter(Boolean) as Array<{
+      category: string;
+      severity: "info" | "warning" | "critical";
+      count: number;
+      samples: Array<{ id: number; label: string; link: string }>;
+      showAllLink?: string | null;
+    }>;
+  }
+
 
   async recordAgreement(input: InsertAgreement): Promise<Agreement> {
     const [row] = await db

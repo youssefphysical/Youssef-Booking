@@ -93,6 +93,7 @@ import {
   TRAINING_LOCATION_KINDS,
   evaluateBookingEligibility,
   CLIENT_STATUSES,
+  LEAD_STATUSES,
   PACKAGE_DEFINITIONS,
   PACKAGE_TYPES,
   type User,
@@ -4816,6 +4817,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (e) {
       console.warn("[verification] admin notification failed:", e);
     }
+    // Task #31: lift the lead pipeline to package_verification_pending.
+    try {
+      await storage.setLeadStatusAuto(me.id, "package_verification_pending");
+    } catch {/* ignore */}
     res.status(201).json(created);
   });
 
@@ -4889,6 +4894,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           "Your package is approved",
           "Your Fitness Zone package has been verified. You can book sessions now.",
         );
+        // Task #31: package is now live — promote pipeline to PT Active.
+        try {
+          await storage.setLeadStatusAuto(pkg.userId, "pt_active");
+        } catch {/* ignore */}
         return res.json(updated);
       }
       // Reject
@@ -5479,6 +5488,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const me = req.user as User;
     const { days, ...plan } = parsed.data;
     const created = await storage.createNutritionPlan(plan, days, me.id);
+    // Task #31: if the plan is created already-active, lift pipeline.
+    if ((created as any).status === "active") {
+      try {
+        await storage.setLeadStatusAuto((created as any).userId, "nutrition_active");
+      } catch {/* ignore */}
+    }
     res.status(201).json(created);
   });
 
@@ -5496,6 +5511,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!existing) return res.status(404).json({ message: "Plan not found" });
     const { days, userId: _ignore, ...rest } = parsed.data as any;
     const updated = await storage.updateNutritionPlan(id, rest, days);
+    // Task #31: nutrition activation lifts the pipeline.
+    if (updated && (updated as any).status === "active" && existing.status !== "active") {
+      try {
+        await storage.setLeadStatusAuto((updated as any).userId, "nutrition_active");
+      } catch {/* ignore */}
+    }
     res.json(updated);
   });
 
@@ -7545,6 +7566,87 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch {/* ignore */}
     res.json(updated);
   });
+
+  // ===================================================================
+  // Task #31 — Admin Command Center, Lead Pipeline, Integrity Checker
+  // ===================================================================
+  // All routes are admin-gated; lead-status mutations write to
+  // admin_audit_log via storage.setLeadStatus.
+
+  // In-memory 30s cache per admin id. The payload is small (~11 ints)
+  // so this is < 1KB per admin. The route hits ~11 parallel COUNT(*)
+  // queries — caching avoids hammering when an admin tab-switches.
+  const commandCenterCache = new Map<
+    number,
+    { at: number; payload: any }
+  >();
+  const COMMAND_CENTER_CACHE_MS = 30_000;
+
+  app.get("/api/admin/command-center", requireAdmin, async (req, res) => {
+    const me = req.user as User;
+    const cached = commandCenterCache.get(me.id);
+    const now = Date.now();
+    if (cached && now - cached.at < COMMAND_CENTER_CACHE_MS) {
+      return res.json({ ...cached.payload, cached: true });
+    }
+    try {
+      const counts = await storage.getCommandCenterCounts();
+      const payload = { ...counts, generatedAt: new Date().toISOString() };
+      commandCenterCache.set(me.id, { at: now, payload });
+      res.json({ ...payload, cached: false });
+    } catch (err) {
+      console.error("[command-center] failed", err);
+      res.status(500).json({ message: "Failed to load command center" });
+    }
+  });
+
+  app.get("/api/admin/integrity", requireAdmin, async (_req, res) => {
+    try {
+      const warnings = await storage.getIntegrityWarnings();
+      res.json({ warnings, generatedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error("[integrity] failed", err);
+      res.status(500).json({ message: "Failed to load integrity report" });
+    }
+  });
+
+  app.get("/api/admin/leads", requireAdmin, async (req, res) => {
+    const leadStatus = typeof req.query.leadStatus === "string" ? req.query.leadStatus : undefined;
+    const leadSource = typeof req.query.leadSource === "string" ? req.query.leadSource : undefined;
+    try {
+      const rows = await storage.getLeadPipeline({ leadStatus, leadSource });
+      res.json(rows.map((u: any) => sanitizeUserAdminView(u)));
+    } catch (err) {
+      console.error("[leads] failed", err);
+      res.status(500).json({ message: "Failed to load lead pipeline" });
+    }
+  });
+
+  app.patch(
+    "/api/admin/clients/:id/lead-status",
+    requireAdmin,
+    async (req, res) => {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+      const schema = z.object({
+        leadStatus: z.enum(LEAD_STATUSES),
+        manualOverride: z.boolean().optional(),
+        reason: z.string().max(2000).optional(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
+      }
+      const me = req.user as User;
+      const updated = await storage.setLeadStatus(id, parsed.data.leadStatus, me.id, {
+        manualOverride: parsed.data.manualOverride ?? true,
+        reason: parsed.data.reason,
+      });
+      if (!updated) return res.status(404).json({ message: "Client not found" });
+      commandCenterCache.clear();
+      res.json(sanitizeUserAdminView(updated as any));
+    },
+  );
 
   // ============== SEED ==============
   await seedDatabase();

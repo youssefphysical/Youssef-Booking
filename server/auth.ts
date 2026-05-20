@@ -388,6 +388,16 @@ export function setupAuth(app: Express) {
           : "incomplete",
       } as any);
 
+      // Task #31: auto-derive lead pipeline status. Skip for the
+      // super-admin auto-promotion path (they're not a lead).
+      if (!isSuperAdminSignup) {
+        try {
+          await storage.setLeadStatusAuto(user.id, "registered");
+        } catch (e) {
+          console.warn("[auth] lead-status auto-derive failed:", e);
+        }
+      }
+
       // Persist registration consent for legal/audit trail
       try {
         await storage.createConsentRecord({

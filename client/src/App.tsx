@@ -40,6 +40,9 @@ const CookiePolicy = lazy(() => import("@/pages/CookiePolicy"));
 const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
 const TransformationsGallery = lazy(() => import("@/pages/TransformationsGallery"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const AdminCommandCenter = lazy(() => import("@/pages/AdminCommandCenter"));
+const AdminLeads = lazy(() => import("@/pages/AdminLeads"));
+const AdminIntegrity = lazy(() => import("@/pages/AdminIntegrity"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
 const AdminBookings = lazy(() => import("@/pages/AdminBookings"));
 const AdminClients = lazy(() => import("@/pages/AdminClients"));
@@ -188,6 +191,15 @@ function Router() {
           {/* Admin */}
           <Route path="/admin">
             <ProtectedRoute component={AdminDashboard} adminOnly />
+          </Route>
+          <Route path="/admin/command-center">
+            <ProtectedRoute component={AdminCommandCenter} adminOnly />
+          </Route>
+          <Route path="/admin/leads">
+            <ProtectedRoute component={AdminLeads} adminOnly />
+          </Route>
+          <Route path="/admin/integrity">
+            <ProtectedRoute component={AdminIntegrity} adminOnly />
           </Route>
           <Route path="/admin/analytics">
             <ProtectedRoute component={AdminAnalytics} adminOnly />

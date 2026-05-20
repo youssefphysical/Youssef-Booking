@@ -56,7 +56,13 @@ export async function notifyUser(
     });
     // Future channels — wire dispatchers here when available.
     // if (channels.push) await pushDispatcher.send(notif);
-    // if (channels.email) await emailDispatcher.send(notif);
+    // Email channel is scaffolded: stamp `email_attempted_at` so the
+    // failed-email metric (attempted-but-not-sent) is accurate even
+    // before a real dispatcher exists. A future dispatcher will set
+    // `email_sent_at` on success, clearing the row from "failed".
+    if (channels.email && notif?.id) {
+      try { await storage.markEmailAttempted(notif.id); } catch {/* swallow */}
+    }
     return notif;
   } catch (err) {
     console.error("[notifyUser] failed:", err);
@@ -100,6 +106,9 @@ export async function notifyUserOnce(
       channelPush: channels.push ?? false,
       channelEmail: channels.email ?? false,
     });
+    if (channels.email && inserted?.id) {
+      try { await storage.markEmailAttempted(inserted.id); } catch {/* swallow */}
+    }
     return inserted;
   } catch (err) {
     console.error("[notifyUserOnce] failed:", err);

@@ -11,6 +11,9 @@ import {
   Settings as SettingsIcon,
   BarChart3,
   HeartPulse,
+  Gauge,
+  UserPlus,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -57,7 +60,9 @@ const ADMIN_TABS: TabSpec[] = [
   // Home — back to the public site, session preserved.
   { href: "/", labelKey: "admin.tabs.home", fallback: "Home", icon: <Home size={15} />, matches: () => false },
   { href: "/admin", labelKey: "admin.tabs.overview", fallback: "Overview", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
+  { href: "/admin/command-center", labelKey: "admin.tabs.commandCenter", fallback: "Command", icon: <Gauge size={15} />, matches: (p) => p.startsWith("/admin/command-center") },
   { href: "/admin/clients", labelKey: "admin.tabs.clients", fallback: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
+  { href: "/admin/leads", labelKey: "admin.tabs.leads", fallback: "Leads", icon: <UserPlus size={15} />, matches: (p) => p.startsWith("/admin/leads") },
   { href: "/admin/bookings", labelKey: "admin.tabs.bookings", fallback: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
   { href: "/admin/packages", labelKey: "admin.tabs.sessions", fallback: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
   { href: "/admin/analytics", labelKey: "admin.tabs.analytics", fallback: "Analytics", icon: <BarChart3 size={15} />, matches: (p) => p.startsWith("/admin/analytics") },
@@ -66,6 +71,7 @@ const ADMIN_TABS: TabSpec[] = [
   { href: "/admin/clients", labelKey: "admin.tabs.inbody", fallback: "InBody", icon: <Activity size={15} />, matches: () => false, hintKey: "admin.tabs.inbodyHint", hintFallback: "Open a client to manage InBody scans" },
   { href: "/admin/clients", labelKey: "admin.tabs.progress", fallback: "Progress", icon: <Camera size={15} />, matches: () => false, hintKey: "admin.tabs.progressHint", hintFallback: "Open a client to manage progress photos" },
   { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
+  { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
   { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
 
