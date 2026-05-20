@@ -1,0 +1,136 @@
+Prepare and push the latest stable production-ready version to GitHub and prepare it for Vercel + Neon deployment.
+
+IMPORTANT:
+Do not add new features.
+Do not redesign anything.
+Do not refactor working systems.
+Do not modify booking, package, nutrition, recovery, admin, auth, or dashboard logic unless a real production blocker appears.
+This task is deployment preparation only.
+
+Goal:
+Finalize the current platform for production deployment using:
+- GitHub
+- Vercel
+- Neon PostgreSQL
+
+Steps:
+
+1. Final Safety Verification
+Run:
+- npm run check
+- npm run build
+
+Verify:
+- No TypeScript errors
+- Build succeeds
+- No route errors
+- No admin protection regression
+- No authentication regression
+- No booking regression
+- No package regression
+- No dashboard regression
+
+2. Verify Production Configuration
+Check:
+- vercel.json exists and is valid
+- Build command is correct
+- Output/start settings are correct for Vercel
+- Serverless/API routes work correctly
+- SPA fallback does not intercept API routes
+- Admin APIs return 401 JSON when unauthenticated
+- Public routes return 200 where expected
+- ensureSchema runs safely and additively
+- No secrets are hardcoded
+- No stack traces exposed
+
+3. Verify Neon PostgreSQL Readiness
+Check:
+- App uses DATABASE_URL from environment variables
+- SSL-compatible connection if required
+- Migrations / ensureSchema are safe
+- No destructive migrations
+- No data reset
+- No hardcoded local database URL
+
+4. Document Required Vercel Environment Variables
+Create or update a deployment notes file if needed and list:
+
+DATABASE_URL=
+JWT_SECRET=
+SESSION_SECRET=
+RESEND_API_KEY=
+PUBLIC_APP_URL=
+CRON_SECRET=
+OPENAI_API_KEY=
+NODE_ENV=production
+
+Also mention:
+- JWT_SECRET and SESSION_SECRET must be strong random values.
+- PUBLIC_APP_URL must match the final Vercel/domain URL.
+- DATABASE_URL must be the Neon production connection string.
+- RESEND_API_KEY is required for emails.
+- CRON_SECRET is required for protected cron jobs if used.
+- OPENAI_API_KEY only if OCR/AI features depend on it.
+
+5. Final Production Smoke Test
+Test expected status codes:
+- / returns 200
+- /api/auth/me returns 401 JSON when logged out
+- /api/bookings returns 401 JSON when logged out
+- /api/packages returns 401 JSON when logged out
+- /api/admin/command-center returns 401 JSON when logged out
+- /api/admin/integrity returns 401 JSON when logged out
+- /api/admin/leads returns 401 JSON when logged out
+- /api/admin/management-analysis returns 401 JSON when logged out
+- /api/admin/data-center returns 401 JSON when logged out
+- /api/admin/control-panel/system-health returns 401 JSON when logged out
+
+6. Commit Current Stable Version
+Commit all current stable changes with this message:
+
+Production ready PT platform release
+
+Before committing:
+- Confirm working tree status
+- Do not include secrets
+- Do not include .env files
+- Do not include unnecessary local/temp files
+
+7. Push to GitHub
+Push to the main branch.
+
+If git remote is missing:
+- Report the issue clearly.
+- Do not guess.
+- Ask for the GitHub remote URL.
+
+If authentication fails:
+- Report clearly.
+- Do not retry unsafe commands.
+
+8. After Push
+Report:
+- Commit hash
+- Branch pushed
+- GitHub remote
+- Build result
+- Typecheck result
+- Deployment readiness result
+- Any Vercel/Neon environment variables still needed
+- Any blockers
+
+9. Do Not Deploy Automatically Unless Already Configured
+If Vercel auto-deploy is connected to GitHub:
+- Mention that Vercel should start automatically.
+
+If Vercel is not connected:
+- Provide the exact next steps:
+  1. Open Vercel
+  2. Import GitHub repository
+  3. Add environment variables
+  4. Deploy
+  5. Test production routes
+
+Final rule:
+Do not modify code unless a blocking deployment error exists.
+Report blockers only.
