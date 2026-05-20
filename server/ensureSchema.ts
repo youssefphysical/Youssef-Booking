@@ -895,6 +895,21 @@ async function run(): Promise<void> {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS trainer_assignments_uq
         ON trainer_assignments(trainer_user_id, client_user_id);
+
+      -- ===== Task #44 — Safety indexes (additive, idempotent) =====
+      -- Hot-path indexes for high-traffic admin lookups + auth.
+      -- All IF NOT EXISTS — safe to re-run; never drops a thing.
+      CREATE INDEX IF NOT EXISTS users_email_lower_idx ON users(lower(email));
+      CREATE INDEX IF NOT EXISTS users_phone_idx ON users(phone);
+      CREATE INDEX IF NOT EXISTS users_role_active_idx ON users(role, is_active);
+      CREATE INDEX IF NOT EXISTS bookings_user_id_idx ON bookings(user_id);
+      CREATE INDEX IF NOT EXISTS bookings_date_idx ON bookings(date);
+      CREATE INDEX IF NOT EXISTS bookings_status_idx ON bookings(status);
+      CREATE INDEX IF NOT EXISTS packages_user_id_idx ON packages(user_id);
+      CREATE INDEX IF NOT EXISTS packages_status_idx ON packages(status);
+      CREATE INDEX IF NOT EXISTS packages_expiry_idx ON packages(expiry_date);
+      CREATE INDEX IF NOT EXISTS admin_audit_performed_by_idx ON admin_audit_log(performed_by_user_id);
+      CREATE INDEX IF NOT EXISTS admin_audit_created_idx ON admin_audit_log(created_at DESC);
     `);
 
     console.log("[ensureSchema] OK");

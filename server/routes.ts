@@ -7961,7 +7961,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
 
     // ---- View-as-client (read-only snapshot) ----
-    app.get(`${cp}/view-as/:userId`, requireAdmin, async (req, res) => {
+    // Task #44: super-admin only per security policy.
+    app.get(`${cp}/view-as/:userId`, requireSuperAdmin, async (req, res) => {
       try {
         const userId = Number(req.params.userId);
         const user = await storage.getUser(userId);
@@ -7992,6 +7993,180 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       } catch (err) {
         console.error("[view-as] failed", err);
+        res.status(500).json({ error: "InternalError" });
+      }
+    });
+
+    // ====================================================================
+    // Task #44 — Enterprise Security & Operations
+    // System Health, Incident Center, Emergency Admin controls.
+    // All routes admin-only; mutations require super admin.
+    // ====================================================================
+
+    // Aggregated system-health snapshot. Cheap counts only — never
+    // returns secret values, only presence/absence.
+    app.get(`${cp}/system-health`, requireAdmin, async (_req, res) => {
+      try {
+        const requiredEnvs = [
+          "DATABASE_URL", "JWT_SECRET", "SESSION_SECRET",
+          "RESEND_API_KEY", "PUBLIC_APP_URL", "OPENAI_API_KEY", "CRON_SECRET",
+        ];
+        const envStatus = requiredEnvs.map(name => ({
+          name,
+          present: !!process.env[name],
+        }));
+        const missingEnvs = envStatus.filter(e => !e.present).map(e => e.name);
+
+        const environment = process.env.NODE_ENV === "production" ? "production"
+          : process.env.NODE_ENV === "staging" ? "staging"
+          : "development";
+
+        const emailCfg = emailConfigStatus();
+        const recentEmails = getRecentEmailSends(50);
+        const failedEmails = recentEmails.filter(e => !e.sent).length;
+        const sentEmails = recentEmails.filter(e => e.sent).length;
+
+        // Cron status — surfaced if the auto-complete service tracks it.
+        let cronLastRunAt: number | null = null;
+        try {
+          const mod = await import("./services/autoCompleteBookings");
+          cronLastRunAt = (mod as any).getLastCronRunAt?.() ?? null;
+        } catch { /* ignore */ }
+
+        // Active admin session count (best-effort; depends on session table).
+        let activeAdminSessions: number | null = null;
+        try {
+          const r = await pool.query(`
+            SELECT COUNT(*)::int AS n
+            FROM session
+            WHERE expire > now()
+              AND (sess->'passport'->>'user') IS NOT NULL
+          `);
+          activeAdminSessions = r.rows?.[0]?.n ?? null;
+        } catch { /* table might not exist with this shape */ }
+
+        // Light integrity probes — counts only, never PII.
+        const [adminCountR, userCountR, orphanBookingsR] = await Promise.all([
+          pool.query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND COALESCE(is_active,true)=true`).catch(() => ({ rows: [{ n: null }] })),
+          pool.query(`SELECT COUNT(*)::int AS n FROM users WHERE role='user'`).catch(() => ({ rows: [{ n: null }] })),
+          pool.query(`SELECT COUNT(*)::int AS n FROM bookings b LEFT JOIN users u ON u.id = b.user_id WHERE u.id IS NULL`).catch(() => ({ rows: [{ n: null }] })),
+        ]);
+
+        res.json({
+          environment,
+          envStatus,
+          missingEnvs,
+          email: {
+            ready: emailCfg.ready,
+            from: emailCfg.from ?? null,
+            recentSent: sentEmails,
+            recentFailed: failedEmails,
+          },
+          cron: {
+            lastRunAt: cronLastRunAt,
+            stale: cronLastRunAt == null ? null : (Date.now() - cronLastRunAt) > 1000 * 60 * 60,
+          },
+          sessions: { activeAdminSessions },
+          integrity: {
+            activeAdmins: adminCountR.rows?.[0]?.n,
+            totalClients: userCountR.rows?.[0]?.n,
+            orphanBookings: orphanBookingsR.rows?.[0]?.n,
+          },
+          mfa: {
+            enabled: false,
+            recommendation: "MFA recommended for super admin accounts. Backend placeholder ready; not enforced.",
+          },
+          backup: {
+            managed: "Neon platform-managed point-in-time recovery.",
+            recommendation: "Verify retention window in Neon console weekly.",
+          },
+          notes: [
+            "Audit log is append-only — no UI or storage path exposes update/delete.",
+            "All sensitive admin mutations require requireSuperAdmin server-side.",
+            "Manual overrides require a written reason (>=5 chars).",
+          ],
+        });
+      } catch (err) {
+        console.error("[system-health] failed", err);
+        res.status(500).json({ error: "InternalError" });
+      }
+    });
+
+    // Incident Center — recent failed jobs (read-only).
+    app.get(`${cp}/incidents`, requireAdmin, async (_req, res) => {
+      const recent = getRecentEmailSends(100);
+      const failedEmails = recent.filter(e => !e.sent).slice(0, 50);
+      let recentAuditErrors: any[] = [];
+      try {
+        recentAuditErrors = await (storage as any).listAdminAuditEntries(50);
+        recentAuditErrors = recentAuditErrors.filter((e: any) =>
+          /^manual_override:|disable_admin|force_logout/.test(e.action),
+        );
+      } catch { /* ignore */ }
+      res.json({
+        failedEmails,
+        sensitiveActions: recentAuditErrors,
+        notes: [
+          "Failed emails are read from the in-memory recent-sends ring buffer (last 100).",
+          "Sensitive actions are pulled from the immutable admin_audit_log.",
+        ],
+      });
+    });
+
+    // Emergency: force-logout a user by destroying their sessions.
+    app.post(`${cp}/emergency/force-logout/:userId`, requireSuperAdmin, async (req, res) => {
+      try {
+        const userId = Number(req.params.userId);
+        if (!Number.isFinite(userId) || userId <= 0) {
+          return res.status(400).json({ error: "BadRequest" });
+        }
+        const r = await pool.query(
+          `DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1`,
+          [userId],
+        );
+        await storage.recordAuditLog({
+          performedByUserId: (req.user as User).id,
+          action: "force_logout",
+          entityType: "user",
+          entityId: userId,
+          newValue: { deletedSessions: r.rowCount ?? 0 },
+        });
+        res.json({ ok: true, deletedSessions: r.rowCount ?? 0 });
+      } catch (err: any) {
+        console.error("[force-logout] failed", err);
+        res.status(500).json({ error: "InternalError" });
+      }
+    });
+
+    // Emergency: disable an admin (cannot disable youssef.physical@gmail.com).
+    app.post(`${cp}/emergency/disable-admin/:userId`, requireSuperAdmin, async (req, res) => {
+      try {
+        const userId = Number(req.params.userId);
+        const reason = String(req.body?.reason || "").trim();
+        if (reason.length < 5) {
+          return res.status(400).json({ error: "BadRequest", message: "Reason (>=5 chars) required" });
+        }
+        const u = await storage.getUser(userId);
+        if (!u || u.role !== "admin") return res.status(404).json({ error: "NotFound" });
+        if ((u.email || "").toLowerCase() === "youssef.physical@gmail.com") {
+          return res.status(403).json({ error: "Forbidden", message: "Permanent super admin cannot be disabled." });
+        }
+        await storage.updateUser(userId, { isActive: false } as any);
+        // Also force-logout their sessions.
+        await pool.query(
+          `DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1`,
+          [userId],
+        ).catch(() => {});
+        await storage.recordAuditLog({
+          performedByUserId: (req.user as User).id,
+          action: "disable_admin",
+          entityType: "admin_user",
+          entityId: userId,
+          reason,
+        });
+        res.json({ ok: true });
+      } catch (err: any) {
+        console.error("[disable-admin] failed", err);
         res.status(500).json({ error: "InternalError" });
       }
     });

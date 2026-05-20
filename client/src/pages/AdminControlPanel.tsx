@@ -36,6 +36,9 @@ import {
   UserCog,
   CheckCircle2,
   AlertTriangle,
+  Activity,
+  KeyRound,
+  Power,
 } from "lucide-react";
 
 type AdminMeta = {
@@ -165,6 +168,7 @@ export default function AdminControlPanel() {
                 <TabsTrigger value="roles" data-testid="tab-roles">Roles & RBAC</TabsTrigger>
                 <TabsTrigger value="bulk" data-testid="tab-bulk">Bulk actions</TabsTrigger>
                 <TabsTrigger value="view-as" data-testid="tab-view-as">View as client</TabsTrigger>
+                <TabsTrigger value="system" data-testid="tab-system">System health</TabsTrigger>
                 <TabsTrigger value="policies" data-testid="tab-policies">Policies</TabsTrigger>
               </TabsList>
 
@@ -180,6 +184,7 @@ export default function AdminControlPanel() {
               <TabsContent value="roles" className="mt-6"><RolesPane toast={toast} isSuper={isSuper} /></TabsContent>
               <TabsContent value="bulk" className="mt-6"><BulkPane toast={toast} /></TabsContent>
               <TabsContent value="view-as" className="mt-6"><ViewAsPane toast={toast} /></TabsContent>
+              <TabsContent value="system" className="mt-6"><SystemHealthPane toast={toast} isSuper={isSuper} /></TabsContent>
               <TabsContent value="policies" className="mt-6"><PoliciesPane /></TabsContent>
             </Tabs>
           </>
@@ -757,6 +762,149 @@ function PoliciesPane() {
         </div>
       )}
     </AdminCard>
+  );
+}
+
+function SystemHealthPane({ toast, isSuper }: { toast: any; isSuper: boolean }) {
+  const q = useQuery<any>({ queryKey: ["/api/admin/control-panel/system-health"] });
+  const inc = useQuery<any>({ queryKey: ["/api/admin/control-panel/incidents"] });
+  const [targetId, setTargetId] = useState("");
+  const [disableReason, setDisableReason] = useState("");
+
+  const forceLogout = useMutation({
+    mutationFn: async (uid: number) => {
+      await apiRequest("POST", `/api/admin/control-panel/emergency/force-logout/${uid}`, {});
+    },
+    onSuccess: () => toast({ title: "Sessions cleared" }),
+    onError: (e: any) => toast({ title: "Failed", description: e?.message, variant: "destructive" }),
+  });
+  const disableAdmin = useMutation({
+    mutationFn: async (v: { id: number; reason: string }) => {
+      await apiRequest("POST", `/api/admin/control-panel/emergency/disable-admin/${v.id}`, { reason: v.reason });
+    },
+    onSuccess: () => {
+      setDisableReason(""); setTargetId("");
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/control-panel/admins"] });
+      toast({ title: "Admin disabled" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message, variant: "destructive" }),
+  });
+
+  if (q.isLoading) return <AdminSkeletonStack count={4} />;
+  const d = q.data;
+  if (!d) return <AdminEmptyState icon={<Activity className="h-6 w-6" />} title="Unavailable" />;
+  const envTone = d.environment === "production" ? "border-red-500/40 text-red-300" :
+                  d.environment === "staging" ? "border-amber-500/40 text-amber-300" :
+                  "border-cyan-500/40 text-cyan-300";
+
+  return (
+    <div className="space-y-6">
+      <AdminCard className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold"><Activity className="mr-2 inline h-5 w-5 text-cyan-300" />System health</h3>
+            <p className="mt-1 text-sm text-white/60">Aggregated environment, email, cron, and integrity status.</p>
+          </div>
+          <Badge variant="outline" className={`uppercase ${envTone}`} data-testid="badge-environment">{d.environment}</Badge>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat label="Active admins" value={String(d.integrity?.activeAdmins ?? "—")} />
+          <Stat label="Clients" value={String(d.integrity?.totalClients ?? "—")} />
+          <Stat label="Orphan bookings" value={String(d.integrity?.orphanBookings ?? "—")} />
+          <Stat label="Admin sessions" value={String(d.sessions?.activeAdminSessions ?? "—")} />
+          <Stat label="Email recent sent" value={String(d.email?.recentSent ?? 0)} />
+          <Stat label="Email recent failed" value={String(d.email?.recentFailed ?? 0)} />
+          <Stat label="Cron last run" value={d.cron?.lastRunAt ? new Date(d.cron.lastRunAt).toLocaleTimeString("en-AE", { timeZone: "Asia/Dubai" }) : "—"} />
+          <Stat label="Email ready" value={d.email?.ready ? "Yes" : "No"} />
+        </div>
+
+        {d.missingEnvs?.length > 0 && (
+          <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-200" data-testid="warn-missing-envs">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">Missing environment variables ({d.missingEnvs.length})</div>
+              <div className="text-xs">{d.missingEnvs.join(", ")}</div>
+            </div>
+          </div>
+        )}
+
+        {d.cron?.stale === true && (
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-200" data-testid="warn-cron-stale">
+            <AlertTriangle className="h-4 w-4" /> Cron has not run in over an hour.
+          </div>
+        )}
+
+        <div className="mt-4 rounded-md border border-cyan-500/20 bg-cyan-500/5 p-3 text-sm text-cyan-100">
+          <strong>MFA:</strong> {d.mfa?.recommendation} <strong>Backup:</strong> {d.backup?.managed} {d.backup?.recommendation}
+        </div>
+      </AdminCard>
+
+      <AdminCard className="p-6">
+        <h3 className="text-lg font-semibold"><AlertTriangle className="mr-2 inline h-5 w-5 text-amber-300" />Incident center</h3>
+        <p className="mt-1 text-sm text-white/60">Recent failed jobs and sensitive admin actions.</p>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-white/40">Failed emails</div>
+            <div className="mt-2 space-y-1 max-h-60 overflow-auto">
+              {inc.data?.failedEmails?.length ? inc.data.failedEmails.map((e: any, i: number) => (
+                <div key={i} className="rounded border border-white/5 bg-white/[0.02] px-2 py-1 text-xs">
+                  <span className="text-white/70">{e.to ?? "—"}</span> <span className="text-white/40">· {e.subject ?? ""}</span>
+                </div>
+              )) : <div className="text-xs text-white/40">None ✓</div>}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wide text-white/40">Sensitive admin actions</div>
+            <div className="mt-2 space-y-1 max-h-60 overflow-auto">
+              {inc.data?.sensitiveActions?.length ? inc.data.sensitiveActions.map((a: any) => (
+                <div key={a.id} className="rounded border border-white/5 bg-white/[0.02] px-2 py-1 text-xs">
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-300">{a.action}</Badge>
+                  <span className="ml-2 text-white/60">{a.entityType ?? "—"}{a.entityId != null ? ` #${a.entityId}` : ""}</span>
+                </div>
+              )) : <div className="text-xs text-white/40">None recently</div>}
+            </div>
+          </div>
+        </div>
+      </AdminCard>
+
+      <AdminCard className="p-6">
+        <h3 className="text-lg font-semibold"><Power className="mr-2 inline h-5 w-5 text-red-300" />Emergency controls</h3>
+        {!isSuper ? (
+          <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-200">
+            <AlertTriangle className="h-4 w-4" /> Super admin only. You can view but not execute.
+          </div>
+        ) : (
+          <div className="mt-3 space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+              <Input value={targetId} onChange={e => setTargetId(e.target.value.replace(/\D/g, ""))} placeholder="User ID" data-testid="input-emergency-user-id" />
+              <Button
+                variant="outline"
+                disabled={!targetId || forceLogout.isPending}
+                onClick={() => forceLogout.mutate(Number(targetId))}
+                data-testid="button-force-logout"
+              >
+                <KeyRound className="mr-2 h-4 w-4" /> Force logout
+              </Button>
+            </div>
+            <div>
+              <Label className="text-white/70">Disable admin reason (≥5 chars)</Label>
+              <Textarea value={disableReason} onChange={e => setDisableReason(e.target.value)} rows={2} placeholder="Why you're disabling this admin" data-testid="input-disable-reason" />
+              <Button
+                className="mt-2"
+                variant="destructive"
+                disabled={!targetId || disableReason.trim().length < 5 || disableAdmin.isPending}
+                onClick={() => disableAdmin.mutate({ id: Number(targetId), reason: disableReason.trim() })}
+                data-testid="button-disable-admin"
+              >
+                <Power className="mr-2 h-4 w-4" /> Disable admin
+              </Button>
+              <div className="mt-1 text-xs text-white/40">The permanent super admin cannot be disabled.</div>
+            </div>
+          </div>
+        )}
+      </AdminCard>
+    </div>
   );
 }
 

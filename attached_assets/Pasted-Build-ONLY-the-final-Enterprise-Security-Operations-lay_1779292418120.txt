@@ -1,0 +1,174 @@
+Build ONLY the final Enterprise Security & Operations layer.
+
+IMPORTANT:
+Do not modify booking logic.
+Do not modify package logic.
+Do not modify nutrition logic.
+Do not modify recovery logic.
+Do not modify registration.
+Do not modify client dashboard.
+Do not modify existing admin pages unless adding safe links/sections.
+Do not create duplicate systems.
+Do not change the public design.
+Preserve all existing data and flows.
+
+Goal:
+Add final production-grade admin/security/operations protections to make the platform safer, more scalable, and easier to operate.
+
+Add these only if not already implemented:
+
+1. Backup & Restore Awareness
+- Add admin System Health section showing backup status if available.
+- Add backup reminder/warning if no backup config exists.
+- Do not implement risky restore unless safe.
+
+2. Staging / Production Safety
+- Add environment indicator:
+  Development / Staging / Production.
+- Show warning badge in admin if environment variables are missing.
+- Never expose secrets.
+
+3. System Incident Center
+Admin-only page/section showing:
+- Failed emails
+- Failed reminders
+- Failed uploads
+- Failed OCR if exists
+- API errors if tracked
+- System warnings
+- Data integrity warnings
+
+4. Permission Granularity
+Improve admin permissions safely:
+- Super Admin
+- Manager
+- Trainer
+- Viewer
+Keep youssef.physical@gmail.com as permanent Super Admin.
+Add server-side permission checks.
+Do not remove existing admin access.
+
+5. Database Index Optimization
+Add safe indexes only where missing for:
+- users.email
+- users.phone
+- bookings.client_id
+- bookings.start_time/date
+- packages.client_id
+- packages.status
+- nutrition.client_id/status if exists
+Do not remove existing indexes.
+
+6. Advanced Rate Limiting
+Add/verify rate limiting for:
+- login
+- register
+- upload
+- booking creation
+- admin sensitive APIs
+Use safe limits.
+Do not block normal usage.
+
+7. Sensitive Action Protection
+Require confirmation/reason for:
+- archive client
+- archive package
+- remove sessions
+- override cancellation
+- change expiry
+- manual package correction
+
+8. Admin Impersonation Audit
+If View As Client exists:
+- Make it read-only.
+- Super Admin only.
+- Log every view-as-client session.
+
+9. Emergency Admin Security
+Add admin-only controls if safe:
+- Force logout sessions if supported.
+- Disable compromised admin if supported.
+- Show active admin sessions if data exists.
+Do not overbuild if sessions table does not support it.
+
+10. MFA / 2FA Readiness
+If MFA is not implemented:
+- Add backend-ready placeholder/settings area for Admin MFA.
+- Do not break login.
+- Do not force MFA yet unless fully safe.
+- Show “MFA recommended” in System Health.
+
+11. Immutable Audit Log Protection
+Ensure audit logs cannot be edited/deleted from UI.
+Audit logs are read-only.
+No hard delete.
+
+12. Background Queue Readiness
+For emails, exports, OCR, reminders:
+- Show queue/status if existing.
+- Add retry/status pattern if already supported.
+- Do not install heavy queue system unless project already supports it.
+
+13. Operational Dashboard
+Admin System Health should show:
+- Build status if available
+- Environment status
+- Email system status
+- Reminder/cron status
+- Storage warnings
+- Failed jobs
+- Data integrity issues
+- Missing environment variables
+
+14. Data Migration Safety
+For any schema changes:
+- Use additive migrations only.
+- Do not drop columns.
+- Do not rewrite historical data.
+- Do not delete records.
+
+Design:
+- Premium Tron Legacy admin style.
+- Dark, clean, professional.
+- No excessive neon.
+- Fast loading.
+- Desktop and mobile responsive.
+
+Security:
+- Admin only.
+- Server-side checks.
+- No secrets exposed.
+- No stack traces.
+- Friendly errors.
+- Audit all sensitive admin actions.
+
+Performance:
+- Keep it lightweight.
+- Do not load all data unnecessarily.
+- Use aggregated counts.
+- Avoid heavy charts/libraries.
+
+Final verification:
+Run:
+- npm run check
+- npm run build
+
+Verify:
+- Existing booking works
+- Existing package flow works
+- Existing nutrition works
+- Existing recovery works
+- Existing Client Data Center works
+- Existing Management & Analysis works
+- Existing Admin Control Panel works
+- Admin APIs return 401 JSON when unauthenticated
+- No client can access admin pages
+- No secrets exposed
+
+Return:
+1. Files changed
+2. Features added
+3. What was skipped because it already existed
+4. Security checks performed
+5. Build/typecheck result
+6. Any risks
