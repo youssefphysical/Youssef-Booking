@@ -1,0 +1,1487 @@
+You are working on an existing production-like fitness coaching / personal training web platform.
+
+This is an incremental professional upgrade and controlled refactor. Do NOT rebuild the project from scratch. Do NOT redesign the whole website. Do NOT remove, rename, or break any working features unless explicitly required below. Preserve all existing users, bookings, session history, package history, nutrition history, admin data, authentication, i18n, mobile responsiveness, email/reminder logic, database records, and deployment configuration.
+
+The main goal is to refactor the platform into one unified, premium, high-end Personal Training / Nutrition / Recovery management system with a controlled Premium Tron Legacy design language, while keeping the website fast, smooth, clean, scalable, and professional.
+
+IMPORTANT PRIORITIES:
+
+1. Site speed and smooth UX are more important than adding heavy effects.
+2. Preserve existing working logic and data.
+3. Do not create duplicate package systems, duplicate payment flows, duplicate booking logic, or duplicate admin sections.
+4. Replace old package selection flows with one unified package architecture.
+5. Registration must stay simple.
+6. Booking, packages, Fitness Zone clients, external clients, Duo clients, nutrition, recovery, expiry, verification, WhatsApp CTAs, admin actions, ledger, audit logs, and rules must all be connected.
+7. Design must remain premium, clean, dark, high-end, Tron Legacy inspired, but not childish, gaming-heavy, or over-neon.
+
+==================================================
+
+1. FIRST: SCAN EXISTING PROJECT SAFELY
+   ==================================================
+
+Before making changes:
+
+- Inspect the current codebase.
+- Identify existing auth/register/login logic.
+- Identify existing booking system.
+- Identify existing package system.
+- Identify existing admin routes and admin panel.
+- Identify existing nutrition logic if any.
+- Identify existing recovery/stretching/mobility logic if any.
+- Identify existing email/reminder logic.
+- Identify existing database schema.
+- Identify current styling/theme system.
+- Identify existing i18n/translation system.
+- Identify current mobile/desktop layout patterns.
+
+Do not start implementing blindly.
+
+Return a short internal implementation summary before coding:
+
+- Which existing files will be modified.
+- Which package flow will be replaced.
+- Which old UI pieces will be removed.
+- Which database migrations are needed.
+- Which existing features will be preserved.
+
+==================================================
+2. REGISTRATION FLOW MUST BE SIMPLIFIED
+
+Remove all package selection from registration.
+
+Registration should only collect essential account data:
+
+- Name
+- Email
+- Phone number with country support
+- Password
+- Training goal:
+  - Fat Loss
+  - Muscle Gain
+  - Body Recomposition / Both
+- Optional InBody upload if already existing
+- Optional profile image if already existing
+
+Do NOT ask for:
+
+- Package type
+- Payment method
+- Nutrition plan
+- Fitness Zone package
+- Duo package
+- Recovery package
+
+After registration, user goes to dashboard.
+
+Registration = account creation only.
+
+==================================================
+3. UNIFIED CLIENT JOURNEY
+
+The new journey should be:
+
+Register / Login
+→ Dashboard
+→ Book Session or My Package
+→ Choose Training Location
+→ Determine client type
+→ Package verification or package request
+→ Admin activation if needed
+→ Book sessions only when eligible
+→ Optional Nutrition / Recovery / Progress / Files / History
+
+Every user should understand:
+
+- Where am I?
+- What do I have?
+- What should I do next?
+
+Add “What happens next?” messages after every pending request.
+
+Examples:
+After Fitness Zone package verification request:
+“Package verification submitted. Next steps: Coach review → Package activation → Book your sessions.”
+
+After nutrition request:
+“Nutrition request submitted. Next steps: Coach contact → Information collection → Program setup.”
+
+==================================================
+4. TRAINING LOCATION FLOW
+
+When user first books or opens My Package and has no active setup, ask:
+
+“Where would you like to train?”
+
+Options:
+
+1. Fitness Zone
+2. Home / Building Gym / Hotel Gym
+3. Other Gym
+
+Keep this step clean, simple, and card-based.
+
+If Fitness Zone:
+Ask:
+“Are you an existing Fitness Zone PT client?”
+Options:
+
+- Yes, I already purchased a PT package at Fitness Zone.
+- No, I want to book a trial / consultation.
+
+If Yes:
+Create a Package Verification Request:
+Fields:
+
+- Package purchased from Fitness Zone: Yes
+- Package type:
+  - 10 Sessions
+  - 20 Sessions
+  - 25 Sessions
+  - 30 Duo Sessions
+  - Not sure
+- Purchase date optional
+- Receipt/proof upload optional
+- Notes optional
+
+User should NOT pay on the website for Fitness Zone PT packages.
+
+Show:
+“Your package request has been submitted. Once verified, you will be able to book your sessions.”
+
+If Home / Building / Hotel:
+Collect:
+
+- Location pin / address
+- Building or hotel name
+- Room / apartment number optional
+- Parking/access notes optional
+- Equipment available optional
+  Save this as the client’s location profile so they do not repeat it every booking.
+
+If Other Gym:
+Collect:
+
+- Gym name
+- Location
+- Guest access available: Yes/No/Not sure
+- Entry/access notes optional
+
+==================================================
+5. UNIFIED PACKAGE ARCHITECTURE
+
+Replace old package logic with one unified package system.
+
+Do NOT create packages on top of old packages.
+
+Create/normalize a single package model that supports:
+
+Package Source:
+
+- Fitness Zone
+- Youssef Fitness Direct
+- Complimentary / Free Trial
+- Corporate / Hotel
+- Manual / Custom
+
+Package Mode:
+
+- Individual
+- Duo
+
+Package Status:
+
+- Pending Verification
+- Active
+- Frozen
+- Expired
+- Completed
+- Cancelled
+- Archived
+- No Active Package
+
+Package fields:
+
+- client_id
+- source
+- mode
+- status
+- base_sessions
+- bonus_sessions
+- total_sessions
+- remaining_sessions
+- used_sessions
+- start_date
+- expiry_date
+- freeze_start_date optional
+- freeze_end_date optional
+- freeze_reason optional
+- payment_status
+- payment_source
+- payment_verified
+- verified_by_admin_id
+- verified_at
+- notes
+- created_at
+- updated_at
+- archived_at optional
+
+Payment Source:
+
+- Paid via Fitness Zone
+- Paid to Youssef Fitness
+- Complimentary
+- Pending
+- Not Required
+- Manual
+
+Fitness Zone clients:
+
+- Hide payment gateway/payment request.
+- Admin must confirm PT payment.
+- Admin activates package after verification.
+- Show payment as “Managed by Fitness Zone” or “Paid via Fitness Zone”.
+
+Youssef Fitness Direct / External clients:
+
+- Show package request/pricing/WhatsApp CTA.
+- Payment handled manually via WhatsApp for now unless existing payment system already exists.
+- Do not force payment gateway.
+
+Complimentary / Free Trial:
+
+- 2 sessions if existing policy says 2.
+- Missed free trial should not be repeatable if that rule already exists.
+- Keep existing free trial rules.
+
+==================================================
+6. DUO PACKAGE LOGIC
+
+Support Duo packages properly.
+
+Duo package:
+
+- Has main client.
+- Has partner/second client.
+- Partner can be:
+  - Existing user
+  - New companion
+  - Guest name only
+- Duo session deducts 1 session from the Duo package, not 2.
+- Duo package is not 60 sessions if it says 30 Duo sessions. It is 30 booked Duo appointments for 2 people.
+- Duo booking must show that it is for 2 people.
+
+Duo validation:
+
+- If package_mode = Duo, require partner data before activation.
+- Booking type should show “Duo Session”.
+- Admin can change/add partner with audit log.
+- Admin can add Duo bonus sessions.
+- Admin can convert only manually if needed.
+
+Client view:
+“My Package”
+“Fitness Zone Duo Package”
+“30 Duo Sessions Remaining”
+“Partner: [Name]”
+“Book Duo Session”
+
+==================================================
+7. ADMIN PACKAGE ACTIVATION
+
+In Admin / Control Panel, client profile must allow:
+
+Assign / Verify Package:
+
+- Package Source
+- Package Mode
+- Package Type
+- Base Sessions
+- Bonus Sessions
+- Total Sessions auto-calculated
+- Expiry Date
+- Payment Status
+- Payment Source
+- PT Payment Confirmed: Yes/No
+- Verified By
+- Verified At
+- Internal Notes
+- Partner info if Duo
+
+Admin quick actions:
+
+- Add Session
+- Remove Session
+- Add Bonus Session
+- Extend Expiry
+- Freeze Package
+- Unfreeze Package
+- Change Package
+- Archive Package
+- Mark Completed
+- Mark Expired
+- Add internal note
+
+Every admin action must create ledger and audit log entries.
+
+==================================================
+8. PACKAGE LEDGER
+
+Create/keep a package ledger.
+
+Ledger examples:
+
+- +20 Package Assigned
+- +3 Bonus Added
+- -1 Session Completed
+- 0 Emergency Cancel Used
+- +1 Compensation Session Added
+- Package Frozen 14 Days
+- Expiry Extended
+- Package Archived
+
+Ledger fields:
+
+- client_id
+- package_id
+- action_type
+- delta_sessions
+- previous_remaining
+- new_remaining
+- reason
+- performed_by
+- created_at
+
+Ledger should be visible in Admin.
+Client may see simplified history if appropriate.
+
+Do not allow silent changes to sessions.
+
+==================================================
+9. BOOKING RULES
+
+Preserve existing booking rules:
+
+- Cannot book a session that starts in less than 6 hours.
+- Cancellation must be at least 6 hours before session.
+- Inside 6 hours, session is charged unless monthly emergency cancel is available.
+- Emergency cancel once per month if existing logic already supports it.
+- Free trial missed cannot be repeated if existing policy exists.
+- Keep session history.
+- Keep booking reminders if existing.
+
+Add unified validation:
+
+- No booking if package is Pending Verification.
+- No booking if package is Expired.
+- No booking if package is Frozen.
+- No booking if package has 0 remaining sessions unless free trial/complimentary active.
+- No booking if client has no eligible active package or approved trial.
+- No double booking same slot.
+- No booking over unavailable trainer time.
+- Respect travel buffer if location-based.
+- Respect session duration.
+
+Booking confirmation screen must show:
+
+- Date
+- Time
+- Location
+- Session category
+- Package that will be used
+- Remaining sessions after booking if applicable
+- Cancellation policy reminder
+- Confirm button
+
+After booking:
+
+- Show clear success state.
+- Send/keep email/reminder logic.
+- Add notification if notification center exists or is created.
+
+==================================================
+10. SESSION COMPLETION WORKFLOW
+
+When admin marks session completed:
+
+- Deduct exactly 1 session from correct active package.
+- For Duo: deduct 1 from Duo package.
+- Create ledger entry.
+- Add session history entry.
+- Allow optional session notes:
+  - Focus
+  - Performance
+  - Injuries/limitations note
+  - Next recommendation
+  - Private coach notes
+- Optional: recommend nutrition, stretching, recovery, or next booking.
+- Do not deduct twice if action is repeated or page refreshes.
+
+Use atomic database transaction for completion and deduction.
+
+==================================================
+11. SESSION CONFLICT LOCK
+
+Implement backend protection against race conditions:
+
+- If two clients book same slot at the same second, only one succeeds.
+- Use database transaction/unique constraint/atomic lock.
+- Prevent double booking.
+- Prevent double session deduction.
+- If booking fails, do not deduct session.
+- Show user-friendly error:
+  “This slot is no longer available. Please choose another time.”
+
+==================================================
+12. NUTRITION SYSTEM
+
+Nutrition must be available to:
+
+1. Fitness Zone clients
+2. Youssef PT clients
+3. Nutrition-only clients
+
+But display differs based on client type.
+
+Nutrition is NOT required.
+Nutrition payment is handled via WhatsApp/manual for now.
+
+Nutrition program types:
+
+- Basic Nutrition Guidance
+- Professional Nutrition Plan
+- Elite Transformation Nutrition
+
+Nutrition durations:
+
+- 1 Month
+- 3 Months recommended
+- 6 Months elite
+- Custom optional admin-only
+
+Nutrition statuses:
+
+- Not Active
+- Requested
+- Pending Details
+- Pending Payment
+- In Preparation
+- Active
+- Needs Update
+- Completed
+- Expired
+- Archived
+
+Nutrition fields:
+
+- client_id
+- plan_type
+- status
+- duration
+- start_date
+- expiry_date
+- payment_status
+- payment_method: WhatsApp / Manual / Included / Free / Pending
+- linked_to: Fitness Zone Client / Youssef PT Client / Nutrition-only
+- check_in_frequency
+- notes
+- created_at
+- updated_at
+
+Fitness Zone nutrition disclaimer:
+Show clearly:
+“Nutrition programs are optional and provided independently by Coach Youssef. Fitness Zone is not responsible for nutrition coaching services, payments, results, or communication related to nutrition programs.”
+
+PT client add-on:
+If client already has active PT package with Youssef Fitness Direct:
+Show:
+“Exclusive PT Client Nutrition Add-on”
+Use from-pricing or WhatsApp CTA.
+
+Nutrition-only:
+Show normal nutrition programs page.
+
+Nutrition pricing display:
+Use professional “From pricing”, not hard hardcoded final pricing if not needed:
+
+- Basic Guidance — From 399 AED / month
+- Professional Nutrition — From 699 AED / month
+- Elite Transformation — From 999 AED / month
+
+Do not make pricing look cheap or crowded.
+Use clean cards.
+
+Buttons:
+
+- Ask on WhatsApp
+- Start on WhatsApp
+- Apply on WhatsApp
+  Use prefilled WhatsApp messages:
+  “Hello Coach Youssef, I would like more information about the Professional Nutrition Plan.”
+
+Nutrition dashboard:
+
+- Program name
+- Status
+- Start date
+- Expiry date
+- Days remaining
+- Renewal button when close to expiry
+- WhatsApp CTA if inactive
+- Check-in button if active
+
+Nutrition expiry:
+
+- 14 days before expiry: Renewal recommended
+- 7 days before expiry: Expiring soon
+- Expired: Disable active status and show Renew Program
+
+Nutrition intake form should be optional/progressive, not overwhelming:
+
+- Current weight
+- Height
+- Goal
+- Food allergies
+- Foods disliked
+- Meal count preference
+- Supplements
+- Medical notes
+- InBody upload
+  Keep it clean and not too long on first view.
+
+==================================================
+13. RECOVERY / MOBILITY / STRETCHING SERVICES
+
+Add a clean Recovery Services section.
+
+Services:
+
+- Stretching Session
+- Mobility Session
+- Corrective Exercise Support / Movement Recovery
+
+Avoid risky medical claims.
+Prefer “Movement Recovery” or “Corrective Exercise Support” over heavy “medical rehabilitation”.
+
+Disclaimer:
+“Recovery and movement support sessions are not medical diagnosis, medical treatment, or a replacement for physiotherapy. Clients with injuries or medical conditions should seek medical clearance when necessary.”
+
+Recovery can be:
+
+- Single session request
+- Add-on
+- Admin-assigned service
+- WhatsApp CTA
+
+Do not overcomplicate client flow.
+
+==================================================
+14. PRICING DISPLAY
+
+Create professional pricing/service sections.
+
+Personal Training for external/direct clients:
+
+- Single Session — From 375 AED
+- 10 Sessions
+- 20 Sessions recommended
+- 25 Sessions transformation
+- Duo Package
+- Custom Program
+
+Use buttons:
+
+- Request Package Details
+- Contact on WhatsApp
+
+Fitness Zone clients:
+Do NOT show they need to pay again for PT on website.
+Show:
+“Fitness Zone PT packages are managed through Fitness Zone. Submit verification to activate booking access.”
+
+Training + Nutrition bundles:
+
+- Training Only
+- Training + Nutrition
+- Elite Transformation
+
+Use comparison cards, not overloaded tables.
+
+Nutrition:
+
+- Basic Guidance
+- Professional Nutrition
+- Elite Transformation
+
+Use “From AED” model.
+Keep CTA WhatsApp/manual.
+
+Do not build complicated payment gateway unless already existing and safe.
+
+==================================================
+15. WHATSAPP CTA SYSTEM
+
+Create consistent WhatsApp CTAs.
+
+PT:
+“Hello Coach Youssef, I would like information about Personal Training packages.”
+
+Nutrition:
+“Hello Coach Youssef, I would like information about the Professional Nutrition Plan.”
+
+Recovery:
+“Hello Coach Youssef, I would like information about Recovery and Mobility sessions.”
+
+Free trial:
+“Hello Coach Youssef, I would like to book a free assessment/trial session.”
+
+Each CTA should know the context when possible.
+
+Do not spam buttons everywhere. Use strategically.
+
+==================================================
+16. DASHBOARD STRUCTURE
+
+Create/adjust client dashboard into clean sections:
+
+- My Training
+- My Package
+- Book Session
+- Nutrition
+- Recovery Services
+- Progress / InBody
+- Files
+- History
+- Notifications
+- What’s Next / Recommended Action
+
+Dashboard must not feel crowded.
+
+If no data, show premium empty states:
+
+- “No sessions booked yet. Book your first session.”
+- “Nutrition coaching is not active. Explore programs.”
+- “No InBody uploaded yet. Upload your first InBody scan.”
+
+==================================================
+17. ADMIN COMMAND CENTER
+
+Add Admin Command Center / Control Panel overview.
+
+Show:
+
+- Today’s sessions
+- Pending Fitness Zone package verifications
+- Pending nutrition requests
+- Expiring PT packages
+- Expiring nutrition plans
+- Frozen packages
+- Failed emails/reminders
+- Failed OCR/manual review
+- Data integrity warnings
+- Pending WhatsApp requests
+- Inactive clients
+- Leads needing follow-up
+
+Use desktop grid layout.
+Use mobile cards.
+
+Do not replace existing admin dashboard if already exists; extend/refactor it carefully.
+
+==================================================
+18. LEAD PIPELINE
+
+Track client journey:
+
+- Lead
+- Registered
+- Trial Requested
+- Trial Booked
+- Trial Completed
+- Package Verification Pending
+- PT Active
+- Nutrition Active
+- Recovery Active
+- VIP
+- Inactive
+- Archived
+
+Admin should filter by status.
+
+Add lead source if possible:
+
+- Fitness Zone
+- Website
+- Instagram
+- Referral
+- Hotel
+- Other
+
+==================================================
+19. PROGRESS / TRANSFORMATION HUB
+
+Create/keep simple progress system:
+
+- Weight history
+- InBody history
+- Progress photos
+- Strength progress
+- Consistency %
+- Sessions completed
+- Milestones
+
+Do not make it heavy or slow.
+
+Achievements:
+
+- First session completed
+- 10 sessions completed
+- 30-day consistency
+- Transformation milestone
+
+Keep achievements premium, not childish.
+
+==================================================
+20. NOTIFICATION CENTER
+
+Add/keep notification center:
+
+- Session reminder
+- Package expiring
+- Nutrition expiring
+- Bonus session added
+- Package activated
+- Nutrition updated
+- Verification approved/rejected
+- Failed request recovery if needed
+
+Client notification preferences:
+
+- Email
+- WhatsApp future/manual
+- Push future
+  Do not overbuild push if not existing.
+
+==================================================
+21. AGREEMENTS / CONSENT CENTER
+
+Create a simple Consent / Agreements Center.
+
+Include:
+
+- Training waiver
+- Nutrition disclaimer
+- Recovery disclaimer
+- Cancellation policy
+- Emergency cancel policy
+- Privacy policy
+- Optional media consent
+
+Store:
+
+- client_id
+- agreement_type
+- accepted_at
+- IP if available
+- version
+- user_agent if available
+
+Do not block all users aggressively unless required.
+Show required agreements before first booking/service activation.
+
+Important disclaimers:
+Training:
+“Clients participate voluntarily and must disclose relevant medical conditions.”
+
+Nutrition:
+“Nutrition coaching does not replace medical advice. Clients should disclose allergies, medical conditions, and medication use.”
+
+Fitness Zone Nutrition:
+“Nutrition programs are optional, independent, and not affiliated with or managed by Fitness Zone.”
+
+Recovery:
+“Movement support only. Not medical diagnosis, treatment, or physiotherapy replacement.”
+
+==================================================
+22. RULES ENGINE
+
+Create one centralized rules layer for business logic.
+
+Rules:
+
+- Fitness Zone client → hide direct payment.
+- Fitness Zone package → requires admin verification before booking.
+- Pending verification → disable booking.
+- Expired package → disable booking and show renewal.
+- Frozen package → disable booking.
+- Duo package → require partner.
+- Nutrition expired → show renewal.
+- Rehab/recovery service → show disclaimer.
+- Free trial missed → cannot repeat if existing rule exists.
+- Booking less than 6 hours → blocked.
+- Cancel less than 6 hours → charged unless emergency cancel available.
+- Emergency cancel → once per month if existing.
+- Remaining sessions must not go negative.
+- Session deduction must be atomic.
+- Nutrition payment → WhatsApp/manual.
+- External client → show pricing/WhatsApp CTA.
+
+Do not scatter business rules randomly across components.
+
+==================================================
+23. VALIDATION LAYER
+
+Before saving admin/user data:
+
+- Bonus sessions cannot be negative.
+- Remaining sessions cannot exceed total unless a logged admin adjustment explains it.
+- Expiry date must be after start date.
+- Duo must have partner before activation.
+- Fitness Zone package requires payment confirmation before active status.
+- Nutrition active requires start and expiry dates.
+- Package status must be valid.
+- Cannot book if no active valid package/trial.
+- Cannot activate package with missing required fields.
+- Cannot delete history.
+
+Show friendly errors.
+
+==================================================
+24. DATA INTEGRITY CHECKER
+
+Create admin-only checker for:
+
+- Active package with invalid remaining sessions
+- Expired package still allowing booking
+- Duo package without partner
+- Nutrition active without expiry
+- Fitness Zone client without verification
+- Failed email/reminder
+- Broken booking-package link
+- Session history without package ledger
+- Package total mismatch
+- Duplicate active packages if not allowed
+- Orphaned files
+
+Show warnings in Admin Command Center.
+
+==================================================
+25. SOFT DELETE / ARCHIVE
+
+Do not permanently delete important records.
+
+Use archive/soft delete:
+
+- Clients
+- Packages
+- Nutrition plans
+- Bookings
+- Files
+- Notes
+
+Preserve:
+
+- History
+- Ledger
+- Audit logs
+
+Add archived status/filter for admin.
+
+==================================================
+26. ERROR RECOVERY
+
+If email fails:
+
+- Retry.
+- Mark failed.
+- Show admin alert.
+
+If reminder fails:
+
+- Retry.
+- Mark failed.
+
+If OCR fails:
+
+- Show manual review.
+- Do not block entire account.
+
+If booking fails:
+
+- Do not deduct session.
+- Show friendly message.
+
+If upload fails:
+
+- Show retry.
+
+If payment/request fails:
+
+- Keep pending.
+
+Add clear user-friendly errors:
+Bad: “Error”
+Good: “This slot is no longer available. Please choose another time.”
+
+==================================================
+27. FEATURE FLAGS
+
+Add admin feature flags/config if simple:
+
+- Nutrition programs enabled/disabled
+- Recovery services enabled/disabled
+- Referral system enabled/disabled
+- Public pricing enabled/disabled
+- WhatsApp CTA enabled/disabled
+- Maintenance mode enabled/disabled
+- Future payment gateway enabled/disabled
+
+Do not overbuild.
+
+==================================================
+28. PERFORMANCE / SPEED
+
+Speed and smoothness are critical.
+
+Requirements:
+
+- Avoid heavy animations.
+- Avoid excessive glow/blur.
+- Lazy load heavy images.
+- Compress/resize uploads.
+- Optimize InBody/progress photo storage.
+- Do not load admin data for clients.
+- Use efficient queries.
+- Avoid repeated API calls.
+- Add skeleton loading states.
+- Use pagination/search for large admin lists.
+- Keep mobile fast.
+- Keep desktop fast.
+- Avoid giant dashboard requests.
+
+Add skeletons for:
+
+- Dashboard
+- Package card
+- Nutrition card
+- Booking slots
+- Admin tables
+
+==================================================
+29. FILE / IMAGE OPTIMIZATION
+
+For InBody and progress photos:
+
+- Resize/compress images.
+- Store optimized versions.
+- If OCR is used, keep extracted text/data and optionally delete original image if this is already the intended privacy/storage policy.
+- Do not expose private files publicly.
+- Add storage cleanup for orphaned files if simple.
+
+==================================================
+30. SECURITY / BACKEND PROTECTION
+
+Ensure:
+
+- Admin routes protected.
+- Admin API protected.
+- No admin UI flicker for normal users.
+- Unauthorized API returns JSON error, not stack trace.
+- Rate limiting for login, booking, upload, contact/request endpoints if possible.
+- Input validation.
+- Server-side validation.
+- Secure cookies if applicable.
+- CSRF protection if applicable.
+- XSS protection for notes/user input.
+- Error masking.
+- No secrets exposed.
+- No database URL/API keys in frontend.
+- Audit logs for admin actions.
+- Soft delete instead of hard delete.
+- Role-based permissions.
+
+Permanent super admin should remain:
+youssef.physical@gmail.com
+Do not remove this role behavior if already implemented.
+
+==================================================
+31. AUDIT LOG
+
+Track admin actions:
+
+- Package activation
+- Payment verification
+- Bonus added
+- Session removed
+- Expiry changed
+- Freeze/unfreeze
+- Nutrition activated/expired
+- Client archived
+- Booking modified
+- Partner changed
+- Manual correction
+
+Audit log fields:
+
+- action
+- entity_type
+- entity_id
+- previous_value
+- new_value
+- performed_by
+- created_at
+- reason optional
+
+==================================================
+32. ANALYTICS / BUSINESS OVERVIEW
+
+Add lightweight analytics, not heavy BI.
+
+Admin should see:
+
+- Active PT clients
+- Active nutrition clients
+- Active recovery clients
+- Pending verifications
+- Expiring packages
+- Expiring nutrition plans
+- Today’s sessions
+- Inactive clients
+- Leads
+- Package renewals
+- Fitness Zone vs external clients
+- Nutrition conversion
+- Most active clients
+
+Keep it fast.
+
+==================================================
+33. SMART RECOMMENDATIONS
+
+Use simple rules, not heavy AI.
+
+Examples:
+
+- Fat loss client + nutrition inactive → suggest nutrition support.
+- Package has 3 sessions remaining → renewal recommended.
+- Client inactive 14/21 days → follow-up recommended.
+- Rehab/recovery client → mobility session recommended.
+- High consistency → show positive message.
+- Nutrition expired → renew program.
+
+Client side: subtle suggestions.
+Admin side: Coach Insights.
+
+==================================================
+34. PUBLIC LANDING / SERVICE PAGES
+
+If public pages exist, improve/align them.
+
+Pages/sections:
+
+- Hero
+- Personal Training
+- Nutrition Coaching
+- Recovery & Mobility
+- Transformations / Success Stories
+- Free Trial / Assessment
+- Pricing / Packages from-pricing
+- FAQ
+- Coach Profile
+- Contact
+- Policies
+
+Keep copy premium and clear.
+Do not overload.
+
+Trust elements:
+
+- Coach Youssef profile
+- Experience
+- Certifications if already available
+- EREPS/fitness background if already on site
+- Transformations
+- Client results
+- FAQ
+- Clear CTAs
+
+==================================================
+35. FAQ
+
+Add FAQ for:
+
+- Do I pay again if I bought Fitness Zone PT package?
+- Is nutrition required?
+- Is nutrition related to Fitness Zone?
+- How does Duo package work?
+- Can I train at my hotel/building gym?
+- What happens if I cancel late?
+- What is emergency cancel?
+- Can I freeze package?
+- What happens when package expires?
+- How do I renew?
+
+Keep answers short and professional.
+
+==================================================
+36. DESIGN SYSTEM: PREMIUM TRON LEGACY
+
+All new UI must match existing design.
+
+Style:
+
+- Dark luxury background
+- Black / deep navy
+- Electric blue / cyan accents
+- White text
+- Glass cards
+- Soft cyan borders
+- Controlled glow
+- Smooth hover
+- Subtle motion
+- Premium spacing
+- High-end fitness brand feeling
+
+Avoid:
+
+- Excessive neon
+- Gaming/cyberpunk overload
+- RGB colors
+- Too many animations
+- Crowded dashboard
+- Random colors
+- Cheap pricing cards
+- Loud buttons everywhere
+- Uncontrolled gradients
+- Heavy blur hurting performance
+
+Design feeling:
+The client should feel:
+
+- This is powerful.
+- This is premium.
+- This is organized.
+- This is easy.
+- I know what to do next.
+
+Client should NOT feel:
+
+- Confused
+- Overwhelmed
+- Lost
+- Shocked by too many features
+- Like the UI is a game
+
+Every page must answer:
+
+1. Where am I?
+2. What do I have?
+3. What should I do now?
+
+==================================================
+37. DESKTOP RESPONSIVENESS
+
+Desktop must not look like a stretched mobile app.
+
+Desktop rules:
+
+- Use responsive grid layouts.
+- Max content width around 1400–1600px.
+- Use sidebar navigation if existing pattern supports it.
+- Avoid giant empty spaces.
+- Use tables for admin desktop views.
+- Use cards for mobile.
+- Dashboard desktop can show multiple cards per row.
+- Admin analytics should use grid.
+- Hover states should exist on desktop.
+- Tooltips can be used where helpful.
+- Ultra-wide screens should not stretch content badly.
+
+Test breakpoints:
+
+- 320px
+- 375px
+- 768px
+- 1024px
+- 1440px
+- 1920px
+- 2560px
+
+Mobile:
+
+- Clean cards
+- Bottom nav if existing
+- Large tap targets
+- Minimal text per card
+
+Desktop:
+
+- Premium layout
+- Efficient information density
+- No excessive scrolling
+- No broken spacing
+
+==================================================
+38. LOADING / EMPTY / ERROR STATES
+
+Add premium states:
+
+- Skeleton loading
+- Empty states
+- Friendly errors
+- Success states
+- Pending states
+
+Examples:
+“No sessions booked yet. Book your first session.”
+“Package verification pending. You’ll be able to book once approved.”
+“Nutrition is not active. Explore optional programs.”
+“This slot is no longer available. Please choose another time.”
+“Upload failed. Please try again.”
+
+==================================================
+39. MAINTENANCE / SYSTEM HEALTH
+
+Add simple admin system health if possible:
+
+- Email system status
+- Reminder jobs status
+- Database health
+- Storage usage
+- Failed jobs
+- Last backup if available
+- OCR status if existing
+
+Add maintenance mode flag if possible.
+
+==================================================
+40. DATABASE / FUTURE-PROOFING
+
+Use flexible models.
+
+Avoid hardcoded one-off fields like:
+nutrition_plan_type_1
+package_20_special_case
+
+Prefer:
+service_type
+service_source
+service_status
+duration
+metadata
+
+Future services should be addable without rebuilding the system.
+
+Do not over-normalize unnecessarily, but keep scalable.
+
+==================================================
+41. DATA MIGRATION
+
+If old package fields exist:
+
+- Map old package_name/package_sessions to new package records.
+- Preserve existing remaining sessions.
+- Preserve bookings.
+- Preserve history.
+- Mark unknown old clients as:
+  source = Existing / Unknown / Manual
+  status = Active if currently active, otherwise appropriate status.
+- Do not delete old data until migration is verified.
+- If old fields remain for compatibility, hide old UI and prevent duplicate logic.
+
+After migration:
+
+- No old package selection UI should appear in registration.
+- No duplicate package cards.
+- No duplicate payment flow.
+- No duplicate booking validation.
+
+==================================================
+42. TESTING SCENARIOS REQUIRED
+
+After implementation, test these manually or with automated tests where possible:
+
+1. New user registers:
+
+- No package selection appears.
+- Dashboard loads.
+
+2. Fitness Zone paid client:
+
+- Selects Fitness Zone.
+- Says package already purchased.
+- Submits verification.
+- Cannot book until admin approves.
+- Admin confirms PT payment.
+- Admin activates package.
+- User can book.
+
+3. Fitness Zone pending verification:
+
+- Booking disabled.
+- Clear pending message shown.
+
+4. External PT client:
+
+- Selects Home/Hotel/Other Gym.
+- Enters location.
+- Sees PT packages/WhatsApp CTA.
+- Admin can activate package manually.
+
+5. Duo package:
+
+- Admin creates Duo package.
+- Partner required.
+- Duo booking deducts only 1 session.
+
+6. Free trial:
+
+- 2 sessions active if existing policy.
+- Missed trial cannot repeat if existing rule.
+- Free trial flow works.
+
+7. Nutrition-only:
+
+- User can request nutrition.
+- WhatsApp CTA works.
+- Admin can activate nutrition plan.
+- Expiry works.
+
+8. PT + Nutrition add-on:
+
+- Active PT client sees nutrition add-on.
+- Nutrition disclaimer shown where needed.
+- Admin activates nutrition.
+
+9. Recovery:
+
+- User can view/request recovery/mobility/stretching.
+- Disclaimer appears.
+
+10. Expired package:
+
+- Booking blocked.
+- Renewal CTA appears.
+
+11. Frozen package:
+
+- Booking blocked.
+- Clear frozen status shown.
+
+12. Booking under 6 hours:
+
+- Blocked.
+
+13. Cancel under 6 hours:
+
+- Charged unless emergency cancel available.
+
+14. Double booking same slot:
+
+- Blocked by backend.
+
+15. Session completion:
+
+- Deducts once.
+- Ledger created.
+- Refresh does not deduct again.
+
+16. Admin unauthorized:
+
+- Cannot access admin UI or API.
+- No admin link flicker.
+
+17. Mobile:
+
+- Layout clean at 320/375/768.
+
+18. Desktop:
+
+- Layout clean at 1440/1920/2560.
+
+19. No duplicate systems:
+
+- Old package selection does not appear.
+- No conflicting package UI.
+- No duplicate payment flow.
+
+20. Performance:
+
+- Dashboard loads smoothly.
+- No heavy animation lag.
+- No giant unnecessary API calls.
+
+==================================================
+43. FINAL OUTPUT REQUIRED FROM REPLIT
+
+After completing implementation, provide:
+
+1. Summary of what changed.
+2. List of modified files.
+3. Database migrations added.
+4. Existing features preserved.
+5. Old flows removed/replaced.
+6. New admin features added.
+7. Testing performed.
+8. Any known limitations.
+9. Any manual environment variables needed.
+10. Confirmation that no duplicate package/payment/booking systems remain.
+
+==================================================
+44. ABSOLUTE DO NOTs
+
+Do NOT:
+
+- Rebuild the whole website.
+- Break authentication.
+- Break existing booking history.
+- Delete users.
+- Delete sessions.
+- Delete package history.
+- Delete nutrition history.
+- Create a second package system.
+- Create a second booking system.
+- Create a second payment flow.
+- Add package selection back into registration.
+- Make the design over-neon.
+- Make the UI look like a game.
+- Add heavy animations that slow the site.
+- Expose admin routes.
+- Expose secrets.
+- Show stack traces.
+- Hard delete important data.
+- Ignore mobile.
+- Ignore desktop.
+- Remove i18n support.
+- Break RTL Arabic support.
+- Break existing reminders/emails.
+- Make Fitness Zone responsible for nutrition.
+- Show payment gateway for Fitness Zone PT packages.
+- Let expired/frozen/pending packages book sessions.
+- Deduct sessions without ledger.
+- Allow double booking.
+
+==================================================
+45. FINAL GOAL
+
+The final product should feel like a premium, high-end, luxury personal training platform:
+
+Fast.
+Clean.
+Powerful.
+Simple for clients.
+Professional for admin.
+Secure.
+Scalable.
+Premium Tron Legacy inspired.
+No clutter.
+No duplicated logic.
+No broken history.
+No confusing package flow.
+
+Client experience:
+Register easily → understand next step → verify/activate package → book sessions → optionally add nutrition/recovery → track progress.
+
+Admin experience:
+See everything clearly → verify packages → manage sessions → activate nutrition/recovery → track alerts → protect data → grow business.
+
+Implement carefully and safely.
