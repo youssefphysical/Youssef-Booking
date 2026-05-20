@@ -60,6 +60,9 @@ const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
+const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
+const AdminRecoveryPage = lazy(() => import("@/pages/AdminRecoveryPage"));
+const AgreementsPage = lazy(() => import("@/pages/AgreementsPage"));
 
 function ProtectedRoute({
   component: Component,
@@ -157,6 +160,13 @@ function Router() {
           <Route path="/how-it-works" component={HowItWorks} />
           <Route path="/transformations" component={TransformationsGallery} />
           <Route path="/direct-payment" component={DirectPaymentPage} />
+          <Route path="/recovery" component={RecoveryPage} />
+          <Route path="/agreements">
+            <ProtectedRoute component={AgreementsPage} />
+          </Route>
+          <Route path="/admin/recovery">
+            <ProtectedRoute component={AdminRecoveryPage} adminOnly />
+          </Route>
 
           {/* Client */}
           <Route path="/wizard">

@@ -59,6 +59,10 @@ import {
 import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
+import { AgreementGate, useAgreements, hasAccepted } from "@/components/AgreementGate";
+
+const REQUIRED_BOOKING_AGREEMENTS = ["training_waiver", "cancellation_policy"] as const;
+const REQUIRED_BOOKING_AGREEMENT_VERSION = "1";
 
 type SessionTypeChoice = "package" | "single" | "trial" | "duo";
 type SessionFocus = (typeof SESSION_FOCUS_GROUPS)["upper"][number] | (typeof SESSION_FOCUS_GROUPS)["lower"][number] | (typeof SESSION_FOCUS_GROUPS)["conditioning"][number];
@@ -88,6 +92,11 @@ export default function BookingPage() {
   const [notes, setNotes] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [showAgreementGate, setShowAgreementGate] = useState(false);
+  const { data: myAgreements } = useAgreements();
+  const missingRequiredAgreements = REQUIRED_BOOKING_AGREEMENTS.filter(
+    (tp) => !hasAccepted(myAgreements, tp, REQUIRED_BOOKING_AGREEMENT_VERSION),
+  );
   const [submitted, setSubmitted] = useState(false);
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
@@ -245,6 +254,11 @@ export default function BookingPage() {
       return;
     }
     if (!isAdmin && sessionType === "duo" && partnerName.trim().length < 2) {
+      return;
+    }
+    // First-booking agreements gate — admins are exempt (they book on behalf of clients).
+    if (!isAdmin && missingRequiredAgreements.length > 0) {
+      setShowAgreementGate(true);
       return;
     }
     const isDuo = sessionType === "duo";
@@ -882,6 +896,14 @@ export default function BookingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AgreementGate
+        types={[...REQUIRED_BOOKING_AGREEMENTS]}
+        version={REQUIRED_BOOKING_AGREEMENT_VERSION}
+        open={showAgreementGate}
+        onOpenChange={setShowAgreementGate}
+        onAccepted={() => handleBook()}
+      />
 
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-md">

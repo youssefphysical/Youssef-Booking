@@ -24,6 +24,7 @@ import {
   NUTRITION_PLAN_DAY_TYPE_LABELS_EN,
   MEAL_CATEGORY_LABELS_EN,
 } from "@shared/schema";
+import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
 
 function dayTotals(meals: { totalKcal: number; totalProteinG: number; totalCarbsG: number; totalFatsG: number }[]) {
   return meals.reduce(
@@ -127,6 +128,8 @@ export default function ClientNutritionPlan() {
             </Button>
           )}
         </div>
+
+        <AgreementDisclaimer type="nutrition_disclaimer" className="mb-6" />
 
         {isLoading ? (
           <div className="rounded-2xl border border-border bg-card/40 p-10 text-center text-muted-foreground">

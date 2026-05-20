@@ -105,6 +105,7 @@ import {
   featureFlags,
   trainingLocations,
   agreements,
+  recoveryRequests,
   FEATURE_FLAG_DEFAULTS,
   type AdminAuditLogEntry,
   type InsertAdminAuditLogEntry,
@@ -112,6 +113,9 @@ import {
   type TrainingLocation,
   type Agreement,
   type InsertAgreement,
+  type RecoveryRequest,
+  type InsertRecoveryRequest,
+  type UpdateRecoveryRequest,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -360,6 +364,15 @@ export interface IStorage {
   getPendingVerificationPackages(): Promise<Package[]>;
   getUserPendingVerificationPackages(userId: number): Promise<Package[]>;
   recordAgreement(input: InsertAgreement): Promise<Agreement>;
+  getUserAgreements(userId: number): Promise<Agreement[]>;
+  hasUserAcceptedAgreement(userId: number, agreementType: string, version: string): Promise<boolean>;
+
+  // ===== Task #30 — Recovery requests =====
+  createRecoveryRequest(input: InsertRecoveryRequest & { userId: number }): Promise<RecoveryRequest>;
+  getRecoveryRequest(id: number): Promise<RecoveryRequest | undefined>;
+  listRecoveryRequestsForUser(userId: number): Promise<RecoveryRequest[]>;
+  listRecoveryRequests(filters?: { status?: string }): Promise<RecoveryRequest[]>;
+  updateRecoveryRequest(id: number, patch: UpdateRecoveryRequest): Promise<RecoveryRequest | undefined>;
 
   // ===== Nutrition OS — Phase 2: Food Library =====
   // Searchable + paginated catalogue. Designed for thousands of rows
@@ -2691,6 +2704,90 @@ export class DatabaseStorage implements IStorage {
         ),
       );
     return existing;
+  }
+
+  async getUserAgreements(userId: number): Promise<Agreement[]> {
+    return db
+      .select()
+      .from(agreements)
+      .where(eq(agreements.userId, userId))
+      .orderBy(desc(agreements.acceptedAt));
+  }
+
+  async hasUserAcceptedAgreement(
+    userId: number,
+    agreementType: string,
+    version: string,
+  ): Promise<boolean> {
+    const [row] = await db
+      .select({ id: agreements.id })
+      .from(agreements)
+      .where(
+        and(
+          eq(agreements.userId, userId),
+          eq(agreements.agreementType, agreementType),
+          eq(agreements.version, version),
+        ),
+      )
+      .limit(1);
+    return !!row;
+  }
+
+  async createRecoveryRequest(
+    input: InsertRecoveryRequest & { userId: number },
+  ): Promise<RecoveryRequest> {
+    const [row] = await db
+      .insert(recoveryRequests)
+      .values({
+        userId: input.userId,
+        serviceType: input.serviceType,
+        notes: input.notes ?? null,
+      })
+      .returning();
+    return row;
+  }
+
+  async getRecoveryRequest(id: number): Promise<RecoveryRequest | undefined> {
+    const [row] = await db.select().from(recoveryRequests).where(eq(recoveryRequests.id, id));
+    return row;
+  }
+
+  async listRecoveryRequestsForUser(userId: number): Promise<RecoveryRequest[]> {
+    return db
+      .select()
+      .from(recoveryRequests)
+      .where(eq(recoveryRequests.userId, userId))
+      .orderBy(desc(recoveryRequests.createdAt));
+  }
+
+  async listRecoveryRequests(filters?: { status?: string }): Promise<RecoveryRequest[]> {
+    if (filters?.status) {
+      return db
+        .select()
+        .from(recoveryRequests)
+        .where(eq(recoveryRequests.status, filters.status))
+        .orderBy(desc(recoveryRequests.createdAt));
+    }
+    return db.select().from(recoveryRequests).orderBy(desc(recoveryRequests.createdAt));
+  }
+
+  async updateRecoveryRequest(
+    id: number,
+    patch: UpdateRecoveryRequest,
+  ): Promise<RecoveryRequest | undefined> {
+    const updates: any = { updatedAt: new Date() };
+    if (patch.status !== undefined) updates.status = patch.status;
+    if (patch.scheduledFor !== undefined) {
+      updates.scheduledFor = patch.scheduledFor ? new Date(patch.scheduledFor) : null;
+    }
+    if (patch.assignedAdminId !== undefined) updates.assignedAdminId = patch.assignedAdminId ?? null;
+    if (patch.notes !== undefined) updates.notes = patch.notes ?? null;
+    const [row] = await db
+      .update(recoveryRequests)
+      .set(updates)
+      .where(eq(recoveryRequests.id, id))
+      .returning();
+    return row;
   }
 }
 

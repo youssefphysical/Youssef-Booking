@@ -10,9 +10,11 @@ import {
   Camera,
   Settings as SettingsIcon,
   BarChart3,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { useFeatureFlag } from "@/lib/featureFlags";
 
 /**
  * AdminTabs — global top navigation strip for the entire /admin/*
@@ -63,12 +65,17 @@ const ADMIN_TABS: TabSpec[] = [
   // the right place (a client profile) without lying about destination.
   { href: "/admin/clients", labelKey: "admin.tabs.inbody", fallback: "InBody", icon: <Activity size={15} />, matches: () => false, hintKey: "admin.tabs.inbodyHint", hintFallback: "Open a client to manage InBody scans" },
   { href: "/admin/clients", labelKey: "admin.tabs.progress", fallback: "Progress", icon: <Camera size={15} />, matches: () => false, hintKey: "admin.tabs.progressHint", hintFallback: "Open a client to manage progress photos" },
+  { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
   { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
 
 export function AdminTabs() {
   const [location] = useLocation();
   const { t } = useTranslation();
+  const recoveryEnabled = useFeatureFlag("recovery_enabled", true);
+  const visibleTabs = ADMIN_TABS.filter(
+    (tab) => recoveryEnabled || tab.href !== "/admin/recovery",
+  );
 
   // Auto-scroll the active tab into view when the route changes.
   // `inline: "center"` on mobile keeps it visually centered when it
@@ -104,7 +111,7 @@ export function AdminTabs() {
       data-testid="admin-tabs"
     >
       <div className="flex gap-0.5 min-w-max">
-        {ADMIN_TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const active = tab.matches(location);
           const label = t(tab.labelKey, tab.fallback);
           return (

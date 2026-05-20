@@ -7388,6 +7388,164 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     },
   );
 
+  // ============== TASK #30 — Recovery + Agreements + Feature flags ==============
+  const { insertRecoveryRequestSchema, updateRecoveryRequestSchema, AGREEMENT_TYPES, AGREEMENT_VERSIONS, FEATURE_FLAG_DEFAULTS } = await import("@shared/schema");
+  const { z: zod } = await import("zod");
+
+  // Public read of feature flags (booleans only). Lets the client know if
+  // gated surfaces should render. Falls back to defaults when a key is unseen.
+  app.get("/api/feature-flags", async (_req, res) => {
+    try {
+      const rows = await storage.listFeatureFlags();
+      const map: Record<string, boolean> = { ...(FEATURE_FLAG_DEFAULTS as any) };
+      for (const r of rows) map[r.key] = r.enabled;
+      res.json(map);
+    } catch (err: any) {
+      console.error("[GET /api/feature-flags] failed", err);
+      res.json({ ...(FEATURE_FLAG_DEFAULTS as any) });
+    }
+  });
+
+  app.get("/api/agreements/versions", (_req, res) => {
+    res.json({ types: AGREEMENT_TYPES, versions: AGREEMENT_VERSIONS });
+  });
+
+  app.get("/api/agreements", requireAuth, async (req, res) => {
+    const uid = (req.user as any).id as number;
+    const rows = await storage.getUserAgreements(uid);
+    res.json(rows);
+  });
+
+  const acceptAgreementSchema = zod.object({
+    agreementType: zod.enum(AGREEMENT_TYPES),
+    version: zod.string().min(1).max(40),
+  });
+
+  app.post("/api/agreements", requireAuth, async (req, res) => {
+    const parsed = acceptAgreementSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid agreement payload", errors: parsed.error.flatten() });
+    }
+    const uid = (req.user as any).id as number;
+    // Prefer Express's `req.ip` (honors `trust proxy`); fall back to the
+    // first XFF hop only if it's missing. Never throw — store NULL.
+    let ip: string | null = null;
+    try {
+      if (req.ip) {
+        ip = req.ip;
+      } else {
+        const xff = req.headers["x-forwarded-for"];
+        const xffStr = Array.isArray(xff) ? xff[0] : (xff as string | undefined);
+        ip = xffStr?.split(",")[0]?.trim() || null;
+      }
+    } catch { ip = null; }
+    const ua = (req.headers["user-agent"] as string | undefined) ?? null;
+    try {
+      const row = await storage.recordAgreement({
+        userId: uid,
+        agreementType: parsed.data.agreementType,
+        version: parsed.data.version,
+        ip: ip ?? null,
+        userAgent: ua,
+      } as any);
+      res.status(201).json(row);
+    } catch (err: any) {
+      console.error("[POST /api/agreements] failed", err);
+      res.status(500).json({ message: "Failed to record agreement" });
+    }
+  });
+
+  // ----- Recovery requests -----
+  async function ensureRecoveryEnabled(res: Response): Promise<boolean> {
+    const on = await storage.isFeatureEnabled("recovery_enabled");
+    if (!on) {
+      res.status(404).json({ message: "Recovery module is disabled" });
+      return false;
+    }
+    return true;
+  }
+
+  app.get("/api/recovery-requests", requireAuth, async (req, res) => {
+    if (!(await ensureRecoveryEnabled(res))) return;
+    const u = req.user as any;
+    if (u.role === "admin") {
+      const status = typeof req.query.status === "string" ? (req.query.status as string) : undefined;
+      const rows = await storage.listRecoveryRequests(status ? { status } : undefined);
+      return res.json(rows);
+    }
+    const rows = await storage.listRecoveryRequestsForUser(u.id as number);
+    res.json(rows);
+  });
+
+  app.post("/api/recovery-requests", requireAuth, async (req, res) => {
+    if (!(await ensureRecoveryEnabled(res))) return;
+    const parsed = insertRecoveryRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid recovery request", errors: parsed.error.flatten() });
+    }
+    const uid = (req.user as any).id as number;
+    try {
+      const row = await storage.createRecoveryRequest({
+        userId: uid,
+        serviceType: parsed.data.serviceType,
+        notes: parsed.data.notes ?? null,
+      } as any);
+      // Best-effort audit (admin queue context). Failure is swallowed —
+      // the client write must always succeed.
+      try {
+        await storage.recordAuditLog({
+          action: "recovery_request.create",
+          entityType: "recovery_request",
+          entityId: row.id,
+          newValue: { serviceType: row.serviceType, status: row.status } as any,
+          performedByUserId: uid,
+        } as any);
+      } catch {/* ignore */}
+      res.status(201).json(row);
+    } catch (err: any) {
+      console.error("[POST /api/recovery-requests] failed", err);
+      res.status(500).json({ message: "Failed to create recovery request" });
+    }
+  });
+
+  app.patch("/api/admin/recovery-requests/:id", requireAdmin, async (req, res) => {
+    if (!(await ensureRecoveryEnabled(res))) return;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const parsed = updateRecoveryRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    }
+    const existing = await storage.getRecoveryRequest(id);
+    if (!existing) return res.status(404).json({ message: "Recovery request not found" });
+    const adminId = (req.user as any).id as number;
+    const patch: any = { ...parsed.data };
+    // If admin is transitioning to scheduled but didn't claim it, assign to themselves.
+    if (parsed.data.status === "scheduled" && existing.assignedAdminId == null && patch.assignedAdminId == null) {
+      patch.assignedAdminId = adminId;
+    }
+    const updated = await storage.updateRecoveryRequest(id, patch);
+    try {
+      await storage.recordAuditLog({
+        action: "recovery_request.update",
+        entityType: "recovery_request",
+        entityId: id,
+        previousValue: {
+          status: existing.status,
+          scheduledFor: existing.scheduledFor,
+          assignedAdminId: existing.assignedAdminId,
+        } as any,
+        newValue: {
+          status: updated?.status,
+          scheduledFor: updated?.scheduledFor,
+          assignedAdminId: updated?.assignedAdminId,
+        } as any,
+        performedByUserId: adminId,
+      } as any);
+    } catch {/* ignore */}
+    res.json(updated);
+  });
+
   // ============== SEED ==============
   await seedDatabase();
 

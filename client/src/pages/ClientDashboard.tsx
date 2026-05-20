@@ -123,7 +123,36 @@ import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
 import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
-import { Pill, LineChart as LineChartIcon } from "lucide-react";
+import { Pill, LineChart as LineChartIcon, HeartPulse } from "lucide-react";
+import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
+import { useFeatureFlag } from "@/lib/featureFlags";
+
+function RecoveryDashboardTile() {
+  const { t } = useTranslation();
+  const enabled = useFeatureFlag("recovery_enabled", true);
+  if (!enabled) return null;
+  return (
+    <Link
+      href="/recovery"
+      className="block mb-4 rounded-2xl border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.05] to-transparent p-4 hover:border-cyan-400/40 transition-colors"
+      data-testid="tile-recovery"
+    >
+      <div className="flex items-center gap-3">
+        <div className="size-10 shrink-0 rounded-xl bg-cyan-500/10 grid place-items-center text-cyan-300">
+          <HeartPulse size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-300/80 font-semibold">
+            {t("recovery.eyebrow", "Recovery & Mobility")}
+          </p>
+          <p className="text-sm text-foreground/80 truncate">
+            {t("recovery.title", "Move better. Recover faster.")}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 function currentMonthKey() {
   const d = new Date();
@@ -202,6 +231,7 @@ export default function ClientDashboard() {
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
       <ProfileHero user={user} />
+      <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />
 
       <TodayHero name={user.fullName} />
@@ -752,6 +782,9 @@ function BookingCard({
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="px-1 pb-1">
+            <AgreementDisclaimer type="emergency_cancel_policy" />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-protected">{t("dashboard.notNow")}</AlertDialogCancel>
             <AlertDialogAction

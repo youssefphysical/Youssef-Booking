@@ -704,6 +704,20 @@ async function run(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS agreements_user_type_version_uq
       ON agreements (user_id, agreement_type, version);
 
+    CREATE TABLE IF NOT EXISTS recovery_requests (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      service_type text NOT NULL,
+      notes text,
+      status text NOT NULL DEFAULT 'pending',
+      scheduled_for timestamp,
+      assigned_admin_id integer REFERENCES users(id),
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS recovery_requests_user_idx ON recovery_requests (user_id);
+    CREATE INDEX IF NOT EXISTS recovery_requests_status_idx ON recovery_requests (status);
+
     CREATE TABLE IF NOT EXISTS feature_flags (
       id serial PRIMARY KEY,
       key text NOT NULL UNIQUE,

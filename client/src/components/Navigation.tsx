@@ -26,11 +26,13 @@ import {
   AdminMobileBottomSpacer,
 } from "@/components/admin/AdminNavigation";
 import { useTranslation } from "@/i18n";
+import { useFeatureFlag } from "@/lib/featureFlags";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
   const { user, isLoading: authLoading, logoutMutation } = useAuth();
   const { t } = useTranslation();
+  const recoveryEnabled = useFeatureFlag("recovery_enabled", true);
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -236,6 +238,9 @@ export function Navigation() {
           <TopNavLink href="/" label={t("nav.home")} testKey="home" active={location === "/"} />
           <TopNavLink href="/book" label={t("nav.book")} testKey="book" active={location === "/book"} />
           <TopNavLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" active={location === "/how-it-works"} />
+          {recoveryEnabled && (
+            <TopNavLink href="/recovery" label={t("nav.recovery", "Recovery")} testKey="recovery" active={location === "/recovery"} />
+          )}
           <TopNavLink href="/policy" label={t("nav.policy")} testKey="policy" active={location === "/policy"} />
           {user?.role === "client" && (
             <TopNavLink href="/dashboard" label={t("nav.mySessions")} testKey="my-sessions" active={location.startsWith("/dashboard")} />
@@ -405,6 +410,9 @@ export function Navigation() {
             <MobileLink href="/" label={t("nav.home")} testKey="home" icon={<Home size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/book" label={t("nav.book")} testKey="book" icon={<Calendar size={16} />} onClose={() => setOpen(false)} />
             <MobileLink href="/how-it-works" label={t("nav.howItWorks")} testKey="how-it-works" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            {recoveryEnabled && (
+              <MobileLink href="/recovery" label={t("nav.recovery", "Recovery")} testKey="recovery" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
+            )}
             <MobileLink href="/policy" label={t("nav.policy")} testKey="policy" icon={<SettingsIcon size={16} />} onClose={() => setOpen(false)} />
             {user?.role === "client" && (
               <>

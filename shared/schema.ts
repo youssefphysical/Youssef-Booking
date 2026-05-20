@@ -575,6 +575,60 @@ export const featureFlags = pgTable("feature_flags", {
   updatedByUserId: integer("updated_by_user_id").references(() => users.id),
 });
 
+// =============================
+// RECOVERY REQUESTS (Task #30)
+// =============================
+// Request-driven service for Stretching / Mobility / Movement Recovery.
+// Not a paid package — purely a queue of client asks that the admin
+// schedules + completes manually. Status transitions are mirrored to
+// admin_audit_log via the route handlers.
+export const RECOVERY_SERVICE_TYPES = ["stretching", "mobility", "movement_recovery"] as const;
+export type RecoveryServiceType = (typeof RECOVERY_SERVICE_TYPES)[number];
+
+export const RECOVERY_REQUEST_STATUSES = ["pending", "scheduled", "completed", "archived"] as const;
+export type RecoveryRequestStatus = (typeof RECOVERY_REQUEST_STATUSES)[number];
+
+export const recoveryRequests = pgTable("recovery_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  serviceType: text("service_type").notNull(),
+  notes: text("notes"),
+  status: text("status").notNull().default("pending"),
+  scheduledFor: timestamp("scheduled_for"),
+  assignedAdminId: integer("assigned_admin_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRecoveryRequestSchema = createInsertSchema(recoveryRequests)
+  .omit({ id: true, createdAt: true, updatedAt: true, status: true, scheduledFor: true, assignedAdminId: true })
+  .extend({
+    serviceType: z.enum(RECOVERY_SERVICE_TYPES),
+    notes: z.string().max(2000).nullish(),
+  });
+
+export const updateRecoveryRequestSchema = z.object({
+  status: z.enum(RECOVERY_REQUEST_STATUSES).optional(),
+  scheduledFor: z.union([z.string().datetime(), z.null()]).optional(),
+  assignedAdminId: z.number().int().nullish(),
+  notes: z.string().max(2000).nullish(),
+});
+
+export type RecoveryRequest = typeof recoveryRequests.$inferSelect;
+export type InsertRecoveryRequest = z.infer<typeof insertRecoveryRequestSchema>;
+export type UpdateRecoveryRequest = z.infer<typeof updateRecoveryRequestSchema>;
+
+// Current agreement versions. Bump these to force re-acceptance.
+export const AGREEMENT_VERSIONS: Record<AgreementType, string> = {
+  training_waiver: "1",
+  nutrition_disclaimer: "1",
+  recovery_disclaimer: "1",
+  cancellation_policy: "1",
+  emergency_cancel_policy: "1",
+  privacy_policy: "1",
+  media_consent: "1",
+};
+
 export const insertFeatureFlagSchema = createInsertSchema(featureFlags)
   .omit({ id: true, updatedAt: true })
   .extend({
