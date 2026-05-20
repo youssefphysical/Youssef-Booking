@@ -9,9 +9,16 @@ import {
   Users,
   Sparkles,
   CheckCircle2,
+  ShieldCheck,
+  X as XIcon,
+  Loader2,
 } from "lucide-react";
 import { usePackages } from "@/hooks/use-packages";
 import { useClients } from "@/hooks/use-clients";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -120,6 +127,8 @@ export default function AdminPackages() {
             testId="stat-pkgs-closed"
           />
         </div>
+
+        <VerificationQueue />
 
         <AdminCard padded={false} className="p-3 sm:p-4">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -280,6 +289,133 @@ export default function AdminPackages() {
         )}
       </div>
     </div>
+  );
+}
+
+function VerificationQueue() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { data: items = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/package-verification-requests"],
+  });
+  const decide = useMutation({
+    mutationFn: async ({ id, body }: { id: number; body: any }) => {
+      const r = await apiRequest(
+        "PATCH",
+        `/api/admin/package-verification-requests/${id}`,
+        body,
+      );
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/package-verification-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/packages"] });
+    },
+    onError: (e: any) => toast({ title: e?.message || "Failed", variant: "destructive" }),
+  });
+
+  if (isLoading) return null;
+  if (!items.length) return null;
+
+  return (
+    <AdminCard padded={false} className="p-4 sm:p-5 border-cyan-500/30 bg-cyan-500/[0.04]">
+      <div className="flex items-center gap-2 mb-3">
+        <ShieldCheck size={16} className="text-primary" />
+        <h2 className="text-sm font-semibold" data-testid="text-verification-queue-title">
+          {t("admin.verifications.title", "Package verification queue")}
+        </h2>
+        <span className="ms-auto text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3" data-testid="grid-verification-queue">
+        {items.map((row: any) => {
+          const payload = row.verificationRequestPayload || {};
+          return (
+            <div
+              key={row.id}
+              className="rounded-xl border border-white/10 bg-card/60 p-3 sm:p-4"
+              data-testid={`row-verification-${row.id}`}
+            >
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">
+                    {row.user?.fullName || t("admin.packagesPage.unknown")}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {row.user?.email} · {payload.requestedType || row.type}
+                    {payload.purchaseDate ? ` · ${payload.purchaseDate}` : ""}
+                  </p>
+                  {payload.notes && (
+                    <p className="text-xs mt-1 text-muted-foreground italic">"{payload.notes}"</p>
+                  )}
+                </div>
+                {row.verificationAttachments && (
+                  <a
+                    href={row.verificationAttachments}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-primary hover:underline shrink-0"
+                    data-testid={`link-receipt-${row.id}`}
+                  >
+                    {t("admin.verifications.viewReceipt", "View receipt")} →
+                  </a>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const sessionsStr = window.prompt(
+                      t("admin.verifications.promptSessions", "Total sessions to grant:"),
+                      String(row.totalSessions || 10),
+                    );
+                    if (sessionsStr === null) return;
+                    const total = Number(sessionsStr);
+                    if (!Number.isFinite(total) || total <= 0) return;
+                    const expiry = window.prompt(
+                      t("admin.verifications.promptExpiry", "Expiry date (YYYY-MM-DD), blank = +60 days:"),
+                      "",
+                    );
+                    decide.mutate({
+                      id: row.id,
+                      body: {
+                        decision: "approve",
+                        totalSessions: total,
+                        expiryDate: expiry || undefined,
+                      },
+                    });
+                  }}
+                  disabled={decide.isPending}
+                  data-testid={`button-approve-verification-${row.id}`}
+                >
+                  {decide.isPending ? <Loader2 size={12} className="animate-spin mr-1" /> : <CheckCircle2 size={12} className="mr-1" />}
+                  {t("admin.verifications.approve", "Approve")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const note = window.prompt(
+                      t("admin.verifications.promptReject", "Reason (sent to client):"),
+                      "",
+                    );
+                    if (note === null) return;
+                    decide.mutate({
+                      id: row.id,
+                      body: { decision: "reject", note: note || undefined },
+                    });
+                  }}
+                  disabled={decide.isPending}
+                  data-testid={`button-reject-verification-${row.id}`}
+                >
+                  <XIcon size={12} className="mr-1" />
+                  {t("admin.verifications.reject", "Reject")}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </AdminCard>
   );
 }
 

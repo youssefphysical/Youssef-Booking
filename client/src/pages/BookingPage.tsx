@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { TrainingLocation } from "@shared/schema";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
@@ -123,6 +125,20 @@ export default function BookingPage() {
   const { data: settings } = useSettings();
   const { data: existing = [] } = useBookings({ from: dubaiTodayYMD() });
   const { data: packages = [] } = usePackages({ userId: user?.id });
+  // Task #28: route brand-new clients (no active package + no saved
+  // training-location row) through the post-signup wizard before they
+  // can see the booking grid. Legacy users with an active package or a
+  // saved location bypass this gate.
+  const { data: trainingLocations = [], isLoading: locLoading } = useQuery<TrainingLocation[]>({
+    queryKey: ["/api/training-locations"],
+    enabled: !!user && user.role === "client",
+  });
+  const anyActivePkg = (packages as Package[]).some((p) => p.isActive && p.usedSessions < p.totalSessions);
+  const needsWizard =
+    !!user && user.role === "client" && !locLoading && trainingLocations.length === 0 && !anyActivePkg;
+  useEffect(() => {
+    if (needsWizard) navigate("/wizard");
+  }, [needsWizard, navigate]);
 
   const isAdmin = user?.role === "admin";
   const hasUsedFreeTrial = !!user?.hasUsedFreeTrial;

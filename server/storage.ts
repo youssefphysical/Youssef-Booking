@@ -353,6 +353,12 @@ export interface IStorage {
     userId: number | null,
   ): Promise<FeatureFlag>;
   getUserTrainingLocations(userId: number): Promise<TrainingLocation[]>;
+  getTrainingLocation(id: number): Promise<TrainingLocation | undefined>;
+  createTrainingLocation(input: any): Promise<TrainingLocation>;
+  updateTrainingLocation(id: number, patch: Partial<TrainingLocation>): Promise<TrainingLocation | undefined>;
+  archiveTrainingLocation(id: number): Promise<void>;
+  getPendingVerificationPackages(): Promise<Package[]>;
+  getUserPendingVerificationPackages(userId: number): Promise<Package[]>;
   recordAgreement(input: InsertAgreement): Promise<Agreement>;
 
   // ===== Nutrition OS — Phase 2: Food Library =====
@@ -2515,6 +2521,84 @@ export class DatabaseStorage implements IStorage {
         ),
       )
       .orderBy(desc(trainingLocations.isDefault), asc(trainingLocations.id));
+  }
+
+  async getTrainingLocation(id: number): Promise<TrainingLocation | undefined> {
+    const [row] = await db.select().from(trainingLocations).where(eq(trainingLocations.id, id));
+    return row;
+  }
+
+  async createTrainingLocation(input: any): Promise<TrainingLocation> {
+    // If this is being marked as the default, demote any existing defaults
+    // for the same user so the (user_id, is_default=true) invariant is
+    // preserved as a soft business rule even without a partial unique index.
+    if (input.isDefault && input.userId) {
+      await db
+        .update(trainingLocations)
+        .set({ isDefault: false })
+        .where(
+          and(
+            eq(trainingLocations.userId, input.userId),
+            eq(trainingLocations.isDefault, true),
+          ),
+        );
+    }
+    const [row] = await db.insert(trainingLocations).values(input).returning();
+    return row;
+  }
+
+  async updateTrainingLocation(
+    id: number,
+    patch: Partial<TrainingLocation>,
+  ): Promise<TrainingLocation | undefined> {
+    if (patch.isDefault) {
+      const existing = await this.getTrainingLocation(id);
+      if (existing) {
+        await db
+          .update(trainingLocations)
+          .set({ isDefault: false })
+          .where(
+            and(
+              eq(trainingLocations.userId, existing.userId),
+              eq(trainingLocations.isDefault, true),
+            ),
+          );
+      }
+    }
+    const [row] = await db
+      .update(trainingLocations)
+      .set(patch as any)
+      .where(eq(trainingLocations.id, id))
+      .returning();
+    return row;
+  }
+
+  async archiveTrainingLocation(id: number): Promise<void> {
+    await db
+      .update(trainingLocations)
+      .set({ archivedAt: new Date() })
+      .where(eq(trainingLocations.id, id));
+  }
+
+  async getPendingVerificationPackages(): Promise<Package[]> {
+    return db
+      .select()
+      .from(packages)
+      .where(eq(packages.status, "pending_verification"))
+      .orderBy(desc(packages.purchasedAt));
+  }
+
+  async getUserPendingVerificationPackages(userId: number): Promise<Package[]> {
+    return db
+      .select()
+      .from(packages)
+      .where(
+        and(
+          eq(packages.userId, userId),
+          eq(packages.status, "pending_verification"),
+        ),
+      )
+      .orderBy(desc(packages.purchasedAt));
   }
 
   async recordAgreement(input: InsertAgreement): Promise<Agreement> {

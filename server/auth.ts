@@ -338,7 +338,6 @@ export function setupAuth(app: Express) {
         primaryGoal,
         notes,
         weeklyFrequency,
-        packageTemplateId,
       } = parsed.data;
 
       const existingByEmail = await storage.getUserByEmail(email);
@@ -403,72 +402,19 @@ export function setupAuth(app: Express) {
         console.warn("[auth] Failed to write consent record:", e);
       }
 
-      // Snapshot the client-selected package template into a packages row.
-      // The package is immediately active and bookable. Payment is tracked
-      // (paymentStatus='unpaid') for the trainer to confirm via the admin
-      // panel, but it does NOT block booking.
-      let snapshotPkgId: number | null = null;
-      if (!isSuperAdminSignup && packageTemplateId) {
-        try {
-          const tpl = await storage.getPackageTemplate(packageTemplateId);
-          if (tpl && tpl.isActive !== false) {
-            const days =
-              tpl.expirationUnit === "months"
-                ? (tpl.expirationValue ?? 0) * 30
-                : tpl.expirationUnit === "weeks"
-                ? (tpl.expirationValue ?? 0) * 7
-                : tpl.expirationValue ?? 0;
-            const startDate = new Date();
-            const expiryDate = days > 0 ? new Date(startDate.getTime() + days * 86_400_000) : null;
-            const created = await storage.createPackage({
-              userId: user.id,
-              type: tpl.type as any,
-              totalSessions: tpl.totalSessions,
-              usedSessions: 0,
-              isActive: true,
-              templateId: tpl.id,
-              name: tpl.name,
-              paidSessions: tpl.paidSessions,
-              bonusSessions: tpl.bonusSessions,
-              pricePerSession: tpl.pricePerSession,
-              totalPrice: tpl.totalPrice,
-              startDate: startDate.toISOString().slice(0, 10) as any,
-              expiryDate: expiryDate ? (expiryDate.toISOString().slice(0, 10) as any) : null,
-              paymentStatus: "unpaid",
-              paymentApproved: false,
-              adminApproved: true,
-              frozen: false,
-            } as any);
-            snapshotPkgId = created.id;
-            try {
-              await storage.createPackageSessionHistory({
-                packageId: created.id,
-                userId: user.id,
-                action: "package_created",
-                bookingId: null as any,
-                sessionsDelta: tpl.totalSessions,
-                performedByUserId: user.id,
-                reason: `Client signup — selected "${tpl.name}"`,
-              } as any);
-            } catch (e) {
-              console.warn("[auth] session history log failed:", e);
-            }
-          }
-        } catch (e) {
-          console.warn("[auth] package snapshot failed:", e);
-        }
-      }
+      // Task #28: package selection happens AFTER signup via the
+      // training-location wizard. No package row is created here — the
+      // wizard either captures a reusable Location Profile (Home / Other
+      // Gym) or submits a Package Verification Request (Fitness Zone)
+      // which becomes a pending_verification package.
+      const snapshotPkgId: number | null = null;
 
-      // Notify the trainer that a new client signed up so they can confirm
-      // payment / review the chosen package. Booking is NOT gated on this.
       if (!isSuperAdminSignup) {
         try {
           await storage.createAdminNotification({
             kind: "system",
             title: `New client signup — ${user.fullName}`,
-            body: snapshotPkgId
-              ? `Selected a package on signup — confirm payment when received.`
-              : `New client registered without selecting a package.`,
+            body: `New client registered. Awaiting training-location wizard.`,
             userId: user.id,
             bookingId: null as any,
           } as any);
@@ -490,18 +436,8 @@ export function setupAuth(app: Express) {
       // total signup latency stays bounded by the slower of the two
       // (≈300–800 ms, not 2×). Each call is internally try/catched
       // and never throws; allSettled is belt-and-braces.
-      let pkgInfo: { name: string | null; price: number | null } = { name: null, price: null };
-      if (!isSuperAdminSignup && snapshotPkgId) {
-        try {
-          const pkg = await storage.getPackage(snapshotPkgId);
-          if (pkg) {
-            pkgInfo = {
-              name: (pkg as any).name ?? `${pkg.type} (${pkg.totalSessions} sessions)`,
-              price: (pkg as any).totalPrice ?? null,
-            };
-          }
-        } catch { /* ignore */ }
-      }
+      const pkgInfo: { name: string | null; price: number | null } = { name: null, price: null };
+      void snapshotPkgId;
       const notifyStartedAt = Date.now();
       const tasks: Promise<unknown>[] = [
         sendWelcomeNotifications({

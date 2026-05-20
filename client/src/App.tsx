@@ -59,6 +59,7 @@ const AdminSupplementStacks = lazy(() => import("@/pages/AdminSupplementStacks")
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
+const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 
 function ProtectedRoute({
   component: Component,
@@ -158,6 +159,9 @@ function Router() {
           <Route path="/direct-payment" component={DirectPaymentPage} />
 
           {/* Client */}
+          <Route path="/wizard">
+            <ProtectedRoute component={TrainingLocationWizard} clientOnly />
+          </Route>
           <Route path="/book">
             <ProtectedRoute component={BookingPage} />
           </Route>

@@ -72,6 +72,10 @@ import {
   adjustPackageSessionsSchema,
   expirationToDays,
   approvePackageSchema,
+  insertTrainingLocationSchema,
+  packageVerificationRequestSchema,
+  packageVerificationDecisionSchema,
+  TRAINING_LOCATION_KINDS,
   evaluateBookingEligibility,
   CLIENT_STATUSES,
   PACKAGE_DEFINITIONS,
@@ -1690,6 +1694,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           "You don't have an active package linked to this booking. Request a new package or contact support through the platform.",
         code: "no_active_package",
       });
+    }
+
+    // Task #28: block bookings when the client's only package is
+    // awaiting Fitness Zone verification. Admin overrides bypass this
+    // — admins can place catch-up bookings on the client's behalf.
+    if (me.role !== "admin" && (sessionType === "package" || sessionType === "duo")) {
+      try {
+        const pending = await storage.getUserPendingVerificationPackages(targetUserId);
+        const linkedActive = packageId
+          ? await storage.getPackage(packageId).catch(() => undefined)
+          : null;
+        const hasUsableActive = !!(linkedActive && linkedActive.isActive && linkedActive.status !== "pending_verification");
+        if (pending.length > 0 && !hasUsableActive) {
+          return res.status(400).json({
+            message:
+              "Your package is awaiting verification. You'll be able to book once approved.",
+            code: "pending_verification",
+          });
+        }
+      } catch (e) {
+        console.warn("[bookings] pending-verification gate failed:", e);
+      }
     }
 
     // Block bookings on expired or completed packages (clients only).
@@ -4250,6 +4276,252 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch {/* ignore */}
     res.json(updated);
   });
+
+  // =====================================================================
+  // Task #28 — TRAINING LOCATIONS (post-signup wizard)
+  // =====================================================================
+  // A client's Location Profile (Fitness Zone / Home / Other Gym).
+  // Multiple rows allowed; one is `isDefault=true`. Wizard creates the
+  // first row on first /book or /dashboard/package visit.
+  app.get("/api/training-locations", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const targetUserId =
+      me.role === "admin" && req.query.userId
+        ? Number(req.query.userId)
+        : me.id;
+    const rows = await storage.getUserTrainingLocations(targetUserId);
+    res.json(rows);
+  });
+
+  app.post("/api/training-locations", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const targetUserId =
+      me.role === "admin" && req.body?.userId
+        ? Number(req.body.userId)
+        : me.id;
+    const parsed = insertTrainingLocationSchema.safeParse({
+      ...req.body,
+      userId: targetUserId,
+    });
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid location" });
+    }
+    const created = await storage.createTrainingLocation(parsed.data);
+    res.status(201).json(created);
+  });
+
+  app.patch("/api/training-locations/:id", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    const existing = await storage.getTrainingLocation(id);
+    if (!existing) return res.status(404).json({ message: "Not found" });
+    if (me.role !== "admin" && existing.userId !== me.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const allowed = (({
+      kind,
+      label,
+      address,
+      buildingName,
+      roomNumber,
+      parkingNotes,
+      equipmentNotes,
+      gymName,
+      guestAccess,
+      accessNotes,
+      isDefault,
+      archivedAt,
+    }: any) => ({
+      ...(kind !== undefined && { kind }),
+      ...(label !== undefined && { label }),
+      ...(address !== undefined && { address }),
+      ...(buildingName !== undefined && { buildingName }),
+      ...(roomNumber !== undefined && { roomNumber }),
+      ...(parkingNotes !== undefined && { parkingNotes }),
+      ...(equipmentNotes !== undefined && { equipmentNotes }),
+      ...(gymName !== undefined && { gymName }),
+      ...(guestAccess !== undefined && { guestAccess }),
+      ...(accessNotes !== undefined && { accessNotes }),
+      ...(isDefault !== undefined && { isDefault: Boolean(isDefault) }),
+      ...(me.role === "admin" && archivedAt !== undefined ? { archivedAt } : {}),
+    }))(req.body || {});
+    if (allowed.kind && !TRAINING_LOCATION_KINDS.includes(allowed.kind)) {
+      return res.status(400).json({ message: "Invalid training-location kind" });
+    }
+    const updated = await storage.updateTrainingLocation(id, allowed as any);
+    res.json(updated);
+  });
+
+  // =====================================================================
+  // Task #28 — PACKAGE VERIFICATION REQUESTS (Fitness Zone clients)
+  // =====================================================================
+  // Client submits a receipt; server stamps a `packages` row with
+  // status='pending_verification'. Admin approves/rejects from the
+  // verification queue, which sets status='active' (or 'archived').
+  app.post("/api/package-verification-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const parsed = packageVerificationRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    // Disallow stacking: a client may only have ONE pending verification
+    // outstanding at a time. They can resubmit after admin decides.
+    const existingPending = await storage.getUserPendingVerificationPackages(me.id);
+    if (existingPending.length > 0) {
+      return res.status(409).json({
+        message:
+          "You already have a package verification request in review. Please wait for Youssef's reply.",
+        code: "verification_already_pending",
+      });
+    }
+    const guessedSessions =
+      parsed.data.requestedType === "ten"
+        ? 10
+        : parsed.data.requestedType === "twenty"
+          ? 20
+          : parsed.data.requestedType === "twentyfive"
+            ? 25
+            : parsed.data.requestedType === "duo30"
+              ? 30
+              : 0;
+    const created = await storage.createPackage({
+      userId: me.id,
+      type: parsed.data.requestedType === "duo30" ? "duo" : "standard",
+      totalSessions: Math.max(guessedSessions, 1),
+      usedSessions: 0,
+      isActive: false,
+      status: "pending_verification" as any,
+      source: "fitness_zone",
+      paymentSource: "paid_via_fitness_zone",
+      paymentStatus: "complimentary",
+      paymentApproved: false,
+      adminApproved: false,
+      frozen: false,
+      verificationAttachments: parsed.data.receiptDataUrl,
+      verificationRequestPayload: {
+        requestedType: parsed.data.requestedType,
+        purchaseDate: parsed.data.purchaseDate,
+        notes: parsed.data.notes ?? null,
+        submittedAt: new Date().toISOString(),
+      } as any,
+    } as any);
+    try {
+      await storage.createAdminNotification({
+        kind: "system",
+        title: `Package verification request — ${me.fullName}`,
+        body: `Fitness Zone client submitted a receipt awaiting review.`,
+        userId: me.id,
+        bookingId: null as any,
+      } as any);
+    } catch (e) {
+      console.warn("[verification] admin notification failed:", e);
+    }
+    res.status(201).json(created);
+  });
+
+  app.get(
+    "/api/admin/package-verification-requests",
+    requireAdmin,
+    async (_req, res) => {
+      const rows = await storage.getPendingVerificationPackages();
+      const out: any[] = [];
+      for (const r of rows) {
+        const u = await storage.getUser(r.userId);
+        out.push({ ...r, user: u ? sanitizeUser(u) : null });
+      }
+      res.json(out);
+    },
+  );
+
+  app.patch(
+    "/api/admin/package-verification-requests/:id",
+    requireAdmin,
+    async (req, res) => {
+      const id = Number(req.params.id);
+      const parsed = packageVerificationDecisionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ message: parsed.error.errors[0]?.message || "Invalid decision" });
+      }
+      const pkg = await storage.getPackage(id);
+      if (!pkg) return res.status(404).json({ message: "Request not found" });
+      if (pkg.status !== "pending_verification") {
+        return res.status(409).json({ message: "Request is no longer pending" });
+      }
+      const me = req.user as User;
+      if (parsed.data.decision === "approve") {
+        const startDate = new Date();
+        const total = parsed.data.totalSessions ?? pkg.totalSessions;
+        const bonus = parsed.data.bonusSessions ?? pkg.bonusSessions ?? 0;
+        const expiry = parsed.data.expiryDate
+          ? new Date(parsed.data.expiryDate)
+          : new Date(startDate.getTime() + 60 * 86_400_000);
+        const updated = await storage.updatePackage(id, {
+          name: parsed.data.name ?? pkg.name ?? "Fitness Zone Package",
+          totalSessions: total,
+          bonusSessions: bonus,
+          paidSessions: total - (bonus ?? 0),
+          startDate: startDate.toISOString().slice(0, 10) as any,
+          expiryDate: expiry.toISOString().slice(0, 10) as any,
+          status: "active" as any,
+          isActive: true,
+          adminApproved: true,
+          adminApprovedAt: new Date(),
+          adminApprovedByUserId: me.id,
+          verifiedByAdminId: me.id,
+          verifiedAt: new Date(),
+        } as any);
+        try {
+          await storage.createPackageSessionHistory({
+            packageId: id,
+            userId: pkg.userId,
+            action: "package_approved",
+            sessionsDelta: total,
+            performedByUserId: me.id,
+            reason: parsed.data.note ?? "Fitness Zone verification approved",
+          } as any);
+        } catch {/* ignore */}
+        void notifyUserOnce(
+          pkg.userId,
+          "system",
+          `verify-approve-${id}`,
+          "Your package is approved",
+          "Your Fitness Zone package has been verified. You can book sessions now.",
+        );
+        return res.json(updated);
+      }
+      // Reject
+      const updated = await storage.updatePackage(id, {
+        status: "archived" as any,
+        isActive: false,
+        notes: parsed.data.note ?? "Verification rejected",
+      } as any);
+      try {
+        await storage.createPackageSessionHistory({
+          packageId: id,
+          userId: pkg.userId,
+          action: "package_rejected",
+          sessionsDelta: 0,
+          performedByUserId: me.id,
+          reason: parsed.data.note ?? "Verification rejected",
+        } as any);
+      } catch {/* ignore */}
+      void notifyUserOnce(
+        pkg.userId,
+        "system",
+        `verify-reject-${id}`,
+        "Package verification needs attention",
+        parsed.data.note ??
+          "Youssef couldn't verify your Fitness Zone receipt. Please re-submit or contact him via WhatsApp.",
+      );
+      res.json(updated);
+    },
+  );
 
   // Read the audit trail for a single client (used by the Sessions tab).
   // P4e: Activity feed (admin scoping a specific client).

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Calendar,
   Lock,
@@ -138,6 +138,28 @@ function todayDateString() {
 export default function ClientDashboard() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const [, dashNavigate] = useLocation();
+  // Task #28: first-time wizard gate. Brand-new clients (no saved
+  // training location AND no active package) are bounced to /wizard
+  // so they capture where they train before the dashboard renders.
+  // Legacy users with active packages bypass this entirely.
+  const { data: dashTrainingLocations = [], isLoading: dashLocLoading } = useQuery<any[]>({
+    queryKey: ["/api/training-locations"],
+    enabled: !!user && user.role === "client",
+  });
+  const { data: dashPackages = [] } = usePackages({ userId: user?.id });
+  const dashHasActive = (dashPackages as any[]).some(
+    (p) => p.isActive && p.usedSessions < p.totalSessions,
+  );
+  const dashNeedsWizard =
+    !!user &&
+    user.role === "client" &&
+    !dashLocLoading &&
+    dashTrainingLocations.length === 0 &&
+    !dashHasActive;
+  useEffect(() => {
+    if (dashNeedsWizard) dashNavigate("/wizard");
+  }, [dashNeedsWizard, dashNavigate]);
 
   // Phase 1 luxury redesign (May 2026): controlled tabs so the new
   // QuickActionsGrid + PackageStatusHero can deep-link into the right
@@ -1921,6 +1943,33 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
   const { data: packages = [] } = usePackages({ userId });
   const list = packages as any[];
   const activePackage = list.find((p) => p.isActive && p.usedSessions < p.totalSessions);
+  const pendingVerif = list.find((p: any) => p.status === "pending_verification");
+  if (pendingVerif) {
+    return (
+      <div
+        className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
+        data-testid="banner-pending-verification"
+      >
+        <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-cyan-100">
+            {t("dashboard.verification.title", "Package awaiting verification")}
+          </p>
+          <p className="text-xs text-cyan-200/90 mt-1">
+            {t(
+              "dashboard.verification.body",
+              "Youssef is reviewing your Fitness Zone receipt. You'll be able to book once your package is activated.",
+            )}
+          </p>
+          <ol className="mt-3 space-y-1 text-xs text-cyan-100/90">
+            <li>1. {t("wizard.next.review", "Coach review")}</li>
+            <li>2. {t("wizard.next.activation", "Package activation")}</li>
+            <li>3. {t("wizard.next.book", "Book your sessions")}</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
   const verdict = evaluateBookingEligibility(user, activePackage ?? null);
   if (verdict.ok) return null;
   return (

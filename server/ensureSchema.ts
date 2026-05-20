@@ -631,7 +631,9 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS verified_at timestamp,
       ADD COLUMN IF NOT EXISTS freeze_start_date date,
       ADD COLUMN IF NOT EXISTS freeze_end_date date,
-      ADD COLUMN IF NOT EXISTS freeze_reason text;
+      ADD COLUMN IF NOT EXISTS freeze_reason text,
+      ADD COLUMN IF NOT EXISTS verification_attachments text,
+      ADD COLUMN IF NOT EXISTS verification_request_payload jsonb;
 
     ALTER TABLE IF EXISTS users
       ADD COLUMN IF NOT EXISTS lead_status text,

@@ -263,6 +263,12 @@ export const packages = pgTable("packages", {
   freezeStartDate: date("freeze_start_date"),
   freezeEndDate: date("freeze_end_date"),
   freezeReason: text("freeze_reason"),
+  // Task #28 — base64 data-url receipt(s) uploaded with a Fitness Zone
+  // package verification request. Stored on the same row that ultimately
+  // becomes the active package once admin approves.
+  verificationAttachments: text("verification_attachments"),
+  // Original request payload (requested type, purchase date, notes etc.).
+  verificationRequestPayload: jsonb("verification_request_payload"),
 });
 
 // =============================
@@ -330,6 +336,46 @@ export const insertTrainingLocationSchema = createInsertSchema(trainingLocations
 
 export type TrainingLocation = typeof trainingLocations.$inferSelect;
 export type InsertTrainingLocation = z.infer<typeof insertTrainingLocationSchema>;
+
+// Task #28 — Package Verification Request submitted by a Fitness Zone client.
+// Server creates a `packages` row with status='pending_verification' from
+// this payload. NO price / payment fields — Fitness Zone handles billing
+// off-platform and Youssef only verifies that the client paid them.
+export const PACKAGE_VERIFICATION_TYPES = [
+  "ten",
+  "twenty",
+  "twentyfive",
+  "duo30",
+  "not_sure",
+] as const;
+export type PackageVerificationType = (typeof PACKAGE_VERIFICATION_TYPES)[number];
+
+export const packageVerificationRequestSchema = z.object({
+  requestedType: z.enum(PACKAGE_VERIFICATION_TYPES),
+  purchaseDate: z.string().min(4, "Purchase date is required"),
+  receiptDataUrl: z
+    .string()
+    .min(1, "Please upload a photo of your Fitness Zone receipt")
+    .max(8_000_000, "Receipt image is too large (max 8 MB)")
+    .refine((v) => v.startsWith("data:image/"), "Receipt must be an image"),
+  notes: z.string().max(1000).optional().nullable(),
+});
+export type PackageVerificationRequestInput = z.infer<
+  typeof packageVerificationRequestSchema
+>;
+
+export const packageVerificationDecisionSchema = z.object({
+  decision: z.enum(["approve", "reject"]),
+  // Approve-only — admin confirms the snapshot fields based on the receipt.
+  name: z.string().max(120).optional(),
+  totalSessions: z.number().int().min(1).max(200).optional(),
+  bonusSessions: z.number().int().min(0).max(50).optional(),
+  expiryDate: z.string().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+export type PackageVerificationDecisionInput = z.infer<
+  typeof packageVerificationDecisionSchema
+>;
 
 // =============================
 // BOOKINGS
@@ -738,10 +784,6 @@ export const insertClientSchema = createInsertSchema(users)
       .min(1, "Choose your preferred weekly training frequency")
       .max(6),
     notes: z.string().optional(),
-    // Optional package template the client picked during signup. Snapshotted
-    // server-side into a `packages` row with adminApproved=false; the trainer
-    // confirms payment + grants access from the Pending Requests panel.
-    packageTemplateId: z.number().int().positive().optional(),
   });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
