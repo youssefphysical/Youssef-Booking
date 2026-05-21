@@ -41,12 +41,19 @@ export interface SessionReminderInput {
   packageName?: string | null;
   remainingSessions?: number | null;
   totalSessions?: number | null;
+  // Task #55 — Add-to-Calendar links surfaced in the 24h reminder.
+  // `googleCalendarUrl` opens Google Calendar's prefilled "add event" UI;
+  // `icsUrl` returns an .ics file (Apple Calendar / Outlook). Both are
+  // optional — the email renders gracefully when only one or neither
+  // is supplied.
+  googleCalendarUrl?: string | null;
+  icsUrl?: string | null;
 }
 
 export function buildSessionReminderEmail(input: SessionReminderInput): ComposedEmail {
   const { lang, kind, date, time12, sessionFocus, location,
     bookingUrl, rescheduleUrl, supportEmail, trainerName, whatsappUrl, sessionDurationLabel,
-    packageName, remainingSessions, totalSessions,
+    packageName, remainingSessions, totalSessions, googleCalendarUrl, icsUrl,
   } = input;
   void rescheduleUrl;
   const isAr = lang === "ar";
@@ -111,6 +118,24 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
     ),
     spacer("s6"),
     section(ctaButton({ href: bookingUrl, label: t("View session details", "عرض تفاصيل الجلسة") })),
+    // Task #55 — Add-to-Calendar link (Google deep-link + .ics download).
+    // Single small text row so it never competes with the primary CTA
+    // above. Hidden entirely when neither URL is supplied.
+    (googleCalendarUrl || icsUrl)
+      ? section(
+          `<div style="text-align:center;font-family:'Inter',system-ui,sans-serif;font-size:13px;color:#9ca3af">`
+          + t("Add to calendar:", "أضف إلى التقويم:")
+          + (googleCalendarUrl
+            ? ` <a href="${googleCalendarUrl}" style="color:#5ee7ff;text-decoration:underline;margin:0 6px">Google</a>`
+            : "")
+          + (googleCalendarUrl && icsUrl ? `<span style="color:#374151">·</span>` : "")
+          + (icsUrl
+            ? ` <a href="${icsUrl}" style="color:#5ee7ff;text-decoration:underline;margin:0 6px">${t("Apple / .ics", "آبل / .ics")}</a>`
+            : "")
+          + `</div>`,
+          { topGap: "s4" },
+        )
+      : "",
     spacer("s6"),
     section(
       supportRow({

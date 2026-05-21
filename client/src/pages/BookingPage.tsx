@@ -60,6 +60,13 @@ import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useTranslation } from "@/i18n";
 import { AgreementGate, useAgreements, hasAccepted } from "@/components/AgreementGate";
+import { buildGoogleCalendarUrl, downloadIcs } from "@/lib/calendar";
+import { getDeviceFingerprint } from "@/lib/device-fingerprint";
+import type { Booking, Waitlist } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { CalendarPlus, Download } from "lucide-react";
 
 const REQUIRED_BOOKING_AGREEMENTS = ["training_waiver", "cancellation_policy"] as const;
 const REQUIRED_BOOKING_AGREEMENT_VERSION = "1";
@@ -94,6 +101,24 @@ export default function BookingPage() {
     (tp) => !hasAccepted(myAgreements, tp, REQUIRED_BOOKING_AGREEMENT_VERSION),
   );
   const [submitted, setSubmitted] = useState(false);
+  // Task #55: capture the created booking so the success screen can
+  // build a stable .ics URL (`/api/bookings/:id/calendar.ics`).
+  const [lastBooking, setLastBooking] = useState<Booking | null>(null);
+  // Lazily computed device fingerprint — best-effort, ~5 ms. Used only
+  // server-side for trial-abuse detection; never sent for non-trial
+  // bookings. `null` when crypto.subtle isn't available (very old
+  // browsers) — server tolerates this gracefully.
+  const [deviceFingerprint, setDeviceFingerprint] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getDeviceFingerprint().then((fp) => {
+      if (alive) setDeviceFingerprint(fp);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const { toast: showToast } = useToast();
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);
   // Premium segmented category selector — only the chips for the active
@@ -294,16 +319,64 @@ export default function BookingPage() {
         partnerFullName: isDuo ? partnerName.trim() : undefined,
         partnerPhone: isDuo && partnerPhone.trim() ? partnerPhone.trim() : undefined,
         partnerEmail: isDuo && partnerEmail.trim() ? partnerEmail.trim() : undefined,
+        // Task #55: only attach fingerprint on trial bookings — non-trial
+        // requests have no reason to carry it.
+        ...(sessionType === "trial" && deviceFingerprint
+          ? { deviceFingerprint }
+          : {}),
         ...(isAdmin ? { override: true } : {}),
       } as any,
       {
-        onSuccess: () => {
+        onSuccess: (booking) => {
           setIsConfirmOpen(false);
+          setLastBooking(booking ?? null);
           setSubmitted(true);
         },
       },
     );
   };
+
+  // Task #55 — Waitlist mutations + my-waitlist query.
+  const { data: myWaitlist = [] } = useQuery<Waitlist[]>({
+    queryKey: ["/api/waitlist/mine"],
+    enabled: !!user && user.role === "client",
+  });
+  const myWaitlistKeys = useMemo(
+    () => new Set(myWaitlist.map((w) => `${w.date}|${w.timeSlot}`)),
+    [myWaitlist],
+  );
+  const joinWaitlist = useMutation({
+    mutationFn: async (slot: string) => {
+      const res = await apiRequest("POST", "/api/waitlist", {
+        date: dateStr,
+        timeSlot: slot,
+      });
+      return (await res.json()) as Waitlist;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist/mine"] });
+      showToast({
+        title: "You're on the waitlist",
+        description: "We'll notify you the moment that slot opens up.",
+      });
+    },
+    onError: (err: Error) => {
+      showToast({
+        title: "Couldn't join the waitlist",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+  const leaveWaitlist = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/waitlist/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/waitlist/mine"] });
+      showToast({ title: "Removed from waitlist" });
+    },
+  });
 
   const sessionTypeOptions: { value: SessionTypeChoice; label: string; disabled?: boolean; hint?: string }[] = [
     {
@@ -358,6 +431,20 @@ export default function BookingPage() {
   }
 
   if (submitted) {
+    // Task #55 — Add-to-Calendar (Google + .ics) shown right next to the
+    // WhatsApp confirmation so clients lock the session into their own
+    // calendar before they navigate away. Falls back to a generic event
+    // payload if the server didn't return the booking (defensive).
+    const focusLabel = (lastBooking?.sessionFocus as string | null) || "Training session";
+    const calendarEvent = {
+      date: lastBooking?.date ?? dateStr,
+      timeSlot: lastBooking?.timeSlot ?? (selectedSlot ?? "08:00"),
+      title: `Training with Coach Youssef — ${focusLabel}`,
+      description: `Session focus: ${focusLabel}\nBooked via youssefahmed.com`,
+      location: "Coach Youssef's studio, Dubai Marina",
+      uid: lastBooking ? `booking-${lastBooking.id}@youssefahmed` : undefined,
+    };
+    const googleHref = buildGoogleCalendarUrl(calendarEvent);
     return (
       <div className="max-w-md mx-auto px-5 pt-32 pb-20 text-center">
         <motion.div
@@ -381,6 +468,27 @@ export default function BookingPage() {
               size="lg"
               testId="button-confirm-whatsapp"
             />
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={googleHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-add-google-calendar"
+                className="h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition flex items-center justify-center gap-2 text-sm font-semibold"
+              >
+                <CalendarPlus size={16} className="text-primary" />
+                Google Calendar
+              </a>
+              <button
+                type="button"
+                onClick={() => downloadIcs(calendarEvent, `session-${lastBooking?.id ?? "youssef"}.ics`)}
+                data-testid="button-download-ics"
+                className="h-11 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition flex items-center justify-center gap-2 text-sm font-semibold"
+              >
+                <Download size={16} className="text-primary" />
+                Apple / .ics
+              </button>
+            </div>
             <Button
               variant="outline"
               onClick={() => navigate("/dashboard")}
@@ -469,44 +577,86 @@ export default function BookingPage() {
                 const state = slotState[slot] || "available";
                 const isAvailable = state === "available";
                 const selected = selectedSlot === slot;
+                // Task #55: compute waitlist state for "taken" slots so the
+                // waitlist control can be rendered as a SIBLING of the
+                // disabled slot button (a disabled <button> swallows pointer
+                // events from any descendants — nested controls don't work).
+                const wlKey = `${dateStr}|${slot}`;
+                const myWlEntry =
+                  state === "taken" && !isAdmin
+                    ? myWaitlist.find(
+                        (w) => `${w.date}|${w.timeSlot}` === wlKey,
+                      )
+                    : undefined;
+                const queued = !!myWlEntry;
+                const wlPending =
+                  joinWaitlist.isPending && joinWaitlist.variables === slot;
                 return (
-                  <button
-                    key={slot}
-                    disabled={!isAvailable}
-                    onClick={() => {
-                      setSelectedSlot(slot);
-                      if (typeof window !== "undefined" && window.innerWidth < 768) {
-                        requestAnimationFrame(() => {
-                          const panel = document.getElementById("booking-confirm-panel");
-                          panel?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        });
-                      }
-                    }}
-                    data-testid={`slot-${slot}`}
-                    title={state === "tooSoon" ? t("booking.advanceRule") : undefined}
-                    className={`relative h-12 rounded-xl text-sm font-semibold transition-all border ${
-                      selected
-                        ? "bg-primary text-black border-primary scale-[1.02] shadow-lg shadow-primary/20"
-                        : isAvailable
-                          ? "bg-white/5 border-white/10 hover:bg-white/10"
-                          : "bg-white/[0.02] border-white/5 text-muted-foreground/40 cursor-not-allowed"
-                    }`}
-                  >
-                    {formatTime12(slot)}
-                    {state === "taken" && (
-                      <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
-                        {t("booking.slotTaken")}
-                      </span>
+                  <div key={slot} className="relative">
+                    <button
+                      disabled={!isAvailable}
+                      onClick={() => {
+                        setSelectedSlot(slot);
+                        if (typeof window !== "undefined" && window.innerWidth < 768) {
+                          requestAnimationFrame(() => {
+                            const panel = document.getElementById("booking-confirm-panel");
+                            panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          });
+                        }
+                      }}
+                      data-testid={`slot-${slot}`}
+                      title={state === "tooSoon" ? t("booking.advanceRule") : undefined}
+                      className={`relative h-12 w-full rounded-xl text-sm font-semibold transition-all border ${
+                        selected
+                          ? "bg-primary text-black border-primary scale-[1.02] shadow-lg shadow-primary/20"
+                          : isAvailable
+                            ? "bg-white/5 border-white/10 hover:bg-white/10"
+                            : "bg-white/[0.02] border-white/5 text-muted-foreground/40 cursor-not-allowed"
+                      }`}
+                    >
+                      {formatTime12(slot)}
+                      {state === "taken" && (
+                        <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
+                          {t("booking.slotTaken")}
+                        </span>
+                      )}
+                      {state === "tooSoon" && (
+                        <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-cyan-400/70">
+                          {t("booking.slotTooSoon")}
+                        </span>
+                      )}
+                      {state === "blocked" && (
+                        <Lock size={10} className="absolute top-1 right-1 text-cyan-400/80" />
+                      )}
+                    </button>
+                    {/* Task #55: Waitlist join/leave pill rendered as a
+                        sibling so it's not blocked by the disabled slot
+                        button. Absolutely positioned over the bottom of
+                        the slot tile. */}
+                    {state === "taken" && !isAdmin && (
+                      <button
+                        type="button"
+                        data-testid={
+                          queued
+                            ? `button-leave-waitlist-${slot}`
+                            : `button-join-waitlist-${slot}`
+                        }
+                        disabled={wlPending}
+                        onClick={() => {
+                          if (wlPending) return;
+                          if (queued) leaveWaitlist.mutate(myWlEntry!.id);
+                          else joinWaitlist.mutate(slot);
+                        }}
+                        className={`absolute left-1 right-1 bottom-1 text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded transition ${
+                          queued
+                            ? "bg-primary/25 text-primary hover:bg-primary/35"
+                            : "bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/25"
+                        }`}
+                      >
+                        {wlPending ? "…" : queued ? "On list" : "Waitlist"}
+                      </button>
                     )}
-                    {state === "tooSoon" && (
-                      <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-cyan-400/70">
-                        {t("booking.slotTooSoon")}
-                      </span>
-                    )}
-                    {state === "blocked" && (
-                      <Lock size={10} className="absolute top-1 right-1 text-cyan-400/80" />
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>

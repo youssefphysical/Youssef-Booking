@@ -130,6 +130,10 @@ import {
   type AdminSavedFilter,
   type InsertSavedFilter,
   type TrainerAssignment,
+  // Task #55 — Waitlist
+  waitlists,
+  type Waitlist,
+  type InsertWaitlist,
 } from "@shared/schema";
 import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
@@ -354,6 +358,29 @@ export interface IStorage {
   ): Promise<ClientNotification | undefined>;
   markClientNotificationRead(id: number, userId: number): Promise<ClientNotification | undefined>;
   markAllClientNotificationsRead(userId: number): Promise<void>;
+
+  // Waitlists (Task #55)
+  getWaitlistEntriesForUser(userId: number): Promise<Waitlist[]>;
+  getWaitlistEntriesForSlot(date: string, timeSlot: string): Promise<Waitlist[]>;
+  createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist>;
+  deleteWaitlistEntry(id: number, userId: number): Promise<boolean>;
+  /**
+   * Atomic claim — stamps `notified_at = now()` only if currently NULL.
+   * Returns the row that was claimed, or undefined if another worker
+   * already notified it. Safe under concurrent cancel-hook invocations.
+   */
+  claimWaitlistEntry(id: number): Promise<Waitlist | undefined>;
+  /**
+   * Lookup of users with hasUsedFreeTrial=true whose normalized
+   * email/phone/fingerprint matches any of the supplied identifiers.
+   * Used by the trial-abuse check.
+   */
+  findTrialUsersByIdentifiers(opts: {
+    emailNormalized?: string | null;
+    phoneNormalized?: string | null;
+    deviceFingerprintHash?: string | null;
+    excludeUserId?: number;
+  }): Promise<User[]>;
 
   // Renewal requests
   getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<RenewalRequest[]>;
@@ -2546,6 +2573,68 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(eq(clientNotifications.userId, userId), sql`${clientNotifications.readAt} IS NULL`),
       );
+  }
+
+  // ===== Waitlists (Task #55) =====
+  async getWaitlistEntriesForUser(userId: number): Promise<Waitlist[]> {
+    return db
+      .select()
+      .from(waitlists)
+      .where(eq(waitlists.userId, userId))
+      .orderBy(asc(waitlists.date), asc(waitlists.timeSlot));
+  }
+
+  async getWaitlistEntriesForSlot(date: string, timeSlot: string): Promise<Waitlist[]> {
+    return db
+      .select()
+      .from(waitlists)
+      .where(and(eq(waitlists.date, date), eq(waitlists.timeSlot, timeSlot)))
+      .orderBy(asc(waitlists.createdAt));
+  }
+
+  async createWaitlistEntry(entry: InsertWaitlist): Promise<Waitlist> {
+    const [row] = await db.insert(waitlists).values(entry).returning();
+    return row;
+  }
+
+  async deleteWaitlistEntry(id: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(waitlists)
+      .where(and(eq(waitlists.id, id), eq(waitlists.userId, userId)))
+      .returning({ id: waitlists.id });
+    return result.length > 0;
+  }
+
+  async claimWaitlistEntry(id: number): Promise<Waitlist | undefined> {
+    // Atomic claim — only stamps notified_at if currently NULL. Two
+    // concurrent cancel-hooks racing on the same row see exactly one
+    // winner.
+    const result = await pool.query(
+      `UPDATE waitlists
+         SET notified_at = now()
+       WHERE id = $1 AND notified_at IS NULL
+       RETURNING id, user_id AS "userId", date, time_slot AS "timeSlot",
+                 created_at AS "createdAt", notified_at AS "notifiedAt"`,
+      [id],
+    );
+    return (result.rows[0] as Waitlist) ?? undefined;
+  }
+
+  async findTrialUsersByIdentifiers(opts: {
+    emailNormalized?: string | null;
+    phoneNormalized?: string | null;
+    deviceFingerprintHash?: string | null;
+    excludeUserId?: number;
+  }): Promise<User[]> {
+    const ors: any[] = [];
+    if (opts.emailNormalized) ors.push(eq(users.emailNormalized, opts.emailNormalized));
+    if (opts.phoneNormalized) ors.push(eq(users.phoneNormalized, opts.phoneNormalized));
+    if (opts.deviceFingerprintHash)
+      ors.push(eq(users.deviceFingerprintHash, opts.deviceFingerprintHash));
+    if (ors.length === 0) return [];
+    const conds: any[] = [eq(users.hasUsedFreeTrial, true), or(...ors)];
+    if (opts.excludeUserId) conds.push(sql`${users.id} <> ${opts.excludeUserId}`);
+    return db.select().from(users).where(and(...conds));
   }
 
   // ===== Renewal requests =====

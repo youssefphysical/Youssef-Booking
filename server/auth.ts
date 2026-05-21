@@ -93,6 +93,11 @@ function sanitizeUser(user: User) {
     adminNotes,
     passwordResetToken,
     passwordResetExpires,
+    // Task #55: trial-abuse tracking identifiers — server-only, never
+    // exposed to the client UI.
+    emailNormalized,
+    phoneNormalized,
+    deviceFingerprintHash,
     ...rest
   } = user as any;
   return rest;
@@ -101,9 +106,18 @@ function sanitizeUser(user: User) {
 // Admin-only view of a user that retains private trainer fields
 // (adminNotes, noShowCount). Use this ONLY in admin-gated endpoints.
 // Reset-token internals are still stripped — they are never useful to UI.
+// Trial-abuse tracking fields are also stripped — they're internal
+// signals, not something an admin needs in their UI.
 function sanitizeUserAdminView(user: User) {
-  const { password, passwordResetToken, passwordResetExpires, ...rest } =
-    user as any;
+  const {
+    password,
+    passwordResetToken,
+    passwordResetExpires,
+    emailNormalized,
+    phoneNormalized,
+    deviceFingerprintHash,
+    ...rest
+  } = user as any;
   return rest;
 }
 

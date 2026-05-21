@@ -20,6 +20,7 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
   coach_message: MessageCircle,
   payment_reminder: CreditCard,
   milestone: Trophy,
+  waitlist_open: Sparkles,
   system: Info,
 };
 
@@ -32,6 +33,7 @@ const ACCENT: Record<NotificationKind, string> = {
   coach_message: "text-blue-300",
   payment_reminder: "text-rose-300",
   milestone: "text-cyan-300",
+  waitlist_open: "text-cyan-300",
   system: "text-white/70",
 };
 

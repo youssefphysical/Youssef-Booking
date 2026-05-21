@@ -742,6 +742,39 @@ async function run(): Promise<void> {
       updated_at timestamp NOT NULL DEFAULT now(),
       updated_by_user_id integer REFERENCES users(id)
     );
+
+    -- Task #55: free-trial abuse prevention. Normalised identifiers
+    -- compared across users with hasUsedFreeTrial=true to block repeat
+    -- trials from the same person under new accounts. All additive +
+    -- nullable; nothing to backfill (existing trial users still match
+    -- on hasUsedFreeTrial alone).
+    ALTER TABLE IF EXISTS users
+      ADD COLUMN IF NOT EXISTS email_normalized text,
+      ADD COLUMN IF NOT EXISTS phone_normalized text,
+      ADD COLUMN IF NOT EXISTS device_fingerprint_hash text;
+    CREATE INDEX IF NOT EXISTS users_email_normalized_idx
+      ON users (email_normalized) WHERE email_normalized IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS users_phone_normalized_idx
+      ON users (phone_normalized) WHERE phone_normalized IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS users_device_fingerprint_idx
+      ON users (device_fingerprint_hash) WHERE device_fingerprint_hash IS NOT NULL;
+
+    -- Task #55: waitlist. Clients queue on a (date, time_slot); when an
+    -- existing booking for that slot is cancelled, the first un-notified
+    -- entry is notified via notifyUser + email. Unique on
+    -- (user_id, date, time_slot) so the same client never queues twice.
+    CREATE TABLE IF NOT EXISTS waitlists (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date text NOT NULL,
+      time_slot text NOT NULL,
+      created_at timestamp NOT NULL DEFAULT now(),
+      notified_at timestamp
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS waitlists_user_date_slot_uq
+      ON waitlists (user_id, date, time_slot);
+    CREATE INDEX IF NOT EXISTS waitlists_date_slot_idx
+      ON waitlists (date, time_slot);
   `;
 
   try {

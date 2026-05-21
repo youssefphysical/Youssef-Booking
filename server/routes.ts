@@ -133,6 +133,71 @@ function currentMonthKey(d: Date = new Date()): string {
   return `${y}-${m}`;
 }
 
+// =============================
+// Task #55 — Free-trial abuse prevention helpers
+// =============================
+// Normalisation collapses common evasion tricks into a comparable key:
+//   - Email lowercased; Gmail-family addresses strip dots in the local
+//     part and drop "+tag" sub-addresses (foo.bar+x@gmail.com → foobar@gmail.com).
+//   - Phone stripped to digits only — international prefix variants
+//     (00971 vs +971 vs 0 5xxxxxxxx) collapse to the same key.
+// These are NEVER used as authentication; they're a soft signal layered
+// on top of the existing hasUsedFreeTrial flag and the per-IP rate limit.
+function normalizeEmail(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed.includes("@")) return null;
+  const [localRaw, domain] = trimmed.split("@");
+  if (!domain) return null;
+  const isGmailFamily = domain === "gmail.com" || domain === "googlemail.com";
+  let local = localRaw;
+  const plus = local.indexOf("+");
+  if (plus >= 0) local = local.slice(0, plus);
+  if (isGmailFamily) local = local.replace(/\./g, "");
+  if (!local) return null;
+  return `${local}@${isGmailFamily ? "gmail.com" : domain}`;
+}
+
+function normalizePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D+/g, "");
+  if (digits.length < 6) return null;
+  // Strip leading "00" (international dial-out) so 00971... == +971...
+  const trimmed = digits.replace(/^00/, "");
+  return trimmed;
+}
+
+// Per-IP token bucket for the trial endpoint (separate from the auth
+// rate-limiter so abusers can't burn through booking quota under cover
+// of a register/login cooldown).
+const TRIAL_RATE_BUCKETS = new Map<string, { count: number; resetAt: number }>();
+function trialRateCheck(req: Request): { ok: true } | { ok: false; retryAfter: number } {
+  const ip =
+    req.ip ||
+    (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown";
+  const key = `trial:${ip}`;
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 hour window
+  const max = 3; // at most 3 trial attempts per IP per hour
+  const cur = TRIAL_RATE_BUCKETS.get(key);
+  if (!cur || cur.resetAt < now) {
+    TRIAL_RATE_BUCKETS.set(key, { count: 1, resetAt: now + windowMs });
+    if (TRIAL_RATE_BUCKETS.size > 5000) {
+      TRIAL_RATE_BUCKETS.forEach((v, k) => {
+        if (v.resetAt < now) TRIAL_RATE_BUCKETS.delete(k);
+      });
+    }
+    return { ok: true };
+  }
+  if (cur.count >= max) {
+    return { ok: false, retryAfter: Math.ceil((cur.resetAt - now) / 1000) };
+  }
+  cur.count += 1;
+  return { ok: true };
+}
+
 // Auth/role guards — return both `error` (machine-readable) and `message`
 // (human-readable) for backwards compatibility with existing clients.
 // Friendly 401 for booking-adjacent routes. Mirrors the user-facing
@@ -1655,15 +1720,64 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Determine session type — defaults to package
     const sessionType = parsed.data.sessionType ?? "package";
 
-    // Free trial check: once per lifetime per user
+    // Free trial check: once per lifetime per user + cross-account abuse
+    // prevention (Task #55). Admins bypass all of this for manual entry.
+    const deviceFpRaw =
+      typeof (req.body as any)?.deviceFingerprint === "string"
+        ? String((req.body as any).deviceFingerprint).slice(0, 200)
+        : null;
+    let trialAbuseChecked = false;
     if (sessionType === "trial") {
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) return res.status(404).json({ message: "Client not found" });
-      if (targetUser.hasUsedFreeTrial && me.role !== "admin") {
-        return res.status(400).json({
-          message:
-            "Your free trial has already been used. Please choose a Single Session or a Package to continue training.",
-        });
+      if (me.role !== "admin") {
+        // 1) Per-IP rate limit so a single host can't farm trial attempts
+        //    across rapidly-created accounts.
+        const rl = trialRateCheck(req);
+        if (!rl.ok) {
+          res.setHeader("Retry-After", String(rl.retryAfter));
+          return res.status(429).json({
+            error: "TooManyRequests",
+            message:
+              "Too many free-trial attempts from this network. Please wait an hour or contact support.",
+          });
+        }
+        // 2) Direct flag — the user has already used theirs.
+        if (targetUser.hasUsedFreeTrial) {
+          return res.status(400).json({
+            message:
+              "Your free trial has already been used. Please choose a Single Session or a Package to continue training.",
+          });
+        }
+        // 3) Cross-account check — does any OTHER user with
+        //    hasUsedFreeTrial=true share a normalised email/phone or the
+        //    same device fingerprint? If so, block politely.
+        const emailNormalized = normalizeEmail(targetUser.email);
+        const phoneNormalized = normalizePhone((targetUser as any).phone);
+        if (emailNormalized || phoneNormalized || deviceFpRaw) {
+          const matches = await storage.findTrialUsersByIdentifiers({
+            emailNormalized,
+            phoneNormalized,
+            deviceFingerprintHash: deviceFpRaw,
+            excludeUserId: targetUser.id,
+          });
+          if (matches.length > 0) {
+            console.warn(
+              "[booking:anomaly]",
+              JSON.stringify({
+                kind: "trial_abuse_blocked",
+                userId: targetUser.id,
+                matchedUserIds: matches.map((u) => u.id),
+              }),
+            );
+            return res.status(400).json({
+              message:
+                "A free trial has already been used by this contact or device. Please choose a Single Session or a Package to continue training.",
+              code: "trial_already_used",
+            });
+          }
+        }
+        trialAbuseChecked = true;
       }
     }
 
@@ -1834,10 +1948,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[booking] notification dispatch failed:", e);
     }
 
-    // Mark trial as used if successful (clients only — admin overrides remain)
+    // Mark trial as used if successful (clients only — admin overrides remain).
+    // Task #55: also persist normalised identifiers + device fingerprint so
+    // future trial attempts from the same person under a new account are
+    // caught by the cross-account check above.
     if (sessionType === "trial" && me.role !== "admin") {
       try {
-        await storage.updateUser(targetUserId, { hasUsedFreeTrial: true });
+        const targetUser = await storage.getUser(targetUserId);
+        const patch: Record<string, any> = { hasUsedFreeTrial: true };
+        if (trialAbuseChecked) {
+          const en = normalizeEmail(targetUser?.email);
+          const pn = normalizePhone((targetUser as any)?.phone);
+          if (en) patch.emailNormalized = en;
+          if (pn) patch.phoneNormalized = pn;
+          if (deviceFpRaw) patch.deviceFingerprintHash = deviceFpRaw;
+        }
+        await storage.updateUser(targetUserId, patch);
       } catch {
         /* ignore */
       }
@@ -3212,7 +3338,193 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
+    // Task #55: notify the first eligible waitlist entry for this slot.
+    // Only fires if the cancellation actually frees the slot — i.e. the
+    // booking transitioned to a status that opens the (date,time_slot)
+    // back up for booking. `claimWaitlistEntry` is atomic so concurrent
+    // cancel-hooks notify exactly one client. Best-effort, swallowed.
+    if (["cancelled", "free_cancelled", "late_cancelled"].includes(newStatus)) {
+      void (async () => {
+        try {
+          const entries = await storage.getWaitlistEntriesForSlot(
+            booking.date,
+            booking.timeSlot,
+          );
+          // Skip rows already notified; cancel-hook is idempotent.
+          const next = entries.find((e) => e.notifiedAt == null);
+          if (!next) return;
+          const claimed = await storage.claimWaitlistEntry(next.id);
+          if (!claimed) return; // raced — another worker took it
+          const time12Notif = formatTime12Server(booking.timeSlot);
+          await notifyUserOnce(
+            claimed.userId,
+            "waitlist_open",
+            `waitlist-open-${booking.date}-${booking.timeSlot}-${claimed.userId}`,
+            "A spot opened up",
+            `Your waitlisted ${booking.date} ${time12Notif} slot is free — book it before someone else does.`,
+            { link: "/book", meta: { date: booking.date, timeSlot: booking.timeSlot } },
+          );
+          const recipient = await storage.getUser(claimed.userId).catch(() => undefined);
+          if (recipient?.email) {
+            const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
+            const bookUrl = baseUrl ? `${baseUrl}/book` : "/book";
+            const subject = `A spot opened up — ${booking.date} at ${time12Notif}`;
+            const text =
+              `Hi ${recipient.fullName || recipient.username || "there"},\n\n` +
+              `The session you waitlisted just opened up:\n` +
+              `  ${booking.date} at ${time12Notif} (Dubai time)\n\n` +
+              `Spots go fast — book it now: ${bookUrl}\n\n` +
+              `If you've changed your mind, you can leave the waitlist from your dashboard.\n\n` +
+              `— Youssef Fitness`;
+            const html =
+              `<div style="font-family:system-ui,-apple-system,sans-serif;background:#050505;color:#e4e4e4;padding:32px;border-radius:16px;max-width:520px;margin:auto">` +
+              `<h2 style="color:#5ee7ff;margin:0 0 12px">A spot opened up</h2>` +
+              `<p>The session you waitlisted just opened:</p>` +
+              `<p style="font-size:18px;font-weight:600">${booking.date} at ${time12Notif} <span style="color:#888">(Dubai)</span></p>` +
+              `<p><a href="${bookUrl}" style="display:inline-block;background:#5ee7ff;color:#000;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700">Book it now</a></p>` +
+              `<p style="color:#888;font-size:12px;margin-top:24px">Spots go fast — book quickly. You can leave the waitlist from your dashboard at any time.</p>` +
+              `</div>`;
+            await sendEmail({
+              to: recipient.email,
+              subject,
+              text,
+              html,
+              replyTo: trainerEmail(),
+            });
+          }
+        } catch (e) {
+          console.warn("[waitlist] cancel-hook notify failed:", e);
+        }
+      })();
+    }
+
     res.json(sanitizeBookingForUser(me, updated));
+  });
+
+  // =========================================================
+  // Task #55 — Waitlist (client-facing)
+  // =========================================================
+  // Clients queue on a specific (date, time_slot). When the cancel hook
+  // above fires, the first un-notified entry for that slot is atomically
+  // claimed and notified via in-app + email. Self-service join/leave;
+  // unique on (user_id, date, time_slot) so duplicates aren't possible.
+
+  app.get("/api/waitlist/mine", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const rows = await storage.getWaitlistEntriesForUser(me.id);
+    res.json(rows);
+  });
+
+  app.post("/api/waitlist", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const date = typeof req.body?.date === "string" ? req.body.date : "";
+    const timeSlot = typeof req.body?.timeSlot === "string" ? req.body.timeSlot : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(timeSlot)) {
+      return res.status(400).json({ message: "Invalid date or time slot." });
+    }
+    // Don't waitlist a slot that's already free — just book it.
+    const taken = await storage.getBookingByDateAndSlot(date, timeSlot);
+    if (
+      !taken ||
+      ["cancelled", "free_cancelled", "late_cancelled"].includes(taken.status)
+    ) {
+      return res.status(400).json({
+        message: "This slot is currently free — book it directly instead of waitlisting.",
+        code: "slot_free",
+      });
+    }
+    // Slot must be in the future (anchor to Dubai for fairness with the
+    // booking grid). A waitlist for a past slot is useless.
+    const sessionAt = buildSessionDate(date, timeSlot);
+    if (sessionAt.getTime() < Date.now()) {
+      return res.status(400).json({ message: "Cannot waitlist a past slot." });
+    }
+    try {
+      const row = await storage.createWaitlistEntry({
+        userId: me.id,
+        date,
+        timeSlot,
+      });
+      res.status(201).json(row);
+    } catch (e: any) {
+      // Unique index collision — the user is already queued for this slot.
+      if (e?.code === "23505") {
+        return res.status(409).json({
+          message: "You're already on the waitlist for this slot.",
+          code: "already_waitlisted",
+        });
+      }
+      throw e;
+    }
+  });
+
+  app.delete("/api/waitlist/:id", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const removed = await storage.deleteWaitlistEntry(id, me.id);
+    if (!removed) return res.status(404).json({ message: "Waitlist entry not found" });
+    res.json({ ok: true });
+  });
+
+  // =========================================================
+  // Task #55 — Add to Calendar (.ics)
+  // =========================================================
+  // Generates an RFC-5545 VEVENT for a confirmed booking. All times are
+  // anchored to Dubai (UTC+4, no DST) via the +04:00 suffix on the local
+  // datetime string. Auth-gated to the booking owner / linked partner /
+  // admin so .ics URLs can't enumerate other clients' sessions.
+  app.get("/api/bookings/:id/calendar.ics", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).send("Invalid id");
+    const booking = await storage.getBooking(id);
+    if (!booking) return res.status(404).send("Not found");
+    const isOwner = booking.userId === me.id;
+    const isPartner =
+      typeof (booking as any).linkedPartnerUserId === "number" &&
+      (booking as any).linkedPartnerUserId === me.id;
+    if (me.role !== "admin" && !isOwner && !isPartner) {
+      return res.status(403).send("Forbidden");
+    }
+    const start = new Date(`${booking.date}T${booking.timeSlot}:00+04:00`);
+    const end = new Date(start.getTime() + 60 * 60_000);
+    const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
+    const stamp = (d: Date) =>
+      d.getUTCFullYear().toString() +
+      pad(d.getUTCMonth() + 1) +
+      pad(d.getUTCDate()) +
+      "T" +
+      pad(d.getUTCHours()) +
+      pad(d.getUTCMinutes()) +
+      pad(d.getUTCSeconds()) +
+      "Z";
+    const esc = (s: string) =>
+      s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+    const focus = (booking as any).sessionFocus || "Training session";
+    const title = `Training with Coach Youssef — ${focus}`;
+    const description = `Session focus: ${focus}\nBooked via youssefahmed.com\n\nNeed to reschedule? Open your dashboard.`;
+    const location = "Coach Youssef's studio, Dubai Marina";
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Youssef Ahmed Fitness//Booking//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:booking-${booking.id}@youssefahmed`,
+      `DTSTAMP:${stamp(new Date())}`,
+      `DTSTART:${stamp(start)}`,
+      `DTEND:${stamp(end)}`,
+      `SUMMARY:${esc(title)}`,
+      `DESCRIPTION:${esc(description)}`,
+      `LOCATION:${esc(location)}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="session-${booking.id}.ics"`);
+    res.send(ics);
   });
 
   // Same-Day Adjustment: shift a session to a different time the SAME day.
@@ -5490,6 +5802,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           let built: { subject: string; text: string; html: string };
           try {
             // Premium cinematic reminder — preferred path.
+            // Task #55: Add-to-Calendar links. Google deep-link is
+            // built inline (UTC stamps from the date + slot anchored to
+            // +04:00); .ics is served by /api/bookings/:id/calendar.ics.
+            const startMs = new Date(`${b.date}T${b.timeSlot}:00+04:00`).getTime();
+            const endMs = startMs + 60 * 60_000;
+            const padN = (n: number) => (n < 10 ? `0${n}` : String(n));
+            const utcStamp = (ms: number) => {
+              const d = new Date(ms);
+              return (
+                d.getUTCFullYear().toString() +
+                padN(d.getUTCMonth() + 1) +
+                padN(d.getUTCDate()) +
+                "T" +
+                padN(d.getUTCHours()) +
+                padN(d.getUTCMinutes()) +
+                padN(d.getUTCSeconds()) +
+                "Z"
+              );
+            };
+            const calTitle = `Training with Coach Youssef${b.sessionFocus ? ` — ${b.sessionFocus}` : ""}`;
+            const calParams = new URLSearchParams({
+              action: "TEMPLATE",
+              text: calTitle,
+              dates: `${utcStamp(startMs)}/${utcStamp(endMs)}`,
+              details: `Session focus: ${b.sessionFocus || "Training session"}\nView details in your dashboard.`,
+              location: "Coach Youssef's studio, Dubai Marina",
+            });
+            const googleCalendarUrl = `https://calendar.google.com/calendar/render?${calParams.toString()}`;
+            const icsUrl = baseUrl
+              ? `${baseUrl}/api/bookings/${b.id}/calendar.ics`
+              : null;
             built = buildSessionReminderEmailPremium({
               kind,
               lang: (recipientLang === "ar" ? "ar" : "en") as "en" | "ar",
@@ -5503,6 +5846,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               bookingUrl: baseUrl ? `${baseUrl}/dashboard` : "/dashboard",
               rescheduleUrl: baseUrl ? `${baseUrl}/book` : "/book",
               supportEmail: trainerEmail(),
+              googleCalendarUrl,
+              icsUrl,
             });
           } catch (premiumErr) {
             console.warn("[cron/reminders] premium render failed, falling back to legacy:", premiumErr);

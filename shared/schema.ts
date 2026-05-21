@@ -133,6 +133,13 @@ export const users = pgTable("users", {
   // Primary goal: 'fat_loss' | 'muscle_gain' | 'recomposition'
   primaryGoal: text("primary_goal"),
   hasUsedFreeTrial: boolean("has_used_free_trial").notNull().default(false),
+  // Free-trial abuse prevention — normalised identifiers used to detect
+  // duplicate trials across accounts (same person, new email/phone).
+  // Persisted lazily the first time a client books a trial; never
+  // returned to the client UI.
+  emailNormalized: text("email_normalized"),
+  phoneNormalized: text("phone_normalized"),
+  deviceFingerprintHash: text("device_fingerprint_hash"),
   // Tracks last calendar month an emergency cancel was used (e.g. "2026-04")
   emergencyCancelLastMonth: text("emergency_cancel_last_month"),
   emergencyCancelLastUsedAt: timestamp("emergency_cancel_last_used_at"),
@@ -1091,6 +1098,7 @@ export const NOTIFICATION_KINDS = [
   "coach_message",
   "payment_reminder",
   "milestone",
+  "waitlist_open",
   "system",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -1159,6 +1167,45 @@ export const insertClientNotificationSchema = createInsertSchema(clientNotificat
 
 export type ClientNotification = typeof clientNotifications.$inferSelect;
 export type InsertClientNotification = z.infer<typeof insertClientNotificationSchema>;
+
+// =============================
+// WAITLISTS — clients can subscribe to a (date, time_slot) and be
+// notified when an existing booking for that slot is cancelled. Unique
+// on (user_id, date, time_slot) so the same client never queues twice.
+// `notified_at` stamps the first notification we send and lets the
+// cancel-hook skip already-served rows in O(1).
+// =============================
+export const waitlists = pgTable(
+  "waitlists",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // YYYY-MM-DD (Dubai)
+    timeSlot: text("time_slot").notNull(), // HH:MM
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    notifiedAt: timestamp("notified_at"),
+  },
+  (t) => ({
+    userSlotUq: uniqueIndex("waitlists_user_date_slot_uq").on(
+      t.userId,
+      t.date,
+      t.timeSlot,
+    ),
+    slotIdx: index("waitlists_date_slot_idx").on(t.date, t.timeSlot),
+  }),
+);
+
+export const insertWaitlistSchema = createInsertSchema(waitlists)
+  .omit({ id: true, createdAt: true, notifiedAt: true })
+  .extend({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+    timeSlot: z.string().regex(/^\d{2}:\d{2}$/, "Invalid time slot"),
+  });
+
+export type Waitlist = typeof waitlists.$inferSelect;
+export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
 
 export const adminNotifications = pgTable("admin_notifications", {
   id: serial("id").primaryKey(),
