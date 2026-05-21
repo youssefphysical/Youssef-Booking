@@ -360,7 +360,7 @@ export default function TrainingLocationWizard() {
                       <span>
                         {t(
                           "wizard.fz.noReceiptInfo",
-                          "The Youssef Elite team will verify your payment and activate your package — no receipt upload needed.",
+                          "The Youssef Elite team will review your package and unlock your booking access once activation is complete.",
                         )}
                       </span>
                     </div>
