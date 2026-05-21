@@ -32,7 +32,8 @@ export default function AdminIntegrity() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="admin-shell">
+    <div className="admin-container space-y-5">
       <AdminPageHeader
         eyebrow="Data integrity"
         title="Integrity checker"
@@ -126,6 +127,7 @@ export default function AdminIntegrity() {
           Generated {new Date(data.generatedAt).toLocaleString()}
         </p>
       ) : null}
+    </div>
     </div>
   );
 }

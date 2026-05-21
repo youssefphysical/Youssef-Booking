@@ -116,8 +116,8 @@ export default function AdminControlPanel() {
   const isSuper = !!metaQ.data?.admin?.isSuperAdmin;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
+    <div className="admin-shell text-white">
+      <div className="admin-container">
         <AdminPageHeader
           title="Admin Control Panel"
           subtitle="RBAC, audit, tags, tasks, notifications, policies — one place."

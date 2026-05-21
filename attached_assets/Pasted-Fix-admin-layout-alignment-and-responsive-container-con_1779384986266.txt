@@ -1,0 +1,57 @@
+Fix admin layout alignment and responsive container consistency.
+
+Issue:
+In production, the Admin Settings page is aligned correctly, but other admin pages such as Clients, Command Center, Recovery, Integrity, and some dashboard tabs have content partially hidden behind the left sidebar or shifted incorrectly, especially when opened on mobile using Chrome Desktop Site mode.
+
+The Settings page should be used as the visual reference for correct alignment.
+
+Requirements:
+- Do not modify backend logic.
+- Do not modify data fetching.
+- Do not modify admin features.
+- Do not redesign the UI.
+- Fix layout only.
+
+Admin layout rules:
+1. All admin pages must use the same main layout shell.
+2. Main content must start after the sidebar, never underneath it.
+3. Top tabs/navigation must respect the sidebar width.
+4. No content should be clipped behind the sidebar.
+5. Keep the Settings page alignment unchanged if it is already correct.
+6. Apply the same spacing, max-width behavior, padding, and responsive rules used by Settings to:
+   - Clients
+   - Command Center
+   - Leads
+   - Bookings
+   - Sessions
+   - Analytics
+   - InBody
+   - Progress
+   - Recovery
+   - Integrity
+   - Management & Analysis
+   - Client Data Center
+   - Control Panel
+   - Packages
+   - Package Designer
+   - Staff
+7. On real desktop, preserve the premium wide admin layout.
+8. On mobile and Chrome Desktop Site mode, sidebar must not cover page content.
+9. If sidebar remains visible, main content should offset correctly.
+10. If screen width is physically narrow, collapse or adapt sidebar safely.
+
+Design:
+- Keep existing Tron Legacy premium dark theme.
+- Keep current colors, cards, typography, glow effects.
+- Only fix alignment, width, overflow, spacing, and responsive behavior.
+
+Verification:
+- Compare Settings page vs Clients page.
+- Compare Settings page vs Recovery page.
+- Compare Settings page vs Integrity page.
+- Check normal mobile mode.
+- Check Android Chrome Desktop Site mode.
+- Check desktop width.
+- Run npm run check.
+- Run npm run build.
+- Report files changed and exact layout rules fixed.

@@ -411,7 +411,8 @@ export default function AdminManagementAnalysis() {
   const ld = data.leads ?? {};
 
   return (
-    <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto space-y-5 sm:space-y-7">
+    <div className="admin-shell">
+    <div className="admin-container space-y-5 sm:space-y-7">
       <AdminPageHeader
         eyebrow="Insights"
         title="Management & Analysis"
@@ -1101,6 +1102,7 @@ export default function AdminManagementAnalysis() {
           </AdminCard>
         )}
       </section>
+    </div>
     </div>
   );
 }

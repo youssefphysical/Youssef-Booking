@@ -64,6 +64,7 @@ export default function AdminRecoveryPage() {
   });
 
   return (
+    <div className="admin-shell">
     <div className="admin-container space-y-5 pt-3" data-testid="page-admin-recovery">
       <header className="space-y-1">
         <h1 className="text-2xl font-display font-bold">{t("admin.recovery.title", "Recovery requests")}</h1>
@@ -194,6 +195,7 @@ export default function AdminRecoveryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

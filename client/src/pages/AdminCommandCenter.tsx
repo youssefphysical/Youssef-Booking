@@ -85,7 +85,8 @@ export default function AdminCommandCenter() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="admin-shell">
+    <div className="admin-container space-y-5">
       <AdminPageHeader
         eyebrow="Command Center"
         title="What needs your attention"
@@ -161,6 +162,7 @@ export default function AdminCommandCenter() {
           {data.cached ? " · cached" : ""}
         </p>
       ) : null}
+    </div>
     </div>
   );
 }
