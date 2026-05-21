@@ -1,0 +1,56 @@
+Fix booking CTA flicker before training-location wizard.
+
+Issue:
+Account creation and login work correctly. The problem happens only when a client clicks:
+- Booking
+- Start Your Transformation Today
+- Any CTA that opens the booking flow
+
+For first-time clients who still need to choose their training location, the booking UI appears briefly for a moment, then the training-location wizard/options screen appears.
+
+This must not happen.
+
+Expected behavior:
+- When a client clicks Booking or Start Your Transformation Today, the app must check wizard eligibility first.
+- If the client needs the training-location wizard, show/redirect to the wizard immediately.
+- The booking UI must not render even for a split second.
+- If the client does not need the wizard, show the booking page normally.
+
+Rules:
+- Do not change account creation.
+- Do not change login.
+- Do not change backend package logic.
+- Do not change admin logic.
+- Do not redesign.
+- Fix only the client-side booking CTA / booking route gating.
+
+Technical requirements:
+1. Locate all CTAs/routes that navigate to booking:
+   - Booking nav item
+   - Start Your Transformation Today button
+   - homepage booking CTA
+   - dashboard booking CTA if any
+2. Before rendering BookingPage content, wait for:
+   - auth/user loading
+   - packages loading
+   - trainingLocations loading
+3. During this check, show only a premium loading state/skeleton.
+4. Do not render calendar, package cards, booking form, or booking layout until needsWizard is resolved.
+5. If needsWizard is true, redirect to /wizard or render the wizard directly.
+6. If needsWizard is false, render BookingPage normally.
+7. Preserve this rule:
+   needsWizard =
+   user.role === "client"
+   AND trainingLocations.length === 0
+   AND no active usable package exists
+8. Apply the same guard anywhere booking can be reached from CTA buttons.
+
+Verification:
+- New client clicks Start Your Transformation Today → wizard/options appear directly, no booking flash.
+- New client clicks Booking → wizard/options appear directly, no booking flash.
+- Existing client with active package clicks Booking → booking opens normally.
+- Admin routes unaffected.
+- npm run check passes.
+- npm run build passes.
+- Push to GitHub main.
+- Report files changed and commit hash.

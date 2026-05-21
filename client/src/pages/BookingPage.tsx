@@ -133,7 +133,7 @@ export default function BookingPage() {
   const { data: blocked = [] } = useBlockedSlots();
   const { data: settings } = useSettings();
   const { data: existing = [] } = useBookings({ from: dubaiTodayYMD() });
-  const { data: packages = [] } = usePackages({ userId: user?.id });
+  const { data: packages = [], isLoading: pkgsLoading } = usePackages({ userId: user?.id });
   // Task #28: route brand-new clients (no active package + no saved
   // training-location row) through the post-signup wizard before they
   // can see the booking grid. Legacy users with an active package or a
@@ -143,11 +143,23 @@ export default function BookingPage() {
     enabled: !!user && user.role === "client",
   });
   const anyActivePkg = (packages as Package[]).some((p) => p.isActive && p.usedSessions < p.totalSessions);
+  // Resolve wizard eligibility *before* any booking UI renders. For clients
+  // we wait for both training-locations and packages queries to settle so
+  // the booking calendar / package cards never flash for first-time users
+  // who actually need the wizard.
+  const isClient = !!user && user.role === "client";
+  const wizardChecksLoading = isClient && (locLoading || pkgsLoading);
   const needsWizard =
-    !!user && user.role === "client" && !locLoading && trainingLocations.length === 0 && !anyActivePkg;
+    isClient && !wizardChecksLoading && trainingLocations.length === 0 && !anyActivePkg;
   useEffect(() => {
     if (needsWizard) navigate("/wizard");
   }, [needsWizard, navigate]);
+  // Gate the entire booking surface (including signed-out fallback, but
+  // *not* the post-submit success screen) on auth + wizard prechecks so
+  // first-time clients see a premium skeleton — never the booking grid
+  // — until we know whether to redirect to /wizard.
+  const showPrecheckSkeleton =
+    !submitted && (isAuthLoading || wizardChecksLoading || needsWizard);
 
   const isAdmin = user?.role === "admin";
   const hasUsedFreeTrial = !!user?.hasUsedFreeTrial;
@@ -309,6 +321,31 @@ export default function BookingPage() {
     },
     { value: "duo", label: t("booking.sessionDuo"), hint: t("booking.hintTrainPartner") },
   ];
+
+  // Premium loading state — covers (a) auth still resolving, (b) training-
+  // locations / packages still loading for clients, (c) needsWizard true
+  // (the redirect to /wizard is in-flight). Renders BEFORE any booking
+  // surface so first-time clients never see a flash of the calendar /
+  // package cards.
+  if (showPrecheckSkeleton) {
+    return (
+      <div className="max-w-3xl mx-auto px-5 pt-24 pb-32" data-testid="booking-precheck-loading">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-primary/15 rounded-2xl text-primary">
+            <CalendarIcon size={22} />
+          </div>
+          <div className="flex-1 space-y-2">
+            <div className="admin-shimmer h-7 w-48 rounded-lg" />
+            <div className="admin-shimmer h-3.5 w-64 rounded" />
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="admin-shimmer h-72 rounded-3xl" />
+          <div className="admin-shimmer h-40 rounded-3xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
