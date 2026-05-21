@@ -120,7 +120,7 @@ import {
 } from "./email-templates";
 import { z } from "zod";
 import { extractInbodyMetricsFromImage } from "./inbody-extract";
-import { notifyUser, notifyUserOnce } from "./services/notifications";
+import { notifyUser, notifyUserOnce, notifyUsers } from "./services/notifications";
 import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
 import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
@@ -1250,6 +1250,49 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // by the Replit deployment platform. Kept extremely cheap (no DB call).
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, env: process.env.VERCEL ? "vercel" : "replit" });
+  });
+
+  // ============== ADMIN: BROADCAST / DIRECT MESSAGE (Task #56) ==============
+  // Single endpoint covers two shapes:
+  //   - { userId: number, title, body, link? }  → 1-1 admin push
+  //   - { title, body, link?, audience?: "all_active" | "all" }  → broadcast
+  // Always emits with kind `admin_message`. Idempotency is intentionally
+  // NOT enforced — Youssef may legitimately resend the same message.
+  app.post("/api/admin/notifications/broadcast", requireAdmin, async (req, res) => {
+    const title = String(req.body?.title ?? "").trim().slice(0, 120);
+    const body = String(req.body?.body ?? "").trim().slice(0, 500);
+    const link = typeof req.body?.link === "string" && req.body.link.trim()
+      ? String(req.body.link).trim().slice(0, 300)
+      : "/dashboard";
+    if (!title || !body) {
+      return res.status(400).json({ message: "title and body are required" });
+    }
+    try {
+      if (req.body?.userId != null) {
+        const uid = Number(req.body.userId);
+        if (!Number.isFinite(uid)) {
+          return res.status(400).json({ message: "Invalid userId" });
+        }
+        const target = await storage.getUser(uid);
+        if (!target || target.role !== "client") {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        await notifyUser(uid, "admin_message", title, body, { link });
+        return res.json({ delivered: 1 });
+      }
+      const audience = String(req.body?.audience ?? "all_active");
+      const clients = await storage.getAllClients();
+      const ids = clients
+        .filter((u: User) =>
+          audience === "all" ? true : (u as any).clientStatus === "active",
+        )
+        .map((u: User) => u.id);
+      await notifyUsers(ids, "admin_message", title, body, { link });
+      return res.json({ delivered: ids.length });
+    } catch (e: any) {
+      console.warn("[admin/broadcast] failed:", e);
+      return res.status(500).json({ message: "Broadcast failed" });
+    }
   });
 
   // ============== USERS ==============
@@ -3356,9 +3399,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const claimed = await storage.claimWaitlistEntry(next.id);
           if (!claimed) return; // raced — another worker took it
           const time12Notif = formatTime12Server(booking.timeSlot);
+          // Task #56: canonical kind is `waitlist_slot_available`. The
+          // dedupeKey is unchanged so an in-flight claim that previously
+          // wrote `waitlist_open` is still deduped by the partial index.
           await notifyUserOnce(
             claimed.userId,
-            "waitlist_open",
+            "waitlist_slot_available",
             `waitlist-open-${booking.date}-${booking.timeSlot}-${claimed.userId}`,
             "A spot opened up",
             `Your waitlisted ${booking.date} ${time12Notif} slot is free — book it before someone else does.`,
@@ -4495,6 +4541,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPackageActivatedEmail({ pkg: updated, source: "converted_trial" });
+    // Task #56: client-side bell event for the trial-to-paid handoff.
+    void notifyUserOnce(
+      pkg.userId,
+      "package_activated",
+      `pkg-activated-${pkg.id}`,
+      "Your package is active",
+      `Your ${tmpl.name} package is live — ${tmpl.totalSessions} sessions ready to book.`,
+      { link: "/dashboard", meta: { packageId: pkg.id } },
+    );
     res.json(updated);
   });
 
@@ -4664,6 +4719,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           reason: note || "Activation request approved",
         } as any);
       } catch {/* ignore */}
+      // Task #56: surface activation in the bell. dedupeKey on packageId
+      // so a re-approve / status-reset path can't double-fire.
+      void notifyUserOnce(
+        pkg.userId,
+        "package_activated",
+        `pkg-activated-${pkg.id}`,
+        "Your package is active",
+        `Your ${updated?.name || pkg.name || "training"} package is live — book your next session whenever you're ready.`,
+        { link: "/dashboard", meta: { packageId: pkg.id } },
+      );
       return res.json(updated);
     }
     if (action === "reject") {
@@ -6714,9 +6779,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const completedCount = all.filter((b) => b.status === "completed").length;
         const MILESTONES = [5, 10, 25, 50, 100, 200, 365, 500];
         if (MILESTONES.includes(completedCount)) {
+          // Task #56: canonical kind is `milestone_achieved`. dedupeKey
+          // is stable across the rename so the same threshold can't
+          // re-fire even if a row with the legacy `milestone` kind
+          // exists from before the rename.
           void notifyUserOnce(
             booking.userId,
-            "milestone",
+            "milestone_achieved",
             `sessions-completed-${completedCount}`,
             `${completedCount} sessions completed`,
             completedCount === 5
@@ -6817,6 +6886,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           } as any);
         } catch {}
         void dispatchAdminPackageActivatedEmail({ pkg: approvedPkg, source: "approved" });
+        // Task #56: client-side bell event mirroring the admin email.
+        // dedupeKey on packageId so a re-approve cannot double-fire.
+        void notifyUserOnce(
+          id,
+          "package_activated",
+          `pkg-activated-${approvedPkg.id}`,
+          "Your package is active",
+          `Your ${approvedPkg.name || "training"} package is live — book your next session whenever you're ready.`,
+          { link: "/dashboard", meta: { packageId: approvedPkg.id } },
+        );
       }
     } catch (e) {
       console.warn("[admin/approve] package approval failed:", e);

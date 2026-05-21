@@ -123,7 +123,9 @@ import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
 import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
+import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { Pill, LineChart as LineChartIcon, HeartPulse } from "lucide-react";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
@@ -265,22 +267,31 @@ export default function ClientDashboard() {
   return (
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
+      {/* Task #56 — information hierarchy pass.
+          Roadmap order: Welcome → Status → Next action → Upcoming →
+          Progress → Insights/Achievements (collapsed on mobile).
+          PackageStatusHero is promoted directly under the welcome hero
+          so the client's most-asked question ("how many sessions do I
+          have?") is the first thing they see. The SessionPrepCard
+          renders only when a session is within 24h and is dismissible
+          per booking, so it never adds noise on quieter days. */}
       <ProfileHero user={user} />
+      <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
       <WhatsNext />
       <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />
 
       <TodayHero name={user.fullName} />
-
-      {/* Phase 2 luxury layer — emotional, spacious, single-purpose cards. */}
-      <CoachInsightCard firstName={user.fullName.split(" ")[0]} />
+      <SessionPrepCard userId={user.id} />
       <SessionTimeline userId={user.id} onJump={jumpToTab} />
-      <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ConsistencyStreak userId={user.id} />
-        <ProgressSnapshot userId={user.id} />
-      </div>
 
-      <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
+      <ProgressSnapshot userId={user.id} />
+
+      {/* Secondary insight stack — informative but not action-required.
+          Collapsed by default on mobile to keep the dashboard scannable;
+          always expanded on lg+ where vertical real estate isn't tight. */}
+      <SecondaryInsights firstName={user.fullName.split(" ")[0]} userId={user.id} />
+
       <MembershipBlock user={user} />
       <DuoPartnersBlock />
       <BookingEligibilityBanner userId={user.id} user={user} />
@@ -330,6 +341,55 @@ export default function ClientDashboard() {
       </Tabs>
       </div>
     </div>
+  );
+}
+
+// =============== SECONDARY INSIGHTS (Task #56) ===============
+// Collapsible stack of "nice to have" widgets (coach insight + streak)
+// — informative but not action-required. Mobile collapses by default to
+// keep the dashboard scannable; lg+ always renders expanded since the
+// vertical real estate isn't tight there.
+function SecondaryInsights({
+  firstName,
+  userId,
+}: {
+  firstName: string;
+  userId: number;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const content = (
+    <div className="space-y-4">
+      <CoachInsightCard firstName={firstName} />
+      <ConsistencyStreak userId={userId} />
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile: collapsible "Show more" panel. */}
+      <div className="lg:hidden mb-6">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-card/40 px-4 py-3 text-sm font-semibold text-foreground/85 hover:border-white/20 transition-colors"
+          aria-expanded={open}
+          data-testid="button-secondary-insights-toggle"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles size={14} className="text-cyan-300" />
+            {open
+              ? t("dashboard.showLess", "Hide insights & streak")
+              : t("dashboard.showMore", "Show insights & streak")}
+          </span>
+          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+        {open && <div className="mt-3">{content}</div>}
+      </div>
+      {/* Desktop: always visible. */}
+      <div className="hidden lg:block mb-6">{content}</div>
+    </>
   );
 }
 

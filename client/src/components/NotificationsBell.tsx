@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Bell, Check, CheckCheck, Calendar, AlertTriangle, Sparkles, Pill, Apple, MessageCircle, CreditCard, Trophy, Info } from "lucide-react";
+import { Bell, Check, CheckCheck, Calendar, AlertTriangle, Sparkles, Pill, Apple, MessageCircle, CreditCard, Trophy, Info, PackageCheck, Megaphone } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +21,10 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
   payment_reminder: CreditCard,
   milestone: Trophy,
   waitlist_open: Sparkles,
+  milestone_achieved: Trophy,
+  waitlist_slot_available: Sparkles,
+  package_activated: PackageCheck,
+  admin_message: Megaphone,
   system: Info,
 };
 
@@ -34,6 +38,10 @@ const ACCENT: Record<NotificationKind, string> = {
   payment_reminder: "text-rose-300",
   milestone: "text-cyan-300",
   waitlist_open: "text-cyan-300",
+  milestone_achieved: "text-cyan-300",
+  waitlist_slot_available: "text-cyan-300",
+  package_activated: "text-emerald-300",
+  admin_message: "text-cyan-300",
   system: "text-white/70",
 };
 

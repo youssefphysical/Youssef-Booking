@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Loader2, Activity, Heart, Moon, ListChecks, EyeOff, Eye } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,10 @@ interface FormState {
   sessionPainInjury: string;
   privateCoachNotes: string;
   clientVisibleCoachNotes: string;
+  // Task #56: explicit per-note share toggle. The textarea is the source
+  // of truth on the server (presence = shared), but the toggle gives
+  // admins a clear on/off intent so a forgotten textarea doesn't leak.
+  shareWithClient: boolean;
 }
 
 const empty = (b: any): FormState => ({
@@ -43,6 +48,7 @@ const empty = (b: any): FormState => ({
   sessionPainInjury: b?.sessionPainInjury ?? "",
   privateCoachNotes: b?.privateCoachNotes ?? "",
   clientVisibleCoachNotes: b?.clientVisibleCoachNotes ?? "",
+  shareWithClient: !!(b?.clientVisibleCoachNotes && String(b.clientVisibleCoachNotes).trim()),
 });
 
 function ScaleField({
@@ -111,7 +117,12 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
         sessionCardio: form.sessionCardio.trim() || null,
         sessionPainInjury: form.sessionPainInjury.trim() || null,
         privateCoachNotes: form.privateCoachNotes.trim() || null,
-        clientVisibleCoachNotes: form.clientVisibleCoachNotes.trim() || null,
+        // Task #56: toggle gates whether the visible note is persisted.
+        // When the admin flips "share" off, the field clears server-side
+        // so the client never sees stale notes from a prior intent.
+        clientVisibleCoachNotes: form.shareWithClient
+          ? form.clientVisibleCoachNotes.trim() || null
+          : null,
       };
       const res = await apiRequest("PATCH", `/api/bookings/${booking.id}`, payload);
       return res.json();
@@ -204,17 +215,37 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1.5 text-blue-300/90">
-              <Eye size={12} /> Visible to client
-            </Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs flex items-center gap-1.5 text-blue-300/90">
+                <Eye size={12} /> Share with client
+              </Label>
+              <Switch
+                checked={form.shareWithClient}
+                onCheckedChange={(v) =>
+                  setForm((f) => ({ ...f, shareWithClient: !!v }))
+                }
+                data-testid="switch-share-coach-note"
+                aria-label="Share this note with the client"
+              />
+            </div>
             <Textarea
               rows={3}
               value={form.clientVisibleCoachNotes}
               onChange={(e) => setForm((f) => ({ ...f, clientVisibleCoachNotes: e.target.value }))}
-              placeholder="Encouragement, takeaways, focus for next session — surfaces on the client's booking card."
-              className="bg-white/5 border-blue-500/20"
+              placeholder={
+                form.shareWithClient
+                  ? "Encouragement, takeaways, focus for next session — surfaces on the client's booking card."
+                  : "Toggle on to share encouragement or focus points with the client."
+              }
+              className="bg-white/5 border-blue-500/20 disabled:opacity-50"
+              disabled={!form.shareWithClient}
               data-testid="textarea-client-visible-notes"
             />
+            {!form.shareWithClient && (
+              <p className="text-[10px] text-white/40">
+                Saving with sharing off will clear any previously visible note.
+              </p>
+            )}
           </div>
         </div>
 

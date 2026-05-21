@@ -1099,6 +1099,19 @@ export const NOTIFICATION_KINDS = [
   "payment_reminder",
   "milestone",
   "waitlist_open",
+  // Task #56 — roadmap-aligned client-facing kinds. `milestone_achieved`
+  // and `waitlist_slot_available` are the canonical names going forward;
+  // `milestone` and `waitlist_open` are kept in the union so historical
+  // rows still render with their proper icon/accent. New emitters MUST
+  // use the canonical names. `package_activated` fires whenever a
+  // package transitions pending → active (verification approve,
+  // /approve toggle, trial conversion). `admin_message` is a generic
+  // admin-authored push (broadcast / 1-1); emitted by the admin
+  // broadcast endpoint and surfaced in the bell.
+  "milestone_achieved",
+  "waitlist_slot_available",
+  "package_activated",
+  "admin_message",
   "system",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
