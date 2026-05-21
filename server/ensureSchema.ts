@@ -199,7 +199,10 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS medical_clearance_note text,
       ADD COLUMN IF NOT EXISTS coach_notes text,
       ADD COLUMN IF NOT EXISTS goal_notes text,
-      ADD COLUMN IF NOT EXISTS communication_notes text;
+      ADD COLUMN IF NOT EXISTS communication_notes text,
+      -- Task #57: short structured medical/limitation flags (e.g.
+      -- "Knee", "Asthma"). Free-form text[]; admin-only edit.
+      ADD COLUMN IF NOT EXISTS medical_flags text[];
 
     ALTER TABLE IF EXISTS packages
       ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'unpaid',

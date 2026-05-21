@@ -72,6 +72,7 @@ const ADMIN_TABS: TabSpec[] = [
   { href: "/admin/clients", labelKey: "admin.tabs.progress", fallback: "Progress", icon: <Camera size={15} />, matches: () => false, hintKey: "admin.tabs.progressHint", hintFallback: "Open a client to manage progress photos" },
   { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
   { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
+  { href: "/admin/audit-log", labelKey: "admin.tabs.auditLog", fallback: "Audit log", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/audit-log") },
   { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
 

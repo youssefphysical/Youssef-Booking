@@ -1091,13 +1091,16 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
     try { return await fn(); } catch { return fallback; }
   };
 
-  const [bookings, packagesList, bodyMetrics, checkins, inbody, photos] = await Promise.all([
+  const [bookings, packagesList, bodyMetrics, checkins, inbody, photos, auditRows] = await Promise.all([
     safe(() => storage.getBookings({ userId }), [] as any[]),
     safe(() => storage.getPackages({ userId }), [] as any[]),
     safe(() => storage.listBodyMetrics(userId, { limit: 50 }), [] as any[]),
     safe(() => storage.listWeeklyCheckins(userId, { limit: 25 }), [] as any[]),
     safe(() => storage.getInbodyRecords({ userId }), [] as any[]),
     safe(() => storage.getProgressPhotos({ userId }), [] as any[]),
+    // Task #57 — fold admin audit entries that touched this client
+    // into the same timeline so the Activity tab shows who did what.
+    safe(() => (storage as any).listAuditEntries({ userId, limit: 80 }), [] as any[]),
   ]);
 
   // Map our canonical booking statuses (BOOKING_STATUSES in shared/schema.ts)
@@ -1220,8 +1223,62 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
     });
   }
 
+  // Task #57 — admin audit entries (approve, freeze, sessions ±, extend,
+  // payment update, attendance toggle, notes/medical flag edits, etc.)
+  // Rendered as `coach_note` kind so they reuse the existing tile look.
+  for (const r of auditRows as any[]) {
+    const at = r.createdAt instanceof Date
+      ? r.createdAt.toISOString()
+      : (r.createdAt ? String(r.createdAt) : null);
+    if (!at) continue;
+    const action = String(r.action ?? "admin action");
+    const title = action
+      .replace(/_/g, " ")
+      .replace(/\./g, " · ")
+      .replace(/^./, (c) => c.toUpperCase());
+    events.push({
+      id: `audit-${r.id}`,
+      kind: "coach_note",
+      at,
+      title: `Admin: ${title}`,
+      subtitle: r.reason ? String(r.reason).slice(0, 160) : null,
+    });
+  }
+
   events.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   return events.slice(0, limit);
+}
+
+// =====================================================
+// Task #57 — audit-log helper.
+// Single seam every admin mutation goes through so we capture
+// actor, action verb, entity, before/after, and an optional reason
+// in `admin_audit_log`. All failures are swallowed: a missing audit
+// row must never break the actual write the user requested.
+// =====================================================
+async function audit(
+  req: any,
+  action: string,
+  entityType: string,
+  entityId: number | null | undefined,
+  previousValue: unknown,
+  newValue: unknown,
+  reason?: string | null,
+) {
+  try {
+    const me = (req?.user ?? {}) as { id?: number };
+    await storage.recordAuditLog({
+      action,
+      entityType,
+      entityId: entityId ?? null,
+      previousValue: (previousValue ?? null) as any,
+      newValue: (newValue ?? null) as any,
+      performedByUserId: me.id ?? null,
+      reason: reason ?? null,
+    } as any);
+  } catch (e) {
+    console.warn("[audit] record failed:", action, entityType, entityId, e);
+  }
 }
 
 function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
@@ -1473,6 +1530,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       delete (updates as any).adminNotes;
       delete (updates as any).injuries;
       delete (updates as any).medicalNotes;
+      // Task #57 — medicalFlags is admin-managed safety metadata. Clients
+      // must not be able to set/clear their own flags via the generic
+      // profile patch; the only legitimate write path is admin-only
+      // PATCH /api/admin/clients/:id/medical-flags (audit-logged).
+      delete (updates as any).medicalFlags;
       delete (updates as any).hasUsedFreeTrial;
     } else {
       // Admin override semantics:
@@ -3203,6 +3265,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       })();
     }
 
+    await audit(req, "booking.link_partner", "booking", id,
+      { userId: booking.userId, linkedPartnerUserId: booking.linkedPartnerUserId ?? null },
+      { userId: booking.userId, linkedPartnerUserId: parsed.data.partnerUserId, override: !!parsed.data.override });
     res.json(sanitizeBookingForUser(req.user as User, updated));
   });
 
@@ -3222,6 +3287,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       linkedPartnerReminder24hSentAt: null,
       linkedPartnerReminder1hSentAt: null,
     } as any);
+    await audit(req, "booking.unlink_partner", "booking", id,
+      { userId: booking.userId, linkedPartnerUserId: booking.linkedPartnerUserId },
+      { userId: booking.userId, linkedPartnerUserId: null });
     res.json(sanitizeBookingForUser(req.user as User, updated));
   });
 
@@ -3442,6 +3510,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           console.warn("[waitlist] cancel-hook notify failed:", e);
         }
       })();
+    }
+
+    // Task #57 — log every admin-initiated cancellation (force-cancel).
+    // Client-initiated cancellations are intentionally NOT audited here:
+    // the audit feed is the *admin* mutation trail, not the client
+    // activity feed (which already surfaces booking status transitions).
+    if (me.role === "admin") {
+      await audit(req, "booking.force_cancel", "booking", booking.id,
+        { userId: booking.userId, status: booking.status, date: booking.date, timeSlot: booking.timeSlot },
+        { userId: booking.userId, status: newStatus, cancelledAt: new Date().toISOString() });
     }
 
     res.json(sanitizeBookingForUser(me, updated));
@@ -3921,7 +3999,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/bookings/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
+    // Snapshot before delete so audit retains userId/date/timeSlot/status.
+    const before = await storage.getBooking(id).catch(() => null);
     await storage.deleteBooking(id);
+    await audit(req, "booking.delete", "booking", id,
+      before ? { userId: before.userId, date: before.date, timeSlot: before.timeSlot, status: before.status } : null,
+      null);
     res.sendStatus(204);
   });
 
@@ -4368,11 +4451,65 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const pkg = await storage.getPackage(id);
     if (!pkg) return res.status(404).json({ message: "Package not found" });
     const me = req.user as User;
-    const updated = await storage.updatePackage(id, {
+
+    // Task #57 — freeze/expiry math.
+    // On FREEZE: stamp frozen=true + frozenAt=now() + freeze_start_date=today.
+    // On UNFREEZE: if the package was previously frozen, compute the
+    // exact whole-day duration between frozenAt and now and extend
+    // expiryDate by that count. freeze_end_date=today caps the audit
+    // trail. Falls back to a no-op extension if either anchor is
+    // missing (e.g. legacy rows pre-task-#27 with no frozenAt).
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const wasFrozen = !!pkg.frozen;
+    let frozenDays = 0;
+    let nextExpiry: string | null = pkg.expiryDate ? String(pkg.expiryDate) : null;
+    let patch: any = {
       frozen: parsed.data.frozen,
       frozenAt: parsed.data.frozen ? new Date() : null,
       frozenReason: parsed.data.frozen ? parsed.data.reason ?? null : null,
-    } as any);
+    };
+    if (parsed.data.frozen) {
+      patch.freezeStartDate = todayIso;
+      patch.freezeEndDate = null;
+    } else if (wasFrozen && pkg.frozenAt) {
+      // NOTE: this manual-unfreeze branch is the ONLY code path that flips
+      // packages.frozen back to false in this codebase (no scheduled cron
+      // auto-unfreeze exists — verified by grep across server/cron/ &
+      // server/storage.ts). If a scheduled unfreeze is ever added, route
+      // it through the same date-diff math below (or extract into a
+      // shared helper) so expiry is always advanced by the exact frozen
+      // calendar-day count.
+      // EXACT calendar-day diff between the freeze-start date (UTC) and
+      // today (UTC). 7 calendar days of freeze => +7 days of expiry,
+      // regardless of the partial-day clock offset. Falls back to
+      // frozenAt's date portion when freezeStartDate wasn't stamped on
+      // legacy rows.
+      const startIso = (pkg as any).freezeStartDate
+        ? String((pkg as any).freezeStartDate)
+        : new Date(pkg.frozenAt as any).toISOString().slice(0, 10);
+      const startUtc = Date.UTC(
+        Number(startIso.slice(0, 4)),
+        Number(startIso.slice(5, 7)) - 1,
+        Number(startIso.slice(8, 10)),
+      );
+      const todayUtc = Date.UTC(
+        Number(todayIso.slice(0, 4)),
+        Number(todayIso.slice(5, 7)) - 1,
+        Number(todayIso.slice(8, 10)),
+      );
+      frozenDays = Math.max(0, Math.round((todayUtc - startUtc) / 86_400_000));
+      if (nextExpiry && frozenDays > 0) {
+        const exp = new Date(nextExpiry);
+        if (!isNaN(exp.getTime())) {
+          exp.setUTCDate(exp.getUTCDate() + frozenDays);
+          nextExpiry = exp.toISOString().slice(0, 10);
+          patch.expiryDate = nextExpiry;
+        }
+      }
+      patch.freezeEndDate = todayIso;
+    }
+
+    const updated = await storage.updatePackage(id, patch);
     try {
       await storage.createPackageSessionHistory({
         packageId: pkg.id,
@@ -4380,9 +4517,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         action: parsed.data.frozen ? "package_frozen" : "package_unfrozen",
         sessionsDelta: 0,
         performedByUserId: me.id,
-        reason: parsed.data.reason ?? null,
+        reason: parsed.data.reason
+          ?? (!parsed.data.frozen && frozenDays > 0
+            ? `Unfrozen — expiry extended by ${frozenDays}d → ${nextExpiry}`
+            : null),
       } as any);
     } catch {/* ignore */}
+    await audit(
+      req,
+      parsed.data.frozen ? "package.freeze" : "package.unfreeze",
+      "package",
+      pkg.id,
+      {
+        userId: pkg.userId,
+        frozen: pkg.frozen,
+        expiryDate: pkg.expiryDate,
+      },
+      {
+        userId: pkg.userId,
+        frozen: parsed.data.frozen,
+        expiryDate: nextExpiry,
+        frozenDaysApplied: frozenDays,
+      },
+      parsed.data.reason ?? null,
+    );
     res.json(updated);
   });
 
@@ -4435,6 +4593,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (status === "paid" && pkg.paymentStatus !== "paid") {
       void dispatchClientPaymentConfirmedEmail({ pkg: updated, paymentMethod: parsed.data.note ?? null });
     }
+    await audit(
+      req,
+      "package.payment_update",
+      "package",
+      pkg.id,
+      { userId: pkg.userId, paymentStatus: pkg.paymentStatus, amountPaid: (pkg as any).amountPaid ?? 0 },
+      { userId: pkg.userId, paymentStatus: status, amountPaid: nextAmountPaid ?? (pkg as any).amountPaid ?? 0 },
+      parsed.data.note ?? null,
+    );
     res.json(updated);
   });
 
@@ -4585,6 +4752,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         reason,
       } as any);
     } catch {/* ignore */}
+    await audit(
+      req,
+      delta > 0 ? "package.session_grant" : "package.session_remove",
+      "package",
+      pkg.id,
+      { userId: pkg.userId, totalSessions: pkg.totalSessions, usedSessions: pkg.usedSessions },
+      { userId: pkg.userId, delta, totalSessions: updated?.totalSessions, usedSessions: updated?.usedSessions },
+      reason ?? null,
+    );
     res.json(updated);
   });
 
@@ -4729,6 +4905,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         `Your ${updated?.name || pkg.name || "training"} package is live — book your next session whenever you're ready.`,
         { link: "/dashboard", meta: { packageId: pkg.id } },
       );
+      await audit(
+        req,
+        "package.verification_approve",
+        "package",
+        id,
+        { userId: pkg.userId, status: "pending_verification" },
+        { userId: pkg.userId, status: "active" },
+        note || null,
+      );
       return res.json(updated);
     }
     if (action === "reject") {
@@ -4743,6 +4928,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           reason: note || "Activation request rejected",
         } as any);
       } catch {/* ignore */}
+      await audit(
+        req,
+        "package.verification_reject",
+        "package",
+        id,
+        { userId: pkg.userId, status: "pending_verification" },
+        { userId: pkg.userId, status: "rejected" },
+        note || null,
+      );
       return res.json({ ok: true, deleted: true });
     }
     return res.status(400).json({ message: "Unknown action" });
@@ -4774,6 +4968,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           : parsed.data.note ?? "Approval revoked",
       } as any);
     } catch {/* ignore */}
+    await audit(
+      req,
+      parsed.data.approved ? "package.approve" : "package.unapprove",
+      "package",
+      pkg.id,
+      { userId: pkg.userId, adminApproved: pkg.adminApproved },
+      { userId: pkg.userId, adminApproved: parsed.data.approved },
+      parsed.data.note ?? null,
+    );
     res.json(updated);
   });
 
@@ -6736,6 +6939,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       attendanceReason: parsed.data.reason ?? null,
     } as any);
 
+    await audit(
+      req,
+      `booking.attendance.${parsed.data.attendance}`,
+      "booking",
+      id,
+      { userId: booking.userId, status: previousStatus },
+      { userId: booking.userId, status: newStatus, attendance: parsed.data.attendance },
+      parsed.data.reason ?? null,
+    );
+
     // Package usage reconciliation. Idempotency anchored on
     // bookings.package_session_deducted_at — see PATCH /api/bookings/:id
     // for the same pattern. Belt-and-braces against auto-complete cron
@@ -6901,6 +7114,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[admin/approve] package approval failed:", e);
     }
 
+    await audit(req, "client.approve", "user", id,
+      { userId: id, clientStatus: client.clientStatus },
+      { userId: id, clientStatus: "active", note });
     res.json(sanitizeUserAdminView(updated));
   });
 
@@ -6940,6 +7156,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[admin/reject] package deactivation failed:", e);
     }
 
+    await audit(req, "client.reject", "user", id,
+      { userId: id, clientStatus: client.clientStatus },
+      { userId: id, clientStatus: "cancelled", reason });
     res.json(sanitizeUserAdminView(updated));
   });
 
@@ -6949,8 +7168,187 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) {
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid notes" });
     }
+    const prev = await storage.getUser(id);
     const updated = await storage.updateUser(id, { adminNotes: parsed.data.adminNotes });
+    await audit(
+      req,
+      "client.note_update",
+      "user",
+      id,
+      { userId: id, adminNotes: (prev as any)?.adminNotes ?? null },
+      { userId: id, adminNotes: parsed.data.adminNotes },
+    );
     res.json(sanitizeUserAdminView(updated));
+  });
+
+  // Task #57 — fire a single in-app notification to one client.
+  // Used by the floating QuickActionsPanel "Send notification" action.
+  app.post("/api/admin/clients/:id/notify", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid client id" });
+    const target = await storage.getUser(id);
+    if (!target || target.role !== "client") {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    const title = typeof req.body?.title === "string" ? req.body.title.trim().slice(0, 120) : "";
+    const body = typeof req.body?.body === "string" ? req.body.body.trim().slice(0, 600) : "";
+    const link = typeof req.body?.link === "string" ? req.body.link.slice(0, 240) : null;
+    if (!body) return res.status(400).json({ message: "Message body is required" });
+    try {
+      await notifyUser(id, "admin_message", title || "Message from your coach", body, link ? { link } : {});
+    } catch (e) {
+      console.warn("[admin/clients/notify] failed:", e);
+      return res.status(500).json({ message: "Failed to notify client" });
+    }
+    await audit(req, "client.notify", "user", id, null, { title, body, link });
+    res.json({ ok: true });
+  });
+
+  // Task #57 — admin-only edit of the structured medical/limitation
+  // flags surfaced on the bookings calendar tile and client header.
+  // Free-form string array; trimmed, deduped, capped at 10 entries.
+  app.patch("/api/admin/clients/:id/medical-flags", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid client id" });
+    const target = await storage.getUser(id);
+    if (!target || target.role !== "client") {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    const raw = Array.isArray(req.body?.medicalFlags) ? req.body.medicalFlags : [];
+    const cleaned = Array.from(
+      new Set(
+        raw
+          .map((x: any) => (typeof x === "string" ? x.trim() : ""))
+          .filter((s: string) => s.length > 0 && s.length <= 40),
+      ),
+    ).slice(0, 10) as string[];
+    const updated = await storage.updateUser(id, { medicalFlags: cleaned } as any);
+    await audit(
+      req,
+      "client.medical_flags_update",
+      "user",
+      id,
+      { userId: id, medicalFlags: (target as any).medicalFlags ?? [] },
+      { userId: id, medicalFlags: cleaned },
+    );
+    res.json(sanitizeUserAdminView(updated));
+  });
+
+  // ============== TASK #57 — AUDIT LOG QUERY ENDPOINTS ==============
+  // Global feed (used by /admin/audit-log) and a per-client slice (used
+  // by the client detail Timeline tab to render audit alongside the
+  // existing activity feed).
+  app.get("/api/admin/audit-log", requireAdmin, async (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const entityType = typeof req.query.entityType === "string" ? req.query.entityType : undefined;
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    const rows = await (storage as any).listAuditEntries({
+      limit,
+      offset,
+      entityType,
+      userId: Number.isFinite(userId) ? userId : undefined,
+    });
+    // Enrich with the actor's display name so the UI doesn't have to
+    // do an N+1 fetch. Single grouped lookup over distinct actor ids.
+    const actorIds = Array.from(
+      new Set(
+        (rows as any[])
+          .map((r) => r.performedByUserId)
+          .filter((x): x is number => typeof x === "number"),
+      ),
+    );
+    const actors: Record<number, { id: number; fullName: string | null; email: string | null }> = {};
+    for (const aid of actorIds) {
+      const u = await storage.getUser(aid);
+      if (u) actors[aid] = { id: u.id, fullName: (u as any).fullName ?? null, email: (u as any).email ?? null };
+    }
+    res.json(
+      (rows as any[]).map((r) => ({
+        ...r,
+        actor: r.performedByUserId ? actors[r.performedByUserId] ?? null : null,
+      })),
+    );
+  });
+
+  app.get("/api/admin/clients/:id/audit-log", requireAdmin, async (req, res) => {
+    const userId = Number(req.params.id);
+    if (!userId) return res.status(400).json({ message: "Invalid client id" });
+    const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+    const rows = await (storage as any).listAuditEntries({ userId, limit });
+    const actorIds = Array.from(
+      new Set(
+        (rows as any[])
+          .map((r) => r.performedByUserId)
+          .filter((x): x is number => typeof x === "number"),
+      ),
+    );
+    const actors: Record<number, { id: number; fullName: string | null }> = {};
+    for (const aid of actorIds) {
+      const u = await storage.getUser(aid);
+      if (u) actors[aid] = { id: u.id, fullName: (u as any).fullName ?? null };
+    }
+    res.json(
+      (rows as any[]).map((r) => ({
+        ...r,
+        actor: r.performedByUserId ? actors[r.performedByUserId] ?? null : null,
+      })),
+    );
+  });
+
+  // ============== TASK #57 — VIEW AS CLIENT (IMPERSONATION) ==============
+  // Session-scoped. Stores the original admin id + target client id on
+  // the express session; the middleware in setupAuth() rewrites req.user
+  // and blocks every non-GET while it's set.
+  //
+  // IMPORTANT: /exit MUST be declared before /:userId so Express doesn't
+  // match "exit" as a userId param. During impersonation requireAdmin
+  // fails (req.user is the client), so /exit also runs without it — it
+  // is gated on the session's own impersonatorUserId.
+  app.post("/api/admin/impersonate/exit", async (req, res) => {
+    const s: any = req.session;
+    const adminId = s?.impersonatorUserId;
+    const targetId = s?.impersonatedUserId;
+    if (!adminId) return res.json({ ok: true });
+    delete s.impersonatorUserId;
+    delete s.impersonatedUserId;
+    // Restore passport's serialized user id so the next request resolves
+    // back to the original admin without forcing a re-login.
+    if (s.passport && typeof adminId === "number") {
+      s.passport.user = adminId;
+    }
+    // Best-effort audit — performed by admin even though `req.user` was
+    // the client during impersonation; we pass adminId explicitly.
+    try {
+      await storage.recordAuditLog({
+        action: "client.impersonate_end",
+        entityType: "user",
+        entityId: targetId ?? null,
+        previousValue: { adminId, viewingAs: targetId } as any,
+        newValue: { adminId } as any,
+        performedByUserId: adminId,
+        reason: null,
+      } as any);
+    } catch {/* ignore */}
+    s.save?.(() => res.json({ ok: true }));
+  });
+
+  app.post("/api/admin/impersonate/:userId", requireAdmin, async (req, res) => {
+    const targetId = Number(req.params.userId);
+    if (!targetId || !Number.isInteger(targetId)) {
+      return res.status(400).json({ message: "Invalid client id" });
+    }
+    const target = await storage.getUser(targetId);
+    if (!target || target.role !== "client") {
+      return res.status(404).json({ message: "Client not found" });
+    }
+    const me = req.user as User;
+    const s: any = req.session;
+    s.impersonatorUserId = me.id;
+    s.impersonatedUserId = targetId;
+    await audit(req, "client.impersonate_start", "user", targetId,
+      { adminId: me.id }, { adminId: me.id, viewingAs: targetId });
+    s.save?.(() => res.json({ ok: true, impersonatedUserId: targetId }));
   });
 
   // ============== ADMIN: PACKAGE EXTEND (manual) ==============
@@ -7002,6 +7400,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       previousExpiry,
       newExpiry: newExpiryStr,
     });
+    await audit(
+      req,
+      "package.extend",
+      "package",
+      pkg.id,
+      { userId: pkg.userId, expiryDate: previousExpiry },
+      { userId: pkg.userId, expiryDate: newExpiryStr, daysAdded },
+      parsed.data.newExpiryDate
+        ? `Expiry set to ${newExpiryStr}`
+        : `Extended by ${parsed.data.addDays ?? 7} days`,
+    );
     res.json(updated);
   });
 
@@ -7196,6 +7605,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             .json({ message: "Failed to deduct session from package; booking rolled back" });
         }
       }
+      await audit(req, "booking.manual_create", "booking", created.id,
+        null,
+        {
+          userId,
+          packageId: data.packageId ?? null,
+          date: data.date,
+          timeSlot: data.timeSlot,
+          status: finalStatus,
+          consumedSession: willConsume,
+        });
       res.status(201).json(finalized);
     },
   );
@@ -7277,6 +7696,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             .json({ message: "Failed to deduct sessions from package; bookings rolled back" });
         }
       }
+      await audit(req, "booking.manual_create_bulk", "booking", created[0]?.id ?? null,
+        null,
+        {
+          userId,
+          packageId: data.packageId ?? null,
+          startDate: data.startDate,
+          timeSlot: data.timeSlot,
+          count: data.count,
+          spacingDays: data.spacingDays,
+          status: finalStatus,
+          consumedSessions: willConsume ? data.count : 0,
+          bookingIds: created.map((b) => b.id),
+        });
       res.status(201).json({ count: created.length });
     },
   );

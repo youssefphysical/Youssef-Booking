@@ -187,6 +187,12 @@ export const users = pgTable("users", {
   preferredTrainingDays: text("preferred_training_days").array(),
   injuries: text("injuries"),
   medicalNotes: text("medical_notes"),
+  // Task #57 — short, structured medical / limitation flags surfaced to
+  // the coach on the bookings calendar tile and client command-center
+  // header (e.g. "Asthma", "Knee", "Pregnancy"). Separate from the
+  // free-form `medicalNotes` and from generic `client_tags` so the UI
+  // can render them at-a-glance without parsing prose.
+  medicalFlags: text("medical_flags").array(),
   parqCompleted: boolean("parq_completed").notNull().default(false),
   waiverAccepted: boolean("waiver_accepted").notNull().default(false),
   medicalClearanceNote: text("medical_clearance_note"),

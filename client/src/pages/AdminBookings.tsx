@@ -756,6 +756,19 @@ function BookingRow({
                     + {partnerName}
                   </span>
                 )}
+                {/* Task #57 — medical/limitation chips on the calendar tile. */}
+                {Array.isArray((b.user as any)?.medicalFlags) &&
+                  (b.user as any).medicalFlags.length > 0 &&
+                  ((b.user as any).medicalFlags as string[]).map((f) => (
+                    <span
+                      key={f}
+                      title={`Medical: ${f}`}
+                      className="inline-flex items-center text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md border border-amber-400/40 bg-amber-400/10 text-amber-300"
+                      data-testid={`booking-medical-${b.id}-${f.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      {f}
+                    </span>
+                  ))}
               </p>
               <p className="text-[12px] sm:text-xs text-muted-foreground/90 mt-0.5 truncate">
                 {b.user?.email || "—"}

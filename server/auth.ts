@@ -276,6 +276,54 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Task #57 — "View as client" impersonation middleware.
+  // When an admin starts an impersonation session via
+  // POST /api/admin/impersonate/:userId, we set:
+  //   session.impersonatorUserId  = original admin's id
+  //   session.impersonatedUserId  = client's id
+  // While both are set, every request is rewritten so `req.user`
+  // becomes the impersonated client (so client-scoped endpoints
+  // return the client's data, exactly mirroring what they would
+  // see). To make impersonation strictly READ-ONLY we reject any
+  // non-GET request — admin writes must exit impersonation first.
+  app.use(async (req, res, next) => {
+    const s: any = req.session;
+    const impId = s?.impersonatedUserId;
+    if (!impId) return next();
+    try {
+      const client = await storage.getUser(impId as number);
+      if (!client) {
+        delete s.impersonatorUserId;
+        delete s.impersonatedUserId;
+        return next();
+      }
+      (req as any).user = client;
+      (req as any).isAuthenticated = () => true;
+      // STRICT read-only impersonation. Allow GET/HEAD freely; for
+       // non-GET, allow only an explicit, minimal allowlist:
+      //   • POST /api/admin/impersonate/exit — escape hatch.
+      //   • POST /api/auth/logout — clean session teardown.
+      // Everything else (login, password reset, any /api/auth/* POST
+      // beyond logout, every mutation route) is rejected. The session
+      // must be exited first.
+      const url = req.originalUrl || req.url;
+      if (req.method === "GET" || req.method === "HEAD") return next();
+      if (
+        (req.method === "POST" && url.startsWith("/api/admin/impersonate/exit")) ||
+        (req.method === "POST" && url.startsWith("/api/auth/logout"))
+      ) {
+        return next();
+      }
+      return res.status(403).json({
+        message:
+          "View-as-client is read-only. Exit impersonation to make changes.",
+      });
+    } catch (e) {
+      console.warn("[impersonation] middleware failed:", e);
+      return next();
+    }
+  });
+
   passport.use(
     new LocalStrategy(async (identifier, password, done) => {
       try {
@@ -681,7 +729,15 @@ export function setupAuth(app: Express) {
   app.get("/api/auth/me", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) return res.sendStatus(401);
     const enriched = await sanitizeAndEnrich(req.user as User);
-    res.json(enriched);
+    // Task #57 — surface the impersonation flag so the client can
+    // render the "Viewing as <client>" banner with an exit button.
+    // The real admin's id is preserved on the session so we can
+    // restore it on exit and so audit logs still attribute writes
+    // to the actor (writes are blocked while impersonating, but
+    // we expose the id for completeness in the response shape).
+    const impersonatedByAdminId =
+      (req.session as any)?.impersonatorUserId ?? null;
+    res.json({ ...enriched, impersonatedByAdminId });
   });
 }
 

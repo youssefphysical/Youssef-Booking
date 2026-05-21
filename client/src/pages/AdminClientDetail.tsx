@@ -8,6 +8,7 @@ import {
   AdminEmptyState,
 } from "@/components/admin/primitives";
 import { ClientCommandCenter } from "@/components/admin/ClientCommandCenter";
+import { QuickActionsPanel } from "@/components/admin/QuickActionsPanel";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -181,6 +182,7 @@ const CLIENT_TABS: Array<{ value: string; labelKey: string; fallback: string; ic
   { value: "packages", labelKey: "admin.clientDetail.tabPackage", fallback: "Payments", icon: <Wallet size={13} /> },
   { value: "inbody", labelKey: "admin.clientDetail.tabHealth", fallback: "Health", icon: <HeartPulse size={13} /> },
   { value: "activity", labelKey: "admin.tabs.activity", fallback: "Activity", icon: <Activity size={13} /> },
+  { value: "audit", labelKey: "admin.tabs.audit", fallback: "Audit", icon: <ShieldCheck size={13} /> },
   { value: "alerts", labelKey: "admin.clientDetail.tabAlerts", fallback: "Alerts", icon: <Bell size={13} /> },
 ];
 
@@ -247,6 +249,22 @@ function ClientHeader({
                 <ClientStatusBadge status={(client.clientStatus ?? "incomplete") as ClientStatus} />
                 <HealthBadge health={client.health} size="sm" />
               </div>
+              {/* Task #57 — medical/limitation chips, edited via the
+                  Health tab editor below. Cyan-on-cyan to flag clearly. */}
+              {Array.isArray((client as any).medicalFlags) &&
+                (client as any).medicalFlags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5" data-testid="medical-flags-strip">
+                    {((client as any).medicalFlags as string[]).map((f) => (
+                      <span
+                        key={f}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-amber-400/30 bg-amber-400/10 text-amber-200 text-[10px] uppercase tracking-wider font-bold"
+                        data-testid={`medical-flag-${f.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        <AlertCircle size={9} /> {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] sm:text-[11px] text-muted-foreground mt-1.5">
                 {client.email && (
                   <span className="inline-flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
@@ -448,6 +466,13 @@ export default function AdminClientDetail() {
           remaining={remaining}
           onJump={setTab}
         />
+        {/* Task #57 — floating admin quick actions. Acts on the
+            currently active package (if any) + the client. */}
+        <QuickActionsPanel
+          clientId={client.id}
+          clientName={client.fullName ?? client.email ?? `Client #${client.id}`}
+          packageId={activePkg?.id ?? null}
+        />
 
         <Tabs value={tab} onValueChange={setTab} className="w-full">
           {/* Premium horizontal-scroll tab rail */}
@@ -496,6 +521,7 @@ export default function AdminClientDetail() {
               title={t("admin.tabs.activity", "Activity")}
             />
           </TabsContent>
+          <TabsContent value="audit"><ClientAuditTab clientId={client.id} /></TabsContent>
           <TabsContent value="alerts"><AlertsPanel client={client} /></TabsContent>
         </Tabs>
       </div>
@@ -3423,6 +3449,41 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
     waiverAccepted: !!(client as any).waiverAccepted,
   });
 
+  // Task #57 — medical-flag chips state (free-text + suggested presets).
+  const [medicalFlags, setMedicalFlags] = useState<string[]>(
+    Array.isArray((client as any).medicalFlags) ? (client as any).medicalFlags : [],
+  );
+  const [flagDraft, setFlagDraft] = useState("");
+  const flagsMutation = useMutation({
+    mutationFn: async (flags: string[]) => {
+      const r = await apiRequest("PATCH", `/api/admin/clients/${client.id}/medical-flags`, {
+        medicalFlags: flags,
+      });
+      return r.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/users"] });
+      qc.invalidateQueries({ queryKey: ["/api/clients"] });
+      qc.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({ title: "Medical flags updated" });
+    },
+    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+  const addFlag = (raw: string) => {
+    const v = raw.trim();
+    if (!v) return;
+    if (medicalFlags.includes(v)) return;
+    const next = [...medicalFlags, v].slice(0, 10);
+    setMedicalFlags(next);
+    setFlagDraft("");
+    flagsMutation.mutate(next);
+  };
+  const removeFlag = (f: string) => {
+    const next = medicalFlags.filter((x) => x !== f);
+    setMedicalFlags(next);
+    flagsMutation.mutate(next);
+  };
+
   const m = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
       const r = await apiRequest("PATCH", `/api/users/${client.id}`, body);
@@ -3545,6 +3606,80 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
           className="bg-white/5 border-white/10 text-sm"
           data-testid="textarea-medical-clearance"
         />
+      </div>
+
+      {/* Task #57 — structured medical/limitation flags. Surfaced on the
+          client header and the bookings calendar tile. Chip add/remove
+          PATCHes /api/admin/clients/:id/medical-flags directly (audit
+          logged server-side). Free-text + a handful of common presets. */}
+      <div>
+        <label className="text-[11px] text-muted-foreground block mb-2 inline-flex items-center gap-1.5">
+          <AlertCircle size={11} /> Medical flags
+          <span className="text-[10px] text-muted-foreground/70">(shown on bookings + header)</span>
+        </label>
+        <div className="flex flex-wrap gap-1.5 mb-2" data-testid="medical-flags-editor">
+          {medicalFlags.length === 0 && (
+            <span className="text-[11px] text-muted-foreground italic">None set.</span>
+          )}
+          {medicalFlags.map((f) => (
+            <span
+              key={f}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-amber-400/30 bg-amber-400/10 text-amber-200 text-[10.5px] font-semibold uppercase tracking-wider"
+              data-testid={`chip-medical-${f.toLowerCase().replace(/\s+/g, "-")}`}
+            >
+              {f}
+              <button
+                type="button"
+                onClick={() => removeFlag(f)}
+                className="text-amber-200/70 hover:text-amber-100"
+                aria-label={`Remove ${f}`}
+                data-testid={`remove-medical-${f.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={flagDraft}
+            onChange={(e) => setFlagDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addFlag(flagDraft);
+              }
+            }}
+            placeholder="e.g. Knee injury"
+            maxLength={40}
+            className="h-9 bg-white/5 border-white/10 text-sm"
+            data-testid="input-medical-flag"
+          />
+          <Button
+            type="button"
+            onClick={() => addFlag(flagDraft)}
+            disabled={!flagDraft.trim() || flagsMutation.isPending || medicalFlags.length >= 10}
+            data-testid="button-add-medical-flag"
+          >
+            Add
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {["Knee injury", "Lower back", "Shoulder", "Hypertension", "Diabetes", "Pregnancy", "Asthma"]
+            .filter((p) => !medicalFlags.includes(p))
+            .map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => addFlag(p)}
+                disabled={flagsMutation.isPending || medicalFlags.length >= 10}
+                data-testid={`preset-medical-${p.toLowerCase().replace(/\s+/g, "-")}`}
+                className="text-[10.5px] px-2 h-7 rounded-md border border-white/10 bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] disabled:opacity-40"
+              >
+                + {p}
+              </button>
+            ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4">
@@ -3797,6 +3932,105 @@ function SessionHistoryCard({ userId }: { userId: number }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+// =============================================================
+// Task #57 — per-client audit timeline. Uses the dedicated
+// /api/admin/clients/:id/audit-log endpoint so the admin can see
+// every mutation that touched THIS client (actor + before/after
+// JSON) without scanning the global page.
+// =============================================================
+function ClientAuditTab({ clientId }: { clientId: number }) {
+  const { data, isLoading, isError } = useQuery<any[]>({
+    queryKey: [`/api/admin/clients/${clientId}/audit-log`],
+    queryFn: async () => {
+      const r = await fetch(`/api/admin/clients/${clientId}/audit-log?limit=120`, {
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error("Failed to load audit log");
+      return r.json();
+    },
+  });
+  const [openId, setOpenId] = useState<number | null>(null);
+  return (
+    <div className="space-y-3" data-testid="client-audit-tab">
+      <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+        <ShieldCheck size={14} className="text-primary" />
+        Every admin mutation that touched this client — newest first.
+      </div>
+      {isLoading && (
+        <div className="text-muted-foreground text-sm py-6 flex items-center gap-2">
+          <Loader2 size={14} className="animate-spin" /> Loading…
+        </div>
+      )}
+      {isError && <div className="text-rose-300 text-sm py-6">Failed to load audit log.</div>}
+      {!isLoading && (data?.length ?? 0) === 0 && (
+        <div className="text-center text-muted-foreground text-sm py-10">
+          No admin actions recorded for this client yet.
+        </div>
+      )}
+      <ul className="divide-y divide-white/[0.06]">
+        {(data ?? []).map((r) => {
+          const isOpen = openId === r.id;
+          const ts = new Date(r.createdAt);
+          return (
+            <li key={r.id} data-testid={`client-audit-row-${r.id}`}>
+              <button
+                type="button"
+                onClick={() => setOpenId(isOpen ? null : r.id)}
+                className="w-full text-left py-2.5 px-1 flex items-start gap-3 hover:bg-white/[0.02] rounded-md"
+              >
+                <ChevronRight
+                  size={14}
+                  className={`mt-1 text-muted-foreground transition-transform ${
+                    isOpen ? "rotate-90 text-primary" : ""
+                  }`}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12.5px] font-semibold truncate">
+                    <span className="text-primary">{r.action}</span>
+                    <span className="text-muted-foreground"> · {r.entityType}</span>
+                    {r.entityId != null && (
+                      <span className="text-muted-foreground"> #{r.entityId}</span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {format(ts, "MMM d, yyyy HH:mm")} ·{" "}
+                    {r.actor?.fullName ||
+                      r.actor?.email ||
+                      (r.performedByUserId ? `User #${r.performedByUserId}` : "system")}
+                  </p>
+                  {r.reason && (
+                    <p className="text-[11.5px] text-foreground/80 mt-1 truncate">{r.reason}</p>
+                  )}
+                </div>
+              </button>
+              {isOpen && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pb-3 ps-7">
+                  <div className="rounded-lg border border-white/[0.06] bg-black/40 p-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      Previous
+                    </p>
+                    <pre className="text-[11px] text-foreground/90 overflow-x-auto whitespace-pre-wrap break-words">
+                      {r.previousValue == null ? "—" : JSON.stringify(r.previousValue, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="rounded-lg border border-white/[0.06] bg-black/40 p-2">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                      New
+                    </p>
+                    <pre className="text-[11px] text-foreground/90 overflow-x-auto whitespace-pre-wrap break-words">
+                      {r.newValue == null ? "—" : JSON.stringify(r.newValue, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -4178,4 +4178,36 @@ declare module "./storage" {
   return db.select().from(adminAuditLog).orderBy(desc(adminAuditLog.createdAt)).limit(limit);
 };
 
+// Task #57 — paginated audit-log query for the global Audit page and
+// the per-client Timeline tab. Both filters are OR-able and optional:
+// pass `userId` to scope to a single client (matches rows whose
+// entityType='user' & entityId=userId OR whose newValue/previousValue
+// JSON contains "userId":N), or `entityType` for a coarser slice.
+(DatabaseStorage.prototype as any).listAuditEntries = async function (opts: {
+  userId?: number;
+  entityType?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<AdminAuditLogEntry[]> {
+  const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
+  const offset = Math.max(opts.offset ?? 0, 0);
+  const where: any[] = [];
+  if (opts.entityType) where.push(eq(adminAuditLog.entityType, opts.entityType));
+  if (opts.userId != null) {
+    where.push(
+      sql`(
+        (${adminAuditLog.entityType} = 'user' AND ${adminAuditLog.entityId} = ${opts.userId})
+        OR ${adminAuditLog.newValue}::jsonb->>'userId' = ${String(opts.userId)}
+        OR ${adminAuditLog.previousValue}::jsonb->>'userId' = ${String(opts.userId)}
+      )`,
+    );
+  }
+  const q = db.select().from(adminAuditLog);
+  const qFiltered = where.length > 0 ? q.where(and(...where)) : q;
+  return qFiltered
+    .orderBy(desc(adminAuditLog.createdAt))
+    .limit(limit)
+    .offset(offset);
+};
+
 export const storage = new DatabaseStorage();

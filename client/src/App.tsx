@@ -22,6 +22,7 @@ import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 
 // ===== Lazy-loaded routes (split into per-page chunks) =====
 // Every other page is loaded on demand. This keeps the initial JS
@@ -66,6 +67,7 @@ const AdminSupplementLibrary = lazy(() => import("@/pages/AdminSupplementLibrary
 const AdminSupplementStacks = lazy(() => import("@/pages/AdminSupplementStacks"));
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
+const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
@@ -134,6 +136,7 @@ function Router() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
+      {!isPrintRoute && <ImpersonationBanner />}
       {!isPrintRoute && <Navigation />}
       {!isPrintRoute && <CookieBanner />}
       {!isPrintRoute && <InstallPrompt />}
@@ -267,6 +270,9 @@ function Router() {
           </Route>
           <Route path="/admin/staff">
             <ProtectedRoute component={AdminStaffPage} superAdminOnly />
+          </Route>
+          <Route path="/admin/audit-log">
+            <ProtectedRoute component={AdminAuditLog} adminOnly />
           </Route>
 
           <Route component={NotFound} />
