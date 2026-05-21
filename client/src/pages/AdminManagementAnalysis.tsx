@@ -371,34 +371,38 @@ export default function AdminManagementAnalysis() {
   // ---------- render ----------
   if (isLoading) {
     return (
-      <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto">
-        <AdminPageHeader
-          eyebrow="Insights"
-          title="Management & Analysis"
-          subtitle="Loading aggregated metrics…"
-          testId="text-management-analysis-title"
-        />
-        <AdminSkeletonStack count={8} />
+      <div className="admin-shell">
+        <div className="admin-container">
+          <AdminPageHeader
+            eyebrow="Insights"
+            title="Management & Analysis"
+            subtitle="Loading aggregated metrics…"
+            testId="text-management-analysis-title"
+          />
+          <AdminSkeletonStack count={8} />
+        </div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-7xl mx-auto">
-        <AdminPageHeader
-          eyebrow="Insights"
-          title="Management & Analysis"
-          testId="text-management-analysis-title"
-        />
-        <AdminCard>
-          <AdminEmptyState
-            icon={<AlertTriangle size={32} className="text-amber-300" />}
-            title="Couldn't load analytics"
-            body="Try refreshing in a moment."
-            testId="empty-management-analysis"
+      <div className="admin-shell">
+        <div className="admin-container">
+          <AdminPageHeader
+            eyebrow="Insights"
+            title="Management & Analysis"
+            testId="text-management-analysis-title"
           />
-        </AdminCard>
+          <AdminCard>
+            <AdminEmptyState
+              icon={<AlertTriangle size={32} className="text-amber-300" />}
+              title="Couldn't load analytics"
+              body="Try refreshing in a moment."
+              testId="empty-management-analysis"
+            />
+          </AdminCard>
+        </div>
       </div>
     );
   }
