@@ -652,7 +652,7 @@ export function HeroSlider() {
               data-testid="hero-buttons-row"
             >
               <Link
-                href="/book"
+                href="/wizard"
                 className="w-full sm:w-auto"
                 data-testid="link-hero-start-transformation"
               >

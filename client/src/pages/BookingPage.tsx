@@ -5,7 +5,7 @@ import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation, Link } from "wouter";
+import { useLocation, Link, Redirect } from "wouter";
 import {
   Loader2,
   Calendar as CalendarIcon,
@@ -73,15 +73,11 @@ export default function BookingPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  // Booking-safety (May 2026): anonymous visitors must authenticate before
-  // they can see the slot picker — server already enforces requireAuth on
-  // POST /api/bookings, this just gives a graceful UX (no flash of the
-  // booking form, deep-link back to /book after sign-in).
-  useEffect(() => {
-    if (!isAuthLoading && !user) {
-      navigate("/auth?redirect=/book");
-    }
-  }, [isAuthLoading, user, navigate]);
+  // Booking-safety: anonymous visitors are redirected to /wizard via
+  // /auth (deep-link back to /wizard after sign-in) so the very first
+  // step is always location selection — never the booking grid. The
+  // synchronous <Redirect> below replaces the previous useEffect-based
+  // navigation that caused a one-frame flash of booking UI.
   // Default to *Dubai* today, not browser-local today. A device sitting in a
   // timezone ahead of Dubai (or with a wrong clock) would otherwise default the
   // picker to Dubai-tomorrow, making early-morning slots erroneously appear
@@ -151,15 +147,9 @@ export default function BookingPage() {
   const wizardChecksLoading = isClient && (locLoading || pkgsLoading);
   const needsWizard =
     isClient && !wizardChecksLoading && trainingLocations.length === 0 && !anyActivePkg;
-  useEffect(() => {
-    if (needsWizard) navigate("/wizard");
-  }, [needsWizard, navigate]);
-  // Gate the entire booking surface (including signed-out fallback, but
-  // *not* the post-submit success screen) on auth + wizard prechecks so
-  // first-time clients see a premium skeleton — never the booking grid
-  // — until we know whether to redirect to /wizard.
-  const showPrecheckSkeleton =
-    !submitted && (isAuthLoading || wizardChecksLoading || needsWizard);
+  // Wizard redirect is handled synchronously via <Redirect> below — no
+  // useEffect, so the booking surface never paints a single frame for
+  // first-time clients.
 
   const isAdmin = user?.role === "admin";
   const hasUsedFreeTrial = !!user?.hasUsedFreeTrial;
@@ -322,50 +312,34 @@ export default function BookingPage() {
     { value: "duo", label: t("booking.sessionDuo"), hint: t("booking.hintTrainPartner") },
   ];
 
-  // Premium loading state — covers (a) auth still resolving, (b) training-
-  // locations / packages still loading for clients, (c) needsWizard true
-  // (the redirect to /wizard is in-flight). Renders BEFORE any booking
-  // surface so first-time clients never see a flash of the calendar /
-  // package cards.
-  if (showPrecheckSkeleton) {
-    return (
-      <div className="max-w-3xl mx-auto px-5 pt-24 pb-32" data-testid="booking-precheck-loading">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/15 rounded-2xl text-primary">
-            <CalendarIcon size={22} />
-          </div>
-          <div className="flex-1 space-y-2">
-            <div className="admin-shimmer h-7 w-48 rounded-lg" />
-            <div className="admin-shimmer h-3.5 w-64 rounded" />
-          </div>
+  // -------- Synchronous gating (no booking UI is ever painted while
+  // any of these conditions hold) --------
+  //
+  // 1. Anonymous visitors → /auth, then back to /wizard. The wizard is
+  //    the mandatory first step for new clients per product policy.
+  // 2. First-time clients who haven't picked a training location AND
+  //    have no active package → /wizard.
+  // 3. While the prechecks (auth, training-locations, packages) are
+  //    still loading, render a minimal neutral spinner — no calendar,
+  //    no skeleton cards, no booking iconography — so there is zero
+  //    visual hint of the booking surface before we know where to go.
+  if (!submitted) {
+    if (!isAuthLoading && !user) {
+      return <Redirect to="/auth?redirect=/wizard" />;
+    }
+    if (needsWizard) {
+      return <Redirect to="/wizard" />;
+    }
+    if (isAuthLoading || wizardChecksLoading) {
+      return (
+        <div
+          className="min-h-[60vh] flex items-center justify-center"
+          data-testid="booking-precheck-loading"
+        >
+          <Loader2 className="h-6 w-6 text-primary/70 animate-spin" />
         </div>
-        <div className="space-y-6">
-          <div className="admin-shimmer h-72 rounded-3xl" />
-          <div className="admin-shimmer h-40 rounded-3xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="max-w-md mx-auto px-5 pt-32 pb-20 text-center">
-        <div className="rounded-3xl border border-white/10 bg-card/80 p-8">
-          <CalendarIcon size={32} className="text-primary mx-auto mb-3" />
-          <h2 className="text-2xl font-display font-bold mb-2">{t("booking.signInTitle")}</h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            {t("booking.signInBody")}
-          </p>
-          <Button
-            onClick={() => navigate("/auth")}
-            className="w-full h-12 rounded-xl"
-            data-testid="button-go-auth"
-          >
-            {t("booking.signInCta")}
-          </Button>
-        </div>
-      </div>
-    );
+      );
+    }
   }
 
   if (submitted) {
