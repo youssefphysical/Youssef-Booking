@@ -4221,7 +4221,156 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json(updated);
   });
 
-  // Approve / unapprove a package (gate for client booking).
+  // ============== PACKAGE ACTIVATION REQUESTS (self-service) ==============
+  // Fitness Zone PT clients submit a package activation request from
+  // the /wizard "Existing PT client" flow. Receipt upload was removed
+  // per product requirement — admin verifies payment manually outside
+  // the platform and then approves via the verification queue. The
+  // request is persisted as a `packages` row in `pending_verification`
+  // state, gated by `adminApproved=false`, so all existing booking
+  // eligibility rules naturally block bookings until the admin
+  // approves it.
+  app.post("/api/package-verification-requests", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    if (me.role !== "client") {
+      return res.status(403).json({ message: "Only clients can submit activation requests" });
+    }
+    const body = req.body ?? {};
+    const requestedType = String(body.requestedType ?? "");
+    const allowed = new Set(["ten", "twenty", "twentyfive", "duo30", "not_sure"]);
+    if (!allowed.has(requestedType)) {
+      return res.status(400).json({ message: "Please pick a package option" });
+    }
+    const notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 1000) : "";
+
+    // Reject if the user already has an in-flight request — admin must
+    // resolve the first one before a second can be submitted.
+    const existing = await storage.getPackages({ userId: me.id });
+    const alreadyPending = existing.find((p) => p.status === "pending_verification");
+    if (alreadyPending) {
+      return res.status(409).json({
+        message: "You already have a pending activation request. Youssef will review it shortly.",
+      });
+    }
+
+    const typeMap: Record<string, { type: string; totalSessions: number; name: string }> = {
+      ten:        { type: "10",    totalSessions: 10, name: "10 Sessions (pending activation)" },
+      twenty:     { type: "20",    totalSessions: 20, name: "20 Sessions (pending activation)" },
+      twentyfive: { type: "25",    totalSessions: 25, name: "25 Sessions (pending activation)" },
+      duo30:      { type: "duo30", totalSessions: 30, name: "Duo 30 (pending activation)" },
+      not_sure:   { type: "10",    totalSessions: 10, name: "Fitness Zone package (pending review)" },
+    };
+    const mapped = typeMap[requestedType];
+
+    const created = await storage.createPackage({
+      userId: me.id,
+      type: mapped.type,
+      name: mapped.name,
+      totalSessions: mapped.totalSessions,
+      usedSessions: 0,
+      isActive: false,
+      status: null,
+      adminApproved: false,
+      paymentStatus: "unpaid",
+      source: "fitness_zone_self_request",
+      verificationRequestPayload: {
+        requestedType,
+        notes: notes || undefined,
+        submittedAt: new Date().toISOString(),
+      } as any,
+    } as any);
+
+    // Mark the row as pending_verification (computePackageStatus may
+    // otherwise overwrite the status field on insert; setting it
+    // explicitly via a follow-up update is the safest path).
+    const pending = await storage.updatePackage(created.id, {
+      status: "pending_verification",
+    } as any);
+
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: created.id,
+        userId: me.id,
+        action: "package_created",
+        sessionsDelta: 0,
+        performedByUserId: me.id,
+        reason: "Self-service activation request",
+      } as any);
+    } catch {/* ignore */}
+
+    res.status(201).json(pending ?? created);
+  });
+
+  // Admin queue + decision endpoints powering the verification-queue UI
+  // in AdminPackages. Reuse the existing approve flow for "approve".
+  app.get("/api/admin/package-verification-requests", requireAdmin, async (_req, res) => {
+    const rows = await storage.getPendingVerificationPackages();
+    const userIds = Array.from(new Set(rows.map((r) => r.userId)));
+    const usersById: Record<number, any> = {};
+    for (const uid of userIds) {
+      const u = await storage.getUser(uid);
+      if (u) usersById[uid] = sanitizeUser(u);
+    }
+    res.json(rows.map((r) => ({ ...r, user: usersById[r.userId] ?? null })));
+  });
+
+  app.patch("/api/admin/package-verification-requests/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Request not found" });
+    if (pkg.status !== "pending_verification") {
+      return res.status(409).json({ message: "Request is no longer pending" });
+    }
+    const me = req.user as User;
+    // Accept both `action` (new API) and `decision` (existing
+    // AdminPackages.tsx VerificationQueue payload) so the legacy admin
+    // UI keeps working without a separate client patch.
+    const action = String(req.body?.action ?? req.body?.decision ?? "");
+    const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 500) : "";
+
+    if (action === "approve") {
+      const today = new Date().toISOString().slice(0, 10);
+      const updated = await storage.updatePackage(id, {
+        status: "active",
+        isActive: true,
+        adminApproved: true,
+        adminApprovedAt: new Date(),
+        adminApprovedByUserId: me.id,
+        paymentStatus: "paid",
+        paymentApproved: true,
+        paymentApprovedAt: new Date(),
+        paymentApprovedByUserId: me.id,
+        startDate: today,
+      } as any);
+      try {
+        await storage.createPackageSessionHistory({
+          packageId: id,
+          userId: pkg.userId,
+          action: "package_approved",
+          sessionsDelta: 0,
+          performedByUserId: me.id,
+          reason: note || "Activation request approved",
+        } as any);
+      } catch {/* ignore */}
+      return res.json(updated);
+    }
+    if (action === "reject") {
+      await storage.deletePackage(id);
+      try {
+        await storage.createPackageSessionHistory({
+          packageId: id,
+          userId: pkg.userId,
+          action: "package_deleted",
+          sessionsDelta: 0,
+          performedByUserId: me.id,
+          reason: note || "Activation request rejected",
+        } as any);
+      } catch {/* ignore */}
+      return res.json({ ok: true, deleted: true });
+    }
+    return res.status(400).json({ message: "Unknown action" });
+  });
+
   app.post("/api/admin/packages/:id/approve", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     const parsed = approvePackageSchema.safeParse(req.body);

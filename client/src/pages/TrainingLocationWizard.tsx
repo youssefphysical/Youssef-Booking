@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, CheckCircle2, Upload } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -40,12 +40,12 @@ export default function TrainingLocationWizard() {
   const [gymGuest, setGymGuest] = useState("");
   const [gymNotes, setGymNotes] = useState("");
 
-  // FZ verification form
+  // FZ activation request form — receipt upload and purchase date were
+  // removed per product requirement (Nov 2026). Admin verifies payment
+  // manually outside the platform and approves via the queue.
   const [reqType, setReqType] = useState<"ten" | "twenty" | "twentyfive" | "duo30" | "not_sure">("not_sure");
-  const [purchaseDate, setPurchaseDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [verifNotes, setVerifNotes] = useState("");
-  const [receiptDataUrl, setReceiptDataUrl] = useState<string>("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [activationSubmitted, setActivationSubmitted] = useState(false);
 
   const { data: locations = [] } = useQuery<TrainingLocation[]>({
     queryKey: ["/api/training-locations"],
@@ -106,16 +106,6 @@ export default function TrainingLocationWizard() {
     [t],
   );
 
-  function onFileChosen(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: t("wizard.fz.receiptTooBig", "Receipt is too large (max 5 MB)"), variant: "destructive" });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setReceiptDataUrl(String(reader.result || ""));
-    reader.readAsDataURL(file);
-  }
-
   async function finish(targetPath: string = "/dashboard") {
     if (branch === "fitness_zone") {
       // Save the location stub
@@ -125,18 +115,13 @@ export default function TrainingLocationWizard() {
         isDefault: locations.length === 0,
       });
       if (fzPath === "existing") {
-        if (!receiptDataUrl) {
-          toast({ title: t("wizard.fz.needReceipt", "Please attach your receipt."), variant: "destructive" });
-          return;
-        }
         try {
           await submitVerification.mutateAsync({
             requestedType: reqType,
-            purchaseDate,
             notes: verifNotes || undefined,
-            receiptDataUrl,
           });
-          toast({ title: t("wizard.fz.submittedTitle", "Verification submitted") });
+          setActivationSubmitted(true);
+          return;
         } catch (e: any) {
           toast({ title: e?.message || "Failed", variant: "destructive" });
           return;
@@ -234,7 +219,40 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {step === 2 && branch === "fitness_zone" && (
+        {activationSubmitted && (
+          <div
+            className="rounded-2xl border border-cyan-500/40 bg-cyan-500/[0.08] p-5 sm:p-6"
+            data-testid="panel-activation-submitted"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={20} className="text-cyan-300" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-display text-lg font-semibold text-cyan-50" data-testid="text-activation-title">
+                  {t("wizard.fz.submittedTitle", "Your package activation request has been received.")}
+                </h2>
+                <p className="text-sm text-cyan-100/85 mt-2 leading-relaxed">
+                  {t(
+                    "wizard.fz.submittedBody",
+                    "Your coach will verify your payment and activate your package shortly. Once approved, your booking access will open automatically.",
+                  )}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="mt-6 w-full h-12 rounded-xl font-bold"
+              data-testid="button-activation-go-dashboard"
+            >
+              {t("wizard.fz.goDashboard", "Go to dashboard")}
+              <ArrowRight size={14} className="ml-2" />
+            </Button>
+          </div>
+        )}
+
+        {!activationSubmitted && step === 2 && branch === "fitness_zone" && (
           <div className="space-y-4">
             {hasPendingVerif ? (
               <div className="rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 text-sm" data-testid="text-fz-already-pending">
@@ -302,46 +320,14 @@ export default function TrainingLocationWizard() {
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <Label className="text-xs">{t("wizard.fz.purchaseDate", "Purchase date")}</Label>
-                      <Input
-                        type="date"
-                        value={purchaseDate}
-                        onChange={(e) => setPurchaseDate(e.target.value)}
-                        className="bg-white/5 border-white/10 h-11 mt-1"
-                        data-testid="input-purchase-date"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">{t("wizard.fz.receipt", "Receipt photo")}</Label>
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) onFileChosen(f);
-                        }}
-                        data-testid="input-receipt-file"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileRef.current?.click()}
-                        data-testid="button-upload-receipt"
-                        className="mt-1 w-full rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-4 text-sm hover:border-primary/40 min-h-[64px] flex items-center justify-center gap-2"
-                      >
-                        {receiptDataUrl ? (
-                          <span className="inline-flex items-center gap-2 text-primary">
-                            <CheckCircle2 size={14} />
-                            {t("wizard.fz.receiptAttached", "Receipt attached — tap to change")}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-2 text-muted-foreground">
-                            <Upload size={14} /> {t("wizard.fz.receiptUpload", "Upload your receipt")}
-                          </span>
+                    <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/[0.04] p-3 text-xs text-cyan-100/90 flex items-start gap-2">
+                      <ShieldCheck size={14} className="text-cyan-300 mt-0.5 shrink-0" />
+                      <span>
+                        {t(
+                          "wizard.fz.noReceiptInfo",
+                          "Youssef will verify your payment with the Fitness Zone team and activate your package — no receipt upload needed.",
                         )}
-                      </button>
+                      </span>
                     </div>
                     <div>
                       <Label className="text-xs">{t("wizard.fz.notes", "Notes for Youssef (optional)")}</Label>
@@ -409,7 +395,7 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {step === 2 && (
+        {!activationSubmitted && step === 2 && (
           <div className="flex gap-2 pt-6">
             <Button
               type="button"
@@ -438,7 +424,7 @@ export default function TrainingLocationWizard() {
                 <Loader2 size={14} className="animate-spin mr-2" />
               )}
               {branch === "fitness_zone" && fzPath === "existing"
-                ? t("wizard.fz.submitCta", "Submit for verification")
+                ? t("wizard.fz.submitCta", "Submit for approval")
                 : branch === "fitness_zone" && (hasPendingVerif || fzPath === "trial")
                   ? t("common.continue", "Continue")
                   : t("wizard.saveCta", "Save location")}

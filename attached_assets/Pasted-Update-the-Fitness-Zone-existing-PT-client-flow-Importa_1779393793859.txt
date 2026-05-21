@@ -1,0 +1,76 @@
+Update the Fitness Zone existing PT client flow.
+
+Important change:
+Remove the receipt upload requirement completely for Fitness Zone PT clients.
+
+Required flow:
+
+1. User opens "/wizard".
+
+2. If user selects “I’m already a Fitness Zone PT client”:
+   
+   - Show only package selection:
+     - 10 sessions
+     - 20 sessions
+     - 25 sessions
+     - Duo 30
+     - Not sure
+   - Do NOT ask for receipt upload.
+   - Do NOT ask for purchase receipt photo.
+   - Purchase date can be removed unless already needed internally.
+   - Button should say something professional like:
+     “Submit for Approval”
+     or
+     “Request Package Activation”
+
+3. When the user submits:
+   
+   - Save a pending package activation request for the admin.
+   - Include:
+     - user name
+     - phone/email
+     - selected package
+     - created date/time
+     - status: pending
+   - Send/show this request in the admin panel so Youssef can review and approve it manually.
+   - Do not allow the user to book sessions yet.
+
+4. After submission, show a clean professional pending state:
+   “Your package activation request has been received.
+   Your coach/admin will verify your payment and activate your package shortly.
+   Once approved, your booking access will open automatically.”
+
+5. The user dashboard should show:
+   
+   - Pending package activation
+   - Selected package
+   - Status: Awaiting approval
+   - No booking button until approved
+
+6. Booking access rules:
+   
+   - Fitness Zone PT client cannot access "/book" until admin approves/activates their package.
+   - If they try to open "/book" manually, redirect them to dashboard or pending activation page.
+   - Do not show booking calendar or loading skeleton.
+
+7. Admin panel requirements:
+   
+   - Add a section for “Package Activation Requests”.
+   - Admin can see pending requests.
+   - Admin can approve the request and assign/activate the selected package.
+   - Once approved, the user can book sessions normally based on their activated package.
+   - Admin should also be able to reject/cancel if needed.
+
+8. Brand new user flow must stay separate:
+   
+   - If user selects “I’m brand new”, Continue should take them to free trial booking.
+   - Free trial booking should not require package approval.
+
+Expected behavior:
+
+- Brand new user → wizard → free trial booking.
+- Existing Fitness Zone PT client → select package → submit activation request → pending approval → booking locked until admin approval.
+- No receipt upload anywhere in this Fitness Zone PT client flow.
+- No dead buttons.
+- No silent stop.
+- Mobile UI must remain clean and professional.

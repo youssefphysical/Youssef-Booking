@@ -139,6 +139,18 @@ export default function BookingPage() {
     enabled: !!user && user.role === "client",
   });
   const anyActivePkg = (packages as Package[]).some((p) => p.isActive && p.usedSessions < p.totalSessions);
+  // A Fitness Zone existing-PT-client request lives as a package row
+  // with status='pending_verification' and adminApproved=false until
+  // the admin activates it. While that's outstanding (and the client
+  // has no other active package) we block the booking surface entirely
+  // and redirect to /dashboard, which already shows the awaiting-
+  // approval banner. This satisfies the "no booking calendar, no
+  // skeleton, no flicker" requirement.
+  const hasPendingActivation =
+    !anyActivePkg &&
+    (packages as Package[]).some(
+      (p) => p.status === "pending_verification" && !p.adminApproved,
+    );
   // Resolve wizard eligibility *before* any booking UI renders. For clients
   // we wait for both training-locations and packages queries to settle so
   // the booking calendar / package cards never flash for first-time users
@@ -329,6 +341,9 @@ export default function BookingPage() {
     }
     if (needsWizard) {
       return <Redirect to="/wizard" />;
+    }
+    if (isClient && hasPendingActivation) {
+      return <Redirect to="/dashboard" />;
     }
     if (isAuthLoading || wizardChecksLoading) {
       return (
