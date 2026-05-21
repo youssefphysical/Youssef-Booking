@@ -220,22 +220,57 @@ export default function TrainingLocationWizard() {
         )}
 
         {activationSubmitted && (
-          <div
-            className="rounded-2xl border border-cyan-500/40 bg-cyan-500/[0.08] p-5 sm:p-6"
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-500/[0.07] to-cyan-500/[0.02] p-6 sm:p-8 shadow-[0_0_60px_-30px_rgba(94,231,255,0.45)]"
             data-testid="panel-activation-submitted"
           >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                <CheckCircle2 size={20} className="text-cyan-300" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent"
+            />
+            <div className="flex flex-col items-center text-center">
+              <div className="relative w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mb-5">
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-2xl bg-cyan-400/10 motion-safe:animate-ping"
+                />
+                <CheckCircle2 size={26} className="text-cyan-200 relative z-10" strokeWidth={1.75} />
               </div>
-              <div className="min-w-0">
-                <h2 className="font-display text-lg font-semibold text-cyan-50" data-testid="text-activation-title">
-                  {t("wizard.fz.submittedTitle", "Your package activation request has been received.")}
-                </h2>
-                <p className="text-sm text-cyan-100/85 mt-2 leading-relaxed">
+              <p className="tron-eyebrow text-[10px] font-semibold tracking-[0.18em] text-cyan-300/90 mb-3">
+                {t("wizard.fz.submittedEyebrow", "Pending approval")}
+              </p>
+              <h2
+                className="font-display text-xl sm:text-2xl font-semibold text-white leading-tight"
+                data-testid="text-activation-title"
+              >
+                {t("wizard.fz.submittedTitle", "Package Activation In Review")}
+              </h2>
+              <div className="mt-5 space-y-3.5 text-[13.5px] sm:text-sm text-cyan-50/85 leading-relaxed max-w-md">
+                <p>
                   {t(
-                    "wizard.fz.submittedBody",
-                    "Your coach will verify your payment and activate your package shortly. Once approved, your booking access will open automatically.",
+                    "wizard.fz.submittedBody1",
+                    "Your package request has been received successfully.",
+                  )}
+                </p>
+                <p>
+                  {t(
+                    "wizard.fz.submittedBody2",
+                    "The Youssef Elite team is currently reviewing and validating your package information.",
+                  )}
+                </p>
+                <p>
+                  {t(
+                    "wizard.fz.submittedBody3",
+                    "Once your package is approved and activated, your booking access will automatically become available and you will be able to schedule your training sessions.",
+                  )}
+                </p>
+                <p className="text-cyan-100/80">
+                  {t(
+                    "wizard.fz.submittedBody4",
+                    "You will be notified as soon as activation is complete.",
                   )}
                 </p>
               </div>
@@ -243,13 +278,13 @@ export default function TrainingLocationWizard() {
             <Button
               type="button"
               onClick={() => navigate("/dashboard")}
-              className="mt-6 w-full h-12 rounded-xl font-bold"
+              className="mt-7 w-full h-12 rounded-xl font-semibold tracking-wide"
               data-testid="button-activation-go-dashboard"
             >
               {t("wizard.fz.goDashboard", "Go to dashboard")}
               <ArrowRight size={14} className="ml-2" />
             </Button>
-          </div>
+          </motion.div>
         )}
 
         {!activationSubmitted && step === 2 && branch === "fitness_zone" && (
@@ -325,7 +360,7 @@ export default function TrainingLocationWizard() {
                       <span>
                         {t(
                           "wizard.fz.noReceiptInfo",
-                          "Youssef will verify your payment with the Fitness Zone team and activate your package — no receipt upload needed.",
+                          "The Youssef Elite team will verify your payment and activate your package — no receipt upload needed.",
                         )}
                       </span>
                     </div>

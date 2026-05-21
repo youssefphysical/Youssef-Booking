@@ -65,7 +65,7 @@ const TONE_TEXT: Record<Widget["tone"], string> = {
 
 const WIDGETS: Widget[] = [
   { key: "sessionsToday", label: "Sessions today", sub: "Confirmed + completed", href: "/admin/bookings", icon: <Calendar size={18} />, tone: "default" },
-  { key: "pendingFitnessZoneVerifications", label: "Pending verifications", sub: "Fitness Zone receipts", href: "/admin/packages?status=pending_verification", icon: <ShieldCheck size={18} />, tone: "warning" },
+  { key: "pendingFitnessZoneVerifications", label: "Pending verifications", sub: "Package activation requests", href: "/admin/packages?status=pending_verification", icon: <ShieldCheck size={18} />, tone: "warning" },
   { key: "pendingNutritionRequests", label: "Nutrition drafts", sub: "Unpublished plans", href: "/admin/nutrition/plans", icon: <Salad size={18} />, tone: "info" },
   { key: "pendingRecoveryRequests", label: "Recovery queue", sub: "Awaiting scheduling", href: "/admin/recovery", icon: <HeartPulse size={18} />, tone: "info" },
   { key: "expiringPackages", label: "Expiring packages", sub: "Next 7 days", href: "/admin/packages?status=expiring_soon", icon: <PackageCheck size={18} />, tone: "warning" },
