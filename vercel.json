@@ -3,7 +3,7 @@
   "version": 2,
   "buildCommand": "node scripts/vercel-build.mjs",
   "outputDirectory": "dist/public",
-  "installCommand": "npm install",
+  "installCommand": "npm install --include=dev",
   "framework": null,
   "functions": {
     "api/index.ts": {
