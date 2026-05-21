@@ -1,5 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useDraft } from "@/lib/useDraft";
+import { ToastAction } from "@/components/ui/toast";
+import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
@@ -46,6 +49,69 @@ export default function TrainingLocationWizard() {
   const [reqType, setReqType] = useState<"ten" | "twenty" | "twentyfive" | "duo30" | "not_sure">("not_sure");
   const [verifNotes, setVerifNotes] = useState("");
   const [activationSubmitted, setActivationSubmitted] = useState(false);
+
+  // Phase 5 — draft recovery. Onboarding is the most expensive form
+  // to lose, so we persist every field to localStorage and restore
+  // on reload behind a toast with a Discard action.
+  const draftKey = user?.id ? `wizard:${user.id}` : "wizard:anon";
+  const draftValue = {
+    step, branch, fzPath,
+    homeLabel, homeAddress, homeBuilding, homeRoom, homeParking, homeEquip, homeKind,
+    gymName, gymAddress, gymGuest, gymNotes,
+    reqType, verifNotes,
+  };
+  const wizardDraft = useDraft({
+    key: draftKey,
+    value: draftValue,
+    enabled: !activationSubmitted,
+  });
+  const draftHandledRef = useRef(false);
+  useEffect(() => {
+    if (draftHandledRef.current) return;
+    if (!wizardDraft.hasDraft || !wizardDraft.draft) return;
+    draftHandledRef.current = true;
+    const d = wizardDraft.draft;
+    toast({
+      title: t("wizard.draftRestoredTitle", "Draft restored"),
+      description: t(
+        "wizard.draftRestoredDesc",
+        "We brought back the onboarding answers you were filling out.",
+      ),
+      action: (
+        <ToastAction
+          altText="Discard draft"
+          data-testid="button-wizard-draft-discard"
+          onClick={() => {
+            wizardDraft.clear();
+            setStep(1); setBranch(null); setFzPath(null);
+            setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
+            setHomeParking(""); setHomeEquip(""); setHomeKind("home");
+            setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
+            setReqType("not_sure"); setVerifNotes("");
+          }}
+        >
+          {t("wizard.draftDiscard", "Discard")}
+        </ToastAction>
+      ),
+    });
+    if (d.step) setStep(d.step);
+    if (d.branch) setBranch(d.branch);
+    if (d.fzPath) setFzPath(d.fzPath);
+    if (typeof d.homeLabel === "string") setHomeLabel(d.homeLabel);
+    if (typeof d.homeAddress === "string") setHomeAddress(d.homeAddress);
+    if (typeof d.homeBuilding === "string") setHomeBuilding(d.homeBuilding);
+    if (typeof d.homeRoom === "string") setHomeRoom(d.homeRoom);
+    if (typeof d.homeParking === "string") setHomeParking(d.homeParking);
+    if (typeof d.homeEquip === "string") setHomeEquip(d.homeEquip);
+    if (d.homeKind) setHomeKind(d.homeKind);
+    if (typeof d.gymName === "string") setGymName(d.gymName);
+    if (typeof d.gymAddress === "string") setGymAddress(d.gymAddress);
+    if (typeof d.gymGuest === "string") setGymGuest(d.gymGuest);
+    if (typeof d.gymNotes === "string") setGymNotes(d.gymNotes);
+    if (d.reqType) setReqType(d.reqType);
+    if (typeof d.verifNotes === "string") setVerifNotes(d.verifNotes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardDraft.hasDraft]);
 
   const { data: locations = [] } = useQuery<TrainingLocation[]>({
     queryKey: ["/api/training-locations"],
@@ -107,35 +173,112 @@ export default function TrainingLocationWizard() {
   );
 
   async function finish(targetPath: string = "/dashboard") {
+    // Phase 5 review fix — offline-first ordering. Previously
+    // `saveLocation.mutateAsync(...)` ran before the offline guard, so
+    // when the user was offline the wizard threw at the very first
+    // network call and the activation payload (or even the location
+    // payload itself) never reached the offline queue. We now check
+    // navigator.onLine UP-FRONT for every branch and enqueue the full
+    // intent (location + optional activation request) before any
+    // mutation fires. Replay drains them in order on reconnect.
+    const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
+    const queuedToast = (descKey: string, fallback: string) =>
+      toast({
+        title: t("wizard.activation.queuedTitle", "Saved for later"),
+        description: t(`wizard.activation.${descKey}`, fallback),
+      });
+
     if (branch === "fitness_zone") {
-      // Save the location stub
-      await saveLocation.mutateAsync({
-        kind: "fitness_zone",
+      const locationPayload = {
+        kind: "fitness_zone" as const,
         label: "Fitness Zone",
         isDefault: locations.length === 0,
-      });
-      if (fzPath === "existing") {
+      };
+      const activationPayload =
+        fzPath === "existing"
+          ? { requestedType: reqType, notes: verifNotes || undefined }
+          : null;
+
+      if (isOffline) {
+        enqueueOffline("wizard_location", "/api/training-locations", locationPayload);
+        if (activationPayload) {
+          enqueueOffline(
+            "wizard_activation",
+            "/api/package-verification-requests",
+            activationPayload,
+          );
+        }
+        queuedToast(
+          "queuedOffline",
+          "You're offline. Your onboarding is queued and will send when you reconnect. Your answers stay saved on this device until it's accepted.",
+        );
+        navigate("/dashboard");
+        return;
+      }
+
+      try {
+        await saveLocation.mutateAsync(locationPayload);
+      } catch (e: any) {
+        if (isOfflineError(e)) {
+          enqueueOffline("wizard_location", "/api/training-locations", locationPayload);
+          if (activationPayload) {
+            enqueueOffline(
+              "wizard_activation",
+              "/api/package-verification-requests",
+              activationPayload,
+            );
+          }
+          queuedToast(
+            "queuedDropped",
+            "Connection dropped. Your onboarding is queued and will send when you're back online. Your answers stay saved on this device until it's accepted.",
+          );
+          navigate("/dashboard");
+          return;
+        }
+        toast({ title: e?.message || "Failed", variant: "destructive" });
+        return;
+      }
+      if (fzPath === "existing" && activationPayload) {
+        // Online path — saveLocation already succeeded above. Submit the
+        // activation request and, on confirmed server success, mark the
+        // user as activationSubmitted and clear the draft. On a
+        // mid-flight connection drop, queue the activation request only
+        // (saveLocation already wrote) and navigate to the dashboard
+        // with a queued toast.
         try {
-          await submitVerification.mutateAsync({
-            requestedType: reqType,
-            notes: verifNotes || undefined,
-          });
+          await submitVerification.mutateAsync(activationPayload);
           setActivationSubmitted(true);
+          wizardDraft.clear();
           return;
         } catch (e: any) {
+          if (isOfflineError(e)) {
+            enqueueOffline(
+              "wizard_activation",
+              "/api/package-verification-requests",
+              activationPayload,
+            );
+            queuedToast(
+              "queuedDropped",
+              "Connection dropped. Your activation request is queued and will send when you're back online. Your answers stay saved on this device until it's accepted.",
+            );
+            navigate("/dashboard");
+            return;
+          }
           toast({ title: e?.message || "Failed", variant: "destructive" });
           return;
         }
       }
+      wizardDraft.clear();
       navigate(fzPath === "trial" ? "/book" : "/dashboard");
       return;
     }
+
     if (branch === "home") {
       if (!homeAddress.trim()) {
         toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
         return;
       }
-      await saveLocation.mutateAsync({
+      const homePayload = {
         kind: homeKind,
         label: homeLabel || t("wizard.home.defaultLabel", "Home"),
         address: homeAddress,
@@ -144,26 +287,77 @@ export default function TrainingLocationWizard() {
         parkingNotes: homeParking || undefined,
         equipmentNotes: homeEquip || undefined,
         isDefault: locations.length === 0,
-      });
+      };
+      if (isOffline) {
+        enqueueOffline("wizard_location", "/api/training-locations", homePayload);
+        queuedToast(
+          "queuedOffline",
+          "You're offline. Your location is queued and will send when you reconnect.",
+        );
+        navigate(targetPath);
+        return;
+      }
+      try {
+        await saveLocation.mutateAsync(homePayload);
+      } catch (e: any) {
+        if (isOfflineError(e)) {
+          enqueueOffline("wizard_location", "/api/training-locations", homePayload);
+          queuedToast(
+            "queuedDropped",
+            "Connection dropped. Your location is queued and will send when you're back online.",
+          );
+          navigate(targetPath);
+          return;
+        }
+        toast({ title: e?.message || "Failed", variant: "destructive" });
+        return;
+      }
       toast({ title: t("wizard.home.savedTitle", "Location saved") });
+      wizardDraft.clear();
       navigate(targetPath);
       return;
     }
+
     if (branch === "other_gym") {
       if (!gymName.trim()) {
         toast({ title: t("wizard.other.needName", "Gym name is required."), variant: "destructive" });
         return;
       }
-      await saveLocation.mutateAsync({
-        kind: "other_gym",
+      const gymPayload = {
+        kind: "other_gym" as const,
         label: gymName,
         gymName,
         address: gymAddress || undefined,
         guestAccess: gymGuest || undefined,
         accessNotes: gymNotes || undefined,
         isDefault: locations.length === 0,
-      });
+      };
+      if (isOffline) {
+        enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
+        queuedToast(
+          "queuedOffline",
+          "You're offline. Your location is queued and will send when you reconnect.",
+        );
+        navigate(targetPath);
+        return;
+      }
+      try {
+        await saveLocation.mutateAsync(gymPayload);
+      } catch (e: any) {
+        if (isOfflineError(e)) {
+          enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
+          queuedToast(
+            "queuedDropped",
+            "Connection dropped. Your location is queued and will send when you're back online.",
+          );
+          navigate(targetPath);
+          return;
+        }
+        toast({ title: e?.message || "Failed", variant: "destructive" });
+        return;
+      }
       toast({ title: t("wizard.other.savedTitle", "Location saved") });
+      wizardDraft.clear();
       navigate(targetPath);
     }
   }

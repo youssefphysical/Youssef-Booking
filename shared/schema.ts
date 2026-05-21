@@ -213,6 +213,15 @@ export const users = pgTable("users", {
   // the vipTierManualOverride pattern). Admin sets via lead-status PATCH.
   leadStatusManualOverride: boolean("lead_status_manual_override").notNull().default(false),
   archivedAt: timestamp("archived_at"),
+  // Phase 5 — admin client-merge tool. When set, this user is a soft-
+  // deleted duplicate; all bookings / packages / notes were folded into
+  // the survivor (`merged_into_user_id`). Storage helpers exclude
+  // merged users from default email/phone lookups so the survivor wins
+  // on subsequent logins, but the row is preserved (never DELETEd) so
+  // the audit trail and the previous account's bookings remain
+  // referentially intact.
+  mergedIntoUserId: integer("merged_into_user_id"),
+  mergedAt: timestamp("merged_at"),
   createdAt: timestamp("created_at").defaultNow(),
   // Client Data Center — bumped by storage.updateUser() so the admin
   // export reflects the last time any field on the user row changed.

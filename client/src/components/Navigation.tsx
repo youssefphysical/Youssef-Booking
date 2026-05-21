@@ -451,9 +451,18 @@ export function Navigation() {
 }
 
 function TopNavLink({ href, label, active, testKey }: { href: string; label: string; active: boolean; testKey: string }) {
+  // Phase 5 — preload the chunk on intent (hover/focus/touch). The
+  // helper guards unknown hrefs so this is a no-op for routes we don't
+  // pre-split.
+  const preload = () => {
+    import("@/lib/routePreload").then((m) => m.preloadHref(href));
+  };
   return (
     <Link href={href} data-testid={`link-top-${testKey}`}>
       <div
+        onMouseEnter={preload}
+        onFocus={preload}
+        onTouchStart={preload}
         className={cn(
           "px-3.5 h-9 inline-flex items-center text-sm font-medium rounded-lg transition-colors whitespace-nowrap",
           active
@@ -468,9 +477,17 @@ function TopNavLink({ href, label, active, testKey }: { href: string; label: str
 }
 
 function MobileLink({ href, label, icon, onClose, testKey }: { href: string; label: string; icon: React.ReactNode; onClose: () => void; testKey: string }) {
+  const preload = () => {
+    import("@/lib/routePreload").then((m) => m.preloadHref(href));
+  };
   return (
     <Link href={href} onClick={onClose} data-testid={`link-mobile-${testKey}`}>
-      <div className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-white/5 active:bg-white/10 btn-soft">
+      <div
+        onMouseEnter={preload}
+        onFocus={preload}
+        onTouchStart={preload}
+        className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium hover:bg-white/5 active:bg-white/10 btn-soft"
+      >
         <span className="shrink-0 text-muted-foreground">{icon}</span>
         <span className="whitespace-nowrap">{label}</span>
       </div>

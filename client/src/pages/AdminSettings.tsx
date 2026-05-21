@@ -22,6 +22,7 @@ import {
 } from "@/hooks/use-transformations";
 import type { Transformation } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
+import { useFeatureFlags } from "@/lib/featureFlags";
 import { Slider } from "@/components/ui/slider";
 import type { HeroImage, Settings } from "@shared/schema";
 import {
@@ -97,6 +98,7 @@ export default function AdminSettings() {
         </div>
 
         <div className="admin-stack">
+          <FeatureFlagsSection />
           <GeneralSettingsSection />
           <BankDetailsSection />
           <ProfileContentSection />
@@ -104,6 +106,139 @@ export default function AdminSettings() {
           <TransformationsSection />
           <BlockedSlotsSection />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// FEATURE FLAGS — runtime toggles for maintenance mode + module gating.
+// Reads from GET /api/feature-flags (public), writes via PATCH
+// /api/admin/feature-flags/:key (admin-only + audit-logged).
+// Maintenance mode replaces every non-admin surface with a "be right
+// back" screen so Youssef can ship database migrations or hot fixes
+// without clients seeing half-broken state.
+// =====================================================================
+function FeatureFlagsSection() {
+  const { toast } = useToast();
+  const { data: flags, isLoading } = useFeatureFlags();
+  const maintenance = !!flags?.maintenance_mode;
+  const recovery = flags?.recovery_enabled ?? true;
+
+  const mutate = useMutation({
+    mutationFn: async ({ key, enabled }: { key: string; enabled: boolean }) => {
+      const r = await apiRequest("PATCH", `/api/admin/feature-flags/${key}`, { enabled });
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/feature-flags"] });
+    },
+    onError: (e: any) => {
+      toast({
+        title: "Couldn't update flag",
+        description: e?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return (
+    <section className="admin-card" data-testid="section-feature-flags">
+      <h2 className="font-display font-bold text-lg mb-1">Platform controls</h2>
+      <p className="text-sm text-muted-foreground mb-5">
+        Runtime toggles. Changes apply within a minute everywhere — no redeploy needed. Every flip
+        is audit-logged.
+      </p>
+
+      <div className="space-y-3">
+        <FlagRow
+          flagKey="maintenance_mode"
+          title="Maintenance mode"
+          description="Locks the client app behind a 'be right back' screen. Admins still have full access. Use this while pushing schema changes or large data fixes."
+          enabled={maintenance}
+          loading={isLoading}
+          pending={mutate.isPending && mutate.variables?.key === "maintenance_mode"}
+          danger
+          confirmOn
+          onChange={(enabled) => mutate.mutate({ key: "maintenance_mode", enabled })}
+        />
+        <FlagRow
+          flagKey="recovery_enabled"
+          title="Recovery module"
+          description="Show the recovery surface in client + admin nav. Turn off if you're not ready to support it yet."
+          enabled={recovery}
+          loading={isLoading}
+          pending={mutate.isPending && mutate.variables?.key === "recovery_enabled"}
+          onChange={(enabled) => mutate.mutate({ key: "recovery_enabled", enabled })}
+        />
+      </div>
+    </section>
+  );
+}
+
+function FlagRow({
+  flagKey,
+  title,
+  description,
+  enabled,
+  loading,
+  pending,
+  danger,
+  confirmOn,
+  onChange,
+}: {
+  flagKey: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  loading: boolean;
+  pending: boolean;
+  danger?: boolean;
+  confirmOn?: boolean;
+  onChange: (enabled: boolean) => void;
+}) {
+  const handleToggle = (next: boolean) => {
+    if (confirmOn && next && !enabled) {
+      const ok = window.confirm(
+        `Turn on "${title}"? Clients will be locked out of the app until you turn it off again.`,
+      );
+      if (!ok) return;
+    }
+    onChange(next);
+  };
+
+  return (
+    <div
+      className={`rounded-2xl border p-4 flex items-start justify-between gap-4 ${
+        danger && enabled
+          ? "border-amber-500/40 bg-amber-500/5"
+          : "border-white/10 bg-white/[0.02]"
+      }`}
+      data-testid={`flag-row-${flagKey}`}
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-sm">{title}</h3>
+          {danger && enabled && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Active
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{description}</p>
+      </div>
+      <div className="shrink-0 pt-0.5">
+        {pending ? (
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        ) : (
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            disabled={loading}
+            data-testid={`switch-flag-${flagKey}`}
+            aria-label={title}
+          />
+        )}
       </div>
     </div>
   );

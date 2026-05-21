@@ -4,7 +4,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified } from "./auth";
+import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified, rateLimit } from "./auth";
 import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import { pool } from "./db";
@@ -58,6 +58,8 @@ import {
   BOOKING_TRAINING_GOAL_LABELS_EN,
   SESSION_TYPE_LABELS_EN,
   PACKAGE_STATUS_LABELS_EN,
+  FEATURE_FLAG_DEFAULTS,
+  FEATURE_FLAG_KEYS,
   insertRenewalRequestSchema,
   insertExtensionRequestSchema,
   renewalDecisionSchema,
@@ -181,8 +183,12 @@ function trialRateCheck(req: Request): { ok: true } | { ok: false; retryAfter: n
     "unknown";
   const key = `trial:${ip}`;
   const now = Date.now();
-  const windowMs = 60 * 60 * 1000; // 1 hour window
-  const max = 3; // at most 3 trial attempts per IP per hour
+  // Phase 5 review fix — env-tunable along with the rest of the rate
+  // limits. Defaults preserve previous behaviour (3/hr).
+  const envWindow = Number(process.env.RL_FREETRIAL_WINDOW_MS);
+  const envMax = Number(process.env.RL_FREETRIAL_MAX);
+  const windowMs = Number.isFinite(envWindow) && envWindow > 0 ? envWindow : 60 * 60 * 1000;
+  const max = Number.isFinite(envMax) && envMax > 0 ? envMax : 3;
   const cur = TRIAL_RATE_BUCKETS.get(key);
   if (!cur || cur.resetAt < now) {
     TRIAL_RATE_BUCKETS.set(key, { count: 1, resetAt: now + windowMs });
@@ -1304,6 +1310,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOAD_ROOT));
 
+  // Phase 5 review fix — centralised rate limit applied to *every*
+  // admin API. Generous ceiling (300 req / min / IP) so normal usage
+  // never trips it, but it caps both abusive scanners and a runaway
+  // admin script. Per-route limits below (merge, feature-flags, etc.)
+  // are stricter and stack on top of this.
+  // Phase 5 review fix — env-configurable rate-limit ceilings. Each
+  // route group reads its max from a dedicated env var; defaults match
+  // the previous hardcoded values so behaviour is unchanged unless the
+  // operator explicitly overrides one. Negative/NaN/0 values fall
+  // through to the default so a typo can't accidentally disable a
+  // protection.
+  const rlMax = (envKey: string, fallback: number): number => {
+    const raw = process.env[envKey];
+    if (!raw) return fallback;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+  const RL = {
+    adminBucket: rlMax("RL_ADMIN_MAX", 300),
+    booking: rlMax("RL_BOOKING_MAX", 20),
+    adminFlag: rlMax("RL_ADMIN_FLAG_MAX", 30),
+    adminMerge: rlMax("RL_ADMIN_MERGE_MAX", 10),
+    activation: rlMax("RL_ACTIVATION_MAX", 5),
+  };
+
+  app.use(
+    "/api/admin",
+    rateLimit({ windowMs: 60_000, max: RL.adminBucket, key: "admin-bucket" }),
+  );
+
   // ============== HEALTH ==============
   // Public, auth-free liveness probe — used by Vercel's health checks and
   // by the Replit deployment platform. Kept extremely cheap (no DB call).
@@ -1736,7 +1772,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
   });
 
-  app.post("/api/bookings", requireAuth, async (req, res) => {
+  app.post("/api/bookings", rateLimit({ windowMs: 60_000, max: RL.booking, key: "book" }), requireAuth, async (req, res) => {
     const me = req.user as User;
     const schema = insertBookingSchema.extend({
       acceptedPolicy: z.literal(true, {
@@ -4015,6 +4051,135 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // so we only have ONE link route; the duplicate block was removed.)
 
   // ============== SETTINGS ==============
+  // ============== FEATURE FLAGS (Phase 5) ==============
+  // Public GET — every client polls this on boot so the maintenance
+  // screen and module switches react without a hard refresh. Cheap
+  // (one indexed SELECT) and cached on the client via TanStack Query.
+  app.get("/api/feature-flags", async (_req, res) => {
+    try {
+      const rows = await storage.listFeatureFlags();
+      const flags: Record<string, boolean> = { ...(FEATURE_FLAG_DEFAULTS as any) };
+      for (const r of rows) flags[r.key] = r.enabled;
+      res.json(flags);
+    } catch (e) {
+      // Never let a flags read break the app — fall through to defaults.
+      console.warn("[feature-flags] list failed:", (e as Error).message);
+      res.json({ ...(FEATURE_FLAG_DEFAULTS as any) });
+    }
+  });
+
+  // Admin-only flip. Rate-limited so a misbehaving admin script can't
+  // hammer the DB. Records an audit-log entry on success.
+  app.patch(
+    "/api/admin/feature-flags/:key",
+    rateLimit({ windowMs: 60_000, max: RL.adminFlag, key: "admin-flag" }),
+    requireAdmin,
+    async (req, res) => {
+      const key = String(req.params.key);
+      const allowed = new Set<string>(FEATURE_FLAG_KEYS as any);
+      if (!allowed.has(key)) {
+        return res.status(400).json({ message: "Unknown feature flag" });
+      }
+      const enabled = req.body?.enabled === true;
+      const me = req.user as User;
+      const prev = await storage.getFeatureFlag(key);
+      const row = await storage.setFeatureFlag(key, enabled, me.id);
+      await audit(req, "feature_flag.toggle", "feature_flag", null,
+        { key, enabled: prev?.enabled ?? (FEATURE_FLAG_DEFAULTS as any)[key] ?? false },
+        { key, enabled },
+        null,
+      );
+      res.json(row);
+    },
+  );
+
+  // Phase 5 review fix — merge preview. Returns row counts in every
+  // dependent table the loser owns so the admin sees exactly what will
+  // move *before* confirming the merge. Read-only.
+  app.get(
+    "/api/admin/clients/merge-preview",
+    requireAdmin,
+    async (req, res) => {
+      const loserId = Number(req.query.loserId);
+      const winnerId = Number(req.query.winnerId);
+      if (!Number.isFinite(loserId) || loserId <= 0) {
+        return res.status(400).json({ message: "loserId required" });
+      }
+      const loser = await storage.getUser(loserId);
+      if (!loser) return res.status(404).json({ message: "Loser not found" });
+      const winner = Number.isFinite(winnerId) && winnerId > 0 ? await storage.getUser(winnerId) : null;
+      const preview = await storage.getMergePreview(loserId);
+      res.json({
+        loser: sanitizeUserAdminView(loser),
+        winner: winner ? sanitizeUserAdminView(winner) : null,
+        counts: preview.counts,
+        total: preview.total,
+        warning:
+          loser.mergedIntoUserId != null
+            ? "This account has already been merged."
+            : null,
+      });
+    },
+  );
+
+  // Admin client-merge tool. Folds the loser account into the winner —
+  // bookings, packages, body metrics, photos, check-ins, notifications,
+  // and notes all move over; loser is marked clientStatus='merged' and
+  // isActive=false so they never appear in active lists again. Storage
+  // layer is fully transactional + idempotent.
+  app.post(
+    "/api/admin/clients/merge",
+    rateLimit({ windowMs: 60_000, max: RL.adminMerge, key: "admin-merge" }),
+    requireAdmin,
+    async (req, res) => {
+      const schema = z.object({
+        winnerId: z.number().int().positive(),
+        loserId: z.number().int().positive(),
+      });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid merge request" });
+      }
+      const { winnerId, loserId } = parsed.data;
+      if (winnerId === loserId) {
+        return res.status(400).json({ message: "Cannot merge a user into themselves" });
+      }
+      // Phase 5 review fix — explicit role/state validation at the API
+      // layer so a malformed admin request gets a clear 400 with the
+      // right error code instead of bubbling a generic 400 from
+      // storage. Storage still enforces the same invariants as
+      // defence-in-depth.
+      const [winnerRow, loserRow] = await Promise.all([
+        storage.getUser(winnerId),
+        storage.getUser(loserId),
+      ]);
+      if (!winnerRow || !loserRow) {
+        return res.status(404).json({ message: "One or both accounts not found" });
+      }
+      if (winnerRow.role !== "client" || loserRow.role !== "client") {
+        return res
+          .status(400)
+          .json({ message: "Merge is only allowed between two client accounts" });
+      }
+      if (winnerRow.mergedIntoUserId) {
+        return res
+          .status(400)
+          .json({ message: "Winner account has itself been merged — pick the surviving account" });
+      }
+      const me = req.user as User;
+      try {
+        const result = await storage.mergeUsers({ winnerId, loserId, performedByUserId: me.id });
+        res.json({
+          winner: sanitizeUserAdminView(result.winner),
+          loser: sanitizeUserAdminView(result.loser),
+        });
+      } catch (e: any) {
+        console.error("[admin/clients/merge] failed:", e);
+        res.status(400).json({ message: e?.message || "Merge failed" });
+      }
+    },
+  );
+
   app.get("/api/settings", async (_req, res) => {
     const s = await storage.getSettings();
     res.json(s);
@@ -4775,7 +4940,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // state, gated by `adminApproved=false`, so all existing booking
   // eligibility rules naturally block bookings until the admin
   // approves it.
-  app.post("/api/package-verification-requests", requireAuth, async (req, res) => {
+  app.post("/api/package-verification-requests", rateLimit({ windowMs: 10 * 60_000, max: RL.activation, key: "activation" }), requireAuth, async (req, res) => {
     const me = req.user as User;
     if (me.role !== "client") {
       return res.status(403).json({ message: "Only clients can submit activation requests" });

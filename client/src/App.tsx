@@ -23,6 +23,10 @@ import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { OfflineQueueBanner } from "@/components/OfflineQueueBanner";
+import { MaintenanceScreen } from "@/components/MaintenanceScreen";
+import { useFeatureFlag } from "@/lib/featureFlags";
 
 // ===== Lazy-loaded routes (split into per-page chunks) =====
 // Every other page is loaded on demand. This keeps the initial JS
@@ -69,6 +73,7 @@ const AdminSupplementStacks = lazy(() => import("@/pages/AdminSupplementStacks")
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
+const AdminMergeClients = lazy(() => import("@/pages/AdminMergeClients"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
@@ -120,6 +125,18 @@ function Router() {
     trackPageView(pathname);
   }, [pathname]);
 
+  // Maintenance mode (Phase 5). When the `maintenance_mode` feature
+  // flag is true, every non-admin surface is replaced with the
+  // maintenance screen. Admins bypass so Youssef can keep working
+  // on the system while it's locked down for clients. Public auth
+  // routes (/auth, /admin-access, /reset-password) stay reachable
+  // so an admin can always log in to flip the flag back.
+  const maintenance = useFeatureFlag("maintenance_mode", false);
+  const { user } = useAuth();
+  const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
+  const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
+  const showMaintenance = maintenance && !allowBypass;
+
   // Print routes (`/print/*`) render a standalone A4 document and must
   // not include any app chrome (header, cookie banner, etc.) or it would
   // bleed into the printed PDF.
@@ -135,8 +152,19 @@ function Router() {
     pathname === "/admin" ||
     (pathname.startsWith("/admin/") && pathname !== "/admin-access");
 
+  if (showMaintenance) {
+    return (
+      <div className="min-h-screen bg-background text-foreground font-body">
+        <OfflineBanner />
+        <MaintenanceScreen />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground font-body">
+      {!isPrintRoute && <OfflineBanner />}
+      {!isPrintRoute && <OfflineQueueBanner />}
       {!isPrintRoute && <ImpersonationBanner />}
       {!isPrintRoute && <Navigation />}
       {!isPrintRoute && <CookieBanner />}
@@ -277,6 +305,9 @@ function Router() {
           </Route>
           <Route path="/admin/audit-log">
             <ProtectedRoute component={AdminAuditLog} adminOnly />
+          </Route>
+          <Route path="/admin/merge-clients">
+            <ProtectedRoute component={AdminMergeClients} adminOnly />
           </Route>
 
           <Route component={NotFound} />

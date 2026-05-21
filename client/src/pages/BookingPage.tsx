@@ -1,4 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useDraft } from "@/lib/useDraft";
+import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
+import { ToastAction } from "@/components/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import type { TrainingLocation } from "@shared/schema";
 import { DayPicker } from "react-day-picker";
@@ -140,6 +143,63 @@ export default function BookingPage() {
     if (sessionFocus) setActiveFocusCategory(focusCategoryOf(sessionFocus));
   }, [sessionFocus]);
   const [trainingGoal, setTrainingGoal] = useState<TrainingGoal | null>(null);
+
+  // Draft recovery (Phase 5). Persist the in-progress booking selection
+  // to localStorage so a hard refresh, PWA cold start, or accidental
+  // tab-close never costs the user their work. Restored once on mount
+  // behind a confirmation toast — never silently overwrites whatever
+  // they'd already started typing.
+  const draftKey = user?.id ? `book:${user.id}` : "book:anon";
+  const draftValue = {
+    dateStr: date ? date.toISOString().slice(0, 10) : null,
+    selectedSlot,
+    notes,
+    sessionType,
+    sessionFocus,
+    trainingGoal,
+  };
+  const bookingDraft = useDraft({ key: draftKey, value: draftValue, enabled: !submitted });
+  const draftHandledRef = useRef(false);
+  useEffect(() => {
+    if (draftHandledRef.current) return;
+    if (!bookingDraft.hasDraft || !bookingDraft.draft) return;
+    draftHandledRef.current = true;
+    const d = bookingDraft.draft;
+    showToast({
+      title: t("booking.draftRestoredTitle", "Draft restored"),
+      description: t(
+        "booking.draftRestoredDesc",
+        "We brought back the booking you were filling out.",
+      ),
+      action: (
+        <ToastAction
+          altText="Discard draft"
+          data-testid="button-draft-discard"
+          onClick={() => {
+            bookingDraft.clear();
+            setDate(dubaiTodayAsLocalDate());
+            setSelectedSlot(null);
+            setNotes("");
+            setSessionType("package");
+            setSessionFocus(null);
+            setTrainingGoal(null);
+          }}
+        >
+          {t("booking.draftDiscard", "Discard")}
+        </ToastAction>
+      ),
+    });
+    if (d.dateStr) {
+      const parsed = new Date(`${d.dateStr}T00:00:00`);
+      if (!isNaN(parsed.getTime())) setDate(parsed);
+    }
+    if (d.selectedSlot) setSelectedSlot(d.selectedSlot);
+    if (typeof d.notes === "string") setNotes(d.notes);
+    if (d.sessionType) setSessionType(d.sessionType);
+    if (d.sessionFocus) setSessionFocus(d.sessionFocus);
+    if (d.trainingGoal) setTrainingGoal(d.trainingGoal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingDraft.hasDraft]);
   // Surfaces inline "required" hints under the missing field only after the
   // user attempts to continue — keeps the form quiet on first render but
   // explicit on submit.
@@ -301,39 +361,70 @@ export default function BookingPage() {
       return;
     }
     const isDuo = sessionType === "duo";
-    createBooking.mutate(
-      {
-        userId: user.id,
-        date: dateStr,
-        timeSlot: selectedSlot,
-        sessionType,
-        sessionFocus: sessionFocus ?? undefined,
-        trainingGoal: trainingGoal ?? undefined,
-        clientNotes: notes || undefined,
-        notes: notes || undefined,
-        acceptedPolicy: true,
-        lang,
-        // Send partner snapshot only for Duo bookings; server superRefine
-        // also enforces this. Empty optional fields are sent as `undefined`
-        // so Zod's union(literal(""), email()) can clear them cleanly.
-        partnerFullName: isDuo ? partnerName.trim() : undefined,
-        partnerPhone: isDuo && partnerPhone.trim() ? partnerPhone.trim() : undefined,
-        partnerEmail: isDuo && partnerEmail.trim() ? partnerEmail.trim() : undefined,
-        // Task #55: only attach fingerprint on trial bookings — non-trial
-        // requests have no reason to carry it.
-        ...(sessionType === "trial" && deviceFingerprint
-          ? { deviceFingerprint }
-          : {}),
-        ...(isAdmin ? { override: true } : {}),
-      } as any,
-      {
-        onSuccess: (booking) => {
-          setIsConfirmOpen(false);
-          setLastBooking(booking ?? null);
-          setSubmitted(true);
-        },
+    const payload = {
+      userId: user.id,
+      date: dateStr,
+      timeSlot: selectedSlot,
+      sessionType,
+      sessionFocus: sessionFocus ?? undefined,
+      trainingGoal: trainingGoal ?? undefined,
+      clientNotes: notes || undefined,
+      notes: notes || undefined,
+      acceptedPolicy: true,
+      lang,
+      partnerFullName: isDuo ? partnerName.trim() : undefined,
+      partnerPhone: isDuo && partnerPhone.trim() ? partnerPhone.trim() : undefined,
+      partnerEmail: isDuo && partnerEmail.trim() ? partnerEmail.trim() : undefined,
+      ...(sessionType === "trial" && deviceFingerprint
+        ? { deviceFingerprint }
+        : {}),
+      ...(isAdmin ? { override: true } : {}),
+    };
+
+    // Phase 5 — offline-first guard. If the browser is offline at submit
+    // time, enqueue the booking payload to localStorage and surface a
+    // friendly toast instead of letting fetch throw silently. The
+    // OfflineQueueBanner + reconnect handler replay the request once
+    // the network is back.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      // Phase 5 review fix — do NOT clear the draft on enqueue. The
+      // queued job may eventually fail server-side (401 expired session,
+      // 400 validation, 429 rate-limit) and we don't want the user to
+      // have to retype everything from scratch. The draft is cleared
+      // only after a *confirmed* server-side success.
+      enqueueOffline("booking", "/api/bookings", payload);
+      setIsConfirmOpen(false);
+      showToast({
+        title: "Saved for later",
+        description:
+          "You're offline. Your booking is queued and will send the moment you reconnect — your draft stays saved until it's accepted.",
+      });
+      return;
+    }
+
+    createBooking.mutate(payload as any, {
+      onSuccess: (booking) => {
+        setIsConfirmOpen(false);
+        setLastBooking(booking ?? null);
+        setSubmitted(true);
+        // Booking succeeded — drop the recovery draft so the next
+        // visit starts clean instead of restoring the now-stale form.
+        bookingDraft.clear();
       },
-    );
+      onError: (err) => {
+        if (isOfflineError(err)) {
+          // Same rule as the pre-submit branch — keep the draft so the
+          // user can retry/edit if the queued job is parked.
+          enqueueOffline("booking", "/api/bookings", payload);
+          setIsConfirmOpen(false);
+          showToast({
+            title: "Saved for later",
+            description:
+              "Connection dropped. Your booking is queued and will send when you're back online — your draft stays saved until it's accepted.",
+          });
+        }
+      },
+    });
   };
 
   // Task #55 — Waitlist mutations + my-waitlist query.

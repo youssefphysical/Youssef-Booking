@@ -25,6 +25,65 @@ import { z } from "zod";
 
 const scryptAsync = promisify(scrypt);
 
+// Phase 5 — normalisation helpers (shared with /api/auth/register so
+// duplicate-account prevention catches gmail dot/plus evasion + phone
+// dial-prefix variants). Routes have an equivalent pair under
+// server/routes.ts; both kept tiny and dependency-free.
+function normalizeRegistrationEmail(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed.includes("@")) return null;
+  const [localRaw, domain] = trimmed.split("@");
+  if (!domain) return null;
+  const isGmailFamily = domain === "gmail.com" || domain === "googlemail.com";
+  let local = localRaw;
+  const plus = local.indexOf("+");
+  if (plus >= 0) local = local.slice(0, plus);
+  if (isGmailFamily) local = local.replace(/\./g, "");
+  if (!local) return null;
+  return `${local}@${isGmailFamily ? "gmail.com" : domain}`;
+}
+// Phase 5 review fix — real E.164-ish canonicalisation (UAE-aware).
+// Youssef's clientele is UAE-resident, so the high-value evasion case is
+// `0501234567` (local) vs `+971501234567` / `00971501234567` (E.164).
+// We collapse all of those onto a single canonical form so the
+// duplicate-prevention check actually catches them. Numbers that
+// already start with `+` (other countries) are preserved as
+// `+<digits>`; bare international numbers with `00` get the same
+// treatment. Pure-local numbers that are not obviously UAE are kept
+// as plain digits so something is still comparable.
+export function normalizeRegistrationPhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = String(raw).trim();
+  if (!trimmed) return null;
+  const hasPlus = trimmed.startsWith("+");
+  let digits = trimmed.replace(/\D+/g, "");
+  if (digits.length < 6) return null;
+  // 00<cc> → +<cc>
+  if (!hasPlus && digits.startsWith("00")) {
+    digits = digits.slice(2);
+    return `+${digits}`;
+  }
+  // UAE canonicalisation — accept any of the common local forms and
+  // normalise to +9715xxxxxxxx. UAE mobiles are 9 digits beginning
+  // with `5` after the country code.
+  if (hasPlus) {
+    if (digits.startsWith("971") && digits.length === 12) return `+${digits}`;
+    return `+${digits}`;
+  }
+  if (digits.startsWith("971") && digits.length === 12) {
+    return `+${digits}`;
+  }
+  if (digits.startsWith("05") && digits.length === 10) {
+    return `+971${digits.slice(1)}`;
+  }
+  if (digits.startsWith("5") && digits.length === 9) {
+    return `+971${digits}`;
+  }
+  // Generic best-effort fallback for non-UAE local numbers.
+  return digits;
+}
+
 // =============================
 // LIGHTWEIGHT IN-MEMORY RATE LIMITER
 // =============================
@@ -36,7 +95,19 @@ const scryptAsync = promisify(scrypt);
 type Bucket = { count: number; resetAt: number };
 const RATE_BUCKETS = new Map<string, Bucket>();
 
-function rateLimit(opts: { windowMs: number; max: number; key: string }) {
+// Phase 5 review fix — env-tunable ceilings for the auth rate limits
+// (was hardcoded). Same `rlMax` semantics as routes.ts: an explicit
+// positive number wins, otherwise the default. Negative / NaN / 0
+// fall back to the default so a typo can't accidentally disable
+// brute-force protection.
+export function authRlMax(envKey: string, fallback: number): number {
+  const raw = process.env[envKey];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+export function rateLimit(opts: { windowMs: number; max: number; key: string }) {
   const { windowMs, max, key: routeKey } = opts;
   return (req: any, res: any, next: any) => {
     // Prefer Express's resolved req.ip — when `trust proxy` is set
@@ -337,6 +408,18 @@ export function setupAuth(app: Express) {
         if (user.role === "admin" && user.isActive === false) {
           return done(null, false);
         }
+        // Phase 5: merged ghost accounts can NEVER sign in. Their data
+        // has been folded into the winner; allowing the loser to log in
+        // would let two sessions claim the same client identity. We
+        // also block clients who have been soft-deleted/inactivated by
+        // an admin (`clientStatus = merged` covers this, but checking
+        // `isActive` as well is a belt-and-braces guarantee).
+        if (user.mergedIntoUserId != null) {
+          return done(null, false);
+        }
+        if (user.role === "client" && user.isActive === false) {
+          return done(null, false);
+        }
         // Auto-promote the canonical super-admin email on every successful login.
         // Best-effort: never blocks the login on failure.
         try {
@@ -367,14 +450,21 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await storage.getUser(id as number);
-      done(null, user || false);
+      // Phase 5: invalidate any pre-existing session belonging to a
+      // merged/inactive client. Without this, a loser account that was
+      // logged in *before* the merge would keep their session alive
+      // until expiry.
+      if (!user) return done(null, false);
+      if (user.mergedIntoUserId != null) return done(null, false);
+      if (user.role === "client" && user.isActive === false) return done(null, false);
+      done(null, user);
     } catch (e) {
       done(e as Error);
     }
   });
 
   // Client registration — rate-limited to discourage automated signups.
-  app.post("/api/auth/register", rateLimit({ windowMs: 60_000, max: 5, key: "register" }), async (req, res, next) => {
+  app.post("/api/auth/register", rateLimit({ windowMs: 60_000, max: authRlMax("RL_REGISTER_MAX", 5), key: "register" }), async (req, res, next) => {
     try {
       const parsed = insertClientSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -404,12 +494,34 @@ export function setupAuth(app: Express) {
       } = parsed.data;
 
       const existingByEmail = await storage.getUserByEmail(email);
-      if (existingByEmail) {
+      if (existingByEmail && !existingByEmail.mergedIntoUserId) {
         return res.status(400).json({ message: "Email already registered" });
       }
       const existingByUsername = await storage.getUserByUsername(email);
-      if (existingByUsername) {
+      if (existingByUsername && !existingByUsername.mergedIntoUserId) {
         return res.status(400).json({ message: "Email already registered" });
+      }
+      // Phase 5: normalised duplicate-account prevention. Catches the
+      // common evasions (gmail dot/plus tricks, +971 vs 00971 vs leading
+      // zero on phone). Merged-soft-deleted rows are ignored — the
+      // survivor wins.
+      const emailNormalized = normalizeRegistrationEmail(email);
+      const phoneNormalized = normalizeRegistrationPhone(phone);
+      if (emailNormalized) {
+        const dup = await storage.findActiveUserByNormalizedIdentifier({ emailNormalized });
+        if (dup) {
+          return res.status(400).json({
+            message: "An account already exists for this email. Try signing in or use password reset.",
+          });
+        }
+      }
+      if (phoneNormalized) {
+        const dup = await storage.findActiveUserByNormalizedIdentifier({ phoneNormalized });
+        if (dup) {
+          return res.status(400).json({
+            message: "An account already exists for this phone number. Try signing in or use password reset.",
+          });
+        }
       }
 
       const hashedPassword = await hashPassword(password);
@@ -419,7 +531,9 @@ export function setupAuth(app: Express) {
       // user is fully operational on first login.
       const isSuperAdminSignup =
         email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-      const user = await storage.createUser({
+      let user;
+      try {
+        user = await storage.createUser({
         username: email,
         email,
         password: hashedPassword,
@@ -440,6 +554,8 @@ export function setupAuth(app: Express) {
         weeklyFrequency,
         vipTier: initialTier,
         vipUpdatedAt: new Date(),
+        emailNormalized,
+        phoneNormalized,
         // Clients with a complete profile become 'active' immediately and can
         // book without trainer approval. Admin retains full edit control via
         // the admin panel. Profiles missing primary goal / weekly frequency
@@ -450,6 +566,21 @@ export function setupAuth(app: Express) {
           ? "active"
           : "incomplete",
       } as any);
+      } catch (e: any) {
+        // Phase 5 review fix — belt-and-suspenders against unique-index
+        // collisions on `users.username` / `users.email`. The merge
+        // path now scrambles loser identifiers so this should not fire
+        // for merged-account reuse, but if a race or legacy row sneaks
+        // through we want a deterministic 400, not a 500.
+        const code = e?.code || e?.cause?.code;
+        const msg = String(e?.message || "");
+        if (code === "23505" || /duplicate key|unique constraint/i.test(msg)) {
+          return res.status(400).json({
+            message: "An account already exists for this email. Try signing in or use password reset.",
+          });
+        }
+        throw e;
+      }
 
       // Persist registration consent for legal/audit trail
       try {
@@ -619,7 +750,7 @@ export function setupAuth(app: Express) {
   // expiry on the user, email the *plaintext* token in a reset link. The
   // /api/auth/reset-password endpoint hashes the supplied token and looks it
   // up. Email failures are logged but never fail the request.
-  app.post("/api/auth/forgot-password", rateLimit({ windowMs: 60_000, max: 5, key: "forgot" }), async (req, res) => {
+  app.post("/api/auth/forgot-password", rateLimit({ windowMs: 60_000, max: authRlMax("RL_FORGOT_MAX", 5), key: "forgot" }), async (req, res) => {
     const schema = z.object({ email: z.string().email() });
     const parsed = schema.safeParse(req.body);
     const friendly = {
@@ -670,7 +801,7 @@ export function setupAuth(app: Express) {
   // On success the token + expiry are nulled so it can't be reused.
   app.post(
     "/api/auth/reset-password",
-    rateLimit({ windowMs: 60_000, max: 10, key: "reset-password" }),
+    rateLimit({ windowMs: 60_000, max: authRlMax("RL_RESET_MAX", 10), key: "reset-password" }),
     async (req, res) => {
       const schema = z.object({
         token: z.string().min(32),
@@ -706,7 +837,7 @@ export function setupAuth(app: Express) {
     },
   );
 
-  app.post("/api/auth/login", rateLimit({ windowMs: 60_000, max: 10, key: "login" }), (req, res, next) => {
+  app.post("/api/auth/login", rateLimit({ windowMs: 60_000, max: authRlMax("RL_LOGIN_MAX", 10), key: "login" }), (req, res, next) => {
     passport.authenticate("local", (err: Error, user: User | false) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });

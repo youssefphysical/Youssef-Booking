@@ -35,6 +35,9 @@ function useLoginMutation() {
     },
     onSuccess: (user) => {
       queryClient.setQueryData([api.auth.me.path], user);
+      // Phase 5 — pre-warm the chunks the user is most likely to hit
+      // right after login so navigation feels instant.
+      import("@/lib/routePreload").then((m) => m.preloadPathForUser(user.role));
       toast({ title: "Welcome back", description: `Signed in as ${user.fullName}` });
     },
     onError: (error: Error) => {
@@ -61,6 +64,9 @@ function useRegisterMutation() {
     },
     onSuccess: (user) => {
       queryClient.setQueryData([api.auth.me.path], user);
+      // Phase 5 — same preload as login: new accounts go straight to
+      // the wizard then dashboard, so prime both chunks now.
+      import("@/lib/routePreload").then((m) => m.preloadPathForUser(user.role));
       toast({ title: "Account created", description: `Welcome, ${user.fullName}!` });
     },
     onError: (error: Error) => {

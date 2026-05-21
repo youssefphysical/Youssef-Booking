@@ -14,6 +14,7 @@ import {
   Gauge,
   UserPlus,
   ShieldAlert,
+  Merge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -73,8 +74,37 @@ const ADMIN_TABS: TabSpec[] = [
   { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
   { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
   { href: "/admin/audit-log", labelKey: "admin.tabs.auditLog", fallback: "Audit log", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/audit-log") },
+  { href: "/admin/merge-clients", labelKey: "admin.tabs.merge", fallback: "Merge", icon: <Merge size={15} />, matches: (p) => p.startsWith("/admin/merge-clients") },
   { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
+
+// Map of href → lazy preload thunk. Calling the thunk on hover/focus
+// kicks off the chunk download before the user actually clicks, so
+// the route is hot by the time they arrive. Safe to call multiple
+// times — `lazy()` caches the promise internally.
+const ADMIN_PRELOAD: Record<string, () => Promise<unknown>> = {
+  "/admin": () => import("@/pages/AdminDashboard"),
+  "/admin/command-center": () => import("@/pages/AdminCommandCenter"),
+  "/admin/clients": () => import("@/pages/AdminClients"),
+  "/admin/leads": () => import("@/pages/AdminLeads"),
+  "/admin/bookings": () => import("@/pages/AdminBookings"),
+  "/admin/packages": () => import("@/pages/AdminPackages"),
+  "/admin/analytics": () => import("@/pages/AdminAnalytics"),
+  "/admin/recovery": () => import("@/pages/AdminRecoveryPage"),
+  "/admin/integrity": () => import("@/pages/AdminIntegrity"),
+  "/admin/audit-log": () => import("@/pages/AdminAuditLog"),
+  "/admin/merge-clients": () => import("@/pages/AdminMergeClients"),
+  "/admin/settings": () => import("@/pages/AdminSettings"),
+};
+
+function preloadAdminRoute(href: string) {
+  const fn = ADMIN_PRELOAD[href];
+  if (fn) {
+    // Swallow failures — preload is best-effort; the real navigation
+    // will surface any actual chunk-loading error to Suspense.
+    fn().catch(() => {});
+  }
+}
 
 export function AdminTabs() {
   const [location] = useLocation();
@@ -129,6 +159,9 @@ export function AdminTabs() {
               data-testid={`admintab-${tab.fallback.toLowerCase()}`}
               title={tab.hintKey ? t(tab.hintKey, tab.hintFallback) : undefined}
               aria-current={active ? "page" : undefined}
+              onMouseEnter={() => preloadAdminRoute(tab.href)}
+              onFocus={() => preloadAdminRoute(tab.href)}
+              onTouchStart={() => preloadAdminRoute(tab.href)}
               className={cn(
                 // Layout-stable: every tab keeps the same padding +
                 // height + font-weight. Active state only swaps

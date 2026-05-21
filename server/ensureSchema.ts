@@ -778,6 +778,14 @@ async function run(): Promise<void> {
       ON waitlists (user_id, date, time_slot);
     CREATE INDEX IF NOT EXISTS waitlists_date_slot_idx
       ON waitlists (date, time_slot);
+
+    -- Phase 5 (Task #59): admin client-merge tool. Both nullable; set
+    -- on the loser row when an admin folds two duplicate accounts.
+    ALTER TABLE IF EXISTS users
+      ADD COLUMN IF NOT EXISTS merged_into_user_id integer REFERENCES users(id),
+      ADD COLUMN IF NOT EXISTS merged_at timestamp;
+    CREATE INDEX IF NOT EXISTS users_merged_into_idx
+      ON users (merged_into_user_id) WHERE merged_into_user_id IS NOT NULL;
   `;
 
   try {

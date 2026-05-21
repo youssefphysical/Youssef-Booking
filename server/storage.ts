@@ -381,6 +381,39 @@ export interface IStorage {
     deviceFingerprintHash?: string | null;
     excludeUserId?: number;
   }): Promise<User[]>;
+  /**
+   * Phase 5 — duplicate-account prevention. Returns the first active
+   * (non-merged, non-archived) user matching either of the supplied
+   * normalised identifiers, or undefined. Used by /api/auth/register
+   * to catch evaded duplicates before write.
+   */
+  findActiveUserByNormalizedIdentifier(opts: {
+    emailNormalized?: string | null;
+    phoneNormalized?: string | null;
+  }): Promise<User | undefined>;
+  /**
+   * Phase 5 — admin client-merge tool. Folds `loserId` into `winnerId`:
+   * reassigns bookings, packages, body metrics, photos, check-ins,
+   * notifications, agreements, consent records, session histories,
+   * and waitlist entries; appends loser's notes onto winner; marks
+   * loser row mergedIntoUserId=winnerId, mergedAt=now, isActive=false,
+   * clientStatus='merged'. Idempotent on the row level — re-running with
+   * the same pair is a no-op once mergedIntoUserId is already set.
+   */
+  mergeUsers(opts: {
+    winnerId: number;
+    loserId: number;
+    performedByUserId: number;
+  }): Promise<{ winner: User; loser: User }>;
+  /**
+   * Phase 5 — preview a pending merge by returning the number of rows
+   * the loser owns in every dependent table. Admins use this in the
+   * merge UI to see exactly what will move before clicking confirm.
+   */
+  getMergePreview(loserId: number): Promise<{
+    counts: Record<string, number>;
+    total: number;
+  }>;
 
   // Renewal requests
   getRenewalRequests(filters?: { userId?: number; status?: string; limit?: number }): Promise<RenewalRequest[]>;
@@ -597,6 +630,207 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string) {
     const [u] = await db.select().from(users).where(eq(users.email, email));
     return u;
+  }
+
+  async findActiveUserByNormalizedIdentifier(opts: {
+    emailNormalized?: string | null;
+    phoneNormalized?: string | null;
+  }): Promise<User | undefined> {
+    const ors: any[] = [];
+    if (opts.emailNormalized) ors.push(eq(users.emailNormalized, opts.emailNormalized));
+    if (opts.phoneNormalized) ors.push(eq(users.phoneNormalized, opts.phoneNormalized));
+    if (ors.length === 0) return undefined;
+    const [u] = await db
+      .select()
+      .from(users)
+      .where(and(isNull(users.mergedIntoUserId), or(...ors)))
+      .limit(1);
+    return u;
+  }
+
+  async mergeUsers(opts: {
+    winnerId: number;
+    loserId: number;
+    performedByUserId: number;
+  }): Promise<{ winner: User; loser: User }> {
+    const { winnerId, loserId, performedByUserId } = opts;
+    if (winnerId === loserId) {
+      throw new Error("Cannot merge a user into themselves");
+    }
+    const winner = await this.getUser(winnerId);
+    const loser = await this.getUser(loserId);
+    if (!winner) throw new Error("Winner user not found");
+    if (!loser) throw new Error("Loser user not found");
+    // Phase 5 review fix — defence-in-depth role check at the storage
+    // layer. The admin UI filters to clients but a misuse of the API
+    // (or a future caller) should not be able to merge admin/staff
+    // accounts or fold a client into an admin. Both sides must be
+    // clients; the winner must not itself already be merged.
+    if (winner.role !== "client" || loser.role !== "client") {
+      throw new Error("Merge is only allowed between two client accounts");
+    }
+    if (winner.mergedIntoUserId) {
+      throw new Error("Winner account has itself been merged — pick the surviving account");
+    }
+    if (loser.mergedIntoUserId) {
+      // Idempotent — already merged.
+      return { winner, loser };
+    }
+
+    // Reassign every row referencing the loser's id via raw SQL so the
+    // whole merge runs in one round-trip and stays correct even when
+    // some optional tables are empty. UPDATE … WHERE user_id = $1 is a
+    // no-op when the table has no matching rows.
+    await db.transaction(async (tx) => {
+      // Phase 5 review fix — fail-fast. Previously this swallowed every
+      // SQL error, which could leave the loser marked as merged while
+      // some of their rows stayed unmoved (silent partial merge). Now
+      // we only swallow the narrow "relation does not exist" case
+      // (Postgres SQLSTATE 42P01), which happens on a fresh DB before
+      // ensureSchema has created an optional auxiliary table. Anything
+      // else — unique violations, FK conflicts, type mismatches —
+      // bubbles up and aborts the transaction, so the loser is *not*
+      // marked merged and the admin sees the real error.
+      const reassign = async (table: string, col: string = "user_id") => {
+        try {
+          await tx.execute(
+            sql.raw(`UPDATE "${table}" SET "${col}" = ${winnerId} WHERE "${col}" = ${loserId}`),
+          );
+        } catch (e: any) {
+          const code = e?.code || e?.cause?.code;
+          const msg = String(e?.message || "");
+          const isMissingTable =
+            code === "42P01" || /relation .* does not exist/i.test(msg);
+          if (isMissingTable) {
+            console.warn(`[mergeUsers] reassign ${table}.${col} skipped (missing table):`, msg);
+            return;
+          }
+          // Re-throw so the transaction rolls back.
+          throw e;
+        }
+      };
+      await reassign("bookings");
+      await reassign("packages");
+      await reassign("body_metrics");
+      await reassign("progress_photos");
+      await reassign("weekly_checkins");
+      await reassign("client_notifications");
+      await reassign("agreements");
+      await reassign("consent_records");
+      await reassign("package_session_history");
+      await reassign("waitlists");
+      await reassign("renewal_requests");
+      await reassign("extension_requests");
+      await reassign("training_locations");
+      await reassign("package_verification_requests");
+      await reassign("recovery_requests");
+      // Phase 5 review fix: tags + adjacent client-scoped tables that
+      // were missed in the first pass. Without these the loser's
+      // taxonomy/segmentation history would silently vanish.
+      await reassign("client_tags");
+      await reassign("client_supplements");
+      await reassign("inbody_records");
+
+      // Append loser's notes onto winner so nothing is silently dropped.
+      const mergedNotes = [winner.notes, loser.notes].filter(Boolean).join("\n\n--- merged from duplicate account ---\n\n") || null;
+      const mergedAdminNotes = [winner.adminNotes, loser.adminNotes].filter(Boolean).join("\n\n--- merged from duplicate account ---\n\n") || null;
+
+      await tx
+        .update(users)
+        .set({
+          notes: mergedNotes,
+          adminNotes: mergedAdminNotes,
+          hasUsedFreeTrial: winner.hasUsedFreeTrial || loser.hasUsedFreeTrial,
+          noShowCount: (winner.noShowCount ?? 0) + (loser.noShowCount ?? 0),
+          updatedAt: new Date(),
+        } as any)
+        .where(eq(users.id, winnerId));
+
+      // Phase 5 review fix — scramble the loser's unique identifiers so
+      // the original email/phone/username are free to register again
+      // (or be assigned to a different client) without tripping the
+      // unique indexes on `users`. We preserve the original values in a
+      // `merged_*` prefix for audit. createUser / registration paths
+      // already ignore rows where `mergedIntoUserId IS NOT NULL`.
+      const scrambleSuffix = `__merged_${loserId}_${Date.now()}`;
+      const loserScrambled: Record<string, any> = {
+        mergedIntoUserId: winnerId,
+        mergedAt: new Date(),
+        isActive: false,
+        clientStatus: "merged",
+        updatedAt: new Date(),
+        username: `${loser.username ?? loser.email ?? "user"}${scrambleSuffix}`,
+        email: loser.email ? `${loser.email}${scrambleSuffix}` : null,
+      };
+      if (loser.phone) loserScrambled.phone = `${loser.phone}${scrambleSuffix}`;
+      if ((loser as any).emailNormalized) loserScrambled.emailNormalized = null;
+      if ((loser as any).phoneNormalized) loserScrambled.phoneNormalized = null;
+
+      await tx
+        .update(users)
+        .set(loserScrambled as any)
+        .where(eq(users.id, loserId));
+    });
+
+    try {
+      await this.recordAuditLog({
+        action: "client.merge",
+        entityType: "user",
+        entityId: loserId,
+        previousValue: { loserId, snapshot: { fullName: loser.fullName, email: loser.email, phone: loser.phone } },
+        newValue: { winnerId, mergedAt: new Date().toISOString() },
+        performedByUserId,
+        reason: `Merged loser #${loserId} into winner #${winnerId}`,
+      });
+    } catch (e) {
+      console.warn("[mergeUsers] audit log failed:", e);
+    }
+
+    const fresh = await this.getUser(winnerId);
+    const freshLoser = await this.getUser(loserId);
+    return { winner: fresh!, loser: freshLoser! };
+  }
+
+  async getMergePreview(loserId: number) {
+    // Tables we reassign in mergeUsers — keep these in lockstep so the
+    // preview total matches what actually moves. Friendly labels are
+    // surfaced to the admin in the UI.
+    const tables: Array<{ key: string; table: string; col?: string }> = [
+      { key: "bookings", table: "bookings" },
+      { key: "packages", table: "packages" },
+      { key: "body_metrics", table: "body_metrics" },
+      { key: "progress_photos", table: "progress_photos" },
+      { key: "weekly_checkins", table: "weekly_checkins" },
+      { key: "client_notifications", table: "client_notifications" },
+      { key: "agreements", table: "agreements" },
+      { key: "consent_records", table: "consent_records" },
+      { key: "package_session_history", table: "package_session_history" },
+      { key: "waitlists", table: "waitlists" },
+      { key: "renewal_requests", table: "renewal_requests" },
+      { key: "extension_requests", table: "extension_requests" },
+      { key: "training_locations", table: "training_locations" },
+      { key: "package_verification_requests", table: "package_verification_requests" },
+      { key: "recovery_requests", table: "recovery_requests" },
+      { key: "client_tags", table: "client_tags" },
+      { key: "client_supplements", table: "client_supplements" },
+      { key: "inbody_records", table: "inbody_records" },
+    ];
+    const counts: Record<string, number> = {};
+    let total = 0;
+    for (const t of tables) {
+      try {
+        const r: any = await db.execute(
+          sql.raw(`SELECT COUNT(*)::int AS c FROM "${t.table}" WHERE "${t.col ?? "user_id"}" = ${loserId}`),
+        );
+        const row = Array.isArray(r) ? r[0] : r?.rows?.[0];
+        const c = Number(row?.c ?? 0);
+        counts[t.key] = c;
+        total += c;
+      } catch {
+        counts[t.key] = 0;
+      }
+    }
+    return { counts, total };
   }
 
   async getUserByPasswordResetToken(tokenHash: string) {
