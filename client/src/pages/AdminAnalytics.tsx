@@ -37,6 +37,8 @@ import {
   AdminSectionTitle,
   AdminStatCard,
 } from "@/components/admin/primitives";
+import { TrialFunnel } from "@/components/admin/TrialFunnel";
+import { CapacityHeatmap } from "@/components/admin/CapacityHeatmap";
 
 const ANALYTICS_PATH = "/api/admin/analytics";
 const FMT_INT = new Intl.NumberFormat("en-US");
@@ -224,6 +226,41 @@ export default function AdminAnalytics() {
                 animate
               />
             </div>
+
+            {/* Trial funnel + capacity heatmap (Phase 4 BI) */}
+            {(data.funnel || data.capacityHeatmap) && (
+              <div className="grid lg:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
+                {data.funnel && (
+                  <AdminChartCard
+                    title={t("admin.analytics.trialFunnel", "Trial funnel")}
+                    subtitle={t(
+                      "admin.analytics.trialFunnelSub",
+                      "Registration → trial → conversion",
+                    )}
+                    testId="chart-funnel"
+                    height="min-h-[260px]"
+                  >
+                    <TrialFunnel data={data.funnel} />
+                  </AdminChartCard>
+                )}
+                {data.capacityHeatmap && (
+                  <AdminChartCard
+                    title={t("admin.analytics.heatmap", "Capacity heatmap")}
+                    subtitle={t(
+                      "admin.analytics.heatmapSub",
+                      "Sessions by weekday × hour (last 90d)",
+                    )}
+                    testId="chart-heatmap"
+                    height="min-h-[260px]"
+                  >
+                    <CapacityHeatmap
+                      hours={data.capacityHeatmap.hours}
+                      cells={data.capacityHeatmap.cells}
+                    />
+                  </AdminChartCard>
+                )}
+              </div>
+            )}
 
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">

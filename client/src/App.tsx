@@ -45,6 +45,7 @@ const AdminCommandCenter = lazy(() => import("@/pages/AdminCommandCenter"));
 const AdminLeads = lazy(() => import("@/pages/AdminLeads"));
 const AdminIntegrity = lazy(() => import("@/pages/AdminIntegrity"));
 const AdminAnalytics = lazy(() => import("@/pages/AdminAnalytics"));
+const AdminBusinessHealth = lazy(() => import("@/pages/AdminBusinessHealth"));
 const AdminBookings = lazy(() => import("@/pages/AdminBookings"));
 const AdminClients = lazy(() => import("@/pages/AdminClients"));
 const AdminDataCenter = lazy(() => import("@/pages/AdminDataCenter"));
@@ -213,6 +214,9 @@ function Router() {
           </Route>
           <Route path="/admin/analytics">
             <ProtectedRoute component={AdminAnalytics} adminOnly />
+          </Route>
+          <Route path="/admin/business-health">
+            <ProtectedRoute component={AdminBusinessHealth} adminOnly />
           </Route>
           <Route path="/admin/bookings">
             <ProtectedRoute component={AdminBookings} adminOnly />

@@ -40,6 +40,9 @@ import {
   AdminEmptyState,
   useAdminCountUp,
 } from "@/components/admin/primitives";
+import { DailyBriefModal } from "@/components/admin/DailyBriefModal";
+import { SmartAlertsPanel } from "@/components/admin/SmartAlertsPanel";
+import { SystemHealthBanner } from "@/components/admin/SystemHealthBanner";
 
 const FMT_AED = new Intl.NumberFormat("en-US", { style: "currency", currency: "AED", maximumFractionDigits: 0 });
 
@@ -194,7 +197,10 @@ export default function AdminDashboard() {
           title={t("admin.dashboardTitle")}
           subtitle={t("admin.dashboard.subtitle")}
           testId="text-admin-title"
+          right={<DailyBriefModal />}
         />
+
+        <SystemHealthBanner />
 
         {/* AdminTabs is now rendered globally for every /admin/* route
             via App.tsx's Router (lifted May 2026). Mount removed here
@@ -256,6 +262,10 @@ export default function AdminDashboard() {
             />
           </div>
         ) : null}
+
+        <div className="mb-4 sm:mb-6">
+          <SmartAlertsPanel />
+        </div>
 
         {/* Headline KPIs — concise, premium count-ups */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">

@@ -1247,6 +1247,49 @@ export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 
 // =============================
+// PHASE 4 — ADMIN BI (Task #58)
+// =============================
+// Smart-alerts inbox. Distinct from `admin_notifications` (which is
+// transactional/per-event); admin_alerts represents a *condition* that
+// can be resolved when it clears. Dedupe is enforced by a partial unique
+// index on (kind, dedupe_key) WHERE resolved_at IS NULL.
+export const adminAlerts = pgTable("admin_alerts", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").notNull(), // e.g. 'silent_email_failure', 'low_attendance', 'expiring_today'
+  severity: text("severity").notNull().default("info"), // 'info' | 'warning' | 'critical'
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  link: text("link"),
+  entityType: text("entity_type"), // 'user' | 'package' | 'booking' | 'system'
+  entityId: integer("entity_id"),
+  dedupeKey: text("dedupe_key"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+export type AdminAlert = typeof adminAlerts.$inferSelect;
+export const insertAdminAlertSchema = createInsertSchema(adminAlerts).omit({
+  id: true,
+  createdAt: true,
+  resolvedAt: true,
+});
+export type InsertAdminAlert = z.infer<typeof insertAdminAlertSchema>;
+
+// Silent-fail detector. Single row per failure kind; rolling 24h counter
+// of failures and last-error context. Surfaced as a banner on the admin
+// dashboard so silent infra failures stop being silent.
+export const systemHealth = pgTable("system_health", {
+  kind: text("kind").primaryKey(), // e.g. 'email_send', 'notification_dispatch', 'inbody_extract'
+  failureCount24h: integer("failure_count_24h").notNull().default(0),
+  lastFailureAt: timestamp("last_failure_at"),
+  lastFailureMessage: text("last_failure_message"),
+  lastSuccessAt: timestamp("last_success_at"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type SystemHealthRow = typeof systemHealth.$inferSelect;
+
+// =============================
 // PACKAGE STATUS
 // =============================
 export const PACKAGE_STATUSES = [
@@ -1955,6 +1998,61 @@ export type AdminAnalytics = {
     completedByMonth: Array<{ month: string; count: number }>;
     signupsByMonth: Array<{ month: string; count: number }>;
     bookingsByDow: Array<{ dow: number; count: number }>;
+  };
+  // Phase 4 — Trial funnel (lifetime). Each stage is a count of clients
+  // that have reached that stage; stages monotonically decrease.
+  funnel: {
+    registered: number;       // total client signups
+    trialBooked: number;      // clients who booked a trial session
+    trialCompleted: number;   // clients whose trial completed (status='completed')
+    converted: number;        // clients with a paid (non-trial) package
+    active: number;           // clientStatus='active' (currently retained)
+  };
+  // Phase 4 — Capacity heatmap (last 90d non-cancelled). 7 weekdays × 17
+  // hours (06..22 inclusive). Values are absolute booking counts.
+  capacityHeatmap: {
+    hours: number[];                                      // [6,7,...,22]
+    cells: Array<{ dow: number; hour: number; count: number }>;
+  };
+};
+
+// Phase 4 — Daily Brief snapshot. Single endpoint, one round-trip.
+// Surfaces the trainer's day-of context: today's sessions w/ flags,
+// pending approvals, expiries, alerts, etc.
+export type AdminDailyBrief = {
+  generatedAt: string;
+  date: string; // YYYY-MM-DD (Dubai date)
+  today: {
+    totalSessions: number;
+    completed: number;
+    upcoming: number;
+    sessions: Array<{
+      id: number;
+      time: string;
+      userId: number;
+      userName: string;
+      status: string;
+      vipTier: string | null;
+      isTrial: boolean;
+      sessionFocus: string | null;
+    }>;
+  };
+  pending: {
+    renewals: number;
+    extensions: number;
+    paymentApprovals: number; // packages with paymentStatus='pending'
+  };
+  expiries: {
+    next7dPackages: number;
+    next7dClients: Array<{ userId: number; userName: string; expiryDate: string }>;
+  };
+  alerts: {
+    open: number;
+    critical: number;
+  };
+  systemHealth: {
+    degraded: boolean;
+    failureKinds: string[];
   };
 };
 

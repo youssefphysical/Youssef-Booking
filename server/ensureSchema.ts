@@ -946,6 +946,36 @@ async function run(): Promise<void> {
       CREATE INDEX IF NOT EXISTS packages_expiry_idx ON packages(expiry_date);
       CREATE INDEX IF NOT EXISTS admin_audit_performed_by_idx ON admin_audit_log(performed_by_user_id);
       CREATE INDEX IF NOT EXISTS admin_audit_created_idx ON admin_audit_log(created_at DESC);
+
+      -- ===== Task #58 — Phase 4 Admin BI =====
+      CREATE TABLE IF NOT EXISTS admin_alerts (
+        id serial PRIMARY KEY,
+        kind text NOT NULL,
+        severity text NOT NULL DEFAULT 'info',
+        title text NOT NULL,
+        body text NOT NULL,
+        link text,
+        entity_type text,
+        entity_id integer,
+        dedupe_key text,
+        created_at timestamp NOT NULL DEFAULT now(),
+        resolved_at timestamp
+      );
+      -- Partial unique: an OPEN alert with the same (kind, dedupe_key)
+      -- collapses; resolved ones can coexist (history).
+      CREATE UNIQUE INDEX IF NOT EXISTS admin_alerts_open_uq
+        ON admin_alerts(kind, dedupe_key) WHERE resolved_at IS NULL AND dedupe_key IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS admin_alerts_open_idx
+        ON admin_alerts(resolved_at, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS system_health (
+        kind text PRIMARY KEY,
+        failure_count_24h integer NOT NULL DEFAULT 0,
+        last_failure_at timestamp,
+        last_failure_message text,
+        last_success_at timestamp,
+        updated_at timestamp NOT NULL DEFAULT now()
+      );
     `);
 
     console.log("[ensureSchema] OK");

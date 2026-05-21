@@ -2068,10 +2068,39 @@ function addDaysISO(start: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+type ClientBusiness = {
+  ltv: number;
+  totalAssigned: number;
+  outstanding: number;
+  burnRatePerWeek: number;
+  packages: Array<{
+    packageId: number;
+    burnRatePerWeek: number;
+    projectedEndDate: string | null;
+    remainingSessions: number;
+    daysRemaining: number | null;
+    expiryDate: string | null;
+    pace: "ahead" | "tight" | "behind" | "unknown";
+  }>;
+};
+
 function PackagesPanel({ client }: { client: UserResponse }) {
   const { t } = useTranslation();
   const { data: packages = [] } = usePackages({ userId: client.id });
   const list = packages as Package[];
+  const { data: business } = useQuery<ClientBusiness>({
+    queryKey: ["/api/admin/clients", client.id, "business"],
+    queryFn: async () => {
+      const r = await fetch(`/api/admin/clients/${client.id}/business`, {
+        credentials: "include",
+      });
+      if (!r.ok) throw new Error("Failed to load business metrics");
+      return r.json();
+    },
+    staleTime: 60_000,
+  });
+  const businessByPkg = new Map<number, ClientBusiness["packages"][number]>();
+  for (const b of business?.packages ?? []) businessByPkg.set(b.packageId, b);
   const create = useCreatePackage();
   const del = useDeletePackage();
   const { data: clients = [] } = useClients();
@@ -2322,6 +2351,33 @@ function PackagesPanel({ client }: { client: UserResponse }) {
         </Dialog>
       </div>
 
+      {business && (
+        <div
+          className="grid grid-cols-3 gap-2 mb-3 rounded-2xl border border-white/8 bg-white/[0.02] p-3"
+          data-testid="client-business-strip"
+        >
+          <BusinessStat
+            label="Lifetime value"
+            value={`AED ${business.ltv.toLocaleString("en-US")}`}
+            sub={business.outstanding > 0 ? `AED ${business.outstanding.toLocaleString("en-US")} outstanding` : "Settled"}
+            tone="primary"
+            testId="client-ltv"
+          />
+          <BusinessStat
+            label="Burn rate"
+            value={`${business.burnRatePerWeek.toFixed(1)}/wk`}
+            sub="Sessions / week (30d)"
+            testId="client-burn-rate"
+          />
+          <BusinessStat
+            label="Assigned"
+            value={`AED ${business.totalAssigned.toLocaleString("en-US")}`}
+            sub="Total packages value"
+            testId="client-assigned-total"
+          />
+        </div>
+      )}
+
       {list.length === 0 ? (
         <EmptyBox text="No packages assigned" />
       ) : (
@@ -2329,6 +2385,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
           {list.map((p) => {
             const def = PACKAGE_DEFINITIONS[p.type];
             const remaining = p.totalSessions - p.usedSessions;
+            const burn = businessByPkg.get(p.id);
             // Prefer the snapshot fields captured at assignment time; fall back
             // to the legacy PACKAGE_DEFINITIONS table for pre-template rows.
             const bonus = (p as any).bonusSessions ?? def?.bonusSessions ?? 0;
@@ -2386,11 +2443,70 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                     className="h-full bg-gradient-to-r from-primary via-primary to-primary/60"
                   />
                 </div>
+                {burn && burn.burnRatePerWeek > 0 && (
+                  <div
+                    className="flex flex-wrap items-center gap-1.5 mt-2 text-[10px]"
+                    data-testid={`pkg-burn-${p.id}`}
+                  >
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/8 text-muted-foreground">
+                      <Activity size={9} /> {burn.burnRatePerWeek.toFixed(1)}/wk
+                    </span>
+                    {burn.projectedEndDate && (
+                      <span
+                        className={
+                          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border " +
+                          (burn.pace === "behind"
+                            ? "bg-red-500/10 border-red-500/30 text-red-300"
+                            : burn.pace === "tight"
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                              : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300")
+                        }
+                      >
+                        ETA {burn.projectedEndDate.slice(5)}
+                        {burn.pace === "behind" && " · over expiry"}
+                        {burn.pace === "tight" && " · tight"}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <PackageAdminControls pkg={p} />
               </motion.div>
             );
           })}
         </div>
+      )}
+    </div>
+  );
+}
+
+function BusinessStat({
+  label,
+  value,
+  sub,
+  tone,
+  testId,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "primary";
+  testId: string;
+}) {
+  return (
+    <div className="min-w-0" data-testid={testId}>
+      <p className="text-[9.5px] uppercase tracking-[0.18em] font-bold text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={
+          "font-display font-bold leading-none mt-1 tabular-nums truncate text-[15px] sm:text-base " +
+          (tone === "primary" ? "text-primary" : "text-foreground")
+        }
+      >
+        {value}
+      </p>
+      {sub && (
+        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>
       )}
     </div>
   );

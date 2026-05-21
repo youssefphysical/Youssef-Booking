@@ -195,6 +195,9 @@ export interface CronPhaseHandlers {
   expiry: () => Promise<void>;
   checkin: () => Promise<void>;
   autoComplete: () => Promise<{ completed: number; deducted: number; notified: number }>;
+  // Phase 4 (optional, task #58). Recompute smart alerts / silent-fail
+  // detector. Optional so existing test harnesses keep working.
+  smartAlerts?: () => Promise<{ opened: number; resolved: number }>;
 }
 
 export async function runCronTick(handlers: CronPhaseHandlers): Promise<CronTickSummary> {
@@ -297,6 +300,14 @@ export async function runCronTick(handlers: CronPhaseHandlers): Promise<CronTick
       return { ok: true };
     });
     summary.phases.push(chkPhase);
+
+    if (handlers.smartAlerts) {
+      const alertsPhase = await phase("smart-alerts", async () => {
+        const r = await handlers.smartAlerts!();
+        return { opened: r.opened, resolved: r.resolved };
+      });
+      summary.phases.push(alertsPhase);
+    }
 
     summary.ok = summary.phases.every((p) => p.ok);
     if (!summary.ok) {

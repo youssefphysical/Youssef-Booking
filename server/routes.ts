@@ -125,6 +125,8 @@ import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
 import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
 import { computeClientIntelligence } from "./services/clientIntelligence";
+import { recomputeSmartAlerts, listOpen as listOpenAlerts, resolveById as resolveAlertById } from "./services/adminAlerts";
+import { getHealth as getSystemHealth } from "./services/systemHealth";
 import { optimizeImageFile } from "./image-utils";
 
 function currentMonthKey(d: Date = new Date()): string {
@@ -6204,6 +6206,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const r = await runAutoCompleteBookings("cron");
         return { completed: r.completed, deducted: r.deducted, notified: r.notified };
       },
+      smartAlerts: () => recomputeSmartAlerts(),
     });
 
     // HTTP status mirrors success: 200 on full success or only-activity-failures,
@@ -6672,6 +6675,55 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (idx !== undefined) signupsByMonth[idx].count++;
     }
 
+    // ----- TRIAL FUNNEL (lifetime) -----
+    const clientIds = new Set(clients.map((c) => c.id));
+    const trialBookedUsers = new Set<number>();
+    const trialCompletedUsers = new Set<number>();
+    for (const b of allBookings as any[]) {
+      if (b.sessionType !== "trial") continue;
+      if (!clientIds.has(b.userId)) continue;
+      trialBookedUsers.add(b.userId);
+      if (b.status === "completed") trialCompletedUsers.add(b.userId);
+    }
+    const convertedUsers = new Set<number>();
+    for (const p of allPackagesAll as any[]) {
+      if (p.type === "trial") continue;
+      if (clientIds.has(p.userId)) convertedUsers.add(p.userId);
+    }
+    const funnel = {
+      registered: clientsTotal,
+      trialBooked: trialBookedUsers.size,
+      trialCompleted: trialCompletedUsers.size,
+      converted: convertedUsers.size,
+      active: clientsActive,
+    };
+
+    // ----- CAPACITY HEATMAP (last 90d, weekday × hour 06..22) -----
+    const hours: number[] = [];
+    for (let h = 6; h <= 22; h++) hours.push(h);
+    const heatmapMap = new Map<string, number>();
+    const cutoffHeat = now.getTime() - ms(90);
+    for (const b of allBookings as any[]) {
+      if (!NON_CANCELLED.has(b.status)) continue;
+      const t = new Date(`${String(b.date)}T${String(b.timeSlot ?? "00:00")}:00+04:00`);
+      if (t.getTime() < cutoffHeat) continue;
+      // Use Dubai-local DOW/hour. Since +04:00 has no DST, getUTC* on a +04:00
+      // anchor matches Asia/Dubai wall-clock for both axes.
+      const dubaiMs = t.getTime() + 4 * 3600 * 1000;
+      const local = new Date(dubaiMs);
+      const dow = local.getUTCDay();
+      const hr = local.getUTCHours();
+      if (hr < 6 || hr > 22) continue;
+      const key = `${dow}:${hr}`;
+      heatmapMap.set(key, (heatmapMap.get(key) ?? 0) + 1);
+    }
+    const cells: Array<{ dow: number; hour: number; count: number }> = [];
+    for (let d = 0; d < 7; d++) {
+      for (const h of hours) {
+        cells.push({ dow: d, hour: h, count: heatmapMap.get(`${d}:${h}`) ?? 0 });
+      }
+    }
+
     const payload: AdminAnalytics = {
       generatedAt: now.toISOString(),
       clients: { total: clientsTotal, active: clientsActive, frozen: clientsFrozen, new30d: clientsNew30 },
@@ -6698,8 +6750,208 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       },
       adherence: { weeklyCheckinRate30d: checkinRate30 },
       trends: { revenueByMonth, completedByMonth, signupsByMonth, bookingsByDow },
+      funnel,
+      capacityHeatmap: { hours, cells },
     };
     res.json(payload);
+  });
+
+  // ============================================================
+  // Phase 4 (task #58) — Admin BI endpoints
+  // ============================================================
+
+  // Daily Brief — one round-trip. Used by the AdminDashboard modal that
+  // opens once per day. All computation is in-memory over already-loaded
+  // lists; no extra heavy SQL.
+  app.get("/api/admin/daily-brief", requireAdmin, async (_req, res) => {
+    try {
+      const now = new Date();
+      // Dubai date (UTC+4, no DST).
+      const dubai = new Date(now.getTime() + 4 * 3600 * 1000);
+      const dateStr = dubai.toISOString().slice(0, 10);
+
+      const [allBookings, allPackages, allClients, renewals, extensions, alertsOpen, health] =
+        await Promise.all([
+          storage.getBookings({ from: dateStr }),
+          storage.getPackages({ activeOnly: true }),
+          storage.getAllClients(),
+          storage.getRenewalRequests({ status: "pending", limit: 500 }).catch(() => []),
+          storage.getExtensionRequests({ status: "pending", limit: 500 }).catch(() => []),
+          listOpenAlerts(),
+          getSystemHealth(),
+        ]);
+      const usersById = new Map<number, any>();
+      for (const u of allClients as any[]) usersById.set(u.id, u);
+
+      const todays = (allBookings as any[]).filter((b) => b.date === dateStr);
+      const completed = todays.filter((b) => b.status === "completed").length;
+      const upcoming = todays.filter((b) => ["upcoming", "confirmed"].includes(b.status)).length;
+      const sessions = todays
+        .filter((b) => b.status !== "cancelled" && b.status !== "late_cancelled")
+        .sort((a, b) => String(a.timeSlot).localeCompare(String(b.timeSlot)))
+        .map((b) => {
+          const u = usersById.get(b.userId);
+          return {
+            id: b.id,
+            time: String(b.timeSlot ?? ""),
+            userId: b.userId,
+            userName: u?.fullName ?? u?.username ?? `Client #${b.userId}`,
+            status: b.status,
+            vipTier: u?.vipTier ?? null,
+            isTrial: b.sessionType === "trial",
+            sessionFocus: b.sessionFocus ?? null,
+          };
+        });
+
+      const paymentApprovals = (allPackages as any[]).filter(
+        (p) => p.paymentStatus === "pending",
+      ).length;
+
+      const in7 = new Date(now.getTime() + 7 * 86_400_000);
+      const expiringClientsMap = new Map<number, { userId: number; userName: string; expiryDate: string }>();
+      for (const p of allPackages as any[]) {
+        if (!p.expiryDate) continue;
+        const exp = new Date(`${p.expiryDate}T23:59:59+04:00`);
+        if (exp.getTime() < now.getTime() || exp.getTime() > in7.getTime()) continue;
+        if (computePackageStatus(p) === "expired") continue;
+        if (!expiringClientsMap.has(p.userId)) {
+          const u = usersById.get(p.userId);
+          const userName = u?.fullName ?? u?.username ?? `Client #${p.userId}`;
+          expiringClientsMap.set(p.userId, { userId: p.userId, userName, expiryDate: p.expiryDate });
+        }
+      }
+      const expiringList = Array.from(expiringClientsMap.values()).sort((a, b) =>
+        a.expiryDate.localeCompare(b.expiryDate),
+      );
+
+      const critical = alertsOpen.filter((a) => a.severity === "critical").length;
+      const degradedKinds = health.filter((h) => h.degraded).map((h) => h.kind);
+
+      const payload = {
+        generatedAt: now.toISOString(),
+        date: dateStr,
+        today: {
+          totalSessions: sessions.length,
+          completed,
+          upcoming,
+          sessions,
+        },
+        pending: {
+          renewals: (renewals as any[]).length,
+          extensions: (extensions as any[]).length,
+          paymentApprovals,
+        },
+        expiries: {
+          next7dPackages: expiringList.length,
+          next7dClients: expiringList,
+        },
+        alerts: { open: alertsOpen.length, critical },
+        systemHealth: { degraded: degradedKinds.length > 0, failureKinds: degradedKinds },
+      };
+      res.json(payload);
+    } catch (e: any) {
+      console.error("[daily-brief] failed:", e);
+      res.status(500).json({ error: e?.message ?? "Daily brief failed" });
+    }
+  });
+
+  // Smart alerts inbox.
+  app.get("/api/admin/alerts", requireAdmin, async (_req, res) => {
+    const alerts = await listOpenAlerts();
+    res.json(alerts);
+  });
+  app.post("/api/admin/alerts/:id/resolve", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
+    await resolveAlertById(id);
+    res.json({ ok: true });
+  });
+  // Admin trigger for the recompute job (without waiting for the next cron).
+  app.post("/api/admin/alerts/recompute", requireAdmin, async (_req, res) => {
+    try {
+      const r = await recomputeSmartAlerts();
+      res.json({ ok: true, ...r });
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: e?.message ?? "recompute failed" });
+    }
+  });
+
+  // System-health (silent-fail) snapshot.
+  app.get("/api/admin/system-health", requireAdmin, async (_req, res) => {
+    const rows = await getSystemHealth();
+    const degraded = rows.some((r) => r.degraded);
+    res.json({ degraded, rows });
+  });
+
+  // Per-client LTV + burn-rate (last 30d) + projected end date per active package.
+  app.get("/api/admin/clients/:id/business", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
+    try {
+      const [packages, bookings] = await Promise.all([
+        storage.getPackages({ userId: id }),
+        storage.getBookings({ userId: id }),
+      ]);
+      const ltv = (packages as any[])
+        .filter((p) => p.paymentStatus === "paid" || p.adminApproved)
+        .reduce((s, p) => s + Number(p.totalPrice ?? 0), 0);
+      const totalAssigned = (packages as any[]).reduce(
+        (s, p) => s + Number(p.totalPrice ?? 0),
+        0,
+      );
+      const now = Date.now();
+      const cutoff30 = now - 30 * 86_400_000;
+      const completedLast30 = (bookings as any[]).filter((b) => {
+        if (b.status !== "completed") return false;
+        const t = new Date(`${String(b.date)}T00:00:00Z`).getTime();
+        return t >= cutoff30 && t <= now;
+      }).length;
+      const sessionsPerDay = completedLast30 / 30;
+      const burnRate = Number((sessionsPerDay * 7).toFixed(2)); // sessions/week
+      // Per active package: projected end date
+      const perPackage = (packages as any[])
+        .filter((p) => p.isActive)
+        .map((p) => {
+          const remaining = (p.totalSessions ?? 0) - (p.usedSessions ?? 0);
+          let projectedEndDate: string | null = null;
+          let daysRemaining: number | null = null;
+          if (sessionsPerDay > 0 && remaining > 0) {
+            const days = Math.ceil(remaining / sessionsPerDay);
+            daysRemaining = days;
+            const proj = new Date(now + days * 86_400_000);
+            projectedEndDate = proj.toISOString().slice(0, 10);
+          }
+          return {
+            packageId: p.id,
+            remaining,
+            burnRatePerWeek: burnRate,
+            projectedEndDate,
+            daysRemaining,
+            expiryDate: p.expiryDate ?? null,
+            // pace flag: red if projection blows past expiry, amber if within 10%,
+            // green otherwise. Used by the UI for an inline chip.
+            pace: (() => {
+              if (!projectedEndDate || !p.expiryDate) return "unknown";
+              const exp = new Date(`${p.expiryDate}T00:00:00Z`).getTime();
+              const proj = new Date(`${projectedEndDate}T00:00:00Z`).getTime();
+              if (proj > exp) return "behind";
+              if (exp - proj < 7 * 86_400_000) return "tight";
+              return "ahead";
+            })(),
+          };
+        });
+      res.json({
+        ltv,
+        totalAssigned,
+        completedLast30,
+        burnRatePerWeek: burnRate,
+        packageCount: packages.length,
+        perPackage,
+      });
+    } catch (e: any) {
+      console.error("[client-business] failed:", e);
+      res.status(500).json({ error: e?.message ?? "failed" });
+    }
   });
 
   // ============== RENEWAL REQUESTS ==============
