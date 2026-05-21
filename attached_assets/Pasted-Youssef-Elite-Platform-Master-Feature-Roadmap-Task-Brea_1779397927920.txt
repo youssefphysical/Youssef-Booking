@@ -1,0 +1,558 @@
+Youssef Elite Platform — Master Feature Roadmap & Task Breakdown
+
+Important:
+Do NOT implement everything at once.
+
+First, read this full roadmap carefully.
+Then create a clear task checklist grouped by phases.
+Implement one phase at a time only.
+After each phase, test all existing flows before moving to the next phase.
+
+Main philosophy:
+
+- Client experience must stay simple, premium, and effortless.
+- Admin side can be powerful and detailed.
+- Do not overload the client UI.
+- No dead-end screens.
+- No confusing flows.
+- One clear primary action per screen.
+- If the user needs to think too much, the UX failed.
+
+BRAND:
+Use consistent brand name:
+Youssef Elite
+
+Keep Fitness Zone only when referring to the actual gym/location.
+
+PHASE 1 — Core Booking, Wizard, Package & Access Logic
+
+1. Homepage CTA
+
+- Main CTA must go to "/wizard", not "/book".
+- New users must choose training type/location first.
+- "/book" must never flash or show skeletons before wizard completion.
+
+2. Wizard flow
+   User types:
+
+- Brand new user
+- Existing Fitness Zone PT client
+- Home / building / hotel training
+- Another gym
+
+3. Brand new user flow
+
+- User selects “I’m brand new”.
+- Continue sends user to free trial booking.
+- Free trial does not require active package approval.
+- Session type should be "free_trial".
+- Prevent duplicate free trial abuse using phone/email/device/account checks.
+
+4. Existing Fitness Zone PT client flow
+
+- User selects package only:
+  - 10 sessions
+  - 20 sessions
+  - 25 sessions
+  - Duo 30
+  - Not sure
+- No receipt upload.
+- No purchase receipt message.
+- Submit button: “Submit for Approval” or “Request Package Activation”.
+- After submit, create pending package activation request.
+
+5. Pending approval logic
+
+- User cannot book until admin approves.
+- If user opens "/book" manually while pending, redirect to dashboard/profile pending status.
+- No booking calendar.
+- No booking skeleton.
+- No confusing loading.
+
+6. After submission UX
+
+- Show loading: “Sending your request...”
+- Redirect to dashboard/profile.
+- Show success notification:
+  “Package activation request received.”
+- Show package status card:
+  Title: Package Activation In Review
+  Status: Pending Review
+  Package: selected package
+  Submitted: date/time
+  Message:
+  “The Youssef Elite team will review your package and unlock your booking access once activation is complete.”
+
+7. Approved package logic
+
+- Admin approval activates the selected package.
+- Booking access unlocks automatically.
+- Sessions count is assigned correctly.
+- Pending state disappears.
+- Package becomes Active.
+- User sees “Book Session”.
+
+8. Booking protection
+
+- Prevent double booking.
+- Prevent duplicate fast-click booking.
+- Prevent booking less than 6 hours before start time.
+- Enforce trainer availability.
+- Enforce package expiry.
+- Enforce active package/session credits.
+- Enforce cancellation policy.
+- Emergency cancel: 1 per month.
+- Auto-lock expired or fully used packages.
+
+9. Waitlist
+
+- If a slot/day is full, allow Join Waitlist.
+- If a slot opens, notify the first suitable waitlisted client.
+
+10. Add to Calendar
+
+- After confirmed booking, allow Add to Google Calendar / Apple Calendar.
+
+PHASE 2 — Client Dashboard, Profile & In-App Notifications
+
+1. Context-aware dashboard
+   Dashboard must change based on user status:
+
+Pending approval:
+
+- Pending package card
+- Timeline
+- Notification
+- No booking button
+
+Active package:
+
+- Next session
+- Book Session button
+- Sessions remaining
+- Package expiry countdown
+- Package progress
+
+No package:
+
+- Start free trial / choose plan
+
+Free trial:
+
+- Free trial booking status
+- Next step after trial
+
+2. Notification Center
+   Add in-app notification bell.
+   Notifications:
+
+- Package activation request received
+- Package activated
+- Session booked
+- Session reminder
+- Session cancelled
+- Package expiring
+- Package expired
+- Waitlist slot available
+- Admin message
+- Milestone achieved
+
+3. Dashboard widgets
+   Client-facing widgets:
+
+- Welcome greeting: “Good Evening, Ahmed”
+- Current status
+- Next action
+- Upcoming session
+- Sessions remaining
+- Package progress
+- Package expiry countdown
+- Emergency cancel balance
+- Activity timeline
+- Goal card
+- InBody latest snapshot
+- Profile completion
+- Achievements
+- Elite score
+- Transformation timeline
+- Quick Rebook button
+
+4. Keep UI simple
+
+- Do not show everything at once.
+- Use smart collapse: “Show more”.
+- Show only the most relevant next action first.
+- One main CTA per screen.
+
+5. Activity timeline
+   Examples:
+
+- Package request submitted
+- Package approved
+- Free trial booked
+- Session booked
+- Session completed
+- Session cancelled
+- Package extended
+- Sessions added
+
+6. Smart empty states
+   No blank pages.
+   Examples:
+
+- “Your next transformation starts here.”
+- “Your package is under review.”
+- “Your booking access will unlock automatically after activation.”
+
+7. Session preparation card
+   Before upcoming sessions, show simple preparation tips:
+
+- Arrive 5 minutes early
+- Stay hydrated
+- Wear training shoes
+
+8. Client visible coach notes
+   After session, optionally show simple note:
+   “Focus next session: posture and shoulder stability.”
+
+PHASE 3 — Admin Control Panel & Client Management
+
+1. Package Activation Requests
+   Admin can:
+
+- View pending requests
+- See client details
+- See selected package
+- Approve
+- Reject
+- Cancel
+- Add internal note
+- Activate package automatically on approval
+
+2. Client management
+   Admin can:
+
+- Search clients quickly
+- View profile
+- View sessions
+- View package
+- View payments/activation status
+- View timeline
+- View notifications
+- Add/remove sessions
+- Extend expiry
+- Freeze/pause package
+- Force book
+- Force cancel
+- Override emergency cancel
+- Mark no-show
+- Add admin/internal notes
+- Add medical/limitation flags
+- Add tags
+
+3. Client tags
+   Examples:
+
+- VIP
+- High Priority
+- Fat Loss
+- Muscle Gain
+- Rehab
+- Follow Up Needed
+- Inactive Risk
+- Free Trial Lead
+
+4. Internal admin notes
+   Client must not see these.
+   Examples:
+
+- Prefers evening sessions
+- Knee limitation
+- VIP client
+- Follow up after trial
+
+5. Audit log
+   Record all admin actions:
+
+- Package approved
+- Sessions added
+- Sessions removed
+- Expiry extended
+- Package frozen
+- Booking forced
+- Session cancelled
+- No-show marked
+- Admin note added
+
+6. Session credit protection
+   Admin can safely adjust:
+
++ Add session
+
+- Remove session
+  Reason required.
+
+7. Package freeze/pause
+   Admin can pause package for travel/injury.
+   Expiry should adjust accordingly.
+
+8. Admin quick actions
+   Floating/quick panel:
+
+- Approve package
+- Add session
+- Extend expiry
+- Send notification
+- Add note
+- View as client
+
+9. Admin impersonation/view-as-client
+   Admin can preview what the client sees without changing data.
+
+10. Backup admin account
+    Support super admin + backup admin roles.
+    Keep route protection strong.
+
+PHASE 4 — Business Intelligence, Alerts & Automation
+
+1. Admin dashboard KPIs
+   Show:
+
+- Sessions today
+- Sessions this week
+- Completed sessions
+- Cancelled sessions
+- No-shows
+- Active clients
+- Pending approvals
+- Free trials booked
+- Trial conversion rate
+- Revenue estimate if available
+- Package expiries
+- Available capacity
+
+2. Daily Brief
+   When admin opens dashboard:
+
+- Today’s sessions
+- Pending approvals
+- VIP clients today
+- Free trials today
+- Packages expiring
+- Clients needing follow-up
+- Capacity status
+
+3. Smart Admin Alerts
+   Alerts for:
+
+- Pending approval over 24 hours
+- Package expires in 5 days
+- Free trial booked but not converted
+- Client inactive 14 days
+- VIP inactive
+- Client cancelled too often
+- Payment/package mismatch
+- Booking failure
+- Notification failure
+
+4. Free Trial Funnel
+   Track:
+   Visitors → Wizard → Free trial booked → Trial completed → Converted → Active client
+
+5. Trial conversion KPI
+   Show:
+
+- Free trials booked
+- Free trials completed
+- Converted clients
+- Conversion %
+
+6. Client risk detection
+   Flag:
+
+- Inactive client
+- Low attendance
+- Frequent cancellations
+- Package almost finished but no renewal
+- Trial user not converted
+
+7. Capacity heatmap
+   Show:
+
+- Busy days
+- Full time slots
+- Available slots
+- Peak hours
+
+8. Session burn rate
+   Example:
+   20-session package
+   Usage: 3 sessions/week
+   Estimated completion: 28 days
+
+9. Client lifetime value
+   Track total estimated spend / packages purchased / session usage.
+
+10. Business Health Dashboard
+    Show:
+
+- Revenue estimate
+- Retention
+- Conversion
+- Utilization %
+- Active clients
+- Pending approvals
+- Growth trends
+
+11. Silent fail detection
+    Detect and alert admin if:
+
+- Booking creation failed
+- Package activation failed
+- Notification failed
+- Approval action failed
+- Calendar generation failed
+
+PHASE 5 — Premium UX Polish, Layout & Performance
+
+1. Information hierarchy
+   Dashboard order:
+
+2. Welcome
+
+3. Current status
+
+4. Next action
+
+5. Upcoming session
+
+6. Sessions remaining
+
+7. Notifications
+
+8. Progress
+
+9. Timeline
+
+10. Insights
+
+11. Achievements
+
+12. Secondary details
+
+13. Layout rule
+    Level 1:
+
+- Booking
+- Package status
+- Next action
+
+Level 2:
+
+- Upcoming session
+- Sessions remaining
+- Notifications
+
+Level 3:
+
+- Progress
+- Achievements
+- Timeline
+- Insights
+
+Never place Level 3 above Level 1.
+
+3. Premium card system
+   Consistent:
+
+- Border radius
+- Padding
+- Spacing
+- Shadow
+- Typography
+- Mobile layout
+
+4. Mobile-first
+
+- Thumb-friendly buttons
+- No crowded screens
+- Compact premium spacing
+- Smooth vertical flow
+
+5. Micro-interactions
+   Subtle only:
+
+- Button press
+- Success check
+- Package activated glow
+- Session booked animation
+- Smooth card transitions
+
+6. Premium loading
+
+- No flicker
+- No skeleton stuck forever
+- No abrupt redirect
+- Loading must always resolve
+
+7. Smart collapse
+   If too many widgets:
+
+- Show important cards first
+- Hide extra details under “Show more”
+
+8. Speed and performance
+
+- Preload important routes
+- Cache safe dashboard data
+- Avoid slow transitions
+- Speed before effects
+
+9. Draft booking recovery
+   If user starts booking and exits:
+
+- Show “Continue your booking”
+
+10. Offline protection
+    If connection drops:
+
+- Do not lose form data
+- Show clear retry state
+
+11. Duplicate account protection
+    Prevent duplicate accounts by:
+
+- Email
+- Phone
+- Existing user check
+
+12. Client merge tool
+    Admin can merge duplicate accounts if needed.
+
+13. Maintenance mode
+    Admin can enable:
+    “Youssef Elite is currently improving your experience.”
+
+14. Rate limiting and security
+    Protect:
+
+- Login
+- Register
+- Booking
+- Admin APIs
+- Package requests
+- Free trial abuse
+
+15. Final UX rule
+    Client side:
+    Simple, premium, clear.
+
+Admin side:
+Powerful, detailed, controlled.
+
+Do not make the client feel like they are using a complex admin system.
+
+Implementation instruction:
+Before coding, create a phase-by-phase checklist and confirm what already exists versus what needs to be added or improved.
+Do not duplicate existing features.
+If a feature already exists, improve it instead of rebuilding it.
