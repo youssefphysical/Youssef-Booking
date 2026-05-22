@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
+import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -393,13 +394,17 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
           {isLoading ? (
             <div className="p-8 text-center text-white/50 text-sm">Loading…</div>
           ) : sorted.length === 0 ? (
-            <div className="p-10 text-center">
-              <CalendarCheck size={28} className="mx-auto text-white/30 mb-3" />
-              <div className="text-white/70 text-sm">No check-ins yet.</div>
-              <div className="text-white/40 text-xs mt-1">
-                {adminMode ? "Client hasn't submitted any check-ins." : "Submit your first check-in to start a streak."}
-              </div>
-            </div>
+            <PremiumEmptyState
+              icon={<CalendarCheck size={20} />}
+              title={adminMode ? "No check-ins yet." : "No check-ins yet."}
+              body={
+                adminMode
+                  ? "Client hasn't submitted any check-ins."
+                  : "Track progress to unlock deeper insights."
+              }
+              testId="empty-checkins"
+              className="border-0 bg-transparent"
+            />
           ) : (
             <div className="divide-y divide-white/10">
               {sorted.map((row) => {

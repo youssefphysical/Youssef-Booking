@@ -25,6 +25,7 @@ import {
   MEAL_CATEGORY_LABELS_EN,
 } from "@shared/schema";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
+import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 
 function dayTotals(meals: { totalKcal: number; totalProteinG: number; totalCarbsG: number; totalFatsG: number }[]) {
   return meals.reduce(
@@ -136,25 +137,12 @@ export default function ClientNutritionPlan() {
             {t("client.nutrition.loading", "Loading your plan…")}
           </div>
         ) : !plan ? (
-          <div
-            className="rounded-2xl border border-border bg-card/40 p-10 text-center"
-            data-testid="empty-no-plan"
-          >
-            <Apple
-              size={36}
-              className="mx-auto mb-3 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <h2 className="text-lg font-semibold mb-2">
-              {t("client.nutrition.empty.title", "No active nutrition plan yet")}
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              {t(
-                "client.nutrition.empty.body",
-                "Your coach will share your nutrition plan here once it's ready. In the meantime, focus on your training and hydration.",
-              )}
-            </p>
-          </div>
+          <PremiumEmptyState
+            icon={<Apple size={20} />}
+            title={t("client.nutrition.empty.title", "No active nutrition plan yet")}
+            body={t("emptyState.noNutritionShort", "Fuel your results.")}
+            testId="empty-no-plan"
+          />
         ) : (
           <>
             {/* Plan overview */}

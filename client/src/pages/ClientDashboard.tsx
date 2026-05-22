@@ -624,7 +624,7 @@ function BookingsTab({ userId }: { userId: number }) {
           <PremiumEmptyState
             icon={<Calendar size={20} />}
             title={t("dashboard.noUpcoming")}
-            body={t("emptyState.noBookings.body")}
+            body={t("emptyState.noBookingsShort")}
             ctaLabel={t("dashboard.bookSessionCta")}
             ctaHref="/book"
             testId="empty-upcoming-bookings"
