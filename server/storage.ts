@@ -2794,6 +2794,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ===== Client-facing notifications (P5a) =====
+  // Task #78 — notification center priority order: Coach > Booking >
+  // Package > Tips/Other. Sorted server-side so EVERY consumer (bell
+  // dropdown, full list page, unread query) gets the same ordering
+  // without each call site re-implementing the bucket logic. Within a
+  // bucket we still fall back to createdAt desc so the freshest item
+  // wins. Index-friendly: the CASE collapses to a small int and we
+  // already have an index on (user_id, created_at desc).
   async getClientNotifications(
     userId: number,
     filters?: { unreadOnly?: boolean; limit?: number },
@@ -2805,7 +2812,15 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(clientNotifications)
       .where(and(...conds))
-      .orderBy(desc(clientNotifications.createdAt))
+      .orderBy(
+        sql`CASE
+          WHEN ${clientNotifications.kind} IN ('coach_message','admin_message') THEN 0
+          WHEN ${clientNotifications.kind} IN ('session_reminder','waitlist_open','waitlist_slot_available') THEN 1
+          WHEN ${clientNotifications.kind} IN ('package_expiring','package_activated','package_activation_requested','payment_reminder') THEN 2
+          ELSE 3
+        END ASC`,
+        desc(clientNotifications.createdAt),
+      )
       .limit(limit);
   }
 

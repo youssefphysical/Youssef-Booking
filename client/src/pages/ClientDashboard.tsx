@@ -276,57 +276,63 @@ export default function ClientDashboard() {
   return (
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
-      {/* Task #56 — information hierarchy pass.
-          Roadmap order: Welcome → Status → Next action → Upcoming →
-          Progress → Insights/Achievements (collapsed on mobile).
-          PackageStatusHero is promoted directly under the welcome hero
-          so the client's most-asked question ("how many sessions do I
-          have?") is the first thing they see. The SessionPrepCard
-          renders only when a session is within 24h and is dismissible
-          per booking, so it never adds noise on quieter days. */}
+      {/* =========================================================
+          Task #78 — Dashboard hierarchy.
+          Above-the-fold render order (capped at 6 priority cards):
+            (0) Status banner — sticky, only when active
+            (1) Welcome (ProfileHero)
+            (2) Today's session / Book session (TodayHero + SessionPrepCard)
+            (3) Package confidence (PackageStatusHero)
+            (4) Streaks (StreakStrip)
+            (5) What's Next (CoachAvailabilityChip + WhatsNext)
+            (6) Progress ring (GoalProgressRing)
+          Everything else (recovery, transformation timeline, recovery
+          readiness, secondary insights, motivation line, quick actions,
+          session timeline, progress snapshot, membership, duo partners,
+          tabs) lives behind a single "Show more" toggle persisted in
+          localStorage (`yedt:dashboard:showMore`). Default collapsed.
+          The status banner is rendered FIRST (and sticky) so clients in
+          waiting states always see their next step on scroll.
+          ========================================================= */}
+      <BookingEligibilityBanner userId={user.id} user={user} />
       <ProfileHero user={user} />
+
+      {/* (2) Today + booking surface */}
+      <TodayHero name={user.fullName} />
+      <SessionPrepCard userId={user.id} />
+
+      {/* (3) Package confidence */}
       <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
-      {/* Task #74 — Streak strip: 3 live chips (sessions/wk, nutrition,
-          attendance streak). Mounts directly under the package hero so
-          the client sees momentum data before scrolling. */}
+
+      {/* (4) Streaks */}
       <StreakStrip />
-      {/* Task #75 — Premium one-line motivational tagline. Rotates daily,
-          deterministic by (userId + Dubai-local date), and classifies
-          into one of 6 buckets based on streak / booking / recovery
-          state. Sits directly above WhatsNext to set the tone for the
-          action below. */}
-      <MotivationLine />
-      {/* Task #76 — Coach availability chip: 3-state pill above the
-          dashboard's next-action surface so clients see whether the
-          coach is free today before they even open the booking page. */}
+
+      {/* (5) What's Next + coach availability chip */}
       <div className="mb-4 flex justify-center">
         <CoachAvailabilityChip />
       </div>
       <WhatsNext />
-      <RecoveryDashboardTile />
-      <QuickActionsGrid onJump={jumpToTab} />
 
-      <TodayHero name={user.fullName} />
-      <SessionPrepCard userId={user.id} />
-      <SessionTimeline userId={user.id} onJump={jumpToTab} />
-
-      <ProgressSnapshot userId={user.id} />
-      <TransformationTimeline userId={user.id} />
-
-      {/* Task #73 — Progress rings + recovery readiness */}
-      <div className="grid gap-4 lg:grid-cols-2 mt-4">
+      {/* (6) Progress ring */}
+      <div className="mb-6">
         <GoalProgressRing user={user} />
-        <RecoveryReadinessCard />
       </div>
 
-      {/* Secondary insight stack — informative but not action-required.
-          Collapsed by default on mobile to keep the dashboard scannable;
-          always expanded on lg+ where vertical real estate isn't tight. */}
-      <SecondaryInsights firstName={user.fullName.split(" ")[0]} userId={user.id} />
-
-      <MembershipBlock user={user} />
-      <DuoPartnersBlock />
-      <BookingEligibilityBanner userId={user.id} user={user} />
+      {/* ===== Secondary content — gated behind "Show more" ===== */}
+      <DashboardShowMore>
+        <MotivationLine />
+        <RecoveryDashboardTile />
+        <QuickActionsGrid onJump={jumpToTab} />
+        <SessionTimeline userId={user.id} onJump={jumpToTab} />
+        <ProgressSnapshot userId={user.id} />
+        <TransformationTimeline userId={user.id} />
+        <div className="mb-6">
+          <RecoveryReadinessCard />
+        </div>
+        <SecondaryInsights firstName={user.fullName.split(" ")[0]} userId={user.id} />
+        <MembershipBlock user={user} />
+        <DuoPartnersBlock />
+      </DashboardShowMore>
 
       <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
         <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
@@ -372,6 +378,89 @@ export default function ClientDashboard() {
         </TabsContent>
       </Tabs>
       </div>
+    </div>
+  );
+}
+
+// =============== DASHBOARD SHOW-MORE GATE (Task #78) ===============
+// Persisted in localStorage so a client who expands once stays expanded
+// on every subsequent visit (per-browser). Defaults to collapsed so the
+// first paint stays at 6 priority cards. Reduced-motion users skip the
+// height animation; everyone else gets a 220ms ease.
+const SHOW_MORE_KEY = "yedt:dashboard:showMore";
+
+function useShowMore(): [boolean, (next: boolean) => void] {
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(SHOW_MORE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const update = (next: boolean) => {
+    setOpen(next);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(SHOW_MORE_KEY, next ? "1" : "0");
+    } catch {
+      /* private mode / quota — non-fatal */
+    }
+  };
+  return [open, update];
+}
+
+function DashboardShowMore({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useShowMore();
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  return (
+    <div className="mb-6">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls="dashboard-secondary-region"
+        className="w-full flex items-center justify-between gap-3 rounded-2xl border border-cyan-500/15 bg-card/40 px-4 py-3 text-sm font-semibold text-foreground/85 hover:border-cyan-400/40 transition-colors"
+        data-testid="btn-dashboard-show-more"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <Sparkles size={14} className="text-cyan-300 shrink-0" />
+          <span className="truncate">
+            {open
+              ? t("dashboard.hierarchy.showLess", "Show fewer dashboard cards")
+              : t("dashboard.hierarchy.showMore", "Show more dashboard cards")}
+          </span>
+        </span>
+        {open ? (
+          <ChevronUp size={16} className="shrink-0 text-cyan-200" />
+        ) : (
+          <ChevronDown size={16} className="shrink-0 text-cyan-200" />
+        )}
+      </button>
+      {!open && (
+        <p className="mt-2 text-[11px] text-muted-foreground px-1">
+          {t(
+            "dashboard.hierarchy.moreHint",
+            "Recovery, progress timeline, membership & more",
+          )}
+        </p>
+      )}
+      {open && (
+        <motion.div
+          id="dashboard-secondary-region"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: "easeOut" }}
+          className="mt-4"
+          data-testid="region-dashboard-secondary"
+        >
+          {children}
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -1999,7 +2088,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
     ];
     return (
       <div
-        className="mb-6 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-500/[0.10] via-cyan-500/[0.04] to-transparent p-5 sm:p-6"
+        className="sticky top-20 z-30 mb-6 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-[#050505]/95 via-cyan-500/[0.06] to-transparent backdrop-blur-xl p-5 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
         data-testid="banner-pending-verification"
       >
         <div className="flex items-start gap-3">
@@ -2094,7 +2183,7 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
   if (verdict.ok) return null;
   return (
     <div
-      className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
+      className="sticky top-20 z-30 mb-6 rounded-2xl border border-cyan-500/40 bg-[#050505]/90 backdrop-blur-xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
       data-testid="banner-dashboard-eligibility"
     >
       <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
