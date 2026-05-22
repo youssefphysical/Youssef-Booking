@@ -131,6 +131,7 @@ import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
 import { TransformationTimeline } from "@/components/dashboard/TransformationTimeline";
 import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
+import { MotivationLine } from "@/components/dashboard/MotivationLine";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { InfoTip } from "@/components/ui/InfoTip";
@@ -288,6 +289,12 @@ export default function ClientDashboard() {
           attendance streak). Mounts directly under the package hero so
           the client sees momentum data before scrolling. */}
       <StreakStrip />
+      {/* Task #75 — Premium one-line motivational tagline. Rotates daily,
+          deterministic by (userId + Dubai-local date), and classifies
+          into one of 6 buckets based on streak / booking / recovery
+          state. Sits directly above WhatsNext to set the tone for the
+          action below. */}
+      <MotivationLine />
       <WhatsNext />
       <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />
