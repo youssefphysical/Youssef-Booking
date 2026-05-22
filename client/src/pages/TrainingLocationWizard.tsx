@@ -27,7 +27,7 @@ import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
 // this renders as "Build: 2026-05-22-diag-v3 · <git-hash>" in the
 // wizard footer so a real-mobile user can confirm which exact
 // production bundle they're running.
-const WIZARD_BUILD = "2026-05-22-diag-v3";
+const WIZARD_BUILD = "2026-05-22-ux-phase1";
 const WIZARD_GIT_HASH =
   (import.meta as any).env?.VITE_GIT_HASH || "local-dev";
 

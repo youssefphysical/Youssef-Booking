@@ -28,6 +28,7 @@ import {
   Wallet,
   BadgeCheck,
   Gift,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -2099,28 +2100,129 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
   const activePackage = list.find((p) => p.isActive && p.usedSessions < p.totalSessions);
   const pendingVerif = list.find((p: any) => p.status === "pending_verification");
   if (pendingVerif) {
+    // Phase 1 UX coordination — premium guided "Coach Review In
+    // Progress" banner. Replaces the prior technical "Package
+    // awaiting verification" copy with progress-tracker semantics:
+    // client always sees Where they are, What's happening, and What
+    // happens next. Step 2 (Coach verification) is the active step
+    // for any pending_verification row; once admin approves and the
+    // package flips to active, the banner is removed entirely.
+    const steps: Array<{
+      key: string;
+      label: string;
+      state: "done" | "current" | "todo";
+    }> = [
+      {
+        key: "received",
+        label: t("dashboard.verification.progress.received", "Request received"),
+        state: "done",
+      },
+      {
+        key: "review",
+        label: t("dashboard.verification.progress.review", "Coach verification"),
+        state: "current",
+      },
+      {
+        key: "activation",
+        label: t("dashboard.verification.progress.activation", "Package activation"),
+        state: "todo",
+      },
+      {
+        key: "unlock",
+        label: t("dashboard.verification.progress.unlock", "Booking unlocked"),
+        state: "todo",
+      },
+    ];
     return (
       <div
-        className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
+        className="mb-6 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-500/[0.10] via-cyan-500/[0.04] to-transparent p-5 sm:p-6"
         data-testid="banner-pending-verification"
       >
-        <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-cyan-100">
-            {t("dashboard.verification.title", "Package awaiting verification")}
-          </p>
-          <p className="text-xs text-cyan-200/90 mt-1">
-            {t(
-              "dashboard.verification.body",
-              "Youssef is reviewing your Fitness Zone receipt. You'll be able to book once your package is activated.",
-            )}
-          </p>
-          <ol className="mt-3 space-y-1 text-xs text-cyan-100/90">
-            <li>1. {t("wizard.next.review", "Coach review")}</li>
-            <li>2. {t("wizard.next.activation", "Package activation")}</li>
-            <li>3. {t("wizard.next.book", "Book your sessions")}</li>
-          </ol>
+        <div className="flex items-start gap-3">
+          <div className="size-10 shrink-0 rounded-xl bg-cyan-500/15 text-cyan-300 grid place-items-center">
+            <ShieldAlert size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-300/90 font-semibold">
+              {t("dashboard.verification.eyebrow", "Coach Review In Progress")}
+            </p>
+            <h3 className="mt-1 font-display font-bold text-base sm:text-lg leading-snug text-cyan-50">
+              {t("dashboard.verification.title", "Getting your package ready")}
+            </h3>
+            <p className="text-xs sm:text-sm text-cyan-100/80 mt-1.5 leading-relaxed">
+              {t(
+                "dashboard.verification.body",
+                "Your package details are being reviewed by the Youssef Elite team. You'll receive a notification the moment booking unlocks.",
+              )}
+            </p>
+          </div>
         </div>
+
+        <ol
+          className="mt-5 space-y-2.5"
+          data-testid="progress-verification"
+          aria-label={t("dashboard.verification.progressLabel", "Progress")}
+        >
+          {steps.map((s) => {
+            const isDone = s.state === "done";
+            const isCurrent = s.state === "current";
+            return (
+              <li
+                key={s.key}
+                className="flex items-center gap-3"
+                data-testid={`progress-step-${s.key}`}
+                data-state={s.state}
+              >
+                <span
+                  className={[
+                    "size-5 shrink-0 grid place-items-center rounded-full border text-[10px] font-bold",
+                    isDone
+                      ? "bg-cyan-400/20 border-cyan-400/70 text-cyan-200"
+                      : isCurrent
+                        ? "bg-cyan-400/10 border-cyan-300 text-cyan-200 ring-2 ring-cyan-400/30"
+                        : "bg-transparent border-cyan-100/20 text-cyan-100/30",
+                  ].join(" ")}
+                  aria-hidden="true"
+                >
+                  {isDone ? "✓" : isCurrent ? "·" : ""}
+                </span>
+                <span
+                  className={[
+                    "text-xs sm:text-sm",
+                    isDone
+                      ? "text-cyan-100/90"
+                      : isCurrent
+                        ? "text-cyan-50 font-semibold"
+                        : "text-cyan-100/40",
+                  ].join(" ")}
+                >
+                  {s.label}
+                </span>
+                {isCurrent && (
+                  <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-cyan-200/90 font-semibold">
+                    {t("dashboard.verification.progress.currentTag", "In progress")}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="mt-4 flex items-center gap-2 text-[11px] text-cyan-100/70">
+          <Clock size={12} className="shrink-0" />
+          <span>{t("dashboard.verification.eta", "Usually within 24 hours.")}</span>
+        </div>
+
+        <a
+          href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-200 hover:text-cyan-100 transition-colors"
+          data-testid="link-verification-help"
+        >
+          {t("dashboard.verification.help", "Need help? Message Coach")}
+          <ArrowRight size={12} />
+        </a>
       </div>
     );
   }
