@@ -5,6 +5,7 @@ import { Heart, Moon, Droplets, Zap, BatteryCharging, Check, Loader2 } from "luc
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/i18n";
@@ -131,6 +132,11 @@ export function RecoveryReadinessCard() {
         <h3 className="text-sm font-semibold tracking-wide text-white/80 uppercase">
           {t("dashboard.recovery.title", "Recovery readiness")}
         </h3>
+        <InfoTip
+          title={t("tooltip.recoveryScore.title")}
+          body={t("tooltip.recoveryScore.body")}
+          testId="infotip-recovery-score"
+        />
       </div>
 
       <div className="flex items-center gap-5">

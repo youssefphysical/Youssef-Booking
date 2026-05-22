@@ -132,6 +132,7 @@ import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { Pill, LineChart as LineChartIcon, HeartPulse } from "lucide-react";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
 import { useFeatureFlag } from "@/lib/featureFlags";
@@ -443,6 +444,11 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
             <span className="font-semibold" data-testid="text-membership-tier">
               {VIP_TIER_LABELS[tier]}
             </span>
+            <InfoTip
+              title={t("tooltip.eliteScore.title")}
+              body={t("tooltip.eliteScore.body")}
+              testId="infotip-elite-score"
+            />
             {tierHasPriority(tier) && (
               <span
                 className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 text-cyan-200"
@@ -828,6 +834,14 @@ function BookingCard({
                   {t("dashboard.useProtected").replace("{left}", String(protectedRemaining)).replace("{quota}", String(protectedQuota))}
                 </Button>
               )}
+              {!isStarted && (
+                <InfoTip
+                  title={t("tooltip.emergencyCancel.title")}
+                  body={t("tooltip.emergencyCancel.body")}
+                  testId={`infotip-emergency-cancel-${booking.id}`}
+                  className="self-start sm:self-end"
+                />
+              )}
             </>
           )}
           {adjustAvailable && (
@@ -1010,9 +1024,17 @@ function SameDayAdjustDialog({
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dashboard.newTimeSlot")}</p>
           {slots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("dashboard.noRemainingSlots")}
-            </p>
+            <div
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-muted-foreground leading-relaxed"
+              data-testid="empty-adjust-slots"
+            >
+              <p className="text-foreground/80 font-medium mb-0.5">
+                {t("dashboard.noRemainingSlots")}
+              </p>
+              <p className="text-xs">
+                {t("dashboard.noRemainingSlotsBody")}
+              </p>
+            </div>
           ) : (
             <Select value={slot} onValueChange={setSlot}>
               <SelectTrigger className="bg-white/5 border-white/10 h-11" data-testid="select-adjust-slot">
@@ -1584,8 +1606,13 @@ function InbodyTab({ userId }: { userId: number }) {
       {/* Trends — wrapped in a ref so the InBody PDF can snapshot it */}
       {sorted.length >= 2 && (
         <div ref={trendsRef}>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 inline-flex items-center gap-1.5">
             {t("dashboard.inbodyTrendsTitle")}
+            <InfoTip
+              title={t("tooltip.inbodyProgress.title")}
+              body={t("tooltip.inbodyProgress.body")}
+              testId="infotip-inbody-progress"
+            />
           </h3>
           <InbodyTrends records={sorted} />
         </div>
@@ -1792,14 +1819,14 @@ function ProgressTab({ userId }: { userId: number }) {
           className={`px-3 py-1.5 text-xs rounded-md ${view === "compare" ? "bg-white/15 text-white" : "text-white/50"}`}
           data-testid="button-view-compare"
         >
-          Compare
+          {t("dashboard.progressViewCompare")}
         </button>
         <button
           onClick={() => setView("gallery")}
           className={`px-3 py-1.5 text-xs rounded-md ${view === "gallery" ? "bg-white/15 text-white" : "text-white/50"}`}
           data-testid="button-view-gallery"
         >
-          Gallery
+          {t("dashboard.progressViewGallery")}
         </button>
       </div>
 

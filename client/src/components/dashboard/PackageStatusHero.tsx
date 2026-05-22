@@ -4,6 +4,7 @@ import { CyanHairline } from "@/components/ui/CyanHairline";
 import { Sparkles, Calendar as CalendarIcon, RefreshCw, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { usePackages } from "@/hooks/use-packages";
 import { type Package, PACKAGE_DEFINITIONS } from "@shared/schema";
 import { useTranslation } from "@/i18n";
@@ -211,6 +212,11 @@ export function PackageStatusHero({
                       format(new Date(active.expiryDate as any), "MMM d, yyyy"),
                     )}
               </span>
+              <InfoTip
+                title={t("tooltip.packageExpiry.title")}
+                body={t("tooltip.packageExpiry.body")}
+                testId="infotip-package-expiry"
+              />
             </div>
           )}
 
