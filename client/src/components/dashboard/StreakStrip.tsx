@@ -14,7 +14,7 @@ import { useTranslation } from "@/i18n";
 interface StreakMetrics {
   sessionsThisWeek: number;
   sessionsTargetWeekly: number;
-  nutritionStreakWeeks: number;
+  nutritionStreakDays: number;
   attendanceStreakWeeks: number;
   nutritionPlanActive: boolean;
 }
@@ -72,13 +72,13 @@ export function StreakStrip() {
       show: showNutrition,
       icon: Apple,
       label: t("dashboard.streak.nutrition", "Nutrition consistency"),
-      value: `${data.nutritionStreakWeeks} / 4`,
+      value: `${data.nutritionStreakDays} / 7`,
       hint:
-        data.nutritionStreakWeeks >= 4
+        data.nutritionStreakDays >= 7
           ? t("dashboard.streak.perfect", "Perfect")
-          : t("dashboard.streak.last4w", "Last 4 weeks"),
+          : t("dashboard.streak.last7d", "Last 7 days"),
       testId: "chip-streak-nutrition",
-      tone: data.nutritionStreakWeeks >= 3 ? "good" : data.nutritionStreakWeeks > 0 ? "mid" : "dim",
+      tone: data.nutritionStreakDays >= 5 ? "good" : data.nutritionStreakDays > 0 ? "mid" : "dim",
     },
     {
       key: "attendance",

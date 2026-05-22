@@ -17,6 +17,7 @@ import {
   type InbodyRecord,
   type WeeklyCheckin,
   type UserBadge,
+  type DailyCheckin,
 } from "@shared/schema";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -69,8 +70,12 @@ export interface StreakMetrics {
   sessionsThisWeek: number;
   /** Target sessions per week from the user's weekly frequency (1..6). */
   sessionsTargetWeekly: number;
-  /** Number of last-N weekly check-ins with notes/data (0..4 capped). */
-  nutritionStreakWeeks: number;
+  /**
+   * Nutrition consistency over the last 7 Dubai-local days: count of
+   * distinct days with a daily check-in row containing at least one
+   * tracked field (water, sleep, recovery, energy). 0..7.
+   */
+  nutritionStreakDays: number;
   /** Consecutive ISO weeks (ending current) with ≥1 completed/upcoming session. */
   attendanceStreakWeeks: number;
   /**
@@ -84,11 +89,11 @@ export interface StreakMetrics {
 
 export function computeStreaks(input: {
   bookings: Booking[];
-  checkins: WeeklyCheckin[];
+  dailyCheckins: DailyCheckin[];
   weeklyFrequency: number | null;
   nutritionPlanActive?: boolean;
 }): StreakMetrics {
-  const { bookings, checkins, weeklyFrequency } = input;
+  const { bookings, dailyCheckins, weeklyFrequency } = input;
   const now = Date.now();
   const currentWeekStart = startOfIsoWeekDubai(new Date(now));
   const nextWeekStart = currentWeekStart + WEEK_MS;
@@ -120,29 +125,34 @@ export function computeStreaks(input: {
     else break;
   }
 
-  // Nutrition consistency: count last 4 ISO weeks that have a check-in
-  // row with at least one nutrition-adjacent field populated.
-  const checkinWeeks = new Set<number>();
-  for (const c of checkins) {
-    if (!c.weekStart) continue;
+  // Nutrition consistency: count distinct days in the last 7 Dubai-local
+  // days that have a daily check-in row with at least one tracked field
+  // populated. Day boundaries are Dubai-anchored midnights (UTC+4 fixed).
+  const todayDubaiStart = (() => {
+    const dubai = new Date(now + DUBAI_OFFSET_MS);
+    const y = dubai.getUTCFullYear();
+    const m = String(dubai.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(dubai.getUTCDate()).padStart(2, "0");
+    return new Date(`${y}-${m}-${dd}T00:00:00${DUBAI_TZ_OFFSET}`).getTime();
+  })();
+  const sevenDayCutoff = todayDubaiStart - 6 * DAY_MS;
+  const trackedDays = new Set<number>();
+  for (const c of dailyCheckins) {
+    if (!c.date) continue;
     const informative =
-      c.notes != null ||
-      c.weight != null ||
-      c.waterLitres != null ||
-      c.trainingAdherence != null ||
-      c.cardioAdherence != null ||
-      c.hunger != null ||
-      c.digestion != null;
+      c.waterLiters != null ||
+      c.sleepHours != null ||
+      c.recoveryScore != null ||
+      c.energyScore != null;
     if (!informative) continue;
-    const t = new Date(`${String(c.weekStart)}T00:00:00${DUBAI_TZ_OFFSET}`).getTime();
+    const rawCd: unknown = c.date;
+    const dateStr =
+      rawCd instanceof Date ? rawCd.toISOString().slice(0, 10) : String(rawCd).slice(0, 10);
+    const t = new Date(`${dateStr}T00:00:00${DUBAI_TZ_OFFSET}`).getTime();
     if (!Number.isFinite(t)) continue;
-    checkinWeeks.add(startOfIsoWeekDubai(new Date(t)));
+    if (t >= sevenDayCutoff && t <= todayDubaiStart) trackedDays.add(t);
   }
-  let nutritionStreakWeeks = 0;
-  for (let i = 0; i < 4; i++) {
-    const ws = currentWeekStart - i * WEEK_MS;
-    if (checkinWeeks.has(ws)) nutritionStreakWeeks++;
-  }
+  const nutritionStreakDays = trackedDays.size;
 
   const sessionsTargetWeekly =
     typeof weeklyFrequency === "number" && weeklyFrequency > 0 ? weeklyFrequency : 3;
@@ -150,7 +160,7 @@ export function computeStreaks(input: {
   return {
     sessionsThisWeek,
     sessionsTargetWeekly,
-    nutritionStreakWeeks,
+    nutritionStreakDays,
     attendanceStreakWeeks,
     nutritionPlanActive: Boolean(input.nutritionPlanActive),
   };
@@ -176,11 +186,12 @@ export interface BadgeEvalInput {
  *   first_session            — ≥1 completed booking
  *   ten_sessions             — ≥10 completed bookings
  *   fifty_sessions           — ≥50 completed bookings
- *   consistency_champion     — In the last 4 ISO weeks, ≥3 had ≥3 completed
- *                              sessions each.
+ *   consistency_champion     — In the last 4 ISO weeks, EVERY week had ≥3
+ *                              completed sessions.
  *   elite_discipline         — In the last 12 ISO weeks, ≥3 sessions in
  *                              every single week.
- *   transformation_started   — ≥1 InBody record on file.
+ *   transformation_started   — ≥1 completed session AND ≥1 InBody record
+ *                              dated on/after the first completed session.
  */
 export function evaluateBadges(input: BadgeEvalInput): BadgeKey[] {
   const { bookings, inbody, alreadyEarned } = input;
@@ -265,10 +276,9 @@ export function evaluateBadges(input: BadgeEvalInput): BadgeKey[] {
  */
 export async function evaluateAndAwardBadges(userId: number): Promise<BadgeKey[]> {
   try {
-    const [bookings, inbody, checkins, existing] = await Promise.all([
+    const [bookings, inbody, existing] = await Promise.all([
       storage.getBookings({ userId }).catch(() => []),
       storage.getInbodyRecords({ userId }).catch(() => [] as InbodyRecord[]),
-      storage.listWeeklyCheckins(userId, { limit: 60 }).catch(() => []),
       storage.getUserBadges(userId).catch(() => [] as UserBadge[]),
     ]);
 
@@ -276,7 +286,7 @@ export async function evaluateAndAwardBadges(userId: number): Promise<BadgeKey[]
     const newly = evaluateBadges({
       bookings,
       inbody,
-      checkins,
+      checkins: [],
       alreadyEarned,
     });
 

@@ -64,9 +64,9 @@ function defaultDescription(key: BadgeKey): string {
     case "first_session": return "Complete your first training session.";
     case "ten_sessions": return "Reach 10 completed sessions.";
     case "fifty_sessions": return "Reach 50 completed sessions.";
-    case "consistency_champion": return "Train 3+ times a week for 3 of the last 4 weeks.";
+    case "consistency_champion": return "Train 3+ times every week for 4 weeks straight.";
     case "elite_discipline": return "Train 3+ times every single week for 12 weeks straight.";
-    case "transformation_started": return "Upload your first InBody scan.";
+    case "transformation_started": return "Complete your first session and upload your first InBody scan.";
   }
 }
 
