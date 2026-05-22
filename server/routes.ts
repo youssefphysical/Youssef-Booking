@@ -6330,6 +6330,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         console.warn("[inbody] consent log failed:", e);
       }
 
+      // Task #74 — re-evaluate badges after every InBody upload so that
+      // `transformation_started` (first InBody after first completed
+      // session) fires at the moment the user earns it, not on the
+      // next booking-completion / cron tick. Fire-and-forget; evaluator
+      // swallows all I/O failures internally.
+      void evaluateAndAwardBadges(targetUserId);
+
       res.status(201).json({
         record,
         aiExtracted: !!extracted,
@@ -6346,6 +6353,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid record" });
     }
     const created = await storage.createInbodyRecord(parsed.data);
+    // Task #74 — see comment in /api/inbody/upload above.
+    void evaluateAndAwardBadges(created.userId);
     // Best-effort trainer notification — never blocks the response.
     void (async () => {
       try {
