@@ -1,40 +1,37 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DailyCheckin } from "@shared/schema";
 import { Heart, Moon, Droplets, Zap, BatteryCharging, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "@/i18n";
 
 export type ReadinessTier = "crushing" | "solid" | "easy" | "unknown";
 
 export function computeReadiness(c: DailyCheckin | null | undefined): {
   score: number | null;
   tier: ReadinessTier;
-  interpretation: string;
 } {
-  if (!c) return { score: null, tier: "unknown", interpretation: "Log today's check-in" };
+  if (!c) return { score: null, tier: "unknown" };
   const { sleepHours, waterLiters, recoveryScore, energyScore } = c;
-  // Normalize each → 0..100. Missing values are excluded from the average.
   const parts: number[] = [];
   if (sleepHours != null) parts.push(Math.max(0, Math.min(100, (Number(sleepHours) / 8) * 100)) * 0.30);
   if (waterLiters != null) parts.push(Math.max(0, Math.min(100, (Number(waterLiters) / 3) * 100)) * 0.20);
   if (recoveryScore != null) parts.push((Number(recoveryScore) / 10) * 100 * 0.30);
   if (energyScore != null) parts.push((Number(energyScore) / 10) * 100 * 0.20);
-  if (parts.length === 0) return { score: null, tier: "unknown", interpretation: "Log today's check-in" };
-  // Re-normalise weights for any missing fields so a partial entry still maps to 0..100.
+  if (parts.length === 0) return { score: null, tier: "unknown" };
   const weightFilled =
     (sleepHours != null ? 0.30 : 0) +
     (waterLiters != null ? 0.20 : 0) +
     (recoveryScore != null ? 0.30 : 0) +
     (energyScore != null ? 0.20 : 0);
   const score = Math.round(parts.reduce((a, b) => a + b, 0) / weightFilled);
-  if (score >= 80) return { score, tier: "crushing", interpretation: "Crushing it" };
-  if (score >= 60) return { score, tier: "solid", interpretation: "Solid" };
-  return { score, tier: "easy", interpretation: "Take it easy" };
+  if (score >= 80) return { score, tier: "crushing" };
+  if (score >= 60) return { score, tier: "solid" };
+  return { score, tier: "easy" };
 }
 
 const TIER_COLOR: Record<ReadinessTier, { ring: string; text: string; bg: string }> = {
@@ -44,7 +41,22 @@ const TIER_COLOR: Record<ReadinessTier, { ring: string; text: string; bg: string
   unknown:  { ring: "stroke-white/20", text: "text-white/60", bg: "bg-white/[0.03] border-white/10" },
 };
 
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+  return reduced;
+}
+
 export function RecoveryReadinessCard() {
+  const { t } = useTranslation();
+  const reduced = useReducedMotion();
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data: today } = useQuery<DailyCheckin | null>({
@@ -57,7 +69,6 @@ export function RecoveryReadinessCard() {
   const [recovery, setRecovery] = useState<number>(today?.recoveryScore ?? 7);
   const [energy, setEnergy] = useState<number>(today?.energyScore ?? 7);
 
-  // sync local state when today's row loads
   useEffect(() => {
     if (today) {
       if (today.sleepHours != null) setSleep(Number(today.sleepHours));
@@ -80,18 +91,30 @@ export function RecoveryReadinessCard() {
     onSuccess: (row) => {
       qc.setQueryData(["/api/me/checkins/today"], row);
       qc.invalidateQueries({ queryKey: ["/api/me/checkins/recent"] });
-      toast({ title: "Check-in saved", description: "Recovery readiness updated." });
+      toast({
+        title: t("dashboard.recovery.saved.title", "Check-in saved"),
+        description: t("dashboard.recovery.saved.desc", "Recovery readiness updated."),
+      });
       setOpen(false);
     },
     onError: (err: Error) => {
-      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+      toast({
+        title: t("dashboard.recovery.saveFailed", "Save failed"),
+        description: err.message,
+        variant: "destructive",
+      });
     },
   });
 
-  const { score, tier, interpretation } = computeReadiness(today ?? null);
+  const { score, tier } = computeReadiness(today ?? null);
   const colors = TIER_COLOR[tier];
+  const interpretation = t(`dashboard.recovery.tier.${tier}`, {
+    crushing: "Crushing it",
+    solid: "Solid",
+    easy: "Take it easy",
+    unknown: "Log today's check-in",
+  }[tier]);
 
-  // Ring geometry
   const size = 120;
   const stroke = 10;
   const r = (size - stroke) / 2;
@@ -105,7 +128,9 @@ export function RecoveryReadinessCard() {
     >
       <div className="flex items-center gap-2 mb-4">
         <Heart size={16} className="text-cyan-300" />
-        <h3 className="text-sm font-semibold tracking-wide text-white/80 uppercase">Recovery readiness</h3>
+        <h3 className="text-sm font-semibold tracking-wide text-white/80 uppercase">
+          {t("dashboard.recovery.title", "Recovery readiness")}
+        </h3>
       </div>
 
       <div className="flex items-center gap-5">
@@ -122,7 +147,9 @@ export function RecoveryReadinessCard() {
               fill="none"
               strokeDasharray={c}
               strokeDashoffset={offset}
-              style={{ transition: "stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+              style={{
+                transition: reduced ? "none" : "stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
             />
           </svg>
           <div className="absolute inset-0 grid place-items-center">
@@ -146,8 +173,8 @@ export function RecoveryReadinessCard() {
           </div>
           <p className="text-sm text-white/60 mt-2 leading-relaxed">
             {today
-              ? "Based on today's sleep, hydration, recovery & energy."
-              : "Log a quick 4-field check-in to get your daily score."}
+              ? t("dashboard.recovery.basedOn", "Based on today's sleep, hydration, recovery & energy.")
+              : t("dashboard.recovery.cta", "Log a quick 4-field check-in to get your daily score.")}
           </p>
           <Button
             type="button"
@@ -157,52 +184,44 @@ export function RecoveryReadinessCard() {
             onClick={() => setOpen((v) => !v)}
             data-testid="button-toggle-checkin"
           >
-            {open ? "Hide form" : today ? "Update today" : "Log today"}
+            {open
+              ? t("dashboard.recovery.btnHide", "Hide form")
+              : today
+                ? t("dashboard.recovery.btnUpdate", "Update today")
+                : t("dashboard.recovery.btnLog", "Log today")}
           </Button>
         </div>
       </div>
 
       {open && (
         <div className="mt-5 pt-5 border-t border-white/10 grid gap-5 sm:grid-cols-2">
-          <Field icon={Moon} label={`Sleep · ${sleep.toFixed(1)} h`} testid="field-sleep">
-            <Slider
-              value={[sleep]}
-              min={0}
-              max={12}
-              step={0.5}
-              onValueChange={(v) => setSleep(v[0] ?? 0)}
-              data-testid="slider-sleep"
-            />
+          <Field
+            icon={Moon}
+            label={t("dashboard.recovery.field.sleep", "Sleep · {h} h").replace("{h}", sleep.toFixed(1))}
+            testid="field-sleep"
+          >
+            <Slider value={[sleep]} min={0} max={12} step={0.5} onValueChange={(v) => setSleep(v[0] ?? 0)} data-testid="slider-sleep" />
           </Field>
-          <Field icon={Droplets} label={`Water · ${water.toFixed(1)} L`} testid="field-water">
-            <Slider
-              value={[water]}
-              min={0}
-              max={6}
-              step={0.25}
-              onValueChange={(v) => setWater(v[0] ?? 0)}
-              data-testid="slider-water"
-            />
+          <Field
+            icon={Droplets}
+            label={t("dashboard.recovery.field.water", "Water · {l} L").replace("{l}", water.toFixed(1))}
+            testid="field-water"
+          >
+            <Slider value={[water]} min={0} max={6} step={0.25} onValueChange={(v) => setWater(v[0] ?? 0)} data-testid="slider-water" />
           </Field>
-          <Field icon={Heart} label={`Recovery · ${recovery}/10`} testid="field-recovery">
-            <Slider
-              value={[recovery]}
-              min={1}
-              max={10}
-              step={1}
-              onValueChange={(v) => setRecovery(v[0] ?? 1)}
-              data-testid="slider-recovery"
-            />
+          <Field
+            icon={Heart}
+            label={t("dashboard.recovery.field.recovery", "Recovery · {n}/10").replace("{n}", String(recovery))}
+            testid="field-recovery"
+          >
+            <Slider value={[recovery]} min={1} max={10} step={1} onValueChange={(v) => setRecovery(v[0] ?? 1)} data-testid="slider-recovery" />
           </Field>
-          <Field icon={Zap} label={`Energy · ${energy}/10`} testid="field-energy">
-            <Slider
-              value={[energy]}
-              min={1}
-              max={10}
-              step={1}
-              onValueChange={(v) => setEnergy(v[0] ?? 1)}
-              data-testid="slider-energy"
-            />
+          <Field
+            icon={Zap}
+            label={t("dashboard.recovery.field.energy", "Energy · {n}/10").replace("{n}", String(energy))}
+            testid="field-energy"
+          >
+            <Slider value={[energy]} min={1} max={10} step={1} onValueChange={(v) => setEnergy(v[0] ?? 1)} data-testid="slider-energy" />
           </Field>
           <div className="sm:col-span-2 flex justify-end">
             <Button
@@ -213,7 +232,7 @@ export function RecoveryReadinessCard() {
               data-testid="button-save-checkin"
             >
               {save.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <Check size={14} className="mr-2" />}
-              Save check-in
+              {t("dashboard.recovery.save", "Save check-in")}
             </Button>
           </div>
         </div>
