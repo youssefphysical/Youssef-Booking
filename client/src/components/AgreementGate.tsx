@@ -79,9 +79,6 @@ export function AgreementGate({
     [types, version, rows],
   );
 
-  // Fast-path: if user has already accepted (localStorage flag), auto-close
-  // and signal acceptance to the parent. Defensive guard against the modal
-  // ever re-appearing after a previous acceptance.
   useEffect(() => {
     if (!open) return;
     try {
@@ -94,7 +91,6 @@ export function AgreementGate({
     }
   }, [open, onOpenChange, onAccepted]);
 
-  // Reset checkbox state every time the modal is opened.
   useEffect(() => {
     if (open) setChecked(false);
   }, [open]);
@@ -112,7 +108,6 @@ export function AgreementGate({
 
   const handleConfirm = () => {
     if (!checked) return;
-    // 1. Persist client-side flag so the modal never re-opens after refresh.
     try {
       if (typeof window !== "undefined") {
         localStorage.setItem(LS_POLICY_KEY, "true");
@@ -120,10 +115,8 @@ export function AgreementGate({
     } catch {
       // ignore
     }
-    // 2. Close immediately — do not wait on the network.
     onOpenChange(false);
     onAccepted();
-    // 3. Fire-and-forget the server audit-trail write.
     if (missing.length > 0) {
       accept.mutate();
     }
@@ -133,126 +126,193 @@ export function AgreementGate({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="
-          bg-[#070808] border border-white/[0.08]
-          sm:rounded-2xl rounded-2xl
-          w-[calc(100vw-1.5rem)] sm:w-full max-w-md
-          p-5 sm:p-6 gap-0
-          shadow-[0_0_0_1px_rgba(94,231,255,0.06),0_30px_80px_-20px_rgba(0,0,0,0.9)]
+          relative overflow-hidden
+          bg-[#050607]
+          border border-white/[0.06]
+          rounded-[20px] sm:rounded-[22px]
+          w-[calc(100vw-1.25rem)] sm:w-full max-w-[420px]
+          p-0 gap-0
+          shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_0_0_1px_rgba(94,231,255,0.05),0_40px_120px_-30px_rgba(0,0,0,0.95),0_8px_24px_-12px_rgba(94,231,255,0.08)]
         "
         data-testid="dialog-agreement-gate"
       >
-        {/* Subtle cyan top hairline accent */}
+        {/* Ambient depth — radial cyan wash behind header */}
         <div
           aria-hidden
-          className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+          className="pointer-events-none absolute -top-24 start-1/2 -translate-x-1/2 h-48 w-[120%] rounded-full bg-primary/[0.06] blur-3xl"
+        />
+        {/* Top hairline glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+        />
+        {/* Inner stroke — luxury double-border */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-px rounded-[19px] sm:rounded-[21px] ring-1 ring-inset ring-white/[0.025]"
         />
 
-        <DialogHeader className="space-y-2 text-start">
-          <div className="flex items-center gap-2.5">
-            <span
-              aria-hidden
+        <div className="relative px-6 pt-6 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
+          <DialogHeader className="space-y-2.5 text-start">
+            <div className="flex items-center gap-3">
+              <span
+                aria-hidden
+                className="
+                  relative inline-flex h-9 w-9 items-center justify-center
+                  rounded-full
+                  bg-gradient-to-b from-primary/[0.14] to-primary/[0.04]
+                  ring-1 ring-inset ring-primary/25
+                  text-primary
+                  shadow-[0_0_24px_-6px_rgba(94,231,255,0.55),0_1px_0_0_rgba(255,255,255,0.06)_inset]
+                "
+              >
+                <ShieldCheck size={16} strokeWidth={2.1} />
+              </span>
+              <div className="min-w-0">
+                <DialogTitle
+                  className="
+                    text-[18px] sm:text-[19px] leading-tight
+                    font-display font-semibold
+                    tracking-[-0.015em] text-foreground
+                  "
+                >
+                  {t("agreements.gate.title", "Before you continue")}
+                </DialogTitle>
+              </div>
+            </div>
+            <DialogDescription
               className="
-                inline-flex h-8 w-8 items-center justify-center
-                rounded-full border border-primary/30
-                bg-primary/10 text-primary
-                shadow-[0_0_18px_-6px_rgba(94,231,255,0.6)]
+                text-[13px] leading-[1.6]
+                text-foreground/55
+                tracking-[-0.005em]
+                ps-[3.25rem]
               "
             >
-              <ShieldCheck size={15} strokeWidth={2.2} />
-            </span>
-            <DialogTitle className="text-[17px] sm:text-lg font-display font-semibold tracking-tight text-foreground">
-              {t("agreements.gate.title", "Before you continue")}
-            </DialogTitle>
-          </div>
-          <DialogDescription className="text-[13px] leading-relaxed text-foreground/60">
-            {t(
-              "agreements.gate.subtitle",
-              "Please review and accept the policies below to proceed.",
-            )}
-          </DialogDescription>
-        </DialogHeader>
+              {t(
+                "agreements.gate.subtitle",
+                "Please review and accept the policies below to proceed.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        {/* Policy cards — compact, scrollable on overflow */}
+        {/* Divider — barely-there optical separator */}
+        <div aria-hidden className="mx-6 sm:mx-7 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+
+        {/* Policy cards */}
         <div
-          className="mt-4 space-y-2 max-h-[42vh] overflow-y-auto pr-1 -mr-1"
+          className="px-6 sm:px-7 pt-4 pb-2 space-y-2 max-h-[40vh] overflow-y-auto"
           data-testid="list-agreement-policies"
         >
           {missing.map((tp) => (
             <div
               key={tp}
               className="
-                rounded-xl border border-white/[0.06]
-                bg-white/[0.015]
-                px-3.5 py-2.5
-                transition-colors hover:border-primary/15
+                group relative overflow-hidden
+                rounded-[14px]
+                border border-white/[0.05]
+                bg-gradient-to-b from-white/[0.025] to-white/[0.008]
+                backdrop-blur-[6px]
+                px-4 py-3
+                transition-all duration-300 ease-out
+                hover:border-primary/20
+                hover:shadow-[0_0_0_1px_rgba(94,231,255,0.06),0_10px_30px_-15px_rgba(94,231,255,0.18)]
               "
               data-testid={`agreement-text-${tp}`}
             >
-              <div className="text-primary/90 text-[10px] font-medium uppercase tracking-[0.12em] mb-1">
+              {/* Left edge accent on hover */}
+              <span
+                aria-hidden
+                className="absolute inset-y-2 start-0 w-px bg-gradient-to-b from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              />
+              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5">
                 {t(`agreements.types.${tp}`, tp)}
               </div>
-              <p className="text-[12.5px] leading-[1.55] text-foreground/75">
+              <p className="text-[12.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em]">
                 {t(`agreements.text.${tp}`, "")}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Consent checkbox */}
-        <label
-          className="
-            flex items-start gap-3 mt-4
-            rounded-xl border border-white/[0.06]
-            bg-white/[0.02] px-3.5 py-3
-            cursor-pointer select-none
-            transition-colors hover:border-primary/20
-          "
-        >
-          <Checkbox
-            checked={checked}
-            onCheckedChange={(v) => setChecked(v === true)}
-            data-testid="checkbox-agreement-accept"
-            className="mt-0.5 h-4 w-4 rounded-[5px]"
-          />
-          <span className="text-[13px] leading-relaxed text-foreground/85">
-            {t(
-              "agreements.gate.acceptAll",
-              "I have read and agree to the policies above.",
-            )}
-          </span>
-        </label>
+        {/* Consent + actions block */}
+        <div className="px-6 sm:px-7 pt-4 pb-6 sm:pb-7">
+          {/* Consent checkbox — premium glass card */}
+          <label
+            className="
+              group flex items-start gap-3
+              rounded-[14px]
+              border border-white/[0.05]
+              bg-gradient-to-b from-white/[0.03] to-white/[0.01]
+              backdrop-blur-[6px]
+              px-4 py-3.5
+              cursor-pointer select-none
+              transition-all duration-300 ease-out
+              hover:border-primary/25
+              hover:bg-gradient-to-b hover:from-primary/[0.04] hover:to-white/[0.01]
+              has-[[data-state=checked]]:border-primary/30
+              has-[[data-state=checked]]:shadow-[0_0_0_1px_rgba(94,231,255,0.08),0_8px_24px_-12px_rgba(94,231,255,0.2)]
+            "
+          >
+            <Checkbox
+              checked={checked}
+              onCheckedChange={(v) => setChecked(v === true)}
+              data-testid="checkbox-agreement-accept"
+              className="mt-[2px] h-4 w-4 rounded-[5px] border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
+            />
+            <span className="text-[13px] leading-[1.55] text-foreground/85 tracking-[-0.003em]">
+              {t(
+                "agreements.gate.acceptAll",
+                "I have read and agree to the policies above.",
+              )}
+            </span>
+          </label>
 
-        {/* Actions — primary right (LTR) / start (RTL) handled by flex-row-reverse from RTL parent if any.
-            Using a simple row with gap; on mobile they stack as full-width buttons for tap comfort. */}
-        <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-agreement-cancel"
-            className="
-              h-9 px-4 text-[13px]
-              text-foreground/55 hover:text-foreground/85
-              hover:bg-white/[0.04]
-            "
-          >
-            {t("common.cancel", "Cancel")}
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!checked}
-            data-testid="button-agreement-confirm"
-            className="
-              h-9 px-5 text-[13px] font-medium
-              bg-primary text-primary-foreground
-              hover:bg-primary/90
-              disabled:opacity-40 disabled:cursor-not-allowed
-              shadow-[0_0_22px_-8px_rgba(94,231,255,0.7)]
-              transition-all
-            "
-          >
-            {t("agreements.gate.confirm", "I agree")}
-          </Button>
+          {/* Actions */}
+          <div className="mt-5 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-agreement-cancel"
+              className="
+                h-10 sm:h-9 px-4
+                text-[13px] font-medium tracking-[-0.005em]
+                text-foreground/50 hover:text-foreground/90
+                bg-transparent hover:bg-white/[0.03]
+                rounded-[10px]
+                transition-colors duration-200
+              "
+            >
+              {t("common.cancel", "Cancel")}
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!checked}
+              data-testid="button-agreement-confirm"
+              className="
+                relative overflow-hidden
+                h-10 sm:h-9 px-6
+                text-[13px] font-semibold tracking-[-0.005em]
+                rounded-[10px]
+                text-[#001218]
+                bg-gradient-to-b from-[#7defff] to-[#39d3f0]
+                hover:from-[#8df3ff] hover:to-[#4adcf6]
+                border border-primary/40
+                shadow-[0_1px_0_0_rgba(255,255,255,0.35)_inset,0_-1px_0_0_rgba(0,30,40,0.2)_inset,0_0_28px_-6px_rgba(94,231,255,0.65),0_8px_22px_-10px_rgba(94,231,255,0.55)]
+                hover:shadow-[0_1px_0_0_rgba(255,255,255,0.45)_inset,0_-1px_0_0_rgba(0,30,40,0.2)_inset,0_0_36px_-4px_rgba(94,231,255,0.8),0_12px_28px_-10px_rgba(94,231,255,0.7)]
+                disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none disabled:from-primary/40 disabled:to-primary/30
+                transition-all duration-300 ease-out
+              "
+            >
+              {/* Specular highlight */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent"
+              />
+              {t("agreements.gate.confirm", "I agree")}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
