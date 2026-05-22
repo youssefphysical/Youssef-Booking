@@ -1,6 +1,7 @@
 import { useLocation } from "wouter";
 import { MessageCircle } from "lucide-react";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/hooks/use-auth";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 
 const HIDDEN_PREFIXES = [
@@ -14,7 +15,12 @@ const HIDDEN_PREFIXES = [
 
 export function HelpFab() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [pathname] = useLocation();
+
+  // Task #76 — one-tap support is a client-area feature. Don't show
+  // to public visitors or admins (admin contact paths differ).
+  if (user?.role !== "client") return null;
 
   const hidden = HIDDEN_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
