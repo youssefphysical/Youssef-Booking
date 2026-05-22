@@ -50,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TodayHero } from "@/components/TodayHero";
+import { PackageConfidenceCard } from "@/components/dashboard/PackageConfidenceCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1067,7 +1068,9 @@ function daysUntilExpiry(p: Package): number | null {
 function PackagesTab({ userId }: { userId: number }) {
   const { t } = useTranslation();
   const { data: packages = [], isLoading } = usePackages({ userId });
+  const { data: bookingsData = [] } = useBookings({ userId });
   const list = packages as Package[];
+  const bookings = bookingsData as Booking[];
 
   const [renewalOpen, setRenewalOpen] = useState(false);
   const [extensionPkg, setExtensionPkg] = useState<Package | null>(null);
@@ -1114,207 +1117,17 @@ function PackagesTab({ userId }: { userId: number }) {
         />
       ) : (
         <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
-          {list.map((p) => {
-            const def = PACKAGE_DEFINITIONS[p.type];
-            const remaining = p.totalSessions - p.usedSessions;
-            const pct = Math.round((p.usedSessions / Math.max(p.totalSessions, 1)) * 100);
-            const status = computePackageStatus(p);
-            const days = daysUntilExpiry(p);
-
-            // Payment-status surface: derives the customer-facing badge from
-            // the snapshot fields the admin maintains. Preserves the brand
-            // vocabulary (Paid in Full / Partial Payment / Payment Pending /
-            // Complimentary). Frozen packages get an additional cyan badge
-            // — they're a "lifecycle" state on top of payment, not a swap.
-            const totalPrice = ((p as any).totalPrice ?? 0) as number;
-            const amountPaid = ((p as any).amountPaid ?? 0) as number;
-            const outstanding = Math.max(0, totalPrice - amountPaid);
-            const payStatus = (((p as any).paymentStatus ?? "unpaid") as string);
-            const isFrozen = !!(p as any).frozen;
-            const payBadge =
-              payStatus === "paid"
-                ? { label: t("dashboard.packagePayPaid", "Paid in Full"), cls: "bg-emerald-500/10 border-emerald-400/30 text-emerald-300", icon: <BadgeCheck size={11} /> }
-                : payStatus === "partially_paid"
-                  ? { label: t("dashboard.packagePayPartial", "Partial Payment"), cls: "bg-cyan-500/10 border-cyan-400/30 text-cyan-300", icon: <Wallet size={11} /> }
-                  : payStatus === "complimentary"
-                    ? { label: t("dashboard.packagePayComp", "Complimentary"), cls: "bg-sky-500/10 border-sky-400/30 text-sky-200", icon: <Gift size={11} /> }
-                    : { label: t("dashboard.packagePayPending", "Payment Pending"), cls: "bg-rose-500/10 border-rose-400/30 text-rose-200", icon: <Wallet size={11} /> };
-
-            const statusBadge =
-              isFrozen
-                ? { label: t("dashboard.packageStatusFrozen", "Frozen"), cls: "bg-cyan-500/10 border-cyan-400/30 text-cyan-200" }
-                : status === "expired"
-                  ? { label: t("dashboard.packageStatusExpired", "Expired"), cls: "bg-red-500/10 border-red-500/30 text-red-300" }
-                  : status === "expiring_soon"
-                    ? { label: t("dashboard.packageStatusExpiring", "Expiring soon"), cls: "bg-cyan-500/10 border-cyan-500/30 text-cyan-300" }
-                    : status === "completed"
-                      ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
-                      : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
-
-            return (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`relative overflow-hidden rounded-2xl border p-5 sm:p-6 ${
-                  p.isActive ? "border-primary/30 bg-primary/5" : "border-white/5 bg-card/60 opacity-70"
-                }`}
-                data-testid={`package-card-${p.id}`}
-              >
-                {/* Cyan top hairline — only on active packages, signals
-                    "this is your live program" without being loud. */}
-                {p.isActive && <CyanHairline intensity="strong" inset="inset-x-5 sm:inset-x-6" />}
-                <div className="relative flex items-start justify-between gap-4 mb-4">
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate">
-                      {(p as any).name || def?.label || `${p.type} Package`}
-                    </p>
-                    <p className="text-3xl font-display font-bold tabular-nums">
-                      {remaining}
-                      <span className="text-base text-muted-foreground font-normal">
-                        {" "}
-                        / {p.totalSessions}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">{t("dashboard.sessionsRemaining")}</p>
-                    {((p as any).bonusSessions ?? 0) > 0 && (
-                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/12 border border-emerald-400/30 px-2 py-0.5 text-emerald-300 shadow-[0_0_14px_-6px_rgba(16,185,129,0.5)]">
-                        <Sparkles size={11} className="shrink-0" />
-                        <span className="text-[11px] font-display font-bold tabular-nums leading-none">
-                          +{(p as any).bonusSessions} {t("home.packages.bonus")}
-                        </span>
-                      </span>
-                    )}
-                    {def?.tagline && (
-                      <p className="text-[10px] text-muted-foreground/70 mt-1">{def.tagline}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span
-                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap ${statusBadge.cls}`}
-                      data-testid={`package-status-${p.id}`}
-                    >
-                      {statusBadge.label}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap ${payBadge.cls}`}
-                      data-testid={`package-payment-${p.id}`}
-                    >
-                      {payBadge.icon}
-                      {payBadge.label}
-                    </span>
-                    {def?.isDuo && (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 whitespace-nowrap">
-                        <Users size={11} /> {t("dashboard.packageDuo")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {/* Outstanding-balance banner — surfaces the AED still owed
-                    so the client can act on it. Booking remains UNGATED:
-                    this is informational, not a hard stop. Hidden when
-                    fully settled or complimentary. */}
-                {outstanding > 0 && payStatus !== "complimentary" && p.isActive && (
-                  <div
-                    className="mb-4 rounded-xl border border-cyan-400/25 bg-cyan-500/[0.07] px-3.5 py-2.5 flex items-center justify-between gap-3"
-                    data-testid={`package-balance-${p.id}`}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-200/80">
-                        {t("dashboard.packageBalanceLabel", "Outstanding balance")}
-                      </p>
-                      <p className="text-sm font-display font-semibold text-cyan-100 tabular-nums mt-1">
-                        AED {outstanding.toLocaleString()}
-                        {totalPrice > 0 && (
-                          <span className="text-[11px] font-normal text-cyan-200/60 ml-1.5">
-                            of AED {totalPrice.toLocaleString()}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <Wallet size={16} className="text-cyan-300 shrink-0" />
-                  </div>
-                )}
-                {/* Progress bar — cyan track with a soft glow at the
-                    leading edge. Reads as a HUD meter, not a generic
-                    bar. Glow is gated to active packages only. */}
-                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      boxShadow: p.isActive
-                        ? "0 0 6px hsl(183 100% 60% / 0.35)"
-                        : undefined,
-                    }}
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground mt-4 space-y-1 leading-relaxed">
-                  <p>
-                    {t("dashboard.packageStarted").replace(
-                      "{date}",
-                      p.startDate
-                        ? format(new Date(p.startDate as any), "MMM d, yyyy")
-                        : p.purchasedAt
-                          ? format(new Date(p.purchasedAt), "MMM d, yyyy")
-                          : "—",
-                    )}
-                    {!p.isActive && ` • ${t("dashboard.packageClosed")}`}
-                  </p>
-                  {p.expiryDate && (
-                    <p data-testid={`package-expiry-${p.id}`}>
-                      {t("dashboard.packageExpiresOn", "Expires").replace(
-                        "{date}",
-                        format(new Date(p.expiryDate as any), "MMM d, yyyy"),
-                      )}
-                      {days !== null && days >= 0 && status !== "completed" && (
-                        <>
-                          {" • "}
-                          <span className={status === "expiring_soon" ? "text-cyan-300 font-semibold" : ""}>
-                            {t("dashboard.packageExpiresIn", "{days} days left").replace("{days}", String(days))}
-                          </span>
-                        </>
-                      )}
-                      {days !== null && days < 0 && (
-                        <>
-                          {" • "}
-                          <span className="text-red-300 font-semibold">
-                            {t("dashboard.packageExpired", "Expired")}
-                          </span>
-                        </>
-                      )}
-                    </p>
-                  )}
-                </div>
-                {(status === "expired" || status === "expiring_soon" || status === "completed") && p.isActive && (
-                  <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-lg h-9 text-xs flex-1"
-                      onClick={() => setRenewalOpen(true)}
-                      data-testid={`button-renew-${p.id}`}
-                    >
-                      <RefreshCw size={12} className="mr-1.5" />
-                      {t("dashboard.requestRenewal", "Request Renewal")}
-                    </Button>
-                    {status !== "completed" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-lg h-9 text-xs flex-1"
-                        onClick={() => setExtensionPkg(p)}
-                        data-testid={`button-extend-${p.id}`}
-                      >
-                        <CalendarPlus size={12} className="mr-1.5" />
-                        {t("dashboard.requestExtension", "Request Extension")}
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
+          {list.map((p) => (
+            <PackageConfidenceCard
+              key={p.id}
+              pkg={p}
+              bookings={bookings}
+              status={computePackageStatus(p)}
+              daysUntilExpiry={daysUntilExpiry(p)}
+              onRequestRenewal={() => setRenewalOpen(true)}
+              onRequestExtension={() => setExtensionPkg(p)}
+            />
+          ))}
         </div>
       )}
 
