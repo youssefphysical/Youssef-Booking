@@ -278,24 +278,26 @@ export default function ClientDashboard() {
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
       {/* =========================================================
           Task #78 — Dashboard hierarchy.
-          Above-the-fold render order (capped at 6 priority cards):
-            (0) Status banner — sticky, only when active
-            (1) Welcome (ProfileHero)
+          Above-the-fold render order (capped at exactly 6 priority cards
+          per the UX spec — Welcome/ProfileHero is intentionally moved
+          into the secondary stack so the hierarchy is not diluted):
+            (1) Status banner — sticky, only when active
             (2) Today's session / Book session (TodayHero + SessionPrepCard)
             (3) Package confidence (PackageStatusHero)
             (4) Streaks (StreakStrip)
             (5) What's Next (CoachAvailabilityChip + WhatsNext)
             (6) Progress ring (GoalProgressRing)
-          Everything else (recovery, transformation timeline, recovery
-          readiness, secondary insights, motivation line, quick actions,
-          session timeline, progress snapshot, membership, duo partners,
-          tabs) lives behind a single "Show more" toggle persisted in
-          localStorage (`yedt:dashboard:showMore`). Default collapsed.
-          The status banner is rendered FIRST (and sticky) so clients in
+          Every other module (welcome, recovery, transformation timeline,
+          recovery readiness, secondary insights, motivation line, quick
+          actions, session timeline, progress snapshot, membership, duo
+          partners, full tab navigation) lives behind a single "Show more"
+          toggle persisted per-user in localStorage
+          (`yedt:dashboard:showMore:<userId>`). Default collapsed. The
+          status banner is rendered FIRST (and sticky) so clients in
           waiting states always see their next step on scroll.
           ========================================================= */}
+      {/* (1) Status banner */}
       <BookingEligibilityBanner userId={user.id} user={user} />
-      <ProfileHero user={user} />
 
       {/* (2) Today + booking surface */}
       <TodayHero name={user.fullName} />
@@ -319,7 +321,8 @@ export default function ClientDashboard() {
       </div>
 
       {/* ===== Secondary content — gated behind "Show more" ===== */}
-      <DashboardShowMore>
+      <DashboardShowMore userId={user.id}>
+        <ProfileHero user={user} />
         <MotivationLine />
         <RecoveryDashboardTile />
         <QuickActionsGrid onJump={jumpToTab} />
@@ -332,9 +335,8 @@ export default function ClientDashboard() {
         <SecondaryInsights firstName={user.fullName.split(" ")[0]} userId={user.id} />
         <MembershipBlock user={user} />
         <DuoPartnersBlock />
-      </DashboardShowMore>
 
-      <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
+        <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
         <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           {/* Brief §36 section labels — tabs map 1:1 to the required
               section model (My Training, My Package, Nutrition (=
@@ -377,6 +379,7 @@ export default function ClientDashboard() {
           <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
         </TabsContent>
       </Tabs>
+      </DashboardShowMore>
       </div>
     </div>
   );
@@ -389,11 +392,16 @@ export default function ClientDashboard() {
 // height animation; everyone else gets a 220ms ease.
 const SHOW_MORE_KEY = "yedt:dashboard:showMore";
 
-function useShowMore(): [boolean, (next: boolean) => void] {
+function useShowMore(userId: number): [boolean, (next: boolean) => void] {
+  // Scoped per-user so switching accounts in the same browser doesn't
+  // share open/closed state. Legacy unscoped key is left orphaned (not
+  // worth a migration — it just stays at its prior value forever and
+  // is never read again).
+  const key = `${SHOW_MORE_KEY}:${userId}`;
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
-      return window.localStorage.getItem(SHOW_MORE_KEY) === "1";
+      return window.localStorage.getItem(key) === "1";
     } catch {
       return false;
     }
@@ -402,7 +410,7 @@ function useShowMore(): [boolean, (next: boolean) => void] {
     setOpen(next);
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(SHOW_MORE_KEY, next ? "1" : "0");
+      window.localStorage.setItem(key, next ? "1" : "0");
     } catch {
       /* private mode / quota — non-fatal */
     }
@@ -410,9 +418,15 @@ function useShowMore(): [boolean, (next: boolean) => void] {
   return [open, update];
 }
 
-function DashboardShowMore({ children }: { children: React.ReactNode }) {
+function DashboardShowMore({
+  userId,
+  children,
+}: {
+  userId: number;
+  children: React.ReactNode;
+}) {
   const { t } = useTranslation();
-  const [open, setOpen] = useShowMore();
+  const [open, setOpen] = useShowMore(userId);
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
