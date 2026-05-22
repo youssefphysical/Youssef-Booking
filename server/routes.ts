@@ -5030,6 +5030,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } as any);
     } catch {/* ignore */}
 
+    // Task #66 follow-up — receipt notification. We dedupe by the
+    // package row id so a retry/double-submit can't double-fire.
+    try {
+      await notifyUserOnce(
+        me.id,
+        "package_activation_requested",
+        `pvr:${created.id}`,
+        "Package activation request received",
+        "Youssef will review your package and unlock your booking access once activation is complete.",
+        {
+          link: "/dashboard",
+          meta: { packageId: created.id, requestedType },
+        },
+      );
+    } catch {/* notification failure must never block the activation request */}
+
     res.status(201).json(pending ?? created);
   });
 

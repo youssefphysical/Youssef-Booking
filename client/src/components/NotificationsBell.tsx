@@ -24,6 +24,7 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
   milestone_achieved: Trophy,
   waitlist_slot_available: Sparkles,
   package_activated: PackageCheck,
+  package_activation_requested: PackageCheck,
   admin_message: Megaphone,
   system: Info,
 };
@@ -41,6 +42,7 @@ const ACCENT: Record<NotificationKind, string> = {
   milestone_achieved: "text-cyan-300",
   waitlist_slot_available: "text-cyan-300",
   package_activated: "text-emerald-300",
+  package_activation_requested: "text-cyan-300",
   admin_message: "text-cyan-300",
   system: "text-white/70",
 };

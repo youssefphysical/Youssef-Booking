@@ -1126,6 +1126,12 @@ export const NOTIFICATION_KINDS = [
   "milestone_achieved",
   "waitlist_slot_available",
   "package_activated",
+  // Task #66 follow-up — fires the moment a client submits their FZ
+  // activation request (POST /api/package-verification-requests). The
+  // bell event tells the user we received it; the matching banner on
+  // the dashboard tells them what happens next. Pairs with the existing
+  // `package_activated` kind that fires on admin approval.
+  "package_activation_requested",
   "admin_message",
   "system",
 ] as const;

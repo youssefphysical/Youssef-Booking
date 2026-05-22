@@ -83,6 +83,74 @@ export default function BookingPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [, navigate] = useLocation();
 
+  // Task #66 follow-up — query-param-aware page chrome. The wizard
+  // hands off via `/book?type=free_trial[&location=X]` (new clients)
+  // or `/book?location=X` (active package). The user must know exactly
+  // which surface they landed on, so we override the header copy and
+  // the success-card copy based on these params. Falls back to the
+  // generic labels for direct `/book` access.
+  const bookingFlow = (() => {
+    if (typeof window === "undefined") {
+      return { isTrial: false, location: null as string | null };
+    }
+    const params = new URLSearchParams(window.location.search);
+    return {
+      isTrial: params.get("type") === "free_trial",
+      location: params.get("location"),
+    };
+  })();
+  const LOCATION_HEADERS: Record<string, { title: string; subtitle: string }> = {
+    home: {
+      title: bookingFlow.isTrial
+        ? t("booking.flow.homeTrial.title", "Book Your Home Training Trial")
+        : t("booking.flow.home.title", "Book Your Home Training Session"),
+      subtitle: t(
+        "booking.flow.home.subtitle",
+        "Choose a time for your first session. Youssef Elite will review your location details before confirming availability if needed.",
+      ),
+    },
+    building: {
+      title: t("booking.flow.building.title", "Book Your Building Gym Session"),
+      subtitle: t(
+        "booking.flow.building.subtitle",
+        "Choose your preferred time. Please make sure gym access is available for your trainer.",
+      ),
+    },
+    hotel: {
+      title: t("booking.flow.hotel.title", "Book Your Hotel Training Session"),
+      subtitle: t(
+        "booking.flow.hotel.subtitle",
+        "Choose your preferred time. Youssef Elite may review hotel access details before final confirmation if needed.",
+      ),
+    },
+    other_gym: {
+      title: t("booking.flow.otherGym.title", "Book Your Training Session"),
+      subtitle: t(
+        "booking.flow.otherGym.subtitle",
+        "Choose your preferred time. Please make sure trainer access is allowed at the selected gym.",
+      ),
+    },
+    fitness_zone: {
+      title: t("booking.flow.fz.title", "Book Your Fitness Zone Session"),
+      subtitle: t(
+        "booking.flow.fz.subtitle",
+        "Choose your preferred time at Fitness Zone with Coach Youssef.",
+      ),
+    },
+  };
+  const flowHeader =
+    bookingFlow.location && LOCATION_HEADERS[bookingFlow.location]
+      ? LOCATION_HEADERS[bookingFlow.location]
+      : bookingFlow.isTrial
+        ? {
+            title: t("booking.flow.trial.title", "Book Your Free Trial Session"),
+            subtitle: t(
+              "booking.flow.trial.subtitle",
+              "Choose a convenient time for your first Youssef Elite assessment session.",
+            ),
+          }
+        : null;
+
   // Booking-safety: anonymous visitors are redirected to /wizard via
   // /auth (deep-link back to /wizard after sign-in) so the very first
   // step is always location selection — never the booking grid. The
@@ -547,10 +615,17 @@ export default function BookingPage() {
             <CheckCircle2 size={32} className="text-emerald-400" />
           </div>
           <h2 className="text-2xl font-display font-bold mb-2" data-testid="text-success-title">
-            {t("booking.successTitle")}
+            {bookingFlow.isTrial
+              ? t("booking.flow.trial.successTitle", "Your free trial session is confirmed.")
+              : t("booking.successTitle")}
           </h2>
           <p className="text-muted-foreground text-sm mb-6">
-            {t("booking.successBody")}
+            {bookingFlow.isTrial
+              ? t(
+                  "booking.flow.trial.successBody",
+                  "Youssef will see you at the time you picked. Check your dashboard for the full details.",
+                )
+              : t("booking.successBody")}
           </p>
           <div className="flex flex-col gap-3">
             <WhatsAppButton
@@ -607,9 +682,11 @@ export default function BookingPage() {
         </div>
         <div>
           <h1 className="text-3xl font-display font-bold" data-testid="text-page-title">
-            {t("booking.pageTitle")}
+            {flowHeader?.title ?? t("booking.pageTitle")}
           </h1>
-          <p className="text-muted-foreground text-sm">{t("booking.pageSubtitle")}</p>
+          <p className="text-muted-foreground text-sm">
+            {flowHeader?.subtitle ?? t("booking.pageSubtitle")}
+          </p>
         </div>
       </div>
 

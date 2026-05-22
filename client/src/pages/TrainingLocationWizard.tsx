@@ -345,6 +345,18 @@ export default function TrainingLocationWizard() {
           return;
         }
       }
+      // FZ trial path — spec wants a celebratory pre-redirect toast so
+      // users know what's about to happen before /book?type=free_trial
+      // takes over.
+      if (fzPath === "trial") {
+        toast({
+          title: t("wizard.fz.trialReadyTitle", "Free trial booking is ready."),
+          description: t(
+            "wizard.fz.trialReadyDesc",
+            "Pick a time on the next page for your first Youssef Elite assessment session.",
+          ),
+        });
+      }
       wizardDraft.clear();
       navigate(
         decideNextRoute({
@@ -401,7 +413,16 @@ export default function TrainingLocationWizard() {
         toast({ title: e?.message || "Failed", variant: "destructive" });
         return;
       }
-      toast({ title: t("wizard.home.savedTitle", "Location saved") });
+      // Branch-specific toast per spec — Home / Building Gym / Hotel
+      // all share the wizard "home" branch but the user-facing wording
+      // must reflect the chosen sub-kind.
+      const homeToastTitle =
+        homeKind === "building"
+          ? t("wizard.home.savedBuilding", "Building gym setup saved.")
+          : homeKind === "hotel"
+            ? t("wizard.home.savedHotel", "Hotel training setup saved.")
+            : t("wizard.home.savedHome", "Training setup saved.");
+      toast({ title: homeToastTitle });
       wizardDraft.clear();
       navigate(homeNext);
       return;
@@ -450,7 +471,7 @@ export default function TrainingLocationWizard() {
         toast({ title: e?.message || "Failed", variant: "destructive" });
         return;
       }
-      toast({ title: t("wizard.other.savedTitle", "Location saved") });
+      toast({ title: t("wizard.other.savedTitle", "Gym details saved.") });
       wizardDraft.clear();
       navigate(gymNext);
     }
@@ -678,11 +699,45 @@ export default function TrainingLocationWizard() {
               {(saveLocation.isPending || submitVerification.isPending) && (
                 <Loader2 size={14} className="animate-spin mr-2" />
               )}
-              {branch === "fitness_zone" && fzPath === "existing"
-                ? t("wizard.fz.submitCta", "Submit for approval")
-                : branch === "fitness_zone" && (hasPendingVerif || fzPath === "trial")
-                  ? t("common.continue", "Continue")
-                  : t("wizard.saveCta", "Save location")}
+              {/* Per-branch CTA + per-branch loading label. The user
+                  must always know what's happening so the button never
+                  reverts to a generic "Continue" while a network call
+                  is in flight. */}
+              {(() => {
+                const submitting =
+                  saveLocation.isPending || submitVerification.isPending;
+                if (branch === "fitness_zone" && fzPath === "existing") {
+                  return submitting
+                    ? t("wizard.fz.submitCtaLoading", "Sending request…")
+                    : t("wizard.fz.submitCta", "Submit for approval");
+                }
+                if (branch === "fitness_zone" && fzPath === "trial") {
+                  return submitting
+                    ? t("wizard.fz.trialCtaLoading", "Preparing your free trial…")
+                    : t("common.continue", "Continue");
+                }
+                if (branch === "fitness_zone" && hasPendingVerif) {
+                  return t("common.continue", "Continue");
+                }
+                if (branch === "home") {
+                  if (submitting) {
+                    return homeKind === "building"
+                      ? t("wizard.home.ctaLoadingBuilding", "Saving your gym setup…")
+                      : homeKind === "hotel"
+                        ? t("wizard.home.ctaLoadingHotel", "Saving your hotel setup…")
+                        : t("wizard.home.ctaLoadingHome", "Saving your training setup…");
+                  }
+                  return t("common.continue", "Continue");
+                }
+                if (branch === "other_gym") {
+                  return submitting
+                    ? t("wizard.other.ctaLoading", "Saving your gym details…")
+                    : t("common.continue", "Continue");
+                }
+                return submitting
+                  ? t("wizard.saveCtaLoading", "Saving…")
+                  : t("wizard.saveCta", "Save location");
+              })()}
               <ArrowRight size={14} className="ml-2" />
             </Button>
           </div>

@@ -1,0 +1,347 @@
+Please define and implement the full wizard journey for ALL training-location flows, not only Fitness Zone.
+
+The user must always know:
+
+- What happens after clicking the button
+- Where they will be redirected
+- What they will see on the next page
+- What is locked/unlocked
+- What the next action is
+
+Global rule:
+After any successful wizard action, the user must never stay stuck on the same wizard page.
+
+All flows must have:
+
+- Loading state
+- Disabled button during submit
+- Success toast
+- Correct redirect
+- Dashboard/profile status card if needed
+- Notification bell event if needed
+- Clear error toast if something fails
+
+FLOW 1 — Existing Fitness Zone PT Client
+
+User selects:
+“I’m already a Fitness Zone PT client”
+
+User selects package:
+10 / 20 / 25 / Duo 30 / Not sure
+
+User clicks:
+“Submit for approval”
+
+After click:
+
+- Button: “Sending request...”
+- Disable duplicate submit
+
+On success:
+
+- Toast: “Package activation request received.”
+- Redirect to "/dashboard"
+
+Dashboard shows:
+Title:
+Package Activation In Review
+
+Status:
+Pending Review
+
+Details:
+
+- Selected package
+- Submitted date/time
+
+Message:
+“The Youssef Elite team will review your package and unlock your booking access once activation is complete.”
+
+Timeline:
+
+1. Request received
+2. Under review
+3. Booking access unlocked
+
+Booking:
+
+- Locked until admin approval
+- If user opens "/book", redirect back to dashboard with locked message
+
+Notification:
+“Package activation request received”
+
+After admin approval:
+
+- Package becomes Active
+- Booking unlocks
+- Sessions count assigned
+- Dashboard shows Book Session button
+
+FLOW 2 — Brand New User
+
+User selects:
+“I’m brand new”
+
+User clicks:
+“Continue”
+
+After click:
+
+- Button: “Preparing your free trial...”
+- Disable duplicate submit
+
+On success:
+
+- Save user as new lead/free trial user
+- Mark wizard completed
+- Toast: “Free trial booking is ready.”
+- Redirect to:
+  "/book?type=free_trial"
+
+Booking page shows:
+Title:
+Book Your Free Trial Session
+
+Message:
+“Choose a convenient time for your first Youssef Elite assessment session.”
+
+Booking:
+
+- Free trial session only
+- No package approval required
+- Prevent duplicate free trial abuse
+- After booking, show confirmation page/card:
+  “Your free trial session is confirmed.”
+
+Notification:
+“Free trial booking started” or “Free trial session booked” after confirmed booking
+
+FLOW 3 — Home Training
+
+User selects:
+Home training
+
+If required, user enters:
+
+- Area / address details
+- Preferred training location note
+
+User clicks:
+“Continue”
+
+After click:
+
+- Button: “Saving your training setup...”
+- Disable duplicate submit
+
+On success:
+
+- Save training location as Home
+- Toast: “Training setup saved.”
+
+Next routing:
+If user is new/free trial:
+Redirect to:
+"/book?type=free_trial&location=home"
+
+Booking page shows:
+Title:
+Book Your Home Training Trial
+
+Message:
+“Choose a time for your first session. Youssef Elite will review your location details before confirming availability if needed.”
+
+If user has active package:
+Redirect to:
+"/book?location=home"
+
+If approval/payment is needed:
+Redirect to "/dashboard" with pending setup/status card.
+
+Dashboard card if pending:
+Title:
+Home Training Setup In Review
+
+Message:
+“The Youssef Elite team will review your location details and confirm your booking access.”
+
+FLOW 4 — Building Gym / Residential Gym
+
+User selects:
+Building gym / residential gym
+
+If required, user enters:
+
+- Building name
+- Area
+- Access instructions if any
+
+User clicks:
+“Continue”
+
+After click:
+
+- Button: “Saving your gym setup...”
+- Disable duplicate submit
+
+On success:
+
+- Save training location as Building Gym
+- Toast: “Building gym setup saved.”
+
+Next routing:
+New/free trial:
+"/book?type=free_trial&location=building_gym"
+
+Active package:
+"/book?location=building_gym"
+
+Pending approval/setup:
+"/dashboard"
+
+Booking page shows:
+Title:
+Book Your Building Gym Session
+
+Message:
+“Choose your preferred time. Please make sure gym access is available for your trainer.”
+
+Dashboard pending card if needed:
+Title:
+Building Gym Setup In Review
+
+Message:
+“Your building gym details have been saved. Youssef Elite will review access and availability if needed.”
+
+FLOW 5 — Hotel Training
+
+User selects:
+Hotel training
+
+If required, user enters:
+
+- Hotel name
+- Area
+- Access or guest policy notes
+
+User clicks:
+“Continue”
+
+After click:
+
+- Button: “Saving your hotel setup...”
+- Disable duplicate submit
+
+On success:
+
+- Save training location as Hotel
+- Toast: “Hotel training setup saved.”
+
+Next routing:
+New/free trial:
+"/book?type=free_trial&location=hotel"
+
+Active package:
+"/book?location=hotel"
+
+Pending approval/setup:
+"/dashboard"
+
+Booking page shows:
+Title:
+Book Your Hotel Training Session
+
+Message:
+“Choose your preferred time. Youssef Elite may review hotel access details before final confirmation if needed.”
+
+FLOW 6 — Another Gym
+
+User selects:
+Another gym
+
+If required, user enters:
+
+- Gym name
+- Location/area
+- Access notes
+- Membership/access requirement if any
+
+User clicks:
+“Continue”
+
+After click:
+
+- Button: “Saving your gym details...”
+- Disable duplicate submit
+
+On success:
+
+- Save training location as Another Gym
+- Toast: “Gym details saved.”
+
+Next routing:
+New/free trial:
+"/book?type=free_trial&location=other_gym"
+
+Active package:
+"/book?location=other_gym"
+
+Pending approval/setup:
+"/dashboard"
+
+Booking page shows:
+Title:
+Book Your Training Session
+
+Message:
+“Choose your preferred time. Please make sure trainer access is allowed at the selected gym.”
+
+Dashboard pending card if needed:
+Title:
+Training Location In Review
+
+Message:
+“Your gym details have been saved. Youssef Elite will review access and availability if needed.”
+
+ERROR HANDLING FOR ALL FLOWS
+
+If any save/submit fails:
+
+- Stay on wizard
+- Show visible toast:
+  “We couldn’t complete your request. Please try again.”
+- Button returns to normal
+- Do not silently fail
+
+If route guard blocks booking:
+
+- Redirect dashboard
+- Show clear locked/pending status card
+
+If user refreshes:
+
+- Preserve selected state if possible
+- Do not lose draft location details
+
+TESTING REQUIREMENTS
+
+Test every flow on mobile:
+
+1. Fitness Zone existing PT client → Submit approval → Dashboard pending
+2. Brand new → Continue → Free trial booking
+3. Home → Continue → Correct booking/dashboard
+4. Building gym → Continue → Correct booking/dashboard
+5. Hotel → Continue → Correct booking/dashboard
+6. Another gym → Continue → Correct booking/dashboard
+
+Also test:
+
+- Double click
+- Back button
+- Refresh
+- Offline then reconnect
+- Manual "/book" access while pending
+- Active package access
+
+Do not mark complete until each flow has been manually verified.
