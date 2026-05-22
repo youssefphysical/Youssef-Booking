@@ -1024,17 +1024,12 @@ function SameDayAdjustDialog({
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dashboard.newTimeSlot")}</p>
           {slots.length === 0 ? (
-            <div
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm text-muted-foreground leading-relaxed"
-              data-testid="empty-adjust-slots"
-            >
-              <p className="text-foreground/80 font-medium mb-0.5">
-                {t("dashboard.noRemainingSlots")}
-              </p>
-              <p className="text-xs">
-                {t("dashboard.noRemainingSlotsBody")}
-              </p>
-            </div>
+            <PremiumEmptyState
+              icon={<Clock size={20} />}
+              title={t("dashboard.noRemainingSlots")}
+              body={t("dashboard.noRemainingSlotsBody")}
+              testId="empty-adjust-slots"
+            />
           ) : (
             <Select value={slot} onValueChange={setSlot}>
               <SelectTrigger className="bg-white/5 border-white/10 h-11" data-testid="select-adjust-slot">

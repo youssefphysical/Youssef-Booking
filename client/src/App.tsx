@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { I18nProvider } from "@/i18n";
 import { Navigation } from "@/components/Navigation";
-import { Loader } from "@/components/Loader";
+import { PremiumPageLoader } from "@/components/PremiumPageLoader";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { isEffectiveSuperAdmin } from "@shared/schema";
 import { trackPageView } from "@/lib/analytics";
@@ -108,7 +108,7 @@ function ProtectedRoute({
     }
   }, [user, isLoading, adminOnly, clientOnly, superAdminOnly, navigate]);
 
-  if (isLoading) return <Loader />;
+  if (isLoading) return <PremiumPageLoader />;
   if (!user) return null;
   if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) return null;
   if (adminOnly && user.role !== "admin") return null;
@@ -181,9 +181,9 @@ function Router() {
           <AdminTabs />
         </div>
       )}
-      {/* Suspense fallback for lazy-loaded routes — Loader matches the
-          existing app loader so chunk-loading feels native, not jarring. */}
-      <Suspense fallback={<Loader />}>
+      {/* Suspense fallback for lazy-loaded routes — premium loader with
+          rotating copy so chunk loads feel intentional, not blank. */}
+      <Suspense fallback={<PremiumPageLoader />}>
         <Switch>
           {/* Public */}
           <Route path="/" component={HomePage} />
