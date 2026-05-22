@@ -1,0 +1,329 @@
+Youssef Elite — FINAL UX COORDINATION & CLIENT GUIDANCE SYSTEM
+
+CRITICAL:
+
+Client must NEVER feel lost.
+
+Client must NEVER think too much.
+
+Client must ALWAYS know:
+
+1. Where am I?
+2. What is happening?
+3. What should I do next?
+
+Golden rule:
+
+Guide.
+
+Do not confuse.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+SMART GUIDANCE SYSTEM
+
+Every important screen must answer:
+
+Current status
+
+Next action
+
+Simple explanation
+
+Example:
+
+Pending package:
+
+Package Activation In Review
+
+Message:
+
+"Your request has been received successfully."
+
+Next step:
+
+"Our team will review your package and unlock booking automatically."
+
+Expected time:
+
+"Usually within 24 hours."
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+NO DEAD ENDS
+
+Never allow screens that end without direction.
+
+Bad:
+
+Package Pending
+
+Good:
+
+Package Pending
+
+Next action:
+
+Wait for approval
+
+Need help?
+
+Message Coach
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+MICRO EXPLANATION SYSTEM
+
+If something could confuse the client:
+
+Explain it.
+
+Examples:
+
+Emergency Cancel
+
+Add:
+
+"Use once monthly if an unexpected situation prevents attendance."
+
+Elite Score
+
+Add:
+
+"Based on consistency, attendance and engagement."
+
+Package Expiry
+
+Add:
+
+"Unused sessions expire on this date."
+
+Recovery Score
+
+Add:
+
+"Based on sleep, recovery and wellness inputs."
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+TOOLTIP SYSTEM
+
+Complex features:
+
+Use small info icon.
+
+Tap:
+
+Show explanation.
+
+Never show long paragraphs.
+
+Maximum:
+
+1–2 lines.
+
+Example:
+
+InBody Progress
+
+Info:
+
+"Track body composition improvements over time."
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+SMART STATUS LANGUAGE
+
+Never use technical language.
+
+Bad:
+
+Pending Verification State
+
+Good:
+
+Coach Review In Progress
+
+Bad:
+
+Package Validation
+
+Good:
+
+Package Review
+
+Bad:
+
+Activation Pending
+
+Good:
+
+Getting Your Package Ready
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PROGRESS CLARITY
+
+Always show:
+
+Current step
+
+Next step
+
+Example:
+
+Request Submitted ✓
+
+Coach Review ⏳
+
+Package Activated
+
+Booking Unlocked
+
+Client always understands progress.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+BUTTON CLARITY
+
+Never:
+
+Continue
+
+If unclear.
+
+Use:
+
+Continue To Free Trial
+
+Schedule Training
+
+Open Workout Program
+
+View Nutrition Plan
+
+Message Coach
+
+Make actions obvious.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PROGRESSIVE DISCLOSURE
+
+Simple first.
+
+Advanced later.
+
+Client opens complexity only if needed.
+
+Default:
+
+Simple.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+CONSISTENT NAVIGATION
+
+All screens follow same logic.
+
+Top:
+
+Status
+
+Middle:
+
+Primary action
+
+Bottom:
+
+Secondary information
+
+Never change layout randomly.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+SMART HELP SYSTEM
+
+If client stays too long:
+
+Offer help.
+
+Example:
+
+Need assistance?
+
+Message Coach
+
+Booking Help
+
+Support
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+EMPTY STATE PROTECTION
+
+Never:
+
+"No data"
+
+Use:
+
+"Complete your first session to unlock progress insights."
+
+"Your transformation journey starts here."
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+ERROR EXPERIENCE
+
+Never:
+
+Something failed
+
+Use:
+
+"We couldn't complete your request."
+
+"Please try again."
+
+Need help?
+
+Message Coach
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+CLIENT FATIGUE PROTECTION
+
+Never overload dashboard.
+
+Visible cards:
+
+Maximum:
+
+6–8
+
+Collapse everything else.
+
+Show More
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+FINAL UX RULE
+
+Every screen must feel:
+
+Clear.
+
+Luxury.
+
+Guided.
+
+Professional.
+
+Effortless.
+
+Client feeling:
+
+"I always know exactly what to do next."
+
+Build Youssef Elite accordingly.
