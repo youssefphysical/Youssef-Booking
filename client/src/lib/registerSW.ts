@@ -23,8 +23,52 @@ export function registerServiceWorker(): void {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
+      .then((reg) => {
+        // Task #66 follow-up — force-update path. A stale SW that
+        // intercepts the wizard JS was leaving real-mobile users on a
+        // pre-fix bundle. Polling `reg.update()` makes the browser
+        // re-check `/sw.js` on every page load, and if it differs from
+        // the active worker, the new one installs in the background.
+        // Combined with `skipWaiting` in sw.js, the user gets the
+        // fresh bundle on the very next navigation/reload.
+        try { reg.update(); } catch {/* defensive */}
+        // When an updated worker takes over, reload once so the page
+        // is served by the new SW (which has the new cache version).
+        // Guarded by sessionStorage to avoid reload loops.
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            try {
+              if (sessionStorage.getItem("__sw_reloaded__") === "1") return;
+              sessionStorage.setItem("__sw_reloaded__", "1");
+              window.location.reload();
+            } catch {/* private mode etc. */}
+          });
+        }
+      })
       .catch(() => {
         // Swallow — a failed SW must not break the app.
       });
   });
+}
+
+/**
+ * Nuclear reset helper — unregister every service worker and delete
+ * every cache. Used by the wizard's "Diagnostic Reset" button when a
+ * user appears to be stuck on a stale bundle. Safe in dev (no SW)
+ * because the loops are no-ops.
+ */
+export async function resetAllCachesAndSW(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister().catch(() => {})));
+    }
+  } catch {/* swallow */}
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k).catch(() => {})));
+    }
+  } catch {/* swallow */}
 }

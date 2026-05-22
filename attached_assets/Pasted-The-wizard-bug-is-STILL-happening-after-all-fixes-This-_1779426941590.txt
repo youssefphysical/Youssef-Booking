@@ -1,0 +1,76 @@
+The wizard bug is STILL happening after all fixes.
+
+This means we must stop assuming the flow is fixed.
+
+Real mobile test:
+
+- "/wizard"
+- Existing Fitness Zone PT client
+- Select package 25
+- Click “Submit for approval”
+
+Actual:
+
+- Button loading appears briefly
+- Then button returns to normal
+- User stays on wizard
+- No toast
+- No dashboard redirect
+- No visible error
+
+This is the real behavior on the live tested version.
+
+I need a hard diagnostic fix now.
+
+Required:
+
+1. Add a temporary visible debug panel on "/wizard" only in development/admin mode showing:
+   
+   - current flow selected
+   - selected package
+   - submit handler fired: yes/no
+   - training location request status
+   - package activation request status
+   - last API response
+   - last caught error
+   - navigation target decided
+   - whether navigate() executed
+
+2. Add console logs with unique labels:
+   
+   - "[wizard-submit-clicked]"
+   - "[wizard-training-location-start]"
+   - "[wizard-training-location-success]"
+   - "[wizard-training-location-error]"
+   - "[wizard-package-request-start]"
+   - "[wizard-package-request-success]"
+   - "[wizard-package-request-error]"
+   - "[wizard-navigation-target]"
+   - "[wizard-navigate-executed]"
+
+3. Confirm if the mobile/live site is running the latest bundle.
+   Add a visible temporary build/version string somewhere small:
+   "Wizard build: <commit hash/time>"
+
+4. If the API succeeds but navigation fails:
+   Force hard redirect:
+   "window.location.assign('/dashboard')"
+
+5. If API fails:
+   Show visible toast and also render inline error under the submit button.
+
+6. If the current button is not using the updated handler:
+   Find the actual handler connected to the button and fix that one.
+
+7. Clear or bypass any stale draft/offline queue that may be swallowing the submit.
+
+8. Check if a Service Worker / PWA cache is serving an old JS bundle.
+   If yes, add cache-busting / unregister service worker during development.
+
+9. Do not mark complete until this exact mobile flow is verified live:
+   Submit for approval → success toast → dashboard → Package Activation In Review card.
+
+Important:
+A report saying “merged” or “typecheck passed” is not enough.
+The real mobile behavior is still broken.
+We need visible runtime proof of where the flow stops.

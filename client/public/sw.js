@@ -19,12 +19,14 @@
  * Bumping CACHE_VERSION invalidates ALL caches → safe escape hatch.
  */
 
-// Bumped 2026-05-12 (v25) to force-evict stale CSS chunks after the
-// site-wide TRON Freeze color cleanup (every amber/gold/orange surface
-// remapped to ice cyan; --warm-accent token + email warn/VIP tokens
-// re-themed). Without this bump returning users would briefly see the
-// old warm palette until the previous CSS chunk is revalidated.
-const CACHE_VERSION = "v25-2026-05-12-tron-freeze";
+// Bumped 2026-05-22 (v26) to force-evict stale wizard bundles. Real
+// mobile users were stuck on a pre-fix TrainingLocationWizard build
+// where "Submit for approval" returned silently with no toast / no
+// navigate — the SW was happily serving the old script chunk. Bumping
+// CACHE_VERSION drops the runtime cache on the next activate(), so
+// the next /sw.js fetch (revalidated every visit) triggers a full
+// reload of static assets. Pairs with registerSW.ts's update poll.
+const CACHE_VERSION = "v26-2026-05-22-wizard-diag";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 

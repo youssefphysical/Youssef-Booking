@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { resetAllCachesAndSW } from "@/lib/registerSW";
 import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
+
+// Task #66 follow-up — visible build stamp so a real-mobile user can
+// confirm they're on the latest JS bundle and not a stale SW-cached
+// chunk. Bump this string in EVERY meaningful wizard edit. If the user
+// sees an older value, the bundle is stale and they need to hard-reload
+// (or hit the "Diagnostic Reset" button below the form).
+const WIZARD_BUILD = "2026-05-22-diag-v1";
 
 type Branch = "fitness_zone" | "home" | "other_gym" | null;
 type FzPath = "existing" | "trial" | null;
@@ -83,6 +91,63 @@ export default function TrainingLocationWizard() {
   // resolves before React re-renders, so a fast double-click can
   // squeeze two requests through. This ref blocks the second one.
   const isSubmittingRef = useRef(false);
+
+  // Task #66 follow-up — runtime diagnostic state. Renders into a
+  // visible panel for admins (and any env where import.meta.env.DEV is
+  // truthy) so a stuck "Submit for approval" produces actionable
+  // evidence on screen and in console — never a silent return.
+  type DebugState = {
+    flow?: string;
+    selectedPackage?: string;
+    submitFired?: boolean;
+    locationStatus?: "idle" | "pending" | "success" | "error" | "offline_queued";
+    activationStatus?: "idle" | "pending" | "success" | "error" | "offline_queued";
+    lastApiResponse?: any;
+    lastError?: string;
+    navTarget?: string;
+    navigateExecuted?: boolean;
+  };
+  const [dbg, setDbg] = useState<DebugState>({});
+  const patchDbg = (p: DebugState) => setDbg((prev) => ({ ...prev, ...p }));
+  // Inline error rendered directly beneath the submit button. Toasts
+  // can be missed on mobile (off-screen, dismissed by scroll, theme
+  // contrast). Inline UI is undeniable.
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const showError = (msg: string) => {
+    setInlineError(msg);
+    patchDbg({ lastError: msg });
+  };
+
+  // Wouter's navigate() is a React state setter and CAN no-op if the
+  // wizard component is unmounting / suspended / blocked by a parent
+  // gate. The hard-redirect fallback guarantees the user never stays
+  // on /wizard after a successful submit — if location.pathname is
+  // still /wizard 600ms after navigate(), we force a real browser
+  // navigation. Logs everything for the diagnostic panel.
+  function safeNavigate(target: string) {
+    console.log("[wizard-navigation-target]", target);
+    patchDbg({ navTarget: target });
+    try {
+      navigate(target);
+      console.log("[wizard-navigate-executed]", target);
+      patchDbg({ navigateExecuted: true });
+    } catch (err) {
+      console.error("[wizard-navigate-throw]", err);
+    }
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        try {
+          if (window.location.pathname.startsWith("/wizard")) {
+            console.warn(
+              "[wizard-navigate-fallback] still on /wizard 600ms after navigate(); forcing hard redirect →",
+              target,
+            );
+            window.location.assign(target);
+          }
+        } catch {/* defensive */}
+      }, 600);
+    }
+  }
 
   // Phase 5 — draft recovery. Onboarding is the most expensive form
   // to lose, so we persist every field to localStorage and restore
@@ -210,8 +275,42 @@ export default function TrainingLocationWizard() {
     // Task #66 follow-up — single-flight guard. Returns immediately on
     // a fast double-click so we never fire two saveLocation /
     // submitVerification mutations in parallel.
-    if (isSubmittingRef.current) return;
+    if (isSubmittingRef.current) {
+      console.warn("[wizard-submit-clicked] BLOCKED: already submitting (single-flight guard)");
+      return;
+    }
     isSubmittingRef.current = true;
+    setInlineError(null);
+    const flowLabel =
+      branch === "fitness_zone"
+        ? fzPath === "existing"
+          ? "fz_existing"
+          : fzPath === "trial"
+            ? "fz_trial"
+            : "fz_unset"
+        : branch === "home"
+          ? `home:${homeKind}`
+          : branch === "other_gym"
+            ? "other_gym"
+            : "unset";
+    console.log("[wizard-submit-clicked]", {
+      build: WIZARD_BUILD,
+      flow: flowLabel,
+      reqType,
+      hasActivePackage,
+      hasPendingVerif,
+    });
+    patchDbg({
+      flow: flowLabel,
+      selectedPackage: reqType,
+      submitFired: true,
+      locationStatus: "idle",
+      activationStatus: "idle",
+      navigateExecuted: false,
+      lastError: undefined,
+      navTarget: undefined,
+      lastApiResponse: undefined,
+    });
     try {
       await finishInner();
     } catch (err: any) {
@@ -220,12 +319,14 @@ export default function TrainingLocationWizard() {
       // unexpected (parse error, programmer mistake, etc.) — surface a
       // professional, user-facing message instead of failing silently.
       console.error("[wizard:finish] unhandled error", err);
+      const msg = err?.message ? String(err.message).slice(0, 200) : "Unknown error";
+      showError(msg);
       toast({
         title: t(
           "wizard.unexpectedError",
           "We couldn't submit your request. Please try again.",
         ),
-        description: err?.message ? String(err.message).slice(0, 200) : undefined,
+        description: msg,
         variant: "destructive",
       });
     } finally {
@@ -261,8 +362,11 @@ export default function TrainingLocationWizard() {
           : null;
 
       if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing");
+        patchDbg({ locationStatus: "offline_queued" });
         enqueueOffline("wizard_location", "/api/training-locations", locationPayload);
         if (activationPayload) {
+          patchDbg({ activationStatus: "offline_queued" });
           enqueueOffline(
             "wizard_activation",
             "/api/package-verification-requests",
@@ -273,16 +377,24 @@ export default function TrainingLocationWizard() {
           "queuedOffline",
           "You're offline. Your onboarding is queued and will send when you reconnect. Your answers stay saved on this device until it's accepted.",
         );
-        navigate("/dashboard");
+        safeNavigate("/dashboard");
         return;
       }
 
+      console.log("[wizard-training-location-start]", locationPayload);
+      patchDbg({ locationStatus: "pending" });
       try {
-        await saveLocation.mutateAsync(locationPayload);
+        const locRes = await saveLocation.mutateAsync(locationPayload);
+        console.log("[wizard-training-location-success]", locRes);
+        patchDbg({ locationStatus: "success", lastApiResponse: locRes });
       } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
         if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
           enqueueOffline("wizard_location", "/api/training-locations", locationPayload);
           if (activationPayload) {
+            patchDbg({ activationStatus: "offline_queued" });
             enqueueOffline(
               "wizard_activation",
               "/api/package-verification-requests",
@@ -293,10 +405,12 @@ export default function TrainingLocationWizard() {
             "queuedDropped",
             "Connection dropped. Your onboarding is queued and will send when you're back online. Your answers stay saved on this device until it's accepted.",
           );
-          navigate("/dashboard");
+          safeNavigate("/dashboard");
           return;
         }
-        toast({ title: e?.message || "Failed", variant: "destructive" });
+        const msg = e?.message || "Failed to save training location";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       if (fzPath === "existing" && activationPayload) {
@@ -305,8 +419,12 @@ export default function TrainingLocationWizard() {
         // toast the user, clear the draft, and redirect to the
         // dashboard via the centralised helper (no more dead-end
         // success panel — Task #66 follow-up).
+        console.log("[wizard-package-request-start]", activationPayload);
+        patchDbg({ activationStatus: "pending" });
         try {
-          await submitVerification.mutateAsync(activationPayload);
+          const verRes = await submitVerification.mutateAsync(activationPayload);
+          console.log("[wizard-package-request-success]", verRes);
+          patchDbg({ activationStatus: "success", lastApiResponse: verRes });
           wizardDraft.clear();
           toast({
             title: t(
@@ -318,7 +436,7 @@ export default function TrainingLocationWizard() {
               "We'll notify you once Youssef approves your package.",
             ),
           });
-          navigate(
+          safeNavigate(
             decideNextRoute({
               flow: "fz_existing",
               hasActivePackage,
@@ -328,7 +446,10 @@ export default function TrainingLocationWizard() {
           );
           return;
         } catch (e: any) {
+          console.error("[wizard-package-request-error]", e);
+          patchDbg({ activationStatus: "error" });
           if (isOfflineError(e)) {
+            patchDbg({ activationStatus: "offline_queued" });
             enqueueOffline(
               "wizard_activation",
               "/api/package-verification-requests",
@@ -338,10 +459,12 @@ export default function TrainingLocationWizard() {
               "queuedDropped",
               "Connection dropped. Your activation request is queued and will send when you're back online. Your answers stay saved on this device until it's accepted.",
             );
-            navigate("/dashboard");
+            safeNavigate("/dashboard");
             return;
           }
-          toast({ title: e?.message || "Failed", variant: "destructive" });
+          const msg = e?.message || "Failed to submit activation request";
+          showError(msg);
+          toast({ title: msg, variant: "destructive" });
           return;
         }
       }
@@ -358,7 +481,7 @@ export default function TrainingLocationWizard() {
         });
       }
       wizardDraft.clear();
-      navigate(
+      safeNavigate(
         decideNextRoute({
           flow: fzPath === "trial" ? "fz_trial" : "fz_existing",
           hasActivePackage,
@@ -390,27 +513,38 @@ export default function TrainingLocationWizard() {
         hasPendingActivation: hasPendingVerif,
       });
       if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing (home)");
+        patchDbg({ locationStatus: "offline_queued" });
         enqueueOffline("wizard_location", "/api/training-locations", homePayload);
         queuedToast(
           "queuedOffline",
           "You're offline. Your location is queued and will send when you reconnect.",
         );
-        navigate(homeNext);
+        safeNavigate(homeNext);
         return;
       }
+      console.log("[wizard-training-location-start]", homePayload);
+      patchDbg({ locationStatus: "pending" });
       try {
-        await saveLocation.mutateAsync(homePayload);
+        const homeRes = await saveLocation.mutateAsync(homePayload);
+        console.log("[wizard-training-location-success]", homeRes);
+        patchDbg({ locationStatus: "success", lastApiResponse: homeRes });
       } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
         if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
           enqueueOffline("wizard_location", "/api/training-locations", homePayload);
           queuedToast(
             "queuedDropped",
             "Connection dropped. Your location is queued and will send when you're back online.",
           );
-          navigate(homeNext);
+          safeNavigate(homeNext);
           return;
         }
-        toast({ title: e?.message || "Failed", variant: "destructive" });
+        const msg = e?.message || "Failed to save training location";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       // Branch-specific toast per spec — Home / Building Gym / Hotel
@@ -424,7 +558,7 @@ export default function TrainingLocationWizard() {
             : t("wizard.home.savedHome", "Training setup saved.");
       toast({ title: homeToastTitle });
       wizardDraft.clear();
-      navigate(homeNext);
+      safeNavigate(homeNext);
       return;
     }
 
@@ -448,32 +582,43 @@ export default function TrainingLocationWizard() {
         hasPendingActivation: hasPendingVerif,
       });
       if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing (other_gym)");
+        patchDbg({ locationStatus: "offline_queued" });
         enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
         queuedToast(
           "queuedOffline",
           "You're offline. Your location is queued and will send when you reconnect.",
         );
-        navigate(gymNext);
+        safeNavigate(gymNext);
         return;
       }
+      console.log("[wizard-training-location-start]", gymPayload);
+      patchDbg({ locationStatus: "pending" });
       try {
-        await saveLocation.mutateAsync(gymPayload);
+        const gymRes = await saveLocation.mutateAsync(gymPayload);
+        console.log("[wizard-training-location-success]", gymRes);
+        patchDbg({ locationStatus: "success", lastApiResponse: gymRes });
       } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
         if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
           enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
           queuedToast(
             "queuedDropped",
             "Connection dropped. Your location is queued and will send when you're back online.",
           );
-          navigate(gymNext);
+          safeNavigate(gymNext);
           return;
         }
-        toast({ title: e?.message || "Failed", variant: "destructive" });
+        const msg = e?.message || "Failed to save gym details";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       toast({ title: t("wizard.other.savedTitle", "Gym details saved.") });
       wizardDraft.clear();
-      navigate(gymNext);
+      safeNavigate(gymNext);
     }
   }
 
@@ -740,6 +885,89 @@ export default function TrainingLocationWizard() {
               })()}
               <ArrowRight size={14} className="ml-2" />
             </Button>
+          </div>
+        )}
+
+        {/* Task #66 follow-up — inline error rendered directly beneath
+            the submit button. Toasts can be off-screen / dismissed on
+            mobile, but an inline block under the CTA is undeniable. */}
+        {inlineError && (
+          <div
+            role="alert"
+            data-testid="text-wizard-inline-error"
+            className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300 flex items-start gap-2"
+          >
+            <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="font-semibold">Submission failed</div>
+              <div className="opacity-90 break-words">{inlineError}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Always-visible build stamp. Lets a real-mobile user confirm
+            they are on the latest JS bundle. If they see an older
+            value than what was just shipped, the SW is serving stale
+            code — they should hit "Diagnostic reset" below. */}
+        <div
+          className="mt-6 text-[10px] text-muted-foreground/60 text-center font-mono"
+          data-testid="text-wizard-build"
+        >
+          Wizard build: {WIZARD_BUILD}
+        </div>
+
+        {/* Diagnostic panel — admin OR vite-dev only. Renders every
+            piece of state needed to localise where the flow stops:
+            which handler fired, mutation statuses, last API response,
+            last error, navigation target, whether navigate executed. */}
+        {(user?.role === "admin" || import.meta.env.DEV) && (
+          <div
+            className="mt-4 rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-3 text-[11px] font-mono space-y-1"
+            data-testid="panel-wizard-debug"
+          >
+            <div className="font-bold text-cyan-300 mb-2">Wizard diagnostic ({user?.role === "admin" ? "admin" : "dev"})</div>
+            <div><span className="text-cyan-400">flow:</span> {dbg.flow ?? "—"}</div>
+            <div><span className="text-cyan-400">selectedPackage:</span> {dbg.selectedPackage ?? "—"}</div>
+            <div><span className="text-cyan-400">submitFired:</span> {String(dbg.submitFired ?? false)}</div>
+            <div><span className="text-cyan-400">saveLocation.isPending:</span> {String(saveLocation.isPending)}</div>
+            <div><span className="text-cyan-400">submitVerification.isPending:</span> {String(submitVerification.isPending)}</div>
+            <div><span className="text-cyan-400">locationStatus:</span> {dbg.locationStatus ?? "—"}</div>
+            <div><span className="text-cyan-400">activationStatus:</span> {dbg.activationStatus ?? "—"}</div>
+            <div><span className="text-cyan-400">lastApiResponse:</span> <span className="break-all">{dbg.lastApiResponse ? JSON.stringify(dbg.lastApiResponse).slice(0, 200) : "—"}</span></div>
+            <div><span className="text-cyan-400">lastError:</span> <span className="break-all text-red-300">{dbg.lastError ?? "—"}</span></div>
+            <div><span className="text-cyan-400">navTarget:</span> {dbg.navTarget ?? "—"}</div>
+            <div><span className="text-cyan-400">navigateExecuted:</span> {String(dbg.navigateExecuted ?? false)}</div>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                className="flex-1 px-2 py-1 rounded border border-cyan-400/40 hover:bg-cyan-400/10"
+                data-testid="button-wizard-clear-draft"
+                onClick={() => {
+                  try { wizardDraft.clear(); } catch {/* swallow */}
+                  try { localStorage.removeItem("yapt:queue:v1"); } catch {/* swallow */}
+                  console.log("[wizard-diag] cleared draft + offline queue");
+                  toast({ title: "Draft + offline queue cleared." });
+                }}
+              >
+                Clear draft & queue
+              </button>
+              <button
+                type="button"
+                className="flex-1 px-2 py-1 rounded border border-red-400/40 hover:bg-red-400/10 text-red-300"
+                data-testid="button-wizard-diag-reset"
+                onClick={async () => {
+                  console.log("[wizard-diag] hard reset starting");
+                  try { wizardDraft.clear(); } catch {/* swallow */}
+                  try { localStorage.removeItem("yapt:queue:v1"); } catch {/* swallow */}
+                  try { sessionStorage.removeItem("__sw_reloaded__"); } catch {/* swallow */}
+                  await resetAllCachesAndSW();
+                  console.log("[wizard-diag] hard reset done → reloading");
+                  window.location.assign("/wizard?ts=" + Date.now());
+                }}
+              >
+                Diagnostic reset (unregister SW)
+              </button>
+            </div>
           </div>
         )}
       </motion.div>
