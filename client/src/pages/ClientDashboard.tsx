@@ -133,6 +133,8 @@ import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
 import { MotivationLine } from "@/components/dashboard/MotivationLine";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
+import { GuidedStatusBanner } from "@/components/dashboard/GuidedStatusBanner";
+import { PackageGuidedBanner } from "@/components/dashboard/PackageGuidedBanner";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { InfoTip } from "@/components/ui/InfoTip";
@@ -308,6 +310,12 @@ export default function ClientDashboard() {
 
       {/* (4) Streaks */}
       <StreakStrip />
+
+      {/* Task #70 — Package status guidance: surfaces expiring (≤3
+          sessions or ≤7 days) and expired/completed packages with a
+          WhatsApp-driven renewal CTA. Sits directly under the streak
+          strip so urgency lands before the next-action surface. */}
+      <PackageGuidedBanner userId={user.id} />
 
       {/* (5) What's Next + coach availability chip */}
       <div className="mb-4 flex justify-center">
@@ -2101,126 +2109,157 @@ function BookingEligibilityBanner({ userId, user }: { userId: number; user: any 
       },
     ];
     return (
-      <div
-        className="sticky top-20 z-30 mb-6 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-[#050505]/95 via-cyan-500/[0.06] to-transparent backdrop-blur-xl p-5 sm:p-6 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
-        data-testid="banner-pending-verification"
-      >
-        <div className="flex items-start gap-3">
-          <div className="size-10 shrink-0 rounded-xl bg-cyan-500/15 text-cyan-300 grid place-items-center">
-            <ShieldAlert size={18} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-300/90 font-semibold">
-              {t("dashboard.verification.eyebrow", "Coach Review In Progress")}
-            </p>
-            <h3 className="mt-1 font-display font-bold text-base sm:text-lg leading-snug text-cyan-50">
-              {t("dashboard.verification.title", "Getting your package ready")}
-            </h3>
-            <p className="text-xs sm:text-sm text-cyan-100/80 mt-1.5 leading-relaxed">
-              {t(
-                "dashboard.verification.body",
-                "Your package details are being reviewed by the Youssef Elite team. You'll receive a notification the moment booking unlocks.",
-              )}
-            </p>
-          </div>
-        </div>
-
-        <ol
-          className="mt-5 space-y-2.5"
-          data-testid="progress-verification"
-          aria-label={t("dashboard.verification.progressLabel", "Progress")}
-        >
-          {steps.map((s) => {
-            const isDone = s.state === "done";
-            const isCurrent = s.state === "current";
-            return (
-              <li
-                key={s.key}
-                className="flex items-center gap-3"
-                data-testid={`progress-step-${s.key}`}
-                data-state={s.state}
-              >
-                <span
-                  className={[
-                    "size-5 shrink-0 grid place-items-center rounded-full border text-[10px] font-bold",
-                    isDone
-                      ? "bg-cyan-400/20 border-cyan-400/70 text-cyan-200"
-                      : isCurrent
-                        ? "bg-cyan-400/10 border-cyan-300 text-cyan-200 ring-2 ring-cyan-400/30"
-                        : "bg-transparent border-cyan-100/20 text-cyan-100/30",
-                  ].join(" ")}
-                  aria-hidden="true"
-                >
-                  {isDone ? "✓" : isCurrent ? "·" : ""}
-                </span>
-                <span
-                  className={[
-                    "text-xs sm:text-sm",
-                    isDone
-                      ? "text-cyan-100/90"
-                      : isCurrent
-                        ? "text-cyan-50 font-semibold"
-                        : "text-cyan-100/40",
-                  ].join(" ")}
-                >
-                  {s.label}
-                </span>
-                {isCurrent && (
-                  <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-cyan-200/90 font-semibold">
-                    {t("dashboard.verification.progress.currentTag", "In progress")}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-
-        <div className="mt-4 flex items-center gap-2 text-[11px] text-cyan-100/70">
-          <Clock size={12} className="shrink-0" />
-          <span>{t("dashboard.verification.eta", "Usually within 24 hours.")}</span>
-        </div>
-
-        <a
-          href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-200 hover:text-cyan-100 transition-colors"
-          data-testid="link-verification-help"
-        >
-          {t("dashboard.verification.help", "Need help? Message Coach")}
-          <ArrowRight size={12} />
-        </a>
+      <div className="sticky top-20 z-30">
+        <GuidedStatusBanner
+          testId="banner-pending-verification"
+          icon={<ShieldAlert size={18} />}
+          eyebrow={t("dashboard.verification.eyebrow", "Coach Review In Progress")}
+          title={t("dashboard.verification.title", "Getting your package ready")}
+          body={t(
+            "dashboard.verification.body",
+            "Your package details are being reviewed by the Youssef Elite team. You'll receive a notification the moment booking unlocks.",
+          )}
+          steps={steps}
+          etaText={t("dashboard.verification.eta", "Usually within 24 hours.")}
+          helpLabel={t("dashboard.verification.help", "Need help? Message Coach")}
+          helpTestId="link-verification-help"
+        />
       </div>
     );
   }
   const verdict = evaluateBookingEligibility(user, activePackage ?? null);
   if (verdict.ok) return null;
   return (
-    <div
-      className="sticky top-20 z-30 mb-6 rounded-2xl border border-cyan-500/40 bg-[#050505]/90 backdrop-blur-xl p-4 flex items-start gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
-      data-testid="banner-dashboard-eligibility"
-    >
-      <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-cyan-100">Booking unavailable</p>
-        <p className="text-xs text-cyan-200/90 mt-1">{verdict.message}</p>
-        <div className="mt-2 flex flex-wrap gap-3 text-xs">
-          {verdict.code === "profile_incomplete" && (
-            <Link href="/profile" className="text-cyan-100 hover:opacity-80" data-testid="link-dashboard-profile">
-              Complete profile →
-            </Link>
-          )}
-          <a
-            href={whatsappUrl(DEFAULT_WHATSAPP_NUMBER)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-100 hover:opacity-80"
-            data-testid="link-dashboard-whatsapp-help"
-          >
-            {t("dashboard.contactYoussef", "Contact Youssef →")}
-          </a>
-        </div>
-      </div>
+    <div className="sticky top-20 z-30">
+      <BookingBlockedBanner
+        code={verdict.code}
+        fallback={verdict.message}
+        testIdSuffix="dashboard"
+      />
     </div>
+  );
+}
+
+// ============= BOOKING BLOCKED (verdict-driven copy) =============
+// Shared by ClientDashboard and BookingPage so the messaging,
+// eyebrow, and next-step CTA are identical across surfaces.
+const BLOCKED_COPY_KEYS: Record<
+  string,
+  {
+    eyebrow: string;
+    eyebrowFallback: string;
+    title: string;
+    titleFallback: string;
+    body: string;
+    bodyFallback: string;
+  }
+> = {
+  profile_incomplete: {
+    eyebrow: "dashboard.bookingBlocked.profile.eyebrow",
+    eyebrowFallback: "Finish your profile",
+    title: "dashboard.bookingBlocked.profile.title",
+    titleFallback: "One quick step before you can book",
+    body: "dashboard.bookingBlocked.profile.body",
+    bodyFallback:
+      "Add your training goal and weekly frequency so Coach Youssef can match you with the right sessions.",
+  },
+  client_frozen: {
+    eyebrow: "dashboard.bookingBlocked.frozen.eyebrow",
+    eyebrowFallback: "Account paused",
+    title: "dashboard.bookingBlocked.frozen.title",
+    titleFallback: "Your account is on pause",
+    body: "dashboard.bookingBlocked.frozen.body",
+    bodyFallback:
+      "Booking is temporarily frozen. Message Coach Youssef to resume training — usually back on the same day.",
+  },
+  client_cancelled: {
+    eyebrow: "dashboard.bookingBlocked.cancelled.eyebrow",
+    eyebrowFallback: "Membership cancelled",
+    title: "dashboard.bookingBlocked.cancelled.title",
+    titleFallback: "Ready to come back?",
+    body: "dashboard.bookingBlocked.cancelled.body",
+    bodyFallback:
+      "Your membership was cancelled. Message Coach Youssef to reactivate and we'll have you training again.",
+  },
+  client_completed: {
+    eyebrow: "dashboard.bookingBlocked.completed.eyebrow",
+    eyebrowFallback: "Chapter complete",
+    title: "dashboard.bookingBlocked.completed.title",
+    titleFallback: "Time for the next chapter",
+    body: "dashboard.bookingBlocked.completed.body",
+    bodyFallback:
+      "Your last membership is wrapped. Tell Coach Youssef what's next and he'll line up the right package.",
+  },
+  client_expired: {
+    eyebrow: "dashboard.bookingBlocked.expired.eyebrow",
+    eyebrowFallback: "Renewal needed",
+    title: "dashboard.bookingBlocked.expired.title",
+    titleFallback: "Your subscription has expired",
+    body: "dashboard.bookingBlocked.expired.body",
+    bodyFallback:
+      "Request a renewal on WhatsApp and Coach Youssef will reactivate booking the moment payment is confirmed.",
+  },
+  package_frozen: {
+    eyebrow: "dashboard.bookingBlocked.packageFrozen.eyebrow",
+    eyebrowFallback: "Package paused",
+    title: "dashboard.bookingBlocked.packageFrozen.title",
+    titleFallback: "Your package is currently frozen",
+    body: "dashboard.bookingBlocked.packageFrozen.body",
+    bodyFallback:
+      "Message Coach Youssef to unfreeze your package — sessions and validity will resume right where you left off.",
+  },
+  package_inactive: {
+    eyebrow: "dashboard.bookingBlocked.packageInactive.eyebrow",
+    eyebrowFallback: "Activate your package",
+    title: "dashboard.bookingBlocked.packageInactive.title",
+    titleFallback: "Your package is inactive",
+    body: "dashboard.bookingBlocked.packageInactive.body",
+    bodyFallback:
+      "Request a renewal on WhatsApp so Coach Youssef can confirm payment and unlock booking again.",
+  },
+};
+
+export function BookingBlockedBanner({
+  code,
+  fallback,
+  testIdSuffix,
+}: {
+  code: string;
+  fallback: string;
+  testIdSuffix: "dashboard" | "booking";
+}) {
+  const { t } = useTranslation();
+  const copy = BLOCKED_COPY_KEYS[code];
+  const eyebrow = copy
+    ? t(copy.eyebrow, copy.eyebrowFallback)
+    : t("dashboard.bookingBlocked.generic.eyebrow", "Booking on hold");
+  const title = copy
+    ? t(copy.title, copy.titleFallback)
+    : t("dashboard.bookingBlocked.generic.title", "Booking unavailable");
+  const body = copy ? t(copy.body, copy.bodyFallback) : fallback;
+  const isProfile = code === "profile_incomplete";
+  return (
+    <GuidedStatusBanner
+      testId={`banner-booking-blocked-${testIdSuffix}`}
+      icon={<ShieldAlert size={18} />}
+      eyebrow={eyebrow}
+      title={title}
+      body={body}
+      primaryAction={
+        isProfile
+          ? {
+              kind: "link",
+              href: "/profile",
+              label: t(
+                "dashboard.bookingBlocked.profile.cta",
+                "Complete profile",
+              ),
+              testId: `link-${testIdSuffix}-complete-profile`,
+            }
+          : undefined
+      }
+      helpLabel={t("dashboard.contactYoussef", "Contact Coach Youssef")}
+      helpTestId={`link-${testIdSuffix}-whatsapp-help`}
+    />
   );
 }

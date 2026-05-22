@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useCreateBooking, useBookings } from "@/hooks/use-bookings";
+import { BookingBlockedBanner } from "@/pages/ClientDashboard";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
@@ -692,21 +693,11 @@ export default function BookingPage() {
       </div>
 
       {!eligibility.ok && (
-        <div
-          className="mb-6 rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 flex items-start gap-3"
-          data-testid="banner-booking-blocked"
-        >
-          <ShieldAlert size={18} className="text-cyan-300 mt-0.5 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-cyan-100">Booking unavailable</p>
-            <p className="text-xs text-cyan-200/90 mt-1">{eligibility.message}</p>
-            {(eligibility.code === "profile_incomplete") && (
-              <Link href="/profile" data-testid="link-complete-profile" className="inline-block mt-2 text-xs text-cyan-100 hover:opacity-80">
-                Complete profile →
-              </Link>
-            )}
-          </div>
-        </div>
+        <BookingBlockedBanner
+          code={eligibility.code}
+          fallback={eligibility.message}
+          testIdSuffix="booking"
+        />
       )}
 
       <div className="space-y-6">

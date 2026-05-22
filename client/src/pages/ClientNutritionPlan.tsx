@@ -25,7 +25,17 @@ import {
   MEAL_CATEGORY_LABELS_EN,
 } from "@shared/schema";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
-import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
+import { GuidedStatusBanner } from "@/components/dashboard/GuidedStatusBanner";
+import { RefreshCw } from "lucide-react";
+
+function isNutritionExpired(plan: any): boolean {
+  if (!plan) return false;
+  if (plan.status === "expired" || plan.status === "archived") return true;
+  const rawDate = plan.expiresAt ?? plan.endDate ?? plan.reviewDate ?? null;
+  if (!rawDate) return false;
+  const ts = new Date(rawDate).getTime();
+  return Number.isFinite(ts) && ts < Date.now();
+}
 
 function dayTotals(meals: { totalKcal: number; totalProteinG: number; totalCarbsG: number; totalFatsG: number }[]) {
   return meals.reduce(
@@ -56,8 +66,20 @@ export default function ClientNutritionPlan() {
   const categoryLabel = (k: string) =>
     t(`nutrition.mealCategory.${k}`, (MEAL_CATEGORY_LABELS_EN as any)[k] ?? k);
 
-  const days = plan?.days ?? [];
+  const planExpired = isNutritionExpired(plan);
+  const days = plan && !planExpired ? plan.days : [];
   const activeDay = days[activeIdx];
+
+  const renewWaHref = whatsappUrl(
+    settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER,
+    t(
+      "client.nutrition.expired.waMessage",
+      "Hello Coach Youssef, my nutrition plan has ended. Could we plan the next one?",
+    ),
+  );
+  const helpWaHref = whatsappUrl(
+    settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER,
+  );
   const totals = useMemo(
     () => (activeDay ? dayTotals(activeDay.meals) : null),
     [activeDay],
@@ -136,12 +158,74 @@ export default function ClientNutritionPlan() {
           <div className="rounded-2xl border border-border bg-card/40 p-10 text-center text-muted-foreground">
             {t("client.nutrition.loading", "Loading your plan…")}
           </div>
+        ) : planExpired ? (
+          <GuidedStatusBanner
+            testId="banner-nutrition-expired"
+            tone="amber"
+            icon={<RefreshCw size={18} aria-hidden="true" />}
+            eyebrow={t(
+              "client.nutrition.expired.eyebrow",
+              "Active plan ended",
+            )}
+            title={t(
+              "client.nutrition.expired.title",
+              "Your nutrition plan has wrapped",
+            )}
+            body={t(
+              "client.nutrition.expired.body",
+              "Great work sticking with it. Tell Coach Youssef how your body is responding and he'll build the next plan around the next phase of your goal.",
+            )}
+            etaText={t(
+              "client.nutrition.expired.eta",
+              "Typical reply within a few hours.",
+            )}
+            primaryAction={{
+              kind: "link",
+              href: renewWaHref,
+              label: t(
+                "client.nutrition.expired.cta",
+                "Request your next plan on WhatsApp",
+              ),
+              testId: "link-nutrition-request-renewal",
+            }}
+            helpHref={helpWaHref}
+            helpLabel={t(
+              "client.nutrition.expired.help",
+              "Have a question? Message Coach",
+            )}
+            helpTestId="link-nutrition-help"
+          />
         ) : !plan ? (
-          <PremiumEmptyState
-            icon={<Apple size={20} />}
-            title={t("client.nutrition.empty.title", "No active nutrition plan yet")}
-            body={t("emptyState.noNutritionShort", "Fuel your results.")}
+          <GuidedStatusBanner
             testId="empty-no-plan"
+            icon={<Apple size={18} aria-hidden="true" />}
+            eyebrow={t(
+              "client.nutrition.empty.eyebrow",
+              "Nutrition coaching",
+            )}
+            title={t(
+              "client.nutrition.empty.title",
+              "Your nutrition plan is on the way",
+            )}
+            body={t(
+              "client.nutrition.empty.body",
+              "Coach Youssef will share your personalised plan here once it's ready. In the meantime, focus on your training and hydration — message him on WhatsApp if you'd like to fast-track it.",
+            )}
+            primaryAction={{
+              kind: "link",
+              href: renewWaHref,
+              label: t(
+                "client.nutrition.empty.cta",
+                "Ask about your plan on WhatsApp",
+              ),
+              testId: "link-nutrition-empty-request",
+            }}
+            helpHref={helpWaHref}
+            helpLabel={t(
+              "client.nutrition.empty.help",
+              "Have a question? Message Coach",
+            )}
+            helpTestId="link-nutrition-empty-help"
           />
         ) : (
           <>
