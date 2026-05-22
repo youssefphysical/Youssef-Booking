@@ -495,11 +495,15 @@ export function setupAuth(app: Express) {
 
       const existingByEmail = await storage.getUserByEmail(email);
       if (existingByEmail && !existingByEmail.mergedIntoUserId) {
-        return res.status(400).json({ message: "Email already registered" });
+        // Task #65 — duplicate-account collisions return 409 Conflict so
+        // the front-end can distinguish "your form is wrong" (400) from
+        // "this account already exists — try signing in" (409) without
+        // string-matching the error message.
+        return res.status(409).json({ message: "Email already registered" });
       }
       const existingByUsername = await storage.getUserByUsername(email);
       if (existingByUsername && !existingByUsername.mergedIntoUserId) {
-        return res.status(400).json({ message: "Email already registered" });
+        return res.status(409).json({ message: "Email already registered" });
       }
       // Phase 5: normalised duplicate-account prevention. Catches the
       // common evasions (gmail dot/plus tricks, +971 vs 00971 vs leading
@@ -510,7 +514,7 @@ export function setupAuth(app: Express) {
       if (emailNormalized) {
         const dup = await storage.findActiveUserByNormalizedIdentifier({ emailNormalized });
         if (dup) {
-          return res.status(400).json({
+          return res.status(409).json({
             message: "An account already exists for this email. Try signing in or use password reset.",
           });
         }
@@ -518,7 +522,7 @@ export function setupAuth(app: Express) {
       if (phoneNormalized) {
         const dup = await storage.findActiveUserByNormalizedIdentifier({ phoneNormalized });
         if (dup) {
-          return res.status(400).json({
+          return res.status(409).json({
             message: "An account already exists for this phone number. Try signing in or use password reset.",
           });
         }
