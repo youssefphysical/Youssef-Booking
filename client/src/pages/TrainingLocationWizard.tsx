@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,36 @@ import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
 
 type Branch = "fitness_zone" | "home" | "other_gym" | null;
 type FzPath = "existing" | "trial" | null;
+
+// Task #66 follow-up — centralised post-wizard navigation. Every
+// successful wizard completion routes through this helper so we
+// never leave the user stuck on the wizard screen and every branch
+// behaves consistently. The decision tree:
+//   - Just submitted a package-activation request  → /dashboard
+//     (booking stays locked until Youssef approves)
+//   - Already has a pending activation request    → /dashboard
+//   - Explicitly chose the "brand new" trial path → /book?type=free_trial
+//   - Has an active package                       → /book
+//   - Otherwise (lead w/ no package, location set)→ /book?type=free_trial
+// `locationKind` is appended for the free-trial branch so the
+// booking page can pre-fill the location chip.
+type WizardFlow = "fz_existing" | "fz_trial" | "home" | "other_gym";
+function decideNextRoute(opts: {
+  flow: WizardFlow;
+  locationKind?: string;
+  hasActivePackage: boolean;
+  hasPendingActivation: boolean;
+  justSubmittedActivation?: boolean;
+}): string {
+  if (opts.flow === "fz_existing" || opts.justSubmittedActivation) {
+    return "/dashboard";
+  }
+  if (opts.hasPendingActivation) return "/dashboard";
+  if (opts.flow === "fz_trial") return "/book?type=free_trial";
+  if (opts.hasActivePackage) return "/book";
+  const locQ = opts.locationKind ? `&location=${opts.locationKind}` : "";
+  return `/book?type=free_trial${locQ}`;
+}
 
 export default function TrainingLocationWizard() {
   const { t } = useTranslation();
@@ -48,7 +78,11 @@ export default function TrainingLocationWizard() {
   // manually outside the platform and approves via the queue.
   const [reqType, setReqType] = useState<"ten" | "twenty" | "twentyfive" | "duo30" | "not_sure">("not_sure");
   const [verifNotes, setVerifNotes] = useState("");
-  const [activationSubmitted, setActivationSubmitted] = useState(false);
+  // Task #66 follow-up — double-submit guard. The Finish button is
+  // already disabled while mutations are pending, but mutationAsync()
+  // resolves before React re-renders, so a fast double-click can
+  // squeeze two requests through. This ref blocks the second one.
+  const isSubmittingRef = useRef(false);
 
   // Phase 5 — draft recovery. Onboarding is the most expensive form
   // to lose, so we persist every field to localStorage and restore
@@ -63,7 +97,6 @@ export default function TrainingLocationWizard() {
   const wizardDraft = useDraft({
     key: draftKey,
     value: draftValue,
-    enabled: !activationSubmitted,
   });
   const draftHandledRef = useRef(false);
   useEffect(() => {
@@ -127,6 +160,7 @@ export default function TrainingLocationWizard() {
     enabled: !!user,
   });
   const hasPendingVerif = (pkgs as any[]).some((p) => p.status === "pending_verification");
+  const hasActivePackage = (pkgs as any[]).some((p) => p.status === "active");
 
   const saveLocation = useMutation({
     mutationFn: async (payload: any) => {
@@ -172,7 +206,20 @@ export default function TrainingLocationWizard() {
     [t],
   );
 
-  async function finish(targetPath: string = "/dashboard") {
+  async function finish() {
+    // Task #66 follow-up — single-flight guard. Returns immediately on
+    // a fast double-click so we never fire two saveLocation /
+    // submitVerification mutations in parallel.
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
+      await finishInner();
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  }
+
+  async function finishInner() {
     // Phase 5 review fix — offline-first ordering. Previously
     // `saveLocation.mutateAsync(...)` ran before the offline guard, so
     // when the user was offline the wizard threw at the very first
@@ -239,16 +286,32 @@ export default function TrainingLocationWizard() {
         return;
       }
       if (fzPath === "existing" && activationPayload) {
-        // Online path — saveLocation already succeeded above. Submit the
-        // activation request and, on confirmed server success, mark the
-        // user as activationSubmitted and clear the draft. On a
-        // mid-flight connection drop, queue the activation request only
-        // (saveLocation already wrote) and navigate to the dashboard
-        // with a queued toast.
+        // Online path — saveLocation already succeeded above. Submit
+        // the activation request and, on confirmed server success,
+        // toast the user, clear the draft, and redirect to the
+        // dashboard via the centralised helper (no more dead-end
+        // success panel — Task #66 follow-up).
         try {
           await submitVerification.mutateAsync(activationPayload);
-          setActivationSubmitted(true);
           wizardDraft.clear();
+          toast({
+            title: t(
+              "wizard.fz.activationToast",
+              "Package activation request received.",
+            ),
+            description: t(
+              "wizard.fz.activationToastDesc",
+              "We'll notify you once Youssef approves your package.",
+            ),
+          });
+          navigate(
+            decideNextRoute({
+              flow: "fz_existing",
+              hasActivePackage,
+              hasPendingActivation: true,
+              justSubmittedActivation: true,
+            }),
+          );
           return;
         } catch (e: any) {
           if (isOfflineError(e)) {
@@ -269,7 +332,13 @@ export default function TrainingLocationWizard() {
         }
       }
       wizardDraft.clear();
-      navigate(fzPath === "trial" ? "/book" : "/dashboard");
+      navigate(
+        decideNextRoute({
+          flow: fzPath === "trial" ? "fz_trial" : "fz_existing",
+          hasActivePackage,
+          hasPendingActivation: hasPendingVerif,
+        }),
+      );
       return;
     }
 
@@ -288,13 +357,19 @@ export default function TrainingLocationWizard() {
         equipmentNotes: homeEquip || undefined,
         isDefault: locations.length === 0,
       };
+      const homeNext = decideNextRoute({
+        flow: "home",
+        locationKind: homeKind,
+        hasActivePackage,
+        hasPendingActivation: hasPendingVerif,
+      });
       if (isOffline) {
         enqueueOffline("wizard_location", "/api/training-locations", homePayload);
         queuedToast(
           "queuedOffline",
           "You're offline. Your location is queued and will send when you reconnect.",
         );
-        navigate(targetPath);
+        navigate(homeNext);
         return;
       }
       try {
@@ -306,7 +381,7 @@ export default function TrainingLocationWizard() {
             "queuedDropped",
             "Connection dropped. Your location is queued and will send when you're back online.",
           );
-          navigate(targetPath);
+          navigate(homeNext);
           return;
         }
         toast({ title: e?.message || "Failed", variant: "destructive" });
@@ -314,7 +389,7 @@ export default function TrainingLocationWizard() {
       }
       toast({ title: t("wizard.home.savedTitle", "Location saved") });
       wizardDraft.clear();
-      navigate(targetPath);
+      navigate(homeNext);
       return;
     }
 
@@ -332,13 +407,18 @@ export default function TrainingLocationWizard() {
         accessNotes: gymNotes || undefined,
         isDefault: locations.length === 0,
       };
+      const gymNext = decideNextRoute({
+        flow: "other_gym",
+        hasActivePackage,
+        hasPendingActivation: hasPendingVerif,
+      });
       if (isOffline) {
         enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
         queuedToast(
           "queuedOffline",
           "You're offline. Your location is queued and will send when you reconnect.",
         );
-        navigate(targetPath);
+        navigate(gymNext);
         return;
       }
       try {
@@ -350,7 +430,7 @@ export default function TrainingLocationWizard() {
             "queuedDropped",
             "Connection dropped. Your location is queued and will send when you're back online.",
           );
-          navigate(targetPath);
+          navigate(gymNext);
           return;
         }
         toast({ title: e?.message || "Failed", variant: "destructive" });
@@ -358,7 +438,7 @@ export default function TrainingLocationWizard() {
       }
       toast({ title: t("wizard.other.savedTitle", "Location saved") });
       wizardDraft.clear();
-      navigate(targetPath);
+      navigate(gymNext);
     }
   }
 
@@ -413,75 +493,7 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {activationSubmitted && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-cyan-500/[0.07] to-cyan-500/[0.02] p-6 sm:p-8 shadow-[0_0_60px_-30px_rgba(94,231,255,0.45)]"
-            data-testid="panel-activation-submitted"
-          >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent"
-            />
-            <div className="flex flex-col items-center text-center">
-              <div className="relative w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mb-5">
-                <span
-                  aria-hidden
-                  className="absolute inset-0 rounded-2xl bg-cyan-400/10 motion-safe:animate-ping"
-                />
-                <CheckCircle2 size={26} className="text-cyan-200 relative z-10" strokeWidth={1.75} />
-              </div>
-              <p className="tron-eyebrow text-[10px] font-semibold tracking-[0.18em] text-cyan-300/90 mb-3">
-                {t("wizard.fz.submittedEyebrow", "Pending approval")}
-              </p>
-              <h2
-                className="font-display text-xl sm:text-2xl font-semibold text-white leading-tight"
-                data-testid="text-activation-title"
-              >
-                {t("wizard.fz.submittedTitle", "Package Activation In Review")}
-              </h2>
-              <div className="mt-5 space-y-3.5 text-[13.5px] sm:text-sm text-cyan-50/85 leading-relaxed max-w-md">
-                <p>
-                  {t(
-                    "wizard.fz.submittedBody1",
-                    "Your package request has been received successfully.",
-                  )}
-                </p>
-                <p>
-                  {t(
-                    "wizard.fz.submittedBody2",
-                    "The Youssef Elite team is currently reviewing and validating your package information.",
-                  )}
-                </p>
-                <p>
-                  {t(
-                    "wizard.fz.submittedBody3",
-                    "Once your package is approved and activated, your booking access will automatically become available and you will be able to schedule your training sessions.",
-                  )}
-                </p>
-                <p className="text-cyan-100/80">
-                  {t(
-                    "wizard.fz.submittedBody4",
-                    "You will be notified as soon as activation is complete.",
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              onClick={() => navigate("/dashboard")}
-              className="mt-7 w-full h-12 rounded-xl font-semibold tracking-wide"
-              data-testid="button-activation-go-dashboard"
-            >
-              {t("wizard.fz.goDashboard", "Go to dashboard")}
-              <ArrowRight size={14} className="ml-2" />
-            </Button>
-          </motion.div>
-        )}
-
-        {!activationSubmitted && step === 2 && branch === "fitness_zone" && (
+        {step === 2 && branch === "fitness_zone" && (
           <div className="space-y-4">
             {hasPendingVerif ? (
               <div className="rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 text-sm" data-testid="text-fz-already-pending">
@@ -624,7 +636,7 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {!activationSubmitted && step === 2 && (
+        {step === 2 && (
           <div className="flex gap-2 pt-6">
             <Button
               type="button"

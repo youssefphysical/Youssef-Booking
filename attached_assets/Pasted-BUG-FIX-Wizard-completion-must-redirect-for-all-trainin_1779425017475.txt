@@ -1,0 +1,112 @@
+BUG FIX — Wizard completion must redirect for all training-location flows
+
+Current issue:
+After the user completes a wizard choice and submits/continues, the user can remain stuck on the same wizard page.
+
+This must be fixed globally for every wizard path, not only Fitness Zone.
+
+Required behavior:
+
+1. Fitness Zone existing PT client
+   Flow:
+
+- Select “I’m already a Fitness Zone PT client”
+- Select package
+- Click “Submit for approval”
+
+Expected:
+
+- Show loading: “Sending your request...”
+- Create package activation request
+- Show success toast: “Package activation request received.”
+- Redirect to "/dashboard"
+- Dashboard shows “Package Activation In Review”
+- Booking remains locked until approval
+
+2. Brand new user
+   Flow:
+
+- Select “I’m brand new”
+- Click “Continue”
+
+Expected:
+
+- Mark wizard step as completed
+- Redirect to free trial booking
+- Open "/book?type=free_trial"
+- Do not stay on wizard
+
+3. Home / building / hotel / building gym flow
+   Flow:
+
+- User selects home, building gym, hotel, or private location training
+- Completes required details if any
+- Clicks Continue / Submit
+
+Expected:
+
+- Save selected training location/type
+- Show success toast if needed
+- Redirect to the correct next step:
+  - If free trial/new lead: "/book?type=free_trial&location=home"
+  - If package approval is required: "/dashboard" with pending status
+  - If active package exists: "/book"
+- Do not stay on wizard after successful completion
+
+4. Another gym flow
+   Flow:
+
+- User selects another gym
+- Completes required details if any
+- Clicks Continue / Submit
+
+Expected:
+
+- Save selected training location/type
+- Redirect to correct next step
+- Do not stay on wizard after success
+
+Global wizard requirements:
+
+- Every successful wizard completion must navigate somewhere clear.
+- Never leave the user on the same wizard screen after success.
+- Every button must have a working loading state.
+- Every success must have a visible confirmation.
+- Every failure must show a clear error message.
+- Prevent duplicate submits / double clicks.
+- Disable button while submitting.
+- Use one shared helper/function for post-wizard navigation so all paths behave consistently.
+- No silent success.
+- No dead-end screen.
+- No manual refresh required.
+
+Suggested implementation:
+Create a centralized function like:
+
+handleWizardSuccess(flowType, selectedLocation, userStatus)
+
+It decides:
+
+- free trial → "/book?type=free_trial"
+- pending approval → "/dashboard"
+- active package → "/book"
+- missing info → next wizard step
+
+Also verify route guards:
+
+- "/book" must remain locked if user has pending package approval.
+- "/book?type=free_trial" must be allowed for brand new users.
+- Existing Fitness Zone clients without approval must go to dashboard pending state.
+- Home/building/hotel users must not get stuck in the wizard.
+
+Test all paths on mobile:
+
+- Fitness Zone existing PT client
+- Brand new user
+- Home training
+- Building gym training
+- Hotel training
+- Another gym training
+
+Expected final result:
+The wizard always leads to the next correct step smoothly and professionally. The client never feels stuck.
