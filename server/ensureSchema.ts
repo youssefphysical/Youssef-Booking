@@ -121,6 +121,27 @@ async function run(): Promise<void> {
       created_at timestamp DEFAULT now()
     );
 
+    -- Task #66 — pending package activation requests. Referenced by
+    -- mergeUsers (storage.ts) and the merge-preview counts, but
+    -- previously never created, which made the merge transaction abort
+    -- on dev DBs (Postgres marks the txn aborted before our catch can
+    -- swallow the 42P01). Idempotent additive CREATE — safe to re-run.
+    CREATE TABLE IF NOT EXISTS package_verification_requests (
+      id serial PRIMARY KEY,
+      user_id integer NOT NULL REFERENCES users(id),
+      requested_package_type text,
+      client_note text,
+      admin_note text,
+      status text NOT NULL DEFAULT 'pending',
+      decided_by_user_id integer,
+      decided_at timestamp,
+      created_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS pvr_user_idx
+      ON package_verification_requests(user_id);
+    CREATE INDEX IF NOT EXISTS pvr_status_idx
+      ON package_verification_requests(status);
+
     CREATE INDEX IF NOT EXISTS users_password_reset_token_idx
       ON users(password_reset_token);
 

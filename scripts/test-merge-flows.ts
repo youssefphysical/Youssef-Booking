@@ -814,6 +814,18 @@ async function cleanup() {
   } catch {
     /* table absent */
   }
+  // Task #66 — package_verification_requests is created by ensureSchema
+  // with a real FK to users(id); clear it before deleting the users
+  // themselves so the cleanup doesn't trip the foreign-key constraint.
+  try {
+    await db.execute(
+      sql.raw(
+        `DELETE FROM package_verification_requests WHERE user_id IN (${ids.join(",")})`,
+      ),
+    );
+  } catch {
+    /* table absent */
+  }
   // Bookings reference auditMarkedByUserId via users.id but no FK — safe.
   // Now drop the test users themselves.
   try {

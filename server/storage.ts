@@ -404,7 +404,18 @@ export interface IStorage {
     winnerId: number;
     loserId: number;
     performedByUserId: number;
-  }): Promise<{ winner: User; loser: User }>;
+  }): Promise<{
+    winner: User;
+    loser: User;
+    tableReport: Array<{
+      table: string;
+      column: string;
+      rowsMoved: number;
+      status: "reassigned" | "skipped_missing_table";
+      note?: string;
+    }>;
+    auditWarning?: string;
+  }>;
   /**
    * Phase 5 — preview a pending merge by returning the number of rows
    * the loser owns in every dependent table. Admins use this in the
@@ -652,7 +663,18 @@ export class DatabaseStorage implements IStorage {
     winnerId: number;
     loserId: number;
     performedByUserId: number;
-  }): Promise<{ winner: User; loser: User }> {
+  }): Promise<{
+    winner: User;
+    loser: User;
+    tableReport: Array<{
+      table: string;
+      column: string;
+      rowsMoved: number;
+      status: "reassigned" | "skipped_missing_table";
+      note?: string;
+    }>;
+    auditWarning?: string;
+  }> {
     const { winnerId, loserId, performedByUserId } = opts;
     if (winnerId === loserId) {
       throw new Error("Cannot merge a user into themselves");
@@ -674,39 +696,97 @@ export class DatabaseStorage implements IStorage {
     }
     if (loser.mergedIntoUserId) {
       // Idempotent — already merged.
-      return { winner, loser };
+      return { winner, loser, tableReport: [] };
     }
+
+    type ReassignReport = {
+      table: string;
+      column: string;
+      rowsMoved: number;
+      status: "reassigned" | "skipped_missing_table";
+      note?: string;
+    };
+    const tableReport: ReassignReport[] = [];
 
     // Reassign every row referencing the loser's id via raw SQL so the
     // whole merge runs in one round-trip and stays correct even when
     // some optional tables are empty. UPDATE … WHERE user_id = $1 is a
     // no-op when the table has no matching rows.
+    //
+    // Task #66 — SAVEPOINT-wrapped reassigns. Previously a missing
+    // optional table (e.g. package_verification_requests on a fresh
+    // dev DB) raised SQLSTATE 42P01, which Postgres treats as a
+    // transaction-level abort *before* our JS-level catch can run.
+    // Every subsequent statement in the same transaction then returned
+    // "current transaction is aborted, commands ignored until end of
+    // transaction block" — completely blocking merges. Wrapping each
+    // reassign in a SAVEPOINT lets us roll back just that one
+    // statement and continue. We still re-throw on any non-missing
+    // error so the *outer* transaction aborts and the loser is NEVER
+    // marked merged with half their rows left behind.
     await db.transaction(async (tx) => {
-      // Phase 5 review fix — fail-fast. Previously this swallowed every
-      // SQL error, which could leave the loser marked as merged while
-      // some of their rows stayed unmoved (silent partial merge). Now
-      // we only swallow the narrow "relation does not exist" case
-      // (Postgres SQLSTATE 42P01), which happens on a fresh DB before
-      // ensureSchema has created an optional auxiliary table. Anything
-      // else — unique violations, FK conflicts, type mismatches —
-      // bubbles up and aborts the transaction, so the loser is *not*
-      // marked merged and the admin sees the real error.
       const reassign = async (table: string, col: string = "user_id") => {
+        const sp = `sp_merge_${table.replace(/[^a-z0-9_]/gi, "_")}`;
+        await tx.execute(sql.raw(`SAVEPOINT ${sp}`));
         try {
-          await tx.execute(
-            sql.raw(`UPDATE "${table}" SET "${col}" = ${winnerId} WHERE "${col}" = ${loserId}`),
+          const result: any = await tx.execute(
+            sql.raw(
+              `UPDATE "${table}" SET "${col}" = ${winnerId} WHERE "${col}" = ${loserId}`,
+            ),
           );
+          await tx.execute(sql.raw(`RELEASE SAVEPOINT ${sp}`));
+          // Drizzle/pg returns rowCount on the underlying result. Be
+          // tolerant of either shape (Neon serverless vs node-pg).
+          const rows =
+            Number(
+              result?.rowCount ??
+                result?.rows?.length ??
+                (Array.isArray(result) ? result.length : 0),
+            ) || 0;
+          tableReport.push({
+            table,
+            column: col,
+            rowsMoved: rows,
+            status: "reassigned",
+          });
+          if (rows > 0) {
+            console.log(
+              `[mergeUsers] reassigned ${rows} row(s) in ${table}.${col} (loser=${loserId} → winner=${winnerId})`,
+            );
+          }
         } catch (e: any) {
+          // Roll back ONLY this statement; the outer transaction
+          // remains usable (this is exactly what SAVEPOINT is for).
+          await tx.execute(sql.raw(`ROLLBACK TO SAVEPOINT ${sp}`));
+          await tx.execute(sql.raw(`RELEASE SAVEPOINT ${sp}`));
           const code = e?.code || e?.cause?.code;
           const msg = String(e?.message || "");
           const isMissingTable =
             code === "42P01" || /relation .* does not exist/i.test(msg);
           if (isMissingTable) {
-            console.warn(`[mergeUsers] reassign ${table}.${col} skipped (missing table):`, msg);
+            console.warn(
+              `[mergeUsers] reassign ${table}.${col} skipped — table not present in this DB`,
+            );
+            tableReport.push({
+              table,
+              column: col,
+              rowsMoved: 0,
+              status: "skipped_missing_table",
+              note: msg,
+            });
             return;
           }
-          // Re-throw so the transaction rolls back.
-          throw e;
+          // Any other failure (unique violation, FK conflict, type
+          // mismatch) is a real problem. Re-throw so the OUTER
+          // transaction rolls back and the loser is NOT marked merged.
+          // The admin sees the actual error in the route handler.
+          console.error(
+            `[mergeUsers] FATAL reassign error on ${table}.${col}:`,
+            e,
+          );
+          throw new Error(
+            `Merge aborted while reassigning ${table}.${col}: ${msg}`,
+          );
         }
       };
       await reassign("bookings");
@@ -772,23 +852,44 @@ export class DatabaseStorage implements IStorage {
         .where(eq(users.id, loserId));
     });
 
+    // Task #66 — audit log is part of the contract (requirement #3
+    // "Keep audit logs intact"). If it fails AFTER a successful merge,
+    // we cannot undo the merge, but we MUST NOT swallow the failure
+    // silently. Surface a warning back to the caller so the admin
+    // route can flag it in the UI and Youssef can investigate.
+    let auditWarning: string | undefined;
     try {
       await this.recordAuditLog({
         action: "client.merge",
         entityType: "user",
         entityId: loserId,
-        previousValue: { loserId, snapshot: { fullName: loser.fullName, email: loser.email, phone: loser.phone } },
-        newValue: { winnerId, mergedAt: new Date().toISOString() },
+        previousValue: {
+          loserId,
+          snapshot: {
+            fullName: loser.fullName,
+            email: loser.email,
+            phone: loser.phone,
+          },
+        },
+        newValue: {
+          winnerId,
+          mergedAt: new Date().toISOString(),
+          tableReport,
+        },
         performedByUserId,
         reason: `Merged loser #${loserId} into winner #${winnerId}`,
       });
-    } catch (e) {
-      console.warn("[mergeUsers] audit log failed:", e);
+      console.log(
+        `[mergeUsers] complete — loser #${loserId} → winner #${winnerId}; ${tableReport.length} table(s) processed, ${tableReport.reduce((n, r) => n + r.rowsMoved, 0)} row(s) moved`,
+      );
+    } catch (e: any) {
+      auditWarning = `Merge succeeded but audit log write failed: ${e?.message || e}`;
+      console.error("[mergeUsers] AUDIT LOG FAILED:", e);
     }
 
     const fresh = await this.getUser(winnerId);
     const freshLoser = await this.getUser(loserId);
-    return { winner: fresh!, loser: freshLoser! };
+    return { winner: fresh!, loser: freshLoser!, tableReport, auditWarning };
   }
 
   async getMergePreview(loserId: number) {

@@ -4169,13 +4169,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const me = req.user as User;
       try {
         const result = await storage.mergeUsers({ winnerId, loserId, performedByUserId: me.id });
+        // Task #66 — surface the structured table report + any audit
+        // warning back to the admin UI so partial failures are
+        // visible. tableReport is also persisted in the audit log
+        // (newValue.tableReport) for forensic review.
+        const totalRowsMoved = result.tableReport.reduce(
+          (n, r) => n + r.rowsMoved,
+          0,
+        );
+        const skipped = result.tableReport.filter(
+          (r) => r.status === "skipped_missing_table",
+        );
         res.json({
           winner: sanitizeUserAdminView(result.winner),
           loser: sanitizeUserAdminView(result.loser),
+          tableReport: result.tableReport,
+          totalRowsMoved,
+          skippedTables: skipped.map((r) => r.table),
+          auditWarning: result.auditWarning ?? null,
         });
       } catch (e: any) {
+        // Task #66 — fail loudly. The storage layer guarantees a full
+        // rollback (no partial merge) when this throws, so it is safe
+        // to bubble the underlying message to the admin verbatim.
         console.error("[admin/clients/merge] failed:", e);
-        res.status(400).json({ message: e?.message || "Merge failed" });
+        res.status(500).json({
+          message: e?.message || "Merge failed",
+          merged: false,
+        });
       }
     },
   );
