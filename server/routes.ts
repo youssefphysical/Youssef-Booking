@@ -42,6 +42,7 @@ import {
   updateHeroImageSchema,
   insertTransformationSchema,
   updateTransformationSchema,
+  insertTrainingLocationSchema,
   protectedCancellationQuota,
   sameDayAdjustQuota,
   tierFromFrequency,
@@ -5030,6 +5031,86 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch {/* ignore */}
 
     res.status(201).json(pending ?? created);
+  });
+
+  // ──────────────────────────────────────────────────────────────────
+  // Training-locations CRUD (Task #66 follow-up bugfix).
+  //
+  // These routes existed on the storage interface and the wizard
+  // already POSTs to them, but the actual Express handlers were
+  // never registered. Vite's SPA fallback was returning HTML 200 for
+  // every request, so `apiRequest` succeeded, `r.json()` threw on
+  // the HTML, the wizard's catch fired with "Unexpected token <" and
+  // the FZ existing-PT flow never reached `submitVerification`.
+  // ──────────────────────────────────────────────────────────────────
+  app.get("/api/training-locations", requireAuth, async (req, res) => {
+    try {
+      const me = req.user as User;
+      const rows = await storage.getUserTrainingLocations(me.id);
+      res.json(rows);
+    } catch (e: any) {
+      console.error("[training-locations:list]", e);
+      res.status(500).json({ message: e?.message || "Failed to load training locations" });
+    }
+  });
+
+  app.post("/api/training-locations", requireAuth, async (req, res) => {
+    try {
+      const me = req.user as User;
+      const parsed = insertTrainingLocationSchema.safeParse({
+        ...(req.body ?? {}),
+        userId: me.id,
+      });
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: parsed.error.errors[0]?.message || "Invalid training location payload",
+          errors: parsed.error.errors,
+        });
+      }
+      const row = await storage.createTrainingLocation(parsed.data);
+      res.status(201).json(row);
+    } catch (e: any) {
+      console.error("[training-locations:create]", e);
+      res.status(500).json({ message: e?.message || "Failed to save training location" });
+    }
+  });
+
+  app.patch("/api/training-locations/:id", requireAuth, async (req, res) => {
+    try {
+      const me = req.user as User;
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid id" });
+      }
+      const existing = await storage.getTrainingLocation(id);
+      if (!existing || existing.userId !== me.id) {
+        return res.status(404).json({ message: "Training location not found" });
+      }
+      const row = await storage.updateTrainingLocation(id, req.body ?? {});
+      res.json(row);
+    } catch (e: any) {
+      console.error("[training-locations:update]", e);
+      res.status(500).json({ message: e?.message || "Failed to update training location" });
+    }
+  });
+
+  app.delete("/api/training-locations/:id", requireAuth, async (req, res) => {
+    try {
+      const me = req.user as User;
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid id" });
+      }
+      const existing = await storage.getTrainingLocation(id);
+      if (!existing || existing.userId !== me.id) {
+        return res.status(404).json({ message: "Training location not found" });
+      }
+      await storage.archiveTrainingLocation(id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("[training-locations:archive]", e);
+      res.status(500).json({ message: e?.message || "Failed to archive training location" });
+    }
   });
 
   // Admin queue + decision endpoints powering the verification-queue UI

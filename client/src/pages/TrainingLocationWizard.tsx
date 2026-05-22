@@ -214,6 +214,20 @@ export default function TrainingLocationWizard() {
     isSubmittingRef.current = true;
     try {
       await finishInner();
+    } catch (err: any) {
+      // Belt-and-suspenders: finishInner already handles known errors
+      // via its inner try/catch blocks. Anything that escapes here is
+      // unexpected (parse error, programmer mistake, etc.) — surface a
+      // professional, user-facing message instead of failing silently.
+      console.error("[wizard:finish] unhandled error", err);
+      toast({
+        title: t(
+          "wizard.unexpectedError",
+          "We couldn't submit your request. Please try again.",
+        ),
+        description: err?.message ? String(err.message).slice(0, 200) : undefined,
+        variant: "destructive",
+      });
     } finally {
       isSubmittingRef.current = false;
     }
