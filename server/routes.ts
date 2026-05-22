@@ -5046,6 +5046,35 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       );
     } catch {/* notification failure must never block the activation request */}
 
+    // Mirror the receipt notification to every admin so the verification
+    // queue isn't the only surface that announces a new request. Dedupe
+    // per (admin × package) so retries can't double-fire the bell.
+    try {
+      const admins = await storage.getAllAdmins();
+      const adminLabel = me.fullName || me.email || `client #${me.id}`;
+      await Promise.all(
+        admins.map((a: any) =>
+          notifyUserOnce(
+            a.id,
+            "admin_message",
+            `pvr-admin:${created.id}`,
+            "New package activation request",
+            `${adminLabel} requested activation for "${mapped.name}". Review it in the verification queue.`,
+            {
+              link: "/admin/packages",
+              meta: { packageId: created.id, clientUserId: me.id, requestedType },
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      console.error("[pvr:admin-notify] failed:", e);
+    }
+
+    console.log(
+      `[pvr:created] id=${created.id} userId=${me.id} email=${me.email} type=${mapped.type} sessions=${mapped.totalSessions} source=fitness_zone_self_request status=pending_verification`,
+    );
+
     res.status(201).json(pending ?? created);
   });
 
@@ -5131,7 +5160,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Admin queue + decision endpoints powering the verification-queue UI
   // in AdminPackages. Reuse the existing approve flow for "approve".
-  app.get("/api/admin/package-verification-requests", requireAdmin, async (_req, res) => {
+  app.get("/api/admin/package-verification-requests", requireAdmin, async (req, res) => {
     const rows = await storage.getPendingVerificationPackages();
     const userIds = Array.from(new Set(rows.map((r) => r.userId)));
     const usersById: Record<number, any> = {};
@@ -5139,6 +5168,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const u = await storage.getUser(uid);
       if (u) usersById[uid] = sanitizeUser(u);
     }
+    const me = req.user as User;
+    console.log(
+      `[pvr:admin-list] count=${rows.length} adminUserId=${me?.id ?? "?"} ids=[${rows.map((r) => r.id).join(",")}]`,
+    );
+    // Disable downstream caching — the verification queue must reflect
+    // the latest DB state on every poll/refresh; never serve a stale
+    // body from a CDN or browser HTTP cache.
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.json(rows.map((r) => ({ ...r, user: usersById[r.userId] ?? null })));
   });
 

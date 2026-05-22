@@ -295,8 +295,15 @@ export default function AdminPackages() {
 function VerificationQueue() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { data: items = [], isLoading } = useQuery<any[]>({
+  const { data: items = [], isLoading, dataUpdatedAt, refetch, isFetching, error } = useQuery<any[]>({
     queryKey: ["/api/admin/package-verification-requests"],
+    // Always show the freshest queue. The fetch is cheap (one indexed
+    // SELECT + per-user lookups) and getting this wrong leaves admin
+    // staring at an empty card while a real request sits in the DB.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
   });
   const decide = useMutation({
     mutationFn: async ({ id, body }: { id: number; body: any }) => {
@@ -314,8 +321,13 @@ function VerificationQueue() {
     onError: (e: any) => toast({ title: e?.message || "Failed", variant: "destructive" }),
   });
 
-  if (isLoading) return null;
-  if (!items.length) return null;
+  // Never hide the panel — even when the queue is empty we need an
+  // explicit "0 pending · last refreshed at HH:MM" affordance so admin
+  // can tell "queue is connected and empty" apart from "queue failed
+  // to load and is silently hidden".
+  const updatedLabel = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "—";
 
   return (
     <AdminCard padded={false} className="p-4 sm:p-5 border-cyan-500/30 bg-cyan-500/[0.04]">
@@ -324,8 +336,47 @@ function VerificationQueue() {
         <h2 className="text-sm font-semibold" data-testid="text-verification-queue-title">
           {t("admin.verifications.title", "Package verification queue")}
         </h2>
-        <span className="ms-auto text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
+        <span
+          className="ms-2 text-[11px] tabular-nums px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-200"
+          data-testid="badge-verification-count"
+        >
+          {items.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="ms-auto text-[11px] text-cyan-300/80 hover:text-cyan-200 disabled:opacity-50"
+          data-testid="button-refresh-verification-queue"
+        >
+          {isFetching ? "Refreshing…" : "Refresh"}
+        </button>
+        <span
+          className="text-[10px] text-muted-foreground tabular-nums"
+          data-testid="text-verification-updated-at"
+        >
+          {updatedLabel}
+        </span>
       </div>
+      {error && (
+        <p
+          className="text-xs text-rose-300 mb-2"
+          data-testid="text-verification-error"
+        >
+          Failed to load queue: {(error as any)?.message || "unknown error"}
+        </p>
+      )}
+      {isLoading && (
+        <div className="h-16 rounded-xl border border-white/[0.05] bg-card/40 admin-shimmer" data-testid="skeleton-verification-queue" />
+      )}
+      {!isLoading && !items.length && (
+        <p
+          className="text-xs text-muted-foreground py-2"
+          data-testid="text-verification-empty"
+        >
+          {t("admin.verifications.empty", "No pending package activation requests.")}
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-3" data-testid="grid-verification-queue">
         {items.map((row: any) => {
           const payload = row.verificationRequestPayload || {};
