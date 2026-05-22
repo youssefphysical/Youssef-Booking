@@ -66,7 +66,7 @@ function decideNextRoute(opts: {
 
 export default function TrainingLocationWizard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, isLoading: isLoadingAuth } = useAuth();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState<1 | 2>(1);
@@ -218,11 +218,19 @@ export default function TrainingLocationWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wizardDraft.hasDraft]);
 
-  const { data: locations = [] } = useQuery<TrainingLocation[]>({
+  const {
+    data: locations = [],
+    isLoading: isLoadingLocations,
+    isFetched: locationsFetched,
+  } = useQuery<TrainingLocation[]>({
     queryKey: ["/api/training-locations"],
     enabled: !!user,
   });
-  const { data: pkgs = [] } = useQuery<PackageRow[]>({
+  const {
+    data: pkgs = [],
+    isLoading: isLoadingPackages,
+    isFetched: packagesFetched,
+  } = useQuery<PackageRow[]>({
     queryKey: ["/api/packages", { userId: user?.id }],
     queryFn: async () => {
       const r = await fetch(`/api/packages?userId=${user?.id}`, { credentials: "include" });
@@ -233,6 +241,31 @@ export default function TrainingLocationWizard() {
   });
   const hasPendingVerif = (pkgs as any[]).some((p) => p.status === "pending_verification");
   const hasActivePackage = (pkgs as any[]).some((p) => p.status === "active");
+
+  // Hydration gate — true while ANY of auth / locations / packages is
+  // still resolving. Until this flips false the wizard renders a
+  // full-page loader (NOT the branch picker), so the "Where do you
+  // train?" step never flashes for users who already have a pending
+  // verification or an active package. This is what eliminates the
+  // refresh-flicker on every branch (FZ, Building, Home, Hotel, Other
+  // gym) — the gate is universal.
+  const isHydrating =
+    isLoadingAuth ||
+    (!!user && (isLoadingLocations || isLoadingPackages || !locationsFetched || !packagesFetched));
+
+  // Once hydration settles, push the user to the right destination
+  // BEFORE we render any wizard UI. Users who already have a pending
+  // activation request belong on /dashboard (the "Package awaiting
+  // verification" banner lives there); users with an active package
+  // belong on /book. The effect runs after queries resolve, so the
+  // gate above keeps the loader on-screen during the navigation tick.
+  useEffect(() => {
+    if (isHydrating) return;
+    if (hasPendingVerif || hasActivePackage) {
+      navigate(hasActivePackage && !hasPendingVerif ? "/book" : "/dashboard", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrating, hasPendingVerif, hasActivePackage]);
 
   const saveLocation = useMutation({
     mutationFn: async (payload: any) => {
@@ -627,6 +660,28 @@ export default function TrainingLocationWizard() {
       wizardDraft.clear();
       safeNavigate(gymNext);
     }
+  }
+
+  // Render the premium loader while hydrating OR while the
+  // post-hydration redirect (to /dashboard or /book) is in flight.
+  // This is the SINGLE source that prevents the wizard from flashing
+  // on refresh — it covers Fitness Zone, Building, Home, Hotel, and
+  // Other Gym branches uniformly because it gates the entire return
+  // tree, not any per-branch sub-render.
+  if (isHydrating || hasPendingVerif || hasActivePackage) {
+    return (
+      <div
+        className="min-h-screen w-full flex items-center justify-center px-6"
+        data-testid="loader-wizard-hydrating"
+      >
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Loader2 size={28} className="text-primary animate-spin" />
+          <p className="text-sm text-muted-foreground">
+            {t("wizard.loading", "Loading your fitness experience…")}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) return null;
