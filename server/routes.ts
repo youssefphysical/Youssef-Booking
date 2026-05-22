@@ -127,6 +127,7 @@ import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce, notifyUsers } from "./services/notifications";
 import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
+import { evaluateAndAwardBadges, computeStreaks } from "./services/badges";
 import { runCronTick, cronGuards, classifyFailure } from "./cron/runner";
 import { computeClientIntelligence } from "./services/clientIntelligence";
 import { recomputeSmartAlerts, listOpen as listOpenAlerts, resolveById as resolveAlertById } from "./services/adminAlerts";
@@ -4034,6 +4035,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     ) {
       void recomputeVipTier(booking.userId);
     }
+    // Task #74 — re-evaluate badges on any completion transition. Pure
+    // fire-and-forget so a slow evaluation never blocks the PATCH; the
+    // evaluator wraps all I/O in try/catch internally.
+    if (newStatus === "completed" && previousStatus !== "completed") {
+      void evaluateAndAwardBadges(booking.userId);
+    }
     res.json(sanitizeBookingForUser(me, updated));
   });
 
@@ -5383,6 +5390,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // P4f: Today Hero summary — next session, supplements-today count,
   // water target, current weekly-active streak, goal progress. Self-
   // scoped only; never trust client-supplied userId.
+  // =============================
+  // Task #74 — Streak system & achievement badges
+  // =============================
+  // GET /api/me/badges      — list earned badges (just keys + earnedAt)
+  // GET /api/me/streaks     — 3 numbers: sessionsThisWeek, nutritionStreakWeeks, attendanceStreakWeeks
+  // POST /api/me/badges/evaluate — manual re-evaluation; same code path the
+  //                          auto-complete cron uses. Returns the keys
+  //                          newly awarded on this call (may be empty).
+  //                          Idempotent: re-running is a no-op once all
+  //                          eligible badges are already on file.
+  app.get("/api/me/badges", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const rows = await storage.getUserBadges(me.id).catch(() => []);
+    res.json(rows);
+  });
+
+  app.get("/api/me/streaks", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const [bookings, checkins] = await Promise.all([
+      storage.getBookings({ userId: me.id }).catch(() => []),
+      storage.listWeeklyCheckins(me.id, { limit: 12 }).catch(() => []),
+    ]);
+    const metrics = computeStreaks({
+      bookings,
+      checkins,
+      weeklyFrequency: (me as any).weeklyFrequency ?? null,
+    });
+    res.json(metrics);
+  });
+
+  app.post("/api/me/badges/evaluate", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const awarded = await evaluateAndAwardBadges(me.id);
+    res.json({ awarded });
+  });
+
   app.get("/api/me/today", requireAuth, async (req, res) => {
     const me = req.user as User;
     const safe = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {

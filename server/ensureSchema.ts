@@ -1011,6 +1011,19 @@ async function run(): Promise<void> {
       CREATE UNIQUE INDEX IF NOT EXISTS daily_checkins_user_date_uniq ON daily_checkins (user_id, date);
       CREATE INDEX IF NOT EXISTS daily_checkins_user_idx ON daily_checkins (user_id, date DESC);
 
+      -- Task #74 — user_badges (streak system & achievement badges).
+      -- Unique index makes evaluator INSERT ... ON CONFLICT idempotent
+      -- across concurrent triggers (auto-complete cron + admin
+      -- attendance + manual eval).
+      CREATE TABLE IF NOT EXISTS user_badges (
+        id serial PRIMARY KEY,
+        user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        badge_key text NOT NULL,
+        earned_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS user_badges_user_badge_uniq ON user_badges (user_id, badge_key);
+      CREATE INDEX IF NOT EXISTS user_badges_user_idx ON user_badges (user_id);
+
       CREATE TABLE IF NOT EXISTS system_health (
         kind text PRIMARY KEY,
         failure_count_24h integer NOT NULL DEFAULT 0,

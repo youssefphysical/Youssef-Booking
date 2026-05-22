@@ -29,6 +29,8 @@ import {
   clientSupplements,
   bodyMetrics,
   weeklyCheckins,
+  userBadges,
+  type UserBadge,
   type WeeklyCheckin,
   type InsertWeeklyCheckin,
   type UpdateWeeklyCheckin,
@@ -359,6 +361,11 @@ export interface IStorage {
     kind: string,
     dedupeKey: string,
   ): Promise<ClientNotification | undefined>;
+
+  // Task #74 — user badges (streak / achievement system).
+  getUserBadges(userId: number): Promise<UserBadge[]>;
+  /** Returns the inserted row on first award, or null when (userId,badgeKey) already existed. Atomic via unique index. */
+  awardUserBadge(userId: number, badgeKey: string): Promise<UserBadge | null>;
   markClientNotificationRead(id: number, userId: number): Promise<ClientNotification | undefined>;
   markAllClientNotificationsRead(userId: number): Promise<void>;
 
@@ -2826,6 +2833,30 @@ export class DatabaseStorage implements IStorage {
   // raw SQL via the pg pool. Returning rows means the row was newly
   // inserted; an empty result means a duplicate was atomically
   // suppressed. Safe under racing cron retries / concurrent triggers.
+  // Task #74 — user badges.
+  async getUserBadges(userId: number): Promise<UserBadge[]> {
+    const rows = await db
+      .select()
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId))
+      .orderBy(asc(userBadges.earnedAt));
+    return rows;
+  }
+
+  async awardUserBadge(userId: number, badgeKey: string): Promise<UserBadge | null> {
+    // INSERT ... ON CONFLICT (user_id, badge_key) DO NOTHING RETURNING.
+    // Atomic via the unique index — concurrent triggers (cron + manual
+    // /evaluate + admin attendance) cannot double-award the same badge.
+    const result = await pool.query(
+      `INSERT INTO user_badges (user_id, badge_key)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, badge_key) DO NOTHING
+       RETURNING id, user_id AS "userId", badge_key AS "badgeKey", earned_at AS "earnedAt"`,
+      [userId, badgeKey],
+    );
+    return (result.rows[0] as UserBadge) ?? null;
+  }
+
   async createClientNotificationOnce(
     notif: InsertClientNotification,
   ): Promise<ClientNotification | null> {

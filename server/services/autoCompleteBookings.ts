@@ -1,6 +1,7 @@
 import { pool } from "../db";
 import { storage } from "../storage";
 import { notifyUserOnce } from "./notifications";
+import { evaluateAndAwardBadges } from "./badges";
 
 /**
  * Auto-complete expired sessions (May 2026).
@@ -189,6 +190,15 @@ export async function runAutoCompleteBookings(
         if (inserted) result.notified++;
       } catch (e: any) {
         result.errors.push({ id: claimed.id, error: `notify: ${e?.message || "unknown"}` });
+      }
+
+      // Task #74 — re-evaluate badges after a session moves to
+      // `completed`. The evaluator swallows its own errors; we wrap
+      // again so an unexpected throw can never break auto-complete.
+      try {
+        await evaluateAndAwardBadges(claimed.user_id);
+      } catch (e: any) {
+        result.errors.push({ id: claimed.id, error: `badges: ${e?.message || "unknown"}` });
       }
     } catch (e: any) {
       result.errors.push({ id: b.id, error: e?.message || "unknown" });

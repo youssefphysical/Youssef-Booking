@@ -1134,6 +1134,11 @@ export const NOTIFICATION_KINDS = [
   "package_activation_requested",
   "admin_message",
   "system",
+  // Task #74 — Streak system & achievement badges. Fired (idempotently
+  // via notifyUserOnce) the first time a client unlocks any of the
+  // BADGE_DEFINITIONS keys. Dedupe key = badgeKey, so a re-evaluation
+  // can never re-notify even if the row was hand-deleted.
+  "badge_earned",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -3791,4 +3796,61 @@ export const trainerAssignments = pgTable('trainer_assignments', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 export type TrainerAssignment = typeof trainerAssignments.$inferSelect;
+
+// =============================
+// TASK #74 — USER BADGES (streak system & achievements)
+// =============================
+// One row per (userId, badgeKey) ever earned. Idempotency is enforced
+// by the unique index — the evaluator writes via raw `INSERT ... ON
+// CONFLICT (user_id, badge_key) DO NOTHING RETURNING id`, so concurrent
+// triggers (auto-complete cron + admin attendance + manual eval) cannot
+// double-award. `earnedAt` is stamped on first insert and never updated.
+//
+// Badge catalogue lives in code (BADGE_DEFINITIONS below) — the table
+// only stores keys + timestamps. Editing a definition (icon, label,
+// criterion) never touches historical earnedAt stamps.
+export const userBadges = pgTable("user_badges", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  badgeKey: text("badge_key").notNull(),
+  earnedAt: timestamp("earned_at").notNull().defaultNow(),
+}, (t) => ({
+  userBadgeUnique: uniqueIndex("user_badges_user_badge_uniq").on(t.userId, t.badgeKey),
+  userIdx: index("user_badges_user_idx").on(t.userId),
+}));
+
+export const insertUserBadgeSchema = createInsertSchema(userBadges).omit({ id: true, earnedAt: true });
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
+
+// Badge catalogue. Pure data so the evaluator (server) + tile renderer
+// (client) share one source of truth. `criterion` is a structured
+// description used only for the locked-tile tooltip; the actual
+// evaluation logic lives in server/services/badges.ts (evaluateBadges).
+export const BADGE_KEYS = [
+  "first_session",
+  "ten_sessions",
+  "fifty_sessions",
+  "consistency_champion",
+  "elite_discipline",
+  "transformation_started",
+] as const;
+export type BadgeKey = (typeof BADGE_KEYS)[number];
+
+export interface BadgeDefinition {
+  key: BadgeKey;
+  icon: string;          // lucide-react icon name (resolved on client)
+  tier: "bronze" | "silver" | "gold" | "platinum";
+  /** Sort order on Achievements tab (lower = first). */
+  order: number;
+}
+
+export const BADGE_DEFINITIONS: readonly BadgeDefinition[] = [
+  { key: "first_session",          icon: "Flame",       tier: "bronze",   order: 10 },
+  { key: "ten_sessions",           icon: "Dumbbell",    tier: "silver",   order: 20 },
+  { key: "fifty_sessions",         icon: "Trophy",      tier: "gold",     order: 30 },
+  { key: "consistency_champion",   icon: "Calendar",    tier: "silver",   order: 40 },
+  { key: "elite_discipline",       icon: "Crown",       tier: "platinum", order: 50 },
+  { key: "transformation_started", icon: "Sparkles",    tier: "bronze",   order: 60 },
+] as const;
 

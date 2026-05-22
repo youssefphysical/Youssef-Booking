@@ -44,6 +44,9 @@ import {
 import { cn } from "@/lib/utils";
 import { PRIMARY_CTA_CLASS } from "@/lib/ui-tokens";
 import { useTranslation } from "@/i18n";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AchievementsSection } from "@/components/profile/AchievementsSection";
+import { Trophy } from "lucide-react";
 
 type T = (key: string, fallback?: string) => string;
 
@@ -67,6 +70,22 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [cropperOpen, setCropperOpen] = useState(false);
+  // Task #74 — Tabs (Profile / Achievements). Hash sync so a deep link
+  // like /profile#achievements (used by the badge_earned notification)
+  // lands directly on the Achievements tab.
+  const [profileTab, setProfileTab] = useState<string>(() => {
+    if (typeof window === "undefined") return "details";
+    return window.location.hash.replace(/^#/, "") === "achievements" ? "achievements" : "details";
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onHash = () => {
+      const h = window.location.hash.replace(/^#/, "");
+      if (h === "achievements" || h === "details") setProfileTab(h);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const schema = useMemo(() => makeProfileSchema(t), [t]);
   const form = useForm<ProfileValues>({
@@ -215,7 +234,20 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-white/5 bg-card/60 p-6 mb-6">
+      <Tabs value={profileTab} onValueChange={setProfileTab} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full bg-white/5 mb-6 h-auto sm:h-11 gap-1 p-1">
+          <TabsTrigger value="details" data-testid="tab-profile-details">
+            {t("profile.tabDetails", "Profile")}
+          </TabsTrigger>
+          <TabsTrigger value="achievements" data-testid="tab-achievements">
+            <Trophy size={14} className="mr-1.5" /> {t("profile.tabAchievements", "Achievements")}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="achievements" className="mt-0">
+          <AchievementsSection />
+        </TabsContent>
+        <TabsContent value="details" className="mt-0 space-y-6">
+      <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">
@@ -356,6 +388,8 @@ export default function ProfilePage() {
           testId="button-profile-whatsapp"
         />
       </div>
+        </TabsContent>
+      </Tabs>
 
       <ProfilePictureCropper
         open={cropperOpen}

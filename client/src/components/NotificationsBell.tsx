@@ -26,6 +26,7 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
   package_activated: PackageCheck,
   package_activation_requested: PackageCheck,
   admin_message: Megaphone,
+  badge_earned: Trophy,
   system: Info,
 };
 
@@ -44,6 +45,7 @@ const ACCENT: Record<NotificationKind, string> = {
   package_activated: "text-emerald-300",
   package_activation_requested: "text-cyan-300",
   admin_message: "text-cyan-300",
+  badge_earned: "text-cyan-300",
   system: "text-white/70",
 };
 

@@ -125,6 +125,7 @@ import { QuickActionsGrid } from "@/components/dashboard/QuickActionsGrid";
 import { PackageStatusHero } from "@/components/dashboard/PackageStatusHero";
 import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
+import { StreakStrip } from "@/components/dashboard/StreakStrip";
 import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
 import { TransformationTimeline } from "@/components/dashboard/TransformationTimeline";
@@ -283,6 +284,10 @@ export default function ClientDashboard() {
           per booking, so it never adds noise on quieter days. */}
       <ProfileHero user={user} />
       <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
+      {/* Task #74 — Streak strip: 3 live chips (sessions/wk, nutrition,
+          attendance streak). Mounts directly under the package hero so
+          the client sees momentum data before scrolling. */}
+      <StreakStrip />
       <WhatsNext />
       <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />
