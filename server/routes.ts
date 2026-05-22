@@ -34,6 +34,7 @@ import {
   insertBodyMetricSchema,
   updateBodyMetricSchema,
   insertWeeklyCheckinSchema,
+  insertDailyCheckinSchema,
   updateWeeklyCheckinSchema,
   insertInbodySchema,
   updateInbodySchema,
@@ -6154,6 +6155,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const ok = await storage.deleteWeeklyCheckin(id);
     if (!ok) return res.status(404).json({ message: "Not found" });
     res.json({ ok: true });
+  });
+
+  // ============== DAILY CHECK-INS (Task #73 — Recovery readiness) ==============
+  // Lightweight one-row-per-day self-report. Client-only surface — no
+  // admin endpoints needed; aggregate is computed client-side for the
+  // dashboard readiness card. Dubai date is derived server-side so the
+  // (userId, date) upsert is stable across client clocks.
+  const dubaiToday = (): string => {
+    const now = new Date();
+    const dubai = new Date(now.getTime() + (4 * 60 - -now.getTimezoneOffset()) * 60_000);
+    return dubai.toISOString().slice(0, 10);
+  };
+
+  app.get("/api/me/checkins/today", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const row = await storage.getDailyCheckin(me.id, dubaiToday());
+    res.json(row ?? null);
+  });
+
+  app.get("/api/me/checkins/recent", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const limit = Math.min(Math.max(Number(req.query.limit) || 14, 1), 90);
+    const rows = await storage.listRecentDailyCheckins(me.id, limit);
+    res.json(rows);
+  });
+
+  app.post("/api/me/checkins", requireAuth, async (req, res) => {
+    const me = req.user as User;
+    const body = { ...req.body, userId: me.id, date: req.body?.date || dubaiToday() };
+    const parsed = insertDailyCheckinSchema.safeParse(body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    }
+    const row = await storage.upsertDailyCheckin(parsed.data);
+    res.status(200).json(row);
   });
 
   // ============== INBODY ==============

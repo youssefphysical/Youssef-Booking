@@ -32,6 +32,9 @@ import {
   type WeeklyCheckin,
   type InsertWeeklyCheckin,
   type UpdateWeeklyCheckin,
+  dailyCheckins,
+  type DailyCheckin,
+  type InsertDailyCheckin,
   type BodyMetric,
   type InsertBodyMetric,
   type UpdateBodyMetric,
@@ -4543,6 +4546,69 @@ declare module "./storage" {
     .orderBy(desc(adminAuditLog.createdAt))
     .limit(limit)
     .offset(offset);
+};
+
+// =====================================================================
+// Task #73 — DAILY CHECK-INS (Recovery readiness)
+// Prototype-mount pattern; upsert via ON CONFLICT against the
+// (user_id, date) unique index. All fields are nullable so partial
+// submissions are valid.
+// =====================================================================
+declare module "./storage" {
+  interface DatabaseStorage {
+    getDailyCheckin(userId: number, date: string): Promise<DailyCheckin | undefined>;
+    listRecentDailyCheckins(userId: number, limit?: number): Promise<DailyCheckin[]>;
+    upsertDailyCheckin(input: InsertDailyCheckin): Promise<DailyCheckin>;
+  }
+}
+
+(DatabaseStorage.prototype as any).getDailyCheckin = async function (
+  userId: number,
+  date: string,
+): Promise<DailyCheckin | undefined> {
+  const [row] = await db
+    .select()
+    .from(dailyCheckins)
+    .where(and(eq(dailyCheckins.userId, userId), eq(dailyCheckins.date, date)));
+  return row;
+};
+
+(DatabaseStorage.prototype as any).listRecentDailyCheckins = async function (
+  userId: number,
+  limit = 14,
+): Promise<DailyCheckin[]> {
+  return db
+    .select()
+    .from(dailyCheckins)
+    .where(eq(dailyCheckins.userId, userId))
+    .orderBy(desc(dailyCheckins.date), desc(dailyCheckins.id))
+    .limit(limit);
+};
+
+(DatabaseStorage.prototype as any).upsertDailyCheckin = async function (
+  input: InsertDailyCheckin,
+): Promise<DailyCheckin> {
+  const [row] = await db
+    .insert(dailyCheckins)
+    .values({
+      userId: input.userId,
+      date: input.date,
+      sleepHours: input.sleepHours ?? null,
+      waterLiters: input.waterLiters ?? null,
+      recoveryScore: input.recoveryScore ?? null,
+      energyScore: input.energyScore ?? null,
+    })
+    .onConflictDoUpdate({
+      target: [dailyCheckins.userId, dailyCheckins.date],
+      set: {
+        sleepHours: input.sleepHours ?? null,
+        waterLiters: input.waterLiters ?? null,
+        recoveryScore: input.recoveryScore ?? null,
+        energyScore: input.energyScore ?? null,
+      },
+    })
+    .returning();
+  return row;
 };
 
 export const storage = new DatabaseStorage();

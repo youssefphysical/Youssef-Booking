@@ -51,6 +51,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TodayHero } from "@/components/TodayHero";
 import { PackageConfidenceCard } from "@/components/dashboard/PackageConfidenceCard";
+import { GoalProgressRing } from "@/components/dashboard/GoalProgressRing";
+import { RecoveryReadinessCard } from "@/components/dashboard/RecoveryReadinessCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -290,6 +292,12 @@ export default function ClientDashboard() {
 
       <ProgressSnapshot userId={user.id} />
       <TransformationTimeline userId={user.id} />
+
+      {/* Task #73 — Progress rings + recovery readiness */}
+      <div className="grid gap-4 lg:grid-cols-2 mt-4">
+        <GoalProgressRing user={user} />
+        <RecoveryReadinessCard />
+      </div>
 
       {/* Secondary insight stack — informative but not action-required.
           Collapsed by default on mobile to keep the dashboard scannable;

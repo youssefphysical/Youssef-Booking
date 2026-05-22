@@ -997,6 +997,20 @@ async function run(): Promise<void> {
       CREATE INDEX IF NOT EXISTS admin_alerts_open_idx
         ON admin_alerts(resolved_at, created_at DESC);
 
+      -- ===== Task #73 — Daily check-ins (Recovery readiness) =====
+      CREATE TABLE IF NOT EXISTS daily_checkins (
+        id serial PRIMARY KEY,
+        user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        date date NOT NULL,
+        sleep_hours double precision,
+        water_liters double precision,
+        recovery_score integer,
+        energy_score integer,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS daily_checkins_user_date_uniq ON daily_checkins (user_id, date);
+      CREATE INDEX IF NOT EXISTS daily_checkins_user_idx ON daily_checkins (user_id, date DESC);
+
       CREATE TABLE IF NOT EXISTS system_health (
         kind text PRIMARY KEY,
         failure_count_24h integer NOT NULL DEFAULT 0,

@@ -3644,6 +3644,40 @@ export const WEEKLY_CHECKIN_SCALE_FIELDS = [
 ] as const;
 export type WeeklyCheckinScaleField = (typeof WEEKLY_CHECKIN_SCALE_FIELDS)[number];
 
+// =============================
+// DAILY CHECK-INS (Task #73 — Recovery readiness)
+// =============================
+// Lightweight one-row-per-day self-report used to compute the dashboard
+// Recovery Readiness score. Distinct from `weekly_checkins` (which is a
+// deeper coach-facing weekly log) — daily check-ins are user-owned, no
+// coach response surface, and are designed to be a 4-field tap form.
+export const dailyCheckins = pgTable("daily_checkins", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  sleepHours: doublePrecision("sleep_hours"),       // hours, 0..24
+  waterLiters: doublePrecision("water_liters"),     // L, 0..20
+  recoveryScore: integer("recovery_score"),         // 1..10
+  energyScore: integer("energy_score"),             // 1..10
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => ({
+  userDateUnique: uniqueIndex("daily_checkins_user_date_uniq").on(t.userId, t.date),
+}));
+
+export const insertDailyCheckinSchema = createInsertSchema(dailyCheckins)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    userId: z.number().int().positive(),
+    date: z.string().min(1, "Date is required"),
+    sleepHours: z.number().min(0).max(24).nullish(),
+    waterLiters: z.number().min(0).max(20).nullish(),
+    recoveryScore: z.number().int().min(1).max(10).nullish(),
+    energyScore: z.number().int().min(1).max(10).nullish(),
+  });
+
+export type DailyCheckin = typeof dailyCheckins.$inferSelect;
+export type InsertDailyCheckin = z.infer<typeof insertDailyCheckinSchema>;
+
 // Apply-stack body: snapshot all items of a stack onto a client.
 export const applyStackToClientSchema = z.object({
   userId: z.number().int().positive(),
