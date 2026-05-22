@@ -125,6 +125,7 @@ import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
 import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
+import { TransformationTimeline } from "@/components/dashboard/TransformationTimeline";
 import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -288,6 +289,7 @@ export default function ClientDashboard() {
       <SessionTimeline userId={user.id} onJump={jumpToTab} />
 
       <ProgressSnapshot userId={user.id} />
+      <TransformationTimeline userId={user.id} />
 
       {/* Secondary insight stack — informative but not action-required.
           Collapsed by default on mobile to keep the dashboard scannable;
