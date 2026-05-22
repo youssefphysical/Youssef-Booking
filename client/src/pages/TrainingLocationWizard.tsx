@@ -22,7 +22,14 @@ import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
 // chunk. Bump this string in EVERY meaningful wizard edit. If the user
 // sees an older value, the bundle is stale and they need to hard-reload
 // (or hit the "Diagnostic Reset" button below the form).
-const WIZARD_BUILD = "2026-05-22-diag-v1";
+// Build marker — bumped on every wizard edit. Combined with the git
+// commit hash injected by scripts/vercel-build.mjs (VITE_GIT_HASH)
+// this renders as "Build: 2026-05-22-diag-v3 · <git-hash>" in the
+// wizard footer so a real-mobile user can confirm which exact
+// production bundle they're running.
+const WIZARD_BUILD = "2026-05-22-diag-v3";
+const WIZARD_GIT_HASH =
+  (import.meta as any).env?.VITE_GIT_HASH || "local-dev";
 
 type Branch = "fitness_zone" | "home" | "other_gym" | null;
 type FzPath = "existing" | "trial" | null;
@@ -913,7 +920,7 @@ export default function TrainingLocationWizard() {
           className="mt-6 text-[10px] text-muted-foreground/60 text-center font-mono"
           data-testid="text-wizard-build"
         >
-          Wizard build: {WIZARD_BUILD}
+          Build: {WIZARD_BUILD} · {WIZARD_GIT_HASH}
         </div>
 
         {/* Diagnostic panel — admin OR vite-dev only. Renders every

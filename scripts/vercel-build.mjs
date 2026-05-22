@@ -26,6 +26,14 @@ function run(cmd, args, { allowFail = false } = {}) {
   }
 }
 
+// Expose the deployed git commit to the client bundle so the wizard
+// footer can render "Build: <hash>". Vercel auto-injects
+// VERCEL_GIT_COMMIT_SHA into the build env; mirroring it under the
+// VITE_ prefix makes it readable via import.meta.env in the client.
+const gitSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_HASH || "local-dev";
+process.env.VITE_GIT_HASH = gitSha.slice(0, 7);
+console.log(`[vercel-build] VITE_GIT_HASH = ${process.env.VITE_GIT_HASH}`);
+
 run("npx", [
   "esbuild", "server/app.ts",
   "--bundle", "--format=esm", "--platform=node", "--target=node20",
