@@ -16,6 +16,7 @@ interface StreakMetrics {
   sessionsTargetWeekly: number;
   nutritionStreakWeeks: number;
   attendanceStreakWeeks: number;
+  nutritionPlanActive: boolean;
 }
 
 export function StreakStrip() {
@@ -39,9 +40,18 @@ export function StreakStrip() {
     );
   }
 
-  const chips = [
+  // Per Task #74 spec, the strip is gated:
+  //   - Sessions chip: always shown (anchor metric).
+  //   - Nutrition chip: only when the client has an active nutrition plan.
+  //     Without one, the chip would shame clients who haven't opted in.
+  //   - Attendance chip: only when the streak is meaningful (> 1 week).
+  //     A "1 week" chip on day 1 reads as noise, not momentum.
+  const showNutrition = data.nutritionPlanActive;
+  const showAttendance = data.attendanceStreakWeeks > 1;
+  const allChips = [
     {
       key: "week",
+      show: true,
       icon: Flame,
       label: t("dashboard.streak.sessionsThisWeek", "Sessions this week"),
       value: `${data.sessionsThisWeek} / ${data.sessionsTargetWeekly}`,
@@ -59,6 +69,7 @@ export function StreakStrip() {
     },
     {
       key: "nutrition",
+      show: showNutrition,
       icon: Apple,
       label: t("dashboard.streak.nutrition", "Nutrition consistency"),
       value: `${data.nutritionStreakWeeks} / 4`,
@@ -71,6 +82,7 @@ export function StreakStrip() {
     },
     {
       key: "attendance",
+      show: showAttendance,
       icon: Calendar,
       label: t("dashboard.streak.attendance", "Attendance streak"),
       value:
@@ -89,12 +101,18 @@ export function StreakStrip() {
     },
   ] as const;
 
+  const chips = allChips.filter((c) => c.show);
+  if (chips.length === 0) return null;
+
+  const gridCols =
+    chips.length === 1 ? "grid-cols-1" : chips.length === 2 ? "grid-cols-2" : "grid-cols-3";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="grid grid-cols-3 gap-3 mb-4"
+      className={`grid ${gridCols} gap-3 mb-4`}
       data-testid="strip-streaks"
     >
       {chips.map((c) => {

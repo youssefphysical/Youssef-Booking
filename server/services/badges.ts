@@ -73,12 +73,20 @@ export interface StreakMetrics {
   nutritionStreakWeeks: number;
   /** Consecutive ISO weeks (ending current) with ≥1 completed/upcoming session. */
   attendanceStreakWeeks: number;
+  /**
+   * Whether the user has an active nutrition plan. The client uses this to
+   * gate the nutrition chip — per product spec the chip only appears when
+   * a plan is actually assigned, otherwise it'd shame clients who haven't
+   * opted into nutrition coaching.
+   */
+  nutritionPlanActive: boolean;
 }
 
 export function computeStreaks(input: {
   bookings: Booking[];
   checkins: WeeklyCheckin[];
   weeklyFrequency: number | null;
+  nutritionPlanActive?: boolean;
 }): StreakMetrics {
   const { bookings, checkins, weeklyFrequency } = input;
   const now = Date.now();
@@ -144,6 +152,7 @@ export function computeStreaks(input: {
     sessionsTargetWeekly,
     nutritionStreakWeeks,
     attendanceStreakWeeks,
+    nutritionPlanActive: Boolean(input.nutritionPlanActive),
   };
 }
 
@@ -194,15 +203,19 @@ export function evaluateBadges(input: BadgeEvalInput): BadgeKey[] {
   }
   const currentWeekStart = startOfIsoWeekDubai(new Date());
 
-  // consistency_champion: in the last 4 weeks (inclusive of current), at
-  // least 3 weeks have ≥3 sessions.
+  // consistency_champion: in the last 4 weeks (inclusive of current),
+  // EVERY week must have ≥3 completed sessions. Task #74 spec wording is
+  // strict: "4 weeks ≥3 sessions/week".
   if (!alreadyEarned.has("consistency_champion")) {
-    let qualifyingWeeks = 0;
+    let allHit4 = true;
     for (let i = 0; i < 4; i++) {
       const ws = currentWeekStart - i * WEEK_MS;
-      if ((perWeek.get(ws) ?? 0) >= 3) qualifyingWeeks++;
+      if ((perWeek.get(ws) ?? 0) < 3) {
+        allHit4 = false;
+        break;
+      }
     }
-    if (qualifyingWeeks >= 3) newly.push("consistency_champion");
+    if (allHit4) newly.push("consistency_champion");
   }
 
   // elite_discipline: in the last 12 weeks, EVERY week has ≥3 sessions.
@@ -218,8 +231,22 @@ export function evaluateBadges(input: BadgeEvalInput): BadgeKey[] {
     if (allHit) newly.push("elite_discipline");
   }
 
-  if (inbody.length >= 1 && !alreadyEarned.has("transformation_started")) {
-    newly.push("transformation_started");
+  // transformation_started: client has both completed at least one
+  // session AND has at least one InBody scan dated on or after that
+  // first completed session. Captures the spirit of "transformation
+  // started" — they've trained AND committed to measuring progress.
+  if (inbody.length >= 1 && completedCount >= 1 && !alreadyEarned.has("transformation_started")) {
+    const firstCompletedMs = Math.min(
+      ...completed.map(bookingDateMs).filter((t) => Number.isFinite(t)),
+    );
+    const hasInbodyAfter = inbody.some((r) => {
+      const raw: unknown = (r as { recordedAt?: unknown; createdAt?: unknown }).recordedAt
+        ?? (r as { createdAt?: unknown }).createdAt;
+      if (!raw) return false;
+      const t = raw instanceof Date ? raw.getTime() : new Date(String(raw)).getTime();
+      return Number.isFinite(t) && t >= firstCompletedMs;
+    });
+    if (hasInbodyAfter) newly.push("transformation_started");
   }
 
   return newly;
@@ -240,7 +267,7 @@ export async function evaluateAndAwardBadges(userId: number): Promise<BadgeKey[]
   try {
     const [bookings, inbody, checkins, existing] = await Promise.all([
       storage.getBookings({ userId }).catch(() => []),
-      storage.getInbodyRecords({ userId }).catch(() => []),
+      storage.getInbodyRecords({ userId }).catch(() => [] as InbodyRecord[]),
       storage.listWeeklyCheckins(userId, { limit: 60 }).catch(() => []),
       storage.getUserBadges(userId).catch(() => [] as UserBadge[]),
     ]);

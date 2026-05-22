@@ -5408,14 +5408,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.get("/api/me/streaks", requireAuth, async (req, res) => {
     const me = req.user as User;
-    const [bookings, checkins] = await Promise.all([
+    const [bookings, checkins, activePlan] = await Promise.all([
       storage.getBookings({ userId: me.id }).catch(() => []),
       storage.listWeeklyCheckins(me.id, { limit: 12 }).catch(() => []),
+      storage.getActiveNutritionPlanForUser(me.id).catch(() => undefined),
     ]);
     const metrics = computeStreaks({
       bookings,
       checkins,
       weeklyFrequency: (me as any).weeklyFrequency ?? null,
+      nutritionPlanActive: !!activePlan,
     });
     res.json(metrics);
   });
