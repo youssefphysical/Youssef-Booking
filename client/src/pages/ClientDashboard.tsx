@@ -132,6 +132,7 @@ import { TransformationTimeline } from "@/components/dashboard/TransformationTim
 import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
 import { MotivationLine } from "@/components/dashboard/MotivationLine";
+import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { InfoTip } from "@/components/ui/InfoTip";
@@ -295,6 +296,12 @@ export default function ClientDashboard() {
           state. Sits directly above WhatsNext to set the tone for the
           action below. */}
       <MotivationLine />
+      {/* Task #76 — Coach availability chip: 3-state pill above the
+          dashboard's next-action surface so clients see whether the
+          coach is free today before they even open the booking page. */}
+      <div className="mb-4 flex justify-center">
+        <CoachAvailabilityChip />
+      </div>
       <WhatsNext />
       <RecoveryDashboardTile />
       <QuickActionsGrid onJump={jumpToTab} />

@@ -61,6 +61,7 @@ import {
 } from "@/lib/booking-utils";
 import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
 import { AgreementGate, useAgreements, hasAccepted } from "@/components/AgreementGate";
 import { buildGoogleCalendarUrl, downloadIcs } from "@/lib/calendar";
@@ -709,6 +710,11 @@ export default function BookingPage() {
       )}
 
       <div className="space-y-6">
+        {/* Task #76 — Coach availability chip surfaces whether today
+            has free slots before the user starts hunting for one. */}
+        <div className="flex justify-center">
+          <CoachAvailabilityChip />
+        </div>
         <div className="bg-card border border-white/5 rounded-3xl p-3 shadow-xl flex justify-center">
           <DayPicker
             mode="single"

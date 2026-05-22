@@ -22,6 +22,7 @@ import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/not-found";
 import { CookieBanner } from "@/components/CookieBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { HelpFab } from "@/components/HelpFab";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { OfflineQueueBanner } from "@/components/OfflineQueueBanner";
@@ -313,6 +314,9 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </Suspense>
+      {/* Task #76 — Global one-tap support FAB. Hides itself on
+          booking/admin/auth routes via internal pathname check. */}
+      {!isPrintRoute && <HelpFab />}
     </div>
   );
 }
