@@ -107,7 +107,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { HealthBadge } from "@/components/HealthBadge";
 import { ImageCropper, dataUrlToFile, type AspectPreset } from "@/components/ImageCropper";
 import { translateStatus, statusColor, ALL_TIME_SLOTS } from "@/lib/booking-utils";
-import { formatTime12 } from "@/lib/time-format";
+import { formatTime12, formatTimeDual } from "@/lib/time-format";
 import { Switch } from "@/components/ui/switch";
 import {
   PACKAGE_DEFINITIONS,
@@ -608,7 +608,7 @@ function OverviewTab({
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12.5px] font-medium leading-tight truncate">
-                      {formatTime12(b.timeSlot)}
+                      {formatTimeDual(b.timeSlot)}
                     </p>
                     <p className="text-[10.5px] text-muted-foreground truncate mt-0.5">
                       {translateStatus(b.status, t)}
@@ -1928,7 +1928,7 @@ function BookingsList({ userId }: { userId: number }) {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-sm">
                 <span className="font-semibold">{formatWeekdayLongDate(b.date)}</span>
-                <span className="text-muted-foreground ml-3">{formatTime12(b.timeSlot)}</span>
+                <span className="text-muted-foreground ml-3">{formatTimeDual(b.timeSlot)}</span>
                 {b.sessionType && (
                   <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
                     {SESSION_TYPE_LABELS[b.sessionType as keyof typeof SESSION_TYPE_LABELS] || b.sessionType}

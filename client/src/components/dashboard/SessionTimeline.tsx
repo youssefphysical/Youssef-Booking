@@ -5,7 +5,7 @@ import { CalendarClock, ChevronRight } from "lucide-react";
 import { useBookings } from "@/hooks/use-bookings";
 import type { Booking } from "@shared/schema";
 import { format } from "date-fns";
-import { isTodayDubai, isTomorrowDubai, formatTime12, formatShortDateDubai } from "@shared/dates";
+import { isTodayDubai, isTomorrowDubai, formatTime12, formatTimeDual, formatShortDateDubai } from "@shared/dates";
 import { useTranslation } from "@/i18n";
 
 // Session timeline — top 3 upcoming sessions in cinematic stacked
@@ -105,7 +105,7 @@ export function SessionTimeline({
         <div className="space-y-2.5">
           {upcoming.map((b, i) => {
             const day = dayLabel(b.date, t);
-            const time = formatTime12(b.timeSlot);
+            const time = formatTimeDual(b.timeSlot);
             const isNext = i === 0;
             return (
               <motion.button

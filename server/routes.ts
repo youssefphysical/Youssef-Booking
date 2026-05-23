@@ -15,6 +15,7 @@ import {
   buildSessionDate,
   sessionEndTime,
   formatTime12 as formatTime12Shared,
+  formatTimeDual as formatTimeDualShared,
   nowDubai,
   DUBAI_TZ_OFFSET,
 } from "@shared/dates";
@@ -532,6 +533,9 @@ function fileToPublicUrl(file: Express.Multer.File, subdir: "inbody" | "photos")
 function formatTime12Server(timeSlot: string): string {
   return formatTime12Shared(timeSlot);
 }
+function formatTimeDualServer(timeSlot: string): string {
+  return formatTimeDualShared(timeSlot);
+}
 
 async function dispatchBookingNotifications(args: {
   booking: Booking;
@@ -555,7 +559,7 @@ async function dispatchBookingNotifications(args: {
   const sessionFocusLabel = SESSION_FOCUS_LABELS_EN[focusKey] || focusKey || "—";
   const trainingGoalLabel = BOOKING_TRAINING_GOAL_LABELS_EN[goalKey] || goalKey || "—";
   const sessionTypeLabel = SESSION_TYPE_LABELS_EN[sessionType] || sessionType;
-  const time12 = formatTime12Server(booking.timeSlot);
+  const timeDual = formatTimeDualServer(booking.timeSlot);
 
   const remainingSessions =
     pkg && typeof pkg.totalSessions === "number" && typeof pkg.usedSessions === "number"
@@ -577,7 +581,7 @@ async function dispatchBookingNotifications(args: {
     clientPhone: user?.phone ?? null,
     date: booking.date,
     timeSlot: booking.timeSlot,
-    time12,
+    time12: timeDual,
     sessionFocusLabel,
     trainingGoalLabel,
     sessionTypeLabel,
@@ -598,7 +602,7 @@ async function dispatchBookingNotifications(args: {
     await storage.createAdminNotification({
       kind: "booking_new",
       title: `New booking — ${clientName}`,
-      body: `${booking.date} at ${time12} • ${sessionFocusLabel} • ${trainingGoalLabel} • ${sessionTypeLabel}${partnerSuffix}`,
+      body: `${booking.date} at ${timeDual} • ${sessionFocusLabel} • ${trainingGoalLabel} • ${sessionTypeLabel}${partnerSuffix}`,
       userId: targetUserId,
       bookingId: booking.id,
     });
@@ -612,14 +616,14 @@ async function dispatchBookingNotifications(args: {
     targetUserId,
     "system",
     "Session booked",
-    `${booking.date} at ${time12} — ${sessionFocusLabel}`,
+    `${booking.date} at ${timeDual} — ${sessionFocusLabel}`,
     { link: "/dashboard", meta: { bookingId: booking.id } },
   );
 
   const bookingDetails: BookingDetails = {
     clientName,
     date: booking.date,
-    time12,
+    time12: timeDual,
     sessionFocusLabel,
     trainingGoalLabel,
     sessionTypeLabel,
@@ -668,7 +672,7 @@ async function dispatchBookingNotifications(args: {
         clientEmail: user?.email ?? null,
         clientPhone: user?.phone ?? null,
         date: booking.date,
-        time12,
+        time12: timeDual,
         sessionType: sessionTypeLabel,
         packageName: bookingDetails.packageName ?? null,
         sessionFocus: bookingDetails.sessionFocusLabel ?? null,
@@ -717,7 +721,7 @@ async function dispatchBookingNotifications(args: {
           lang: clientLang,
           recipientName: clientName,
           date: booking.date,
-          time12,
+          time12: timeDual,
           sessionFocus: bookingDetails.sessionFocusLabel ?? null,
           trainingGoal: bookingDetails.trainingGoalLabel ?? null,
           location: "Coach Youssef's studio, Dubai",
@@ -847,13 +851,13 @@ async function dispatchBookingChangeNotification(opts: {
   try {
     const user = await storage.getUser(opts.booking.userId).catch(() => undefined);
     const clientName = (user?.fullName?.trim() || user?.username || `Client #${opts.booking.userId}`).trim();
-    const time12 = formatTime12Server(opts.booking.timeSlot);
+    const timeDual = formatTimeDualServer(opts.booking.timeSlot);
     const built =
       opts.kind === "cancellation" && opts.protectedCancel
         ? buildAdminEmergencyCancelEmail({
             clientName,
             date: opts.booking.date,
-            time12,
+            time12: timeDual,
             monthlyQuotaUsed: opts.monthlyQuotaUsed ?? null,
             monthlyQuotaTotal: opts.monthlyQuotaTotal ?? null,
             reason: opts.reason ?? null,
@@ -862,7 +866,7 @@ async function dispatchBookingChangeNotification(opts: {
             kind: opts.kind,
             clientName,
             date: opts.booking.date,
-            time12,
+            time12: timeDual,
             fromDate: opts.fromDate ?? null,
             fromTime12: opts.fromTime12 ?? null,
             reason: opts.reason ?? null,
@@ -902,7 +906,7 @@ async function dispatchAdminAttendanceEmail(opts: {
       attendance: opts.attendance,
       clientName,
       date: opts.booking.date,
-      time12: formatTime12Server(opts.booking.timeSlot),
+      time12: formatTimeDualServer(opts.booking.timeSlot),
       packageName,
       remainingSessions,
       reason: opts.reason ?? null,
@@ -3227,7 +3231,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const trainingGoalLabel = BOOKING_TRAINING_GOAL_LABELS_EN[goalKey] || goalKey || "—";
           const sessionTypeLabel =
             SESSION_TYPE_LABELS_EN[booking.sessionType] || booking.sessionType;
-          const time12 = formatTime12Server(booking.timeSlot);
+          const timeDual = formatTimeDualServer(booking.timeSlot);
           const owner = await storage.getUser(booking.userId).catch(() => undefined);
           const ownerName =
             owner?.fullName?.trim() || owner?.username || `Client #${booking.userId}`;
@@ -3235,7 +3239,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const details: BookingDetails = {
             clientName: partnerName,
             date: booking.date,
-            time12,
+            time12: timeDual,
             sessionFocusLabel,
             trainingGoalLabel,
             sessionTypeLabel,
@@ -3263,7 +3267,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 lang: pLang,
                 recipientName: partnerName,
                 date: booking.date,
-                time12,
+                time12: timeDual,
                 sessionFocus: sessionFocusLabel,
                 trainingGoal: trainingGoalLabel,
                 location: "Coach Youssef's studio, Dubai",
@@ -3293,7 +3297,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             "system",
             `partner-linked-${booking.id}`,
             "You're on a Duo session",
-            `${booking.date} at ${time12} with ${ownerName} — ${sessionFocusLabel}`,
+            `${booking.date} at ${timeDual} with ${ownerName} — ${sessionFocusLabel}`,
             { link: "/dashboard", meta: { bookingId: booking.id, partnerOf: booking.userId } },
           );
         } catch (e) {
@@ -3466,7 +3470,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // the result in the UI. dedupeKey is recipient-scoped so re-cancels
     // are idempotent for each recipient independently.
     {
-      const time12 = formatTime12Server(booking.timeSlot);
+      const timeDual = formatTimeDualServer(booking.timeSlot);
       const linkedPartnerId =
         typeof (booking as any).linkedPartnerUserId === "number"
           ? ((booking as any).linkedPartnerUserId as number)
@@ -3480,7 +3484,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           "system",
           `booking-cancelled-${booking.id}-${uid}`,
           "Session cancelled",
-          `Your session on ${booking.date} at ${time12} was cancelled. Tap to rebook.`,
+          `Your session on ${booking.date} at ${timeDual} was cancelled. Tap to rebook.`,
           { link: "/book", meta: { bookingId: booking.id } },
         );
       }
@@ -3503,7 +3507,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           if (!next) return;
           const claimed = await storage.claimWaitlistEntry(next.id);
           if (!claimed) return; // raced — another worker took it
-          const time12Notif = formatTime12Server(booking.timeSlot);
+          const timeDualNotif = formatTimeDualServer(booking.timeSlot);
           // Task #56: canonical kind is `waitlist_slot_available`. The
           // dedupeKey is unchanged so an in-flight claim that previously
           // wrote `waitlist_open` is still deduped by the partial index.
@@ -3512,18 +3516,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             "waitlist_slot_available",
             `waitlist-open-${booking.date}-${booking.timeSlot}-${claimed.userId}`,
             "A spot opened up",
-            `Your waitlisted ${booking.date} ${time12Notif} slot is free — book it before someone else does.`,
+            `Your waitlisted ${booking.date} ${timeDualNotif} slot is free — book it before someone else does.`,
             { link: "/book", meta: { date: booking.date, timeSlot: booking.timeSlot } },
           );
           const recipient = await storage.getUser(claimed.userId).catch(() => undefined);
           if (recipient?.email) {
             const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
             const bookUrl = baseUrl ? `${baseUrl}/book` : "/book";
-            const subject = `A spot opened up — ${booking.date} at ${time12Notif}`;
+            const subject = `A spot opened up — ${booking.date} at ${timeDualNotif}`;
             const text =
               `Hi ${recipient.fullName || recipient.username || "there"},\n\n` +
               `The session you waitlisted just opened up:\n` +
-              `  ${booking.date} at ${time12Notif} (Dubai time)\n\n` +
+              `  ${booking.date} at ${timeDualNotif} (Dubai time)\n\n` +
               `Spots go fast — book it now: ${bookUrl}\n\n` +
               `If you've changed your mind, you can leave the waitlist from your dashboard.\n\n` +
               `— Youssef Fitness`;
@@ -3531,7 +3535,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               `<div style="font-family:system-ui,-apple-system,sans-serif;background:#050505;color:#e4e4e4;padding:32px;border-radius:16px;max-width:520px;margin:auto">` +
               `<h2 style="color:#5ee7ff;margin:0 0 12px">A spot opened up</h2>` +
               `<p>The session you waitlisted just opened:</p>` +
-              `<p style="font-size:18px;font-weight:600">${booking.date} at ${time12Notif} <span style="color:#888">(Dubai)</span></p>` +
+              `<p style="font-size:18px;font-weight:600">${booking.date} at ${timeDualNotif} <span style="color:#888">(Dubai)</span></p>` +
               `<p><a href="${bookUrl}" style="display:inline-block;background:#5ee7ff;color:#000;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:700">Book it now</a></p>` +
               `<p style="color:#888;font-size:12px;margin-top:24px">Spots go fast — book quickly. You can leave the waitlist from your dashboard at any time.</p>` +
               `</div>`;
@@ -3810,7 +3814,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // adjustment. Recipient-scoped dedupe key keyed on the new slot so
     // re-adjusting to a different time also notifies.
     {
-      const newTime12 = formatTime12Server(newTimeSlot);
+      const newTimeDual = formatTimeDualServer(newTimeSlot);
       const linkedPartnerId =
         typeof (booking as any).linkedPartnerUserId === "number"
           ? ((booking as any).linkedPartnerUserId as number)
@@ -3824,7 +3828,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           "system",
           `booking-adjust-${booking.id}-${newTimeSlot}-${uid}`,
           "Session time changed",
-          `Your session moved to ${newTime12} on ${booking.date}.`,
+          `Your session moved to ${newTimeDual} on ${booking.date}.`,
           { link: "/dashboard", meta: { bookingId: booking.id } },
         );
       }
@@ -3940,7 +3944,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const previousStatus = booking.status;
     const newStatus = updateFields.status ?? previousStatus;
     const fromDate = booking.date;
-    const fromTime12 = formatTime12Server(booking.timeSlot);
+    const fromTimeDual = formatTimeDualServer(booking.timeSlot);
     // P4d: stamp coach-notes timestamp whenever an admin writes any
     // coach-note field, so the UI can show "logged X ago".
     const coachKeys = [
@@ -3970,7 +3974,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         kind: "reschedule",
         booking: { ...booking, ...updateFields } as Booking,
         fromDate,
-        fromTime12,
+        fromTime12: fromTimeDual,
       });
 
       // P5b / Task #6: Notify everyone affected by a reschedule that
@@ -3982,7 +3986,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // again, while replays of the same change are no-ops.
       const newDate = updateFields.date ?? booking.date;
       const newSlot = updateFields.timeSlot ?? booking.timeSlot;
-      const newTime12 = formatTime12Server(newSlot);
+      const newTimeDual = formatTimeDualServer(newSlot);
       const linkedPartnerId =
         typeof (booking as any).linkedPartnerUserId === "number"
           ? ((booking as any).linkedPartnerUserId as number)
@@ -3996,7 +4000,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           "system",
           `booking-reschedule-${booking.id}-${newDate}-${newSlot}-${uid}`,
           "Session rescheduled",
-          `Your session moved from ${fromDate} ${fromTime12} → ${newDate} ${newTime12}.`,
+          `Your session moved from ${fromDate} ${fromTimeDual} → ${newDate} ${newTimeDual}.`,
           { link: "/dashboard", meta: { bookingId: booking.id } },
         );
       }
@@ -6473,7 +6477,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           if (!recipientUser) return;
           const recipientLang = (recipientUser as any).preferredLanguage || "en";
           const recipientName = recipientUser.fullName || recipientUser.username || "Client";
-          const time12Str = formatTime12Server(b.timeSlot);
+          const timeDualStr = formatTimeDualServer(b.timeSlot);
           const baseUrl = (process.env.PUBLIC_APP_URL || "").replace(/\/+$/, "");
           let built: { subject: string; text: string; html: string };
           try {
@@ -6514,7 +6518,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               lang: (recipientLang === "ar" ? "ar" : "en") as "en" | "ar",
               recipientName,
               date: b.date,
-              time12: time12Str,
+              time12: timeDualStr,
               sessionFocus: b.sessionFocus || null,
               location: recipientLang === "ar"
                 ? "استوديو المدرب يوسف، مرسى دبي"
@@ -6533,7 +6537,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               data: {
                 clientName: recipientName,
                 date: b.date,
-                time12: time12Str,
+                time12: timeDualStr,
                 sessionFocusLabel: b.sessionFocus || null,
                 trainingGoalLabel: b.trainingGoal || null,
               },
@@ -6544,7 +6548,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             "session_reminder",
             `reminder-${b.id}-${kind}-${recipient}`,
             kind === "24h" ? "Session tomorrow" : "Session in 1 hour",
-            `${b.date} at ${formatTime12Server(b.timeSlot)}`,
+            `${b.date} at ${formatTimeDualServer(b.timeSlot)}`,
             { link: "/dashboard", meta: { bookingId: b.id, kind, recipient } },
           );
           if (!recipientUser.email) return;
@@ -7199,7 +7203,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const u = usersById.get(b.userId);
           return {
             id: b.id,
-            time: String(b.timeSlot ?? ""),
+            time: formatTimeDualServer(String(b.timeSlot ?? "")),
             userId: b.userId,
             userName: u?.fullName ?? u?.username ?? `Client #${b.userId}`,
             status: b.status,

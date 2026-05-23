@@ -7,4 +7,4 @@
  * the browser/device timezone.
  */
 
-export { formatTime12 } from "@shared/dates";
+export { formatTime12, formatTimeDual, formatTimeDualParts } from "@shared/dates";

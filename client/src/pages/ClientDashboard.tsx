@@ -7,6 +7,7 @@ import {
   formatDayDubai,
   formatMonthDubai,
   formatTime12,
+  formatTimeDual,
   formatWeekdayDubai,
   formatWeekdayLongDate,
   isTodayDubai,
@@ -881,7 +882,7 @@ function BookingCard({
         <div className="min-w-0 flex-1">
           <p className="font-semibold truncate">{formatWeekdayDubai(booking.date)}</p>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {formatTime12(booking.timeSlot)} • {sessionLabel}
+            {formatTimeDual(booking.timeSlot)} • {sessionLabel}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
             <span
@@ -1005,7 +1006,7 @@ function BookingCard({
             <AlertDialogDescription>
               {t("dashboard.cancelDesc")
                 .replace("{date}", formatWeekdayLongDate(booking.date))
-                .replace("{time}", formatTime12(booking.timeSlot))
+                .replace("{time}", formatTimeDual(booking.timeSlot))
                 .replace("{hours}", String(cutoff))}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1155,7 +1156,7 @@ function SameDayAdjustDialog({
           </DialogTitle>
           <DialogDescription>
             {t("dashboard.adjustDescDialog")
-              .replace("{time}", formatTime12(booking.timeSlot))
+              .replace("{time}", formatTimeDual(booking.timeSlot))
               .replace("{n}", String(remaining))}
           </DialogDescription>
         </DialogHeader>

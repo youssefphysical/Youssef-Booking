@@ -28,7 +28,7 @@ import { api } from "@shared/routes";
 import type { DashboardStats, BookingWithUser, AdminAnalytics } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
 import { translateStatus, statusColor } from "@/lib/booking-utils";
-import { formatTime12 } from "@/lib/time-format";
+import { formatTime12, formatTimeDual } from "@/lib/time-format";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import {
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] sm:text-sm font-semibold truncate leading-tight">{b.user?.fullName || t("admin.bookings.client")}</p>
                       <p className="text-[11px] sm:text-xs text-muted-foreground truncate mt-0.5">
-                        {formatTime12(b.timeSlot)}{b.user?.phone ? ` • ${b.user.phone}` : ""}
+                        {formatTimeDual(b.timeSlot)}{b.user?.phone ? ` • ${b.user.phone}` : ""}
                       </p>
                     </div>
                     <span

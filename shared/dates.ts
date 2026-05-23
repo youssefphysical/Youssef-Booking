@@ -153,18 +153,70 @@ export function formatWeekdayDubai(dubaiYmd: string): string {
   }).format(d);
 }
 
-/** Format a 24-hour slot "HH:MM" to 12-hour display. */
-export function formatTime12(timeSlot: string | null | undefined): string {
-  if (!timeSlot) return "";
-  const m = /^(\d{1,2}):(\d{2})/.exec(timeSlot);
-  if (!m) return timeSlot;
-  const h24 = Number(m[1]);
+/**
+ * Canonical parser for time-slot strings.
+ * Accepts 24-hour `HH:MM` and 12-hour `HH:MM AM/PM` (case-insensitive,
+ * whitespace-tolerant). Returns zero-padded 12-hour and 24-hour strings.
+ * 12 AM → 00:00, 12 PM → 12:00.
+ */
+export function parseTimeSlot(
+  timeSlot: string | null | undefined,
+): { hour24: number; minute: string; time24: string; time12: string } | null {
+  if (!timeSlot) return null;
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$/.exec(timeSlot.trim());
+  if (!m) return null;
+  let h = Number(m[1]);
   const min = m[2];
-  if (Number.isNaN(h24) || h24 < 0 || h24 > 23) return timeSlot;
+  const ampm = m[3]?.toUpperCase();
+  if (Number.isNaN(h) || Number.isNaN(Number(min))) return null;
+  let h24: number;
+  if (ampm) {
+    // 12-hour input
+    if (h < 1 || h > 12) return null;
+    h24 = ampm === "AM" ? (h === 12 ? 0 : h) : (h === 12 ? 12 : h + 12);
+  } else {
+    // 24-hour input
+    if (h < 0 || h > 23) return null;
+    h24 = h;
+  }
+  const mNum = Number(min);
+  if (mNum < 0 || mNum > 59) return null;
   const period = h24 >= 12 ? "PM" : "AM";
   let h12 = h24 % 12;
   if (h12 === 0) h12 = 12;
-  return `${String(h12).padStart(2, "0")}:${min} ${period}`;
+  return {
+    hour24: h24,
+    minute: String(mNum).padStart(2, "0"),
+    time24: `${String(h24).padStart(2, "0")}:${String(mNum).padStart(2, "0")}`,
+    time12: `${String(h12).padStart(2, "0")}:${String(mNum).padStart(2, "0")} ${period}`,
+  };
+}
+
+/** Format any time-slot string to 12-hour display. */
+export function formatTime12(timeSlot: string | null | undefined): string {
+  return parseTimeSlot(timeSlot)?.time12 ?? (timeSlot || "");
+}
+
+/** Format any time-slot string to dual 12h/24h display. */
+export function formatTimeDual(timeSlot: string | null | undefined): string {
+  const parsed = parseTimeSlot(timeSlot);
+  if (!parsed) return timeSlot || "";
+  return `${parsed.time12} / ${parsed.time24} — Dubai time`;
+}
+
+/** Dual-format parts for styled UI rendering. */
+export function formatTimeDualParts(timeSlot: string | null | undefined): {
+  time12: string;
+  time24: string;
+  label: string;
+} {
+  const parsed = parseTimeSlot(timeSlot);
+  if (!parsed) return { time12: timeSlot || "", time24: timeSlot || "", label: "Dubai time" };
+  return {
+    time12: parsed.time12,
+    time24: parsed.time24,
+    label: "Dubai time",
+  };
 }
 
 /** Format an ISO timestamp as Dubai-local date + time. */

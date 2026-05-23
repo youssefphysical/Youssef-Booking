@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import {
   formatShortDateDubai,
   formatTime12,
+  formatTimeDual,
   formatTimestampDubai,
   formatWeekdayDubai,
   isTodayDubai,
@@ -46,9 +47,9 @@ const GOAL_LABELS: Record<string, string> = {
 
 function formatNextSession(ymd: string, timeSlot?: string | null): string {
   try {
-    if (isTodayDubai(ymd)) return `Today \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
-    if (isTomorrowDubai(ymd)) return `Tomorrow \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
-    return `${formatWeekdayDubai(ymd)} \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
+    if (isTodayDubai(ymd)) return `Today \u00b7 ${timeSlot ? formatTimeDual(timeSlot) : ""}`;
+    if (isTomorrowDubai(ymd)) return `Tomorrow \u00b7 ${timeSlot ? formatTimeDual(timeSlot) : ""}`;
+    return `${formatWeekdayDubai(ymd)} \u00b7 ${timeSlot ? formatTimeDual(timeSlot) : ""}`;
   } catch {
     return ymd;
   }

@@ -91,7 +91,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ALL_TIME_SLOTS, translateStatus, statusColor, paymentColor } from "@/lib/booking-utils";
-import { formatTime12 } from "@/lib/time-format";
+import { formatTime12, formatTimeDual, formatTimeDualParts } from "@/lib/time-format";
 import type { BookingWithUser } from "@shared/schema";
 import { useTranslation } from "@/i18n";
 import {
@@ -725,12 +725,22 @@ function BookingRow({
               className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary shrink-0"
               title={partnerName ? `Duo · + ${partnerName}` : undefined}
             >
-              <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-wider opacity-80">
-                {formatTime12(b.timeSlot).split(" ")[1] /* AM/PM */}
-              </span>
-              <span className="text-[15px] sm:text-base font-display font-bold leading-none tabular-nums">
-                {formatTime12(b.timeSlot).split(" ")[0]}
-              </span>
+              {(() => {
+                const parts = formatTimeDualParts(b.timeSlot);
+                return (
+                  <>
+                    <span className="text-[13px] sm:text-sm font-display font-bold leading-none tabular-nums">
+                      {parts.time12}
+                    </span>
+                    <span className="text-[9px] sm:text-[10px] text-primary/70 tabular-nums leading-none">
+                      {parts.time24}
+                    </span>
+                    <span className="text-[8px] uppercase tracking-wider text-primary/50 leading-none mt-0.5">
+                      {parts.label}
+                    </span>
+                  </>
+                );
+              })()}
               {partnerName && (
                 <span
                   className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full bg-primary text-black text-[9px] font-bold leading-none flex items-center justify-center border border-background shadow-sm shadow-primary/30 tabular-nums"
