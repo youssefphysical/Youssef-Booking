@@ -64,7 +64,13 @@ import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, ChevronDown } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { buildGoogleCalendarUrl, downloadIcs } from "@/lib/calendar";
 import { getDeviceFingerprint } from "@/lib/device-fingerprint";
 import type { Booking, Waitlist } from "@shared/schema";
@@ -1282,27 +1288,28 @@ export default function BookingPage() {
             className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent"
           />
 
-          {/* Header (sticky, never scrolls). pe-12 reserves space so the
-              title can never collide with the absolute close button. */}
-          <div className="relative shrink-0 px-4 pt-5 pb-4 xs:px-5 sm:px-7 sm:pt-7 sm:pb-5 pe-12 sm:pe-14">
-            <DialogHeader className="space-y-2 sm:space-y-2.5 text-start">
-              <div className="flex items-center gap-3">
+          {/* Header (sticky, never scrolls). Compact on mobile so the
+              full confirmation flow fits above the fold. */}
+          <div className="relative shrink-0 px-4 pt-3.5 pb-2.5 xs:px-5 xs:pt-4 xs:pb-3 sm:px-7 sm:pt-6 sm:pb-4 pe-11 sm:pe-14">
+            <DialogHeader className="space-y-0.5 sm:space-y-2 text-start">
+              <div className="flex items-center gap-2.5 sm:gap-3">
                 <span
                   aria-hidden
                   className="
-                    relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                    relative inline-flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full
                     bg-gradient-to-b from-primary/[0.16] to-primary/[0.04]
                     ring-1 ring-inset ring-primary/25 text-primary
                     shadow-[0_0_26px_-6px_rgba(94,231,255,0.55),0_1px_0_0_rgba(255,255,255,0.07)_inset,0_-1px_0_0_rgba(0,0,0,0.3)_inset]
                   "
                 >
-                  <ShieldCheck size={16} strokeWidth={2.1} />
+                  <ShieldCheck size={13} strokeWidth={2.1} className="sm:hidden" />
+                  <ShieldCheck size={16} strokeWidth={2.1} className="hidden sm:block" />
                 </span>
-                <DialogTitle className="text-[17px] xs:text-[18px] sm:text-[20px] leading-tight font-display font-semibold tracking-[-0.018em] text-foreground break-words">
+                <DialogTitle className="text-[15.5px] xs:text-[16.5px] sm:text-[20px] leading-tight font-display font-semibold tracking-[-0.018em] text-foreground break-words">
                   {t("booking.confirmTitle", "Confirm your booking")}
                 </DialogTitle>
               </div>
-              <DialogDescription className="text-[12.5px] sm:text-[13.5px] leading-[1.55] text-foreground/55 tracking-[-0.005em] ps-[3rem] sm:ps-[3.25rem]">
+              <DialogDescription className="hidden sm:block text-[12.5px] sm:text-[13.5px] leading-[1.55] text-foreground/55 tracking-[-0.005em] ps-[3.25rem]">
                 {t(
                   "booking.confirmReview",
                   "Please review the details and accept the policies below.",
@@ -1317,94 +1324,145 @@ export default function BookingPage() {
           />
 
           {/* Scrollable body — only this region scrolls. */}
-          <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 xs:px-5 sm:px-7 pt-3.5 sm:pt-4 pb-3 space-y-3 sm:space-y-3.5 [-webkit-overflow-scrolling:touch]">
-            {/* Booking details card */}
+          <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 xs:px-5 sm:px-7 pt-2.5 sm:pt-4 pb-2.5 sm:pb-3 space-y-2.5 sm:space-y-3.5 [-webkit-overflow-scrolling:touch]">
+            {/* Booking details — compact 2-col grid on mobile, list on >=sm */}
             <div
               className="
-                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
+                relative overflow-hidden rounded-[14px] sm:rounded-[18px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.032] to-white/[0.008]
                 backdrop-blur-[8px]
-                px-4 py-2 xs:px-[18px] xs:py-2.5 sm:px-5 sm:py-3
+                px-3 py-2.5 xs:px-[14px] xs:py-3 sm:px-5 sm:py-3
               "
               data-testid="card-booking-summary"
             >
-              <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
-              <Row
-                label={t("booking.timeLabel")}
-                value={
-                  <span className="text-primary font-semibold tracking-[-0.005em]">
-                    {formatTime12(selectedSlot)}
-                  </span>
-                }
-              />
-              {sessionFocus && (
-                <Row
-                  label={t("booking.sessionFocusLabel")}
-                  value={t(`booking.focus.${sessionFocus}`)}
-                />
-              )}
-              {trainingGoal && (
-                <Row
-                  label={t("booking.trainingGoalLabel")}
-                  value={t(`booking.goal.${trainingGoal}`)}
-                />
-              )}
-              {sessionType === "duo" && partnerName.trim() && (
-                <Row
-                  label={t("booking.partnerLabel", "Training partner")}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:hidden">
+                <GridCell label={t("booking.dateLabel")} value={date && format(date, "MMM d, yyyy")} />
+                <GridCell
+                  label={t("booking.timeLabel")}
                   value={
-                    <span data-testid="text-confirm-partner">{partnerName.trim()}</span>
+                    <span className="text-primary font-semibold tracking-[-0.005em]">
+                      {formatTime12(selectedSlot)}
+                    </span>
                   }
                 />
-              )}
-              {notes && <Row label={t("booking.notesLabel")} value={notes} />}
+                {sessionFocus && (
+                  <GridCell label={t("booking.sessionFocusLabel")} value={t(`booking.focus.${sessionFocus}`)} />
+                )}
+                {trainingGoal && (
+                  <GridCell label={t("booking.trainingGoalLabel")} value={t(`booking.goal.${trainingGoal}`)} />
+                )}
+                {sessionType === "duo" && partnerName.trim() && (
+                  <GridCell
+                    label={t("booking.partnerLabel", "Training partner")}
+                    value={<span data-testid="text-confirm-partner">{partnerName.trim()}</span>}
+                  />
+                )}
+                {notes && (
+                  <div className="col-span-2">
+                    <GridCell label={t("booking.notesLabel")} value={notes} />
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden sm:block">
+                <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
+                <Row
+                  label={t("booking.timeLabel")}
+                  value={
+                    <span className="text-primary font-semibold tracking-[-0.005em]">
+                      {formatTime12(selectedSlot)}
+                    </span>
+                  }
+                />
+                {sessionFocus && (
+                  <Row label={t("booking.sessionFocusLabel")} value={t(`booking.focus.${sessionFocus}`)} />
+                )}
+                {trainingGoal && (
+                  <Row label={t("booking.trainingGoalLabel")} value={t(`booking.goal.${trainingGoal}`)} />
+                )}
+                {sessionType === "duo" && partnerName.trim() && (
+                  <Row
+                    label={t("booking.partnerLabel", "Training partner")}
+                    value={<span data-testid="text-confirm-partner">{partnerName.trim()}</span>}
+                  />
+                )}
+                {notes && <Row label={t("booking.notesLabel")} value={notes} />}
+              </div>
             </div>
 
-            {/* Training waiver */}
-            <div
+            {/* Policies — collapsible accordions (collapsed by default) */}
+            <Accordion
+              type="multiple"
               className="
-                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
+                relative overflow-hidden rounded-[14px] sm:rounded-[18px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.028] to-white/[0.008]
                 backdrop-blur-[8px]
-                px-4 py-3 xs:px-[18px] xs:py-3.5 sm:px-5 sm:py-4
+                divide-y divide-white/[0.045]
               "
-              data-testid="agreement-text-training_waiver"
             >
-              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5 sm:mb-2">
-                {t("agreements.types.training_waiver", "Training Waiver")}
-              </div>
-              <p className="text-[12.5px] sm:text-[13.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em] break-words">
-                {t("agreements.text.training_waiver", "")}
-              </p>
-            </div>
+              <AccordionItem value="waiver" className="border-b-0" data-testid="agreement-text-training_waiver">
+                <AccordionTrigger
+                  className="
+                    px-3.5 py-2.5 xs:px-4 xs:py-3 sm:px-5 sm:py-3.5
+                    hover:no-underline gap-3
+                    [&[data-state=open]>svg]:rotate-180
+                  "
+                >
+                  <div className="flex flex-col items-start gap-0.5 min-w-0 text-start">
+                    <span className="text-primary/95 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-[0.16em]">
+                      {t("agreements.types.training_waiver", "Training Waiver")}
+                    </span>
+                    <span className="text-[11.5px] sm:text-[12.5px] text-foreground/55 tracking-[-0.003em] truncate max-w-full">
+                      {t("booking.waiverPreview", "Acknowledge training risks. Tap to read.")}
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3.5 pb-3 xs:px-4 sm:px-5 sm:pb-4">
+                  <p className="text-[12px] sm:text-[13.5px] leading-[1.6] text-foreground/72 tracking-[-0.003em] break-words">
+                    {t("agreements.text.training_waiver", "")}
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
 
-            {/* Cancellation policy (with dynamic cutoff window) */}
-            <div
-              className="
-                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
-                border border-white/[0.05]
-                bg-gradient-to-b from-white/[0.028] to-white/[0.008]
-                backdrop-blur-[8px]
-                px-4 py-3 xs:px-[18px] xs:py-3.5 sm:px-5 sm:py-4
-              "
-              data-testid="agreement-text-cancellation_policy"
-            >
-              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5 sm:mb-2">
-                {t("agreements.types.cancellation_policy", "Cancellation Policy")}
-              </div>
-              <p className="text-[12.5px] sm:text-[13.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em] break-words">
-                {t("booking.cancellationWarningBefore")}{" "}
-                <span className="text-foreground/90 font-semibold">
-                  {t("booking.cancellationWarningHours").replace(
-                    "{hours}",
-                    String(settings?.cancellationCutoffHours ?? 3),
-                  )}
-                </span>{" "}
-                {t("booking.cancellationWarningAfter")}
-              </p>
-            </div>
+              <AccordionItem value="cancellation" className="border-b-0" data-testid="agreement-text-cancellation_policy">
+                <AccordionTrigger
+                  className="
+                    px-3.5 py-2.5 xs:px-4 xs:py-3 sm:px-5 sm:py-3.5
+                    hover:no-underline gap-3
+                    [&[data-state=open]>svg]:rotate-180
+                  "
+                >
+                  <div className="flex flex-col items-start gap-0.5 min-w-0 text-start">
+                    <span className="text-primary/95 text-[9.5px] sm:text-[10px] font-semibold uppercase tracking-[0.16em]">
+                      {t("agreements.types.cancellation_policy", "Cancellation Policy")}
+                    </span>
+                    <span className="text-[11.5px] sm:text-[12.5px] text-foreground/55 tracking-[-0.003em] truncate max-w-full">
+                      {t("booking.cancellationPreview", "Cancel at least {hours} before.").replace(
+                        "{hours}",
+                        t("booking.cancellationWarningHours").replace(
+                          "{hours}",
+                          String(settings?.cancellationCutoffHours ?? 3),
+                        ),
+                      )}
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3.5 pb-3 xs:px-4 sm:px-5 sm:pb-4">
+                  <p className="text-[12px] sm:text-[13.5px] leading-[1.6] text-foreground/72 tracking-[-0.003em] break-words">
+                    {t("booking.cancellationWarningBefore")}{" "}
+                    <span className="text-foreground/90 font-semibold">
+                      {t("booking.cancellationWarningHours").replace(
+                        "{hours}",
+                        String(settings?.cancellationCutoffHours ?? 3),
+                      )}
+                    </span>{" "}
+                    {t("booking.cancellationWarningAfter")}
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
 
           {/* Footer — sticky consent + actions, always reachable. */}
@@ -1607,6 +1665,19 @@ function sessionTypeIcon(value: SessionTypeChoice) {
     default:
       return PackageIcon;
   }
+}
+
+function GridCell({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0 flex flex-col gap-0.5">
+      <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-foreground/45">
+        {label}
+      </span>
+      <span className="text-[12.5px] font-semibold text-foreground/95 tracking-[-0.005em] break-words leading-[1.3]">
+        {value}
+      </span>
+    </div>
+  );
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
