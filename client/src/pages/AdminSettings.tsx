@@ -1217,7 +1217,7 @@ function GeneralSettingsSection() {
   const form = useForm<z.infer<typeof generalSchema>>({
     resolver: zodResolver(generalSchema),
     defaultValues: {
-      cancellationCutoffHours: 6,
+      cancellationCutoffHours: 3,
       whatsappNumber: "",
       profilePhotoUrl: "",
       profileBio: "",
@@ -1227,7 +1227,7 @@ function GeneralSettingsSection() {
   useEffect(() => {
     if (settings) {
       form.reset({
-        cancellationCutoffHours: settings.cancellationCutoffHours ?? 6,
+        cancellationCutoffHours: settings.cancellationCutoffHours ?? 3,
         whatsappNumber: settings.whatsappNumber ?? "",
         profilePhotoUrl: settings.profilePhotoUrl ?? "",
         profileBio: settings.profileBio ?? "",

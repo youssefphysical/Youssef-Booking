@@ -7,7 +7,7 @@ import { useTranslation } from "@/i18n";
 
 export default function CancellationPolicyPage() {
   const { data: settings } = useSettings();
-  const cutoff = settings?.cancellationCutoffHours ?? 6;
+  const cutoff = settings?.cancellationCutoffHours ?? 3;
   const { t } = useTranslation();
 
   return (

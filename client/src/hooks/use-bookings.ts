@@ -12,7 +12,7 @@ import { TRANSLATIONS, DEFAULT_LANGUAGE, type LanguageCode } from "@/i18n/transl
 const RULE_CODE_FALLBACK: Record<string, { key: string; fallback: string }> = {
   slot_taken: { key: "booking.error.slot_taken", fallback: "This time slot was just booked by someone else. Please pick another." },
   slot_in_past: { key: "booking.error.slot_in_past", fallback: "This time has already passed. Please pick a future slot." },
-  lead_time_too_short: { key: "booking.error.lead_time_too_short", fallback: "Bookings need to be made at least 6 hours in advance." },
+  lead_time_too_short: { key: "booking.error.lead_time_too_short", fallback: "Bookings need to be made at least 3 hours in advance." },
   pending_verification: { key: "booking.error.pending_verification", fallback: "Your package is awaiting verification. You'll be able to book once approved." },
   package_expired: { key: "booking.error.package_expired", fallback: "Your package has expired. Please request a renewal or extension." },
   package_completed: { key: "booking.error.package_completed", fallback: "Your package is fully used. Please request a renewal." },

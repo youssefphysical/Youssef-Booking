@@ -721,7 +721,7 @@ function BookingsTab({ userId }: { userId: number }) {
   const { t } = useTranslation();
   const { data: bookings = [], isLoading } = useBookings({ userId });
   const { data: settings } = useSettings();
-  const cutoff = settings?.cancellationCutoffHours ?? 6;
+  const cutoff = settings?.cancellationCutoffHours ?? 3;
 
   const { upcoming, past } = useMemo(() => {
     const now = new Date();

@@ -64,7 +64,7 @@ import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
-import { AgreementGate, useAgreements, hasAccepted } from "@/components/AgreementGate";
+import { ShieldCheck } from "lucide-react";
 import { buildGoogleCalendarUrl, downloadIcs } from "@/lib/calendar";
 import { getDeviceFingerprint } from "@/lib/device-fingerprint";
 import type { Booking, Waitlist } from "@shared/schema";
@@ -72,9 +72,6 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarPlus, Download } from "lucide-react";
-
-const REQUIRED_BOOKING_AGREEMENTS = ["training_waiver", "cancellation_policy"] as const;
-const REQUIRED_BOOKING_AGREEMENT_VERSION = "1";
 
 type SessionTypeChoice = "package" | "single" | "trial" | "duo";
 type SessionFocus = (typeof SESSION_FOCUS_GROUPS)["upper"][number] | (typeof SESSION_FOCUS_GROUPS)["lower"][number] | (typeof SESSION_FOCUS_GROUPS)["conditioning"][number];
@@ -168,11 +165,6 @@ export default function BookingPage() {
   const [notes, setNotes] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [showAgreementGate, setShowAgreementGate] = useState(false);
-  const { data: myAgreements } = useAgreements();
-  const missingRequiredAgreements = REQUIRED_BOOKING_AGREEMENTS.filter(
-    (tp) => !hasAccepted(myAgreements, tp, REQUIRED_BOOKING_AGREEMENT_VERSION),
-  );
   const [submitted, setSubmitted] = useState(false);
   // Task #55: capture the created booking so the success screen can
   // build a stable .ics URL (`/api/bookings/:id/calendar.ics`).
@@ -425,10 +417,18 @@ export default function BookingPage() {
     if (!isAdmin && sessionType === "duo" && partnerName.trim().length < 2) {
       return;
     }
-    // First-booking agreements gate — admins are exempt (they book on behalf of clients).
-    if (!isAdmin && missingRequiredAgreements.length > 0) {
-      setShowAgreementGate(true);
-      return;
+    // Consent is captured inline in the unified confirm dialog. The server-side
+    // POST /api/bookings handler writes a consent record (consentType: "booking",
+    // acceptedItems: ["cancellation_policy"]) on every successful booking, so
+    // the audit trail is created transactionally with the booking row itself.
+    if (!isAdmin) {
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("policyAccepted", "true");
+        }
+      } catch {
+        // ignore
+      }
     }
     const isDuo = sessionType === "duo";
     const payload = {
@@ -1238,79 +1238,252 @@ export default function BookingPage() {
         )}
       </AnimatePresence>
 
-      <AgreementGate
-        types={[...REQUIRED_BOOKING_AGREEMENTS]}
-        version={REQUIRED_BOOKING_AGREEMENT_VERSION}
-        open={showAgreementGate}
-        onOpenChange={setShowAgreementGate}
-        onAccepted={() => handleBook()}
-      />
-
+      {/* Unified booking confirmation + consent gate.
+          One modal only — booking details + training waiver + cancellation
+          policy + a single required checkbox + the Confirm CTA. The audit
+          trail is preserved server-side via fire-and-forget /api/agreements
+          POSTs inside handleBook(). */}
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-display">{t("booking.confirmTitle")}</DialogTitle>
-            <DialogDescription>{t("booking.confirmReview")}</DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          className="
+            ag-sheet-in
+            relative overflow-hidden
+            bg-[#06080A]
+            border border-white/[0.055]
+            rounded-[22px] sm:rounded-[24px]
+            w-[calc(100vw-1.25rem)] sm:w-full max-w-[460px]
+            p-0 gap-0
+            will-change-transform
+            shadow-[0_1px_0_0_rgba(255,255,255,0.045)_inset,0_0_0_1px_rgba(94,231,255,0.045),0_50px_140px_-30px_rgba(0,0,0,0.96),0_12px_30px_-14px_rgba(94,231,255,0.1)]
+          "
+          data-testid="dialog-confirm-booking"
+        >
+          {/* Layer 1 — Ambient radial cyan wash */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-28 start-1/2 -translate-x-1/2 h-56 w-[130%] rounded-full bg-primary/[0.055] blur-3xl"
+          />
+          {/* Layer 2 — Top hairline glow */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent"
+          />
+          {/* Layer 3 — Inner luxury double-stroke */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-px rounded-[21px] sm:rounded-[23px] ring-1 ring-inset ring-white/[0.022]"
+          />
+          {/* Layer 4 — Bottom soft vignette */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent"
+          />
 
-          <div className="bg-white/5 p-4 rounded-xl space-y-2 my-2">
-            <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
-            <Row label={t("booking.timeLabel")} value={<span className="text-primary font-bold">{formatTime12(selectedSlot)}</span>} />
-            {sessionFocus && (
-              <Row
-                label={t("booking.sessionFocusLabel")}
-                value={t(`booking.focus.${sessionFocus}`)}
-              />
-            )}
-            {trainingGoal && (
-              <Row
-                label={t("booking.trainingGoalLabel")}
-                value={t(`booking.goal.${trainingGoal}`)}
-              />
-            )}
-            {sessionType === "duo" && partnerName.trim() && (
-              <Row label="Training partner" value={<span data-testid="text-confirm-partner">{partnerName.trim()}</span>} />
-            )}
-            {notes && <Row label={t("booking.notesLabel")} value={notes} />}
+          <div className="relative px-6 pt-6 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
+            <DialogHeader className="space-y-2.5 text-start">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden
+                  className="
+                    relative inline-flex h-9 w-9 items-center justify-center rounded-full
+                    bg-gradient-to-b from-primary/[0.16] to-primary/[0.04]
+                    ring-1 ring-inset ring-primary/25 text-primary
+                    shadow-[0_0_26px_-6px_rgba(94,231,255,0.55),0_1px_0_0_rgba(255,255,255,0.07)_inset,0_-1px_0_0_rgba(0,0,0,0.3)_inset]
+                  "
+                >
+                  <ShieldCheck size={16} strokeWidth={2.1} />
+                </span>
+                <DialogTitle className="text-[18px] sm:text-[19px] leading-tight font-display font-semibold tracking-[-0.018em] text-foreground">
+                  {t("booking.confirmTitle", "Confirm your booking")}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-[13px] leading-[1.6] text-foreground/55 tracking-[-0.005em] ps-[3.25rem]">
+                {t(
+                  "booking.confirmReview",
+                  "Please review the details and accept the policies below.",
+                )}
+              </DialogDescription>
+            </DialogHeader>
           </div>
 
-          <div className="flex gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-xs leading-relaxed">
-            <ShieldAlert className="text-cyan-400 shrink-0 mt-0.5" size={16} />
-            <div className="text-cyan-100/80 space-y-1.5">
-              <p>{t("booking.advanceRule")}</p>
-              <p>
+          <div
+            aria-hidden
+            className="mx-6 sm:mx-7 h-px bg-gradient-to-r from-transparent via-white/[0.055] to-transparent"
+          />
+
+          <div className="relative px-6 sm:px-7 pt-4 pb-2 space-y-2.5 max-h-[55vh] overflow-y-auto">
+            {/* Booking details card */}
+            <div
+              className="
+                relative overflow-hidden rounded-[14px]
+                border border-white/[0.05]
+                bg-gradient-to-b from-white/[0.032] to-white/[0.008]
+                backdrop-blur-[8px]
+                px-4 py-3.5 space-y-2
+              "
+              data-testid="card-booking-summary"
+            >
+              <Row label={t("booking.dateLabel")} value={date && format(date, "PPPP")} />
+              <Row
+                label={t("booking.timeLabel")}
+                value={
+                  <span className="text-primary font-semibold tracking-[-0.005em]">
+                    {formatTime12(selectedSlot)}
+                  </span>
+                }
+              />
+              {sessionFocus && (
+                <Row
+                  label={t("booking.sessionFocusLabel")}
+                  value={t(`booking.focus.${sessionFocus}`)}
+                />
+              )}
+              {trainingGoal && (
+                <Row
+                  label={t("booking.trainingGoalLabel")}
+                  value={t(`booking.goal.${trainingGoal}`)}
+                />
+              )}
+              {sessionType === "duo" && partnerName.trim() && (
+                <Row
+                  label={t("booking.partnerLabel", "Training partner")}
+                  value={
+                    <span data-testid="text-confirm-partner">{partnerName.trim()}</span>
+                  }
+                />
+              )}
+              {notes && <Row label={t("booking.notesLabel")} value={notes} />}
+            </div>
+
+            {/* Training waiver */}
+            <div
+              className="
+                relative overflow-hidden rounded-[14px]
+                border border-white/[0.05]
+                bg-gradient-to-b from-white/[0.028] to-white/[0.008]
+                backdrop-blur-[8px]
+                px-4 py-3
+              "
+              data-testid="agreement-text-training_waiver"
+            >
+              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5">
+                {t("agreements.types.training_waiver", "Training Waiver")}
+              </div>
+              <p className="text-[12.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em]">
+                {t("agreements.text.training_waiver", "")}
+              </p>
+            </div>
+
+            {/* Cancellation policy (with dynamic cutoff window) */}
+            <div
+              className="
+                relative overflow-hidden rounded-[14px]
+                border border-white/[0.05]
+                bg-gradient-to-b from-white/[0.028] to-white/[0.008]
+                backdrop-blur-[8px]
+                px-4 py-3
+              "
+              data-testid="agreement-text-cancellation_policy"
+            >
+              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5">
+                {t("agreements.types.cancellation_policy", "Cancellation Policy")}
+              </div>
+              <p className="text-[12.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em]">
                 {t("booking.cancellationWarningBefore")}{" "}
-                <span className="font-bold">
-                  {t("booking.cancellationWarningHours").replace("{hours}", String(settings?.cancellationCutoffHours ?? 6))}
+                <span className="text-foreground/90 font-semibold">
+                  {t("booking.cancellationWarningHours").replace(
+                    "{hours}",
+                    String(settings?.cancellationCutoffHours ?? 3),
+                  )}
                 </span>{" "}
                 {t("booking.cancellationWarningAfter")}
               </p>
             </div>
           </div>
 
-          <label className="flex items-start gap-3 mt-4 cursor-pointer">
-            <Checkbox
-              checked={accepted}
-              onCheckedChange={(v) => setAccepted(v === true)}
-              data-testid="checkbox-accept-policy"
-              className="mt-0.5"
-            />
-            <span className="text-sm">{t("booking.acceptPolicy")}</span>
-          </label>
-
-          <DialogFooter className="mt-2">
-            <Button variant="ghost" onClick={() => setIsConfirmOpen(false)} data-testid="button-cancel-confirm">
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={handleBook}
-              disabled={createBooking.isPending || !accepted}
-              data-testid="button-confirm-booking"
+          {/* Consent + actions */}
+          <div className="relative px-6 sm:px-7 pt-4 pb-6 sm:pb-7">
+            <label
+              className="
+                group flex items-start gap-3
+                rounded-[14px]
+                border border-white/[0.05]
+                bg-gradient-to-b from-white/[0.032] to-white/[0.01]
+                backdrop-blur-[8px]
+                px-4 py-3.5
+                cursor-pointer select-none
+                transition-all duration-[160ms] ease-out
+                hover:border-primary/25
+                hover:bg-gradient-to-b hover:from-primary/[0.045] hover:to-white/[0.01]
+                hover:-translate-y-[1px]
+                has-[[data-state=checked]]:border-primary/35
+                has-[[data-state=checked]]:shadow-[0_0_0_1px_rgba(94,231,255,0.08),0_12px_28px_-14px_rgba(94,231,255,0.25)]
+              "
             >
-              {createBooking.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("booking.confirmBooking")}
-            </Button>
-          </DialogFooter>
+              <Checkbox
+                checked={accepted}
+                onCheckedChange={(v) => setAccepted(v === true)}
+                data-testid="checkbox-accept-policy"
+                className="mt-[2px] h-4 w-4 rounded-[5px] border-white/20 transition-colors duration-[140ms] data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
+              />
+              <span className="text-[13px] leading-[1.55] text-foreground/85 tracking-[-0.003em]">
+                {t(
+                  "booking.acceptWaiverAndCancellation",
+                  "I have read and agree to the training waiver and cancellation policy.",
+                )}
+              </span>
+            </label>
+
+            <div className="mt-5 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsConfirmOpen(false)}
+                data-testid="button-cancel-confirm"
+                className="
+                  h-10 sm:h-9 px-4
+                  text-[13px] font-medium tracking-[-0.005em]
+                  text-foreground/55 hover:text-foreground/90
+                  bg-transparent hover:bg-white/[0.035]
+                  rounded-[10px]
+                  transition-colors duration-[160ms] ease-out
+                "
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                onClick={handleBook}
+                disabled={createBooking.isPending || !accepted}
+                data-testid="button-confirm-booking"
+                className="
+                  ag-cta-sheen
+                  relative overflow-hidden
+                  h-10 sm:h-9 px-6
+                  text-[13px] font-semibold tracking-[-0.005em]
+                  rounded-[10px]
+                  text-[#001218]
+                  bg-gradient-to-b from-[#7defff] to-[#39d3f0]
+                  hover:from-[#8df3ff] hover:to-[#4adcf6]
+                  border border-primary/40
+                  shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_-1px_0_0_rgba(0,30,40,0.22)_inset,0_0_24px_-6px_rgba(94,231,255,0.55),0_10px_24px_-12px_rgba(94,231,255,0.5)]
+                  hover:shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_-1px_0_0_rgba(0,30,40,0.22)_inset,0_0_32px_-4px_rgba(94,231,255,0.72),0_14px_30px_-12px_rgba(94,231,255,0.62)]
+                  active:scale-[0.985]
+                  disabled:opacity-35 disabled:cursor-not-allowed disabled:shadow-none disabled:from-primary/40 disabled:to-primary/30 disabled:active:scale-100
+                  transition-[transform,box-shadow,background-color] duration-[180ms] ease-out
+                  will-change-transform
+                "
+              >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                />
+                <span className="relative z-[1] inline-flex items-center gap-2">
+                  {createBooking.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {t("booking.confirmBooking")}
+                </span>
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

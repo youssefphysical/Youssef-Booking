@@ -103,13 +103,13 @@ export function isValidBookingSlot(args: {
     return { ok: false, code: "slot_in_past", message: "This time is no longer available. Please choose a future slot." };
   }
   if (!isAdmin && sessionAt.getTime() < leadTimeCutoffMs) {
-    return { ok: false, code: "lead_time_too_short", message: "Bookings must be made at least 6 hours in advance so the trainer can prepare and arrive on time." };
+    return { ok: false, code: "lead_time_too_short", message: "Bookings must be made at least 3 hours in advance so the trainer can prepare and arrive on time." };
   }
   return OK;
 }
 
 // -----------------------------------------------------------------------------
-// canCancelWithoutCharge — 6h lockout rule.
+// canCancelWithoutCharge — Nh lockout rule (default 3h, admin-configurable).
 // -----------------------------------------------------------------------------
 export function canCancelWithoutCharge(args: {
   sessionAt: Date;

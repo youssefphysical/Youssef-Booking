@@ -719,7 +719,7 @@ export const COACH_NOTE_FIELDS = [
 // =============================
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
-  cancellationCutoffHours: integer("cancellation_cutoff_hours").notNull().default(6),
+  cancellationCutoffHours: integer("cancellation_cutoff_hours").notNull().default(3),
   profilePhotoUrl: text("profile_photo_url"),
   profileBio: text("profile_bio"),
   whatsappNumber: text("whatsapp_number").default("971505394754"),
@@ -2196,16 +2196,16 @@ export const VIP_TIER_DESCRIPTIONS: Record<string, string> = {
   momentum:
     "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
   starter:
-    "2 sessions per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
+    "2 sessions per week. Standard 3-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
   foundation:
-    "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
+    "1 session per week. Standard 3-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
   // Legacy aliases
   progress:
     "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
   consistent:
     "3 sessions per week. 1 Protected Cancellation and 1 Same-Day Adjustment each month.",
   developing:
-    "1 session per week. Standard 6-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
+    "1 session per week. Standard 3-hour cancellation policy applies; no Protected Cancellations or Same-Day Adjustments.",
 };
 
 export const VIP_TIER_TAGLINES: Record<string, string> = {
