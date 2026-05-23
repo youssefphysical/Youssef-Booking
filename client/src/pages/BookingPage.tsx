@@ -1250,9 +1250,12 @@ export default function BookingPage() {
             relative overflow-hidden
             bg-[#06080A]
             border border-white/[0.055]
-            rounded-[22px] sm:rounded-[24px]
-            w-[calc(100vw-1.25rem)] sm:w-full max-w-[460px]
+            rounded-[20px] sm:rounded-[24px]
+            w-[calc(100vw-1rem)] sm:w-full max-w-[460px]
             p-0 gap-0
+            flex flex-col
+            max-h-[calc(100dvh-1rem)] sm:max-h-[85vh]
+            [padding-bottom:env(safe-area-inset-bottom)]
             will-change-transform
             shadow-[0_1px_0_0_rgba(255,255,255,0.045)_inset,0_0_0_1px_rgba(94,231,255,0.045),0_50px_140px_-30px_rgba(0,0,0,0.96),0_12px_30px_-14px_rgba(94,231,255,0.1)]
           "
@@ -1271,7 +1274,7 @@ export default function BookingPage() {
           {/* Layer 3 — Inner luxury double-stroke */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-px rounded-[21px] sm:rounded-[23px] ring-1 ring-inset ring-white/[0.022]"
+            className="pointer-events-none absolute inset-px rounded-[19px] sm:rounded-[23px] ring-1 ring-inset ring-white/[0.022]"
           />
           {/* Layer 4 — Bottom soft vignette */}
           <div
@@ -1279,13 +1282,15 @@ export default function BookingPage() {
             className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent"
           />
 
-          <div className="relative px-6 pt-6 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
-            <DialogHeader className="space-y-2.5 text-start">
+          {/* Header (sticky, never scrolls). pe-12 reserves space so the
+              title can never collide with the absolute close button. */}
+          <div className="relative shrink-0 px-4 pt-5 pb-4 xs:px-5 sm:px-7 sm:pt-7 sm:pb-5 pe-12 sm:pe-14">
+            <DialogHeader className="space-y-2 sm:space-y-2.5 text-start">
               <div className="flex items-center gap-3">
                 <span
                   aria-hidden
                   className="
-                    relative inline-flex h-9 w-9 items-center justify-center rounded-full
+                    relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full
                     bg-gradient-to-b from-primary/[0.16] to-primary/[0.04]
                     ring-1 ring-inset ring-primary/25 text-primary
                     shadow-[0_0_26px_-6px_rgba(94,231,255,0.55),0_1px_0_0_rgba(255,255,255,0.07)_inset,0_-1px_0_0_rgba(0,0,0,0.3)_inset]
@@ -1293,11 +1298,11 @@ export default function BookingPage() {
                 >
                   <ShieldCheck size={16} strokeWidth={2.1} />
                 </span>
-                <DialogTitle className="text-[18px] sm:text-[19px] leading-tight font-display font-semibold tracking-[-0.018em] text-foreground">
+                <DialogTitle className="text-[17px] xs:text-[18px] sm:text-[20px] leading-tight font-display font-semibold tracking-[-0.018em] text-foreground break-words">
                   {t("booking.confirmTitle", "Confirm your booking")}
                 </DialogTitle>
               </div>
-              <DialogDescription className="text-[13px] leading-[1.6] text-foreground/55 tracking-[-0.005em] ps-[3.25rem]">
+              <DialogDescription className="text-[12.5px] sm:text-[13.5px] leading-[1.55] text-foreground/55 tracking-[-0.005em] ps-[3rem] sm:ps-[3.25rem]">
                 {t(
                   "booking.confirmReview",
                   "Please review the details and accept the policies below.",
@@ -1308,18 +1313,19 @@ export default function BookingPage() {
 
           <div
             aria-hidden
-            className="mx-6 sm:mx-7 h-px bg-gradient-to-r from-transparent via-white/[0.055] to-transparent"
+            className="shrink-0 mx-4 xs:mx-5 sm:mx-7 h-px bg-gradient-to-r from-transparent via-white/[0.055] to-transparent"
           />
 
-          <div className="relative px-6 sm:px-7 pt-4 pb-2 space-y-2.5 max-h-[55vh] overflow-y-auto">
+          {/* Scrollable body — only this region scrolls. */}
+          <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 xs:px-5 sm:px-7 pt-3.5 sm:pt-4 pb-3 space-y-3 sm:space-y-3.5 [-webkit-overflow-scrolling:touch]">
             {/* Booking details card */}
             <div
               className="
-                relative overflow-hidden rounded-[14px]
+                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.032] to-white/[0.008]
                 backdrop-blur-[8px]
-                px-4 py-3.5 space-y-2
+                px-4 py-2 xs:px-[18px] xs:py-2.5 sm:px-5 sm:py-3
               "
               data-testid="card-booking-summary"
             >
@@ -1358,18 +1364,18 @@ export default function BookingPage() {
             {/* Training waiver */}
             <div
               className="
-                relative overflow-hidden rounded-[14px]
+                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.028] to-white/[0.008]
                 backdrop-blur-[8px]
-                px-4 py-3
+                px-4 py-3 xs:px-[18px] xs:py-3.5 sm:px-5 sm:py-4
               "
               data-testid="agreement-text-training_waiver"
             >
-              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5">
+              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5 sm:mb-2">
                 {t("agreements.types.training_waiver", "Training Waiver")}
               </div>
-              <p className="text-[12.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em]">
+              <p className="text-[12.5px] sm:text-[13.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em] break-words">
                 {t("agreements.text.training_waiver", "")}
               </p>
             </div>
@@ -1377,18 +1383,18 @@ export default function BookingPage() {
             {/* Cancellation policy (with dynamic cutoff window) */}
             <div
               className="
-                relative overflow-hidden rounded-[14px]
+                relative overflow-hidden rounded-[16px] sm:rounded-[18px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.028] to-white/[0.008]
                 backdrop-blur-[8px]
-                px-4 py-3
+                px-4 py-3 xs:px-[18px] xs:py-3.5 sm:px-5 sm:py-4
               "
               data-testid="agreement-text-cancellation_policy"
             >
-              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5">
+              <div className="text-primary/95 text-[10px] font-semibold uppercase tracking-[0.16em] mb-1.5 sm:mb-2">
                 {t("agreements.types.cancellation_policy", "Cancellation Policy")}
               </div>
-              <p className="text-[12.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em]">
+              <p className="text-[12.5px] sm:text-[13.5px] leading-[1.65] text-foreground/72 tracking-[-0.003em] break-words">
                 {t("booking.cancellationWarningBefore")}{" "}
                 <span className="text-foreground/90 font-semibold">
                   {t("booking.cancellationWarningHours").replace(
@@ -1401,16 +1407,17 @@ export default function BookingPage() {
             </div>
           </div>
 
-          {/* Consent + actions */}
-          <div className="relative px-6 sm:px-7 pt-4 pb-6 sm:pb-7">
+          {/* Footer — sticky consent + actions, always reachable. */}
+          <div className="relative shrink-0 px-4 xs:px-5 sm:px-7 pt-3.5 sm:pt-4 pb-4 sm:pb-6 border-t border-white/[0.04] bg-[#06080A]/85 backdrop-blur-md">
             <label
               className="
                 group flex items-start gap-3
-                rounded-[14px]
+                rounded-[14px] sm:rounded-[16px]
                 border border-white/[0.05]
                 bg-gradient-to-b from-white/[0.032] to-white/[0.01]
                 backdrop-blur-[8px]
-                px-4 py-3.5
+                px-3.5 py-3 xs:px-4 xs:py-3.5
+                min-h-[48px]
                 cursor-pointer select-none
                 transition-all duration-[160ms] ease-out
                 hover:border-primary/25
@@ -1424,9 +1431,9 @@ export default function BookingPage() {
                 checked={accepted}
                 onCheckedChange={(v) => setAccepted(v === true)}
                 data-testid="checkbox-accept-policy"
-                className="mt-[2px] h-4 w-4 rounded-[5px] border-white/20 transition-colors duration-[140ms] data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
+                className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-[5px] border-white/25 transition-colors duration-[140ms] data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
               />
-              <span className="text-[13px] leading-[1.55] text-foreground/85 tracking-[-0.003em]">
+              <span className="text-[12.5px] sm:text-[13px] leading-[1.55] text-foreground/85 tracking-[-0.003em] break-words">
                 {t(
                   "booking.acceptWaiverAndCancellation",
                   "I have read and agree to the training waiver and cancellation policy.",
@@ -1434,18 +1441,18 @@ export default function BookingPage() {
               </span>
             </label>
 
-            <div className="mt-5 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3">
+            <div className="mt-3.5 sm:mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsConfirmOpen(false)}
                 data-testid="button-cancel-confirm"
                 className="
-                  h-10 sm:h-9 px-4
-                  text-[13px] font-medium tracking-[-0.005em]
+                  h-11 sm:h-10 px-4
+                  text-[13px] sm:text-[13.5px] font-medium tracking-[-0.005em]
                   text-foreground/55 hover:text-foreground/90
                   bg-transparent hover:bg-white/[0.035]
-                  rounded-[10px]
+                  rounded-[11px]
                   transition-colors duration-[160ms] ease-out
                 "
               >
@@ -1458,13 +1465,14 @@ export default function BookingPage() {
                 className="
                   ag-cta-sheen
                   relative overflow-hidden
-                  h-10 sm:h-9 px-6
-                  text-[13px] font-semibold tracking-[-0.005em]
-                  rounded-[10px]
+                  h-11 sm:h-10 px-5 sm:px-6
+                  text-[13.5px] sm:text-[14px] font-semibold tracking-[-0.005em]
+                  rounded-[11px]
                   text-[#001218]
                   bg-gradient-to-b from-[#7defff] to-[#39d3f0]
                   hover:from-[#8df3ff] hover:to-[#4adcf6]
                   border border-primary/40
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#7defff] disabled:hover:to-[#39d3f0]
                   shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_-1px_0_0_rgba(0,30,40,0.22)_inset,0_0_24px_-6px_rgba(94,231,255,0.55),0_10px_24px_-12px_rgba(94,231,255,0.5)]
                   hover:shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_-1px_0_0_rgba(0,30,40,0.22)_inset,0_0_32px_-4px_rgba(94,231,255,0.72),0_14px_30px_-12px_rgba(94,231,255,0.62)]
                   active:scale-[0.985]
@@ -1603,9 +1611,18 @@ function sessionTypeIcon(value: SessionTypeChoice) {
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between items-start gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value}</span>
+    <div
+      className="
+        flex items-start justify-between gap-3
+        py-2.5 sm:py-3 min-h-[40px] sm:min-h-[44px]
+        text-[12.5px] sm:text-[13.5px]
+        border-b border-white/[0.045] last:border-b-0
+      "
+    >
+      <span className="shrink-0 text-foreground/55 tracking-[-0.003em]">{label}</span>
+      <span className="min-w-0 font-semibold text-foreground/95 text-end break-words tracking-[-0.005em]">
+        {value}
+      </span>
     </div>
   );
 }

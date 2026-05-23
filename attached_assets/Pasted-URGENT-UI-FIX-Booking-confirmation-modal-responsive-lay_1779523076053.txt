@@ -1,0 +1,151 @@
+URGENT UI FIX — Booking confirmation modal responsive layout is broken on mobile.
+
+Current issue on production:
+The booking modal appears visually compressed and inconsistent on mobile.
+The booking summary card is too close to the header/subtitle.
+Some content feels clipped/cut off.
+The modal does not feel premium enough after the merge.
+
+Goal:
+Make the unified booking confirmation modal fully responsive and premium across ALL phones and tablets.
+
+Important:
+DO NOT change functionality.
+DO NOT touch booking logic.
+DO NOT touch the 3-hour cutoff logic.
+DO NOT bring back the second modal.
+UI/responsive polish only.
+
+The modal must remain ONE unified modal containing:
+- Booking summary card
+- Training waiver
+- Cancellation policy
+- One checkbox only
+- Confirm Booking CTA
+- Cancel secondary action
+
+Responsive requirements:
+Must work perfectly on:
+- 320px
+- 360px
+- 375px
+- 390px
+- 412px
+- 430px
+- 768px+
+
+Modal container:
+- max-height: 85vh on mobile
+- internal content scrolling only
+- no page/body scroll issues
+- respect safe-area insets
+- no overflow clipping
+- no overlapping content
+- footer/actions should remain accessible
+- landscape safe
+- keyboard safe
+
+Spacing system:
+Use adaptive spacing by breakpoint.
+
+320–360px:
+- padding: 16px
+- gaps: 12–14px
+
+375–412px:
+- padding: 18–20px
+- gaps: 16–18px
+
+430px+:
+- padding: 22–24px
+- gaps: 20px
+
+Header:
+- More breathing room.
+- Title must not collide with close button.
+- Subtitle should have clear margin below.
+- Header should feel premium, not cramped.
+
+Booking summary card:
+- Needs more vertical breathing room.
+- Rows must never compress or overlap.
+- Minimum row height: 44px.
+- Labels opacity around 70%.
+- Values stronger hierarchy.
+- Values should align cleanly.
+- Add subtle dividers between rows if needed.
+- Border radius around 20px.
+- Long text/translations must wrap safely.
+- No horizontal overflow.
+- No clipped text.
+
+Policy cards:
+- Reduce visual density.
+- Padding 18–20px on normal mobile, slightly less on 320px.
+- Improve readability and line-height.
+- Keep premium glass/dark surface.
+- Controlled cyan accents only.
+- No gaming/excessive glow.
+
+Typography:
+Use responsive type sizing.
+
+Title:
+- 18–22px adaptive
+
+Subtitle:
+- 13–14px adaptive
+
+Booking labels/values:
+- responsive and readable
+- values can be slightly stronger
+
+Policy body:
+- 12–14px adaptive
+- comfortable line-height
+
+Buttons:
+- 13–15px adaptive
+- Confirm Booking should feel premium, not oversized.
+- Disabled state clear.
+- CTA should remain the hero.
+- Cancel should be subtle and elegant.
+
+Visual style:
+Premium Apple Pay / Stripe sheet feeling.
+Luxury Dubai fitness concierge.
+High-end PT booking experience.
+Clean, calm, expensive.
+Not bulky.
+Not SaaS-dashboard.
+Not gaming UI.
+
+RTL/i18n:
+- Arabic safe
+- English safe
+- Long language strings safe
+- Use logical CSS properties where possible
+- No LTR-only assumptions
+
+Testing:
+Test at widths:
+320, 360, 375, 390, 412, 430, 768+
+
+Manual verification:
+1. Open /book on mobile.
+2. Choose a valid session more than 3 hours ahead.
+3. Click Book Session.
+4. Only ONE modal appears.
+5. Booking summary is clean and readable.
+6. No clipping/overlap.
+7. Scroll works inside modal only.
+8. Checkbox enables Confirm Booking.
+9. Confirm Booking submits booking.
+10. No second modal appears.
+
+Again:
+Do NOT change backend.
+Do NOT change 3-hour cutoff.
+Do NOT change booking submit logic.
+Do NOT create new features.
+Only fix responsive UI layout and premium visual polish for the unified booking modal.

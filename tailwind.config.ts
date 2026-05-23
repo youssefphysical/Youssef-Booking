@@ -19,6 +19,9 @@ export default {
   },
   theme: {
     extend: {
+      screens: {
+        xs: "380px",
+      },
       borderRadius: {
         lg: ".5625rem", /* 9px */
         md: ".375rem", /* 6px */
