@@ -4,27 +4,23 @@ import { useTranslation } from "@/i18n";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
 import { useBookings } from "@/hooks/use-bookings";
 import { dubaiTodayYMD, buildSessionDate } from "@/lib/booking-utils";
+import { formatTimeDual } from "@shared/dates";
 import { computeCoachAvailability } from "@/lib/coach-availability";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
-// Render a Dubai-anchored slot as "Wed, May 22 · 14:00" regardless of
-// the viewer's browser timezone. Booking semantics are Dubai-local, so
-// the chip must mirror that — date-fns format() uses local TZ and
-// would mislead users outside the UAE.
-const DUBAI_LABEL_FMT = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Asia/Dubai",
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
+// Render a Dubai-anchored slot as "Wed, May 22 · 08:00 PM / 20:00 — Dubai time"
+// regardless of the viewer's browser timezone.
 function formatDubaiSlotLabel(date: string, timeSlot: string): string {
-  const parts = DUBAI_LABEL_FMT.formatToParts(buildSessionDate(date, timeSlot));
+  const d = buildSessionDate(date, timeSlot);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Dubai",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).formatToParts(d);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  return `${get("weekday")}, ${get("month")} ${get("day")} · ${get("hour")}:${get("minute")}`;
+  return `${get("weekday")}, ${get("month")} ${get("day")} · ${formatTimeDual(timeSlot)}`;
 }
 
 interface CoachAvailabilityChipProps {

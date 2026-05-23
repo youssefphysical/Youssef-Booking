@@ -53,7 +53,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ALL_TIME_SLOTS } from "@/lib/booking-utils";
-import { formatTime12 } from "@/lib/time-format";
+import { formatTime12, formatTimeDual } from "@/lib/time-format";
 import { useTranslation } from "@/i18n";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 
@@ -1865,7 +1865,7 @@ function BlockedSlotsSection() {
             >
               <div className="flex items-center gap-3 text-sm flex-wrap">
                 <span className="font-semibold">{formatWeekdayShortDate(b.date)}</span>
-                <span className="text-muted-foreground">{b.timeSlot ?? t("admin.settingsPage.wholeDayLabel")}</span>
+                <span className="text-muted-foreground">{b.timeSlot ? formatTimeDual(b.timeSlot) : t("admin.settingsPage.wholeDayLabel")}</span>
                 {!b.timeSlot && b.blockType && (
                   <span
                     className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${BLOCK_TYPE_COLORS[b.blockType] || "bg-white/5 border-white/10"}`}

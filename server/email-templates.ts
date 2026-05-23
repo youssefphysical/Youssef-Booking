@@ -1286,7 +1286,7 @@ export function buildClientBookingConfirmationEmail(opts: {
   // all rendered as horizontal label/value rows. Same shape as admin.
   const combinedRows: Array<{ icon: string; label: string; value: string | number | null; valueTone?: "primary" | "default" }> = [
     { icon: "", label: t(lang, "bookingDate"), value: d.date },
-    { icon: "", label: `${t(lang, "bookingTime")} (Dubai)`, value: `${d.time12} · GST (UTC+4)` },
+    { icon: "", label: t(lang, "bookingTime"), value: d.time12 },
   ];
   if (d.sessionFocusLabel) combinedRows.push({ icon: "", label: t(lang, "bookingFocus"), value: d.sessionFocusLabel });
   if (d.trainingGoalLabel) combinedRows.push({ icon: "", label: t(lang, "bookingGoal"), value: d.trainingGoalLabel });
@@ -1568,7 +1568,7 @@ export function buildAdminBookingEmail(opts: {
   ];
   if (d.partnerFullName) combinedRows.push({ icon: "", label: "Training Partner", value: d.partnerFullName });
   combinedRows.push({ icon: "", label: "Date", value: d.date });
-  combinedRows.push({ icon: "", label: "Time (Dubai)", value: `${d.time12} · GST (UTC+4)` });
+  combinedRows.push({ icon: "", label: "Time", value: d.time12 });
   if (d.sessionFocusLabel) combinedRows.push({ icon: "", label: "Focus", value: d.sessionFocusLabel });
   if (d.trainingGoalLabel) combinedRows.push({ icon: "", label: "Goal", value: d.trainingGoalLabel });
   if (d.sessionTypeLabel) combinedRows.push({ icon: "", label: "Type", value: d.sessionTypeLabel });

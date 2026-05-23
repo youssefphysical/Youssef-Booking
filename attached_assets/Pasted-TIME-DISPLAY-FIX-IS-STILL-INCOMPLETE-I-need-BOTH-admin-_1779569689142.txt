@@ -1,0 +1,88 @@
+TIME DISPLAY FIX IS STILL INCOMPLETE.
+
+I need BOTH admin and client UI to show BOTH time formats everywhere.
+
+Required format:
+08:00 PM / 20:00 — Dubai time
+
+This means:
+- 12-hour format with AM/PM must always appear.
+- 24-hour format must also appear.
+- Dubai time label must appear.
+- Do NOT show 20:00 alone.
+- Do NOT show 08:00 PM alone.
+- Do NOT omit AM/PM.
+- Do NOT apply this only to client views.
+- Admin must also use the exact same dual format.
+
+Scope must include EVERY visible time:
+ADMIN:
+- Admin Daily Brief
+- Today's Sessions
+- Upcoming sessions
+- Admin dashboard
+- Admin booking list
+- Booking details
+- Client detail booking history
+- Calendar
+- Session timeline
+- Notifications
+- Emails to admin
+- Any admin modal or card that displays session time
+
+CLIENT:
+- Booking page
+- Booking confirmation modal
+- Client dashboard
+- Upcoming sessions
+- Booking history
+- Session history
+- Notifications
+- Emails/reminders
+- WhatsApp message text
+- Cancellation/reschedule messages
+
+Important:
+All times must still be Asia/Dubai UTC+4.
+Do NOT use browser/device timezone.
+Do NOT change booking logic.
+Do NOT change the 3-hour cutoff.
+
+Implementation requirement:
+Use one shared formatter everywhere:
+
+formatDubaiTimeDual(dateOrTime)
+Example output:
+08:00 PM / 20:00 — Dubai time
+
+For tight spaces, do NOT fallback to 12-hour only unless absolutely impossible.
+If space is tight, use:
+08:00 PM / 20:00
+and show Dubai time in tooltip/subtext.
+But admin Daily Brief and normal cards must show the full format.
+
+Verification:
+Search the whole codebase for visible time formatting.
+Find every place still using:
+formatTime12
+formatTime24
+toLocaleTimeString
+toLocaleString
+manual HH:mm
+raw startTime/endTime display
+
+Replace all user-facing/admin-facing time displays with dual Dubai format.
+
+Specific failed example:
+Admin Daily Brief must NOT show:
+20:00
+
+It must show:
+08:00 PM / 20:00 — Dubai time
+
+Report:
+- files changed
+- examples fixed
+- GitHub push status
+- Vercel production READY
+- confirmation that Admin Daily Brief no longer shows 20:00 alone

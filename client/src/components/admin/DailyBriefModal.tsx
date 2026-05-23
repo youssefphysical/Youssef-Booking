@@ -22,7 +22,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { dubaiTodayYMD, formatWeekdayShortDate } from "@shared/dates";
+import { dubaiTodayYMD, formatWeekdayShortDate, formatTimeDual } from "@shared/dates";
 
 const STORAGE_PREFIX = "daily-brief-dismissed-";
 
@@ -149,8 +149,8 @@ export function DailyBriefModal({ enabled = true }: { enabled?: boolean }) {
                     data-testid={`brief-session-${s.id}`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-mono text-[12px] text-primary tabular-nums w-12 shrink-0">
-                        {s.time}
+                      <span className="font-mono text-[12px] text-primary tabular-nums shrink-0">
+                        {formatTimeDual(s.time)}
                       </span>
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{s.userName}</p>

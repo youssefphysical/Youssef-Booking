@@ -28,6 +28,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "@/i18n";
+import { formatTimeDual } from "@shared/dates";
 import { isEffectiveSuperAdmin } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -287,7 +288,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                   </span>
                   <span className="flex flex-col min-w-0">
                     <span className="text-sm font-medium truncate">
-                      {b.date} · {b.timeSlot}
+                      {b.date} · {formatTimeDual(b.timeSlot)}
                     </span>
                     <span className="text-[11px] text-muted-foreground truncate">
                       {b.userName ?? `User #${b.userId}`} · {b.status}
