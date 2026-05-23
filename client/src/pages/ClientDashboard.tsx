@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CyanHairline } from "@/components/ui/CyanHairline";
-import { format } from "date-fns";
 import { motion } from "framer-motion";
+import {
+  dubaiTodayYMD,
+  formatDateDubai,
+  formatDayDubai,
+  formatMonthDubai,
+  formatTime12,
+  formatWeekdayDubai,
+  formatWeekdayLongDate,
+  isTodayDubai,
+  isTomorrowDubai,
+} from "@shared/dates";
 import { Link, useLocation } from "wouter";
 import {
   Calendar,
@@ -101,7 +111,6 @@ import {
   isCancellable,
   buildSessionDate,
 } from "@/lib/booking-utils";
-import { formatTime12 } from "@/lib/time-format";
 import {
   PACKAGE_DEFINITIONS,
   PACKAGE_TYPES,
@@ -203,13 +212,12 @@ function RecoveryDashboardTile() {
 }
 
 function currentMonthKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const d = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function todayDateString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function todayDateString(): string {
+  return dubaiTodayYMD();
 }
 
 export default function ClientDashboard() {
@@ -724,14 +732,14 @@ function BookingsTab({ userId }: { userId: number }) {
   const cutoff = settings?.cancellationCutoffHours ?? 3;
 
   const { upcoming, past } = useMemo(() => {
-    const now = new Date();
+    const nowMs = Date.now() + 4 * 60 * 60 * 1000;
     const list = bookings as Booking[];
     const up = list
       .filter((b) => {
         const sd = buildSessionDate(b.date, b.timeSlot);
         return (
           ["upcoming", "confirmed"].includes(b.status) &&
-          sd.getTime() >= now.getTime() - 60 * 60 * 1000
+          sd.getTime() >= nowMs - 60 * 60 * 1000
         );
       })
       .sort((a, b) =>
@@ -864,14 +872,14 @@ function BookingCard({
       <div className="flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
         <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
           <span className="text-[10px] uppercase font-bold tracking-wider">
-            {format(new Date(booking.date), "MMM")}
+            {formatMonthDubai(booking.date)}
           </span>
           <span className="text-2xl font-display font-bold leading-none mt-0.5">
-            {format(new Date(booking.date), "d")}
+            {formatDayDubai(booking.date)}
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold truncate">{format(new Date(booking.date), "EEEE")}</p>
+          <p className="font-semibold truncate">{formatWeekdayDubai(booking.date)}</p>
           <p className="text-sm text-muted-foreground mt-0.5">
             {formatTime12(booking.timeSlot)} • {sessionLabel}
           </p>
@@ -996,7 +1004,7 @@ function BookingCard({
             <AlertDialogTitle>{t("dashboard.cancelTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("dashboard.cancelDesc")
-                .replace("{date}", format(new Date(booking.date), "PPPP"))
+                .replace("{date}", formatWeekdayLongDate(booking.date))
                 .replace("{time}", formatTime12(booking.timeSlot))
                 .replace("{hours}", String(cutoff))}
             </AlertDialogDescription>
@@ -1201,7 +1209,8 @@ function SameDayAdjustDialog({
 function computePackageStatus(p: Package): "active" | "expiring_soon" | "expired" | "completed" {
   if (p.usedSessions >= p.totalSessions) return "completed";
   if (p.expiryDate) {
-    const today = new Date();
+    const todayMs = Date.now() + 4 * 60 * 60 * 1000;
+    const today = new Date(todayMs);
     today.setHours(0, 0, 0, 0);
     const exp = new Date(p.expiryDate as any);
     if (isFinite(exp.getTime())) {
@@ -1215,7 +1224,8 @@ function computePackageStatus(p: Package): "active" | "expiring_soon" | "expired
 
 function daysUntilExpiry(p: Package): number | null {
   if (!p.expiryDate) return null;
-  const today = new Date();
+  const todayMs = Date.now() + 4 * 60 * 60 * 1000;
+  const today = new Date(todayMs);
   today.setHours(0, 0, 0, 0);
   const exp = new Date(p.expiryDate as any);
   if (!isFinite(exp.getTime())) return null;
@@ -1764,7 +1774,7 @@ function InbodyTab({ userId }: { userId: number }) {
                 <TrendingUp size={12} /> {t("dashboard.latestScan")}
               </p>
               <p className="text-sm text-muted-foreground">
-                {latest.recordedAt && format(new Date(latest.recordedAt), "PPP")}
+                {latest.recordedAt && formatDateDubai(latest.recordedAt)}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -1825,7 +1835,7 @@ function InbodyTab({ userId }: { userId: number }) {
               >
                 <div className="text-sm">
                   <span className="font-semibold">
-                    {r.recordedAt && format(new Date(r.recordedAt), "MMM d, yyyy")}
+                    {r.recordedAt && formatDateDubai(r.recordedAt)}
                   </span>
                   <span className="text-muted-foreground ml-3">
                     {r.weight != null ? `${r.weight}kg` : t("dashboard.notAvailable")} •{" "}
@@ -1989,7 +1999,7 @@ function ProgressTab({ userId }: { userId: number }) {
               />
               <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                 <p className="text-xs text-white font-medium">
-                  {p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}
+                  {p.recordedAt && formatDateDubai(p.recordedAt)}
                 </p>
                 <p className="text-[10px] uppercase tracking-wider text-primary">
                   {p.type} · {(p as any).viewAngle ?? "front"}

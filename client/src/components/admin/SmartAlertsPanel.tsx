@@ -4,7 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AlertTriangle, AlertCircle, Info, Check, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminCard, AdminSectionTitle, AdminEmptyState } from "@/components/admin/primitives";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelativeDubai } from "@shared/dates";
 
 type Severity = "info" | "warning" | "critical";
 
@@ -95,7 +95,7 @@ export function SmartAlertsPanel() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[13px] font-semibold leading-tight">{a.title}</p>
                   <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
-                    {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+                    {formatRelativeDubai(a.createdAt)}
                   </span>
                 </div>
                 <p className="text-[11.5px] text-muted-foreground mt-1 leading-snug">{a.body}</p>

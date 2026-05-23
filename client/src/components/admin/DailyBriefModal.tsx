@@ -22,14 +22,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { dubaiTodayYMD, formatWeekdayShortDate } from "@shared/dates";
 
 const STORAGE_PREFIX = "daily-brief-dismissed-";
 
 function todayKey() {
-  // Match the server's Dubai date to avoid late-night drift on the client.
-  const d = new Date(Date.now() + 4 * 3600 * 1000);
-  return d.toISOString().slice(0, 10);
+  return dubaiTodayYMD();
 }
 
 export function DailyBriefModal({ enabled = true }: { enabled?: boolean }) {
@@ -66,7 +64,7 @@ export function DailyBriefModal({ enabled = true }: { enabled?: boolean }) {
 
   if (!data) return null;
 
-  const dateLabel = format(new Date(data.date + "T12:00:00"), "EEEE, MMM d");
+  const dateLabel = formatWeekdayShortDate(data.date);
   const totalPending =
     data.pending.renewals + data.pending.extensions + data.pending.paymentApprovals;
 

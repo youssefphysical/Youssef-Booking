@@ -224,7 +224,7 @@ function exportSummary(d: Payload) {
       [csvEscape(s), csvEscape(l), csvEscape(v)].join(","),
     )
     .join("\n");
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
   triggerDownload(
     new Blob(["\ufeff" + header + body], {
       type: "text/csv;charset=utf-8",
@@ -247,7 +247,7 @@ function exportActions(rows: ActionRow[]) {
       ].join(","),
     )
     .join("\n");
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
   triggerDownload(
     new Blob(["\ufeff" + header + body], {
       type: "text/csv;charset=utf-8",

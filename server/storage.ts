@@ -608,11 +608,10 @@ export function computePackageStatus(pkg: Pick<Package, "totalSessions" | "usedS
     return "completed";
   }
   if (pkg.expiryDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiry = new Date(pkg.expiryDate as any);
-    if (isFinite(expiry.getTime())) {
-      const diffMs = expiry.getTime() - today.getTime();
+    const todayStr = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const expStr = String(pkg.expiryDate).slice(0, 10);
+    if (isFinite(new Date(expStr).getTime())) {
+      const diffMs = new Date(`${expStr}T00:00:00Z`).getTime() - new Date(`${todayStr}T00:00:00Z`).getTime();
       const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
       if (diffDays < 0) return "expired";
       if (diffDays <= 7) return "expiring_soon";

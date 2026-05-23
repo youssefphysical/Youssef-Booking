@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { Sparkles, Calendar as CalendarIcon, RefreshCw, Users } from "lucide-react";
-import { format } from "date-fns";
+import { formatDateDubai } from "@shared/dates";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { usePackages } from "@/hooks/use-packages";
@@ -209,7 +209,7 @@ export function PackageStatusHero({
                     )
                   : t("dashboard.packageExpiresOn", "Expires {date}").replace(
                       "{date}",
-                      format(new Date(active.expiryDate as any), "MMM d, yyyy"),
+                      formatDateDubai(active.expiryDate as any),
                     )}
               </span>
               <InfoTip

@@ -4,8 +4,8 @@ import { CyanHairline } from "@/components/ui/CyanHairline";
 import { CalendarClock, ChevronRight } from "lucide-react";
 import { useBookings } from "@/hooks/use-bookings";
 import type { Booking } from "@shared/schema";
-import { format, isToday, isTomorrow } from "date-fns";
-import { formatTime12 } from "@/lib/time-format";
+import { format } from "date-fns";
+import { isTodayDubai, isTomorrowDubai, formatTime12, formatShortDateDubai } from "@shared/dates";
 import { useTranslation } from "@/i18n";
 
 // Session timeline — top 3 upcoming sessions in cinematic stacked
@@ -14,10 +14,10 @@ import { useTranslation } from "@/i18n";
 // existing useBookings hook; clicking a card jumps to the bookings tab
 // where the full management UI (cancel/adjust) lives.
 
-function dayLabel(d: Date, t: (k: string, fb?: string) => string): string {
-  if (isToday(d)) return t("dashboard.today", "Today");
-  if (isTomorrow(d)) return t("dashboard.tomorrow", "Tomorrow");
-  return format(d, "EEE, MMM d");
+function dayLabel(ymd: string, t: (k: string, fb?: string) => string): string {
+  if (isTodayDubai(ymd)) return t("dashboard.today", "Today");
+  if (isTomorrowDubai(ymd)) return t("dashboard.tomorrow", "Tomorrow");
+  return formatShortDateDubai(ymd);
 }
 
 export function SessionTimeline({
@@ -104,8 +104,7 @@ export function SessionTimeline({
       ) : (
         <div className="space-y-2.5">
           {upcoming.map((b, i) => {
-            const dt = new Date(`${b.date}T${b.timeSlot}:00+04:00`);
-            const day = dayLabel(dt, t);
+            const day = dayLabel(b.date, t);
             const time = formatTime12(b.timeSlot);
             const isNext = i === 0;
             return (

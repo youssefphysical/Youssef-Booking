@@ -699,7 +699,7 @@ export function emailFooter({ lang, whatsappUrl, instagramUrl, supportEmail, lar
     ? `<div style="text-align:center;padding-top:${SPACE.s5};">${socials.join("")}</div>`
     : "";
 
-  const year = new Date().getFullYear();
+  const year = new Date(Date.now() + 4 * 60 * 60 * 1000).getUTCFullYear();
   const copy = t(
     `© ${year} Youssef Elite Coaching. All rights reserved.`,
     `© ${year} يوسف إيليت كوتشينج. جميع الحقوق محفوظة.`,

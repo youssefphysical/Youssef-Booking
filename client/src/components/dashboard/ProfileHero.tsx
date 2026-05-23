@@ -68,7 +68,7 @@ export function ProfileHero({
   const goal = user.primaryGoal ? GOAL_LABELS[user.primaryGoal] : null;
   const weeks =
     joinedAt != null
-      ? Math.max(1, differenceInWeeks(new Date(), new Date(joinedAt as any)) + 1)
+      ? Math.max(1, differenceInWeeks(new Date(Date.now() + 4 * 60 * 60 * 1000), new Date(`${String(joinedAt).slice(0,10)}T12:00:00+04:00`)) + 1)
       : null;
   const subtitle = goal
     ? weeks

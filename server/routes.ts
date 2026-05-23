@@ -9,6 +9,16 @@ import sharp from "sharp";
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import { pool } from "./db";
 import {
+  dubaiTodayYMD,
+  dubaiTomorrowYMD,
+  formatYMDInDubai,
+  buildSessionDate,
+  sessionEndTime,
+  formatTime12 as formatTime12Shared,
+  nowDubai,
+  DUBAI_TZ_OFFSET,
+} from "@shared/dates";
+import {
   insertBookingSchema,
   updateBookingSchema,
   updateSettingsSchema,
@@ -134,9 +144,9 @@ import { recomputeSmartAlerts, listOpen as listOpenAlerts, resolveById as resolv
 import { getHealth as getSystemHealth } from "./services/systemHealth";
 import { optimizeImageFile } from "./image-utils";
 
-function currentMonthKey(d: Date = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
+function currentMonthKey(d: Date = nowDubai()): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
 }
 
@@ -279,11 +289,7 @@ function requirePermission(key: AdminPermissionKey) {
 // endTime 4 hours ahead, breaking auto-completion + reminders + lead-time
 // checks. Dubai stays on UTC+4 year-round so a string offset is sufficient
 // (no Intl/date-fns-tz dep needed).
-const DUBAI_TZ_OFFSET = "+04:00";
-
-function buildSessionDate(date: string, timeSlot: string): Date {
-  return new Date(`${date}T${timeSlot}:00${DUBAI_TZ_OFFSET}`);
-}
+// buildSessionDate / sessionEndTime / DUBAI_TZ_OFFSET imported from @shared/dates.
 
 // Compute when a session is over (UTC instant) given its date, slot, and
 // duration. Used by the auto-complete cron to decide if a booking has
@@ -323,7 +329,7 @@ async function runPackageExpiryNotifications(): Promise<void> {
   // Pull only active packages — expired/completed/frozen don't need
   // expiry warnings. activeOnly=true filters to status='active' in storage.
   const pkgs = await storage.getPackages({ activeOnly: true });
-  const today = new Date();
+  const today = nowDubai();
   today.setUTCHours(0, 0, 0, 0);
   for (const p of pkgs) {
     if (!p.expiryDate) continue;
@@ -411,12 +417,9 @@ const ALLOWED_BOOKING_HOURS = new Set([
   "18:00","19:00","20:00","21:00","22:00",
 ]);
 
+/** Dubai-anchored "today" as YYYY-MM-DD. Never uses server-local timezone. */
 function todayDateString(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+  return dubaiTodayYMD();
 }
 
 // Recompute the client's VIP tier based on their declared weekly frequency.
@@ -527,15 +530,7 @@ function fileToPublicUrl(file: Express.Multer.File, subdir: "inbody" | "photos")
 // Always best-effort. Caller wraps it in try/catch so booking never fails.
 // =============================================================
 function formatTime12Server(timeSlot: string): string {
-  const m = /^(\d{1,2}):(\d{2})/.exec(timeSlot || "");
-  if (!m) return timeSlot;
-  const h = Number(m[1]);
-  const min = m[2];
-  if (Number.isNaN(h) || h < 0 || h > 23) return timeSlot;
-  const period = h >= 12 ? "PM" : "AM";
-  let h12 = h % 12;
-  if (h12 === 0) h12 = 12;
-  return `${h12}:${min} ${period}`;
+  return formatTime12Shared(timeSlot);
 }
 
 async function dispatchBookingNotifications(args: {
@@ -962,6 +957,7 @@ async function dispatchClientPaymentConfirmedEmail(opts: {
     const amountNumber = opts.amountReceived ?? totalPrice;
     const amount = `AED ${Number(amountNumber).toLocaleString()}`;
     const paymentDate = new Date().toLocaleDateString("en-GB", {
+      timeZone: "Asia/Dubai",
       weekday: "short", day: "numeric", month: "short", year: "numeric",
     });
     const startDate = opts.pkg.startDate
@@ -5202,7 +5198,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 500) : "";
 
     if (action === "approve") {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = dubaiTodayYMD();
       const updated = await storage.updatePackage(id, {
         status: "active",
         isActive: true,
@@ -5435,7 +5431,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     };
 
     const nowMs = Date.now();
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = dubaiTodayYMD();
 
     const [bookings, clientSupps, activePlan, checkins, bodyMetrics] = await Promise.all([
       safe(() => storage.getBookings({ userId: me.id }), [] as any[]),
@@ -6428,8 +6424,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   }> {
     const sent: Array<{ id: number; kind: "24h" | "1h" }> = [];
     const failed: Array<{ id: number; kind: "24h" | "1h"; error: string }> = [];
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const tomorrowIso = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    const todayIso = dubaiTodayYMD();
+    const tomorrowIso = dubaiTomorrowYMD();
     // Storage call is OUTSIDE the per-recipient try/catch — if the bookings
     // query itself fails (DB down, schema mismatch), let it throw so the
     // runner classifies the phase as DB_FAILURE / QUERY_FAILURE rather
@@ -6847,10 +6843,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ============== DASHBOARD ==============
   app.get("/api/dashboard/stats", requireAdmin, async (_req, res) => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    const monthStartStr = monthStart.toISOString().slice(0, 10);
+    const todayStr = dubaiTodayYMD();
+    const monthStart = nowDubai();
+    monthStart.setUTCDate(1);
+    const monthStartStr = formatYMDInDubai(monthStart);
 
     const [clients, allBookings, allPackages, pendingRenewalsList, pendingExtensionsList] =
       await Promise.all([

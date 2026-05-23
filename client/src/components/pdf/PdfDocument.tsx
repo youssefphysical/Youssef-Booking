@@ -114,7 +114,7 @@ export function PdfDocument({
             <span>youssef-booking.vercel.app</span>
             <span className="pdf-footer-dot">·</span>
             <span>
-              {t("pdf.generated", "Generated")} {new Date().toLocaleDateString()}
+              {t("pdf.generated", "Generated")} {new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleDateString("en-GB", { timeZone: "UTC" })}
             </span>
           </footer>
         </article>

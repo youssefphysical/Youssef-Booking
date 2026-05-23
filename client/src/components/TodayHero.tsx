@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { CyanHairline } from "@/components/ui/CyanHairline";
-import { format, formatDistanceToNow, isToday, isTomorrow } from "date-fns";
+import { format } from "date-fns";
+import {
+  formatShortDateDubai,
+  formatTime12,
+  formatTimestampDubai,
+  formatWeekdayDubai,
+  isTodayDubai,
+  isTomorrowDubai,
+} from "@shared/dates";
 import {
   CalendarClock,
   Droplets,
@@ -36,14 +44,13 @@ const GOAL_LABELS: Record<string, string> = {
   rehabilitation: "Rehabilitation",
 };
 
-function formatNextSession(iso: string): string {
+function formatNextSession(ymd: string, timeSlot?: string | null): string {
   try {
-    const d = new Date(iso);
-    if (isToday(d)) return `Today · ${format(d, "p")}`;
-    if (isTomorrow(d)) return `Tomorrow · ${format(d, "p")}`;
-    return `${formatDistanceToNow(d, { addSuffix: true })} · ${format(d, "EEE p")}`;
+    if (isTodayDubai(ymd)) return `Today \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
+    if (isTomorrowDubai(ymd)) return `Tomorrow \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
+    return `${formatWeekdayDubai(ymd)} \u00b7 ${timeSlot ? formatTime12(timeSlot) : ""}`;
   } catch {
-    return iso;
+    return ymd;
   }
 }
 
@@ -120,7 +127,7 @@ export function TodayHero({ name }: { name?: string | null }) {
   const streakValue = data.streakWeeks > 0 ? `${data.streakWeeks} wk` : "—";
   const streakSub = data.streakWeeks > 0 ? "Consecutive active weeks" : "Start a streak this week";
 
-  const sessionValue = data.nextSession ? formatNextSession(data.nextSession.date) : "Nothing booked";
+  const sessionValue = data.nextSession ? formatNextSession(data.nextSession.date, null) : "Nothing booked";
   const sessionSub = data.nextSession?.sessionType ?? "Book your next session";
 
   const suppValue = `${data.supplementsToday}`;

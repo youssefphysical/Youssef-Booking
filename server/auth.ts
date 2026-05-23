@@ -615,8 +615,8 @@ export function setupAuth(app: Express) {
                 : tpl.expirationUnit === "weeks"
                 ? (tpl.expirationValue ?? 0) * 7
                 : tpl.expirationValue ?? 0;
-            const startDate = new Date();
-            const expiryDate = days > 0 ? new Date(startDate.getTime() + days * 86_400_000) : null;
+            const startDate = new Date(Date.now() + 4 * 60 * 60 * 1000);
+            const expiryDate = days > 0 ? new Date(Date.now() + 4 * 60 * 60 * 1000 + days * 86_400_000) : null;
             const created = await storage.createPackage({
               userId: user.id,
               type: tpl.type as any,

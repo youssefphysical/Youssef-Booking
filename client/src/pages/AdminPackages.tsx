@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
+import { formatDateDubai } from "@shared/dates";
 import {
   Search,
   Package as PackageIcon,
@@ -270,7 +270,7 @@ export default function AdminPackages() {
                       {p.purchasedAt &&
                         t("admin.packagesPage.startedOn").replace(
                           "{date}",
-                          format(new Date(p.purchasedAt), "MMM d, yyyy"),
+                          formatDateDubai(p.purchasedAt),
                         )}
                     </span>
                   </div>

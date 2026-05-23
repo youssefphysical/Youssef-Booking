@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CyanHairline } from "@/components/ui/CyanHairline";
-import { format } from "date-fns";
+import { formatShortDateDubai } from "@shared/dates";
 import {
   ResponsiveContainer,
   LineChart,
@@ -124,7 +124,7 @@ export function InbodyTrends({ records }: { records: InbodyRecord[] }) {
         const points = ordered
           .map((r) => ({
             t: r.recordedAt ? new Date(r.recordedAt).getTime() : 0,
-            label: r.recordedAt ? format(new Date(r.recordedAt), "MMM d") : "",
+            label: r.recordedAt ? formatShortDateDubai(r.recordedAt) : "",
             value: r[s.key] as number | null,
           }))
           .filter((p) => p.value != null) as { t: number; label: string; value: number }[];

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { format } from "date-fns";
+import { formatWeekdayShortDate, dubaiTodayYMD } from "@shared/dates";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1719,7 +1719,7 @@ function BlockedSlotsSection() {
   const form = useForm<z.infer<typeof blockSchema>>({
     resolver: zodResolver(blockSchema),
     defaultValues: {
-      date: new Date().toISOString().slice(0, 10),
+      date: dubaiTodayYMD(),
       scope: "whole-day",
       timeSlot: "",
       blockType: "off-day",
@@ -1864,7 +1864,7 @@ function BlockedSlotsSection() {
               data-testid={`block-row-${b.id}`}
             >
               <div className="flex items-center gap-3 text-sm flex-wrap">
-                <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d")}</span>
+                <span className="font-semibold">{formatWeekdayShortDate(b.date)}</span>
                 <span className="text-muted-foreground">{b.timeSlot ?? t("admin.settingsPage.wholeDayLabel")}</span>
                 {!b.timeSlot && b.blockType && (
                   <span

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { formatDateDubai, formatShortDateDubai } from "@shared/dates";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,8 +91,8 @@ function CompareSlider({
     );
   }
 
-  const beforeDate = beforePhoto.recordedAt ? format(new Date(beforePhoto.recordedAt), "MMM d, yyyy") : "—";
-  const afterDate = afterPhoto.recordedAt ? format(new Date(afterPhoto.recordedAt), "MMM d, yyyy") : "—";
+  const beforeDate = beforePhoto.recordedAt ? formatDateDubai(beforePhoto.recordedAt) : "—";
+  const afterDate = afterPhoto.recordedAt ? formatDateDubai(afterPhoto.recordedAt) : "—";
 
   return (
     <Card className="bg-white/5 border-white/10 overflow-hidden">
@@ -237,7 +237,7 @@ export default function BeforeAfterCompare({ photos }: Props) {
               >
                 <img src={p.photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 <div className="absolute inset-x-0 bottom-0 px-1 py-0.5 bg-black/65 text-white text-[9px] text-center">
-                  {p.recordedAt && format(new Date(p.recordedAt), "MMM d")}
+                  {p.recordedAt && formatShortDateDubai(p.recordedAt)}
                 </div>
               </div>
             ))}

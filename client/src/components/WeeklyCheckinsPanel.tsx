@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
+import { formatDateDubai, formatShortDateDubai, formatShortDateTimeDubai, dubaiTodayAsLocalDate } from "@shared/dates";
 import {
   ResponsiveContainer,
   LineChart,
@@ -92,7 +93,7 @@ interface FormState {
 
 function emptyForm(weekStart?: string): FormState {
   return {
-    weekStart: weekStart ?? mondayOf(new Date()),
+    weekStart: weekStart ?? mondayOf(dubaiTodayAsLocalDate()),
     weight: "",
     sleepQuality: 7,
     energy: 7,
@@ -230,7 +231,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
     return [...data]
       .sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1))
       .map((r) => ({
-        week: format(parseISO(r.weekStart), "MMM d"),
+        week: formatShortDateDubai(r.weekStart),
         adherence: adherenceScore(r),
         weight: r.weight ?? null,
         sleep: r.sleepQuality ?? null,
@@ -329,7 +330,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
           <CardContent className="p-4">
             <div className="text-[11px] uppercase tracking-widest text-white/50">Last check-in</div>
             <div className="mt-2 text-white text-sm" data-testid="text-latest-week">
-              {latest ? format(parseISO(latest.weekStart), "MMM d, yyyy") : "Never"}
+              {latest ? formatDateDubai(latest.weekStart) : "Never"}
             </div>
           </CardContent>
         </Card>
@@ -415,10 +416,10 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div>
                         <div className="text-white text-sm font-medium">
-                          Week of {format(parseISO(row.weekStart), "MMM d, yyyy")}
+                          Week of {formatDateDubai(row.weekStart)}
                         </div>
                         <div className="text-white/40 text-xs mt-0.5">
-                          Submitted {format(new Date(row.createdAt), "MMM d, p")}
+                          Submitted {formatShortDateTimeDubai(row.createdAt)}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -482,7 +483,7 @@ export default function WeeklyCheckinsPanel({ userId, isAdmin = false }: Props) 
                           <MessageCircle size={10} /> Coach response
                           {row.coachRespondedAt && (
                             <span className="ml-2 text-white/40 lowercase tracking-normal">
-                              {format(new Date(row.coachRespondedAt), "MMM d, p")}
+                              {formatShortDateTimeDubai(row.coachRespondedAt)}
                             </span>
                           )}
                         </div>

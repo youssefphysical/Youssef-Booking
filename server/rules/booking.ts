@@ -73,9 +73,9 @@ export function canUserBook(
       return { ok: false, code: "package_completed", message: "Your package is fully used. Please request a renewal to continue booking." };
     }
     if (linked.expiryDate) {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const exp = new Date(linked.expiryDate as any);
-      if (isFinite(exp.getTime()) && exp.getTime() < today.getTime()) {
+      const todayStr = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const expStr = String(linked.expiryDate).slice(0, 10);
+      if (expStr < todayStr) {
         return { ok: false, code: "package_expired", message: "Your package has expired. Please request a renewal or an extension to continue booking." };
       }
     }

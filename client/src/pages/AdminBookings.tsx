@@ -9,6 +9,7 @@ import {
   subDays,
   differenceInCalendarDays,
 } from "date-fns";
+import { isTodayDubai, isTomorrowDubai, formatShortDateDubai, dubaiTodayYMD, dubaiTodayAsLocalDate } from "@shared/dates";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -153,13 +154,13 @@ export default function AdminBookings() {
     window.history.replaceState(window.history.state, "", url.toString());
   };
   const [search, setSearch] = useState<string>("");
-  const [weekAnchor, setWeekAnchor] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekAnchor, setWeekAnchor] = useState<Date>(() => startOfWeek(dubaiTodayAsLocalDate(), { weekStartsOn: 1 }));
 
   const bookings = rawBookings as BookingWithUser[];
 
   // ---------- Premium KPIs ----------
   const stats = useMemo(() => {
-    const now = new Date();
+    const now = dubaiTodayAsLocalDate();
     const todayIso = toIsoDate(now);
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
     const weekEnd = addDays(weekStart, 6);
@@ -319,7 +320,7 @@ export default function AdminBookings() {
           onPrev={() => setWeekAnchor((d) => addDays(d, -7))}
           onNext={() => setWeekAnchor((d) => addDays(d, 7))}
           onToday={() => {
-            const today = new Date();
+            const today = dubaiTodayAsLocalDate();
             setWeekAnchor(startOfWeek(today, { weekStartsOn: 1 }));
             setDateFilter(toIsoDate(today));
           }}
@@ -504,7 +505,7 @@ function CalendarWeekStrip({
       : `${format(weekAnchor, "MMM d")} – ${format(last, "MMM d, yyyy")}`;
   }, [weekAnchor, weekDays]);
 
-  const todayInThisWeek = weekDays.some((d) => isToday(d));
+  const todayInThisWeek = weekDays.some((d) => isTodayDubai(toIsoDate(d)));
 
   return (
     <AdminCard className="!p-3 sm:!p-4" padded={false}>
@@ -562,7 +563,7 @@ function CalendarWeekStrip({
           const iso = toIsoDate(d);
           const count = densityByIso.get(iso) || 0;
           const selected = dateFilter === iso;
-          const today = isToday(d);
+          const today = isTodayDubai(iso);
           return (
             <button
               key={iso}
@@ -632,8 +633,8 @@ function DaySection({
   t: (k: string, fb?: string) => string;
 }) {
   const d = parseBookingDate(isoDate);
-  const today = isToday(d);
-  const distance = differenceInCalendarDays(d, new Date());
+  const today = isTodayDubai(isoDate);
+  const distance = differenceInCalendarDays(d, dubaiTodayAsLocalDate());
   const relLabel =
     today
       ? t("admin.bookings.today", "Today")
@@ -1208,7 +1209,7 @@ function CreateBookingButton() {
     resolver: zodResolver(createSchema),
     defaultValues: {
       userId: 0 as any,
-      date: new Date().toISOString().slice(0, 10),
+      date: dubaiTodayYMD(),
       timeSlot: "10:00",
       notes: "",
     },

@@ -10,6 +10,7 @@ import {
 import { ClientCommandCenter } from "@/components/admin/ClientCommandCenter";
 import { QuickActionsPanel } from "@/components/admin/QuickActionsPanel";
 import { format } from "date-fns";
+import { formatDateDubai, formatMonthDubai, formatDayDubai, formatShortDateDubai, formatShortDateTimeDubai, formatWeekdayShortDate, formatWeekdayLongDate, dubaiTodayYMD } from "@shared/dates";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -559,7 +560,7 @@ function OverviewTab({
   const totalSessions = activePkg ? (activePkg.totalSessions ?? 0) : 0;
   const usedSessions = activePkg ? (activePkg.usedSessions ?? 0) : 0;
   const usagePct = totalSessions > 0 ? Math.min(100, Math.round((usedSessions / totalSessions) * 100)) : 0;
-  const expiryStr = activePkg?.expiryDate ? format(new Date(activePkg.expiryDate), "MMM d, yyyy") : "—";
+  const expiryStr = activePkg?.expiryDate ? formatDateDubai(activePkg.expiryDate) : "—";
 
   const goalLabel =
     PRIMARY_GOAL_OPTIONS.find((g) => g.value === client.primaryGoal)?.label ||
@@ -599,10 +600,10 @@ function OverviewTab({
                 >
                   <span className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary shrink-0">
                     <span className="text-[8px] uppercase font-bold leading-none tracking-wide">
-                      {format(new Date(b.date), "MMM")}
+                      {formatMonthDubai(b.date)}
                     </span>
                     <span className="text-[13px] font-display font-bold leading-none mt-0.5">
-                      {format(new Date(b.date), "d")}
+                      {formatDayDubai(b.date)}
                     </span>
                   </span>
                   <div className="flex-1 min-w-0">
@@ -715,7 +716,7 @@ function OverviewTab({
                 )}
                 <span className="inline-flex items-center gap-1">
                   <CalendarDays size={10} />{" "}
-                  {latestMetric.recordedOn ? format(new Date(latestMetric.recordedOn), "MMM d") : ""}
+                  {latestMetric.recordedOn ? formatShortDateDubai(latestMetric.recordedOn) : ""}
                 </span>
               </div>
             </button>
@@ -737,7 +738,7 @@ function OverviewTab({
             <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-card">
               <p className="text-[11px] text-muted-foreground">
                 {latestCheckin.weekStart
-                  ? `${t("admin.clientDetail.weekOf", "Week of")} ${format(new Date(latestCheckin.weekStart), "MMM d")}`
+                  ? `${t("admin.clientDetail.weekOf", "Week of")} ${formatShortDateDubai(latestCheckin.weekStart)}`
                   : ""}
               </p>
               <div className="grid grid-cols-3 gap-2 mt-2">
@@ -764,7 +765,7 @@ function OverviewTab({
           <InfoCard
             icon={<Calendar size={13} />}
             label={t("admin.clientDetail.memberSince", "Member Since")}
-            value={client.createdAt ? format(new Date(client.createdAt), "PPP") : "—"}
+            value={client.createdAt ? formatDateDubai(client.createdAt) : "—"}
           />
           <InfoCard
             icon={<Notebook size={13} />}
@@ -903,8 +904,8 @@ function ClientPrivilegesCard({ client }: { client: UserResponse }) {
   const { toast } = useToast();
 
   const monthKey = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const d = new Date(Date.now() + 4 * 60 * 60 * 1000);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
   })();
   const usedThisMonth = client.emergencyCancelLastMonth === monthKey;
 
@@ -1229,7 +1230,7 @@ function ConsentsCard({ userId }: { userId: number }) {
                     {String(c.consentType).replace("_", " ")}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
-                    {c.createdAt ? format(new Date(c.createdAt), "PPp") : ""}
+                    {c.createdAt ? formatShortDateTimeDubai(c.createdAt) : ""}
                     {c.policyVersion ? ` · ${c.policyVersion}` : ""}
                   </span>
                 </div>
@@ -1298,8 +1299,7 @@ const manualBulkSchema = z.object({
 type ManualBulkValues = z.infer<typeof manualBulkSchema>;
 
 function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return dubaiTodayYMD();
 }
 
 function BookingsTab({ client }: { client: UserResponse }) {
@@ -1927,7 +1927,7 @@ function BookingsList({ userId }: { userId: number }) {
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-sm">
-                <span className="font-semibold">{format(new Date(b.date), "EEE, MMM d, yyyy")}</span>
+                <span className="font-semibold">{formatWeekdayLongDate(b.date)}</span>
                 <span className="text-muted-foreground ml-3">{formatTime12(b.timeSlot)}</span>
                 {b.sessionType && (
                   <span className="ml-2 text-[10px] uppercase tracking-wider text-primary/70">
@@ -2059,8 +2059,7 @@ const assignPackageSchema = z.object({
 type AssignPackageValues = z.infer<typeof assignPackageSchema>;
 
 function isoToday(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
+  return dubaiTodayYMD();
 }
 function addDaysISO(start: string, days: number): string {
   const d = new Date(start);
@@ -2405,7 +2404,7 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                   <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">{displayName}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {p.purchasedAt && format(new Date(p.purchasedAt), "MMM d, yyyy")}
+                      {p.purchasedAt && formatDateDubai(p.purchasedAt)}
                       {!p.isActive && " • Closed"}
                     </p>
                   </div>
@@ -2594,7 +2593,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
   const [actBonus, setActBonus] = useState<number>(pkg.bonusSessions ?? 0);
   const [actTotalPrice, setActTotalPrice] = useState<number>((pkg as any).totalPrice ?? 0);
   const [actExpiry, setActExpiry] = useState<string>(
-    (pkg.expiryDate ? String(pkg.expiryDate).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+    (pkg.expiryDate ? String(pkg.expiryDate).slice(0, 10) : dubaiTodayYMD()),
   );
   const [actPaymentSource, setActPaymentSource] = useState<string>((pkg as any).paymentSource ?? "manual");
   const [actPaymentConfirmed, setActPaymentConfirmed] = useState<boolean>(!!(pkg as any).paymentApproved);
@@ -2685,7 +2684,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment ledger</p>
               {lastPay && (
                 <p className="text-[10px] text-muted-foreground tabular-nums">
-                  Last payment {format(new Date(lastPay), "MMM d, yyyy")}
+                  Last payment {formatDateDubai(lastPay)}
                 </p>
               )}
             </div>
@@ -3134,7 +3133,7 @@ function InbodyRow({ record, onDelete }: { record: InbodyRecord; onDelete: () =>
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-sm font-semibold">
-            {record.recordedAt && format(new Date(record.recordedAt), "PPP")}
+            {record.recordedAt && formatDateDubai(record.recordedAt)}
           </p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
             {record.aiExtracted ? "AI-extracted" : "Manual"}
@@ -3339,7 +3338,7 @@ function ProgressPanel({ userId }: { userId: number }) {
             <div key={p.id} className="relative aspect-square rounded-2xl overflow-hidden border border-white/5 bg-white/5 group" data-testid={`admin-photo-${p.id}`}>
               <img src={p.photoUrl} alt="Progress" loading="lazy" decoding="async" className="w-full h-full object-cover" />
               <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent text-white">
-                <p className="text-[11px] font-medium">{p.recordedAt && format(new Date(p.recordedAt), "MMM d, yyyy")}</p>
+                <p className="text-[11px] font-medium">{p.recordedAt && formatDateDubai(p.recordedAt)}</p>
                 <p className="text-[9px] uppercase tracking-wider text-primary">{p.type} · {(p as any).viewAngle ?? "front"}</p>
               </div>
               <button
@@ -4031,7 +4030,7 @@ function SessionHistoryCard({ userId }: { userId: number }) {
               className="flex items-start gap-3 text-xs border-b border-white/5 pb-2 last:border-0"
             >
               <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                {row.createdAt ? format(new Date(row.createdAt), "MMM d, HH:mm") : ""}
+                {row.createdAt ? formatShortDateTimeDubai(row.createdAt) : ""}
               </span>
               <div className="min-w-0">
                 <p className="font-medium">
@@ -4113,7 +4112,7 @@ function ClientAuditTab({ clientId }: { clientId: number }) {
                     )}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {format(ts, "MMM d, yyyy HH:mm")} ·{" "}
+                    {formatShortDateTimeDubai(ts)} ·{" "}
                     {r.actor?.fullName ||
                       r.actor?.email ||
                       (r.performedByUserId ? `User #${r.performedByUserId}` : "system")}

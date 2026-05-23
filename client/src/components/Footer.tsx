@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { SiWhatsapp, SiInstagram } from "react-icons/si";
 import { useTranslation } from "@/i18n";
+import { dubaiTodayYMD } from "@shared/dates";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export function Footer() {
             {t("footer.tagline")}
           </p>
           <p className="text-[11px] text-muted-foreground/70 mt-1">
-            © {new Date().getFullYear()} Youssef Ahmed. {t("footer.rights")}
+            © {dubaiTodayYMD().slice(0,4)} Youssef Ahmed. {t("footer.rights")}
           </p>
         </div>
         <div className="flex flex-col items-center gap-4 md:items-end">

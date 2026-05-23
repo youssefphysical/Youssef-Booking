@@ -31,11 +31,11 @@ export type PackageStatus = "active" | "expiring_soon" | "expired" | "completed"
  */
 export function computeSessionsPerWeek(
   bookings: AnyBooking[],
-  now: Date = new Date(),
+  now: number = Date.now(),
 ): number {
   if (!Array.isArray(bookings) || bookings.length === 0) return 0;
   const windowMs = 28 * 86400_000;
-  const cutoff = now.getTime() - windowMs;
+  const cutoff = now - windowMs;
   let count = 0;
   for (const b of bookings) {
     if ((b as any).status !== "completed") continue;
@@ -43,7 +43,7 @@ export function computeSessionsPerWeek(
     if (!raw) continue;
     const t = new Date(raw).getTime();
     if (!Number.isFinite(t)) continue;
-    if (t >= cutoff && t <= now.getTime()) count += 1;
+    if (t >= cutoff && t <= now) count += 1;
   }
   return count / 4;
 }

@@ -210,7 +210,7 @@ function exportCsv(rows: DataCenterRow[]) {
     .map((r) => COLUMNS.map((c) => csvEscape(c.get(r))).join(","))
     .join("\n");
   const csv = "\ufeff" + header + "\n" + body;
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
   triggerDownload(new Blob([csv], { type: "text/csv;charset=utf-8" }), `clients-${stamp}.csv`);
 }
 
@@ -231,7 +231,7 @@ function exportExcel(rows: DataCenterRow[]) {
     `<thead><tr>${head}</tr></thead>` +
     `<tbody>${body}</tbody>` +
     `</table></body></html>`;
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
   triggerDownload(
     new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" }),
     `clients-${stamp}.xls`,
@@ -239,9 +239,9 @@ function exportExcel(rows: DataCenterRow[]) {
 }
 
 function exportJsonDump(rows: DataCenterRow[]) {
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const payload = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
     count: rows.length,
     columns: COLUMNS.map((c) => c.label),
     rows,

@@ -56,7 +56,7 @@ export function useMarkNotificationRead() {
     // before the refetch lands.
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: [LIST_PREFIX] });
-      const now = new Date().toISOString();
+      const now = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
       queryClient.setQueriesData<ClientNotification[]>({ queryKey: [LIST_PREFIX] }, (old) =>
         old?.map((n) => (n.id === id && !n.readAt ? { ...n, readAt: now as any } : n)) ?? old,
       );
@@ -76,7 +76,7 @@ export function useMarkAllNotificationsRead() {
     },
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: [LIST_PREFIX] });
-      const now = new Date().toISOString();
+      const now = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
       queryClient.setQueriesData<ClientNotification[]>({ queryKey: [LIST_PREFIX] }, (old) =>
         old?.map((n) => (n.readAt ? n : { ...n, readAt: now as any })) ?? old,
       );

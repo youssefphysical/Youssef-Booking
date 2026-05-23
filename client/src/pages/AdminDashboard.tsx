@@ -23,7 +23,7 @@ import {
   Wallet,
   Sun,
 } from "lucide-react";
-import { format } from "date-fns";
+import { dubaiTodayYMD, formatWeekdayShortDate, formatMonthDubai, formatDayDubai } from "@shared/dates";
 import { api } from "@shared/routes";
 import type { DashboardStats, BookingWithUser, AdminAnalytics } from "@shared/schema";
 import { useBookings } from "@/hooks/use-bookings";
@@ -70,7 +70,7 @@ function TodayHero({
 }) {
   const { t } = useTranslation();
   const animatedToday = useAdminCountUp(todayCount);
-  const dateLabel = format(new Date(), "EEEE, MMM d");
+  const dateLabel = formatWeekdayShortDate(dubaiTodayYMD());
   return (
     <AdminCard className="mb-3 sm:mb-5 relative overflow-hidden" testId="today-hero">
       {/* Soft brand glow */}
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
     staleTime: 60_000,
   });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dubaiTodayYMD();
   const { data: upcomingRaw = [] } = useBookings({ from: today, includeUser: true });
   const upcoming = (upcomingRaw as BookingWithUser[])
     .filter((b) => ["upcoming", "confirmed"].includes(b.status))
@@ -300,10 +300,10 @@ export default function AdminDashboard() {
                   >
                     <div className="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-lg sm:rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center text-primary">
                       <span className="text-[8.5px] uppercase font-bold leading-none tracking-wide">
-                        {format(new Date(b.date), "MMM")}
+                        {formatMonthDubai(b.date)}
                       </span>
                       <span className="text-[15px] font-display font-bold leading-none mt-0.5">
-                        {format(new Date(b.date), "d")}
+                        {formatDayDubai(b.date)}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">

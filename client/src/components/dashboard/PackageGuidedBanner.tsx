@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
-import { format } from "date-fns";
+import { formatDateDubai } from "@shared/dates";
 import { usePackages } from "@/hooks/use-packages";
 import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
@@ -93,7 +93,7 @@ export function PackageGuidedBanner({ userId }: { userId: number }) {
 
   const validUntil =
     pkg.expiryDate && isFinite(new Date(pkg.expiryDate as any).getTime())
-      ? format(new Date(pkg.expiryDate as any), "MMM d, yyyy")
+      ? formatDateDubai(pkg.expiryDate as any)
       : null;
 
   if (kind === "expiring") {

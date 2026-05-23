@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatShortDateDubai, formatRelativeDubai } from "@shared/dates";
 import {
   Activity,
   Calendar,
@@ -202,7 +202,7 @@ export function ClientCommandCenter({
       : "kg";
 
   const nextValue = snapshot.nextBookingDate
-    ? format(new Date(snapshot.nextBookingDate), "MMM d")
+    ? formatShortDateDubai(snapshot.nextBookingDate)
     : "—";
   const nextHint = snapshot.nextBookingTimeSlot ?? "Not scheduled";
 
@@ -366,7 +366,7 @@ export function ClientCommandCenter({
                       </p>
                     </div>
                     <span className="text-[10px] text-muted-foreground/70 tabular-nums shrink-0">
-                      {formatDistanceToNow(new Date(c.when), { addSuffix: true })}
+                      {formatRelativeDubai(c.when)}
                     </span>
                   </li>
                 );

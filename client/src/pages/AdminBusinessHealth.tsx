@@ -68,11 +68,12 @@ export default function AdminBusinessHealth() {
     },
   });
 
-  const today = new Date().toLocaleDateString("en-GB", {
+  const today = new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 
   return (
@@ -227,7 +228,7 @@ export default function AdminBusinessHealth() {
         </Section>
 
         <p className="text-[10px] text-muted-foreground mt-8 print-muted text-center">
-          Generated {new Date().toLocaleString()} — Youssef Ahmed Personal Training
+          Generated {new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleString("en-GB", { timeZone: "UTC" })} — Youssef Ahmed Personal Training
         </p>
       </div>
     </div>

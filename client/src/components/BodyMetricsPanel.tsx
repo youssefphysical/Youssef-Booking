@@ -50,7 +50,8 @@ const FIELDS: FieldMeta[] = [
   { key: "calves", label: "Calves", unit: "cm", goodDirection: "up" },
 ];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+import { dubaiTodayYMD } from "@shared/dates";
+const todayISO = () => dubaiTodayYMD();
 
 interface FormState {
   recordedOn: string;

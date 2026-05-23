@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { CyanHairline } from "@/components/ui/CyanHairline";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatRelativeDubai, formatShortDateTimeDubai } from "@shared/dates";
 import {
   Activity as ActivityIcon,
   CalendarCheck,
@@ -114,8 +114,7 @@ export function ActivityFeed({
           const Icon = meta.Icon;
           let when = "";
           try {
-            const d = new Date(e.at);
-            when = `${formatDistanceToNow(d, { addSuffix: true })} · ${format(d, "PPp")}`;
+            when = `${formatRelativeDubai(e.at)} \u00b7 ${formatShortDateTimeDubai(e.at)}`;
           } catch {
             when = e.at;
           }
