@@ -78,6 +78,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarPlus, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type SessionTypeChoice = "package" | "single" | "trial" | "duo";
 type SessionFocus = (typeof SESSION_FOCUS_GROUPS)["upper"][number] | (typeof SESSION_FOCUS_GROUPS)["lower"][number] | (typeof SESSION_FOCUS_GROUPS)["conditioning"][number];
@@ -1251,20 +1252,18 @@ export default function BookingPage() {
           POSTs inside handleBook(). */}
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogContent
-          className="
-            ag-sheet-in
-            relative overflow-hidden
-            bg-[#06080A]
-            border border-white/[0.055]
-            rounded-[20px] sm:rounded-[24px]
-            w-[calc(100vw-1rem)] sm:w-full max-w-[460px]
-            p-0 gap-0
-            flex flex-col
-            max-h-[calc(100dvh-1rem)] sm:max-h-[85vh]
-            [padding-bottom:env(safe-area-inset-bottom)]
-            will-change-transform
-            shadow-[0_1px_0_0_rgba(255,255,255,0.045)_inset,0_0_0_1px_rgba(94,231,255,0.045),0_50px_140px_-30px_rgba(0,0,0,0.96),0_12px_30px_-14px_rgba(94,231,255,0.1)]
-          "
+          className={cn(
+            "ag-sheet-in",
+            "bg-[#06080A]",
+            "border border-white/[0.055]",
+            "rounded-[20px] sm:rounded-[24px]",
+            "w-[calc(100vw-1rem)] sm:w-full max-w-[460px]",
+            "p-0 gap-0",
+            "flex flex-col overflow-hidden",
+            "max-h-[92dvh] sm:max-h-[85vh]",
+            "will-change-transform",
+            "shadow-[0_1px_0_0_rgba(255,255,255,0.045)_inset,0_0_0_1px_rgba(94,231,255,0.045),0_50px_140px_-30px_rgba(0,0,0,0.96),0_12px_30px_-14px_rgba(94,231,255,0.1)]"
+          )}
           data-testid="dialog-confirm-booking"
         >
           {/* Layer 1 — Ambient radial cyan wash */}
@@ -1323,8 +1322,12 @@ export default function BookingPage() {
             className="shrink-0 mx-4 xs:mx-5 sm:mx-7 h-px bg-gradient-to-r from-transparent via-white/[0.055] to-transparent"
           />
 
-          {/* Scrollable body — only this region scrolls. */}
-          <div className="relative flex-1 overflow-y-auto overscroll-contain px-4 xs:px-5 sm:px-7 pt-2.5 sm:pt-4 pb-2.5 sm:pb-3 space-y-2.5 sm:space-y-3.5 [-webkit-overflow-scrolling:touch]">
+          {/* Scrollable body — only this region scrolls.
+              min-h-0 is critical: it lets flexbox shrink this region when
+              the modal is near the max-height limit, so the footer stays
+              pinned and the middle content scrolls instead of pushing
+              the modal off-screen. */}
+          <div className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 xs:px-5 sm:px-7 pt-2.5 sm:pt-4 pb-2.5 sm:pb-3 space-y-2.5 sm:space-y-3.5 [-webkit-overflow-scrolling:touch]">
             {/* Booking details — compact 2-col grid on mobile, list on >=sm */}
             <div
               className="
@@ -1465,8 +1468,10 @@ export default function BookingPage() {
             </Accordion>
           </div>
 
-          {/* Footer — sticky consent + actions, always reachable. */}
-          <div className="relative shrink-0 px-4 xs:px-5 sm:px-7 pt-3.5 sm:pt-4 pb-4 sm:pb-6 border-t border-white/[0.04] bg-[#06080A]/85 backdrop-blur-md">
+          {/* Footer — sticky consent + actions, always reachable.
+              pb-[calc(1rem+env(safe-area-inset-bottom))] keeps the CTA
+              above the home-indicator on iPhone X-class devices. */}
+          <div className="relative shrink-0 px-4 xs:px-5 sm:px-7 pt-3.5 sm:pt-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-6 border-t border-white/[0.04] bg-[#06080A]/85 backdrop-blur-md">
             <label
               className="
                 group flex items-start gap-3
