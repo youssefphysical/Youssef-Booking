@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { resetAllCachesAndSW } from "@/lib/registerSW";
+import { whatsappUrl } from "@/lib/whatsapp";
 import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
 
 // Task #66 follow-up — visible build stamp so a real-mobile user can
@@ -719,48 +720,12 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "online_coaching") {
-      const payload = {
-        kind: "online_coaching" as const,
-        label: "Online Coaching",
-        isDefault: locations.length === 0,
-      };
-      const next = decideNextRoute({
-        flow: "online_coaching",
-        hasActivePackage,
-        hasPendingActivation: hasPendingVerif,
-      });
-      if (isOffline) {
-        console.warn("[wizard-training-location-start] offline → queueing (online)");
-        patchDbg({ locationStatus: "offline_queued" });
-        enqueueOffline("wizard_location", "/api/training-locations", payload);
-        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
-        safeNavigate(next);
-        return;
-      }
-      console.log("[wizard-training-location-start]", payload);
-      patchDbg({ locationStatus: "pending" });
-      try {
-        const res = await saveLocation.mutateAsync(payload);
-        console.log("[wizard-training-location-success]", res);
-        patchDbg({ locationStatus: "success", lastApiResponse: res });
-      } catch (e: any) {
-        console.error("[wizard-training-location-error]", e);
-        patchDbg({ locationStatus: "error" });
-        if (isOfflineError(e)) {
-          patchDbg({ locationStatus: "offline_queued" });
-          enqueueOffline("wizard_location", "/api/training-locations", payload);
-          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
-          safeNavigate(next);
-          return;
-        }
-        const msg = e?.message || "Failed to save training location";
-        showError(msg);
-        toast({ title: msg, variant: "destructive" });
-        return;
-      }
-      toast({ title: t("wizard.online.savedTitle", "Online coaching setup saved.") });
+      const url = whatsappUrl(
+        null,
+        "Hi Youssef, I'm interested in online coaching. I'd like to know more about the available plans, nutrition support, supplement guidance, and how we can start.",
+      );
+      window.open(url, "_blank", "noopener,noreferrer");
       wizardDraft.clear();
-      safeNavigate(next);
       return;
     }
 
