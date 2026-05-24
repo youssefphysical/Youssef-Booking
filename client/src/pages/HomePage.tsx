@@ -31,7 +31,7 @@ import { HeroSlider } from "@/components/HeroSlider";
 import { Transformations } from "@/components/Transformations";
 import { useTranslation } from "@/i18n";
 import { lazy, Suspense } from "react";
-import { Salad, HeartPulse, Gift, HelpCircle } from "lucide-react";
+import { Utensils, FlaskConical, Gift, HelpCircle, ArrowRight } from "lucide-react";
 import { buildContextMessage, whatsappUrl } from "@/lib/whatsapp";
 const PricingCards = lazy(() => import("@/components/public/PricingCards").then(m => ({ default: m.PricingCards })));
 const FaqAccordion = lazy(() => import("@/components/public/FaqAccordion").then(m => ({ default: m.FaqAccordion })));
@@ -743,15 +743,15 @@ function ServicesSection() {
           className="inline-flex items-center justify-center gap-2 h-12 w-full px-5 rounded-xl bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-colors"
           data-testid="button-services-pt-book"
         >
-          <Calendar size={15} />
           Book Training
+          <ArrowRight size={14} />
         </a>
       ),
     },
     {
       key: "nutrition",
       imageUrl: settings?.nutritionImageUrl || "",
-      icon: <Salad size={28} className="text-primary" />,
+      icon: <Utensils size={28} className="text-primary" />,
       eyebrow: "Nutrition Plans",
       title: "Personalised Nutrition",
       body: "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
@@ -771,7 +771,7 @@ function ServicesSection() {
     {
       key: "supplement",
       imageUrl: settings?.supplementImageUrl || "",
-      icon: <HeartPulse size={28} className="text-primary" />,
+      icon: <FlaskConical size={28} className="text-primary" />,
       eyebrow: "Supplement Protocol",
       title: "Supplement Protocol",
       body: "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",

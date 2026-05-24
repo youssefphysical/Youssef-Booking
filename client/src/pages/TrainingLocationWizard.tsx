@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Globe } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, MapPinned, BedDouble, Layers, Car, DoorOpen, Key, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -346,7 +346,7 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "hotel" as const,
-        icon: <MapPin size={22} className="text-primary" />,
+        icon: <BedDouble size={22} className="text-primary" />,
         title: t("wizard.hotel.title", "Hotel Training"),
         body: t("wizard.hotel.body", "Youssef trains me at my hotel."),
       },
@@ -358,7 +358,7 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "other_location" as const,
-        icon: <Globe size={22} className="text-primary" />,
+        icon: <MapPinned size={22} className="text-primary" />,
         title: t("wizard.otherLocation.title", "External Gym"),
         body: t("wizard.otherLocation.body", "I train at an external gym."),
       },
@@ -1026,6 +1026,7 @@ export default function TrainingLocationWizard() {
               testId="input-building-maps-link"
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
               required
+              icon={<MapPin size={11} />}
             />
             <Field
               label={t("wizard.building.community", "Building Name")}
@@ -1033,6 +1034,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeBuilding}
               testId="input-building-building"
               placeholder={t("wizard.building.communityPh", "Example: Marina Gate, Downtown Views, JVC Building")}
+              icon={<Building2 size={11} />}
             />
             <Field
               label={t("wizard.building.floor", "Gym Floor")}
@@ -1040,6 +1042,7 @@ export default function TrainingLocationWizard() {
               onChange={setGymFloor}
               testId="input-building-floor"
               placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
+              icon={<Layers size={11} />}
             />
             <FieldArea
               label={t("wizard.building.access", "Parking / Access Notes (optional)")}
@@ -1047,6 +1050,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeParking}
               testId="input-building-parking"
               placeholder={t("wizard.building.accessPh", "Example: Visitor parking, reception access, gate code")}
+              icon={<Car size={11} />}
             />
           </div>
         )}
@@ -1078,6 +1082,7 @@ export default function TrainingLocationWizard() {
               testId="input-hotel-maps-link"
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
               required
+              icon={<MapPin size={11} />}
             />
             <Field
               label={t("wizard.hotel.name", "Hotel Name")}
@@ -1085,6 +1090,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeBuilding}
               testId="input-hotel-name"
               placeholder={t("wizard.hotel.namePh", "Example: Marriott, JW Marriott, Jumeirah")}
+              icon={<BedDouble size={11} />}
             />
             <Field
               label={t("wizard.building.floor", "Gym Floor")}
@@ -1092,6 +1098,7 @@ export default function TrainingLocationWizard() {
               onChange={setGymFloor}
               testId="input-hotel-floor"
               placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
+              icon={<Layers size={11} />}
             />
             <Field
               label={t("wizard.hotel.room", "Room Number (optional)")}
@@ -1099,6 +1106,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeRoom}
               testId="input-hotel-room"
               placeholder={t("wizard.hotel.roomPh", "Example: 512")}
+              icon={<DoorOpen size={11} />}
             />
             <FieldArea
               label={t("wizard.hotel.access", "Access Notes (optional)")}
@@ -1106,6 +1114,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeParking}
               testId="input-hotel-access"
               placeholder={t("wizard.hotel.accessPh", "Example: Gym on 3rd floor, ask reception for access")}
+              icon={<Key size={11} />}
             />
           </div>
         )}
@@ -1127,9 +1136,25 @@ export default function TrainingLocationWizard() {
               testId="input-other-location-maps-link"
               placeholder={t("wizard.other.mapsPh", "Paste the gym location link here")}
               required
+              icon={<MapPin size={11} />}
             />
-            <Field label={t("wizard.otherLocation.name", "Gym Name")} value={gymName} onChange={setGymName} testId="input-other-location-name" required placeholder={t("wizard.otherLocation.namePh", "Example: Gold's Gym JBR, Fitness First")} />
-            <Field label={t("wizard.other.address", "Area / Location")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JBR, Downtown")} />
+            <Field
+              label={t("wizard.otherLocation.name", "Gym Name")}
+              value={gymName}
+              onChange={setGymName}
+              testId="input-other-location-name"
+              required
+              placeholder={t("wizard.otherLocation.namePh", "Example: Gold's Gym JBR, Fitness First")}
+              icon={<Dumbbell size={11} />}
+            />
+            <Field
+              label={t("wizard.other.address", "Area / Location")}
+              value={gymAddress}
+              onChange={setGymAddress}
+              testId="input-other-location-address"
+              placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JBR, Downtown")}
+              icon={<Navigation size={11} />}
+            />
           </div>
         )}
 
@@ -1287,22 +1312,28 @@ export default function TrainingLocationWizard() {
   );
 }
 
-function Field({ label, value, onChange, testId, required, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean; placeholder?: string;
+function Field({ label, value, onChange, testId, required, placeholder, icon }: {
+  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean; placeholder?: string; icon?: React.ReactNode;
 }) {
   return (
     <div>
-      <Label className="text-xs">{label}{required ? " *" : ""}</Label>
+      <Label className="text-xs flex items-center gap-1.5">
+        {icon && <span className="text-primary/60">{icon}</span>}
+        {label}{required ? " *" : ""}
+      </Label>
       <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 mt-1" data-testid={testId} />
     </div>
   );
 }
-function FieldArea({ label, value, onChange, testId, placeholder }: {
-  label: string; value: string; onChange: (v: string) => void; testId: string; placeholder?: string;
+function FieldArea({ label, value, onChange, testId, placeholder, icon }: {
+  label: string; value: string; onChange: (v: string) => void; testId: string; placeholder?: string; icon?: React.ReactNode;
 }) {
   return (
     <div>
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs flex items-center gap-1.5">
+        {icon && <span className="text-primary/60">{icon}</span>}
+        {label}
+      </Label>
       <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 mt-1" data-testid={testId} />
     </div>
   );
