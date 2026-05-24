@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, MapPinned, BedDouble, Layers, Car, DoorOpen, Key, Navigation } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Footprints, BedDouble, Layers, Car, DoorOpen, Key, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -352,9 +352,9 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "other_location" as const,
-        icon: <MapPinned size={22} className="text-primary" />,
-        title: t("wizard.otherLocation.title", "Outdoor / External Workout"),
-        body: t("wizard.otherLocation.body", "Outdoor, park, beach, track, stadium, or any custom location."),
+        icon: <Footprints size={22} className="text-primary" />,
+        title: t("wizard.otherLocation.title", "Outdoor / Custom Workout"),
+        body: t("wizard.otherLocation.body", "Park, beach, running, stadium, outdoor gym, football field, or custom location."),
       },
     ],
     [t],
@@ -1022,7 +1022,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
+              hint={t("wizard.mapsHint", "Copy Google Maps link")}
             />
             <Field
               label={t("wizard.building.community", "Building Name")}
@@ -1079,7 +1079,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
+              hint={t("wizard.mapsHint", "Copy Google Maps link")}
             />
             <Field
               label={t("wizard.hotel.name", "Hotel Name")}
@@ -1134,7 +1134,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.other.mapsPh", "Paste the location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
+              hint={t("wizard.mapsHint", "Copy Google Maps link")}
             />
             <Field
               label={t("wizard.otherLocation.name", "Training Place Name")}
@@ -1142,7 +1142,7 @@ export default function TrainingLocationWizard() {
               onChange={setGymName}
               testId="input-other-location-name"
               required
-              placeholder={t("wizard.otherLocation.namePh", "Example: JBR Beach, Al Barsha Park, Gold's Gym")}
+              placeholder={t("wizard.otherLocation.namePh", "Example: Kite Beach, Gold's Gym, Running Track")}
               icon={<Dumbbell size={11} />}
             />
             <Field
@@ -1158,7 +1158,7 @@ export default function TrainingLocationWizard() {
               value={gymNotes}
               onChange={setGymNotes}
               testId="input-other-location-notes"
-              placeholder={t("wizard.other.notesPh", "Example: Meet at the main entrance at 7am")}
+              placeholder={t("wizard.other.notesPh", "Gate code / parking details / landmark")}
               icon={<ShieldCheck size={11} />}
             />
           </div>
