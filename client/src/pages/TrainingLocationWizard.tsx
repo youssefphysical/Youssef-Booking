@@ -593,6 +593,10 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "building") {
+      if (!mapsLink.trim()) {
+        toast({ title: t("wizard.building.needMaps", "Google Maps link is required."), variant: "destructive" });
+        return;
+      }
       const payload = {
         kind: "building" as const,
         label: homeLabel || t("wizard.building.defaultLabel", "Building Gym"),
@@ -700,6 +704,10 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "hotel") {
+      if (!mapsLink.trim()) {
+        toast({ title: t("wizard.hotel.needMaps", "Google Maps link is required."), variant: "destructive" });
+        return;
+      }
       const payload = {
         kind: "hotel" as const,
         label: homeBuilding || t("wizard.hotel.defaultLabel", "Hotel"),
@@ -761,6 +769,10 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "other_location") {
+      if (!mapsLink.trim()) {
+        toast({ title: t("wizard.otherLocation.needMaps", "Google Maps link is required."), variant: "destructive" });
+        return;
+      }
       if (!gymName.trim()) {
         toast({ title: t("wizard.otherLocation.needName", "Location name is required."), variant: "destructive" });
         return;
@@ -1008,11 +1020,12 @@ export default function TrainingLocationWizard() {
         {step === 2 && branch === "building" && (
           <div className="space-y-3" data-testid="form-building-location">
             <Field
-              label={t("wizard.building.maps", "Google Maps Location Link (optional)")}
+              label={t("wizard.building.maps", "Google Maps Location Link")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-building-maps-link"
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
+              required
             />
             <Field
               label={t("wizard.building.community", "Building Name")}
@@ -1059,11 +1072,12 @@ export default function TrainingLocationWizard() {
         {step === 2 && branch === "hotel" && (
           <div className="space-y-3" data-testid="form-hotel-location">
             <Field
-              label={t("wizard.hotel.maps", "Google Maps Location Link (optional)")}
+              label={t("wizard.hotel.maps", "Google Maps Location Link")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-hotel-maps-link"
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
+              required
             />
             <Field
               label={t("wizard.hotel.name", "Hotel Name")}
@@ -1107,11 +1121,12 @@ export default function TrainingLocationWizard() {
         {step === 2 && branch === "other_location" && (
           <div className="space-y-3" data-testid="form-other-location">
             <Field
-              label={t("wizard.other.maps", "Google Maps Location Link (optional)")}
+              label={t("wizard.other.maps", "Google Maps Location Link")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-other-location-maps-link"
               placeholder={t("wizard.other.mapsPh", "Paste the gym location link here")}
+              required
             />
             <Field label={t("wizard.otherLocation.name", "Gym Name")} value={gymName} onChange={setGymName} testId="input-other-location-name" required placeholder={t("wizard.otherLocation.namePh", "Example: Gold's Gym JBR, Fitness First")} />
             <Field label={t("wizard.other.address", "Area / Location")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JBR, Downtown")} />
