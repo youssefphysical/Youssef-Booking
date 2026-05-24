@@ -353,8 +353,8 @@ export default function TrainingLocationWizard() {
       {
         key: "other_location" as const,
         icon: <MapPinned size={22} className="text-primary" />,
-        title: t("wizard.otherLocation.title", "External Gym"),
-        body: t("wizard.otherLocation.body", "I train at an external gym."),
+        title: t("wizard.otherLocation.title", "Outdoor / External Workout"),
+        body: t("wizard.otherLocation.body", "Outdoor, park, beach, track, stadium, or any custom location."),
       },
     ],
     [t],
@@ -776,6 +776,7 @@ export default function TrainingLocationWizard() {
         label: gymName,
         gymName,
         address: gymAddress || undefined,
+        accessNotes: gymNotes || undefined,
         mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
@@ -869,7 +870,7 @@ export default function TrainingLocationWizard() {
         <p className="text-sm text-muted-foreground mb-6">
           {step === 1
             ? t("wizard.subtitle", "Pick the option that matches your training setup. You can change it later.")
-            : t("wizard.subtitle2", "We use this for every booking so you don't have to re-enter it.")}
+            : t("wizard.subtitle2", "Saved for future bookings.")}
         </p>
 
         {step === 1 && (
@@ -1012,7 +1013,7 @@ export default function TrainingLocationWizard() {
         )}
 
         {step === 2 && branch === "building" && (
-          <div className="space-y-3" data-testid="form-building-location">
+          <div className="space-y-4" data-testid="form-building-location">
             <Field
               label={t("wizard.building.maps", "Google Maps Location Link")}
               value={mapsLink}
@@ -1021,6 +1022,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
               required
               icon={<MapPin size={11} />}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
               label={t("wizard.building.community", "Building Name")}
@@ -1068,7 +1070,7 @@ export default function TrainingLocationWizard() {
         )}
 
         {step === 2 && branch === "hotel" && (
-          <div className="space-y-3" data-testid="form-hotel-location">
+          <div className="space-y-4" data-testid="form-hotel-location">
             <Field
               label={t("wizard.hotel.maps", "Google Maps Location Link")}
               value={mapsLink}
@@ -1077,6 +1079,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
               required
               icon={<MapPin size={11} />}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
               label={t("wizard.hotel.name", "Hotel Name")}
@@ -1122,23 +1125,24 @@ export default function TrainingLocationWizard() {
         )}
 
         {step === 2 && branch === "other_location" && (
-          <div className="space-y-3" data-testid="form-other-location">
+          <div className="space-y-4" data-testid="form-other-location">
             <Field
               label={t("wizard.other.maps", "Google Maps Location Link")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-other-location-maps-link"
-              placeholder={t("wizard.other.mapsPh", "Paste the gym location link here")}
+              placeholder={t("wizard.other.mapsPh", "Paste the location link here")}
               required
               icon={<MapPin size={11} />}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
-              label={t("wizard.otherLocation.name", "Gym Name")}
+              label={t("wizard.otherLocation.name", "Training Place Name")}
               value={gymName}
               onChange={setGymName}
               testId="input-other-location-name"
               required
-              placeholder={t("wizard.otherLocation.namePh", "Example: Gold's Gym JBR, Fitness First")}
+              placeholder={t("wizard.otherLocation.namePh", "Example: JBR Beach, Al Barsha Park, Gold's Gym")}
               icon={<Dumbbell size={11} />}
             />
             <Field
@@ -1146,8 +1150,16 @@ export default function TrainingLocationWizard() {
               value={gymAddress}
               onChange={setGymAddress}
               testId="input-other-location-address"
-              placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JBR, Downtown")}
+              placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JVC, Downtown")}
               icon={<Navigation size={11} />}
+            />
+            <FieldArea
+              label={t("wizard.other.notes", "Notes (optional)")}
+              value={gymNotes}
+              onChange={setGymNotes}
+              testId="input-other-location-notes"
+              placeholder={t("wizard.other.notesPh", "Example: Meet at the main entrance at 7am")}
+              icon={<ShieldCheck size={11} />}
             />
           </div>
         )}
@@ -1306,12 +1318,12 @@ export default function TrainingLocationWizard() {
   );
 }
 
-function Field({ label, value, onChange, testId, required, placeholder, icon }: {
-  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean; placeholder?: string; icon?: React.ReactNode;
+function Field({ label, value, onChange, testId, required, placeholder, icon, hint }: {
+  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean; placeholder?: string; icon?: React.ReactNode; hint?: string;
 }) {
   return (
     <div>
-      <Label className="text-xs flex items-center gap-2">
+      <Label className="text-[13px] flex items-center gap-2 mb-1.5">
         {icon && (
           <span className="text-primary" style={{ filter: "drop-shadow(0 0 4px rgba(94,231,255,0.65))" }}>
             {icon}
@@ -1319,7 +1331,13 @@ function Field({ label, value, onChange, testId, required, placeholder, icon }: 
         )}
         {label}{required ? " *" : ""}
       </Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 mt-1" data-testid={testId} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 text-sm placeholder:text-muted-foreground/50" data-testid={testId} />
+      {hint && (
+        <p className="mt-1.5 flex items-center gap-1 text-[11px] text-primary/50">
+          <MapPin size={9} className="shrink-0" />
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -1328,7 +1346,7 @@ function FieldArea({ label, value, onChange, testId, placeholder, icon }: {
 }) {
   return (
     <div>
-      <Label className="text-xs flex items-center gap-2">
+      <Label className="text-[13px] flex items-center gap-2 mb-1.5">
         {icon && (
           <span className="text-primary" style={{ filter: "drop-shadow(0 0 4px rgba(94,231,255,0.65))" }}>
             {icon}
@@ -1336,7 +1354,7 @@ function FieldArea({ label, value, onChange, testId, placeholder, icon }: {
         )}
         {label}
       </Label>
-      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 mt-1" data-testid={testId} />
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 text-sm placeholder:text-muted-foreground/50" data-testid={testId} />
     </div>
   );
 }
