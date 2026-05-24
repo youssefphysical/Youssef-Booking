@@ -60,7 +60,7 @@ import {
   dubaiTodayAsLocalDate,
   formatYMDInDubai,
 } from "@/lib/booking-utils";
-import { formatTime12, formatTimeDual, formatTimeDualParts } from "@/lib/time-format";
+import { formatTime12 } from "@/lib/time-format";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
@@ -639,7 +639,7 @@ export default function BookingPage() {
           <div className="flex flex-col gap-3">
             <WhatsAppButton
               label={t("booking.successConfirmWa")}
-              message={t("booking.successWaMessage").replace("{date}", dateStr).replace("{time}", formatTimeDual(selectedSlot ?? ""))}
+              message={t("booking.successWaMessage").replace("{date}", dateStr).replace("{time}", formatTime12(selectedSlot ?? ""))}
               size="lg"
               testId="button-confirm-whatsapp"
             />
@@ -786,7 +786,7 @@ export default function BookingPage() {
                             : "bg-white/[0.02] border-white/5 text-muted-foreground/40 cursor-not-allowed"
                       }`}
                     >
-                      {formatTimeDual(slot)}
+                      {formatTime12(slot)}
                       {state === "taken" && (
                         <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-red-400/80">
                           {t("booking.slotTaken")}
@@ -1237,7 +1237,7 @@ export default function BookingPage() {
                 }`}
               >
                 {canContinue
-                  ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTimeDual(selectedSlot ?? ""))
+                  ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))
                   : t("booking.completeRequired", "Complete required fields to continue")}
               </Button>
             </div>
@@ -1345,7 +1345,7 @@ export default function BookingPage() {
                   label={t("booking.timeLabel")}
                   value={
                     <span className="text-primary font-semibold tracking-[-0.005em]">
-                      {formatTimeDual(selectedSlot)}
+                      {formatTime12(selectedSlot)}
                     </span>
                   }
                 />
@@ -1374,7 +1374,7 @@ export default function BookingPage() {
                   label={t("booking.timeLabel")}
                   value={
                     <span className="text-primary font-semibold tracking-[-0.005em]">
-                      {formatTimeDual(selectedSlot)}
+                      {formatTime12(selectedSlot)}
                     </span>
                   }
                 />
