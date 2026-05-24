@@ -81,6 +81,10 @@ export default function TrainingLocationWizard() {
   const [homeRoom, setHomeRoom] = useState("");
   const [homeParking, setHomeParking] = useState("");
   const [homeEquip, setHomeEquip] = useState("");
+  // Shared across physical-location forms (Building, Home, Hotel, Other).
+  // Building Gym uses its own focused fields and skips address/room.
+  const [mapsLink, setMapsLink] = useState("");
+  const [gymFloor, setGymFloor] = useState("");
 
   // Gym form
   const [gymName, setGymName] = useState("");
@@ -163,6 +167,7 @@ export default function TrainingLocationWizard() {
   const draftValue = {
     step, branch, fzPath,
     homeLabel, homeAddress, homeBuilding, homeRoom, homeParking, homeEquip,
+    mapsLink, gymFloor,
     gymName, gymAddress, gymGuest, gymNotes,
     reqType, verifNotes,
   };
@@ -190,6 +195,7 @@ export default function TrainingLocationWizard() {
     setFzPath(null);
     setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
     setHomeParking(""); setHomeEquip("");
+    setMapsLink(""); setGymFloor("");
     setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
     setReqType("not_sure"); setVerifNotes("");
     if (window.history.replaceState) {
@@ -220,6 +226,7 @@ export default function TrainingLocationWizard() {
             setStep(1); setBranch(null); setFzPath(null);
             setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
             setHomeParking(""); setHomeEquip("");
+            setMapsLink(""); setGymFloor("");
             setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
             setReqType("not_sure"); setVerifNotes("");
           }}
@@ -237,6 +244,8 @@ export default function TrainingLocationWizard() {
     if (typeof d.homeRoom === "string") setHomeRoom(d.homeRoom);
     if (typeof d.homeParking === "string") setHomeParking(d.homeParking);
     if (typeof d.homeEquip === "string") setHomeEquip(d.homeEquip);
+    if (typeof d.mapsLink === "string") setMapsLink(d.mapsLink);
+    if (typeof d.gymFloor === "string") setGymFloor(d.gymFloor);
     if (typeof d.gymName === "string") setGymName(d.gymName);
     if (typeof d.gymAddress === "string") setGymAddress(d.gymAddress);
     if (typeof d.gymGuest === "string") setGymGuest(d.gymGuest);
@@ -584,18 +593,14 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "building") {
-      if (!homeAddress.trim()) {
-        toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
-        return;
-      }
       const payload = {
         kind: "building" as const,
         label: homeLabel || t("wizard.building.defaultLabel", "Building Gym"),
-        address: homeAddress,
         buildingName: homeBuilding || undefined,
-        roomNumber: homeRoom || undefined,
+        gymFloor: gymFloor || undefined,
         parkingNotes: homeParking || undefined,
         equipmentNotes: homeEquip || undefined,
+        mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
       const next = decideNextRoute({
@@ -651,6 +656,7 @@ export default function TrainingLocationWizard() {
         roomNumber: homeRoom || undefined,
         parkingNotes: homeParking || undefined,
         equipmentNotes: homeEquip || undefined,
+        mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
       const next = decideNextRoute({
@@ -706,6 +712,7 @@ export default function TrainingLocationWizard() {
         roomNumber: homeRoom || undefined,
         parkingNotes: homeParking || undefined,
         equipmentNotes: homeEquip || undefined,
+        mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
       const next = decideNextRoute({
@@ -770,6 +777,7 @@ export default function TrainingLocationWizard() {
         address: gymAddress || undefined,
         guestAccess: gymGuest || undefined,
         accessNotes: gymNotes || undefined,
+        mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
       const next = decideNextRoute({
@@ -1006,12 +1014,48 @@ export default function TrainingLocationWizard() {
 
         {step === 2 && branch === "building" && (
           <div className="space-y-3" data-testid="form-building-location">
-            <Field label={t("wizard.building.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-building-label" />
-            <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-building-address" required />
-            <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-building-building" />
-            <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-building-room" />
-            <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-building-parking" />
-            <FieldArea label={t("wizard.home.equipment", "Equipment available")} value={homeEquip} onChange={setHomeEquip} testId="input-building-equipment" />
+            <Field
+              label={t("wizard.building.label", "Location Nickname (optional)")}
+              value={homeLabel}
+              onChange={setHomeLabel}
+              testId="input-building-label"
+              placeholder={t("wizard.building.labelPh", "My Building Gym")}
+            />
+            <Field
+              label={t("wizard.building.maps", "Paste Google Maps Location Link")}
+              value={mapsLink}
+              onChange={setMapsLink}
+              testId="input-building-maps-link"
+              placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
+            />
+            <Field
+              label={t("wizard.building.community", "Building / Community")}
+              value={homeBuilding}
+              onChange={setHomeBuilding}
+              testId="input-building-building"
+              placeholder={t("wizard.building.communityPh", "Example: Marina Gate, Downtown Views, JVC Building Name")}
+            />
+            <Field
+              label={t("wizard.building.floor", "Gym Floor")}
+              value={gymFloor}
+              onChange={setGymFloor}
+              testId="input-building-floor"
+              placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
+            />
+            <FieldArea
+              label={t("wizard.building.access", "Access / Parking Notes")}
+              value={homeParking}
+              onChange={setHomeParking}
+              testId="input-building-parking"
+              placeholder={t("wizard.building.accessPh", "Example: Visitor parking, reception access, security gate instructions")}
+            />
+            <FieldArea
+              label={t("wizard.building.equipment", "Gym Equipment Available")}
+              value={homeEquip}
+              onChange={setHomeEquip}
+              testId="input-building-equipment"
+              placeholder={t("wizard.building.equipmentPh", "Example: dumbbells, cable machine, treadmill, bench, Smith machine")}
+            />
           </div>
         )}
 
@@ -1019,6 +1063,13 @@ export default function TrainingLocationWizard() {
           <div className="space-y-3" data-testid="form-home-location">
             <Field label={t("wizard.home.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-home-label" />
             <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-home-address" required />
+            <Field
+              label={t("wizard.home.maps", "Google Maps Location Link (optional)")}
+              value={mapsLink}
+              onChange={setMapsLink}
+              testId="input-home-maps-link"
+              placeholder={t("wizard.home.mapsPh", "Paste the location link here")}
+            />
             <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-home-building" />
             <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-home-room" />
             <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-home-parking" />
@@ -1030,6 +1081,13 @@ export default function TrainingLocationWizard() {
           <div className="space-y-3" data-testid="form-hotel-location">
             <Field label={t("wizard.hotel.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-hotel-label" />
             <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-hotel-address" required />
+            <Field
+              label={t("wizard.hotel.maps", "Google Maps Location Link (optional)")}
+              value={mapsLink}
+              onChange={setMapsLink}
+              testId="input-hotel-maps-link"
+              placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
+            />
             <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-hotel-building" />
             <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-hotel-room" />
             <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-hotel-parking" />
@@ -1049,6 +1107,13 @@ export default function TrainingLocationWizard() {
           <div className="space-y-3" data-testid="form-other-location">
             <Field label={t("wizard.otherLocation.name", "Enter Training Location")} value={gymName} onChange={setGymName} testId="input-other-location-name" required />
             <Field label={t("wizard.other.address", "Location / area")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" />
+            <Field
+              label={t("wizard.other.maps", "Google Maps Location Link (optional)")}
+              value={mapsLink}
+              onChange={setMapsLink}
+              testId="input-other-location-maps-link"
+              placeholder={t("wizard.other.mapsPh", "Paste the location link here")}
+            />
             <Field label={t("wizard.other.guest", "Guest access policy")} value={gymGuest} onChange={setGymGuest} testId="input-other-location-guest" />
             <FieldArea label={t("wizard.other.notes", "Entry / parking notes")} value={gymNotes} onChange={setGymNotes} testId="input-other-location-notes" />
           </div>
@@ -1208,23 +1273,23 @@ export default function TrainingLocationWizard() {
   );
 }
 
-function Field({ label, value, onChange, testId, required }: {
-  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean;
+function Field({ label, value, onChange, testId, required, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; testId: string; required?: boolean; placeholder?: string;
 }) {
   return (
     <div>
       <Label className="text-xs">{label}{required ? " *" : ""}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} className="bg-white/5 border-white/10 h-11 mt-1" data-testid={testId} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 mt-1" data-testid={testId} />
     </div>
   );
 }
-function FieldArea({ label, value, onChange, testId }: {
-  label: string; value: string; onChange: (v: string) => void; testId: string;
+function FieldArea({ label, value, onChange, testId, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; testId: string; placeholder?: string;
 }) {
   return (
     <div>
       <Label className="text-xs">{label}</Label>
-      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} className="bg-white/5 border-white/10 mt-1" data-testid={testId} />
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 mt-1" data-testid={testId} />
     </div>
   );
 }

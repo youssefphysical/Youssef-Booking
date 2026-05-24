@@ -376,6 +376,8 @@ export const trainingLocations = pgTable("training_locations", {
   gymName: text("gym_name"),
   guestAccess: text("guest_access"),
   accessNotes: text("access_notes"),
+  mapsLink: text("maps_link"),
+  gymFloor: text("gym_floor"),
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   archivedAt: timestamp("archived_at"),
@@ -394,6 +396,8 @@ export const insertTrainingLocationSchema = createInsertSchema(trainingLocations
     gymName: z.string().max(200).nullish(),
     guestAccess: z.string().max(200).nullish(),
     accessNotes: z.string().max(500).nullish(),
+    mapsLink: z.string().max(1000).nullish(),
+    gymFloor: z.string().max(120).nullish(),
     isDefault: z.boolean().optional(),
   });
 

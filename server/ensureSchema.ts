@@ -708,6 +708,10 @@ async function run(): Promise<void> {
     CREATE INDEX IF NOT EXISTS training_locations_user_idx
       ON training_locations (user_id);
 
+    ALTER TABLE IF EXISTS training_locations
+      ADD COLUMN IF NOT EXISTS maps_link text,
+      ADD COLUMN IF NOT EXISTS gym_floor text;
+
     ALTER TABLE IF EXISTS bookings
       ADD COLUMN IF NOT EXISTS training_location_id integer
         REFERENCES training_locations(id);
