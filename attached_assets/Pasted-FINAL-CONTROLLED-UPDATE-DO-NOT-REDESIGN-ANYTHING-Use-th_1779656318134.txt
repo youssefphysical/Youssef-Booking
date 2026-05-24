@@ -1,0 +1,184 @@
+FINAL CONTROLLED UPDATE — DO NOT REDESIGN ANYTHING
+
+Use the latest mobile mockup direction as visual guidance only.
+
+The current website design, Tron Legacy style, spacing, typography, colors, cards, buttons, booking logic, dashboard cleanup, and existing UX must remain unchanged.
+
+Only make the following controlled updates:
+
+1. SERVICES / PACKAGE CARDS IMAGE CONTROL
+
+Add admin control from the Control Panel for the images used on the public service/package cards:
+
+- Personal Training card image
+- Nutrition Plans card image
+- Supplement Protocol card image
+
+Admin must be able to:
+
+- Upload/change image
+- Preview current image
+- Replace image
+- Remove image if needed
+
+Images should display on the public website cards exactly in the same premium card style.
+
+Do NOT hardcode these images permanently.
+
+Keep image aspect ratio clean and optimized for mobile.
+
+Use existing upload/storage pattern if available.
+
+Do NOT redesign the cards.
+
+2. PUBLIC SERVICES SECTION
+
+Keep a simple premium service section with three cards:
+
+Personal Training
+
+Text:
+1:1 coaching built around your goal.
+
+Features:
+
+- Fat Loss
+- Muscle Building
+- Performance Training
+- Home / Building / Hotel / Fitness Zone
+
+Button:
+Book Training
+
+Action:
+Open the existing training location wizard.
+
+Nutrition Plans
+
+Text:
+Personalized guidance designed around your goal, lifestyle, and training routine.
+
+Options:
+
+- 1 Month
+- 3 Months
+- 6 Months
+
+Button:
+Ask on WhatsApp
+
+Action:
+Open WhatsApp with message:
+"Hi Youssef, I’m interested in a nutrition plan. I’d like to know the available options, pricing, and which duration suits my goal best."
+
+Supplement Protocol
+
+Text:
+Goal-focused supplement guidance designed around training, recovery, and routine.
+
+Options:
+
+- 1 Month
+- 3 Months
+- 6 Months
+
+Button:
+Ask on WhatsApp
+
+Action:
+Open WhatsApp with message:
+"Hi Youssef, I’m interested in a supplement protocol. I’d like to know what options are available and what would suit my goal."
+
+Do NOT add meal builders.
+Do NOT add macros.
+Do NOT add calories.
+Do NOT add supplement dosage builders.
+Do NOT add InBody.
+Do NOT add analysis.
+
+3. BOOKING LOCATION FLOW
+
+Keep the location flow simple:
+
+Fitness Zone:
+Go directly to Date → Time → Confirmation.
+
+Building Gym:
+Fields only:
+
+- Google Maps Location Link
+- Building Name
+- Gym Floor
+- Parking Notes optional
+
+Hotel Training:
+Fields only:
+
+- Google Maps Location Link
+- Hotel Name
+- Gym Floor
+- Room Number optional
+- Access Notes optional
+
+External Gym:
+Rename “Other Location” to “External Gym”.
+
+Fields only:
+
+- Google Maps Location Link
+- Gym Name
+- Area / Location
+
+Online Coaching:
+No location form.
+Immediately open WhatsApp with message:
+"Hi Youssef, I’m interested in online coaching. I’d like to know more about the available plans, nutrition support, supplement guidance, and how we can start."
+
+4. IMPORTANT UX RULES
+
+Remove unnecessary repeated questions.
+
+Remove unnecessary long helper text.
+
+Reduce annoying toast notifications.
+
+Only keep toast notifications for important actions:
+
+- Booking completed
+- Save completed
+- Critical error
+- Payment success if applicable
+
+Do not show repetitive informational popups everywhere.
+
+5. DO NOT TOUCH
+
+Do NOT redesign homepage.
+
+Do NOT redesign booking UI.
+
+Do NOT change colors.
+
+Do NOT change spacing.
+
+Do NOT change typography.
+
+Do NOT change package logic.
+
+Do NOT change cancellation logic.
+
+Do NOT change emergency cancel.
+
+Do NOT change same-day reschedule.
+
+Do NOT change membership priority.
+
+Do NOT restore InBody.
+
+Do NOT restore nutrition builders.
+
+Do NOT restore supplement builders.
+
+Do NOT change dashboard cleanup.
+
+Only implement the exact updates listed above.

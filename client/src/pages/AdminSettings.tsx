@@ -102,6 +102,7 @@ export default function AdminSettings() {
           <GeneralSettingsSection />
           <BankDetailsSection />
           <ProfileContentSection />
+          <ServiceCardImagesSection />
           <HeroImagesSection />
           <TransformationsSection />
           <BlockedSlotsSection />
@@ -1888,6 +1889,152 @@ function BlockedSlotsSection() {
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+// =====================================================================
+// SERVICE CARD IMAGES — admin uploads images for the 3 public service
+// cards (Personal Training, Nutrition Plans, Supplement Protocol).
+// Images are stored as base64 data URLs in the settings row so there
+// is no filesystem dependency (Vercel-safe). Same architecture as the
+// profile photo uploader above.
+// =====================================================================
+function ServiceCardImagesSection() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
+
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+  type CardKey = "personalTrainingImageUrl" | "nutritionImageUrl" | "supplementImageUrl";
+
+  const [pending, setPending] = useState<Record<CardKey, string | null>>({
+    personalTrainingImageUrl: null,
+    nutritionImageUrl: null,
+    supplementImageUrl: null,
+  });
+
+  const cards: { key: CardKey; label: string }[] = [
+    { key: "personalTrainingImageUrl", label: "Personal Training" },
+    { key: "nutritionImageUrl", label: "Nutrition Plans" },
+    { key: "supplementImageUrl", label: "Supplement Protocol" },
+  ];
+
+  function handleFile(cardKey: CardKey, file: File | undefined) {
+    if (!file) return;
+    if (!ALLOWED_MIME.includes(file.type.toLowerCase())) {
+      toast({ title: "Only JPEG, PNG, or WebP images are allowed.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast({ title: "Image must be under 5 MB.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) return;
+      setPending((p) => ({ ...p, [cardKey]: dataUrl }));
+      updateSettings.mutate(
+        { [cardKey]: dataUrl },
+        {
+          onSuccess: () => {
+            setPending((p) => ({ ...p, [cardKey]: null }));
+            toast({ title: `${cards.find((c) => c.key === cardKey)?.label} image saved.` });
+          },
+          onError: (err: any) => {
+            setPending((p) => ({ ...p, [cardKey]: null }));
+            toast({ title: "Upload failed. Please try again.", description: err?.message, variant: "destructive" });
+          },
+        },
+      );
+    };
+    reader.onerror = () => toast({ title: "Could not read the file.", variant: "destructive" });
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemove(cardKey: CardKey) {
+    updateSettings.mutate(
+      { [cardKey]: null },
+      {
+        onSuccess: () => toast({ title: `${cards.find((c) => c.key === cardKey)?.label} image removed.` }),
+        onError: (err: any) => toast({ title: "Remove failed.", description: err?.message, variant: "destructive" }),
+      },
+    );
+  }
+
+  return (
+    <section className="admin-card">
+      <h2 className="font-display font-bold text-lg mb-1">Service Card Images</h2>
+      <p className="text-sm text-muted-foreground mb-5">
+        Upload an image for each public service card on the homepage. If no image is set, the card shows a default icon.
+        JPEG, PNG, or WebP — max 5 MB.
+      </p>
+      <div className="grid sm:grid-cols-3 gap-5">
+        {cards.map(({ key, label }) => {
+          const savedUrl = (settings as any)?.[key]?.trim() || "";
+          const previewUrl = pending[key] || savedUrl;
+          const inputId = `service-img-input-${key}`;
+          return (
+            <div key={key} className="space-y-3">
+              <p className="text-sm font-medium">{label}</p>
+              {/* Preview */}
+              <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-primary/10 to-black/40">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={label}
+                    className="w-full h-full object-cover"
+                    data-testid={`img-service-card-${key}`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/50">
+                    <ImageIcon size={24} className="mb-1 opacity-40" />
+                    <span className="text-[10px] uppercase tracking-widest">No image</span>
+                  </div>
+                )}
+                {pending[key] && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <Loader2 size={20} className="animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+              {/* Actions */}
+              <div className="flex gap-2">
+                <label htmlFor={inputId} className="flex-1">
+                  <input
+                    id={inputId}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(e) => handleFile(key, e.target.files?.[0])}
+                    data-testid={`input-service-img-${key}`}
+                  />
+                  <span className="inline-flex items-center justify-center gap-1.5 h-9 w-full px-3 rounded-xl border border-white/10 text-xs font-medium cursor-pointer hover:border-primary/40 hover:text-primary transition-colors">
+                    <UploadCloud size={13} />
+                    {savedUrl ? "Replace" : "Upload"}
+                  </span>
+                </label>
+                {savedUrl && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={() => handleRemove(key)}
+                    disabled={updateSettings.isPending}
+                    data-testid={`button-service-img-remove-${key}`}
+                  >
+                    <Trash2 size={13} />
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

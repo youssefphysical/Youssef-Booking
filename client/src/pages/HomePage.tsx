@@ -32,7 +32,7 @@ import { Transformations } from "@/components/Transformations";
 import { useTranslation } from "@/i18n";
 import { lazy, Suspense } from "react";
 import { Salad, HeartPulse, Gift, HelpCircle } from "lucide-react";
-import { buildContextMessage } from "@/lib/whatsapp";
+import { buildContextMessage, whatsappUrl } from "@/lib/whatsapp";
 const PricingCards = lazy(() => import("@/components/public/PricingCards").then(m => ({ default: m.PricingCards })));
 const FaqAccordion = lazy(() => import("@/components/public/FaqAccordion").then(m => ({ default: m.FaqAccordion })));
 
@@ -422,42 +422,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PERSONAL TRAINING — primary service overview (brief §14). */}
-      <ServiceCallout
-        id="personal-training"
-        eyebrow="home.personalTraining.eyebrow"
-        title="home.personalTraining.title"
-        body="home.personalTraining.body"
-        ctaKey="home.personalTraining.cta"
-        whatsappKind="pt"
-        icon={<Dumbbell size={22} />}
-        secondaryHref="/wizard"
-        secondaryKey="home.personalTraining.book"
-      />
-
-      {/* NUTRITION COACHING — service overview (brief §14). */}
-      <ServiceCallout
-        id="nutrition"
-        eyebrow="home.nutrition.eyebrow"
-        title="home.nutrition.title"
-        body="home.nutrition.body"
-        ctaKey="home.nutrition.cta"
-        whatsappKind="nutrition"
-        icon={<Salad size={22} />}
-      />
-
-      {/* RECOVERY & MOBILITY — service overview (brief §14). */}
-      <ServiceCallout
-        id="recovery"
-        eyebrow="home.recovery.eyebrow"
-        title="home.recovery.title"
-        body="home.recovery.body"
-        ctaKey="home.recovery.cta"
-        whatsappKind="recovery"
-        icon={<HeartPulse size={22} />}
-        secondaryHref="/recovery"
-        secondaryKey="home.recovery.learnMore"
-      />
+      {/* SERVICES — 3 cards: Personal Training, Nutrition Plans, Supplement Protocol */}
+      <ServicesSection />
 
       {/* PRICING — "From AED" cards, Fitness-Zone-aware. */}
       <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="pricing">
@@ -751,63 +717,139 @@ function PublicPackages() {
 // the Nutrition and Recovery overviews (Task #32, brief §14). Keeps the
 // homepage code dry: pass the i18n keys and the WhatsApp context tag.
 // =====================================================================
-function ServiceCallout({
-  id,
-  eyebrow,
-  title,
-  body,
-  ctaKey,
-  whatsappKind,
-  icon,
-  secondaryHref,
-  secondaryKey,
-}: {
-  id: string;
-  eyebrow: string;
-  title: string;
-  body: string;
-  ctaKey: string;
-  whatsappKind: "nutrition" | "recovery" | "trial" | "pt";
-  icon: React.ReactNode;
-  secondaryHref?: string;
-  secondaryKey?: string;
-}) {
-  const { t, lang } = useTranslation();
+// =====================================================================
+// SERVICES SECTION — 3 admin-image-backed service cards replacing the
+// old separate ServiceCallout rows. Images come from settings; icons
+// are used as fallback when no image is uploaded.
+// =====================================================================
+function ServicesSection() {
+  const { data: settings } = useSettings();
+
+  const nutritionMsg = "Hi Youssef, I'm interested in a personalised nutrition plan. I'd like to know more about your approach and how we can get started.";
+  const supplementMsg = "Hi Youssef, I'm interested in a personalised supplement protocol. Can you share more about what you recommend and how it works?";
+
+  const cards = [
+    {
+      key: "pt",
+      imageUrl: settings?.personalTrainingImageUrl || "",
+      icon: <Dumbbell size={28} className="text-primary" />,
+      eyebrow: "Personal Training",
+      title: "1-on-1 Personal Training",
+      body: "Fully customised sessions designed around your goals, fitness level, and schedule — with real-time coaching and form correction.",
+      features: ["Fat Loss", "Muscle Building", "Athletic Performance", "Rehabilitation"],
+      cta: (
+        <a
+          href="/wizard?fresh=1"
+          className="inline-flex items-center justify-center gap-2 h-12 w-full px-5 rounded-xl bg-primary text-black font-semibold text-sm hover:bg-primary/90 transition-colors"
+          data-testid="button-services-pt-book"
+        >
+          <Calendar size={15} />
+          Book Training
+        </a>
+      ),
+    },
+    {
+      key: "nutrition",
+      imageUrl: settings?.nutritionImageUrl || "",
+      icon: <Salad size={28} className="text-primary" />,
+      eyebrow: "Nutrition Plans",
+      title: "Personalised Nutrition",
+      body: "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
+      features: ["Macro Tracking", "Meal Planning", "Body Recomposition", "InBody Analysis"],
+      cta: (
+        <a
+          href={whatsappUrl(settings?.whatsappNumber, nutritionMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 h-12 w-full px-5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/20 transition-colors"
+          data-testid="button-services-nutrition-whatsapp"
+        >
+          Ask on WhatsApp
+        </a>
+      ),
+    },
+    {
+      key: "supplement",
+      imageUrl: settings?.supplementImageUrl || "",
+      icon: <HeartPulse size={28} className="text-primary" />,
+      eyebrow: "Supplement Protocol",
+      title: "Supplement Protocol",
+      body: "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",
+      features: ["Protein & Creatine", "Vitamins & Minerals", "Recovery Support", "Performance Stack"],
+      cta: (
+        <a
+          href={whatsappUrl(settings?.whatsappNumber, supplementMsg)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 h-12 w-full px-5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/20 transition-colors"
+          data-testid="button-services-supplement-whatsapp"
+        >
+          Ask on WhatsApp
+        </a>
+      ),
+    },
+  ];
+
   return (
-    <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id={id}>
-      <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-10 grid md:grid-cols-[auto,1fr,auto] gap-5 md:gap-6 items-center">
-        <div className="size-14 rounded-2xl bg-primary/10 border border-primary/30 text-primary grid place-items-center shrink-0">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="tron-eyebrow text-[11px] mb-1.5">{t(eyebrow)}</p>
-          <h2 className="text-2xl md:text-3xl font-display font-bold leading-tight">
-            {t(title)}
-          </h2>
-          <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-prose">
-            {t(body)}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row md:flex-col gap-2 md:gap-2.5 shrink-0">
-          <WhatsAppButton
-            label={t(ctaKey)}
-            message={buildContextMessage(whatsappKind, { lang })}
-            testId={`button-${id}-whatsapp`}
-          />
-          {secondaryHref && secondaryKey && (
-            <Link
-              href={secondaryHref}
-              className="inline-flex items-center justify-center gap-2 h-12 px-4 rounded-xl border border-white/10 text-sm font-semibold text-foreground hover:border-primary/40 hover:text-primary transition-colors"
-              data-testid={`link-${id}-secondary`}
-            >
-              {t(secondaryKey)}
-            </Link>
-          )}
-        </div>
+    <section className="max-w-6xl mx-auto px-5 py-14 md:py-20" id="services">
+      <div className="mb-10 text-start">
+        <p className="tron-eyebrow text-xs mb-5">What I Offer</p>
+        <h2 className="text-3xl md:text-4xl font-display font-bold">Services</h2>
+      </div>
+      <div className="grid md:grid-cols-3 gap-5">
+        {cards.map((card) => (
+          <motion.div
+            key={card.key}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45 }}
+            className="tron-card rounded-3xl overflow-hidden flex flex-col"
+            data-testid={`card-service-${card.key}`}
+          >
+            {/* Image or icon header */}
+            {card.imageUrl ? (
+              <div className="w-full aspect-[16/9] overflow-hidden">
+                <img
+                  src={card.imageUrl}
+                  alt={card.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-[16/9] bg-gradient-to-br from-primary/10 to-black/40 border-b border-primary/10 flex items-center justify-center">
+                <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 grid place-items-center">
+                  {card.icon}
+                </div>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-6 flex flex-col flex-1 gap-4">
+              <div>
+                <p className="tron-eyebrow text-[10px] mb-2">{card.eyebrow}</p>
+                <h3 className="font-display font-bold text-xl leading-tight mb-2">{card.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{card.body}</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {card.features.map((f) => (
+                  <span
+                    key={f}
+                    className="text-[10px] px-2.5 py-1 rounded-full border border-primary/20 text-primary/80 bg-primary/5 font-medium tracking-wide uppercase"
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-auto pt-2">{card.cta}</div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );
 }
+
 
 function SectionHeader({
   eyebrow,

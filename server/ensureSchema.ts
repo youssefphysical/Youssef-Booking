@@ -40,6 +40,11 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS expiry_date date,
       ADD COLUMN IF NOT EXISTS status text;
 
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS personal_training_image_url text,
+      ADD COLUMN IF NOT EXISTS nutrition_image_url text,
+      ADD COLUMN IF NOT EXISTS supplement_image_url text;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

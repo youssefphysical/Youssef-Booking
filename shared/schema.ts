@@ -731,6 +731,9 @@ export const settings = pgTable("settings", {
   bankAccountName: text("bank_account_name").default("Youssef Tarek Hashim Ahmed"),
   bankIban: text("bank_iban").default("AE230260001015917468101"),
   showBankDetailsPublicly: boolean("show_bank_details_publicly").notNull().default(false),
+  personalTrainingImageUrl: text("personal_training_image_url"),
+  nutritionImageUrl: text("nutrition_image_url"),
+  supplementImageUrl: text("supplement_image_url"),
 });
 
 // =============================
@@ -1537,6 +1540,9 @@ export const updateSettingsSchema = z.object({
   bankAccountName: z.string().nullable().optional(),
   bankIban: z.string().nullable().optional(),
   showBankDetailsPublicly: z.boolean().optional(),
+  personalTrainingImageUrl: z.string().nullable().optional(),
+  nutritionImageUrl: z.string().nullable().optional(),
+  supplementImageUrl: z.string().nullable().optional(),
 });
 
 export const PACKAGE_TYPES = [

@@ -359,8 +359,8 @@ export default function TrainingLocationWizard() {
       {
         key: "other_location" as const,
         icon: <Globe size={22} className="text-primary" />,
-        title: t("wizard.otherLocation.title", "Other Location"),
-        body: t("wizard.otherLocation.body", "I train at another location."),
+        title: t("wizard.otherLocation.title", "External Gym"),
+        body: t("wizard.otherLocation.body", "I train at an external gym."),
       },
     ],
     [t],
@@ -700,18 +700,13 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "hotel") {
-      if (!homeAddress.trim()) {
-        toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
-        return;
-      }
       const payload = {
         kind: "hotel" as const,
-        label: homeLabel || t("wizard.hotel.defaultLabel", "Hotel"),
-        address: homeAddress,
+        label: homeBuilding || t("wizard.hotel.defaultLabel", "Hotel"),
         buildingName: homeBuilding || undefined,
+        gymFloor: gymFloor || undefined,
         roomNumber: homeRoom || undefined,
         parkingNotes: homeParking || undefined,
-        equipmentNotes: homeEquip || undefined,
         mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
@@ -775,8 +770,6 @@ export default function TrainingLocationWizard() {
         label: gymName,
         gymName,
         address: gymAddress || undefined,
-        guestAccess: gymGuest || undefined,
-        accessNotes: gymNotes || undefined,
         mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
       };
@@ -1015,25 +1008,18 @@ export default function TrainingLocationWizard() {
         {step === 2 && branch === "building" && (
           <div className="space-y-3" data-testid="form-building-location">
             <Field
-              label={t("wizard.building.label", "Location Nickname (optional)")}
-              value={homeLabel}
-              onChange={setHomeLabel}
-              testId="input-building-label"
-              placeholder={t("wizard.building.labelPh", "My Building Gym")}
-            />
-            <Field
-              label={t("wizard.building.maps", "Paste Google Maps Location Link")}
+              label={t("wizard.building.maps", "Google Maps Location Link (optional)")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-building-maps-link"
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
             />
             <Field
-              label={t("wizard.building.community", "Building / Community")}
+              label={t("wizard.building.community", "Building Name")}
               value={homeBuilding}
               onChange={setHomeBuilding}
               testId="input-building-building"
-              placeholder={t("wizard.building.communityPh", "Example: Marina Gate, Downtown Views, JVC Building Name")}
+              placeholder={t("wizard.building.communityPh", "Example: Marina Gate, Downtown Views, JVC Building")}
             />
             <Field
               label={t("wizard.building.floor", "Gym Floor")}
@@ -1043,18 +1029,11 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
             />
             <FieldArea
-              label={t("wizard.building.access", "Access / Parking Notes")}
+              label={t("wizard.building.access", "Parking / Access Notes (optional)")}
               value={homeParking}
               onChange={setHomeParking}
               testId="input-building-parking"
-              placeholder={t("wizard.building.accessPh", "Example: Visitor parking, reception access, security gate instructions")}
-            />
-            <FieldArea
-              label={t("wizard.building.equipment", "Gym Equipment Available")}
-              value={homeEquip}
-              onChange={setHomeEquip}
-              testId="input-building-equipment"
-              placeholder={t("wizard.building.equipmentPh", "Example: dumbbells, cable machine, treadmill, bench, Smith machine")}
+              placeholder={t("wizard.building.accessPh", "Example: Visitor parking, reception access, gate code")}
             />
           </div>
         )}
@@ -1079,8 +1058,6 @@ export default function TrainingLocationWizard() {
 
         {step === 2 && branch === "hotel" && (
           <div className="space-y-3" data-testid="form-hotel-location">
-            <Field label={t("wizard.hotel.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-hotel-label" />
-            <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-hotel-address" required />
             <Field
               label={t("wizard.hotel.maps", "Google Maps Location Link (optional)")}
               value={mapsLink}
@@ -1088,10 +1065,34 @@ export default function TrainingLocationWizard() {
               testId="input-hotel-maps-link"
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
             />
-            <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-hotel-building" />
-            <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-hotel-room" />
-            <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-hotel-parking" />
-            <FieldArea label={t("wizard.home.equipment", "Equipment available")} value={homeEquip} onChange={setHomeEquip} testId="input-hotel-equipment" />
+            <Field
+              label={t("wizard.hotel.name", "Hotel Name")}
+              value={homeBuilding}
+              onChange={setHomeBuilding}
+              testId="input-hotel-name"
+              placeholder={t("wizard.hotel.namePh", "Example: Marriott, JW Marriott, Jumeirah")}
+            />
+            <Field
+              label={t("wizard.building.floor", "Gym Floor")}
+              value={gymFloor}
+              onChange={setGymFloor}
+              testId="input-hotel-floor"
+              placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
+            />
+            <Field
+              label={t("wizard.hotel.room", "Room Number (optional)")}
+              value={homeRoom}
+              onChange={setHomeRoom}
+              testId="input-hotel-room"
+              placeholder={t("wizard.hotel.roomPh", "Example: 512")}
+            />
+            <FieldArea
+              label={t("wizard.hotel.access", "Access Notes (optional)")}
+              value={homeParking}
+              onChange={setHomeParking}
+              testId="input-hotel-access"
+              placeholder={t("wizard.hotel.accessPh", "Example: Gym on 3rd floor, ask reception for access")}
+            />
           </div>
         )}
 
@@ -1105,17 +1106,15 @@ export default function TrainingLocationWizard() {
 
         {step === 2 && branch === "other_location" && (
           <div className="space-y-3" data-testid="form-other-location">
-            <Field label={t("wizard.otherLocation.name", "Enter Training Location")} value={gymName} onChange={setGymName} testId="input-other-location-name" required />
-            <Field label={t("wizard.other.address", "Location / area")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" />
             <Field
               label={t("wizard.other.maps", "Google Maps Location Link (optional)")}
               value={mapsLink}
               onChange={setMapsLink}
               testId="input-other-location-maps-link"
-              placeholder={t("wizard.other.mapsPh", "Paste the location link here")}
+              placeholder={t("wizard.other.mapsPh", "Paste the gym location link here")}
             />
-            <Field label={t("wizard.other.guest", "Guest access policy")} value={gymGuest} onChange={setGymGuest} testId="input-other-location-guest" />
-            <FieldArea label={t("wizard.other.notes", "Entry / parking notes")} value={gymNotes} onChange={setGymNotes} testId="input-other-location-notes" />
+            <Field label={t("wizard.otherLocation.name", "Gym Name")} value={gymName} onChange={setGymName} testId="input-other-location-name" required placeholder={t("wizard.otherLocation.namePh", "Example: Gold's Gym JBR, Fitness First")} />
+            <Field label={t("wizard.other.address", "Area / Location")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JBR, Downtown")} />
           </div>
         )}
 
