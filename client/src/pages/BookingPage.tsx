@@ -129,11 +129,18 @@ export default function BookingPage() {
         "Choose your preferred time. Youssef Elite may review hotel access details before final confirmation if needed.",
       ),
     },
-    other_gym: {
-      title: t("booking.flow.otherGym.title", "Book Your Training Session"),
+    online_coaching: {
+      title: t("booking.flow.online.title", "Book Your Online Coaching Session"),
       subtitle: t(
-        "booking.flow.otherGym.subtitle",
-        "Choose your preferred time. Please make sure trainer access is allowed at the selected gym.",
+        "booking.flow.online.subtitle",
+        "Choose your preferred time. You will receive a video call link before the session.",
+      ),
+    },
+    other_location: {
+      title: t("booking.flow.otherLocation.title", "Book Your Training Session"),
+      subtitle: t(
+        "booking.flow.otherLocation.subtitle",
+        "Choose your preferred time. Please make sure trainer access is allowed at the selected location.",
       ),
     },
     fitness_zone: {

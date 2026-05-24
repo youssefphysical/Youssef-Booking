@@ -1,6 +1,6 @@
 # Youssef Ahmed Personal Training Service
 
-Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed — client booking, InBody tracking, progress photos, admin management. Installable PWA, RTL-ready, AED currency, Asia/Dubai timezone.
+Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed — client booking, progress photos, admin management. Installable PWA, RTL-ready, AED currency, Asia/Dubai timezone.
 
 ## Run & Operate
 
@@ -17,7 +17,6 @@ Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed —
 - `SESSION_SECRET` — express-session cookie signing.
 - `RESEND_API_KEY` — transactional email (password reset).
 - `PUBLIC_APP_URL` — base URL used in emails (reset links, etc.).
-- `OPENAI_API_KEY` — OpenAI Vision (gpt-5) for InBody scan extraction.
 - `CRON_SECRET` — bearer token for `/api/cron/*` external scheduler.
 
 ## Stack
@@ -54,7 +53,6 @@ Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed —
 - **Consent audit trail.** Detailed consent records stored server-side even when UI shows a combined checkbox.
 - **Dedicated admin portal.** `/admin-access` login → permissioned `/admin/*` routes.
 - **Package catalogue with snapshots.** `package_templates` is the catalogue. Assigning a template **snapshots** every field onto the `packages` row, so editing/deleting a template never mutates historical client data.
-- **AI for InBody.** OpenAI Vision extracts metrics; failures are swallowed so uploads always persist.
 - **Centralised notifications.** All triggers funnel through `notifyUser*()`; channels (`inApp` active, `push`/`email` scaffolded) live as flags on the same row.
 - **Atomic dedupe.** `client_notifications.dedupe_key` + partial unique index `(user_id, kind, dedupe_key) WHERE dedupe_key IS NOT NULL`. Storage uses raw SQL `ON CONFLICT … WHERE … DO NOTHING` (Drizzle's helper omits the predicate).
 - **Coach-notes privacy.** `sanitizeBookingForUser(me, b)` strips `privateCoachNotes` from every non-admin booking response (list, create, cancel, patch, same-day-adjust).
@@ -65,7 +63,7 @@ Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed —
 
 - **Public:** hero slider, about, certifications, transformations gallery (`/transformations`), contact.
 - **Client area:** 2-step register, dashboard (today hero, bookings, package, body, check-ins, photos, activity timeline), booking calendar with real-time availability, profile + avatar cropper, WhatsApp-driven renewal/extension requests.
-- **Admin:** dashboard with KPIs + urgent alerts, bookings/calendar scheduler, clients (with health badge, command center, full detail tabs), packages, package builder, nutrition plans, supplement stacks, staff/permissions, analytics (`/admin/analytics`), system settings, ⌘K command palette.
+- **Admin:** dashboard with KPIs + urgent alerts, bookings/calendar scheduler, clients (with health badge, command center, full detail tabs), packages, package builder, staff/permissions, analytics (`/admin/analytics`), system settings, ⌘K command palette.
 - **PWA:** custom install prompt (14d dismiss TTL), standalone-mode polish (no pull-to-refresh, AMOLED bg lock), offline page with auto-reload on reconnect.
 - **Password reset:** Resend-powered email + token invalidation.
 

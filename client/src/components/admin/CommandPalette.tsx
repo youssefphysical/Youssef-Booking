@@ -14,12 +14,9 @@ import {
   Users,
   Calendar,
   Package as PackageIcon,
-  ClipboardList,
-  Pill,
   UserPlus,
   CalendarPlus,
   PackagePlus,
-  Apple,
   ShieldCheck,
   Settings as SettingsIcon,
   LayoutDashboard,
@@ -60,20 +57,6 @@ type SearchResult = {
     totalSessions: number;
     usedSessions: number;
     status: string | null;
-  }>;
-  nutritionPlans: Array<{
-    id: number;
-    userId: number;
-    userName: string | null;
-    name: string;
-    status: string;
-    goal: string;
-  }>;
-  supplementStacks: Array<{
-    id: number;
-    name: string;
-    goal: string;
-    active: boolean;
   }>;
 };
 
@@ -116,8 +99,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
           clients: [],
           bookings: [],
           packages: [],
-          nutritionPlans: [],
-          supplementStacks: [],
         };
       }
       const res = await fetch(
@@ -141,9 +122,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     !!data &&
     (data.clients.length > 0 ||
       data.bookings.length > 0 ||
-      data.packages.length > 0 ||
-      data.nutritionPlans.length > 0 ||
-      data.supplementStacks.length > 0);
+      data.packages.length > 0);
 
   const quickAdds = useMemo(
     () => [
@@ -167,20 +146,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         hint: t("palette.create.packageHint", "Add a package to the public catalogue"),
         icon: <PackagePlus size={18} />,
         path: "/admin/package-builder?new=1",
-      },
-      {
-        key: "nutrition",
-        label: t("palette.create.nutrition", "New nutrition plan"),
-        hint: t("palette.create.nutritionHint", "Build a meal plan for a client"),
-        icon: <Apple size={18} />,
-        path: "/admin/nutrition/plans?new=1",
-      },
-      {
-        key: "supplements",
-        label: t("palette.create.supplements", "New supplement stack"),
-        hint: t("palette.create.supplementsHint", "Curate a stack to assign"),
-        icon: <Pill size={18} />,
-        path: "/admin/supplement-stacks?new=1",
       },
     ],
     [t],
@@ -322,59 +287,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                       {p.userName ?? `User #${p.userId}`} ·{" "}
                       {p.usedSessions}/{p.totalSessions} sessions
                       {p.status ? ` · ${p.status}` : ""}
-                    </span>
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {hasQuery && data && data.nutritionPlans.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading={t("palette.section.nutrition", "Nutrition Plans")}>
-              {data.nutritionPlans.map((n) => (
-                <CommandItem
-                  key={`np-${n.id}`}
-                  value={`nutrition ${n.name} ${n.userName ?? ""} ${n.goal}`}
-                  onSelect={() => go(`/admin/nutrition/plans/${n.id}`)}
-                  data-testid={`palette-nutrition-${n.id}`}
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-lime-500/10 text-lime-400">
-                    <ClipboardList size={16} />
-                  </span>
-                  <span className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium truncate">{n.name}</span>
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {n.userName ?? `User #${n.userId}`} · {n.status} · {n.goal}
-                    </span>
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </>
-        )}
-
-        {hasQuery && data && data.supplementStacks.length > 0 && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading={t("palette.section.supplements", "Supplement Stacks")}>
-              {data.supplementStacks.map((s) => (
-                <CommandItem
-                  key={`stack-${s.id}`}
-                  value={`stack ${s.name} ${s.goal}`}
-                  onSelect={() => go(`/admin/supplement-stacks`)}
-                  data-testid={`palette-stack-${s.id}`}
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
-                    <Pill size={16} />
-                  </span>
-                  <span className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium truncate">{s.name}</span>
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {s.goal}
-                      {!s.active ? " · inactive" : ""}
                     </span>
                   </span>
                 </CommandItem>

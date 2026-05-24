@@ -8,8 +8,6 @@ export type RecommendationKind =
   | "verification_pending"
   | "renewal_low_sessions"
   | "renewal_expired"
-  | "nutrition_suggestion"
-  | "nutrition_expired"
   | "book_next"
   | "inactive_book_next"
   | "consistency_milestone"
@@ -45,10 +43,6 @@ export interface RecommendationInput {
   hasPendingVerification?: boolean;
   /** Client's goal: "fat_loss", "muscle_gain", "performance", etc. */
   goal?: string | null;
-  /** True when the user has an active nutrition plan. */
-  hasActiveNutrition?: boolean;
-  /** True when the user previously had nutrition but it has lapsed. */
-  hasExpiredNutrition?: boolean;
   /** Last completed booking (ISO date or Date), if any. */
   lastSessionAt?: string | Date | null;
   /** Total completed sessions in the current consistency window. */
@@ -170,31 +164,6 @@ export function collectRecommendations(input: RecommendationInput): Recommendati
     }
   }
 
-  // 60 — Fat-loss goal but no nutrition plan → suggest nutrition coaching.
-  const goal = (input.goal || "").toLowerCase();
-  const isFatLoss = goal.includes("fat") || goal.includes("loss") || goal.includes("weight");
-  if (isFatLoss && !input.hasActiveNutrition) {
-    out.push({
-      kind: "nutrition_suggestion",
-      priority: 60,
-      titleKey: "whatsnext.nutritionSuggest.title",
-      bodyKey: "whatsnext.nutritionSuggest.body",
-      href: "/#nutrition",
-      ctaKey: "whatsnext.nutritionSuggest.cta",
-    });
-  }
-
-  // 55 — Nutrition lapsed → renew prompt.
-  if (input.hasExpiredNutrition && !input.hasActiveNutrition) {
-    out.push({
-      kind: "nutrition_expired",
-      priority: 55,
-      titleKey: "whatsnext.nutritionExpired.title",
-      bodyKey: "whatsnext.nutritionExpired.body",
-      href: "/#nutrition",
-      ctaKey: "whatsnext.nutritionExpired.cta",
-    });
-  }
 
   // 40 — High consistency → positive milestone callout. Pure encouragement.
   if ((input.consistencyStreak ?? 0) >= 8) {

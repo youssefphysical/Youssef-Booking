@@ -36,8 +36,6 @@ import {
   ClipboardList,
   Ruler,
   Flame,
-  Pill,
-  Apple,
   AlertCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -332,8 +330,6 @@ function ClientHeader({
             })()}
             <QuickActionPill icon={<Calendar size={11} />} label={t("admin.clientDetail.qaSessions", "Sessions")} onClick={() => onJump("bookings")} testId="qa-jump-bookings" />
             <QuickActionPill icon={<Wallet size={11} />} label={t("admin.clientDetail.qaPayments", "Payments")} onClick={() => onJump("packages")} testId="qa-jump-packages" />
-            <QuickActionPill icon={<Apple size={11} />} label={t("admin.clientDetail.qaNutrition", "Nutrition")} onClick={() => onJump("nutrition")} testId="qa-jump-nutrition" />
-            <QuickActionPill icon={<Pill size={11} />} label={t("admin.clientDetail.qaSupplements", "Supplements")} onClick={() => onJump("supplements")} testId="qa-jump-supplements" />
             <QuickActionPill icon={<Camera size={11} />} label={t("admin.clientDetail.qaPhotos", "Photos")} onClick={() => onJump("progress")} testId="qa-jump-progress" />
             <QuickActionPill icon={<Scale size={11} />} label={t("admin.clientDetail.qaMetrics", "Metrics")} onClick={() => onJump("body")} testId="qa-jump-body" />
             <QuickActionPill icon={<FileText size={11} />} label={t("admin.clientDetail.qaNotes", "Notes")} onClick={() => onJump("notes")} testId="qa-jump-notes" />

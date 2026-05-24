@@ -5,11 +5,6 @@ import {
   Users,
   Database,
   Calendar,
-  Apple,
-  UtensilsCrossed,
-  ClipboardList,
-  Calculator,
-  Pill,
   Package as PackageIcon,
   PackagePlus,
   BarChart3,
@@ -113,49 +108,6 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.bookings"),
           icon: <Calendar size={18} />,
           isActive: (loc) => loc.startsWith("/admin/bookings"),
-        },
-      ],
-    },
-    {
-      id: "nutrition",
-      label: t("nav.section.nutrition", "Nutrition"),
-      items: [
-        {
-          href: "/admin/nutrition/macro-calculator",
-          label: t("nav.macroCalculator", "Macro Calculator"),
-          icon: <Calculator size={18} />,
-          isActive: (loc) => loc === "/admin/nutrition/macro-calculator",
-        },
-        {
-          href: "/admin/nutrition/foods",
-          label: t("nav.foodLibrary", "Food Library"),
-          icon: <Apple size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/nutrition/foods"),
-        },
-        {
-          href: "/admin/nutrition/meals",
-          label: t("nav.mealLibrary", "Meal Library"),
-          icon: <UtensilsCrossed size={18} />,
-          isActive: (loc) =>
-            loc === "/admin/nutrition/meals" || loc.startsWith("/admin/nutrition/meals/"),
-        },
-        {
-          href: "/admin/nutrition/plans",
-          label: t("nav.nutritionPlans", "Nutrition Plans"),
-          icon: <ClipboardList size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/nutrition/plans"),
-        },
-      ],
-    },
-    {
-      id: "supplements",
-      label: t("nav.section.supplements", "Supplements"),
-      items: [
-        {
-          href: "/admin/supplement-stacks",
-          label: t("nav.supplementStacks", "Supplement Stacks"),
-          icon: <Pill size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/supplement"),
         },
       ],
     },

@@ -37,7 +37,6 @@ import {
   BadgeCheck,
   Gift,
   ArrowRight,
-  Apple,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -48,8 +47,6 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
-import { useMyActiveNutritionPlan } from "@/hooks/use-nutrition-plans";
-import { useMySupplements } from "@/hooks/use-supplements";
 import BeforeAfterCompare from "@/components/BeforeAfterCompare";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
@@ -137,7 +134,7 @@ import { GuidedStatusBanner } from "@/components/dashboard/GuidedStatusBanner";
 import { PackageGuidedBanner } from "@/components/dashboard/PackageGuidedBanner";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
-import { Pill, HeartPulse, Upload } from "lucide-react";
+import { HeartPulse, Upload } from "lucide-react";
 import { InfoTip } from "@/components/ui/InfoTip";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
 import { useFeatureFlag } from "@/lib/featureFlags";
@@ -245,7 +242,7 @@ export default function ClientDashboard() {
   const [tab, setTab] = useState<string>(() => {
     if (typeof window === "undefined") return "bookings";
     const h = window.location.hash.replace(/^#/, "");
-    return h && ["bookings","packages","nutrition","supplements","progress","activity"].includes(h)
+    return h && ["bookings","packages","progress","activity"].includes(h)
       ? h
       : "bookings";
   });
@@ -253,7 +250,7 @@ export default function ClientDashboard() {
     if (typeof window === "undefined") return;
     const onHash = () => {
       const h = window.location.hash.replace(/^#/, "");
-      if (h && ["bookings","packages","nutrition","supplements","progress","activity"].includes(h)) {
+      if (h && ["bookings","packages","progress","activity"].includes(h)) {
         setTab(h);
       }
     };
@@ -349,12 +346,6 @@ export default function ClientDashboard() {
           <TabsTrigger value="packages" data-testid="tab-packages">
             <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.section.myPackage", "My Package")}
           </TabsTrigger>
-          <TabsTrigger value="nutrition" data-testid="tab-nutrition">
-            <Apple size={14} className="mr-1.5" /> {t("dashboard.section.nutrition", "Nutrition")}
-          </TabsTrigger>
-          <TabsTrigger value="supplements" data-testid="tab-supplements">
-            <Pill size={14} className="mr-1.5" /> {t("dashboard.section.supplements", "Supplements")}
-          </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">
             <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.section.progress", "Progress")}
           </TabsTrigger>
@@ -365,8 +356,6 @@ export default function ClientDashboard() {
 
         <TabsContent value="bookings"><BookingsTab userId={user.id} /></TabsContent>
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
-        <TabsContent value="nutrition"><NutritionStatusTab /></TabsContent>
-        <TabsContent value="supplements"><SupplementStatusTab /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
         <TabsContent value="activity">
           <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
@@ -1571,94 +1560,6 @@ function ExtensionRequestDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// =============== NUTRITION STATUS TAB ===============
-
-function NutritionStatusTab() {
-  const { t } = useTranslation();
-  const { data: plan } = useMyActiveNutritionPlan();
-  const active = !!plan && plan.status === "active";
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-display font-bold">{t("dashboard.nutritionTitle", "Nutrition Plan")}</h2>
-        <p className="text-xs text-muted-foreground">{t("dashboard.nutritionSubtitle", "Your coaching nutrition status")}</p>
-      </div>
-
-      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border ${active ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/20 bg-white/[0.03] text-muted-foreground"}`}>
-            {active ? t("dashboard.statusActive", "Active") : t("dashboard.statusNotActive", "Not Active")}
-          </span>
-        </div>
-
-        {plan ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatusField label={t("dashboard.planName", "Plan")} value={plan.name} />
-            <StatusField label={t("dashboard.startDate", "Start Date")} value={plan.startDate ? formatDateDubai(plan.startDate) : "—"} />
-            <StatusField label={t("dashboard.reviewDate", "Review Date")} value={plan.reviewDate ? formatDateDubai(plan.reviewDate) : "—"} />
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">{t("dashboard.noNutritionPlan", "No active nutrition plan. Contact Coach to get started.")}</p>
-        )}
-
-        <WhatsAppButton
-          message={t("dashboard.whatsappNutrition", "Hi Coach, I have a question about my nutrition plan.")}
-          label={t("dashboard.whatsappCoach", "Message Coach")}
-        />
-      </div>
-    </div>
-  );
-}
-
-// =============== SUPPLEMENT STATUS TAB ===============
-
-function SupplementStatusTab() {
-  const { t } = useTranslation();
-  const { data: items = [] } = useMySupplements();
-  const active = items.some((i: any) => i.status === "active");
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-display font-bold">{t("dashboard.supplementsTitle", "Supplement Protocol")}</h2>
-        <p className="text-xs text-muted-foreground">{t("dashboard.supplementsSubtitle", "Your coaching supplement status")}</p>
-      </div>
-
-      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border ${active ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/20 bg-white/[0.03] text-muted-foreground"}`}>
-            {active ? t("dashboard.statusActive", "Active") : t("dashboard.statusNotActive", "Not Active")}
-          </span>
-        </div>
-
-        {active ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatusField label={t("dashboard.itemsInStack", "Items in Stack")} value={String(items.length)} />
-            <StatusField label={t("dashboard.activeItems", "Active Items")} value={String(items.filter((i: any) => i.status === "active").length)} />
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">{t("dashboard.noSupplements", "No active supplement protocol. Contact Coach to get started.")}</p>
-        )}
-
-        <WhatsAppButton
-          message={t("dashboard.whatsappSupplements", "Hi Coach, I have a question about my supplement protocol.")}
-          label={t("dashboard.whatsappCoach", "Message Coach")}
-        />
-      </div>
-    </div>
-  );
-}
-
-function StatusField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-background/40 border border-white/5 p-3">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="font-display font-bold text-base mt-0.5">{value}</p>
-    </div>
   );
 }
 

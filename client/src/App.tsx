@@ -135,8 +135,8 @@ function Router() {
 
   // Admin top-tab strip is mounted globally for the entire /admin/*
   // surface so it stays visible across every section (Overview, Clients,
-  // Bookings, Analytics, Packages, Settings, ClientDetail, Nutrition,
-  // Supplements, Staff, etc.) without each page having to mount it.
+  // Bookings, Analytics, Packages, Settings, ClientDetail, Staff, etc.)
+  // without each page having to mount it.
   // /admin-access (hidden admin login) is excluded — the user isn't
   // authenticated as admin yet on that route.
   const isAdminRoute =

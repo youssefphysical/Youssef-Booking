@@ -14,7 +14,6 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { usePackages } from "@/hooks/use-packages";
 import { useBookings } from "@/hooks/use-bookings";
-import { useMyActiveNutritionPlan } from "@/hooks/use-nutrition-plans";
 import { useTranslation } from "@/i18n";
 import {
   pickRecommendation,
@@ -26,8 +25,6 @@ const ICONS: Record<RecommendationKind, JSX.Element> = {
   verification_pending: <ShieldAlert size={18} />,
   renewal_low_sessions: <RefreshCw size={18} />,
   renewal_expired: <RefreshCw size={18} />,
-  nutrition_suggestion: <Salad size={18} />,
-  nutrition_expired: <Salad size={18} />,
   book_next: <Calendar size={18} />,
   inactive_book_next: <Calendar size={18} />,
   book_first: <Calendar size={18} />,
@@ -46,18 +43,6 @@ function formatTemplate(s: string, values?: Record<string, string | number>) {
  * recommendation engine, and renders the single highest-priority nudge.
  * Renders nothing when no rule fires (keeps the dashboard quiet).
  */
-// True when an explicit expiry/end date has passed, or the plan was
-// soft-marked expired via status. Server's `/me/active` may still return
-// the most recent plan even after expiry, so we still need this guard.
-function isNutritionExpired(plan: any): boolean {
-  if (!plan) return false;
-  if (plan.status === "expired") return true;
-  const rawDate = plan.expiresAt ?? plan.endDate ?? plan.validUntil ?? null;
-  if (!rawDate) return false;
-  const ts = new Date(rawDate).getTime();
-  return Number.isFinite(ts) && ts < Date.now();
-}
-
 export function WhatsNext() {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -65,11 +50,6 @@ export function WhatsNext() {
   const { data: packages = [] } = usePackages({ userId: user?.id });
   const { data: bookings = [] } = useBookings({ userId: user?.id });
 
-  // Nutrition: useMyActiveNutritionPlan is 404-safe (returns null when no
-  // active plan exists) — so missing-plan vs network-error stays clean.
-  const { data: myNutrition } = useMyActiveNutritionPlan(
-    !!user && user.role === "client",
-  );
 
   const { data: trainingLocations = [] } = useQuery<any[]>({
     queryKey: ["/api/training-locations"],
@@ -129,10 +109,6 @@ export function WhatsNext() {
           : null,
         hasPendingVerification,
         goal: (user as any)?.goal ?? null,
-        hasActiveNutrition:
-          !!myNutrition && !isNutritionExpired(myNutrition),
-        hasExpiredNutrition:
-          !!myNutrition && isNutritionExpired(myNutrition),
         lastSessionAt,
         consistencyStreak,
         hasAnyBooking: (bookings as any[]).length > 0,
@@ -142,7 +118,6 @@ export function WhatsNext() {
       activePackage,
       hasPendingVerification,
       user,
-      myNutrition,
       lastSessionAt,
       consistencyStreak,
       bookings,

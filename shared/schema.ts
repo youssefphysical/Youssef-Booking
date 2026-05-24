@@ -74,10 +74,11 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
 
 export const TRAINING_LOCATION_KINDS = [
   "fitness_zone",
-  "home",
   "building",
+  "home",
   "hotel",
-  "other_gym",
+  "online_coaching",
+  "other_location",
 ] as const;
 export type TrainingLocationKind = (typeof TRAINING_LOCATION_KINDS)[number];
 

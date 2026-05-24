@@ -184,8 +184,6 @@ export interface IStorage {
     clients: User[];
     bookings: Booking[];
     packages: Package[];
-    nutritionPlans: NutritionPlan[];
-    supplementStacks: SupplementStack[];
   }>;
   /**
    * Batched lookup for the verified-badge flag. Returns a Map keyed by userId
@@ -1516,14 +1514,12 @@ export class DatabaseStorage implements IStorage {
         clients: [],
         bookings: [],
         packages: [],
-        nutritionPlans: [],
-        supplementStacks: [],
       };
     }
     const pat = `%${trimmed.replace(/[%_]/g, (m) => `\\${m}`)}%`;
     const limit = Math.min(Math.max(perCategory, 1), 20);
 
-    const [clientsR, bookingsR, packagesR, npR, ssR] = await Promise.all([
+    const [clientsR, bookingsR, packagesR] = await Promise.all([
       db
         .select()
         .from(users)
@@ -1565,35 +1561,11 @@ export class DatabaseStorage implements IStorage {
         )
         .orderBy(desc(packages.purchasedAt))
         .limit(limit),
-      db
-        .select()
-        .from(nutritionPlans)
-        .where(
-          or(
-            ilike(nutritionPlans.name, pat),
-            ilike(nutritionPlans.publicNotes, pat),
-          ),
-        )
-        .orderBy(desc(nutritionPlans.updatedAt))
-        .limit(limit),
-      db
-        .select()
-        .from(supplementStacks)
-        .where(
-          or(
-            ilike(supplementStacks.name, pat),
-            ilike(supplementStacks.description, pat),
-          ),
-        )
-        .orderBy(desc(supplementStacks.updatedAt))
-        .limit(limit),
     ]);
     return {
       clients: clientsR,
       bookings: bookingsR,
       packages: packagesR,
-      nutritionPlans: npR,
-      supplementStacks: ssR,
     };
   }
 

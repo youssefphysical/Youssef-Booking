@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ const WIZARD_BUILD = "2026-05-22-ux-phase1";
 const WIZARD_GIT_HASH =
   (import.meta as any).env?.VITE_GIT_HASH || "local-dev";
 
-type Branch = "fitness_zone" | "home" | "other_gym" | null;
+type Branch = "fitness_zone" | "home" | "hotel" | "building" | "online_coaching" | "other_location" | null;
 type FzPath = "existing" | "trial" | null;
 
 // Task #66 follow-up — centralised post-wizard navigation. Every
@@ -46,7 +46,7 @@ type FzPath = "existing" | "trial" | null;
 //   - Otherwise (lead w/ no package, location set)→ /book?type=free_trial
 // `locationKind` is appended for the free-trial branch so the
 // booking page can pre-fill the location chip.
-type WizardFlow = "fz_existing" | "fz_trial" | "home" | "other_gym";
+type WizardFlow = "fz_existing" | "fz_trial" | "home" | "hotel" | "building" | "online_coaching" | "other_location";
 function decideNextRoute(opts: {
   flow: WizardFlow;
   locationKind?: string;
@@ -80,7 +80,6 @@ export default function TrainingLocationWizard() {
   const [homeRoom, setHomeRoom] = useState("");
   const [homeParking, setHomeParking] = useState("");
   const [homeEquip, setHomeEquip] = useState("");
-  const [homeKind, setHomeKind] = useState<"home" | "building" | "hotel">("home");
 
   // Gym form
   const [gymName, setGymName] = useState("");
@@ -162,7 +161,7 @@ export default function TrainingLocationWizard() {
   const draftKey = user?.id ? `wizard:${user.id}` : "wizard:anon";
   const draftValue = {
     step, branch, fzPath,
-    homeLabel, homeAddress, homeBuilding, homeRoom, homeParking, homeEquip, homeKind,
+    homeLabel, homeAddress, homeBuilding, homeRoom, homeParking, homeEquip,
     gymName, gymAddress, gymGuest, gymNotes,
     reqType, verifNotes,
   };
@@ -190,7 +189,7 @@ export default function TrainingLocationWizard() {
             wizardDraft.clear();
             setStep(1); setBranch(null); setFzPath(null);
             setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
-            setHomeParking(""); setHomeEquip(""); setHomeKind("home");
+            setHomeParking(""); setHomeEquip("");
             setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
             setReqType("not_sure"); setVerifNotes("");
           }}
@@ -208,7 +207,6 @@ export default function TrainingLocationWizard() {
     if (typeof d.homeRoom === "string") setHomeRoom(d.homeRoom);
     if (typeof d.homeParking === "string") setHomeParking(d.homeParking);
     if (typeof d.homeEquip === "string") setHomeEquip(d.homeEquip);
-    if (d.homeKind) setHomeKind(d.homeKind);
     if (typeof d.gymName === "string") setGymName(d.gymName);
     if (typeof d.gymAddress === "string") setGymAddress(d.gymAddress);
     if (typeof d.gymGuest === "string") setGymGuest(d.gymGuest);
@@ -296,16 +294,34 @@ export default function TrainingLocationWizard() {
         body: t("wizard.fz.body", "I train at Fitness Zone with Youssef."),
       },
       {
-        key: "home" as const,
-        icon: <Home size={22} className="text-primary" />,
-        title: t("wizard.home.title", "Home, building or hotel"),
-        body: t("wizard.home.body", "Youssef trains me at my place."),
+        key: "building" as const,
+        icon: <Building2 size={22} className="text-primary" />,
+        title: t("wizard.building.title", "Building Gym"),
+        body: t("wizard.building.body", "Youssef trains me at my building gym."),
       },
       {
-        key: "other_gym" as const,
-        icon: <Building2 size={22} className="text-primary" />,
-        title: t("wizard.other.title", "Another gym"),
-        body: t("wizard.other.body", "I train at a different gym."),
+        key: "home" as const,
+        icon: <Home size={22} className="text-primary" />,
+        title: t("wizard.home.title", "Home Training"),
+        body: t("wizard.home.body", "Youssef trains me at my home."),
+      },
+      {
+        key: "hotel" as const,
+        icon: <MapPin size={22} className="text-primary" />,
+        title: t("wizard.hotel.title", "Hotel Training"),
+        body: t("wizard.hotel.body", "Youssef trains me at my hotel."),
+      },
+      {
+        key: "online_coaching" as const,
+        icon: <Wifi size={22} className="text-primary" />,
+        title: t("wizard.online.title", "Online Coaching"),
+        body: t("wizard.online.body", "I train online with Youssef."),
+      },
+      {
+        key: "other_location" as const,
+        icon: <Globe size={22} className="text-primary" />,
+        title: t("wizard.otherLocation.title", "Other Location"),
+        body: t("wizard.otherLocation.body", "I train at another location."),
       },
     ],
     [t],
@@ -328,11 +344,17 @@ export default function TrainingLocationWizard() {
           : fzPath === "trial"
             ? "fz_trial"
             : "fz_unset"
-        : branch === "home"
-          ? `home:${homeKind}`
-          : branch === "other_gym"
-            ? "other_gym"
-            : "unset";
+        : branch === "building"
+          ? "building"
+          : branch === "home"
+            ? "home"
+            : branch === "hotel"
+              ? "hotel"
+              : branch === "online_coaching"
+                ? "online_coaching"
+                : branch === "other_location"
+                  ? "other_location"
+                  : "unset";
     console.log("[wizard-submit-clicked]", {
       build: WIZARD_BUILD,
       flow: flowLabel,
@@ -531,13 +553,68 @@ export default function TrainingLocationWizard() {
       return;
     }
 
+    if (branch === "building") {
+      if (!homeAddress.trim()) {
+        toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
+        return;
+      }
+      const payload = {
+        kind: "building" as const,
+        label: homeLabel || t("wizard.building.defaultLabel", "Building Gym"),
+        address: homeAddress,
+        buildingName: homeBuilding || undefined,
+        roomNumber: homeRoom || undefined,
+        parkingNotes: homeParking || undefined,
+        equipmentNotes: homeEquip || undefined,
+        isDefault: locations.length === 0,
+      };
+      const next = decideNextRoute({
+        flow: "building",
+        hasActivePackage,
+        hasPendingActivation: hasPendingVerif,
+      });
+      if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing (building)");
+        patchDbg({ locationStatus: "offline_queued" });
+        enqueueOffline("wizard_location", "/api/training-locations", payload);
+        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
+        safeNavigate(next);
+        return;
+      }
+      console.log("[wizard-training-location-start]", payload);
+      patchDbg({ locationStatus: "pending" });
+      try {
+        const res = await saveLocation.mutateAsync(payload);
+        console.log("[wizard-training-location-success]", res);
+        patchDbg({ locationStatus: "success", lastApiResponse: res });
+      } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
+        if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
+          enqueueOffline("wizard_location", "/api/training-locations", payload);
+          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
+          safeNavigate(next);
+          return;
+        }
+        const msg = e?.message || "Failed to save training location";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
+        return;
+      }
+      toast({ title: t("wizard.building.savedTitle", "Building gym setup saved.") });
+      wizardDraft.clear();
+      safeNavigate(next);
+      return;
+    }
+
     if (branch === "home") {
       if (!homeAddress.trim()) {
         toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
         return;
       }
-      const homePayload = {
-        kind: homeKind,
+      const payload = {
+        kind: "home" as const,
         label: homeLabel || t("wizard.home.defaultLabel", "Home"),
         address: homeAddress,
         buildingName: homeBuilding || undefined,
@@ -546,40 +623,33 @@ export default function TrainingLocationWizard() {
         equipmentNotes: homeEquip || undefined,
         isDefault: locations.length === 0,
       };
-      const homeNext = decideNextRoute({
+      const next = decideNextRoute({
         flow: "home",
-        locationKind: homeKind,
         hasActivePackage,
         hasPendingActivation: hasPendingVerif,
       });
       if (isOffline) {
         console.warn("[wizard-training-location-start] offline → queueing (home)");
         patchDbg({ locationStatus: "offline_queued" });
-        enqueueOffline("wizard_location", "/api/training-locations", homePayload);
-        queuedToast(
-          "queuedOffline",
-          "You're offline. Your location is queued and will send when you reconnect.",
-        );
-        safeNavigate(homeNext);
+        enqueueOffline("wizard_location", "/api/training-locations", payload);
+        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
+        safeNavigate(next);
         return;
       }
-      console.log("[wizard-training-location-start]", homePayload);
+      console.log("[wizard-training-location-start]", payload);
       patchDbg({ locationStatus: "pending" });
       try {
-        const homeRes = await saveLocation.mutateAsync(homePayload);
-        console.log("[wizard-training-location-success]", homeRes);
-        patchDbg({ locationStatus: "success", lastApiResponse: homeRes });
+        const res = await saveLocation.mutateAsync(payload);
+        console.log("[wizard-training-location-success]", res);
+        patchDbg({ locationStatus: "success", lastApiResponse: res });
       } catch (e: any) {
         console.error("[wizard-training-location-error]", e);
         patchDbg({ locationStatus: "error" });
         if (isOfflineError(e)) {
           patchDbg({ locationStatus: "offline_queued" });
-          enqueueOffline("wizard_location", "/api/training-locations", homePayload);
-          queuedToast(
-            "queuedDropped",
-            "Connection dropped. Your location is queued and will send when you're back online.",
-          );
-          safeNavigate(homeNext);
+          enqueueOffline("wizard_location", "/api/training-locations", payload);
+          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
+          safeNavigate(next);
           return;
         }
         const msg = e?.message || "Failed to save training location";
@@ -587,28 +657,120 @@ export default function TrainingLocationWizard() {
         toast({ title: msg, variant: "destructive" });
         return;
       }
-      // Branch-specific toast per spec — Home / Building Gym / Hotel
-      // all share the wizard "home" branch but the user-facing wording
-      // must reflect the chosen sub-kind.
-      const homeToastTitle =
-        homeKind === "building"
-          ? t("wizard.home.savedBuilding", "Building gym setup saved.")
-          : homeKind === "hotel"
-            ? t("wizard.home.savedHotel", "Hotel training setup saved.")
-            : t("wizard.home.savedHome", "Training setup saved.");
-      toast({ title: homeToastTitle });
+      toast({ title: t("wizard.home.savedTitle", "Training setup saved.") });
       wizardDraft.clear();
-      safeNavigate(homeNext);
+      safeNavigate(next);
       return;
     }
 
-    if (branch === "other_gym") {
-      if (!gymName.trim()) {
-        toast({ title: t("wizard.other.needName", "Gym name is required."), variant: "destructive" });
+    if (branch === "hotel") {
+      if (!homeAddress.trim()) {
+        toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
         return;
       }
-      const gymPayload = {
-        kind: "other_gym" as const,
+      const payload = {
+        kind: "hotel" as const,
+        label: homeLabel || t("wizard.hotel.defaultLabel", "Hotel"),
+        address: homeAddress,
+        buildingName: homeBuilding || undefined,
+        roomNumber: homeRoom || undefined,
+        parkingNotes: homeParking || undefined,
+        equipmentNotes: homeEquip || undefined,
+        isDefault: locations.length === 0,
+      };
+      const next = decideNextRoute({
+        flow: "hotel",
+        hasActivePackage,
+        hasPendingActivation: hasPendingVerif,
+      });
+      if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing (hotel)");
+        patchDbg({ locationStatus: "offline_queued" });
+        enqueueOffline("wizard_location", "/api/training-locations", payload);
+        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
+        safeNavigate(next);
+        return;
+      }
+      console.log("[wizard-training-location-start]", payload);
+      patchDbg({ locationStatus: "pending" });
+      try {
+        const res = await saveLocation.mutateAsync(payload);
+        console.log("[wizard-training-location-success]", res);
+        patchDbg({ locationStatus: "success", lastApiResponse: res });
+      } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
+        if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
+          enqueueOffline("wizard_location", "/api/training-locations", payload);
+          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
+          safeNavigate(next);
+          return;
+        }
+        const msg = e?.message || "Failed to save training location";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
+        return;
+      }
+      toast({ title: t("wizard.hotel.savedTitle", "Hotel training setup saved.") });
+      wizardDraft.clear();
+      safeNavigate(next);
+      return;
+    }
+
+    if (branch === "online_coaching") {
+      const payload = {
+        kind: "online_coaching" as const,
+        label: "Online Coaching",
+        isDefault: locations.length === 0,
+      };
+      const next = decideNextRoute({
+        flow: "online_coaching",
+        hasActivePackage,
+        hasPendingActivation: hasPendingVerif,
+      });
+      if (isOffline) {
+        console.warn("[wizard-training-location-start] offline → queueing (online)");
+        patchDbg({ locationStatus: "offline_queued" });
+        enqueueOffline("wizard_location", "/api/training-locations", payload);
+        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
+        safeNavigate(next);
+        return;
+      }
+      console.log("[wizard-training-location-start]", payload);
+      patchDbg({ locationStatus: "pending" });
+      try {
+        const res = await saveLocation.mutateAsync(payload);
+        console.log("[wizard-training-location-success]", res);
+        patchDbg({ locationStatus: "success", lastApiResponse: res });
+      } catch (e: any) {
+        console.error("[wizard-training-location-error]", e);
+        patchDbg({ locationStatus: "error" });
+        if (isOfflineError(e)) {
+          patchDbg({ locationStatus: "offline_queued" });
+          enqueueOffline("wizard_location", "/api/training-locations", payload);
+          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
+          safeNavigate(next);
+          return;
+        }
+        const msg = e?.message || "Failed to save training location";
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
+        return;
+      }
+      toast({ title: t("wizard.online.savedTitle", "Online coaching setup saved.") });
+      wizardDraft.clear();
+      safeNavigate(next);
+      return;
+    }
+
+    if (branch === "other_location") {
+      if (!gymName.trim()) {
+        toast({ title: t("wizard.otherLocation.needName", "Location name is required."), variant: "destructive" });
+        return;
+      }
+      const payload = {
+        kind: "other_location" as const,
         label: gymName,
         gymName,
         address: gymAddress || undefined,
@@ -616,49 +778,44 @@ export default function TrainingLocationWizard() {
         accessNotes: gymNotes || undefined,
         isDefault: locations.length === 0,
       };
-      const gymNext = decideNextRoute({
-        flow: "other_gym",
+      const next = decideNextRoute({
+        flow: "other_location",
         hasActivePackage,
         hasPendingActivation: hasPendingVerif,
       });
       if (isOffline) {
-        console.warn("[wizard-training-location-start] offline → queueing (other_gym)");
+        console.warn("[wizard-training-location-start] offline → queueing (other_location)");
         patchDbg({ locationStatus: "offline_queued" });
-        enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
-        queuedToast(
-          "queuedOffline",
-          "You're offline. Your location is queued and will send when you reconnect.",
-        );
-        safeNavigate(gymNext);
+        enqueueOffline("wizard_location", "/api/training-locations", payload);
+        queuedToast("queuedOffline", "You're offline. Your location is queued and will send when you reconnect.");
+        safeNavigate(next);
         return;
       }
-      console.log("[wizard-training-location-start]", gymPayload);
+      console.log("[wizard-training-location-start]", payload);
       patchDbg({ locationStatus: "pending" });
       try {
-        const gymRes = await saveLocation.mutateAsync(gymPayload);
-        console.log("[wizard-training-location-success]", gymRes);
-        patchDbg({ locationStatus: "success", lastApiResponse: gymRes });
+        const res = await saveLocation.mutateAsync(payload);
+        console.log("[wizard-training-location-success]", res);
+        patchDbg({ locationStatus: "success", lastApiResponse: res });
       } catch (e: any) {
         console.error("[wizard-training-location-error]", e);
         patchDbg({ locationStatus: "error" });
         if (isOfflineError(e)) {
           patchDbg({ locationStatus: "offline_queued" });
-          enqueueOffline("wizard_location", "/api/training-locations", gymPayload);
-          queuedToast(
-            "queuedDropped",
-            "Connection dropped. Your location is queued and will send when you're back online.",
-          );
-          safeNavigate(gymNext);
+          enqueueOffline("wizard_location", "/api/training-locations", payload);
+          queuedToast("queuedDropped", "Connection dropped. Your location is queued and will send when you're back online.");
+          safeNavigate(next);
           return;
         }
-        const msg = e?.message || "Failed to save gym details";
+        const msg = e?.message || "Failed to save location details";
         showError(msg);
         toast({ title: msg, variant: "destructive" });
         return;
       }
-      toast({ title: t("wizard.other.savedTitle", "Gym details saved.") });
+      toast({ title: t("wizard.otherLocation.savedTitle", "Location details saved.") });
       wizardDraft.clear();
-      safeNavigate(gymNext);
+      safeNavigate(next);
+      return;
     }
   }
 
@@ -698,9 +855,15 @@ export default function TrainingLocationWizard() {
             ? t("wizard.title", "Where do you train?")
             : branch === "fitness_zone"
               ? t("wizard.fz.stepTitle", "Tell us about your Fitness Zone setup")
-              : branch === "home"
-                ? t("wizard.home.stepTitle", "Where should Youssef meet you?")
-                : t("wizard.other.stepTitle", "Tell us about your gym")}
+              : branch === "building"
+                ? t("wizard.building.stepTitle", "Tell us about your building gym")
+                : branch === "home"
+                  ? t("wizard.home.stepTitle", "Where should Youssef meet you?")
+                  : branch === "hotel"
+                    ? t("wizard.hotel.stepTitle", "Tell us about your hotel")
+                    : branch === "online_coaching"
+                      ? t("wizard.online.stepTitle", "Online coaching setup")
+                      : t("wizard.otherLocation.stepTitle", "Tell us about your location")}
         </h1>
         <p className="text-sm text-muted-foreground mb-6">
           {step === 1
@@ -839,28 +1002,20 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
+        {step === 2 && branch === "building" && (
+          <div className="space-y-3" data-testid="form-building-location">
+            <Field label={t("wizard.building.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-building-label" />
+            <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-building-address" required />
+            <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-building-building" />
+            <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-building-room" />
+            <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-building-parking" />
+            <FieldArea label={t("wizard.home.equipment", "Equipment available")} value={homeEquip} onChange={setHomeEquip} testId="input-building-equipment" />
+          </div>
+        )}
+
         {step === 2 && branch === "home" && (
           <div className="space-y-3" data-testid="form-home-location">
-            <div>
-              <Label className="text-xs">{t("wizard.home.kind", "Type")}</Label>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                {(["home", "building", "hotel"] as const).map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setHomeKind(k)}
-                    data-testid={`button-home-kind-${k}`}
-                    className={`rounded-lg border px-2 py-2 text-xs min-h-[44px] ${
-                      homeKind === k ? "border-primary bg-primary/10 text-primary" : "border-white/10 bg-white/[0.03]"
-                    }`}
-                  >
-                    {t(`wizard.home.kind.${k}`, k)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Field label={t("wizard.home.label", "Nickname (optional)")}
-              value={homeLabel} onChange={setHomeLabel} testId="input-home-label" />
+            <Field label={t("wizard.home.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-home-label" />
             <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-home-address" required />
             <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-home-building" />
             <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-home-room" />
@@ -869,12 +1024,31 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {step === 2 && branch === "other_gym" && (
-          <div className="space-y-3" data-testid="form-other-gym">
-            <Field label={t("wizard.other.name", "Gym name")} value={gymName} onChange={setGymName} testId="input-gym-name" required />
-            <Field label={t("wizard.other.address", "Location / area")} value={gymAddress} onChange={setGymAddress} testId="input-gym-address" />
-            <Field label={t("wizard.other.guest", "Guest access policy")} value={gymGuest} onChange={setGymGuest} testId="input-gym-guest" />
-            <FieldArea label={t("wizard.other.notes", "Entry / parking notes")} value={gymNotes} onChange={setGymNotes} testId="input-gym-notes" />
+        {step === 2 && branch === "hotel" && (
+          <div className="space-y-3" data-testid="form-hotel-location">
+            <Field label={t("wizard.hotel.label", "Nickname (optional)")} value={homeLabel} onChange={setHomeLabel} testId="input-hotel-label" />
+            <Field label={t("wizard.home.address", "Address")} value={homeAddress} onChange={setHomeAddress} testId="input-hotel-address" required />
+            <Field label={t("wizard.home.building", "Building / community")} value={homeBuilding} onChange={setHomeBuilding} testId="input-hotel-building" />
+            <Field label={t("wizard.home.room", "Unit / room")} value={homeRoom} onChange={setHomeRoom} testId="input-hotel-room" />
+            <FieldArea label={t("wizard.home.parking", "Parking notes")} value={homeParking} onChange={setHomeParking} testId="input-hotel-parking" />
+            <FieldArea label={t("wizard.home.equipment", "Equipment available")} value={homeEquip} onChange={setHomeEquip} testId="input-hotel-equipment" />
+          </div>
+        )}
+
+        {step === 2 && branch === "online_coaching" && (
+          <div className="space-y-3" data-testid="form-online-coaching">
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed">
+              {t("wizard.online.info", "You will receive a video call link via WhatsApp before each online session. Make sure you have a stable internet connection and enough space to train.")}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && branch === "other_location" && (
+          <div className="space-y-3" data-testid="form-other-location">
+            <Field label={t("wizard.otherLocation.name", "Enter Training Location")} value={gymName} onChange={setGymName} testId="input-other-location-name" required />
+            <Field label={t("wizard.other.address", "Location / area")} value={gymAddress} onChange={setGymAddress} testId="input-other-location-address" />
+            <Field label={t("wizard.other.guest", "Guest access policy")} value={gymGuest} onChange={setGymGuest} testId="input-other-location-guest" />
+            <FieldArea label={t("wizard.other.notes", "Entry / parking notes")} value={gymNotes} onChange={setGymNotes} testId="input-other-location-notes" />
           </div>
         )}
 
@@ -927,18 +1101,13 @@ export default function TrainingLocationWizard() {
                   return t("common.continue", "Continue");
                 }
                 if (branch === "home") {
-                  if (submitting) {
-                    return homeKind === "building"
-                      ? t("wizard.home.ctaLoadingBuilding", "Saving your gym setup…")
-                      : homeKind === "hotel"
-                        ? t("wizard.home.ctaLoadingHotel", "Saving your hotel setup…")
-                        : t("wizard.home.ctaLoadingHome", "Saving your training setup…");
-                  }
-                  return t("common.continue", "Continue");
-                }
-                if (branch === "other_gym") {
                   return submitting
-                    ? t("wizard.other.ctaLoading", "Saving your gym details…")
+                    ? t("wizard.home.ctaLoadingHome", "Saving your training setup…")
+                    : t("common.continue", "Continue");
+                }
+                if (branch === "other_location") {
+                  return submitting
+                    ? t("wizard.otherLocation.ctaLoading", "Saving your location details…")
                     : t("common.continue", "Continue");
                 }
                 return submitting

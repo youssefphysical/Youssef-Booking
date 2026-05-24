@@ -65,7 +65,7 @@ const makeAdminLoginSchema = (t: T) =>
   });
 
 // Simpler registration: account basics + a primary goal + the legal consents.
-// InBody scans, profile pictures, training level/goal and progress photos all
+// Profile pictures, training level/goal and progress photos all
 // live on the dashboard / profile page now — the user can fill them in at
 // their own pace after creating an account.
 const makeRegisterSchema = (t: T) =>

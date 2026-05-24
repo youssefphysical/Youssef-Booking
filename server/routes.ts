@@ -29,26 +29,11 @@ import {
   updatePackageSchema,
   insertPackageTemplateSchema,
   updatePackageTemplateSchema,
-  insertFoodSchema,
-  updateFoodSchema,
-  insertMealSchema,
-  updateMealSchema,
-  insertNutritionPlanSchema,
-  updateNutritionPlanSchema,
-  insertSupplementSchema,
-  updateSupplementSchema,
-  insertSupplementStackSchema,
-  updateSupplementStackSchema,
-  insertClientSupplementSchema,
-  updateClientSupplementSchema,
-  applyStackToClientSchema,
   insertBodyMetricSchema,
   updateBodyMetricSchema,
   insertWeeklyCheckinSchema,
   insertDailyCheckinSchema,
   updateWeeklyCheckinSchema,
-  insertInbodySchema,
-  updateInbodySchema,
   insertProgressPhotoSchema,
   insertHeroImageSchema,
   updateHeroImageSchema,
@@ -116,7 +101,6 @@ import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
   buildAdminBookingChangeEmail,
-  buildAdminInbodyEmail,
   buildAdminPackageExpiringEmail,
   buildPackageExpiringEmail,
   buildPackageFinishedEmail,
@@ -134,7 +118,6 @@ import {
   type BookingDetails,
 } from "./email-templates";
 import { z } from "zod";
-import { extractInbodyMetricsFromImage } from "./inbody-extract";
 import { notifyUser, notifyUserOnce, notifyUsers } from "./services/notifications";
 import { sendPaymentConfirmedNotification } from "./notifications";
 import { runAutoCompleteBookings, getLastAutoCompleteRun, getLastCronRunAt } from "./services/autoCompleteBookings";
@@ -455,12 +438,12 @@ async function recomputeVipTier(userId: number): Promise<string> {
 // MULTER SETUP
 // =============================
 const UPLOAD_ROOT = path.resolve(process.cwd(), "uploads");
-for (const sub of ["inbody", "photos"]) {
+for (const sub of ["photos"]) {
   const full = path.join(UPLOAD_ROOT, sub);
   if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
 }
 
-// Strict MIME allowlists. The InBody flow legitimately accepts PDFs (lab
+// Strict MIME allowlists. (lab
 // reports), but the progress-photo endpoint must only accept images.
 const PHOTO_MIME_ALLOWLIST = new Set([
   "image/png",
@@ -470,13 +453,8 @@ const PHOTO_MIME_ALLOWLIST = new Set([
   "image/heic",
   "image/heif",
 ]);
-const INBODY_MIME_ALLOWLIST = new Set<string>([
-  ...Array.from(PHOTO_MIME_ALLOWLIST),
-  "application/pdf",
-]);
-
-function makeUploader(subdir: "inbody" | "photos") {
-  const allow = subdir === "photos" ? PHOTO_MIME_ALLOWLIST : INBODY_MIME_ALLOWLIST;
+function makeUploader(subdir: "photos") {
+  const allow = PHOTO_MIME_ALLOWLIST;
   return multer({
     storage: multer.diskStorage({
       destination: (_req, _file, cb) => cb(null, path.join(UPLOAD_ROOT, subdir)),
@@ -499,7 +477,6 @@ function makeUploader(subdir: "inbody" | "photos") {
   });
 }
 
-const inbodyUploader = makeUploader("inbody");
 const photoUploader = makeUploader("photos");
 
 /**
@@ -522,7 +499,7 @@ function safeSingle(uploader: ReturnType<typeof makeUploader>, field: string) {
   };
 }
 
-function fileToPublicUrl(file: Express.Multer.File, subdir: "inbody" | "photos"): string {
+function fileToPublicUrl(file: Express.Multer.File, subdir: "photos"): string {
   return `/uploads/${subdir}/${file.filename}`;
 }
 
@@ -1077,8 +1054,8 @@ async function dispatchAdminProfileUpdateEmail(opts: {
 // objects (list, create, patch, cancel, same-day-adjust). Admin
 // responses are returned unchanged.
 // P4e: unified activity-feed event shape. The aggregator unions across
-// bookings, packages, body metrics, weekly check-ins, inbody records,
-// and progress photos. Keep this lean — no ORM-specific shapes leak.
+// bookings, packages, body metrics, weekly check-ins, and progress photos.
+// Keep this lean — no ORM-specific shapes leak.
 type ActivityEvent = {
   id: string;
   kind:
@@ -1088,7 +1065,6 @@ type ActivityEvent = {
     | "package_activated"
     | "body_metric"
     | "weekly_checkin"
-    | "inbody"
     | "progress_photo"
     | "coach_note";
   at: string;
@@ -1102,12 +1078,11 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
     try { return await fn(); } catch { return fallback; }
   };
 
-  const [bookings, packagesList, bodyMetrics, checkins, inbody, photos, auditRows] = await Promise.all([
+  const [bookings, packagesList, bodyMetrics, checkins, photos, auditRows] = await Promise.all([
     safe(() => storage.getBookings({ userId }), [] as any[]),
     safe(() => storage.getPackages({ userId }), [] as any[]),
     safe(() => storage.listBodyMetrics(userId, { limit: 50 }), [] as any[]),
     safe(() => storage.listWeeklyCheckins(userId, { limit: 25 }), [] as any[]),
-    safe(() => storage.getInbodyRecords({ userId }), [] as any[]),
     safe(() => storage.getProgressPhotos({ userId }), [] as any[]),
     // Task #57 — fold admin audit entries that touched this client
     // into the same timeline so the Activity tab shows who did what.
@@ -1202,22 +1177,6 @@ async function buildActivityFeed(userId: number, limit = 60): Promise<ActivityEv
       kind: "weekly_checkin",
       at,
       title: "Weekly check-in submitted",
-      subtitle: bits.join(" · ") || null,
-    });
-  }
-
-  for (const r of inbody as any[]) {
-    const at = r.recordedAt instanceof Date ? r.recordedAt.toISOString() : (r.recordedAt ? String(r.recordedAt) : null);
-    if (!at) continue;
-    const bits: string[] = [];
-    if (r.weight != null) bits.push(`${r.weight} kg`);
-    if (r.bodyFat != null) bits.push(`${r.bodyFat}% BF`);
-    if (r.muscleMass != null) bits.push(`${r.muscleMass} kg muscle`);
-    events.push({
-      id: `inbody-${r.id}`,
-      kind: "inbody",
-      at,
-      title: "InBody scan recorded",
       subtitle: bits.join(" · ") || null,
     });
   }
@@ -2721,9 +2680,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         fromTime12: "9:00 AM",
       }),
     );
-    run("admin.inbody", () =>
-      buildAdminInbodyEmail({ clientName: "Sara Khalil", recordedDate: "2026-05-20" }),
-    );
     run("admin.packageExpiringAlert", () =>
       buildAdminPackageExpiringEmail({
         clientName: "Sara Khalil",
@@ -2944,7 +2900,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       { name: "admin.newBooking", build: () => buildAdminBookingEmail({ d: sampleBooking, clientEmail: "sara@example.com", clientPhone: "+971 50 123 4567", clientNotes: "Please focus on hamstrings." }) },
       { name: "admin.bookingCancellation", build: () => buildAdminBookingChangeEmail({ kind: "cancellation", clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", reason: "Client requested cancellation." }) },
       { name: "admin.bookingReschedule", build: () => buildAdminBookingChangeEmail({ kind: "reschedule", clientName: "Sara Khalil", date: "2026-05-22", time12: "10:00 AM", fromDate: "2026-05-20", fromTime12: "9:00 AM" }) },
-      { name: "admin.inbody", build: () => buildAdminInbodyEmail({ clientName: "Sara Khalil", recordedDate: "2026-05-20" }) },
       { name: "admin.packageExpiringAlert", build: () => buildAdminPackageExpiringEmail({ clientName: "Sara Khalil", packageName: "Premium 12", remainingSessions: 2, daysUntilExpiry: 5 } as any) },
       { name: "admin.attendance", build: () => buildAdminAttendanceEmail({ attendance: "attended", clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", packageName: "Premium 12", remainingSessions: 7 }) },
       { name: "admin.emergencyCancel", build: () => buildAdminEmergencyCancelEmail({ clientName: "Sara Khalil", date: "2026-05-20", time12: "9:00 AM", monthlyQuotaUsed: 1, monthlyQuotaTotal: 2, reason: "Family emergency." }) },
@@ -3027,7 +2982,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const userIds = new Set<number>();
     for (const b of groups.bookings) userIds.add(b.userId);
     for (const p of groups.packages) userIds.add(p.userId);
-    for (const n of groups.nutritionPlans) userIds.add(n.userId);
     for (const u of groups.clients) userIds.add(u.id);
     const nameMap = new Map<number, string>();
     if (userIds.size > 0) {
@@ -3069,20 +3023,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         totalSessions: p.totalSessions,
         usedSessions: p.usedSessions,
         status: (p as any).status ?? null,
-      })),
-      nutritionPlans: decorate(groups.nutritionPlans).map((n) => ({
-        id: n.id,
-        userId: n.userId,
-        userName: n._userName,
-        name: n.name,
-        status: n.status,
-        goal: n.goal,
-      })),
-      supplementStacks: groups.supplementStacks.map((s) => ({
-        id: s.id,
-        name: s.name,
-        goal: s.goal,
-        active: s.active,
       })),
     });
   });
@@ -5408,16 +5348,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.get("/api/me/streaks", requireAuth, async (req, res) => {
     const me = req.user as User;
-    const [bookings, dailyCheckins, activePlan] = await Promise.all([
+    const [bookings, dailyCheckins] = await Promise.all([
       storage.getBookings({ userId: me.id }).catch(() => []),
       (storage as any).listRecentDailyCheckins(me.id, 14).catch(() => []),
-      storage.getActiveNutritionPlanForUser(me.id).catch(() => undefined),
     ]);
     const metrics = computeStreaks({
       bookings,
       dailyCheckins,
       weeklyFrequency: (me as any).weeklyFrequency ?? null,
-      nutritionPlanActive: !!activePlan,
+      nutritionPlanActive: false,
     });
     res.json(metrics);
   });
@@ -5437,10 +5376,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const nowMs = Date.now();
     const todayIso = dubaiTodayYMD();
 
-    const [bookings, clientSupps, activePlan, checkins, bodyMetrics] = await Promise.all([
+    const [bookings, checkins, bodyMetrics] = await Promise.all([
       safe(() => storage.getBookings({ userId: me.id }), [] as any[]),
-      safe(() => storage.listClientSupplements(me.id, { activeOnly: true }), [] as any[]),
-      safe(() => storage.getActiveNutritionPlanForUser(me.id), undefined as any),
       safe(() => storage.listWeeklyCheckins(me.id, { limit: 60 }), [] as any[]),
       safe(() => storage.listBodyMetrics(me.id, { limit: 200 }), [] as any[]),
     ]);
@@ -5473,16 +5410,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       nextSession = first ? { id: first.id, date: first.date, sessionType: first.sessionType } : null;
     }
 
-    // Supplements applicable today: active client supplements whose
-    // start/end window covers today (nullable = open-ended).
-    const supplementsToday = (clientSupps as any[]).filter((s) => {
-      if (s.status && s.status !== "active") return false;
-      if (s.startDate && String(s.startDate) > todayIso) return false;
-      if (s.endDate && String(s.endDate) < todayIso) return false;
-      return true;
-    }).length;
-
-    const waterTargetMl: number | null = activePlan?.waterTargetMl ?? null;
+    const supplementsToday = 0;
+    const waterTargetMl: number | null = null;
 
     // Streak: consecutive ISO weeks (Mon-anchored) ending at the current
     // week, where the user logged ≥1 check-in OR ≥1 completed booking.
@@ -5674,404 +5603,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.sendStatus(204);
   });
 
-  // ============== FOODS (Nutrition OS — Phase 2) ==============
-  // Admin-only catalogue. List supports server-side search + pagination
-  // for scalability (designed for thousands of rows). Per-client read
-  // access (Phase 4 nutrition assignments) will route through a
-  // different endpoint that enforces snapshot data, so /api/foods stays
-  // strictly admin.
-  app.get("/api/foods", requireAdmin, async (req, res) => {
-    const search = typeof req.query.search === "string" ? req.query.search : undefined;
-    const category = typeof req.query.category === "string" && req.query.category
-      ? req.query.category
-      : undefined;
-    const supplementParam = req.query.supplement;
-    const isSupplement =
-      supplementParam === "true" ? true : supplementParam === "false" ? false : undefined;
-    const activeOnly = req.query.activeOnly === "true";
-    const limit = req.query.limit ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200) : 50;
-    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
-    const result = await storage.getFoods({
-      search,
-      category,
-      isSupplement,
-      activeOnly,
-      limit,
-      offset,
-    });
-    res.json(result);
-  });
-
-  app.get("/api/foods/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const food = await storage.getFood(id);
-    if (!food) return res.status(404).json({ message: "Food not found" });
-    res.json(food);
-  });
-
-  app.post("/api/foods", requireAdmin, async (req, res) => {
-    const parsed = insertFoodSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid food",
-        errors: parsed.error.errors,
-      });
-    }
-    const me = req.user as User;
-    const created = await storage.createFood(parsed.data, me.id);
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/foods/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateFoodSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid update",
-        errors: parsed.error.errors,
-      });
-    }
-    const existing = await storage.getFood(id);
-    if (!existing) return res.status(404).json({ message: "Food not found" });
-    const updated = await storage.updateFood(id, parsed.data);
-    res.json(updated);
-  });
-
-  app.delete("/api/foods/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const existing = await storage.getFood(id);
-    if (!existing) return res.status(404).json({ message: "Food not found" });
-    // Phase 3 meal_items will snapshot food fields, so deleting here
-    // does not affect historical meals. Until Phase 3 ships, hard delete
-    // is safe (no other table references foods.id yet).
-    await storage.deleteFood(id);
-    res.sendStatus(204);
-  });
-
-  app.post("/api/foods/:id/duplicate", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const me = req.user as User;
-    const dup = await storage.duplicateFood(id, me.id);
-    if (!dup) return res.status(404).json({ message: "Food not found" });
-    res.status(201).json(dup);
-  });
-
-  // ============== MEALS (Nutrition OS — Phase 3) ==============
-  // Admin-only meal builder. Each meal has N meal_items which
-  // SNAPSHOT the food fields, so editing/deleting a food never
-  // mutates an existing meal. Cached totals are recomputed
-  // server-side on every write via the shared computeMealTotals
-  // helper — list views never need to JOIN + SUM.
-  app.get("/api/meals", requireAdmin, async (req, res) => {
-    const search = typeof req.query.search === "string" ? req.query.search : undefined;
-    const category =
-      typeof req.query.category === "string" && req.query.category
-        ? req.query.category
-        : undefined;
-    const templateOnly = req.query.templateOnly === "true";
-    const activeOnly = req.query.activeOnly === "true";
-    const limit = req.query.limit
-      ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200)
-      : 50;
-    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
-    const result = await storage.getMeals({
-      search,
-      category,
-      templateOnly,
-      activeOnly,
-      limit,
-      offset,
-    });
-    res.json(result);
-  });
-
-  app.get("/api/meals/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const meal = await storage.getMeal(id);
-    if (!meal) return res.status(404).json({ message: "Meal not found" });
-    res.json(meal);
-  });
-
-  app.post("/api/meals", requireAdmin, async (req, res) => {
-    const parsed = insertMealSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid meal",
-        errors: parsed.error.errors,
-      });
-    }
-    const me = req.user as User;
-    const { items, ...meal } = parsed.data;
-    const created = await storage.createMeal(meal, items, me.id);
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/meals/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateMealSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid update",
-        errors: parsed.error.errors,
-      });
-    }
-    const existing = await storage.getMeal(id);
-    if (!existing) return res.status(404).json({ message: "Meal not found" });
-    const { items, ...meal } = parsed.data;
-    const updated = await storage.updateMeal(id, meal, items);
-    res.json(updated);
-  });
-
-  app.delete("/api/meals/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const existing = await storage.getMeal(id);
-    if (!existing) return res.status(404).json({ message: "Meal not found" });
-    await storage.deleteMeal(id);
-    res.sendStatus(204);
-  });
-
-  app.post("/api/meals/:id/duplicate", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const me = req.user as User;
-    const dup = await storage.duplicateMeal(id, me.id);
-    if (!dup) return res.status(404).json({ message: "Meal not found" });
-    res.status(201).json(dup);
-  });
-
-  // ============== NUTRITION PLANS (Phase 4) ==============
-  // Admin-managed client nutrition plans. The full plan tree
-  // (plan → days → meals → items) is FULL-snapshotted server-side
-  // so editing/deleting library foods or meals never mutates a
-  // delivered plan. Cached per-meal totals are recomputed on every
-  // write via shared/nutrition.ts. There is exactly one /me/active
-  // endpoint for the client view — it strips private trainer notes
-  // and enforces ownership at the DB filter level.
-
-  // CLIENT-FACING: must be registered BEFORE the admin /:id route
-  // so Express doesn't treat "me" as a numeric id.
-  app.get("/api/nutrition-plans/me/active", async (req, res) => {
-    if (!req.isAuthenticated || !req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-    const me = req.user as User;
-    const plan = await storage.getActiveNutritionPlanForUser(me.id);
-    if (!plan) return res.status(404).json({ message: "No active nutrition plan" });
-    // Trainer-only field — never leak to client surface.
-    const { privateNotes: _strip, ...rest } = plan as any;
-    res.json(rest);
-  });
-
-  app.get("/api/nutrition-plans", requireAdmin, async (req, res) => {
-    const userId = req.query.userId ? Number(req.query.userId) : undefined;
-    const status =
-      typeof req.query.status === "string" && req.query.status ? req.query.status : undefined;
-    const limit = req.query.limit
-      ? Math.min(Math.max(Number(req.query.limit) || 50, 1), 200)
-      : 50;
-    const offset = req.query.offset ? Math.max(Number(req.query.offset) || 0, 0) : 0;
-    const result = await storage.getNutritionPlans({
-      userId: userId && Number.isFinite(userId) ? userId : undefined,
-      status,
-      limit,
-      offset,
-    });
-    res.json(result);
-  });
-
-  app.get("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const plan = await storage.getNutritionPlan(id);
-    if (!plan) return res.status(404).json({ message: "Plan not found" });
-    res.json(plan);
-  });
-
-  app.post("/api/nutrition-plans", requireAdmin, async (req, res) => {
-    const parsed = insertNutritionPlanSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid plan",
-        errors: parsed.error.errors,
-      });
-    }
-    // Reject if the target user doesn't exist or isn't a client.
-    const target = await storage.getUser(parsed.data.userId);
-    if (!target) return res.status(400).json({ message: "Client not found" });
-    const me = req.user as User;
-    const { days, ...plan } = parsed.data;
-    const created = await storage.createNutritionPlan(plan, days, me.id);
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateNutritionPlanSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: parsed.error.errors[0]?.message || "Invalid update",
-        errors: parsed.error.errors,
-      });
-    }
-    const existing = await storage.getNutritionPlan(id);
-    if (!existing) return res.status(404).json({ message: "Plan not found" });
-    const { days, userId: _ignore, ...rest } = parsed.data as any;
-    const updated = await storage.updateNutritionPlan(id, rest, days);
-    res.json(updated);
-  });
-
-  app.delete("/api/nutrition-plans/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const existing = await storage.getNutritionPlan(id);
-    if (!existing) return res.status(404).json({ message: "Plan not found" });
-    await storage.deleteNutritionPlan(id);
-    res.sendStatus(204);
-  });
-
-  app.post("/api/nutrition-plans/:id/duplicate", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const me = req.user as User;
-    const dup = await storage.duplicateNutritionPlan(id, me.id);
-    if (!dup) return res.status(404).json({ message: "Plan not found" });
-    res.status(201).json(dup);
-  });
-
-  // ============== SUPPLEMENTS (Phase 3) ==============
-  // Library — admin-curated catalogue. Supplements assigned to clients
-  // are SNAPSHOTS, so deleting/editing a library row is always safe.
-  app.get("/api/supplements", requireAdmin, async (req, res) => {
-    const activeOnly = req.query.activeOnly === "true";
-    const category = typeof req.query.category === "string" ? req.query.category : undefined;
-    const list = await storage.listSupplements({ activeOnly, category });
-    res.json(list);
-  });
-  app.get("/api/supplements/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const row = await storage.getSupplement(id);
-    if (!row) return res.status(404).json({ message: "Not found" });
-    res.json(row);
-  });
-  app.post("/api/supplements", requireAdmin, async (req, res) => {
-    const parsed = insertSupplementSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const me = req.user as User;
-    const row = await storage.createSupplement(parsed.data, me.id);
-    res.status(201).json(row);
-  });
-  app.patch("/api/supplements/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateSupplementSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const row = await storage.updateSupplement(id, parsed.data);
-    if (!row) return res.status(404).json({ message: "Not found" });
-    res.json(row);
-  });
-  app.delete("/api/supplements/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const ok = await storage.deleteSupplement(id);
-    if (!ok) return res.status(404).json({ message: "Not found" });
-    res.json({ ok: true });
-  });
-
-  // Stacks — reusable templates of supplements with snapshotted items.
-  app.get("/api/supplement-stacks", requireAdmin, async (req, res) => {
-    const activeOnly = req.query.activeOnly === "true";
-    const list = await storage.listSupplementStacks({ activeOnly });
-    res.json(list);
-  });
-  app.get("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const row = await storage.getSupplementStack(id);
-    if (!row) return res.status(404).json({ message: "Not found" });
-    res.json(row);
-  });
-  app.post("/api/supplement-stacks", requireAdmin, async (req, res) => {
-    const parsed = insertSupplementStackSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const me = req.user as User;
-    const row = await storage.createSupplementStack(parsed.data, me.id);
-    res.status(201).json(row);
-  });
-  app.patch("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateSupplementStackSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const row = await storage.updateSupplementStack(id, parsed.data);
-    if (!row) return res.status(404).json({ message: "Not found" });
-    res.json(row);
-  });
-  app.delete("/api/supplement-stacks/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const ok = await storage.deleteSupplementStack(id);
-    if (!ok) return res.status(404).json({ message: "Not found" });
-    res.json({ ok: true });
-  });
-
-  // Per-client assignments. Clients can only ever read their OWN list
-  // via /me. Admin can read by ?userId= and write to any user.
-  app.get("/api/client-supplements/me", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const list = await storage.listClientSupplements(me.id, { activeOnly: true });
-    // Strip warnings? No — clients NEED to see warnings. They are the audience.
-    res.json(list);
-  });
-  app.get("/api/client-supplements", requireAdmin, async (req, res) => {
-    const userId = req.query.userId ? Number(req.query.userId) : undefined;
-    if (!userId || !Number.isFinite(userId)) return res.status(400).json({ message: "userId required" });
-    const list = await storage.listClientSupplements(userId);
-    res.json(list);
-  });
-  app.post("/api/client-supplements", requireAdmin, async (req, res) => {
-    const parsed = insertClientSupplementSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const me = req.user as User;
-    const row = await storage.createClientSupplement(parsed.data, me.id);
-    res.status(201).json(row);
-  });
-  app.patch("/api/client-supplements/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const parsed = updateClientSupplementSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const row = await storage.updateClientSupplement(id, parsed.data);
-    if (!row) return res.status(404).json({ message: "Not found" });
-    res.json(row);
-  });
-  app.delete("/api/client-supplements/:id", requireAdmin, async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
-    const ok = await storage.deleteClientSupplement(id);
-    if (!ok) return res.status(404).json({ message: "Not found" });
-    res.json({ ok: true });
-  });
-  app.post("/api/client-supplements/apply-stack", requireAdmin, async (req, res) => {
-    const parsed = applyStackToClientSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    const me = req.user as User;
-    try {
-      const rows = await storage.applyStackToClient(parsed.data, me.id);
-      res.status(201).json(rows);
-    } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Failed to apply stack" });
-    }
-  });
-
   // ============== BODY METRICS (P4a) ==============
   // Self-scoped: clients use /me. Admin uses /api/body-metrics?userId= to
   // read any client and to mutate. Non-admin POST/PATCH/DELETE attempts
@@ -6235,171 +5766,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     const row = await storage.upsertDailyCheckin(parsed.data);
     res.status(200).json(row);
-  });
-
-  // ============== INBODY ==============
-  app.get("/api/inbody", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const userIdQuery = req.query.userId ? Number(req.query.userId) : undefined;
-    const filters: { userId?: number } = {};
-    if (me.role !== "admin") filters.userId = me.id;
-    else if (userIdQuery) filters.userId = userIdQuery;
-    const list = await storage.getInbodyRecords(filters);
-    res.json(list);
-  });
-
-  app.get("/api/inbody/:id", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const r = await storage.getInbodyRecord(Number(req.params.id));
-    if (!r) return res.status(404).json({ message: "Not found" });
-    if (me.role !== "admin" && r.userId !== me.id)
-      return res.status(403).json({ message: "Forbidden" });
-    res.json(r);
-  });
-
-  app.post(
-    "/api/inbody/upload",
-    requireAuth,
-    safeSingle(inbodyUploader, "file"),
-    async (req, res) => {
-      const me = req.user as User;
-      if (!req.file) return res.status(400).json({ message: "File is required" });
-
-      const targetUserId =
-        me.role === "admin" && req.body.userId ? Number(req.body.userId) : me.id;
-      const originalFullPath = path.join(UPLOAD_ROOT, "inbody", req.file.filename);
-
-      // AI extraction first (uses original quality). Best-effort — if it
-      // throws or the API key is missing, registration must still succeed.
-      let extracted: Awaited<ReturnType<typeof extractInbodyMetricsFromImage>> = null;
-      if (req.file.mimetype.startsWith("image/")) {
-        try {
-          extracted = await extractInbodyMetricsFromImage(
-            originalFullPath,
-            req.file.mimetype,
-          );
-        } catch (e) {
-          console.warn("[inbody] AI extraction threw, continuing without it:", e);
-        }
-      }
-
-      // Image optimization is best-effort; never blocks the upload
-      let opt: Awaited<ReturnType<typeof optimizeImageFile>> = { optimized: false };
-      try {
-        opt = await optimizeImageFile(originalFullPath, req.file.mimetype, {
-          maxWidth: 1800,
-          quality: 86,
-        });
-      } catch (e) {
-        console.warn("[inbody] image optimization failed, keeping original:", e);
-      }
-      const finalFilename = opt.optimized && opt.optimizedFilename
-        ? opt.optimizedFilename
-        : req.file.filename;
-      const fileUrl = `/uploads/inbody/${finalFilename}`;
-      const finalMime = opt.optimized ? "image/webp" : req.file.mimetype;
-
-      const record = await storage.createInbodyRecord({
-        userId: targetUserId,
-        fileUrl,
-        fileName: req.file.originalname,
-        mimeType: finalMime,
-        weight: extracted?.weight ?? null,
-        bodyFat: extracted?.bodyFat ?? null,
-        muscleMass: extracted?.muscleMass ?? null,
-        bmi: extracted?.bmi ?? null,
-        visceralFat: extracted?.visceralFat ?? null,
-        bmr: extracted?.bmr ?? null,
-        water: extracted?.water ?? null,
-        score: extracted?.score ?? null,
-        aiExtracted: !!extracted,
-        notes: req.body.notes || null,
-      });
-
-      // Log upload consent (best-effort)
-      try {
-        await storage.createConsentRecord({
-          userId: targetUserId,
-          consentType: "inbody",
-          policyVersion: "v1",
-          acceptedItems: ["inbody_upload_consent"],
-          ipAddress: (req.ip || req.socket.remoteAddress || null) as string | null,
-          userAgent: (req.get("user-agent") || null) as string | null,
-        });
-      } catch (e) {
-        console.warn("[inbody] consent log failed:", e);
-      }
-
-      // Task #74 — re-evaluate badges after every InBody upload so that
-      // `transformation_started` (first InBody after first completed
-      // session) fires at the moment the user earns it, not on the
-      // next booking-completion / cron tick. Fire-and-forget; evaluator
-      // swallows all I/O failures internally.
-      void evaluateAndAwardBadges(targetUserId);
-
-      res.status(201).json({
-        record,
-        aiExtracted: !!extracted,
-        message: extracted
-          ? "Your InBody scan was analyzed automatically. Youssef will review and confirm."
-          : "We received your InBody scan. Youssef will review and update your analysis.",
-      });
-    },
-  );
-
-  app.post("/api/inbody", requireAdmin, async (req, res) => {
-    const parsed = insertInbodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid record" });
-    }
-    const created = await storage.createInbodyRecord(parsed.data);
-    // Task #74 — see comment in /api/inbody/upload above.
-    void evaluateAndAwardBadges(created.userId);
-    // Best-effort trainer notification — never blocks the response.
-    void (async () => {
-      try {
-        const owner = await storage.getUser(created.userId).catch(() => undefined);
-        if (!owner) return;
-        const built = buildAdminInbodyEmail({
-          clientName: owner.fullName || owner.username || `Client #${created.userId}`,
-          recordedDate: created.recordedAt ? new Date(created.recordedAt).toISOString().slice(0, 10) : null,
-        });
-        await sendEmail({ to: trainerEmail(), subject: built.subject, text: built.text, html: built.html });
-      } catch (e) {
-        console.warn("[notif] inbody admin email failed:", e);
-      }
-    })();
-    res.status(201).json(created);
-  });
-
-  app.patch("/api/inbody/:id", requireAuth, async (req, res) => {
-    const me = req.user as User;
-    const id = Number(req.params.id);
-    const existing = await storage.getInbodyRecord(id);
-    if (!existing) return res.status(404).json({ message: "Record not found" });
-    if (me.role !== "admin" && existing.userId !== me.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    const parsed = updateInbodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
-    }
-    // Clients can only edit their own metric values + notes — never the file
-    // path, ownership, or AI-extraction flag.
-    const data: Record<string, unknown> = { ...parsed.data };
-    if (me.role !== "admin") {
-      delete (data as any).userId;
-      delete (data as any).fileUrl;
-      delete (data as any).aiExtracted;
-      delete (data as any).recordedAt;
-    }
-    const updated = await storage.updateInbodyRecord(id, data as any);
-    res.json(updated);
-  });
-
-  app.delete("/api/inbody/:id", requireAdmin, async (req, res) => {
-    await storage.deleteInbodyRecord(Number(req.params.id));
-    res.sendStatus(204);
   });
 
   // ============== CRON ENTRYPOINT ==============
