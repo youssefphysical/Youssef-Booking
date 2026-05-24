@@ -170,8 +170,37 @@ export default function TrainingLocationWizard() {
     key: draftKey,
     value: draftValue,
   });
+
+  // Fresh-start: hero CTA passes ?fresh=1. Wipe all drafts, reset state,
+  // strip the flag, and suppress the draft-recovery toast on this mount.
+  const freshHandledRef = useRef(false);
+  useEffect(() => {
+    if (freshHandledRef.current) return;
+    const isFresh = new URLSearchParams(window.location.search).get("fresh") === "1";
+    if (!isFresh) return;
+    freshHandledRef.current = true;
+    wizardDraft.clear();
+    try {
+      const uid = user?.id ? String(user.id) : "anon";
+      window.localStorage.removeItem("yapt:draft:v1:book:" + uid);
+      window.localStorage.removeItem("yapt:draft:v1:book:anon");
+    } catch {/* ignore */}
+    setStep(1);
+    setBranch(null);
+    setFzPath(null);
+    setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
+    setHomeParking(""); setHomeEquip("");
+    setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
+    setReqType("not_sure"); setVerifNotes("");
+    if (window.history.replaceState) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const draftHandledRef = useRef(false);
   useEffect(() => {
+    if (freshHandledRef.current) return; // fresh-start already cleared everything
     if (draftHandledRef.current) return;
     if (!wizardDraft.hasDraft || !wizardDraft.draft) return;
     draftHandledRef.current = true;

@@ -225,7 +225,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
-              <Link href="/wizard" data-testid="link-book-session" className="w-full sm:w-auto">
+              <Link href="/wizard?fresh=1" data-testid="link-book-session" className="w-full sm:w-auto">
                 <button className="tron-sweep w-full sm:w-auto inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 blue-glow amber-edge-glow whitespace-nowrap btn-press">
                   <Calendar size={18} />
                   {t("hero.bookSession")}
@@ -574,7 +574,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
-              <Link href="/wizard" data-testid="link-cta-book" className="w-full sm:w-auto">
+              <Link href="/wizard?fresh=1" data-testid="link-cta-book" className="w-full sm:w-auto">
                 <button className="tron-cta w-full inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl font-semibold whitespace-nowrap btn-press">
                   {t("section.cta.bookSession")} <ArrowRight size={16} />
                 </button>
