@@ -67,10 +67,6 @@ const ADMIN_TABS: TabSpec[] = [
   { href: "/admin/bookings", labelKey: "admin.tabs.bookings", fallback: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
   { href: "/admin/packages", labelKey: "admin.tabs.sessions", fallback: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
   { href: "/admin/analytics", labelKey: "admin.tabs.analytics", fallback: "Analytics", icon: <BarChart3 size={15} />, matches: (p) => p.startsWith("/admin/analytics") },
-  // Hint-only — never render as active. Tooltip directs the admin to
-  // the right place (a client profile) without lying about destination.
-  { href: "/admin/clients", labelKey: "admin.tabs.inbody", fallback: "InBody", icon: <Activity size={15} />, matches: () => false, hintKey: "admin.tabs.inbodyHint", hintFallback: "Open a client to manage InBody scans" },
-  { href: "/admin/clients", labelKey: "admin.tabs.progress", fallback: "Progress", icon: <Camera size={15} />, matches: () => false, hintKey: "admin.tabs.progressHint", hintFallback: "Open a client to manage progress photos" },
   { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
   { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
   { href: "/admin/audit-log", labelKey: "admin.tabs.auditLog", fallback: "Audit log", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/audit-log") },

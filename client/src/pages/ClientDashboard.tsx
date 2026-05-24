@@ -22,13 +22,10 @@ import {
   Package as PackageIcon,
   Activity,
   Image as ImageIcon,
-  Upload,
-  TrendingUp,
   Users,
   Loader2,
   Shield,
   Clock,
-  FileDown,
   Crown,
   Star,
   Sparkles,
@@ -40,6 +37,7 @@ import {
   BadgeCheck,
   Gift,
   ArrowRight,
+  Apple,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -50,11 +48,9 @@ import {
 import { useSettings } from "@/hooks/use-settings";
 import { usePackages } from "@/hooks/use-packages";
 import { useBlockedSlots } from "@/hooks/use-blocked-slots";
-import { useInbodyRecords, useUploadInbody } from "@/hooks/use-inbody";
-import BodyMetricsPanel from "@/components/BodyMetricsPanel";
-import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
+import { useMyActiveNutritionPlan } from "@/hooks/use-nutrition-plans";
+import { useMySupplements } from "@/hooks/use-supplements";
 import BeforeAfterCompare from "@/components/BeforeAfterCompare";
-import { ClipboardCheck } from "lucide-react";
 import { useProgressPhotos, useUploadProgressPhoto } from "@/hooks/use-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +93,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { InbodyTrends } from "@/components/InbodyTrends";
-import { exportInbodyReportPdf } from "@/lib/pdf-export";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER, buildWhatsappMessage } from "@/lib/whatsapp";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -124,21 +118,17 @@ import {
   WEEKLY_FREQUENCY_OPTIONS,
   type Booking,
   type Package,
-  type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useTranslation } from "@/i18n";
-import { SupplementsTab } from "@/components/dashboard/SupplementsTab";
 import { ProfileHero } from "@/components/dashboard/ProfileHero";
 import { QuickActionsGrid } from "@/components/dashboard/QuickActionsGrid";
 import { PackageStatusHero } from "@/components/dashboard/PackageStatusHero";
 import { CoachInsightCard } from "@/components/dashboard/CoachInsightCard";
 import { ConsistencyStreak } from "@/components/dashboard/ConsistencyStreak";
 import { StreakStrip } from "@/components/dashboard/StreakStrip";
-import { ProgressSnapshot } from "@/components/dashboard/ProgressSnapshot";
 import { SessionTimeline } from "@/components/dashboard/SessionTimeline";
-import { TransformationTimeline } from "@/components/dashboard/TransformationTimeline";
 import { SessionPrepCard } from "@/components/dashboard/SessionPrepCard";
 import { WhatsNext } from "@/components/dashboard/WhatsNext";
 import { MotivationLine } from "@/components/dashboard/MotivationLine";
@@ -147,8 +137,8 @@ import { GuidedStatusBanner } from "@/components/dashboard/GuidedStatusBanner";
 import { PackageGuidedBanner } from "@/components/dashboard/PackageGuidedBanner";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
+import { Pill, HeartPulse, Upload } from "lucide-react";
 import { InfoTip } from "@/components/ui/InfoTip";
-import { Pill, LineChart as LineChartIcon, HeartPulse } from "lucide-react";
 import { AgreementDisclaimer } from "@/components/AgreementDisclaimer";
 import { useFeatureFlag } from "@/lib/featureFlags";
 
@@ -255,7 +245,7 @@ export default function ClientDashboard() {
   const [tab, setTab] = useState<string>(() => {
     if (typeof window === "undefined") return "bookings";
     const h = window.location.hash.replace(/^#/, "");
-    return h && ["bookings","packages","supplements","body","checkins","inbody","progress","activity"].includes(h)
+    return h && ["bookings","packages","nutrition","supplements","progress","activity"].includes(h)
       ? h
       : "bookings";
   });
@@ -263,7 +253,7 @@ export default function ClientDashboard() {
     if (typeof window === "undefined") return;
     const onHash = () => {
       const h = window.location.hash.replace(/^#/, "");
-      if (h && ["bookings","packages","supplements","body","checkins","inbody","progress","activity"].includes(h)) {
+      if (h && ["bookings","packages","nutrition","supplements","progress","activity"].includes(h)) {
         setTab(h);
       }
     };
@@ -344,8 +334,6 @@ export default function ClientDashboard() {
         <RecoveryDashboardTile />
         <QuickActionsGrid onJump={jumpToTab} />
         <SessionTimeline userId={user.id} onJump={jumpToTab} />
-        <ProgressSnapshot userId={user.id} />
-        <TransformationTimeline userId={user.id} />
         <div className="mb-6">
           <RecoveryReadinessCard />
         </div>
@@ -354,28 +342,18 @@ export default function ClientDashboard() {
         <DuoPartnersBlock />
 
         <Tabs id="dashboard-tabs" value={tab} onValueChange={setTab} className="w-full scroll-mt-24">
-        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
-          {/* Brief §36 section labels — tabs map 1:1 to the required
-              section model (My Training, My Package, Nutrition (=
-              Supplements + plan summary surfaced via WhatsNext), Body,
-              Check-ins, InBody, Progress, History). */}
+        <TabsList className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 w-full max-w-6xl bg-white/5 mb-6 h-auto lg:h-11 gap-1 p-1">
           <TabsTrigger value="bookings" data-testid="tab-bookings">
             <Calendar size={14} className="mr-1.5" /> {t("dashboard.section.myTraining", "My Training")}
           </TabsTrigger>
           <TabsTrigger value="packages" data-testid="tab-packages">
             <PackageIcon size={14} className="mr-1.5" /> {t("dashboard.section.myPackage", "My Package")}
           </TabsTrigger>
+          <TabsTrigger value="nutrition" data-testid="tab-nutrition">
+            <Apple size={14} className="mr-1.5" /> {t("dashboard.section.nutrition", "Nutrition")}
+          </TabsTrigger>
           <TabsTrigger value="supplements" data-testid="tab-supplements">
-            <Pill size={14} className="mr-1.5" /> {t("dashboard.section.nutrition", "Nutrition")}
-          </TabsTrigger>
-          <TabsTrigger value="body" data-testid="tab-body">
-            <LineChartIcon size={14} className="mr-1.5" /> {t("dashboard.section.body", "Body")}
-          </TabsTrigger>
-          <TabsTrigger value="checkins" data-testid="tab-checkins">
-            <ClipboardCheck size={14} className="mr-1.5" /> {t("dashboard.section.checkins", "Check-ins")}
-          </TabsTrigger>
-          <TabsTrigger value="inbody" data-testid="tab-inbody">
-            <Activity size={14} className="mr-1.5" /> {t("dashboard.section.inbody", "InBody")}
+            <Pill size={14} className="mr-1.5" /> {t("dashboard.section.supplements", "Supplements")}
           </TabsTrigger>
           <TabsTrigger value="progress" data-testid="tab-progress">
             <ImageIcon size={14} className="mr-1.5" /> {t("dashboard.section.progress", "Progress")}
@@ -387,10 +365,8 @@ export default function ClientDashboard() {
 
         <TabsContent value="bookings"><BookingsTab userId={user.id} /></TabsContent>
         <TabsContent value="packages"><PackagesTab userId={user.id} /></TabsContent>
-        <TabsContent value="supplements"><SupplementsTab /></TabsContent>
-        <TabsContent value="body"><BodyMetricsPanel userId={user.id} canEdit={false} /></TabsContent>
-        <TabsContent value="checkins"><WeeklyCheckinsPanel /></TabsContent>
-        <TabsContent value="inbody"><InbodyTab userId={user.id} /></TabsContent>
+        <TabsContent value="nutrition"><NutritionStatusTab /></TabsContent>
+        <TabsContent value="supplements"><SupplementStatusTab /></TabsContent>
         <TabsContent value="progress"><ProgressTab userId={user.id} /></TabsContent>
         <TabsContent value="activity">
           <ActivityFeed endpoint="/api/me/activity" title={t("dashboard.tabActivity", "Activity")} />
@@ -1598,285 +1574,90 @@ function ExtensionRequestDialog({
   );
 }
 
-// =============== INBODY TAB ===============
+// =============== NUTRITION STATUS TAB ===============
 
-function hasMetrics(r: InbodyRecord) {
-  return (
-    r.weight != null ||
-    r.bodyFat != null ||
-    r.muscleMass != null ||
-    r.bmi != null ||
-    r.visceralFat != null ||
-    r.bmr != null ||
-    r.water != null ||
-    r.score != null
-  );
-}
-
-function InbodyTab({ userId }: { userId: number }) {
+function NutritionStatusTab() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { data: records = [], isLoading } = useInbodyRecords({ userId });
-  const upload = useUploadInbody();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const trendsRef = useRef<HTMLDivElement>(null);
-  const [exporting, setExporting] = useState(false);
-
-  const list = records as InbodyRecord[];
-  const sorted = [...list].sort(
-    (a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime(),
-  );
-  const latest = sorted[0];
-
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      upload.mutate(
-        { file },
-        {
-          onSuccess: (result) => {
-            const r = result.record;
-            if (r.aiExtracted && hasMetrics(r)) {
-              toast({
-                title: t("dashboard.toastInbodyAdded"),
-                description: t("dashboard.toastInbodyAddedDesc"),
-              });
-            } else {
-              toast({
-                title: t("dashboard.toastInbodyReview"),
-                description: t("dashboard.toastInbodyReviewDesc"),
-              });
-            }
-          },
-          onError: (err: any) => {
-            toast({
-              title: t("dashboard.toastUploadFailed"),
-              description: err?.message || t("dashboard.toastUploadFailedDesc"),
-              variant: "destructive",
-            });
-          },
-        },
-      );
-    }
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const handleDownloadPdf = async () => {
-    try {
-      setExporting(true);
-      await exportInbodyReportPdf({
-        clientName: user?.fullName || t("dashboard.client"),
-        records: sorted,
-        trendsElement: trendsRef.current,
-      });
-      toast({ title: t("dashboard.toastInbodyReportReady"), description: t("dashboard.toastInbodyReportReadyDesc") });
-    } catch (e: any) {
-      toast({
-        title: t("dashboard.toastPdfFailed"),
-        description: e?.message || t("dashboard.toastPdfFailedDesc"),
-        variant: "destructive",
-      });
-    } finally {
-      setExporting(false);
-    }
-  };
+  const { data: plan } = useMyActiveNutritionPlan();
+  const active = !!plan && plan.status === "active";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-lg font-display font-bold">{t("dashboard.bodyCompHistory")}</h2>
-          <p className="text-xs text-muted-foreground">
-            {t("dashboard.uploadHint")}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={handleDownloadPdf}
-            disabled={exporting || sorted.length === 0}
-            className="rounded-xl border-white/10"
-            data-testid="button-download-inbody-pdf"
-          >
-            {exporting ? (
-              <Loader2 size={14} className="animate-spin mr-1.5" />
-            ) : (
-              <FileDown size={14} className="mr-1.5" />
-            )}
-            {t("dashboard.downloadInbodyPdf")}
-          </Button>
-          <Button
-            onClick={() => fileRef.current?.click()}
-            className="rounded-xl"
-            disabled={upload.isPending}
-            data-testid="button-upload-inbody"
-          >
-            {upload.isPending ? (
-              <Loader2 size={14} className="animate-spin mr-1.5" />
-            ) : (
-              <Upload size={14} className="mr-1.5" />
-            )}
-            {upload.isPending ? t("dashboard.readingScanShort") : t("dashboard.uploadScan")}
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*,application/pdf"
-            className="hidden"
-            onChange={onFile}
-          />
-        </div>
+      <div>
+        <h2 className="text-lg font-display font-bold">{t("dashboard.nutritionTitle", "Nutrition Plan")}</h2>
+        <p className="text-xs text-muted-foreground">{t("dashboard.nutritionSubtitle", "Your coaching nutrition status")}</p>
       </div>
 
-      {upload.isPending && (
-        <div
-          className="rounded-2xl border border-primary/30 bg-primary/5 p-4 inline-flex items-center gap-3"
-          data-testid="status-inbody-reading"
-        >
-          <Loader2 size={16} className="animate-spin text-primary" />
-          <span className="text-sm">{t("dashboard.readingScanLong")}</span>
+      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border ${active ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/20 bg-white/[0.03] text-muted-foreground"}`}>
+            {active ? t("dashboard.statusActive", "Active") : t("dashboard.statusNotActive", "Not Active")}
+          </span>
         </div>
-      )}
 
-      {/* Trends — wrapped in a ref so the InBody PDF can snapshot it */}
-      {sorted.length >= 2 && (
-        <div ref={trendsRef}>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3 inline-flex items-center gap-1.5">
-            {t("dashboard.inbodyTrendsTitle")}
-            <InfoTip
-              title={t("tooltip.inbodyProgress.title")}
-              body={t("tooltip.inbodyProgress.body")}
-              testId="infotip-inbody-progress"
-            />
-          </h3>
-          <InbodyTrends records={sorted} />
-        </div>
-      )}
+        {plan ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <StatusField label={t("dashboard.planName", "Plan")} value={plan.name} />
+            <StatusField label={t("dashboard.startDate", "Start Date")} value={plan.startDate ? formatDateDubai(plan.startDate) : "—"} />
+            <StatusField label={t("dashboard.reviewDate", "Review Date")} value={plan.reviewDate ? formatDateDubai(plan.reviewDate) : "—"} />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("dashboard.noNutritionPlan", "No active nutrition plan. Contact Coach to get started.")}</p>
+        )}
 
-      {isLoading && <SkeletonCards />}
-
-      {!isLoading && list.length === 0 && !upload.isPending && (
-        <PremiumEmptyState
-          icon={<Activity size={20} />}
-          title={t("dashboard.inbodyEmpty")}
-          body={t("emptyState.noInbody.body")}
-          ctaLabel={t("dashboard.uploadScan")}
-          ctaOnClick={() => fileRef.current?.click()}
-          testId="empty-inbody"
+        <WhatsAppButton
+          message={t("dashboard.whatsappNutrition", "Hi Coach, I have a question about my nutrition plan.")}
+          label={t("dashboard.whatsappCoach", "Message Coach")}
         />
-      )}
-
-      {latest && (
-        <div className="rounded-3xl border border-primary/30 bg-primary/5 p-6">
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 inline-flex items-center gap-2">
-                <TrendingUp size={12} /> {t("dashboard.latestScan")}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {latest.recordedAt && formatDateDubai(latest.recordedAt)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {!latest.aiExtracted && (
-                <span
-                  className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                  data-testid="badge-needs-review"
-                >
-                  <AlertCircle size={11} /> {t("dashboard.needsReview")}
-                </span>
-              )}
-              {latest.fileUrl && (
-                <a
-                  href={latest.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:opacity-80"
-                  data-testid={`link-inbody-file-${latest.id}`}
-                >
-                  {t("dashboard.viewOriginal")}
-                </a>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Metric label={t("dashboard.metricWeight")} value={latest.weight} unit="kg" />
-            <Metric label={t("dashboard.metricBodyFat")} value={latest.bodyFat} unit="%" />
-            <Metric label={t("dashboard.metricMuscle")} value={latest.muscleMass} unit="kg" />
-            <Metric label={t("dashboard.metricBmi")} value={latest.bmi} />
-            <Metric label={t("dashboard.metricVisceral")} value={latest.visceralFat} />
-            <Metric label={t("dashboard.metricBmr")} value={latest.bmr} unit="kcal" />
-            <Metric label={t("dashboard.metricWater")} value={latest.water} unit="L" />
-            <Metric label={t("dashboard.metricScore")} value={latest.score} />
-          </div>
-          {latest.notes && (
-            <p className="text-xs text-muted-foreground mt-4 italic">"{latest.notes}"</p>
-          )}
-          {!latest.aiExtracted && (
-            <p className="text-xs text-cyan-300/80 mt-4 inline-flex items-start gap-1.5">
-              <AlertCircle size={12} className="mt-0.5" />
-              {hasMetrics(latest) ? t("dashboard.lowConfidence") : t("dashboard.couldNotRead")}
-            </p>
-          )}
-        </div>
-      )}
-
-      {sorted.length > 1 && (
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            {t("dashboard.earlierScans")}
-          </h3>
-          <div className="space-y-2">
-            {sorted.slice(1).map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5"
-                data-testid={`inbody-row-${r.id}`}
-              >
-                <div className="text-sm">
-                  <span className="font-semibold">
-                    {r.recordedAt && formatDateDubai(r.recordedAt)}
-                  </span>
-                  <span className="text-muted-foreground ml-3">
-                    {r.weight != null ? `${r.weight}kg` : t("dashboard.notAvailable")} •{" "}
-                    {r.bodyFat != null ? `${r.bodyFat}% BF` : t("dashboard.notAvailable")}
-                  </span>
-                </div>
-                {r.fileUrl && (
-                  <a
-                    href={r.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:opacity-80"
-                  >
-                    {t("dashboard.view")}
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function Metric({ label, value, unit }: { label: string; value: number | null; unit?: string }) {
+// =============== SUPPLEMENT STATUS TAB ===============
+
+function SupplementStatusTab() {
   const { t } = useTranslation();
-  const display =
-    value != null ? `${value}${unit ? ` ${unit}` : ""}` : t("dashboard.notAvailable");
+  const { data: items = [] } = useMySupplements();
+  const active = items.some((i: any) => i.status === "active");
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-display font-bold">{t("dashboard.supplementsTitle", "Supplement Protocol")}</h2>
+        <p className="text-xs text-muted-foreground">{t("dashboard.supplementsSubtitle", "Your coaching supplement status")}</p>
+      </div>
+
+      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold px-2.5 py-1 rounded-md border ${active ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/20 bg-white/[0.03] text-muted-foreground"}`}>
+            {active ? t("dashboard.statusActive", "Active") : t("dashboard.statusNotActive", "Not Active")}
+          </span>
+        </div>
+
+        {active ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <StatusField label={t("dashboard.itemsInStack", "Items in Stack")} value={String(items.length)} />
+            <StatusField label={t("dashboard.activeItems", "Active Items")} value={String(items.filter((i: any) => i.status === "active").length)} />
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("dashboard.noSupplements", "No active supplement protocol. Contact Coach to get started.")}</p>
+        )}
+
+        <WhatsAppButton
+          message={t("dashboard.whatsappSupplements", "Hi Coach, I have a question about my supplement protocol.")}
+          label={t("dashboard.whatsappCoach", "Message Coach")}
+        />
+      </div>
+    </div>
+  );
+}
+
+function StatusField({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-background/40 border border-white/5 p-3">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p
-        className={`font-display font-bold text-lg mt-0.5 ${
-          value == null ? "text-muted-foreground/60 text-base" : ""
-        }`}
-        data-testid={`metric-${label.toLowerCase().replace(/\s+/g, "-")}`}
-      >
-        {display}
-      </p>
+      <p className="font-display font-bold text-base mt-0.5">{value}</p>
     </div>
   );
 }

@@ -1,0 +1,236 @@
+CRITICAL INSTRUCTION:
+
+DO NOT redesign.
+
+DO NOT modify layout.
+
+DO NOT change spacing.
+
+DO NOT change typography.
+
+DO NOT change section order.
+
+DO NOT change animations.
+
+DO NOT change Tron Legacy visual identity.
+
+DO NOT modify colors.
+
+DO NOT resize cards.
+
+DO NOT move sections.
+
+DO NOT modify booking system.
+
+DO NOT modify booking UI.
+
+DO NOT modify package logic.
+
+DO NOT modify cancellation system.
+
+DO NOT modify same-day reschedule system.
+
+DO NOT modify emergency cancel system.
+
+PRESERVE current design pixel-perfect.
+
+Only perform the following removals and simplifications:
+
+========================
+REMOVE CLIENT DASHBOARD FEATURES
+
+REMOVE ENTIRE InBody System:
+
+- Weight
+- BMI
+- Body Fat %
+- Muscle Mass
+- Body Water
+- Protein
+- Minerals
+- Visceral Fat
+- Obesity Analysis
+- Segmental Fat Analysis
+- Segmental Lean Analysis
+- BMR
+- InBody Score
+- Body Composition Analysis
+- Weight Charts
+- Progress Charts
+- Analytics
+- AI Analysis
+- Progress Tracking
+- Body Tracking
+- Graphs
+- Reports
+- Upload View
+- Comparison Reports
+
+REMOVE EVERYTHING related to InBody completely.
+
+No traces.
+
+No empty cards.
+
+No placeholders.
+
+========================
+REMOVE NUTRITION DETAILS
+
+Remove:
+
+- Meal Builder
+- Meal 1
+- Meal 2
+- Meal 3
+- Calories
+- Macros
+- Food Database
+- Meal Timing
+- Full Nutrition Program Editor
+- Nutrition Charts
+
+REMOVE Supplement Protocol Details:
+
+- Dosages
+- Timing
+- Supplement Builder
+- Supplement Protocol Editor
+
+========================
+KEEP ONLY NUTRITION STATUS
+
+Nutrition Card:
+
+Show ONLY:
+
+Nutrition Status:
+
+Active / Not Active
+
+Duration:
+
+1 Month
+
+3 Months
+
+6 Months
+
+Start Date
+
+Expiry Date
+
+Price
+
+WhatsApp Coach Button
+
+NO nutrition details.
+
+========================
+KEEP ONLY SUPPLEMENT STATUS
+
+Supplement Card:
+
+Show ONLY:
+
+Supplement Status:
+
+Active / Not Active
+
+Duration:
+
+1 Month
+
+3 Months
+
+6 Months
+
+Start Date
+
+Expiry Date
+
+Price
+
+WhatsApp Coach Button
+
+NO supplement details.
+
+========================
+CONTROL PANEL
+
+REMOVE:
+
+- InBody Upload
+- OCR
+- AI Extraction
+- Analysis System
+- Charts
+- Reports
+- Comparison Tools
+- Meal Builder
+- Nutrition Editor
+- Calories Builder
+- Macros Builder
+- Supplement Builder
+- Dosage Builder
+
+KEEP ONLY:
+
+Nutrition:
+
+Yes / No
+
+Duration
+
+Start Date
+
+Expiry Date
+
+Price
+
+Simple Notes
+
+Supplements:
+
+Yes / No
+
+Duration
+
+Start Date
+
+Expiry Date
+
+Price
+
+Simple Notes
+
+========================
+DO NOT TOUCH
+
+KEEP BOOKING SYSTEM EXACTLY AS CURRENT.
+
+KEEP CLIENT PROFILE EXACTLY AS CURRENT.
+
+KEEP SESSION PACKAGE SYSTEM EXACTLY AS CURRENT.
+
+KEEP MEMBERSHIP PRIORITY SYSTEM EXACTLY AS CURRENT.
+
+KEEP SAME DAY RESCHEDULE EXACTLY AS CURRENT.
+
+KEEP EMERGENCY CANCEL EXACTLY AS CURRENT.
+
+KEEP PACKAGE MANAGEMENT EXACTLY AS CURRENT.
+
+KEEP TRON LEGACY DESIGN EXACTLY AS CURRENT.
+
+KEEP MOBILE UX EXACTLY AS CURRENT.
+
+KEEP DESKTOP UX EXACTLY AS CURRENT.
+
+NO redesign.
+
+NO improvements.
+
+NO visual changes.
+
+Only remove complexity and preserve current premium luxury experience.

@@ -39,7 +39,7 @@ export function QuickActionsGrid({ onJump }: { onJump: (tab: string) => void }) 
       icon: ClipboardCheck,
       label: t("dashboard.quick.checkin", "Weekly Check-In"),
       sub: t("dashboard.quick.checkinSub", "Log how the week went"),
-      onClick: () => onJump("checkins"),
+      onClick: () => onJump("progress"),
       glow: "from-emerald-500/25 via-emerald-500/[0.06] to-transparent",
       ringGlow: "group-hover:ring-emerald-400/45 group-hover:text-emerald-300",
     },

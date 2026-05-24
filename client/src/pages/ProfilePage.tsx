@@ -302,26 +302,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Link
-        href="/dashboard"
-        data-testid="link-profile-inbody"
-        className="group relative block mb-6 rounded-3xl border border-primary/15 bg-primary/[0.04] p-5 sm:p-6 overflow-hidden transition-all hover:border-primary/30 hover:bg-primary/[0.07] hover:shadow-[0_0_18px_-10px_hsl(183_100%_55%_/_0.35)]"
-      >
-        <CyanHairline inset="inset-x-5" className="opacity-60" />
-        <div className="relative flex items-start gap-4">
-          <div className="w-11 h-11 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center shrink-0 transition-shadow group-hover:shadow-[0_0_18px_-4px_hsl(183_100%_55%_/_0.55)]">
-            <Activity size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold">{t("profile.inbodyTitle")}</p>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              {t("profile.inbodyBody")}
-            </p>
-          </div>
-          <ArrowRight size={16} className="text-primary mt-1 shrink-0 transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 rtl:rotate-180" />
-        </div>
-      </Link>
-
       <div className="rounded-3xl border border-white/5 bg-card/60 p-6">
         <p className="text-xs uppercase tracking-[0.22em] text-primary mb-1">
           {t("profile.accountEyebrow")}

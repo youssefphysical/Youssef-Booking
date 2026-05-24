@@ -1,7 +1,5 @@
 import { useState, useRef, useMemo } from "react";
 import { useParams, Link } from "wouter";
-import { useBodyMetrics } from "@/hooks/use-body-metrics";
-import { useWeeklyCheckins } from "@/hooks/use-weekly-checkins";
 import {
   AdminCard,
   AdminSectionTitle,
@@ -31,7 +29,6 @@ import {
   Edit3,
   Loader2,
   Save,
-  Upload,
   ChevronRight,
   CalendarDays,
   Camera,
@@ -52,12 +49,6 @@ import {
 } from "@/hooks/use-packages";
 import { usePackageTemplates } from "@/hooks/use-package-templates";
 import { expirationToDays } from "@shared/schema";
-import {
-  useInbodyRecords,
-  useUploadInbody,
-  useUpdateInbody,
-  useDeleteInbody,
-} from "@/hooks/use-inbody";
 import {
   useProgressPhotos,
   useUploadProgressPhoto,
@@ -97,10 +88,6 @@ import { motion } from "framer-motion";
 import { whatsappClientUrl } from "@/lib/whatsapp";
 import { SiWhatsapp } from "react-icons/si";
 import { UserAvatar } from "@/components/UserAvatar";
-import { ClientNutritionTab } from "@/components/ClientNutritionTab";
-import { AdminSupplementsTab } from "@/components/AdminSupplementsTab";
-import BodyMetricsPanel from "@/components/BodyMetricsPanel";
-import WeeklyCheckinsPanel from "@/components/WeeklyCheckinsPanel";
 import BeforeAfterCompare from "@/components/BeforeAfterCompare";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -134,10 +121,9 @@ import {
   type PackageSessionHistory,
   type UserResponse,
   type Package,
-  type InbodyRecord,
   type ProgressPhoto,
 } from "@shared/schema";
-import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles } from "lucide-react";
+import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles, Upload } from "lucide-react";
 import { usePackageTemplates as usePackageTemplatesForConvert } from "@/hooks/use-package-templates";
 
 const FMT_AED_ADMIN = new Intl.NumberFormat("en-US", {
@@ -173,15 +159,10 @@ import { useTranslation } from "@/i18n";
 const CLIENT_TABS: Array<{ value: string; labelKey: string; fallback: string; icon: React.ReactNode }> = [
   { value: "overview", labelKey: "admin.tabs.overview", fallback: "Overview", icon: <Activity size={13} /> },
   { value: "bookings", labelKey: "admin.clientDetail.tabSessions", fallback: "Sessions", icon: <Calendar size={13} /> },
-  { value: "nutrition", labelKey: "admin.tabs.nutrition", fallback: "Nutrition", icon: <Apple size={13} /> },
-  { value: "supplements", labelKey: "admin.tabs.supplements", fallback: "Supplements", icon: <Pill size={13} /> },
   { value: "progress", labelKey: "admin.clientDetail.tabProgress", fallback: "Progress", icon: <Camera size={13} /> },
-  { value: "body", labelKey: "admin.clientDetail.tabBody", fallback: "Body Metrics", icon: <Scale size={13} /> },
-  { value: "checkins", labelKey: "admin.clientDetail.tabCheckins", fallback: "Check-ins", icon: <ClipboardList size={13} /> },
   { value: "notes", labelKey: "admin.clientDetail.tabNotes", fallback: "Notes", icon: <FileText size={13} /> },
   { value: "documents", labelKey: "admin.clientDetail.tabDocuments", fallback: "Documents", icon: <FileCheck2 size={13} /> },
   { value: "packages", labelKey: "admin.clientDetail.tabPackage", fallback: "Payments", icon: <Wallet size={13} /> },
-  { value: "inbody", labelKey: "admin.clientDetail.tabHealth", fallback: "Health", icon: <HeartPulse size={13} /> },
   { value: "activity", labelKey: "admin.tabs.activity", fallback: "Activity", icon: <Activity size={13} /> },
   { value: "audit", labelKey: "admin.tabs.audit", fallback: "Audit", icon: <ShieldCheck size={13} /> },
   { value: "alerts", labelKey: "admin.clientDetail.tabAlerts", fallback: "Alerts", icon: <Bell size={13} /> },
@@ -503,19 +484,9 @@ export default function AdminClientDetail() {
             </div>
           </TabsContent>
           <TabsContent value="bookings"><BookingsTab client={client} /></TabsContent>
-          <TabsContent value="inbody">
-            <HealthGoalsPanel client={client} />
-            <div className="mt-6">
-              <InbodyPanel userId={client.id} />
-            </div>
-          </TabsContent>
           <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
-          <TabsContent value="body"><BodyMetricsPanel userId={client.id} canEdit={true} /></TabsContent>
-          <TabsContent value="checkins"><WeeklyCheckinsPanel userId={client.id} isAdmin={true} /></TabsContent>
           <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
           <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
-          <TabsContent value="nutrition"><ClientNutritionTab client={client} /></TabsContent>
-          <TabsContent value="supplements"><AdminSupplementsTab userId={client.id} /></TabsContent>
           <TabsContent value="activity">
             <ActivityFeed
               endpoint={`/api/admin/clients/${client.id}/activity`}
@@ -547,15 +518,6 @@ function OverviewTab({
   const upcoming = (upcomingBookings as any[])
     .filter((b) => ["upcoming", "confirmed"].includes(b.status))
     .slice(0, 3);
-  const { data: bodyMetrics = [] } = useBodyMetrics(client.id);
-  const latestMetric = bodyMetrics[0]; // hooks return newest-first
-  const prevMetric = bodyMetrics[1];
-  const weightDelta =
-    latestMetric?.weight != null && prevMetric?.weight != null
-      ? latestMetric.weight - prevMetric.weight
-      : null;
-  const { data: checkins = [] } = useWeeklyCheckins(client.id);
-  const latestCheckin = checkins[0];
 
   const totalSessions = activePkg ? (activePkg.totalSessions ?? 0) : 0;
   const usedSessions = activePkg ? (activePkg.usedSessions ?? 0) : 0;
@@ -674,86 +636,6 @@ function OverviewTab({
           )}
         </AdminCard>
 
-        {/* Latest body metric */}
-        <AdminCard testId="overview-body">
-          <AdminSectionTitle title={t("admin.clientDetail.latestBody", "Latest body metric")} />
-          {!latestMetric ? (
-            <button type="button" onClick={() => onJump("body")} className="w-full text-start" data-testid="overview-body-empty">
-              <AdminEmptyState
-                icon={<Scale size={18} />}
-                title={t("admin.clientDetail.noBody", "No body metrics yet")}
-                body={t("admin.clientDetail.addBodyHint", "Log weight & body fat to start tracking.")}
-              />
-            </button>
-          ) : (
-            <button type="button" onClick={() => onJump("body")} className="w-full text-start" data-testid="overview-body-card">
-              <div className="flex items-baseline gap-2">
-                <span className="font-display font-bold text-2xl tabular-nums">
-                  {latestMetric.weight ?? "—"}
-                </span>
-                <span className="text-[11px] text-muted-foreground">kg</span>
-                {weightDelta != null && weightDelta !== 0 && (
-                  <span
-                    className={`text-[11px] font-semibold tabular-nums ${
-                      weightDelta < 0 ? "text-emerald-300" : "text-cyan-300"
-                    }`}
-                  >
-                    {weightDelta > 0 ? "+" : ""}
-                    {weightDelta.toFixed(1)}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-[11px] text-muted-foreground">
-                {latestMetric.bodyFat != null && (
-                  <span className="inline-flex items-center gap-1">
-                    <Flame size={10} /> {latestMetric.bodyFat}% bf
-                  </span>
-                )}
-                {latestMetric.waist != null && (
-                  <span className="inline-flex items-center gap-1">
-                    <Ruler size={10} /> {latestMetric.waist} cm waist
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays size={10} />{" "}
-                  {latestMetric.recordedOn ? formatShortDateDubai(latestMetric.recordedOn) : ""}
-                </span>
-              </div>
-            </button>
-          )}
-        </AdminCard>
-
-        {/* Latest weekly check-in */}
-        <AdminCard testId="overview-checkin">
-          <AdminSectionTitle title={t("admin.clientDetail.latestCheckin", "Latest check-in")} />
-          {!latestCheckin ? (
-            <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-empty">
-              <AdminEmptyState
-                icon={<ClipboardList size={18} />}
-                title={t("admin.clientDetail.noCheckin", "No check-ins yet")}
-                body={t("admin.clientDetail.checkinHint", "Weekly check-ins help spot trends early.")}
-              />
-            </button>
-          ) : (
-            <button type="button" onClick={() => onJump("checkins")} className="w-full text-start" data-testid="overview-checkin-card">
-              <p className="text-[11px] text-muted-foreground">
-                {latestCheckin.weekStart
-                  ? `${t("admin.clientDetail.weekOf", "Week of")} ${formatShortDateDubai(latestCheckin.weekStart)}`
-                  : ""}
-              </p>
-              <div className="grid grid-cols-3 gap-2 mt-2">
-                <CheckinChip label={t("admin.clientDetail.energy", "Energy")} value={latestCheckin.energy} max={10} />
-                <CheckinChip label={t("admin.clientDetail.sleep", "Sleep")} value={latestCheckin.sleepQuality} max={10} />
-                <CheckinChip label={t("admin.clientDetail.training", "Training")} value={latestCheckin.trainingAdherence} max={100} suffix="%" />
-              </div>
-              {latestCheckin.notes && (
-                <p className="text-[11px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-                  "{latestCheckin.notes}"
-                </p>
-              )}
-            </button>
-          )}
-        </AdminCard>
       </div>
 
       {/* Profile snapshot — secondary info */}
@@ -3031,203 +2913,6 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
       {(pkg as any).frozenReason && (
         <p className="text-[11px] text-cyan-300/90 italic">Frozen reason: {(pkg as any).frozenReason}</p>
       )}
-    </div>
-  );
-}
-
-// =============== INBODY ===============
-
-const inbodySchema = z.object({
-  weight: z.string().optional(),
-  bodyFat: z.string().optional(),
-  muscleMass: z.string().optional(),
-  bmi: z.string().optional(),
-  visceralFat: z.string().optional(),
-  bmr: z.string().optional(),
-  water: z.string().optional(),
-  score: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-function InbodyPanel({ userId }: { userId: number }) {
-  const { t } = useTranslation();
-  const { data: records = [] } = useInbodyRecords({ userId });
-  const upload = useUploadInbody();
-  const del = useDeleteInbody();
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const list = (records as InbodyRecord[]).sort(
-    (a, b) => new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime(),
-  );
-
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) upload.mutate({ file, userId });
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{t("admin.clientDetail.inbodyScans", "InBody Scans")}</h3>
-        <Button size="sm" className="rounded-xl" onClick={() => fileRef.current?.click()} disabled={upload.isPending} data-testid="button-admin-upload-inbody">
-          {upload.isPending ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Upload size={13} className="mr-1.5" />}
-          Upload Scan
-        </Button>
-        <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onFile} />
-      </div>
-
-      {list.length === 0 ? (
-        <EmptyBox text="No InBody scans" />
-      ) : (
-        <div className="space-y-3">
-          {list.map((r) => (
-            <InbodyRow key={r.id} record={r} onDelete={() => del.mutate(r.id)} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InbodyRow({ record, onDelete }: { record: InbodyRecord; onDelete: () => void }) {
-  const [editing, setEditing] = useState(false);
-  const update = useUpdateInbody();
-
-  const form = useForm<z.infer<typeof inbodySchema>>({
-    resolver: zodResolver(inbodySchema),
-    defaultValues: {
-      weight: record.weight?.toString() ?? "",
-      bodyFat: record.bodyFat?.toString() ?? "",
-      muscleMass: record.muscleMass?.toString() ?? "",
-      bmi: record.bmi?.toString() ?? "",
-      visceralFat: record.visceralFat?.toString() ?? "",
-      bmr: record.bmr?.toString() ?? "",
-      water: record.water?.toString() ?? "",
-      score: record.score?.toString() ?? "",
-      notes: record.notes ?? "",
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof inbodySchema>) {
-    const num = (s: string | undefined) => (s && s.trim() !== "" ? Number(s) : null);
-    update.mutate(
-      {
-        id: record.id,
-        weight: num(values.weight),
-        bodyFat: num(values.bodyFat),
-        muscleMass: num(values.muscleMass),
-        bmi: num(values.bmi),
-        visceralFat: num(values.visceralFat),
-        bmr: num(values.bmr),
-        water: num(values.water),
-        score: num(values.score),
-        notes: values.notes ?? null,
-      } as any,
-      { onSuccess: () => setEditing(false) },
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4" data-testid={`admin-inbody-${record.id}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <p className="text-sm font-semibold">
-            {record.recordedAt && formatDateDubai(record.recordedAt)}
-          </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            {record.aiExtracted ? "AI-extracted" : "Manual"}
-            {record.fileUrl && " • "}
-            {record.fileUrl && (
-              <a href={record.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-80">
-                View file
-              </a>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => setEditing(!editing)} className="h-8 w-8" data-testid={`button-edit-inbody-${record.id}`}>
-            <Edit3 size={13} />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={onDelete} className="h-8 w-8 text-red-400 hover:bg-red-500/10">
-            <Trash2 size={13} />
-          </Button>
-        </div>
-      </div>
-
-      {!editing ? (
-        <div className="grid grid-cols-4 gap-2 text-xs">
-          <Stat label="Weight" v={record.weight} u="kg" />
-          <Stat label="BF" v={record.bodyFat} u="%" />
-          <Stat label="Muscle" v={record.muscleMass} u="kg" />
-          <Stat label="BMI" v={record.bmi} />
-          <Stat label="Visceral" v={record.visceralFat} />
-          <Stat label="BMR" v={record.bmr} />
-          <Stat label="Water" v={record.water} u="L" />
-          <Stat label="Score" v={record.score} />
-        </div>
-      ) : (
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                ["weight", "Weight"],
-                ["bodyFat", "Body Fat %"],
-                ["muscleMass", "Muscle (kg)"],
-                ["bmi", "BMI"],
-                ["visceralFat", "Visceral Fat"],
-                ["bmr", "BMR"],
-                ["water", "Water (L)"],
-                ["score", "Score"],
-              ].map(([name, label]) => (
-                <FormField
-                  key={name}
-                  control={form.control}
-                  name={name as any}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" step="0.1" className="bg-white/5 border-white/10 h-9 text-sm" data-testid={`input-inbody-${name}`} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              ))}
-            </div>
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Notes</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={2} className="bg-white/5 border-white/10 text-sm" />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <div className="flex gap-2">
-              <Button type="submit" size="sm" disabled={update.isPending} data-testid={`button-save-inbody-${record.id}`}>
-                {update.isPending ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Save size={13} className="mr-1.5" />}
-                Save
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Form>
-      )}
-    </div>
-  );
-}
-
-function Stat({ label, v, u }: { label: string; v: number | null; u?: string }) {
-  return (
-    <div className="rounded-lg bg-background/40 border border-white/5 p-2 text-center">
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="text-sm font-bold">{v != null ? `${v}${u ?? ""}` : "—"}</p>
     </div>
   );
 }

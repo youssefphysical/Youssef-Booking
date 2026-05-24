@@ -61,16 +61,6 @@ const AdminControlPanel = lazy(() => import("@/pages/AdminControlPanel"));
 const AdminClientDetail = lazy(() => import("@/pages/AdminClientDetail"));
 const AdminPackages = lazy(() => import("@/pages/AdminPackages"));
 const AdminPackageBuilder = lazy(() => import("@/pages/AdminPackageBuilder"));
-const AdminMacroCalculator = lazy(() => import("@/pages/AdminMacroCalculator"));
-const AdminFoodLibrary = lazy(() => import("@/pages/AdminFoodLibrary"));
-const AdminMealLibrary = lazy(() => import("@/pages/AdminMealLibrary"));
-const AdminMealBuilder = lazy(() => import("@/pages/AdminMealBuilder"));
-const AdminNutritionPlans = lazy(() => import("@/pages/AdminNutritionPlans"));
-const AdminNutritionPlanBuilder = lazy(() => import("@/pages/AdminNutritionPlanBuilder"));
-const NutritionPlanPdf = lazy(() => import("@/pages/NutritionPlanPdf"));
-const ClientNutritionPlan = lazy(() => import("@/pages/ClientNutritionPlan"));
-const AdminSupplementLibrary = lazy(() => import("@/pages/AdminSupplementLibrary"));
-const AdminSupplementStacks = lazy(() => import("@/pages/AdminSupplementStacks"));
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
@@ -224,10 +214,6 @@ function Router() {
           <Route path="/profile">
             <ProtectedRoute component={ProfilePage} clientOnly />
           </Route>
-          <Route path="/my-nutrition">
-            <ProtectedRoute component={ClientNutritionPlan} clientOnly />
-          </Route>
-
           {/* Admin */}
           <Route path="/admin">
             <ProtectedRoute component={AdminDashboard} adminOnly />
@@ -270,33 +256,6 @@ function Router() {
           </Route>
           <Route path="/admin/package-builder">
             <ProtectedRoute component={AdminPackageBuilder} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/macro-calculator">
-            <ProtectedRoute component={AdminMacroCalculator} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/foods">
-            <ProtectedRoute component={AdminFoodLibrary} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/meals">
-            <ProtectedRoute component={AdminMealLibrary} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/meals/:id">
-            <ProtectedRoute component={AdminMealBuilder} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/plans">
-            <ProtectedRoute component={AdminNutritionPlans} adminOnly />
-          </Route>
-          <Route path="/admin/nutrition/plans/:id">
-            <ProtectedRoute component={AdminNutritionPlanBuilder} adminOnly />
-          </Route>
-          <Route path="/admin/supplements">
-            <ProtectedRoute component={AdminSupplementLibrary} adminOnly />
-          </Route>
-          <Route path="/admin/supplement-stacks">
-            <ProtectedRoute component={AdminSupplementStacks} adminOnly />
-          </Route>
-          <Route path="/print/nutrition-plan/:id">
-            <ProtectedRoute component={NutritionPlanPdf} />
           </Route>
           <Route path="/admin/settings">
             <ProtectedRoute component={AdminSettings} adminOnly />
