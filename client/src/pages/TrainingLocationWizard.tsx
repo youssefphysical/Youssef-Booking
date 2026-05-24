@@ -339,12 +339,6 @@ export default function TrainingLocationWizard() {
         body: t("wizard.building.body", "Youssef trains me at my building gym."),
       },
       {
-        key: "home" as const,
-        icon: <Home size={22} className="text-primary" />,
-        title: t("wizard.home.title", "Home Training"),
-        body: t("wizard.home.body", "Youssef trains me at my home."),
-      },
-      {
         key: "hotel" as const,
         icon: <BedDouble size={22} className="text-primary" />,
         title: t("wizard.hotel.title", "Hotel Training"),
@@ -1317,8 +1311,12 @@ function Field({ label, value, onChange, testId, required, placeholder, icon }: 
 }) {
   return (
     <div>
-      <Label className="text-xs flex items-center gap-1.5">
-        {icon && <span className="text-primary/60">{icon}</span>}
+      <Label className="text-xs flex items-center gap-2">
+        {icon && (
+          <span className="text-primary" style={{ filter: "drop-shadow(0 0 4px rgba(94,231,255,0.65))" }}>
+            {icon}
+          </span>
+        )}
         {label}{required ? " *" : ""}
       </Label>
       <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 mt-1" data-testid={testId} />
@@ -1330,8 +1328,12 @@ function FieldArea({ label, value, onChange, testId, placeholder, icon }: {
 }) {
   return (
     <div>
-      <Label className="text-xs flex items-center gap-1.5">
-        {icon && <span className="text-primary/60">{icon}</span>}
+      <Label className="text-xs flex items-center gap-2">
+        {icon && (
+          <span className="text-primary" style={{ filter: "drop-shadow(0 0 4px rgba(94,231,255,0.65))" }}>
+            {icon}
+          </span>
+        )}
         {label}
       </Label>
       <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 mt-1" data-testid={testId} />

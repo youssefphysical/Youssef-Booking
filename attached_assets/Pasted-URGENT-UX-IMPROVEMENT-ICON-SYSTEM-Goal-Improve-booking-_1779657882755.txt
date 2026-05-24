@@ -1,0 +1,219 @@
+URGENT UX IMPROVEMENT + ICON SYSTEM
+
+Goal:
+
+Improve booking wizard visual clarity.
+
+IMPORTANT:
+
+DO NOT redesign UI.
+DO NOT change Tron Legacy styling.
+DO NOT change booking logic.
+DO NOT change package logic.
+DO NOT change spacing system globally.
+DO NOT modify animations.
+DO NOT modify glow system.
+
+Only improve visual guidance and remove confusion.
+
+==================================
+1. REMOVE DUPLICATION
+==================================
+
+Delete completely:
+
+❌ Home, building or hotel
+
+Keep ONLY:
+
+1. Fitness Zone
+2. Building Gym
+3. Hotel Training
+4. External Gym
+5. Online Coaching
+
+Reason:
+
+Current setup duplicates flows and creates confusion.
+
+==================================
+2. TRON ICON GUIDANCE SYSTEM
+==================================
+
+Add premium Tron Legacy neon icons beside fields.
+
+Icons must:
+
+- Neon cyan glow
+- Same Tron style
+- Small elegant size
+- Mobile optimized
+- Not oversized
+- Consistent spacing
+- Professional luxury appearance
+
+Field icons:
+
+----------------------------------
+BUILDING GYM
+----------------------------------
+
+Google Maps Link
+
+Icon:
+📍 / Link icon
+
+Placeholder:
+
+Paste Google Maps link
+
+Building Name
+
+Icon:
+🏢
+
+Placeholder:
+
+Example:
+Marina Gate
+
+Gym Floor
+
+Icon:
+⬆️ / Floor icon
+
+Placeholder:
+
+Example:
+3rd Floor
+
+Parking / Access Notes
+
+Icon:
+🚗
+
+Placeholder:
+
+Visitor parking / access instructions
+
+----------------------------------
+HOTEL TRAINING
+----------------------------------
+
+Google Maps Link
+
+Icon:
+📍
+
+Hotel Name
+
+Icon:
+🏨
+
+Gym Floor
+
+Icon:
+⬆️
+
+Room Number
+
+Icon:
+🚪
+
+Parking / Access
+
+Icon:
+🚗
+
+----------------------------------
+EXTERNAL GYM
+----------------------------------
+
+Google Maps Link
+
+Icon:
+📍
+
+Gym Name
+
+Icon:
+🏋️
+
+Area / Location
+
+Icon:
+🌍
+
+Placeholder:
+
+Dubai Marina / JVC / Downtown
+
+==================================
+3. PREMIUM VISUAL IMPROVEMENT
+==================================
+
+Field icons:
+
+- Left aligned
+- Vertically centered
+- Neon cyan glow
+- Same opacity system as Tron cards
+- Mobile friendly
+- No visual clutter
+
+Field spacing:
+
+8-12px icon gap
+
+Input focus:
+
+Maintain Tron glow effect.
+
+==================================
+4. ONLINE COACHING
+==================================
+
+Keep existing WhatsApp flow.
+
+No changes.
+
+==================================
+5. KEEP EXISTING SYSTEM
+==================================
+
+DO NOT TOUCH:
+
+Booking flow
+
+Location → Date → Time → Confirmation
+
+Package logic
+
+Emergency cancellation
+
+Session logic
+
+Pricing
+
+Dashboard
+
+Admin controls
+
+==================================
+FINAL GOAL
+==================================
+
+Cleaner UX
+
+More premium feel
+
+Less confusion
+
+Faster booking
+
+Luxury fitness brand feeling
+
+Professional Tron Legacy experience
+
+NO OTHER CHANGES.
+ONLY THESE IMPROVEMENTS.
