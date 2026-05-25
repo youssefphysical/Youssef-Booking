@@ -1,0 +1,169 @@
+URGENT PRODUCTION PERFORMANCE + UX CLEANUP
+
+This is NOT a text removal task.
+
+The real issue is waiting time and blocked UX.
+
+Current bad experience:
+
+User opens website →
+Black screen →
+Spinner →
+"Preparing your transformation..."
+OR
+"Loading your fitness experience..."
+
+This feels slow and hurts premium experience.
+
+REQUIRED CHANGES:
+
+1. REMOVE FULL PAGE BLOCKING LOADER
+
+Current:
+
+Black background + spinner + loading text.
+
+Remove this behavior.
+
+User must NEVER wait on empty black screen.
+
+2. ONLY SHOW LOADER IF REAL LOADING EXCEEDS 700ms
+
+Rules:
+
+Loading under 700ms:
+→ NO loader.
+
+Page appears instantly.
+
+Loading above 700ms:
+→ Small spinner ONLY.
+
+No full screen blocking.
+
+No black waiting page.
+
+3. REMOVE LOADING TEXTS COMPLETELY
+
+Remove:
+
+"Preparing your transformation..."
+
+Remove:
+
+"Loading your fitness experience..."
+
+Do NOT replace with another marketing message.
+
+If loading exists:
+
+Spinner only.
+
+4. PRELOAD CRITICAL DATA
+
+Preload before rendering:
+
+- wizard configuration
+- package configuration
+- translations
+- session information
+- draft state
+- notification state
+- booking configuration
+
+Reduce waiting.
+
+5. CACHE LOCALLY
+
+Do NOT re-fetch everything after refresh.
+
+Use cached wizard state.
+
+Use cached language state.
+
+Use cached package data.
+
+6. NAVBAR MUST APPEAR IMMEDIATELY
+
+Instant render:
+
+- logo
+- notifications icon
+- language selector
+- menu button
+
+Never hide header behind loading.
+
+7. USE SKELETON LOADING INSTEAD OF BLACK SCREEN
+
+If backend still loading:
+
+Show layout immediately.
+
+Examples:
+
+Package cards → skeleton cards
+
+Wizard cards → skeleton cards
+
+Client sees progress.
+
+No blocked screen.
+
+8. REMOVE UNNECESSARY REFRESH DELAY
+
+Current issue:
+
+User refreshes →
+
+Waiting again.
+
+Optimize hydration.
+
+Optimize render.
+
+Optimize refresh state.
+
+9. FITNESS ZONE FLOW SPEED
+
+Fitness Zone must feel instant.
+
+No extra waiting.
+
+No extra loading screens.
+
+10. KEEP PREMIUM TRON LEGACY FEEL
+
+Fast.
+
+Luxury.
+
+Professional.
+
+Modern app feel.
+
+Feels like premium fintech / luxury fitness product.
+
+CRITICAL:
+
+DO NOT break:
+
+- booking logic
+- packages
+- admin panel
+- WhatsApp flow
+- authentication
+- notifications
+- package activation
+
+Only improve performance and waiting experience.
+
+GOAL:
+
+Open website →
+
+Content visible immediately →
+
+No black waiting screens →
+
+Feels premium and extremely fast.

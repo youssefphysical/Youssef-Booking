@@ -1,46 +1,37 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { useTranslation } from "@/i18n";
-
-const COPY_KEYS = ["loading.experience", "loading.transformation"] as const;
-const FALLBACKS: Record<typeof COPY_KEYS[number], string> = {
-  "loading.experience": "Loading your fitness experience…",
-  "loading.transformation": "Preparing your transformation…",
-};
 
 /**
- * Premium page-level loader (Task #71).
- * Standardises chunk-load / auth-bootstrapping screens with Loader2 + rotating
- * premium copy so cold starts feel intentional rather than blank. The copy
- * line is picked once per mount (deterministic during the same loading flash,
- * but alternates across navigations).
+ * Non-blocking page loader.
+ *
+ * Renders nothing for the first 700 ms — fast auth checks and cached chunk
+ * loads complete within this window and the user never sees any loader at
+ * all. Only on genuinely slow responses (cold-start serverless, slow 3G)
+ * does a small centred spinner appear. No full-screen black overlay,
+ * no marketing copy.
  */
 export function PremiumPageLoader() {
-  const { t } = useTranslation();
-  const key = useMemo(
-    () => COPY_KEYS[Math.floor(Math.random() * COPY_KEYS.length)],
-    [],
-  );
-  const copy = t(key, FALLBACKS[key]);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-[60vh] w-full gap-4 px-6"
+      className="flex items-center justify-center w-full py-24"
       data-testid="page-loader"
       role="status"
-      aria-live="polite"
+      aria-label="Loading"
     >
       <Loader2
-        className="h-9 w-9 animate-spin text-primary"
-        style={{ filter: "drop-shadow(0 0 10px hsl(183 100% 60% / 0.45))" }}
+        className="h-7 w-7 animate-spin text-primary"
+        style={{ filter: "drop-shadow(0 0 8px hsl(183 100% 60% / 0.4))" }}
         aria-hidden="true"
       />
-      <p
-        className="text-sm text-white/70 text-center max-w-xs leading-relaxed"
-        data-testid="text-page-loader-copy"
-      >
-        {copy}
-      </p>
     </div>
   );
 }
