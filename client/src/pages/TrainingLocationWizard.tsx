@@ -17,19 +17,6 @@ import { resetAllCachesAndSW } from "@/lib/registerSW";
 import { whatsappUrl } from "@/lib/whatsapp";
 import type { TrainingLocation, Package as PackageRow } from "@shared/schema";
 
-// Task #66 follow-up — visible build stamp so a real-mobile user can
-// confirm they're on the latest JS bundle and not a stale SW-cached
-// chunk. Bump this string in EVERY meaningful wizard edit. If the user
-// sees an older value, the bundle is stale and they need to hard-reload
-// (or hit the "Diagnostic Reset" button below the form).
-// Build marker — bumped on every wizard edit. Combined with the git
-// commit hash injected by scripts/vercel-build.mjs (VITE_GIT_HASH)
-// this renders as "Build: 2026-05-22-diag-v3 · <git-hash>" in the
-// wizard footer so a real-mobile user can confirm which exact
-// production bundle they're running.
-const WIZARD_BUILD = "2026-05-22-ux-phase1";
-const WIZARD_GIT_HASH =
-  (import.meta as any).env?.VITE_GIT_HASH || "local-dev";
 
 type Branch = "fitness_zone" | "home" | "hotel" | "building" | "online_coaching" | "other_location" | null;
 type FzPath = "existing" | "trial" | null;
@@ -356,7 +343,7 @@ export default function TrainingLocationWizard() {
                   ? "other_location"
                   : "unset";
     console.log("[wizard-submit-clicked]", {
-      build: WIZARD_BUILD,
+
       flow: flowLabel,
       reqType,
       hasActivePackage,
@@ -1105,71 +1092,6 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {/* Always-visible build stamp. Lets a real-mobile user confirm
-            they are on the latest JS bundle. If they see an older
-            value than what was just shipped, the SW is serving stale
-            code — they should hit "Diagnostic reset" below. */}
-        <div
-          className="mt-6 text-[10px] text-muted-foreground/60 text-center font-mono"
-          data-testid="text-wizard-build"
-        >
-          Build: {WIZARD_BUILD} · {WIZARD_GIT_HASH}
-        </div>
-
-        {/* Diagnostic panel — admin OR vite-dev only. Renders every
-            piece of state needed to localise where the flow stops:
-            which handler fired, mutation statuses, last API response,
-            last error, navigation target, whether navigate executed. */}
-        {(user?.role === "admin" || import.meta.env.DEV) && (
-          <div
-            className="mt-4 rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-3 text-[11px] font-mono space-y-1"
-            data-testid="panel-wizard-debug"
-          >
-            <div className="font-bold text-cyan-300 mb-2">Wizard diagnostic ({user?.role === "admin" ? "admin" : "dev"})</div>
-            <div><span className="text-cyan-400">flow:</span> {dbg.flow ?? "—"}</div>
-            <div><span className="text-cyan-400">selectedPackage:</span> {dbg.selectedPackage ?? "—"}</div>
-            <div><span className="text-cyan-400">submitFired:</span> {String(dbg.submitFired ?? false)}</div>
-            <div><span className="text-cyan-400">saveLocation.isPending:</span> {String(saveLocation.isPending)}</div>
-            <div><span className="text-cyan-400">submitVerification.isPending:</span> {String(submitVerification.isPending)}</div>
-            <div><span className="text-cyan-400">locationStatus:</span> {dbg.locationStatus ?? "—"}</div>
-            <div><span className="text-cyan-400">activationStatus:</span> {dbg.activationStatus ?? "—"}</div>
-            <div><span className="text-cyan-400">lastApiResponse:</span> <span className="break-all">{dbg.lastApiResponse ? JSON.stringify(dbg.lastApiResponse).slice(0, 200) : "—"}</span></div>
-            <div><span className="text-cyan-400">lastError:</span> <span className="break-all text-red-300">{dbg.lastError ?? "—"}</span></div>
-            <div><span className="text-cyan-400">navTarget:</span> {dbg.navTarget ?? "—"}</div>
-            <div><span className="text-cyan-400">navigateExecuted:</span> {String(dbg.navigateExecuted ?? false)}</div>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                className="flex-1 px-2 py-1 rounded border border-cyan-400/40 hover:bg-cyan-400/10"
-                data-testid="button-wizard-clear-draft"
-                onClick={() => {
-                  try { wizardDraft.clear(); } catch {/* swallow */}
-                  try { localStorage.removeItem("yapt:queue:v1"); } catch {/* swallow */}
-                  console.log("[wizard-diag] cleared draft + offline queue");
-                  toast({ title: "Draft + offline queue cleared." });
-                }}
-              >
-                Clear draft & queue
-              </button>
-              <button
-                type="button"
-                className="flex-1 px-2 py-1 rounded border border-red-400/40 hover:bg-red-400/10 text-red-300"
-                data-testid="button-wizard-diag-reset"
-                onClick={async () => {
-                  console.log("[wizard-diag] hard reset starting");
-                  try { wizardDraft.clear(); } catch {/* swallow */}
-                  try { localStorage.removeItem("yapt:queue:v1"); } catch {/* swallow */}
-                  try { sessionStorage.removeItem("__sw_reloaded__"); } catch {/* swallow */}
-                  await resetAllCachesAndSW();
-                  console.log("[wizard-diag] hard reset done → reloading");
-                  window.location.assign("/wizard?ts=" + Date.now());
-                }}
-              >
-                Diagnostic reset (unregister SW)
-              </button>
-            </div>
-          </div>
-        )}
       </motion.div>
     </div>
   );
