@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Footprints, BedDouble, ArrowUpDown, Car, DoorOpen, KeyRound, Navigation } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Activity, MonitorPlay, Warehouse, BedDouble, ArrowUpDown, Car, DoorOpen, KeyRound, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -334,7 +334,7 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "building" as const,
-        icon: <Building2 size={22} className="text-primary" />,
+        icon: <Warehouse size={22} className="text-primary" />,
         title: t("wizard.building.title", "Building Gym"),
         body: t("wizard.building.body", "Youssef trains me at my building gym."),
       },
@@ -346,13 +346,13 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "online_coaching" as const,
-        icon: <Wifi size={22} className="text-primary" />,
+        icon: <MonitorPlay size={22} className="text-primary" />,
         title: t("wizard.online.title", "Online Coaching"),
         body: t("wizard.online.body", "I train online with Youssef."),
       },
       {
         key: "other_location" as const,
-        icon: <Footprints size={22} className="text-primary" />,
+        icon: <Activity size={22} className="text-primary" />,
         title: t("wizard.otherLocation.title", "Outdoor / Custom Workout"),
         body: t("wizard.otherLocation.body", "Park, beach, running, stadium, outdoor gym, football field, or custom location."),
       },
