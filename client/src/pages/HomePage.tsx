@@ -31,7 +31,7 @@ import { HeroSlider } from "@/components/HeroSlider";
 import { Transformations } from "@/components/Transformations";
 import { useTranslation } from "@/i18n";
 import { lazy, Suspense } from "react";
-import { Utensils, FlaskConical, Gift, HelpCircle, ArrowRight } from "lucide-react";
+import { Utensils, FlaskConical, Gift, HelpCircle } from "lucide-react";
 import { buildContextMessage, whatsappUrl } from "@/lib/whatsapp";
 const PricingCards = lazy(() => import("@/components/public/PricingCards").then(m => ({ default: m.PricingCards })));
 const FaqAccordion = lazy(() => import("@/components/public/FaqAccordion").then(m => ({ default: m.FaqAccordion })));

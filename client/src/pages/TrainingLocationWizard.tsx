@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDraft } from "@/lib/useDraft";
-import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Activity, MonitorPlay, Warehouse, BedDouble, ArrowUpDown, Car, DoorOpen, KeyRound, Navigation } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Activity, MonitorPlay, ConciergeBell, BedDouble, ArrowUpDown, Car, DoorOpen, KeyRound, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -213,27 +212,7 @@ export default function TrainingLocationWizard() {
     const d = wizardDraft.draft;
     toast({
       title: t("wizard.draftRestoredTitle", "Draft restored"),
-      description: t(
-        "wizard.draftRestoredDesc",
-        "We brought back the onboarding answers you were filling out.",
-      ),
-      action: (
-        <ToastAction
-          altText="Discard draft"
-          data-testid="button-wizard-draft-discard"
-          onClick={() => {
-            wizardDraft.clear();
-            setStep(1); setBranch(null); setFzPath(null);
-            setHomeLabel(""); setHomeAddress(""); setHomeBuilding(""); setHomeRoom("");
-            setHomeParking(""); setHomeEquip("");
-            setMapsLink(""); setGymFloor("");
-            setGymName(""); setGymAddress(""); setGymGuest(""); setGymNotes("");
-            setReqType("not_sure"); setVerifNotes("");
-          }}
-        >
-          {t("wizard.draftDiscard", "Discard")}
-        </ToastAction>
-      ),
+      duration: 2000,
     });
     if (d.step) setStep(d.step);
     if (d.branch) setBranch(d.branch);
@@ -334,13 +313,18 @@ export default function TrainingLocationWizard() {
       },
       {
         key: "building" as const,
-        icon: <Warehouse size={22} className="text-primary" />,
+        icon: (
+          <span className="flex flex-col items-center justify-center gap-px">
+            <Building2 size={13} className="text-primary" />
+            <Dumbbell size={10} className="text-primary" />
+          </span>
+        ),
         title: t("wizard.building.title", "Building Gym"),
         body: t("wizard.building.body", "Youssef trains me at my building gym."),
       },
       {
         key: "hotel" as const,
-        icon: <BedDouble size={22} className="text-primary" />,
+        icon: <ConciergeBell size={22} className="text-primary" />,
         title: t("wizard.hotel.title", "Hotel Training"),
         body: t("wizard.hotel.body", "Youssef trains me at my hotel."),
       },
@@ -1111,7 +1095,7 @@ export default function TrainingLocationWizard() {
               onChange={setHomeParking}
               testId="input-hotel-access"
               placeholder={t("wizard.hotel.accessPh", "Example: Gym on 3rd floor, ask reception for access")}
-              icon={<Key size={11} />}
+              icon={<KeyRound size={11} />}
             />
           </div>
         )}

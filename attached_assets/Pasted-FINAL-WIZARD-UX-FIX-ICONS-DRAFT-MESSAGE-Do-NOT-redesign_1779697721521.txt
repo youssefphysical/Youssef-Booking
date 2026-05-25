@@ -1,0 +1,101 @@
+FINAL WIZARD UX FIX — ICONS + DRAFT MESSAGE
+
+Do NOT redesign.
+Do NOT change booking logic.
+Do NOT change forms.
+Do NOT change package logic.
+Do NOT change cancellation logic.
+Do NOT change dashboard.
+Do NOT change admin panel.
+Only apply the exact UX fixes below.
+
+1. LOCATION CARD ICONS
+
+Keep the same Tron Legacy cyan glow style, same icon size, same spacing, same card layout.
+
+Fitness Zone:
+Keep current dumbbell icon.
+
+Building Gym:
+Replace generic building icon with a clearer premium "Building Gym" concept.
+It should visually communicate:
+
+- private building gym
+- residential tower gym
+- not generic office building
+
+Preferred direction:
+building + small dumbbell/gym element, Tron outline style.
+
+Hotel Training:
+Use a clearer hotel icon.
+Preferred direction:
+hotel building / hotel bed / hospitality icon.
+Must communicate hotel training clearly.
+
+Online Coaching:
+Replace Wi-Fi icon.
+Current Wi-Fi icon feels like internet settings, not coaching.
+Use a premium online coaching icon:
+
+- laptop + user
+- monitor + coach
+- video coaching concept
+
+Outdoor / Custom Workout:
+Replace footprints icon.
+Use a stronger outdoor training concept:
+
+- running icon
+- athlete movement icon
+- track/outdoor activity icon
+  Must communicate:
+  park, beach, running, stadium, outdoor gym, football field, custom location.
+
+All icons must:
+
+- Match stroke thickness
+- Match Tron cyan glow
+- Be mobile friendly
+- Be instantly understandable
+- Not look childish
+- Not use colorful emoji style
+- Use consistent premium outline icon style
+
+2. DRAFT RESTORED MESSAGE
+
+The current “Draft restored” banner is too large and blocks the booking flow.
+
+Remove the large blocking banner completely.
+
+Replace it with a small non-blocking toast only.
+
+Toast behavior:
+
+- Small
+- Premium Tron style
+- No layout shift
+- Does not cover title or cards
+- Auto-hide after 2 seconds
+- Text only: “Draft restored”
+- No paragraph description
+- No large Discard button
+
+If user enters wizard with ?fresh=1:
+Do not show draft restored message at all.
+
+Important:
+The booking wizard must feel fast, clean, premium, and uninterrupted.
+
+3. VERIFY
+
+After changes:
+
+- Run TypeScript check
+- Confirm no booking flow regression
+- Confirm all 5 location cards still appear
+- Confirm Online Coaching WhatsApp still works
+- Confirm Building/Hotel/Outdoor forms still work
+- Confirm draft message no longer blocks the UI
+
+No other changes.
