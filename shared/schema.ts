@@ -1675,6 +1675,20 @@ export const adjustPackageSessionsSchema = z.object({
 });
 export type AdjustPackageSessionsInput = z.infer<typeof adjustPackageSessionsSchema>;
 
+export const addBonusSessionsSchema = z.object({
+  bonusSessions: z.number().int().min(1).max(100),
+  reason: z.string().min(1, "Please provide a reason").max(500),
+  // Optional expiry extension applied at the same time as the bonus grant.
+  expiryExtension: z
+    .discriminatedUnion("type", [
+      z.object({ type: z.literal("none") }),
+      z.object({ type: z.literal("days"), days: z.number().int().min(1).max(730) }),
+      z.object({ type: z.literal("date"), date: z.string().min(1) }),
+    ])
+    .optional(),
+});
+export type AddBonusSessionsInput = z.infer<typeof addBonusSessionsSchema>;
+
 export const approvePackageSchema = z.object({
   approved: z.boolean(),
   note: z.string().max(500).nullable().optional(),

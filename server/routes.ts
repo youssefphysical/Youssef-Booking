@@ -70,6 +70,7 @@ import {
   addPackagePaymentSchema,
   convertTrialPackageSchema,
   adjustPackageSessionsSchema,
+  addBonusSessionsSchema,
   expirationToDays,
   approvePackageSchema,
   evaluateBookingEligibility,
@@ -4897,6 +4898,76 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       { userId: pkg.userId, totalSessions: pkg.totalSessions, usedSessions: pkg.usedSessions },
       { userId: pkg.userId, delta, totalSessions: updated?.totalSessions, usedSessions: updated?.usedSessions },
       reason ?? null,
+    );
+    res.json(updated);
+  });
+
+  // ============== ADD BONUS SESSIONS ==============
+  // Admin-only. Grants bonus credits that are explicitly tracked as
+  // bonus (not paid) sessions. Increments both bonusSessions and
+  // totalSessions so the client's remaining balance increases without
+  // touching paidSessions or price fields. Optionally extends expiry.
+  app.post("/api/admin/packages/:id/add-bonus", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    const parsed = addBonusSessionsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid input" });
+    }
+    const pkg = await storage.getPackage(id);
+    if (!pkg) return res.status(404).json({ message: "Package not found" });
+    const me = req.user as User;
+    const { bonusSessions, reason, expiryExtension } = parsed.data;
+
+    // Compute optional expiry update.
+    let newExpiryDate: string | undefined;
+    if (expiryExtension && expiryExtension.type !== "none") {
+      if (expiryExtension.type === "date") {
+        newExpiryDate = expiryExtension.date;
+      } else {
+        const base = pkg.expiryDate ? new Date(pkg.expiryDate as any) : new Date();
+        const next = new Date(base);
+        next.setDate(next.getDate() + expiryExtension.days);
+        newExpiryDate = next.toISOString().slice(0, 10);
+      }
+    }
+
+    const updatePayload: any = {
+      bonusSessions: (pkg.bonusSessions ?? 0) + bonusSessions,
+      totalSessions: pkg.totalSessions + bonusSessions,
+    };
+    if (newExpiryDate) updatePayload.expiryDate = newExpiryDate;
+
+    const updated = await storage.updatePackage(id, updatePayload);
+
+    try {
+      await storage.createPackageSessionHistory({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        action: "bonus_added",
+        sessionsDelta: bonusSessions,
+        performedByUserId: me.id,
+        reason,
+      } as any);
+      if (newExpiryDate) {
+        await storage.createPackageSessionHistory({
+          packageId: pkg.id,
+          userId: pkg.userId,
+          action: "package_extended",
+          sessionsDelta: 0,
+          performedByUserId: me.id,
+          reason: `Expiry extended to ${newExpiryDate} (with bonus grant)`,
+        } as any);
+      }
+    } catch {/* ignore */}
+
+    await audit(
+      req,
+      "package.bonus_added",
+      "package",
+      pkg.id,
+      { userId: pkg.userId, bonusSessions: pkg.bonusSessions, totalSessions: pkg.totalSessions },
+      { userId: pkg.userId, bonusSessions: updatePayload.bonusSessions, totalSessions: updatePayload.totalSessions, newExpiryDate },
+      reason,
     );
     res.json(updated);
   });

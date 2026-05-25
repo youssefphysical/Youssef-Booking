@@ -12,17 +12,17 @@ import {
   Eye,
   X,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 
 /**
- * Task #57 — floating admin Quick Actions panel.
+ * Floating admin Quick Actions panel.
  * Anchored bottom-right on every client detail page; collapses to a
- * single round Zap button until expanded. Each action funnels through
- * the existing admin REST endpoints (which now also write to the
- * admin audit log via the `audit()` seam in server/routes.ts).
+ * single round Zap button until expanded.
  *
  * Actions:
  *  • Approve package         POST /api/admin/packages/:id/approve
+ *  • Add bonus sessions      POST /api/admin/packages/:id/add-bonus
  *  • Add session             POST /api/admin/packages/:id/sessions-adjust
  *  • Extend expiry           POST /api/admin/packages/:id/extend
  *  • Send notification       POST /api/admin/clients/:id/notify
@@ -40,10 +40,28 @@ export function QuickActionsPanel({
 }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [modal, setModal] = useState<null | "add_session" | "extend" | "notify" | "note">(null);
+  const [modal, setModal] = useState<null | "add_bonus" | "add_session" | "extend" | "notify" | "note">(null);
   const [draft, setDraft] = useState<string>("");
   const [days, setDays] = useState<number>(7);
   const [sessions, setSessions] = useState<number>(1);
+
+  // Bonus sessions state
+  const [bonusCount, setBonusCount] = useState<number>(1);
+  const [bonusReason, setBonusReason] = useState<string>("Promotion bonus");
+  const [bonusReasonCustom, setBonusReasonCustom] = useState<string>("");
+  const [bonusExpiryType, setBonusExpiryType] = useState<"none" | "days" | "date">("none");
+  const [bonusExpiryDays, setBonusExpiryDays] = useState<number>(7);
+  const [bonusExpiryDate, setBonusExpiryDate] = useState<string>("");
+
+  const BONUS_REASON_PRESETS = [
+    "Promotion bonus",
+    "Renewal bonus",
+    "Compensation",
+    "Manual adjustment",
+    "Custom…",
+  ];
+  const effectiveBonusReason =
+    bonusReason === "Custom…" ? bonusReasonCustom : bonusReason;
 
   const invalidateClient = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -61,6 +79,38 @@ export function QuickActionsPanel({
     onSuccess: () => {
       toast({ title: "Package approved" });
       invalidateClient();
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
+
+  const addBonus = useMutation({
+    mutationFn: async () => {
+      if (!packageId) throw new Error("No active package");
+      const expiryExtension =
+        bonusExpiryType === "none"
+          ? { type: "none" as const }
+          : bonusExpiryType === "days"
+            ? { type: "days" as const, days: bonusExpiryDays }
+            : { type: "date" as const, date: bonusExpiryDate };
+      await apiRequest("POST", `/api/admin/packages/${packageId}/add-bonus`, {
+        bonusSessions: bonusCount,
+        reason: effectiveBonusReason,
+        expiryExtension,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: `+${bonusCount} bonus session${bonusCount > 1 ? "s" : ""} added`,
+        description: effectiveBonusReason,
+      });
+      invalidateClient();
+      setModal(null);
+      setBonusCount(1);
+      setBonusReason("Promotion bonus");
+      setBonusReasonCustom("");
+      setBonusExpiryType("none");
+      setBonusExpiryDays(7);
+      setBonusExpiryDate("");
     },
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
@@ -160,6 +210,13 @@ export function QuickActionsPanel({
               testId="qa-approve"
             />
             <ActionRow
+              icon={<Sparkles size={14} className="text-emerald-400" />}
+              label="Add bonus sessions"
+              onClick={() => { setModal("add_bonus"); setOpen(false); }}
+              disabled={!packageId}
+              testId="qa-add-bonus"
+            />
+            <ActionRow
               icon={<Plus size={14} />}
               label="Add session"
               onClick={() => { setModal("add_session"); setOpen(false); }}
@@ -206,6 +263,110 @@ export function QuickActionsPanel({
 
       {modal && (
         <Modal title={MODAL_TITLES[modal]} onClose={() => setModal(null)}>
+          {modal === "add_bonus" && (
+            <>
+              <p className="text-[11px] text-muted-foreground mb-3">
+                Bonus sessions are added on top of the client's existing balance and clearly labeled as bonus in their history.
+              </p>
+
+              <NumberField
+                label="Number of bonus sessions"
+                value={bonusCount}
+                setValue={setBonusCount}
+                min={1}
+                max={100}
+                testId="input-bonus-count"
+              />
+
+              <label className="block mb-3">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Reason</span>
+                <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+                  {BONUS_REASON_PRESETS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setBonusReason(p)}
+                      data-testid={`button-bonus-reason-${p.toLowerCase().replace(/\W+/g, "-")}`}
+                      className={`h-8 rounded-lg border text-[11px] px-2 transition-colors ${
+                        bonusReason === p
+                          ? "border-emerald-400/60 bg-emerald-400/10 text-emerald-300"
+                          : "border-white/10 bg-white/[0.03] text-foreground/80 hover:border-white/20"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {bonusReason === "Custom…" && (
+                  <input
+                    type="text"
+                    value={bonusReasonCustom}
+                    onChange={(e) => setBonusReasonCustom(e.target.value)}
+                    placeholder="Describe the reason…"
+                    data-testid="input-bonus-reason-custom"
+                    className="mt-2 w-full h-9 rounded-lg bg-white/[0.04] border border-white/10 px-3 text-sm focus:outline-none focus:border-primary/50"
+                  />
+                )}
+              </label>
+
+              <label className="block mb-3">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Expiry extension</span>
+                <div className="flex flex-col gap-1.5 mt-1.5">
+                  {(["none", "days", "date"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setBonusExpiryType(t)}
+                      data-testid={`button-expiry-type-${t}`}
+                      className={`h-8 rounded-lg border text-[11px] px-3 text-left transition-colors ${
+                        bonusExpiryType === t
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-white/10 bg-white/[0.03] text-foreground/80 hover:border-white/20"
+                      }`}
+                    >
+                      {t === "none" && "No extension"}
+                      {t === "days" && "Extend by number of days"}
+                      {t === "date" && "Extend to specific date"}
+                    </button>
+                  ))}
+                </div>
+                {bonusExpiryType === "days" && (
+                  <div className="mt-2">
+                    <NumberField
+                      label="Days to add"
+                      value={bonusExpiryDays}
+                      setValue={setBonusExpiryDays}
+                      min={1}
+                      max={730}
+                      testId="input-bonus-expiry-days"
+                    />
+                  </div>
+                )}
+                {bonusExpiryType === "date" && (
+                  <input
+                    type="date"
+                    value={bonusExpiryDate}
+                    onChange={(e) => setBonusExpiryDate(e.target.value)}
+                    data-testid="input-bonus-expiry-date"
+                    className="mt-2 w-full h-9 rounded-lg bg-white/[0.04] border border-white/10 px-3 text-sm focus:outline-none focus:border-primary/50"
+                  />
+                )}
+              </label>
+
+              <ModalActions
+                busy={addBonus.isPending}
+                onConfirm={() => addBonus.mutate()}
+                onCancel={() => setModal(null)}
+                confirmLabel={`Add ${bonusCount} bonus session${bonusCount > 1 ? "s" : ""}`}
+                disabled={
+                  bonusCount < 1 ||
+                  !effectiveBonusReason.trim() ||
+                  (bonusExpiryType === "date" && !bonusExpiryDate)
+                }
+                accent="emerald"
+              />
+            </>
+          )}
           {modal === "add_session" && (
             <>
               <NumberField label="Sessions to add" value={sessions} setValue={setSessions} min={1} max={50} testId="input-add-sessions" />
@@ -263,6 +424,7 @@ export function QuickActionsPanel({
 }
 
 const MODAL_TITLES: Record<string, string> = {
+  add_bonus: "Add Bonus Sessions",
   add_session: "Add sessions",
   extend: "Extend expiry",
   notify: "Send notification",
@@ -302,7 +464,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0a0f17] p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0a0f17] p-5 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         data-testid="quick-action-modal"
       >
@@ -369,8 +531,11 @@ function TextField({
 }
 
 function ModalActions({
-  busy, onConfirm, onCancel, confirmLabel, disabled,
-}: { busy?: boolean; onConfirm: () => void; onCancel: () => void; confirmLabel: string; disabled?: boolean }) {
+  busy, onConfirm, onCancel, confirmLabel, disabled, accent,
+}: { busy?: boolean; onConfirm: () => void; onCancel: () => void; confirmLabel: string; disabled?: boolean; accent?: "emerald" }) {
+  const confirmCls = accent === "emerald"
+    ? "bg-emerald-500 text-white hover:bg-emerald-400"
+    : "bg-primary text-black hover:bg-primary/90";
   return (
     <div className="flex items-center justify-end gap-2 mt-2">
       <button
@@ -386,7 +551,7 @@ function ModalActions({
         onClick={onConfirm}
         disabled={busy || disabled}
         data-testid="button-modal-confirm"
-        className="h-9 px-4 rounded-lg text-[12.5px] font-semibold bg-primary text-black hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+        className={`h-9 px-4 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 ${confirmCls}`}
       >
         {busy && <Loader2 size={14} className="animate-spin" />}
         {confirmLabel}
