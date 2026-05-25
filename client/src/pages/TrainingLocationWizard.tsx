@@ -70,6 +70,15 @@ export default function TrainingLocationWizard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState<1 | 2>(1);
+
+  // 300ms deadline — after this the full-screen loader is never shown,
+  // even if auth is still in-flight. Cards appear immediately; the
+  // redirect effect fires once data settles in the background.
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setAuthTimedOut(true), 300);
+    return () => clearTimeout(t);
+  }, []);
   const [branch, setBranch] = useState<Branch>(null);
   const [fzPath, setFzPath] = useState<FzPath>(null);
 
@@ -258,30 +267,22 @@ export default function TrainingLocationWizard() {
   const hasPendingVerif = (pkgs as any[]).some((p) => p.status === "pending_verification");
   const hasActivePackage = (pkgs as any[]).some((p) => p.status === "active");
 
-  // Hydration gate — true while ANY of auth / locations / packages is
-  // still resolving. Until this flips false the wizard renders a
-  // full-page loader (NOT the branch picker), so the "Where do you
-  // train?" step never flashes for users who already have a pending
-  // verification or an active package. This is what eliminates the
-  // refresh-flicker on every branch (FZ, Building, Home, Hotel, Other
-  // gym) — the gate is universal.
-  const isHydrating =
-    isLoadingAuth ||
-    (!!user && (isLoadingLocations || isLoadingPackages || !locationsFetched || !packagesFetched));
+  // Hydration gate — only blocks on auth, and only within the 300ms
+  // deadline window. Packages/locations load in the background without
+  // blocking the UI — the redirect effect below fires once they settle.
+  const isHydrating = isLoadingAuth && !authTimedOut;
 
-  // Once hydration settles, push the user to the right destination
-  // BEFORE we render any wizard UI. Users who already have a pending
-  // activation request belong on /dashboard (the "Package awaiting
-  // verification" banner lives there); users with an active package
-  // belong on /book. The effect runs after queries resolve, so the
-  // gate above keeps the loader on-screen during the navigation tick.
+  // Once packages/locations resolve, redirect users who don't need the
+  // wizard (pending verification → /dashboard, active package → /book).
+  // Runs in the background — never blocks the card render.
   useEffect(() => {
-    if (isHydrating) return;
+    if (isLoadingAuth || !user) return;
+    if (isLoadingLocations || isLoadingPackages) return;
     if (hasPendingVerif || hasActivePackage) {
       navigate(hasActivePackage && !hasPendingVerif ? "/book" : "/dashboard", { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrating, hasPendingVerif, hasActivePackage]);
+  }, [isLoadingAuth, user, isLoadingLocations, isLoadingPackages, hasPendingVerif, hasActivePackage]);
 
   const saveLocation = useMutation({
     mutationFn: async (payload: any) => {
@@ -805,13 +806,10 @@ export default function TrainingLocationWizard() {
     }
   }
 
-  // Render the premium loader while hydrating OR while the
-  // post-hydration redirect (to /dashboard or /book) is in flight.
-  // This is the SINGLE source that prevents the wizard from flashing
-  // on refresh — it covers Fitness Zone, Building, Home, Hotel, and
-  // Other Gym branches uniformly because it gates the entire return
-  // tree, not any per-branch sub-render.
-  if (isHydrating || hasPendingVerif || hasActivePackage) {
+  // Full-screen loader only while auth is unresolved AND within the
+  // 300ms deadline. After that the cards are shown immediately;
+  // packages/locations redirect fires via useEffect in the background.
+  if (isHydrating) {
     return (
       <div
         className="min-h-screen w-full flex items-center justify-center px-6"
