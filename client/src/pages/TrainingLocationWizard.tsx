@@ -5,7 +5,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { enqueue as enqueueOffline, isOfflineError } from "@/lib/offlineQueue";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Footprints, BedDouble, Layers, Car, DoorOpen, Key, Navigation } from "lucide-react";
+import { Loader2, MapPin, Home, Dumbbell, Building2, ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, Wifi, Footprints, BedDouble, ArrowUpDown, Car, DoorOpen, KeyRound, Navigation } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/i18n";
 import { Button } from "@/components/ui/button";
@@ -867,7 +867,7 @@ export default function TrainingLocationWizard() {
                       ? t("wizard.online.stepTitle", "Online coaching setup")
                       : t("wizard.otherLocation.stepTitle", "Tell us about your location")}
         </h1>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-[13px] text-muted-foreground/70 mt-2 mb-6">
           {step === 1
             ? t("wizard.subtitle", "Pick the option that matches your training setup. You can change it later.")
             : t("wizard.subtitle2", "Saved for future bookings.")}
@@ -1013,7 +1013,7 @@ export default function TrainingLocationWizard() {
         )}
 
         {step === 2 && branch === "building" && (
-          <div className="space-y-4" data-testid="form-building-location">
+          <div className="space-y-5" data-testid="form-building-location">
             <Field
               label={t("wizard.building.maps", "Google Maps Location Link")}
               value={mapsLink}
@@ -1022,14 +1022,14 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.building.mapsPh", "Paste the building location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Copy Google Maps link")}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
               label={t("wizard.building.community", "Building Name")}
               value={homeBuilding}
               onChange={setHomeBuilding}
               testId="input-building-building"
-              placeholder={t("wizard.building.communityPh", "Example: Marina Gate, Downtown Views, JVC Building")}
+              placeholder={t("wizard.building.communityPh", "Marina Gate Tower, Downtown Views, JVC Residence")}
               icon={<Building2 size={11} />}
             />
             <Field
@@ -1037,16 +1037,16 @@ export default function TrainingLocationWizard() {
               value={gymFloor}
               onChange={setGymFloor}
               testId="input-building-floor"
-              placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
-              icon={<Layers size={11} />}
+              placeholder={t("wizard.building.floorPh", "3rd Floor, G Floor, Rooftop Gym, Level 2")}
+              icon={<ArrowUpDown size={11} />}
             />
             <FieldArea
               label={t("wizard.building.access", "Parking / Access Notes (optional)")}
               value={homeParking}
               onChange={setHomeParking}
               testId="input-building-parking"
-              placeholder={t("wizard.building.accessPh", "Example: Visitor parking, reception access, gate code")}
-              icon={<Car size={11} />}
+              placeholder={t("wizard.building.accessPh", "Visitor parking, Reception access, Gate code")}
+              icon={<KeyRound size={11} />}
             />
           </div>
         )}
@@ -1079,7 +1079,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.hotel.mapsPh", "Paste the hotel location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Copy Google Maps link")}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
               label={t("wizard.hotel.name", "Hotel Name")}
@@ -1094,8 +1094,8 @@ export default function TrainingLocationWizard() {
               value={gymFloor}
               onChange={setGymFloor}
               testId="input-hotel-floor"
-              placeholder={t("wizard.building.floorPh", "Example: 3rd floor, G floor, rooftop")}
-              icon={<Layers size={11} />}
+              placeholder={t("wizard.building.floorPh", "3rd Floor, G Floor, Rooftop Gym, Level 2")}
+              icon={<ArrowUpDown size={11} />}
             />
             <Field
               label={t("wizard.hotel.room", "Room Number (optional)")}
@@ -1134,7 +1134,7 @@ export default function TrainingLocationWizard() {
               placeholder={t("wizard.other.mapsPh", "Paste the location link here")}
               required
               icon={<MapPin size={11} />}
-              hint={t("wizard.mapsHint", "Copy Google Maps link")}
+              hint={t("wizard.mapsHint", "Open Google Maps → Share → Copy link")}
             />
             <Field
               label={t("wizard.otherLocation.name", "Training Place Name")}
@@ -1165,15 +1165,15 @@ export default function TrainingLocationWizard() {
         )}
 
         {step === 2 && (
-          <div className="flex gap-2 pt-6">
+          <div className="flex gap-3 pt-6">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 setStep(1);
                 setFzPath(null);
               }}
-              className="flex-1 h-12 rounded-xl"
+              className="h-12 px-5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-150"
               data-testid="button-wizard-back"
             >
               <ArrowLeft size={14} className="mr-2" /> {t("common.back", "Back")}
@@ -1186,7 +1186,7 @@ export default function TrainingLocationWizard() {
                 submitVerification.isPending ||
                 (branch === "fitness_zone" && !hasPendingVerif && !fzPath)
               }
-              className="flex-1 h-12 rounded-xl font-bold"
+              className="flex-1 h-12 rounded-xl font-bold transition-all duration-150 hover:shadow-[0_0_18px_rgba(94,231,255,0.35)] active:scale-[0.97]"
               data-testid="button-wizard-finish"
             >
               {(saveLocation.isPending || submitVerification.isPending) && (
@@ -1331,7 +1331,7 @@ function Field({ label, value, onChange, testId, required, placeholder, icon, hi
         )}
         {label}{required ? " *" : ""}
       </Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-11 text-sm placeholder:text-muted-foreground/50" data-testid={testId} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="bg-white/5 border-white/10 h-[50px] text-sm placeholder:text-muted-foreground/60 transition-all duration-150 focus:border-primary/40 focus:ring-1 focus:ring-primary/20" data-testid={testId} />
       {hint && (
         <p className="mt-1.5 flex items-center gap-1 text-[11px] text-primary/50">
           <MapPin size={9} className="shrink-0" />
@@ -1354,7 +1354,7 @@ function FieldArea({ label, value, onChange, testId, placeholder, icon }: {
         )}
         {label}
       </Label>
-      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 text-sm placeholder:text-muted-foreground/50" data-testid={testId} />
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={2} placeholder={placeholder} className="bg-white/5 border-white/10 text-sm placeholder:text-muted-foreground/60 transition-all duration-150 focus:border-primary/40 focus:ring-1 focus:ring-primary/20" data-testid={testId} />
     </div>
   );
 }

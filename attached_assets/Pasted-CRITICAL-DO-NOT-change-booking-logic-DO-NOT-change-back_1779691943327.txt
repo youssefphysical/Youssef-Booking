@@ -1,0 +1,321 @@
+CRITICAL:
+
+DO NOT change booking logic.
+DO NOT change backend.
+DO NOT change wizard flow.
+DO NOT change database.
+DO NOT change WhatsApp logic.
+DO NOT change package logic.
+DO NOT change functionality.
+
+ONLY improve UX + visual clarity + premium premium premium feeling.
+
+Theme remains:
+TRON LEGACY luxury premium fitness design.
+Dark black background + premium cyan glow.
+Minimalistic.
+Luxury Dubai PT brand.
+Mobile first.
+
+=========================
+STEP 1 — BUILDING GYM FORM
+=========================
+
+Current page is good but needs premium usability improvements.
+
+1) HEADER
+
+Current:
+
+"Tell us about your building gym"
+
+Keep.
+
+Replace subtitle:
+
+Current:
+"We use this for every booking so you don't have to re-enter it."
+
+Replace with:
+
+"Saved for future bookings."
+
+Smaller.
+Cleaner.
+Premium.
+
+Spacing:
+
+Header → subtitle spacing +6px.
+
+Subtitle opacity:
+70%.
+
+=========================
+2) FIELD LABEL ICON SYSTEM
+=========================
+
+Current icons are inconsistent.
+
+Need stronger premium icon language.
+
+Google Maps Link:
+
+Use:
+
+📍 premium location icon
+
+Field:
+
+Google Maps Location Link
+
+Helper text UNDER field:
+
+Current:
+
+Copy Google Maps Link
+
+Replace:
+
+📍 Open Google Maps → Share → Copy link
+
+Very small.
+Opacity 55%.
+Premium Tron cyan.
+
+No clutter.
+
+Building Name:
+
+Current icon feels generic.
+
+Replace icon:
+
+Modern premium building tower icon.
+
+Field label:
+
+🏢 Building Name
+
+Placeholder:
+
+Marina Gate Tower
+Downtown Views
+JVC Residence
+
+Gym Floor:
+
+Current layer icon is confusing.
+
+REMOVE current icon.
+
+Replace with:
+
+🛗 Elevator/Floor icon
+
+Reason:
+
+Client immediately understands floor level.
+
+Placeholder:
+
+3rd Floor
+G Floor
+Rooftop Gym
+Level 2
+
+Parking / Access:
+
+Current car icon not enough.
+
+Need combined access feeling.
+
+Replace icon:
+
+🚗 + access style icon
+
+Field:
+
+Parking / Access Notes
+
+Placeholder:
+
+Visitor parking
+Reception access
+Gate code
+
+Optional field opacity lower.
+
+=========================
+3) INPUT FIELD PREMIUM UX
+=========================
+
+Increase field height:
+
++6px
+
+Current inputs too compressed.
+
+Border glow:
+
+Very subtle Tron cyan.
+
+Focused state:
+
+Soft cyan glow.
+
+NOT aggressive.
+
+Placeholder opacity:
+
+Current too faded.
+
+Increase readability.
+
+Field label font:
+
++10%
+
+Field spacing:
+
+Increase vertical spacing.
+
+Current layout slightly cramped.
+
+Goal:
+
+Luxury.
+Expensive.
+Breathing space.
+
+=========================
+4) VISUAL HIERARCHY
+=========================
+
+Google Maps field:
+
+MOST IMPORTANT.
+
+Make visually strongest.
+
+Order:
+
+1 Maps link
+
+2 Building Name
+
+3 Gym Floor
+
+4 Parking Notes
+
+Maps section should visually feel:
+
+"Start here"
+
+=========================
+5) BUTTON IMPROVEMENT
+=========================
+
+Save Location button:
+
+Keep same style.
+
+Improve:
+
+Hover glow.
+
+Pressed state.
+
+Premium animation.
+
+Back button:
+
+Reduce visual dominance.
+
+Primary CTA remains:
+
+Save Location.
+
+=========================
+6) MICRO INTERACTIONS
+=========================
+
+Input focus:
+
+Subtle Tron cyan animation.
+
+Button press:
+
+Micro scale effect.
+
+Card transition:
+
+Smooth.
+
+150ms–220ms.
+
+Luxury.
+
+=========================
+7) MOBILE PREMIUM OPTIMIZATION
+=========================
+
+Everything optimized mobile first.
+
+No field crowding.
+
+No visual confusion.
+
+No icon inconsistency.
+
+Client must instantly understand:
+
+Where to paste map.
+
+Where building name goes.
+
+Where floor goes.
+
+Where parking notes go.
+
+Goal:
+
+Apple luxury simplicity.
+
+Dubai premium PT brand.
+
+TRON LEGACY aesthetics.
+
+=========================
+8) VERY IMPORTANT
+=========================
+
+DO NOT TOUCH:
+
+Booking flow.
+
+Wizard flow.
+
+Online coaching logic.
+
+WhatsApp logic.
+
+Admin panel.
+
+Database.
+
+Session system.
+
+Packages.
+
+ONLY PREMIUM UX IMPROVEMENTS.
+
+Verify:
+
+npm run build
+
+No errors.
+
+No regressions.
+
+Deliver production ready.
