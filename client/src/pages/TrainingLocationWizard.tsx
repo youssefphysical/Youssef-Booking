@@ -71,14 +71,6 @@ export default function TrainingLocationWizard() {
   const { toast } = useToast();
   const [step, setStep] = useState<1 | 2>(1);
 
-  // 300ms deadline — after this the full-screen loader is never shown,
-  // even if auth is still in-flight. Cards appear immediately; the
-  // redirect effect fires once data settles in the background.
-  const [authTimedOut, setAuthTimedOut] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setAuthTimedOut(true), 300);
-    return () => clearTimeout(t);
-  }, []);
   const [branch, setBranch] = useState<Branch>(null);
   const [fzPath, setFzPath] = useState<FzPath>(null);
 
@@ -219,10 +211,6 @@ export default function TrainingLocationWizard() {
     if (!wizardDraft.hasDraft || !wizardDraft.draft) return;
     draftHandledRef.current = true;
     const d = wizardDraft.draft;
-    toast({
-      title: t("wizard.draftRestoredTitle", "Draft restored"),
-      duration: 2000,
-    });
     if (d.step) setStep(d.step);
     if (d.branch) setBranch(d.branch);
     if (d.fzPath) setFzPath(d.fzPath);
@@ -267,14 +255,8 @@ export default function TrainingLocationWizard() {
   const hasPendingVerif = (pkgs as any[]).some((p) => p.status === "pending_verification");
   const hasActivePackage = (pkgs as any[]).some((p) => p.status === "active");
 
-  // Hydration gate — only blocks on auth, and only within the 300ms
-  // deadline window. Packages/locations load in the background without
-  // blocking the UI — the redirect effect below fires once they settle.
-  const isHydrating = isLoadingAuth && !authTimedOut;
-
-  // Once packages/locations resolve, redirect users who don't need the
-  // wizard (pending verification → /dashboard, active package → /book).
-  // Runs in the background — never blocks the card render.
+  // Background redirect: once packages/locations settle, send users who
+  // already have an active package or pending verif to the right page.
   useEffect(() => {
     if (isLoadingAuth || !user) return;
     if (isLoadingLocations || isLoadingPackages) return;
@@ -806,25 +788,6 @@ export default function TrainingLocationWizard() {
     }
   }
 
-  // Full-screen loader only while auth is unresolved AND within the
-  // 300ms deadline. After that the cards are shown immediately;
-  // packages/locations redirect fires via useEffect in the background.
-  if (isHydrating) {
-    return (
-      <div
-        className="min-h-screen w-full flex items-center justify-center px-6"
-        data-testid="loader-wizard-hydrating"
-      >
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Loader2 size={28} className="text-primary animate-spin" />
-          <p className="text-sm text-muted-foreground">
-            {t("wizard.loading", "Loading your fitness experience…")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (!user) return null;
 
   return (
@@ -870,6 +833,21 @@ export default function TrainingLocationWizard() {
                     window.open(url, "_blank", "noopener,noreferrer");
                     return;
                   }
+                  if (c.key === "fitness_zone") {
+                    const locationPayload = {
+                      kind: "fitness_zone" as const,
+                      label: "Fitness Zone",
+                      isDefault: locations.length === 0,
+                    };
+                    if (navigator.onLine !== false) {
+                      saveLocation.mutate(locationPayload);
+                    } else {
+                      enqueueOffline("wizard_location", "/api/training-locations", locationPayload);
+                    }
+                    wizardDraft.clear();
+                    navigate(hasActivePackage ? "/book" : "/book?type=free_trial");
+                    return;
+                  }
                   setBranch(c.key);
                   setStep(2);
                 }}
@@ -890,109 +868,6 @@ export default function TrainingLocationWizard() {
           </div>
         )}
 
-        {step === 2 && branch === "fitness_zone" && (
-          <div className="space-y-4">
-            {hasPendingVerif ? (
-              <div className="rounded-2xl border border-cyan-500/40 bg-cyan-500/10 p-4 text-sm" data-testid="text-fz-already-pending">
-                {t(
-                  "wizard.fz.alreadyPending",
-                  "You already have a verification request in review. We'll notify you once Youssef approves it.",
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 gap-2" data-testid="grid-fz-paths">
-                  <button
-                    type="button"
-                    onClick={() => setFzPath("existing")}
-                    data-testid="button-fz-existing"
-                    className={`text-left rounded-xl border p-3 min-h-[56px] transition-colors ${
-                      fzPath === "existing" ? "border-primary bg-primary/10" : "border-white/10 bg-white/[0.03]"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">
-                      {t("wizard.fz.pathExisting", "I'm already a Fitness Zone PT client")}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {t("wizard.fz.pathExistingHint", "Send your receipt — Youssef will activate your package.")}
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFzPath("trial")}
-                    data-testid="button-fz-trial"
-                    className={`text-left rounded-xl border p-3 min-h-[56px] transition-colors ${
-                      fzPath === "trial" ? "border-primary bg-primary/10" : "border-white/10 bg-white/[0.03]"
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{t("wizard.fz.pathTrial", "I'm brand new")}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {t("wizard.fz.pathTrialHint", "Book a free trial session with Youssef.")}
-                    </p>
-                  </button>
-                </div>
-
-                {fzPath === "existing" && (
-                  <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4" data-testid="form-fz-verification">
-                    <div>
-                      <Label className="text-xs">{t("wizard.fz.packageType", "Which package did you buy?")}</Label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                        {([
-                          ["ten", "10"],
-                          ["twenty", "20"],
-                          ["twentyfive", "25"],
-                          ["duo30", "Duo 30"],
-                          ["not_sure", t("wizard.fz.notSure", "Not sure")],
-                        ] as const).map(([val, label]) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => setReqType(val as any)}
-                            data-testid={`button-req-type-${val}`}
-                            className={`rounded-lg border px-2 py-2 text-xs min-h-[44px] ${
-                              reqType === val ? "border-primary bg-primary/10 text-primary" : "border-white/10 bg-white/[0.03]"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-cyan-500/25 bg-cyan-500/[0.04] p-3 text-xs text-cyan-100/90 flex items-start gap-2">
-                      <ShieldCheck size={14} className="text-cyan-300 mt-0.5 shrink-0" />
-                      <span>
-                        {t(
-                          "wizard.fz.noReceiptInfo",
-                          "The Youssef Elite team will review your package and unlock your booking access once activation is complete.",
-                        )}
-                      </span>
-                    </div>
-                    <div>
-                      <Label className="text-xs">{t("wizard.fz.notes", "Notes for Youssef (optional)")}</Label>
-                      <Textarea
-                        value={verifNotes}
-                        onChange={(e) => setVerifNotes(e.target.value)}
-                        rows={2}
-                        className="bg-white/5 border-white/10 mt-1"
-                        data-testid="input-verif-notes"
-                      />
-                    </div>
-                    <NextStepsTimeline />
-                  </div>
-                )}
-
-                {fzPath === "trial" && (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm" data-testid="text-fz-trial-info">
-                    {t(
-                      "wizard.fz.trialInfo",
-                      "Great — we'll take you to the booking page so you can pick a free trial slot.",
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
 
         {step === 2 && branch === "building" && (
           <div className="space-y-5" data-testid="form-building-location">
