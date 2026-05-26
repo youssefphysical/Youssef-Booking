@@ -11,7 +11,7 @@ export default function FaqPage() {
   const { t, lang } = useTranslation();
 
   useEffect(() => {
-    document.title = `${t("faq.pageTitle")} — Youssef Ahmed`;
+    document.title = `${t("faq.pageTitle")} — Youssef Elite`;
   }, [t]);
 
   return (

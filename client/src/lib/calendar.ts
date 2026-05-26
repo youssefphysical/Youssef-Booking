@@ -70,7 +70,7 @@ export function buildIcsString(ev: CalendarEvent): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Youssef Ahmed Fitness//Booking//EN",
+    "PRODID:-//Youssef Elite//Booking//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

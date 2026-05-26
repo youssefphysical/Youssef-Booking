@@ -27,6 +27,7 @@ import {
 } from "@/components/admin/AdminNavigation";
 import { useTranslation } from "@/i18n";
 import { useFeatureFlag } from "@/lib/featureFlags";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function Navigation() {
   const [location, navigate] = useLocation();
@@ -225,13 +226,10 @@ export function Navigation() {
       <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-16 flex items-center justify-between gap-2 sm:gap-3 overflow-x-clip">
         <Link
           href="/"
-          className="font-display font-bold text-base sm:text-lg min-w-0"
+          className="min-w-0 shrink-0"
           data-testid="link-brand"
         >
-          <span className="text-gradient-blue truncate block">
-            <span className="hidden sm:inline">{t("nav.brand")}</span>
-            <span className="sm:hidden">{t("brand.trainerName", "Youssef Ahmed")}</span>
-          </span>
+          <BrandLogo variant="navbar" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">

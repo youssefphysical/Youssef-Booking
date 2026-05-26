@@ -268,7 +268,7 @@ const sections = ordered
   .join("");
 
 const indexHtml =
-  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email Previews · Youssef Ahmed Training</title></head>`
+  `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email Previews · Youssef Elite</title></head>`
   + `<body style="margin:0;background:#050505;color:#e6edf3;font:14px/1.5 -apple-system,Segoe UI,sans-serif;padding:48px 24px;">`
   + `<div style="max-width:760px;margin:0 auto;">`
   + `<h1 style="font:700 28px/1.2 -apple-system;color:#fff;letter-spacing:-.01em;margin:0 0 8px;">Email Previews</h1>`

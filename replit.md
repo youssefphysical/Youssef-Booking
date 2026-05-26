@@ -1,6 +1,6 @@
-# Youssef Ahmed Personal Training Service
+# Youssef Elite
 
-Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Ahmed — client booking, progress photos, admin management. Installable PWA, RTL-ready, AED currency, Asia/Dubai timezone.
+Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Elite — client booking, progress photos, admin management. Installable PWA, RTL-ready, AED currency, Asia/Dubai timezone.
 
 ## Run & Operate
 

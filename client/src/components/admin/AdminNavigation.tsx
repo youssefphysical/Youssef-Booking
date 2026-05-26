@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { BrandLogo } from "@/components/BrandLogo";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
 // ============================================================
@@ -265,10 +266,8 @@ export function AdminSidebar({
       {/* Brand */}
       <div className="px-5 pt-6 pb-3">
         <Link href="/" className="block min-w-0" data-testid="link-home" onClick={onItemClick}>
-          <h1 className="text-lg font-bold font-display text-gradient-blue truncate leading-tight">
-            {t("brand.trainerName", "Youssef Ahmed")}
-          </h1>
-          <p className="text-[10px] text-muted-foreground/80 mt-1 tracking-[0.18em] uppercase leading-snug line-clamp-2">
+          <BrandLogo variant="sidebar" />
+          <p className="text-[10px] text-muted-foreground/80 mt-2 tracking-[0.18em] uppercase leading-snug line-clamp-2">
             {t("nav.adminTagline")}
           </p>
         </Link>

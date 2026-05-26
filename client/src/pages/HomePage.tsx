@@ -122,7 +122,7 @@ function ProfilePhoto({
   return (
     <img
       src={trimmed}
-      alt="Youssef Ahmed — Personal Training Service"
+      alt="Youssef Elite — Premium Personal Training Dubai"
       className="w-full h-full"
       style={{ objectFit: "cover", objectPosition: "center top" }}
       decoding="async"

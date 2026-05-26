@@ -350,7 +350,7 @@ export function HeroSlider() {
          background (radial accent + 4-stop dark navy gradient,
          applied on the homepage parent div) shows through any
          sub-pixel gap at the bottom edge. This eliminates the
-         visible bands between hero, Youssef Ahmed, and About
+         visible bands between hero, Youssef Elite, and About
          sections by ensuring all sections sit on the same
          continuous shell background. The v8.7.3 sub-pixel-gap
          insight is preserved — the gap is still invisible because
@@ -402,7 +402,7 @@ export function HeroSlider() {
           index.css and use logical properties so the side accent + brand
           plate auto-flip for RTL (Arabic / Persian / Urdu). */}
       <div className="hero-brand-plate" data-testid="hero-brand-plate" aria-hidden="true">
-        <span>{t("hero.signature.coachName", "COACH YOUSSEF AHMED")}</span>
+        <span>{t("hero.signature.coachName", "YOUSSEF ELITE")}</span>
         <span className="hero-brand-dot" />
         <span>{t("hero.signature.location", "DUBAI · UAE")}</span>
       </div>

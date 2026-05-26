@@ -34,7 +34,7 @@ type OpenAlert = {
 export default function AdminBusinessHealth() {
   useEffect(() => {
     const t = document.title;
-    document.title = "Business Health — Youssef Ahmed PT";
+    document.title = "Business Health — Youssef Elite";
     return () => {
       document.title = t;
     };
@@ -111,7 +111,7 @@ export default function AdminBusinessHealth() {
 
         <div className="hidden print:block mb-6">
           <h1 className="text-3xl font-bold print-text">Business Health</h1>
-          <p className="text-sm print-muted">{today} — Youssef Ahmed PT</p>
+          <p className="text-sm print-muted">{today} — Youssef Elite</p>
         </div>
 
         {analytics && (
@@ -228,7 +228,7 @@ export default function AdminBusinessHealth() {
         </Section>
 
         <p className="text-[10px] text-muted-foreground mt-8 print-muted text-center">
-          Generated {new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleString("en-GB", { timeZone: "UTC" })} — Youssef Ahmed Personal Training
+          Generated {new Date(Date.now() + 4 * 60 * 60 * 1000).toLocaleString("en-GB", { timeZone: "UTC" })} — Youssef Elite
         </p>
       </div>
     </div>

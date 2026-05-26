@@ -3614,7 +3614,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//Youssef Ahmed Fitness//Booking//EN",
+      "PRODID:-//Youssef Elite//Booking//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
       "BEGIN:VEVENT",
@@ -7888,7 +7888,7 @@ async function seedDatabase() {
       username: adminUsername,
       email: "admin@youssef-ahmed.fit",
       password: hashed,
-      fullName: "Youssef Ahmed",
+      fullName: "Youssef Elite",
       phone: "+971505394754",
       role: "admin",
       fitnessGoal: null,
@@ -7900,13 +7900,13 @@ async function seedDatabase() {
     const hashed = await hashPassword("change-this-password");
     await storage.updateUser(existing.id, {
       password: hashed,
-      fullName: existing.fullName === "Youssef Fitness" ? "Youssef Ahmed" : existing.fullName,
+      fullName: existing.fullName === "Youssef Fitness" || existing.fullName === "Youssef Ahmed" ? "Youssef Elite" : existing.fullName,
     } as any);
     console.log("Admin password reset to: change-this-password (RESEED_ADMIN=1)");
-  } else if (existing.fullName === "Youssef Fitness") {
+  } else if (existing.fullName === "Youssef Fitness" || existing.fullName === "Youssef Ahmed") {
     // Quietly correct the admin display name without touching the password.
     try {
-      await storage.updateUser(existing.id, { fullName: "Youssef Ahmed" } as any);
+      await storage.updateUser(existing.id, { fullName: "Youssef Elite" } as any);
     } catch {
       /* ignore */
     }
@@ -7936,7 +7936,7 @@ async function seedDatabase() {
 
   const s = await storage.getSettings();
   const cleanBio =
-    "Youssef Ahmed provides premium personal training services in Dubai, combining academic physical education, movement science, competitive sports experience, and structured coaching systems. His approach focuses on safe, personalized, and result-driven training for adults, beginners, fat-loss clients, muscle-gain clients, and kids & youth fitness.";
+    "Youssef Elite provides premium personal training services in Dubai, combining academic physical education, movement science, competitive sports experience, and structured coaching systems. His approach focuses on safe, personalized, and result-driven training for adults, beginners, fat-loss clients, muscle-gain clients, and kids & youth fitness.";
 
   // Only replace the bio when it's empty OR when it still matches one of the
   // known legacy auto-seeded prefixes. A startsWith check prevents clobbering

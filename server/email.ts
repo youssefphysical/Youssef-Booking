@@ -8,13 +8,13 @@
  *
  * Configure via env:
  *   RESEND_API_KEY            (required to actually send)
- *   EMAIL_FROM                (default: "Youssef Ahmed | Elite Coaching <welcome@youssefelite.com>")
+ *   EMAIL_FROM                (default: "Youssef Elite <welcome@youssefelite.com>")
  *   TRAINER_EMAIL             (default: "youssef.physical@gmail.com")
  */
 
 const TRAINER_EMAIL_DEFAULT = "youssef.physical@gmail.com";
 // Display name uses the elite-coaching brand identity — inboxes show
-// "Youssef Ahmed | Elite Coaching" for premium client perception. The
+// "Youssef Elite" for premium client perception. The
 // address half MUST live on a domain that is fully verified in Resend
 // (SPF + DKIM + DMARC). The current production sender lives on
 // youssefelite.com (verified 2026-05). Override via EMAIL_FROM env.

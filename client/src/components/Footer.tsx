@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { SiWhatsapp, SiInstagram } from "react-icons/si";
 import { useTranslation } from "@/i18n";
 import { dubaiTodayYMD } from "@shared/dates";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function Footer() {
   const { t } = useTranslation();
@@ -11,13 +12,13 @@ export function Footer() {
       <div className="absolute left-6 right-6 top-0 tron-beam opacity-70 pointer-events-none" aria-hidden="true" />
       <div className="max-w-6xl mx-auto px-5 flex flex-col items-center gap-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div className="text-center md:text-left">
-          <p className="font-display text-foreground/90 text-sm tracking-wide">
-            <span className="text-gradient-blue font-semibold whitespace-nowrap">{t("brand.trainerName", "Youssef Ahmed")}</span>
-            <span className="text-muted-foreground/60 mx-2">·</span>
+          <p className="font-display text-foreground/90 text-sm tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
+            <BrandLogo variant="footer" />
+            <span className="text-muted-foreground/60">·</span>
             {t("footer.tagline")}
           </p>
           <p className="text-[11px] text-muted-foreground/70 mt-1">
-            © {dubaiTodayYMD().slice(0,4)} Youssef Ahmed. {t("footer.rights")}
+            © {dubaiTodayYMD().slice(0,4)} Youssef Elite. {t("footer.rights")}
           </p>
         </div>
         <div className="flex flex-col items-center gap-4 md:items-end">

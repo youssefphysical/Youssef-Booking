@@ -1271,7 +1271,7 @@ function PackagesTab({ userId }: { userId: number }) {
         </p>
         <ul className="list-disc pl-4 space-y-0.5">
           <li>{t("dashboard.requestRule1", "Each session is one hour. Extra time must be agreed in advance and may add a fee.")}</li>
-          <li>{t("dashboard.requestRule2", "Renewals and extensions are confirmed manually by Youssef Ahmed after payment.")}</li>
+          <li>{t("dashboard.requestRule2", "Renewals and extensions are confirmed manually by Youssef Elite after payment.")}</li>
           <li>{t("dashboard.requestRule3", "All payments are final and non-refundable. Unused sessions expire on the package end date.")}</li>
         </ul>
       </div>
@@ -1317,7 +1317,7 @@ function RenewalRequestDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/renewal-requests"] });
       toast({
         title: t("dashboard.requestSubmittedTitle", "Request submitted"),
-        description: t("dashboard.requestSubmittedDesc", "Youssef Ahmed will confirm your request shortly. Tap WhatsApp to follow up."),
+        description: t("dashboard.requestSubmittedDesc", "Youssef Elite will confirm your request shortly. Tap WhatsApp to follow up."),
       });
       onOpenChange(false);
       setNote("");
@@ -1349,7 +1349,7 @@ function RenewalRequestDialog({
         <DialogHeader>
           <DialogTitle>{t("dashboard.requestRenewalTitle", "Request a renewal")}</DialogTitle>
           <DialogDescription>
-            {t("dashboard.requestRenewalDesc", "Pick a package and we'll let Youssef Ahmed know. He will confirm pricing and payment via WhatsApp.")}
+            {t("dashboard.requestRenewalDesc", "Pick a package and we'll let Youssef Elite know. He will confirm pricing and payment via WhatsApp.")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -1458,7 +1458,7 @@ function ExtensionRequestDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/extension-requests"] });
       toast({
         title: t("dashboard.requestSubmittedTitle", "Request submitted"),
-        description: t("dashboard.requestSubmittedDesc", "Youssef Ahmed will confirm your request shortly. Tap WhatsApp to follow up."),
+        description: t("dashboard.requestSubmittedDesc", "Youssef Elite will confirm your request shortly. Tap WhatsApp to follow up."),
       });
       onClose();
       const def = pkg ? PACKAGE_DEFINITIONS[pkg.type] : undefined;

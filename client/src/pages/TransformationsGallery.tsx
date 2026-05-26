@@ -413,7 +413,7 @@ export default function TransformationsGallery() {
   // SEO
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = `${t("section.transformations.title")} · Youssef Ahmed`;
+    document.title = `${t("section.transformations.title")} · Youssef Elite`;
     return () => {
       document.title = prevTitle;
     };

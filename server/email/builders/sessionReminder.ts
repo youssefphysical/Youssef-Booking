@@ -69,7 +69,7 @@ export function buildSessionReminderEmail(input: SessionReminderInput): Composed
     ? t(`See you at ${time12}. Hydrate, warm up, show up.`, `أراك في ${time12}. اشرب الماء، سخّن، استعد.`)
     : t(`Quick heads-up — your session with Coach Youssef is tomorrow.`, `تذكير سريع — جلستك مع المدرب يوسف غداً.`);
 
-  const trainer = trainerName || t("Youssef Ahmed", "يوسف أحمد");
+  const trainer = trainerName || t("Youssef Elite", "Youssef Elite");
   const duration = sessionDurationLabel || t("60 minutes", "٦٠ دقيقة");
   const focus = sessionFocus || t("Strength & conditioning", "قوة ولياقة");
   const pkgLabel = packageName || t("Standard 1-on-1", "خاص 1-إلى-1");

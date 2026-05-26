@@ -65,7 +65,7 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationInput): 
     `تم تأكيد جلستك مع المدرب يوسف. ${date} في ${time12}.`,
   );
 
-  const trainer = trainerName || t("Youssef Ahmed", "يوسف أحمد");
+  const trainer = trainerName || t("Youssef Elite", "Youssef Elite");
   const duration = sessionDurationLabel || t("60 minutes", "٦٠ دقيقة");
   const focus = sessionFocus || t("Strength & conditioning", "قوة ولياقة");
   const pkgLabel = packageName || t("Standard 1-on-1", "خاص 1-إلى-1");

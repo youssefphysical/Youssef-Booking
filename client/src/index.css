@@ -1810,14 +1810,14 @@ html[dir="rtl"] .hero-eyebrow-rule {
    Per the user-supplied "STRICT MICRO VISUAL FIX — UNIFY HOMEPAGE
    BACKGROUND SECTIONS" spec. Applied to the homepage parent div
    (<div className="min-h-screen pt-16 homepage-shell">) so that
-   every section (hero wrapper, Youssef Ahmed section, About,
+   every section (hero wrapper, Youssef Elite section, About,
    Specialties, Certifications, Why, CTA) sits on top of ONE
    continuous dark navy gradient instead of each having its own
    colored block. The radial layer adds the subtle blue accent in
    the top-right that previously lived as the per-section
    `bg-primary/15 blur-3xl` sphere.
    Section-specific gradient layers and decorative blur spheres
-   were REMOVED from the Youssef Ahmed section to let this shell
+   were REMOVED from the Youssef Elite section to let this shell
    show through. Cards, content, and section padding/spacing are
    UNCHANGED — only the section-level background blocks were
    removed. */
