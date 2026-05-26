@@ -19,10 +19,10 @@ interface BrandLogoProps {
 }
 
 const ICON_SIZES: Record<NonNullable<BrandLogoProps["variant"]>, number> = {
-  navbar: 30,
-  sidebar: 32,
-  footer: 22,
-  icon: 32,
+  navbar: 36,   // spec: 34–42 px desktop, 28–36 px mobile
+  sidebar: 32,  // spec: 32 px
+  footer: 22,   // spec: small elegant branding
+  icon: 36,
 };
 
 export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps) {

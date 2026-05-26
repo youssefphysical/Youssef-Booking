@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import logoSrc from "@assets/file_00000000b3687246a13bd5863c0a5b80_1779795159837.png";
+import logoSrc from "@assets/file_000000005578724685bd3e5a7e0d443a_1779796154291.png";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
