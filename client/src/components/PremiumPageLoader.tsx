@@ -54,7 +54,7 @@ export function PremiumPageLoader() {
             ],
           }}
           transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative w-[160px] sm:w-[200px] md:w-[240px] max-w-full object-contain"
+          className="relative w-[200px] sm:w-[240px] md:w-[300px] max-w-full object-contain"
         />
       </div>
 
