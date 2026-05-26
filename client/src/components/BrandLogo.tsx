@@ -31,7 +31,11 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
       <span
         className={`inline-flex items-center shrink-0 ${className}`}
         aria-label="Youssef Elite"
-        style={{ padding: "var(--brand-logo-padding,0px) 0", gap: "var(--brand-navbar-gap,12px)" }}
+        style={{
+          padding: `max(var(--brand-logo-padding,0px), 5px) 0`,
+          gap: "var(--brand-navbar-gap,12px)",
+          overflow: "visible",
+        }}
       >
         <img
           src="/ye-logo-horizontal.png"

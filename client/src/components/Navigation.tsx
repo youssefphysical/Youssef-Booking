@@ -221,9 +221,10 @@ export function Navigation() {
           • Brand wrapper drops `shrink-0` and adds `min-w-0`+`truncate`
             so the brand can yield space to the right cluster on
             narrow widths instead of forcing horizontal overflow.
-          • `overflow-x-clip` on the inner row is a defence-in-depth
-            against any future child overflowing past the safe pad. */}
-      <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-16 flex items-center justify-between gap-2 sm:gap-3 overflow-x-clip">
+          • h-[70px] gives the logo 7px vertical clearance above/below
+            (overflow-x-clip was removed — it forced overflow-y:auto
+            which clipped the tall icon portion of the horizontal logo). */}
+      <div className="max-w-6xl mx-auto ps-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))] h-[70px] flex items-center justify-between gap-2 sm:gap-3">
         <Link
           href="/"
           className="min-w-0 shrink-0"
