@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
@@ -19,11 +19,12 @@ import {
   ArrowDown,
   Eye,
   EyeOff,
-  RefreshCw,
-  Pencil,
   Film,
   Layers,
   Palette,
+  RefreshCw,
+  Settings2,
+  CheckCircle2,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -57,26 +58,27 @@ const SERVICE_ASPECTS: AspectPreset[] = [
   { key: "1x1",   label: "1:1",   ratio: 1 },
 ];
 
-// ─── Tiny slider row ──────────────────────────────────────────────────────────
+// ─── Premium slider row ───────────────────────────────────────────────────────
 function SliderRow({
-  label, value, min, max, step = 0.01, unit = "",
-  onChange,
+  label, value, min, max, step = 0.01, unit = "", onChange,
 }: {
   label: string; value: number; min: number; max: number;
   step?: number; unit?: string; onChange: (v: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-[11px] text-muted-foreground w-28 shrink-0">{label}</span>
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{label}</span>
+        <span className="text-[11px] tabular-nums font-mono text-primary/80 bg-primary/8 px-2 py-0.5 rounded-md border border-primary/15">
+          {Number.isInteger(value) ? value : value.toFixed(2)}{unit}
+        </span>
+      </div>
       <Slider
         value={[value]}
         min={min} max={max} step={step}
         onValueChange={(v) => onChange(v[0] ?? value)}
-        className="flex-1"
+        className="w-full"
       />
-      <span className="text-[11px] tabular-nums text-muted-foreground w-12 text-right">
-        {Number.isInteger(value) ? value : value.toFixed(2)}{unit}
-      </span>
     </div>
   );
 }
@@ -84,8 +86,8 @@ function SliderRow({
 // ─── Fit selector ─────────────────────────────────────────────────────────────
 function FitSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-[11px] text-muted-foreground w-28 shrink-0">Object fit</span>
+    <div className="space-y-1.5">
+      <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">Object fit</span>
       <div className="flex gap-2">
         {["cover", "contain"].map((f) => (
           <button
@@ -93,13 +95,13 @@ function FitSelect({ value, onChange }: { value: string; onChange: (v: string) =
             type="button"
             onClick={() => onChange(f)}
             data-testid={`button-fit-${f}`}
-            className={`px-3 h-7 rounded-full text-[11px] font-semibold border transition-colors ${
+            className={`flex-1 h-8 rounded-xl text-[11px] font-semibold border transition-all duration-200 ${
               value === f
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                ? "bg-primary/20 text-primary border-primary/40 shadow-[0_0_12px_-4px_hsl(183_100%_60%/0.4)]"
+                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:border-white/20"
             }`}
           >
-            {f}
+            {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
       </div>
@@ -107,20 +109,188 @@ function FitSelect({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
+// ─── Glass icon button ────────────────────────────────────────────────────────
+function IconBtn({
+  icon, label, onClick, disabled, danger, active, testId,
+}: {
+  icon: React.ReactNode;
+  label?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  active?: boolean;
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={testId}
+      title={label}
+      className={`
+        inline-flex items-center gap-1.5 px-3 h-9 rounded-xl text-[11px] font-semibold
+        border transition-all duration-200 disabled:opacity-30
+        ${danger
+          ? "bg-red-500/8 border-red-500/20 text-red-400 hover:bg-red-500/18 hover:border-red-500/35 hover:shadow-[0_0_14px_-4px_rgba(239,68,68,0.4)]"
+          : active
+          ? "bg-primary/20 border-primary/40 text-primary shadow-[0_0_12px_-4px_hsl(183_100%_60%/0.35)]"
+          : "bg-white/6 border-white/10 text-muted-foreground hover:bg-white/12 hover:border-white/20 hover:text-foreground"
+        }
+      `}
+    >
+      {icon}
+      {label && <span>{label}</span>}
+    </button>
+  );
+}
+
+// ─── Drag-and-drop upload zone ────────────────────────────────────────────────
+function DropZone({
+  onTrigger, accept = "image/*", disabled = false, compact = false,
+}: {
+  onTrigger: () => void; accept?: string; disabled?: boolean; compact?: boolean;
+}) {
+  const [dragging, setDragging] = useState(false);
+
+  const handleDragEnter = (e: React.DragEvent) => { e.preventDefault(); if (!disabled) setDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setDragging(false); };
+  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop      = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (!disabled) onTrigger();
+  };
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={onTrigger}
+        disabled={disabled}
+        className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.4)]"
+      >
+        <UploadCloud size={15} />
+        Upload Image
+      </button>
+    );
+  }
+
+  return (
+    <div
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onClick={onTrigger}
+      className={`
+        relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 select-none
+        flex flex-col items-center justify-center gap-3 py-10
+        ${dragging
+          ? "border-primary/60 bg-primary/8 shadow-[0_0_30px_-8px_hsl(183_100%_60%/0.3)]"
+          : "border-white/12 bg-white/[0.02] hover:border-primary/30 hover:bg-primary/5"
+        }
+        ${disabled ? "opacity-40 cursor-not-allowed" : ""}
+      `}
+    >
+      <motion.div
+        animate={dragging ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 22 }}
+      >
+        <UploadCloud size={32} className={dragging ? "text-primary" : "text-muted-foreground/50"} />
+      </motion.div>
+      <div className="text-center">
+        <p className={`text-sm font-semibold ${dragging ? "text-primary" : "text-muted-foreground"}`}>
+          {dragging ? "Release to upload" : "Drop image here"}
+        </p>
+        <p className="text-[11px] text-muted-foreground/60 mt-0.5">or click to browse · Max 25 MB</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Preview chip (desktop / mobile) ─────────────────────────────────────────
+function PreviewTab({
+  value, onChange,
+}: { value: "desktop" | "mobile"; onChange: (v: "desktop" | "mobile") => void }) {
+  return (
+    <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit">
+      {(["desktop", "mobile"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => onChange(t)}
+          className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
+            value === t
+              ? "bg-primary/20 text-primary shadow-[0_0_10px_-3px_hsl(183_100%_60%/0.35)]"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
+          {t === "desktop" ? "Desktop" : "Mobile"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Settings tab bar ─────────────────────────────────────────────────────────
+function SettingsTabBar({
+  value, onChange, id,
+}: { value: "desktop" | "mobile"; onChange: (v: "desktop" | "mobile") => void; id: string | number }) {
+  return (
+    <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit mb-4">
+      {(["desktop", "mobile"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => onChange(t)}
+          data-testid={`tab-hero-${t}-${id}`}
+          className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
+            value === t
+              ? "bg-primary/20 text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
+          {t === "desktop" ? "Desktop" : "Mobile"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Save button ──────────────────────────────────────────────────────────────
+function SaveBtn({
+  onClick, disabled, testId,
+}: { onClick: () => void; disabled?: boolean; testId?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={testId}
+      className="w-full h-10 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 hover:border-primary/50 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.35)] flex items-center justify-center gap-2"
+    >
+      <CheckCircle2 size={14} />
+      Save Settings
+    </button>
+  );
+}
+
 // ─── Section tab bar ──────────────────────────────────────────────────────────
 type Section = "hero" | "services" | "branding";
 
-const SECTIONS: { key: Section; label: string; icon: React.ReactNode }[] = [
-  { key: "hero",     label: "Hero Images",  icon: <Film size={14} /> },
-  { key: "services", label: "Services",     icon: <Layers size={14} /> },
-  { key: "branding", label: "Branding",     icon: <Palette size={14} /> },
+const SECTIONS: { key: Section; label: string; icon: React.ReactNode; desc: string }[] = [
+  { key: "hero",     label: "Hero Slider",    icon: <Film size={16} />,    desc: "Homepage slides" },
+  { key: "services", label: "Services",       icon: <Layers size={16} />,  desc: "Card images" },
+  { key: "branding", label: "Branding",       icon: <Palette size={16} />, desc: "Logo & icons" },
 ];
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
 function HeroSection({ images }: { images: HeroImage[] }) {
   const { toast } = useToast();
   const [cropperOpen, setCropperOpen] = useState(false);
-  const [mobileCropperOpen, setMobileCropperOpen] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Record<number, "desktop" | "mobile">>({});
 
@@ -133,20 +303,12 @@ function HeroSection({ images }: { images: HeroImage[] }) {
       }
       return res.json();
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: "Hero slide uploaded" }); setCropperOpen(false); },
-    onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-  });
-
-  const mobileUploadMutation = useMutation({
-    mutationFn: async ({ id, imageDataUrl }: { id: number; imageDataUrl: string }) => {
-      const res = await apiRequest("PATCH", `/api/admin/media/hero/${id}/settings`, {
-        mobileSettings: { customMobileUrl: "pending" },
-      });
-      if (!res.ok) throw new Error("Failed to save mobile image");
-      return res.json();
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Slide uploaded", description: "Your new hero slide is live." });
+      setCropperOpen(false);
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: "Mobile image updated" }); setMobileCropperOpen(null); },
-    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+    onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
   });
 
   const settingsMutation = useMutation({
@@ -155,7 +317,10 @@ function HeroSection({ images }: { images: HeroImage[] }) {
       if (!res.ok) throw new Error("Save failed");
       return res.json();
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: "Settings saved" }); },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Settings saved", description: "Hero slide updated successfully." });
+    },
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
 
@@ -163,7 +328,10 @@ function HeroSection({ images }: { images: HeroImage[] }) {
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/admin/hero-images/${id}`);
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: "Slide deleted" }); },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Slide removed", description: "The slide has been deleted." });
+    },
     onError: () => toast({ title: "Delete failed", variant: "destructive" }),
   });
 
@@ -219,36 +387,27 @@ function HeroSection({ images }: { images: HeroImage[] }) {
     setLocalMobile(prev => ({ ...prev, [img.id]: { ...prev[img.id], [key]: val } }));
   }
 
-  function saveDesktop(img: HeroImage) {
-    const d = getDesktop(img);
-    settingsMutation.mutate({ id: img.id, updates: d });
-  }
-
-  function saveMobile(img: HeroImage) {
-    const m = getMobileDefaults(img);
-    settingsMutation.mutate({ id: img.id, updates: { mobileSettings: m } });
-  }
-
   const sorted = [...images].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Section header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display font-bold text-base">Hero Slides</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{images.length} / 12 slides · Drag to reorder</p>
+          <h3 className="font-display font-bold text-lg">Hero Slides</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {images.length} / 12 slides · Reorder with arrows · Changes apply live
+          </p>
         </div>
-        <Button
+        <button
           onClick={() => setCropperOpen(true)}
           disabled={uploadMutation.isPending || images.length >= 12}
-          size="sm"
           data-testid="button-hero-upload"
-          className="gap-1.5 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30"
-          variant="ghost"
+          className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 hover:border-primary/50 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_20px_-6px_hsl(183_100%_60%/0.5)]"
         >
-          <UploadCloud size={14} />
+          <UploadCloud size={15} />
           Add Slide
-        </Button>
+        </button>
       </div>
 
       <ImageCropper
@@ -258,17 +417,14 @@ function HeroSection({ images }: { images: HeroImage[] }) {
         aspects={HERO_ASPECTS}
         outputLongEdgePx={2400}
         title="Upload hero slide"
-        description="16:9 recommended for desktop. The server generates desktop, mobile, and thumbnail versions automatically."
+        description="16:9 recommended for desktop. Desktop, mobile, and thumbnail versions are generated automatically."
         onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
       />
 
       {sorted.length === 0 ? (
-        <div className="border border-dashed border-white/10 rounded-2xl py-16 flex flex-col items-center gap-3 text-muted-foreground">
-          <ImageIcon size={28} className="opacity-30" />
-          <p className="text-sm">No hero slides yet. Upload your first one above.</p>
-        </div>
+        <DropZone onTrigger={() => setCropperOpen(true)} disabled={uploadMutation.isPending} />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sorted.map((img, i) => {
             const isExpanded = expandedId === img.id;
             const currentTab = tab(img.id);
@@ -277,164 +433,186 @@ function HeroSection({ images }: { images: HeroImage[] }) {
             const thumbSrc = img.thumbnailDataUrl ?? img.imageDataUrl;
 
             return (
-              <div
+              <motion.div
                 key={img.id}
-                className="admin-card !p-0 overflow-hidden"
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-2xl border border-white/[0.08] bg-card/60 overflow-hidden backdrop-blur-sm"
+                style={{ boxShadow: isExpanded ? "0 0 30px -10px hsl(183 100% 60% / 0.12)" : "none" }}
                 data-testid={`hero-card-${img.id}`}
               >
                 {/* Card header */}
-                <div className="flex items-center gap-3 p-3">
-                  <div className="relative w-24 h-14 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-black/40">
+                <div className="flex items-center gap-4 p-4">
+                  {/* Thumbnail */}
+                  <div className="relative w-44 h-[100px] rounded-xl overflow-hidden shrink-0 border border-white/10 bg-black/40">
                     <img src={thumbSrc} alt="" className="w-full h-full object-cover" />
                     {img.isActive === false && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <EyeOff size={12} className="text-white/70" />
+                      <div className="absolute inset-0 bg-black/65 flex items-center justify-center gap-1.5">
+                        <EyeOff size={14} className="text-white/70" />
+                        <span className="text-[10px] text-white/70 font-medium">Hidden</span>
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {img.title || `Slide ${i + 1}`}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate">{img.subtitle || "No subtitle"}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      {img.mobileDataUrl && (
-                        <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">
-                          <Smartphone size={8} className="inline mr-0.5" />Mobile
-                        </span>
-                      )}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                    {/* Status pill */}
+                    <div className="absolute top-1.5 left-1.5">
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${
                         img.isActive !== false
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-white/5 text-muted-foreground border-white/10"
+                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                          : "bg-white/8 text-muted-foreground border-white/12"
                       }`}>
-                        {img.isActive !== false ? "Active" : "Hidden"}
+                        {img.isActive !== false ? "● Live" : "○ Off"}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
+                  {/* Meta */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-sm font-bold truncate">{img.title || `Slide ${i + 1}`}</p>
+                    <p className="text-xs text-muted-foreground truncate">{img.subtitle || "No subtitle set"}</p>
+                    <div className="flex items-center gap-2 pt-0.5">
+                      {img.mobileDataUrl && (
+                        <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Smartphone size={8} />Mobile ready
+                        </span>
+                      )}
+                      <span className="text-[10px] text-muted-foreground/60">
+                        Slide {i + 1} of {sorted.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <IconBtn
+                      icon={<ArrowUp size={13} />}
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
-                      data-testid={`button-hero-up-${img.id}`}
-                      className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 disabled:opacity-25 flex items-center justify-center"
-                    ><ArrowUp size={12} /></button>
-                    <button
-                      type="button"
+                      testId={`button-hero-up-${img.id}`}
+                    />
+                    <IconBtn
+                      icon={<ArrowDown size={13} />}
                       onClick={() => move(i, 1)}
                       disabled={i === sorted.length - 1}
-                      data-testid={`button-hero-down-${img.id}`}
-                      className="w-7 h-7 rounded-md bg-white/5 hover:bg-white/10 disabled:opacity-25 flex items-center justify-center"
-                    ><ArrowDown size={12} /></button>
-                    <button
-                      type="button"
+                      testId={`button-hero-down-${img.id}`}
+                    />
+                    <IconBtn
+                      icon={isExpanded ? <ChevronUp size={13} /> : <Settings2 size={13} />}
+                      label={isExpanded ? "Close" : "Edit"}
                       onClick={() => setExpandedId(isExpanded ? null : img.id)}
-                      data-testid={`button-hero-expand-${img.id}`}
-                      className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-                        isExpanded ? "bg-primary/20 text-primary" : "bg-white/5 hover:bg-white/10 text-muted-foreground"
-                      }`}
-                    >{isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</button>
-                    <button
-                      type="button"
+                      active={isExpanded}
+                      testId={`button-hero-expand-${img.id}`}
+                    />
+                    <IconBtn
+                      icon={<Trash2 size={13} />}
                       onClick={() => deleteMutation.mutate(img.id)}
-                      data-testid={`button-hero-delete-${img.id}`}
-                      className="w-7 h-7 rounded-md bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-muted-foreground flex items-center justify-center"
-                    ><Trash2 size={12} /></button>
+                      danger
+                      testId={`button-hero-delete-${img.id}`}
+                    />
                   </div>
                 </div>
 
                 {/* Expanded settings */}
-                {isExpanded && (
-                  <div className="border-t border-white/[0.06] p-4 space-y-4 bg-black/20">
-                    {/* Active toggle */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">Visible on homepage</span>
-                      <Switch
-                        checked={img.isActive !== false}
-                        onCheckedChange={(v) => settingsMutation.mutate({ id: img.id, updates: { isActive: v } })}
-                        data-testid={`switch-hero-active-${img.id}`}
-                      />
-                    </div>
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-white/[0.07] p-5 space-y-5 bg-black/25">
 
-                    {/* Title/subtitle/badge */}
-                    <div className="grid grid-cols-1 gap-2">
-                      {[
-                        { key: "title", label: "Title", max: 140, val: img.title ?? "" },
-                        { key: "subtitle", label: "Subtitle", max: 240, val: img.subtitle ?? "" },
-                        { key: "badge", label: "Badge", max: 60, val: img.badge ?? "" },
-                      ].map(({ key, label, max, val }) => (
-                        <div key={key} className="flex items-center gap-3">
-                          <span className="text-[11px] text-muted-foreground w-16 shrink-0">{label}</span>
-                          <input
-                            type="text"
-                            defaultValue={val}
-                            maxLength={max}
-                            onBlur={(e) => settingsMutation.mutate({ id: img.id, updates: { [key]: e.target.value || null } })}
-                            data-testid={`input-hero-${key}-${img.id}`}
-                            className="flex-1 h-8 rounded-lg bg-white/5 border border-white/10 px-2.5 text-xs focus:outline-none focus:border-primary/40"
+                        {/* Visibility toggle */}
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/8">
+                          <div>
+                            <p className="text-sm font-semibold">Visible on homepage</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Toggle to show/hide this slide</p>
+                          </div>
+                          <Switch
+                            checked={img.isActive !== false}
+                            onCheckedChange={(v) => settingsMutation.mutate({ id: img.id, updates: { isActive: v } })}
+                            data-testid={`switch-hero-active-${img.id}`}
                           />
                         </div>
-                      ))}
-                    </div>
 
-                    {/* Desktop / Mobile tabs */}
-                    <div>
-                      <div className="flex gap-1 mb-3">
-                        {(["desktop", "mobile"] as const).map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setTab(img.id, t)}
-                            data-testid={`tab-hero-${t}-${img.id}`}
-                            className={`flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold border transition-colors ${
-                              currentTab === t
-                                ? "bg-primary/20 text-primary border-primary/30"
-                                : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
-                            }`}
-                          >
-                            {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
-                            {t === "desktop" ? "Desktop" : "Mobile"}
-                          </button>
-                        ))}
+                        {/* Text fields */}
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Content</p>
+                          {[
+                            { key: "title", label: "Title", max: 140, val: img.title ?? "", placeholder: "Slide headline" },
+                            { key: "subtitle", label: "Subtitle", max: 240, val: img.subtitle ?? "", placeholder: "Supporting text" },
+                            { key: "badge", label: "Badge", max: 60, val: img.badge ?? "", placeholder: "e.g. 500+ clients" },
+                          ].map(({ key, label, max, val, placeholder }) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <span className="text-[11px] text-muted-foreground w-16 shrink-0">{label}</span>
+                              <input
+                                type="text"
+                                defaultValue={val}
+                                maxLength={max}
+                                placeholder={placeholder}
+                                onBlur={(e) => settingsMutation.mutate({ id: img.id, updates: { [key]: e.target.value || null } })}
+                                data-testid={`input-hero-${key}-${img.id}`}
+                                className="flex-1 h-9 rounded-xl bg-white/5 border border-white/10 px-3 text-xs focus:outline-none focus:border-primary/40 focus:bg-white/8 transition-colors placeholder:text-muted-foreground/40"
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Desktop / Mobile tabs */}
+                        <div>
+                          <SettingsTabBar value={currentTab} onChange={(t) => setTab(img.id, t)} id={img.id} />
+
+                          {currentTab === "desktop" && (
+                            <div className="space-y-4">
+                              <SliderRow label="Focal X" value={desktop.focalX} min={-200} max={200} step={1} unit="px" onChange={(v) => patchDesktop(img, "focalX", v)} />
+                              <SliderRow label="Focal Y" value={desktop.focalY} min={-200} max={200} step={1} unit="px" onChange={(v) => patchDesktop(img, "focalY", v)} />
+                              <SliderRow label="Zoom" value={desktop.zoom} min={0.8} max={2.0} step={0.01} onChange={(v) => patchDesktop(img, "zoom", v)} />
+                              <SliderRow label="Rotate" value={desktop.rotate} min={-10} max={10} step={0.5} unit="°" onChange={(v) => patchDesktop(img, "rotate", v)} />
+                              <SliderRow label="Brightness" value={desktop.brightness} min={0.9} max={1.2} step={0.01} onChange={(v) => patchDesktop(img, "brightness", v)} />
+                              <SliderRow label="Contrast" value={desktop.contrast} min={0.95} max={1.2} step={0.01} onChange={(v) => patchDesktop(img, "contrast", v)} />
+                              <SliderRow label="Overlay" value={desktop.overlayOpacity} min={0} max={60} step={1} unit="%" onChange={(v) => patchDesktop(img, "overlayOpacity", v)} />
+                              <SaveBtn
+                                onClick={() => settingsMutation.mutate({ id: img.id, updates: getDesktop(img) })}
+                                disabled={settingsMutation.isPending}
+                                testId={`button-hero-save-desktop-${img.id}`}
+                              />
+                            </div>
+                          )}
+
+                          {currentTab === "mobile" && (
+                            <div className="space-y-4">
+                              <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
+                                Mobile settings are fully independent from desktop.
+                              </p>
+                              <SliderRow label="Position X" value={mobile.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => patchMobile(img, "positionX", v)} />
+                              <SliderRow label="Position Y" value={mobile.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => patchMobile(img, "positionY", v)} />
+                              <SliderRow label="Zoom" value={mobile.zoom} min={0.5} max={3} step={0.01} onChange={(v) => patchMobile(img, "zoom", v)} />
+                              <SliderRow label="Height" value={mobile.height} min={80} max={600} step={4} unit="px" onChange={(v) => patchMobile(img, "height", v)} />
+                              <SliderRow label="Radius" value={mobile.radius} min={0} max={50} step={1} unit="px" onChange={(v) => patchMobile(img, "radius", v)} />
+                              <FitSelect value={mobile.fit} onChange={(v) => patchMobile(img, "fit", v)} />
+                              <SaveBtn
+                                onClick={() => settingsMutation.mutate({ id: img.id, updates: { mobileSettings: getMobileDefaults(img) } })}
+                                disabled={settingsMutation.isPending}
+                                testId={`button-hero-save-mobile-${img.id}`}
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
-
-                      {currentTab === "desktop" && (
-                        <div className="space-y-3">
-                          <SliderRow label="Focal X" value={desktop.focalX} min={-200} max={200} step={1} unit="px" onChange={(v) => patchDesktop(img, "focalX", v)} />
-                          <SliderRow label="Focal Y" value={desktop.focalY} min={-200} max={200} step={1} unit="px" onChange={(v) => patchDesktop(img, "focalY", v)} />
-                          <SliderRow label="Zoom" value={desktop.zoom} min={0.8} max={2.0} step={0.01} onChange={(v) => patchDesktop(img, "zoom", v)} />
-                          <SliderRow label="Rotate" value={desktop.rotate} min={-10} max={10} step={0.5} unit="°" onChange={(v) => patchDesktop(img, "rotate", v)} />
-                          <SliderRow label="Brightness" value={desktop.brightness} min={0.9} max={1.2} step={0.01} onChange={(v) => patchDesktop(img, "brightness", v)} />
-                          <SliderRow label="Contrast" value={desktop.contrast} min={0.95} max={1.2} step={0.01} onChange={(v) => patchDesktop(img, "contrast", v)} />
-                          <SliderRow label="Overlay %" value={desktop.overlayOpacity} min={0} max={60} step={1} unit="%" onChange={(v) => patchDesktop(img, "overlayOpacity", v)} />
-                          <Button size="sm" onClick={() => saveDesktop(img)} disabled={settingsMutation.isPending} data-testid={`button-hero-save-desktop-${img.id}`} className="mt-1 w-full">
-                            Save desktop settings
-                          </Button>
-                        </div>
-                      )}
-
-                      {currentTab === "mobile" && (
-                        <div className="space-y-3">
-                          <SliderRow label="Position X" value={mobile.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => patchMobile(img, "positionX", v)} />
-                          <SliderRow label="Position Y" value={mobile.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => patchMobile(img, "positionY", v)} />
-                          <SliderRow label="Zoom" value={mobile.zoom} min={0.5} max={3} step={0.01} onChange={(v) => patchMobile(img, "zoom", v)} />
-                          <SliderRow label="Height" value={mobile.height} min={80} max={600} step={4} unit="px" onChange={(v) => patchMobile(img, "height", v)} />
-                          <SliderRow label="Radius" value={mobile.radius} min={0} max={50} step={1} unit="px" onChange={(v) => patchMobile(img, "radius", v)} />
-                          <FitSelect value={mobile.fit} onChange={(v) => patchMobile(img, "fit", v)} />
-                          <Button size="sm" onClick={() => saveMobile(img)} disabled={settingsMutation.isPending} data-testid={`button-hero-save-mobile-${img.id}`} className="mt-1 w-full">
-                            Save mobile settings
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
+
+          {/* Add more */}
+          {images.length < 12 && (
+            <DropZone onTrigger={() => setCropperOpen(true)} disabled={uploadMutation.isPending} compact />
+          )}
         </div>
       )}
     </div>
@@ -445,9 +623,9 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 type ServiceCard = "personalTraining" | "nutrition" | "supplement";
 
 const SERVICE_META: { key: ServiceCard; label: string; desc: string }[] = [
-  { key: "personalTraining", label: "Personal Training", desc: "3:2 recommended · 1200×800" },
-  { key: "nutrition",        label: "Nutrition Plans",   desc: "3:2 recommended · 1200×800" },
-  { key: "supplement",       label: "Supplement Protocol", desc: "3:2 recommended · 1200×800" },
+  { key: "personalTraining", label: "Personal Training", desc: "3:2 · 1200×800" },
+  { key: "nutrition",        label: "Nutrition Plans",   desc: "3:2 · 1200×800" },
+  { key: "supplement",       label: "Supplement Protocol", desc: "3:2 · 1200×800" },
 ];
 
 function ServiceCardEditor({ cardKey, label, desc, settings }: {
@@ -461,13 +639,11 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
-  // Pull current values from settings
   const prefix = cardKey;
   const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]        ?? null;
   const mobileUrl    = (settings as any)[`${prefix}MobileUrl`]       ?? null;
   const thumbnailUrl = (settings as any)[`${prefix}ThumbnailUrl`]    ?? null;
 
-  // Desktop settings (flat columns)
   const [desktop, setDesktop] = useState({
     fit:           String((settings as any)[`${prefix}ImageFit`]           ?? "cover"),
     positionX:     Number((settings as any)[`${prefix}ImagePositionX`]     ?? 50),
@@ -478,7 +654,6 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
     radius:        Number((settings as any)[`${prefix}ImageRadius`]        ?? 0),
   });
 
-  // Mobile settings (jsonb)
   const rawMobileSettings = ((settings as any)[`${prefix}MobileSettings`] ?? {}) as Record<string, number | string>;
   const [mob, setMob] = useState({
     fit:       String(rawMobileSettings.fit       ?? "cover"),
@@ -498,7 +673,11 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
       }
       return res.json();
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: `${label} image updated` }); setCropperOpen(false); },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: `${label} updated`, description: "Image uploaded and optimised for all screens." });
+      setCropperOpen(false);
+    },
     onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
   });
 
@@ -508,156 +687,165 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
       if (!res.ok) throw new Error("Save failed");
       return res.json();
     },
-    onSuccess: () => { invalidateMedia(); toast({ title: "Settings saved" }); },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Settings saved", description: "Display settings updated." });
+    },
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
 
   const displaySrc = previewMode === "mobile" && mobileUrl ? mobileUrl : (thumbnailUrl ?? desktopUrl);
 
   return (
-    <div className="admin-card space-y-4" data-testid={`service-card-${cardKey}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h4 className="font-display font-bold text-sm">{label}</h4>
-          <p className="text-[11px] text-muted-foreground">{desc}</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setPreviewMode(previewMode === "desktop" ? "mobile" : "desktop")}
-            data-testid={`button-preview-toggle-${cardKey}`}
-            className="flex items-center gap-1 px-2 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-muted-foreground text-[10px]"
-          >
-            {previewMode === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
-            {previewMode}
-          </button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setCropperOpen(true)}
-            disabled={uploadMutation.isPending}
-            data-testid={`button-upload-${cardKey}`}
-            className="gap-1 h-7 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
-          >
-            <UploadCloud size={12} />
-            {desktopUrl ? "Replace" : "Upload"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Image preview */}
-      <div
-        className="relative w-full rounded-xl overflow-hidden border border-white/10 bg-black/40"
-        style={{ height: 160 }}
-      >
+    <div
+      className="rounded-2xl border border-white/[0.08] bg-card/60 overflow-hidden backdrop-blur-sm space-y-0"
+      data-testid={`service-card-${cardKey}`}
+    >
+      {/* Preview area */}
+      <div className="relative w-full bg-black/40" style={{ aspectRatio: "16/9" }}>
         {displaySrc ? (
           <img
             src={displaySrc}
             alt={label}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
             style={{
-              objectFit: activeTab === "desktop" ? desktop.fit as any : mob.fit as any,
-              objectPosition: activeTab === "desktop"
+              objectFit: (previewMode === "desktop" ? desktop.fit : mob.fit) as any,
+              objectPosition: previewMode === "desktop"
                 ? `${desktop.positionX}% ${desktop.positionY}%`
                 : `${mob.positionX}% ${mob.positionY}%`,
-              transform: `scale(${activeTab === "desktop" ? desktop.zoom : mob.zoom})`,
+              transform: `scale(${previewMode === "desktop" ? desktop.zoom : mob.zoom})`,
               transformOrigin: "center",
-              borderRadius: activeTab === "desktop" ? desktop.radius : mob.radius,
+              display: "block",
             }}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-            <ImageIcon size={24} className="opacity-30" />
-            <p className="text-xs">No image — click Upload</p>
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer group"
+            onClick={() => setCropperOpen(true)}
+          >
+            <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-white/15 group-hover:border-primary/40 flex items-center justify-center transition-colors">
+              <ImageIcon size={22} className="text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+            </div>
+            <p className="text-xs text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
+              Click to upload
+            </p>
           </div>
         )}
+
+        {/* Overlay badges */}
         {desktopUrl && (
-          <div className="absolute bottom-2 right-2 flex gap-1">
+          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+            <span className="text-[9px] bg-black/70 backdrop-blur-sm text-white/70 px-2 py-1 rounded-lg border border-white/10">
+              {label}
+            </span>
             {mobileUrl && (
-              <span className="text-[9px] bg-black/70 text-primary/80 px-1.5 py-0.5 rounded-full border border-primary/20">
-                <Smartphone size={8} className="inline mr-0.5" />Mobile ready
+              <span className="text-[9px] bg-primary/20 backdrop-blur-sm text-primary px-2 py-1 rounded-lg border border-primary/25 flex items-center gap-1">
+                <Smartphone size={8} />Mobile ✓
               </span>
             )}
           </div>
         )}
       </div>
 
-      <ImageCropper
-        open={cropperOpen}
-        onOpenChange={setCropperOpen}
-        saving={uploadMutation.isPending}
-        aspects={SERVICE_ASPECTS}
-        outputLongEdgePx={2000}
-        title={`Upload ${label} image`}
-        description="3:2 recommended. Desktop, mobile, and thumbnail variants are generated automatically."
-        onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
-      />
-
-      {/* Desktop / Mobile tabs */}
-      <div>
-        <div className="flex gap-1 mb-3">
-          {(["desktop", "mobile"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setActiveTab(t)}
-              data-testid={`tab-service-${t}-${cardKey}`}
-              className={`flex items-center gap-1.5 px-3 h-7 rounded-full text-[11px] font-semibold border transition-colors ${
-                activeTab === t
-                  ? "bg-primary/20 text-primary border-primary/30"
-                  : "bg-white/5 text-muted-foreground border-white/10 hover:bg-white/10"
-              }`}
-            >
-              {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
-              {t === "desktop" ? "Desktop" : "Mobile"}
-            </button>
-          ))}
+      {/* Card body */}
+      <div className="p-4 space-y-4">
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h4 className="font-display font-bold text-sm">{label}</h4>
+            <p className="text-[11px] text-muted-foreground">{desc}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <PreviewTab value={previewMode} onChange={setPreviewMode} />
+          </div>
         </div>
 
-        {activeTab === "desktop" && (
-          <div className="space-y-3">
-            <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
-            <SliderRow label="Position X" value={desktop.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionX: v }))} />
-            <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
-            <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
-            <SliderRow label="Desktop height" value={desktop.desktopHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, desktopHeight: v }))} />
-            <SliderRow label="Mobile height" value={desktop.mobileHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, mobileHeight: v }))} />
-            <SliderRow label="Radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
-            <Button
-              size="sm"
-              onClick={() => settingsMutation.mutate({ ...desktop })}
-              disabled={settingsMutation.isPending}
-              data-testid={`button-save-desktop-${cardKey}`}
-              className="w-full mt-1"
+        {/* Upload zone or replace button */}
+        {!desktopUrl ? (
+          <DropZone onTrigger={() => setCropperOpen(true)} disabled={uploadMutation.isPending} />
+        ) : (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setCropperOpen(true)}
+              disabled={uploadMutation.isPending}
+              data-testid={`button-upload-${cardKey}`}
+              className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-xl bg-white/6 hover:bg-white/12 border border-white/12 hover:border-white/22 text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-all duration-200"
             >
-              Save desktop settings
-            </Button>
+              <UploadCloud size={13} />
+              Replace Image
+            </button>
           </div>
         )}
 
-        {activeTab === "mobile" && (
-          <div className="space-y-3">
-            <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
-              Mobile settings are independent from desktop. Changing these never affects the desktop view.
-            </p>
-            <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
-            <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
-            <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
-            <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
-            <SliderRow label="Height" value={mob.height} min={80} max={700} step={4} unit="px" onChange={(v) => setMob(p => ({ ...p, height: v }))} />
-            <SliderRow label="Radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
-            <Button
-              size="sm"
-              onClick={() => settingsMutation.mutate({ mobileSettings: mob })}
-              disabled={settingsMutation.isPending}
-              data-testid={`button-save-mobile-${cardKey}`}
-              className="w-full mt-1"
-            >
-              Save mobile settings
-            </Button>
+        <ImageCropper
+          open={cropperOpen}
+          onOpenChange={setCropperOpen}
+          saving={uploadMutation.isPending}
+          aspects={SERVICE_ASPECTS}
+          outputLongEdgePx={2000}
+          title={`Upload ${label} image`}
+          description="3:2 recommended. Desktop, mobile, and thumbnail variants are generated automatically."
+          onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
+        />
+
+        {/* Settings tabs */}
+        <div className="pt-1">
+          <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit mb-4">
+            {(["desktop", "mobile"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setActiveTab(t)}
+                data-testid={`tab-service-${t}-${cardKey}`}
+                className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
+                  activeTab === t
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
+                {t === "desktop" ? "Desktop" : "Mobile"}
+              </button>
+            ))}
           </div>
-        )}
+
+          {activeTab === "desktop" && (
+            <div className="space-y-4">
+              <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
+              <SliderRow label="Position X" value={desktop.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionX: v }))} />
+              <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
+              <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
+              <SliderRow label="Desktop height" value={desktop.desktopHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, desktopHeight: v }))} />
+              <SliderRow label="Mobile height" value={desktop.mobileHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, mobileHeight: v }))} />
+              <SliderRow label="Radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
+              <SaveBtn
+                onClick={() => settingsMutation.mutate({ ...desktop })}
+                disabled={settingsMutation.isPending}
+                testId={`button-save-desktop-${cardKey}`}
+              />
+            </div>
+          )}
+
+          {activeTab === "mobile" && (
+            <div className="space-y-4">
+              <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
+                Mobile settings are fully independent from desktop.
+              </p>
+              <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
+              <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
+              <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
+              <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
+              <SliderRow label="Height" value={mob.height} min={80} max={700} step={4} unit="px" onChange={(v) => setMob(p => ({ ...p, height: v }))} />
+              <SliderRow label="Radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
+              <SaveBtn
+                onClick={() => settingsMutation.mutate({ mobileSettings: mob })}
+                disabled={settingsMutation.isPending}
+                testId={`button-save-mobile-${cardKey}`}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -665,14 +853,14 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
 
 function ServicesSection({ settings }: { settings: Settings }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <h3 className="font-display font-bold text-base">Service Images</h3>
+        <h3 className="font-display font-bold text-lg">Service Images</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Desktop and mobile settings are fully independent. Uploads generate desktop, mobile, and thumbnail variants automatically.
+          Desktop and mobile settings are independent. Uploads generate all three size variants automatically.
         </p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {SERVICE_META.map(({ key, label, desc }) => (
           <ServiceCardEditor key={key} cardKey={key} label={label} desc={desc} settings={settings} />
         ))}
@@ -684,15 +872,19 @@ function ServicesSection({ settings }: { settings: Settings }) {
 // ─── Branding section ─────────────────────────────────────────────────────────
 function BrandingSection() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <h3 className="font-display font-bold text-base">Branding</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Logo and future branding assets</p>
+        <h3 className="font-display font-bold text-lg">Branding</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Logo assets and brand identity</p>
       </div>
-      <div className="border border-dashed border-white/10 rounded-2xl py-16 flex flex-col items-center gap-3 text-muted-foreground">
-        <Palette size={28} className="opacity-30" />
-        <p className="text-sm">Logo upload coming soon.</p>
-        <p className="text-xs opacity-60">Profile photo is managed in Settings → Profile.</p>
+      <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] py-20 flex flex-col items-center gap-4 text-muted-foreground">
+        <div className="w-16 h-16 rounded-2xl border border-white/10 flex items-center justify-center bg-white/[0.03]">
+          <Palette size={28} className="opacity-30" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold">Logo upload coming soon</p>
+          <p className="text-xs opacity-50 mt-1">Profile photo is managed in Settings → Profile</p>
+        </div>
       </div>
     </div>
   );
@@ -705,65 +897,78 @@ export default function AdminMedia() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="admin-shimmer h-10 rounded-2xl w-64" />
-        <div className="admin-shimmer h-48 rounded-2xl" />
-        <div className="admin-shimmer h-48 rounded-2xl" />
+      <div className="space-y-5">
+        <div className="admin-shimmer h-10 rounded-2xl w-72" />
+        <div className="admin-shimmer h-32 rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {[0,1,2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="admin-card text-center py-12">
-        <p className="text-muted-foreground text-sm">Failed to load media data. Please refresh.</p>
+      <div className="rounded-2xl border border-white/8 bg-card/60 text-center py-16">
+        <p className="text-muted-foreground text-sm">Failed to load media. Please refresh.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" data-testid="page-admin-media">
+    <div className="space-y-7" data-testid="page-admin-media">
       {/* Page header */}
       <div>
-        <h1 className="font-display font-bold text-xl">Media Manager</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Upload, organise, and fine-tune every image on the site. Desktop and mobile settings are always independent.
+        <h1 className="font-display font-bold text-2xl tracking-tight">Media Manager</h1>
+        <p className="text-sm text-muted-foreground mt-1.5">
+          Upload, organise, and fine-tune every image on the site. Desktop and mobile controls are always independent.
         </p>
       </div>
 
       {/* Section selector */}
-      <div className="flex gap-2 p-1 bg-black/30 rounded-2xl border border-white/[0.06] w-fit">
-        {SECTIONS.map(({ key, label, icon }) => (
+      <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-3 sm:w-fit">
+        {SECTIONS.map(({ key, label, icon, desc }) => (
           <button
             key={key}
             type="button"
             onClick={() => setActiveSection(key)}
             data-testid={`tab-section-${key}`}
-            className={`flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex flex-col sm:flex-row items-center sm:items-center gap-2 px-4 sm:px-5 py-3 sm:py-0 sm:h-12 rounded-2xl text-sm font-semibold border transition-all duration-200 ${
               activeSection === key
-                ? "bg-primary/20 text-primary border border-primary/30 shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                ? "bg-primary/15 text-primary border-primary/35 shadow-[0_0_20px_-6px_hsl(183_100%_60%/0.4)]"
+                : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:border-white/15 hover:text-foreground"
             }`}
           >
             {icon}
-            {label}
+            <span className="hidden sm:block">{label}</span>
+            <span className="text-[10px] sm:hidden text-center leading-tight">{label}</span>
           </button>
         ))}
       </div>
 
       {/* Security notice */}
-      <div className="flex items-start gap-2 p-3 bg-primary/5 border border-primary/15 rounded-xl text-xs text-primary/80">
-        <RefreshCw size={12} className="mt-0.5 shrink-0" />
-        <span>
+      <div className="flex items-start gap-3 p-3.5 bg-primary/5 border border-primary/15 rounded-xl">
+        <RefreshCw size={13} className="mt-0.5 shrink-0 text-primary/60" />
+        <p className="text-[11px] text-primary/70">
           All uploads are server-validated (magic bytes, MIME type, 25 MB limit). Images are automatically
           optimised and generated at three resolutions. Only admins can upload or modify media.
-        </span>
+        </p>
       </div>
 
       {/* Section content */}
-      {activeSection === "hero"     && <HeroSection images={data.heroImages} />}
-      {activeSection === "services" && <ServicesSection settings={data.settings} />}
-      {activeSection === "branding" && <BrandingSection />}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeSection}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18 }}
+        >
+          {activeSection === "hero"     && <HeroSection images={data.heroImages} />}
+          {activeSection === "services" && <ServicesSection settings={data.settings} />}
+          {activeSection === "branding" && <BrandingSection />}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

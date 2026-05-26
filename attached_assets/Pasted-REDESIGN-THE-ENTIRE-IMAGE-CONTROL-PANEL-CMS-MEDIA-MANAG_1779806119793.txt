@@ -1,0 +1,183 @@
+REDESIGN THE ENTIRE IMAGE CONTROL PANEL / CMS MEDIA MANAGEMENT EXPERIENCE.
+
+Current admin image controls feel too developer/basic/MVP quality.
+
+Target quality:
+Premium SaaS UX level similar philosophy to modern WhatsApp Business / Meta Business Suite / premium Apple-level admin panels.
+
+DO NOT copy branding.
+DO copy usability quality, spacing quality, hierarchy quality and premium interaction quality.
+
+GOALS:
+
+1. PROFESSIONAL IMAGE CARDS
+
+Each image section card:
+- Bigger premium container
+- Better spacing
+- Premium glow matching Tron Legacy theme
+- Rounded corners 20–24px
+- Cleaner typography
+- Better visual hierarchy
+
+Current cards:
+Nutrition Plans
+Supplement Protocol
+Homepage Hero Slider
+
+Need luxury SaaS quality.
+
+2. IMAGE PREVIEW SYSTEM
+
+Current image preview feels weak.
+
+Create:
+
+Image preview area:
+- fixed professional aspect ratio
+- cover mode
+- center focus
+- image fills container correctly
+- no awkward crop
+- no random hidden parts
+
+Add:
+
+"Adjust Image Position"
+
+Open mini image editor:
+
+Controls:
+- Drag image position
+- Zoom slider
+- Scale slider
+- Reset position
+
+Like premium CMS systems.
+
+3. REPLACE / EDIT / DELETE REDESIGN
+
+Current buttons look developer tools.
+
+Need:
+
+Modern icon buttons
+
+Replace:
+upload icon
+
+Edit:
+crop/focus icon
+
+Delete:
+trash icon
+
+Equal size.
+Better spacing.
+
+Premium hover states.
+
+Glass Tron style.
+
+4. DRAG & DROP
+
+Allow:
+Drag image directly.
+
+Visual upload zone:
+
+Drop image here
+
+or
+
+Click to upload
+
+Professional animation.
+
+5. IMAGE SAFE ZONE SYSTEM
+
+Critical:
+
+Show crop safe zone overlay.
+
+User must preview:
+
+Desktop preview
+
+Mobile preview
+
+Card preview
+
+Prevent image important parts being hidden.
+
+6. AUTO SMART CROP
+
+System detects:
+
+logo
+
+face
+
+product
+
+important object
+
+Keep important area visible automatically.
+
+7. IMAGE POSITION MEMORY
+
+Remember zoom and position.
+
+Do NOT reset after refresh.
+
+8. PREMIUM STATUS FEEDBACK
+
+Instead of:
+
+"Image saved"
+
+Show:
+
+Animated success toast.
+
+Luxury motion.
+
+9. HERO SLIDER CONTROL
+
+Slider images need:
+
+thumbnail reorder
+
+drag reorder
+
+preview desktop/mobile
+
+10. TRON LEGACY DESIGN LANGUAGE
+
+Keep:
+
+Black background
+
+Electric cyan glow
+
+Luxury spacing
+
+Apple premium feeling
+
+No childish design.
+
+No developer tool feeling.
+
+Need production SaaS quality.
+
+Goal:
+
+Control panel should feel expensive.
+
+Like premium enterprise software.
+
+NOT MVP.
+
+NOT internal tool.
+
+NOT developer panel.
