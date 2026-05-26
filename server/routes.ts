@@ -4684,8 +4684,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       positionX: z.number().min(0).max(100).optional(),
       positionY: z.number().min(0).max(100).optional(),
       zoom: z.number().min(0.5).max(3).optional(),
-      desktopHeight: z.number().int().min(80).max(700).optional(),
-      mobileHeight: z.number().int().min(80).max(700).optional(),
       radius: z.number().int().min(0).max(50).optional(),
       mobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
     });
@@ -4694,14 +4692,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const d = parsed.data;
     const p = card; // prefix
     const updates: Record<string, unknown> = {};
-    if (d.fit         !== undefined) updates[`${p}ImageFit`]           = d.fit;
-    if (d.positionX   !== undefined) updates[`${p}ImagePositionX`]     = d.positionX;
-    if (d.positionY   !== undefined) updates[`${p}ImagePositionY`]     = d.positionY;
-    if (d.zoom        !== undefined) updates[`${p}ImageZoom`]          = d.zoom;
-    if (d.desktopHeight !== undefined) updates[`${p}ImageDesktopHeight`] = d.desktopHeight;
-    if (d.mobileHeight  !== undefined) updates[`${p}ImageMobileHeight`]  = d.mobileHeight;
-    if (d.radius      !== undefined) updates[`${p}ImageRadius`]        = d.radius;
-    if (d.mobileSettings !== undefined) updates[`${p}MobileSettings`]  = d.mobileSettings;
+    if (d.fit            !== undefined) updates[`${p}ImageFit`]       = d.fit;
+    if (d.positionX      !== undefined) updates[`${p}ImagePositionX`] = d.positionX;
+    if (d.positionY      !== undefined) updates[`${p}ImagePositionY`] = d.positionY;
+    if (d.zoom           !== undefined) updates[`${p}ImageZoom`]      = d.zoom;
+    if (d.radius         !== undefined) updates[`${p}ImageRadius`]    = d.radius;
+    if (d.mobileSettings !== undefined) updates[`${p}MobileSettings`] = d.mobileSettings;
     await storage.updateSettings(updates as any);
     const updated = await storage.getSettings();
     return res.json({ success: true, settings: updated });

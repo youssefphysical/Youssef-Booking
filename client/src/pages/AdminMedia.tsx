@@ -672,13 +672,11 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const thumbnailUrl = (settings as any)[`${prefix}ThumbnailUrl`] ?? null;
 
   const [desktop, setDesktop] = useState({
-    fit:           String((settings as any)[`${prefix}ImageFit`]           ?? "cover"),
-    positionX:     Number((settings as any)[`${prefix}ImagePositionX`]     ?? 50),
-    positionY:     Number((settings as any)[`${prefix}ImagePositionY`]     ?? 50),
-    zoom:          Number((settings as any)[`${prefix}ImageZoom`]          ?? 1),
-    desktopHeight: Number((settings as any)[`${prefix}ImageDesktopHeight`] ?? 260),
-    mobileHeight:  Number((settings as any)[`${prefix}ImageMobileHeight`]  ?? 220),
-    radius:        Number((settings as any)[`${prefix}ImageRadius`]        ?? 0),
+    fit:       String((settings as any)[`${prefix}ImageFit`]       ?? "cover"),
+    positionX: Number((settings as any)[`${prefix}ImagePositionX`] ?? 50),
+    positionY: Number((settings as any)[`${prefix}ImagePositionY`] ?? 50),
+    zoom:      Number((settings as any)[`${prefix}ImageZoom`]      ?? 1),
+    radius:    Number((settings as any)[`${prefix}ImageRadius`]    ?? 0),
   });
 
   const rawMobileSettings = ((settings as any)[`${prefix}MobileSettings`] ?? {}) as Record<string, number | string>;
@@ -687,7 +685,6 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
     positionX: Number(rawMobileSettings.positionX ?? 50),
     positionY: Number(rawMobileSettings.positionY ?? 50),
     zoom:      Number(rawMobileSettings.zoom      ?? 1),
-    height:    Number(rawMobileSettings.height    ?? 220),
     radius:    Number(rawMobileSettings.radius    ?? 0),
   });
 

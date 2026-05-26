@@ -2102,8 +2102,6 @@ const SVC_DEFAULTS = {
   positionX: 50,
   positionY: 50,
   zoom: 1.0,
-  mobileHeight: 220,
-  desktopHeight: 260,
   radius: 0,
 } as const;
 
@@ -2130,23 +2128,19 @@ function ServiceCardImagesSection() {
   const [uploadingCard, setUploadingCard] = useState<SvcCardKey | null>(null);
 
   // Editor state — loaded from saved settings when an editor opens
-  const [fit,           setFit]           = useState<string>(SVC_DEFAULTS.fit);
-  const [positionX,     setPositionX]     = useState<number>(SVC_DEFAULTS.positionX);
-  const [positionY,     setPositionY]     = useState<number>(SVC_DEFAULTS.positionY);
-  const [zoom,          setZoom]          = useState<number>(SVC_DEFAULTS.zoom);
-  const [mobileHeight,  setMobileHeight]  = useState<number>(SVC_DEFAULTS.mobileHeight);
-  const [desktopHeight, setDesktopHeight] = useState<number>(SVC_DEFAULTS.desktopHeight);
-  const [radius,        setRadius]        = useState<number>(SVC_DEFAULTS.radius);
+  const [fit,       setFit]       = useState<string>(SVC_DEFAULTS.fit);
+  const [positionX, setPositionX] = useState<number>(SVC_DEFAULTS.positionX);
+  const [positionY, setPositionY] = useState<number>(SVC_DEFAULTS.positionY);
+  const [zoom,      setZoom]      = useState<number>(SVC_DEFAULTS.zoom);
+  const [radius,    setRadius]    = useState<number>(SVC_DEFAULTS.radius);
 
   function openEditor(key: SvcCardKey) {
     const s = settings as any;
-    setFit          (s?.[`${key}ImageFit`]            ?? SVC_DEFAULTS.fit);
-    setPositionX    (s?.[`${key}ImagePositionX`]      ?? SVC_DEFAULTS.positionX);
-    setPositionY    (s?.[`${key}ImagePositionY`]      ?? SVC_DEFAULTS.positionY);
-    setZoom         (s?.[`${key}ImageZoom`]           ?? SVC_DEFAULTS.zoom);
-    setMobileHeight (s?.[`${key}ImageMobileHeight`]   ?? SVC_DEFAULTS.mobileHeight);
-    setDesktopHeight(s?.[`${key}ImageDesktopHeight`]  ?? SVC_DEFAULTS.desktopHeight);
-    setRadius       (s?.[`${key}ImageRadius`]         ?? SVC_DEFAULTS.radius);
+    setFit      (s?.[`${key}ImageFit`]       ?? SVC_DEFAULTS.fit);
+    setPositionX(s?.[`${key}ImagePositionX`] ?? SVC_DEFAULTS.positionX);
+    setPositionY(s?.[`${key}ImagePositionY`] ?? SVC_DEFAULTS.positionY);
+    setZoom     (s?.[`${key}ImageZoom`]      ?? SVC_DEFAULTS.zoom);
+    setRadius   (s?.[`${key}ImageRadius`]    ?? SVC_DEFAULTS.radius);
     setEditingKey(key);
   }
 
@@ -2155,21 +2149,17 @@ function ServiceCardImagesSection() {
     setPositionX(SVC_DEFAULTS.positionX);
     setPositionY(SVC_DEFAULTS.positionY);
     setZoom(SVC_DEFAULTS.zoom);
-    setMobileHeight(SVC_DEFAULTS.mobileHeight);
-    setDesktopHeight(SVC_DEFAULTS.desktopHeight);
     setRadius(SVC_DEFAULTS.radius);
   }
 
   function saveDisplaySettings(key: SvcCardKey) {
     updateSettings.mutate(
       {
-        [`${key}ImageFit`]:            fit,
-        [`${key}ImagePositionX`]:      positionX,
-        [`${key}ImagePositionY`]:      positionY,
-        [`${key}ImageZoom`]:           zoom,
-        [`${key}ImageMobileHeight`]:   mobileHeight,
-        [`${key}ImageDesktopHeight`]:  desktopHeight,
-        [`${key}ImageRadius`]:         radius,
+        [`${key}ImageFit`]:       fit,
+        [`${key}ImagePositionX`]: positionX,
+        [`${key}ImagePositionY`]: positionY,
+        [`${key}ImageZoom`]:      zoom,
+        [`${key}ImageRadius`]:    radius,
       } as any,
       {
         onSuccess: () => {
@@ -2362,7 +2352,7 @@ function ServiceCardImagesSection() {
             <div
               className="relative w-full border border-white/10 bg-black mb-5"
               style={{
-                height: `${desktopHeight}px`,
+                height: "260px",
                 borderRadius: `${radius}px`,
                 overflow: "hidden",
               }}
@@ -2420,20 +2410,6 @@ function ServiceCardImagesSection() {
                 value={radius} min={0} max={24} step={1}
                 format={(v) => `${Math.round(v)} px`}
                 onChange={setRadius}
-              />
-              <TuningSlider
-                testId={`slider-service-mobileheight-${editingKey}`}
-                label="Mobile height"
-                value={mobileHeight} min={120} max={420} step={4}
-                format={(v) => `${Math.round(v)} px`}
-                onChange={setMobileHeight}
-              />
-              <TuningSlider
-                testId={`slider-service-desktopheight-${editingKey}`}
-                label="Desktop height"
-                value={desktopHeight} min={160} max={520} step={4}
-                format={(v) => `${Math.round(v)} px`}
-                onChange={setDesktopHeight}
               />
             </div>
 

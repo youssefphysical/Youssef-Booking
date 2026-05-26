@@ -54,22 +54,16 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS personal_training_image_position_x double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS personal_training_image_position_y double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS personal_training_image_zoom double precision DEFAULT 1.0,
-      ADD COLUMN IF NOT EXISTS personal_training_image_mobile_height integer DEFAULT 220,
-      ADD COLUMN IF NOT EXISTS personal_training_image_desktop_height integer DEFAULT 260,
       ADD COLUMN IF NOT EXISTS personal_training_image_radius integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS nutrition_image_fit text DEFAULT 'cover',
       ADD COLUMN IF NOT EXISTS nutrition_image_position_x double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS nutrition_image_position_y double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS nutrition_image_zoom double precision DEFAULT 1.0,
-      ADD COLUMN IF NOT EXISTS nutrition_image_mobile_height integer DEFAULT 220,
-      ADD COLUMN IF NOT EXISTS nutrition_image_desktop_height integer DEFAULT 260,
       ADD COLUMN IF NOT EXISTS nutrition_image_radius integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS supplement_image_fit text DEFAULT 'cover',
       ADD COLUMN IF NOT EXISTS supplement_image_position_x double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS supplement_image_position_y double precision DEFAULT 50,
       ADD COLUMN IF NOT EXISTS supplement_image_zoom double precision DEFAULT 1.0,
-      ADD COLUMN IF NOT EXISTS supplement_image_mobile_height integer DEFAULT 220,
-      ADD COLUMN IF NOT EXISTS supplement_image_desktop_height integer DEFAULT 260,
       ADD COLUMN IF NOT EXISTS supplement_image_radius integer DEFAULT 0;
 
     -- Media Manager v2 — hero_images: original backup, mobile, thumbnail, mobile settings JSONB

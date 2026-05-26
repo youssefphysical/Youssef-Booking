@@ -730,13 +730,11 @@ function ServicesSection() {
 
   // Helper: read a display-tuning field from settings, with fallback
   const svcCfg = (prefix: string) => ({
-    fit:           ((settings as any)?.[`${prefix}ImageFit`]           ?? "cover") as string,
-    posX:          ((settings as any)?.[`${prefix}ImagePositionX`]     ?? 50)      as number,
-    posY:          ((settings as any)?.[`${prefix}ImagePositionY`]     ?? 50)      as number,
-    zoom:          ((settings as any)?.[`${prefix}ImageZoom`]          ?? 1.0)     as number,
-    mobileH:       ((settings as any)?.[`${prefix}ImageMobileHeight`]  ?? 220)     as number,
-    desktopH:      ((settings as any)?.[`${prefix}ImageDesktopHeight`] ?? 260)     as number,
-    radius:        ((settings as any)?.[`${prefix}ImageRadius`]        ?? 0)       as number,
+    fit:    ((settings as any)?.[`${prefix}ImageFit`]       ?? "cover") as string,
+    posX:   ((settings as any)?.[`${prefix}ImagePositionX`] ?? 50)      as number,
+    posY:   ((settings as any)?.[`${prefix}ImagePositionY`] ?? 50)      as number,
+    zoom:   ((settings as any)?.[`${prefix}ImageZoom`]      ?? 1.0)     as number,
+    radius: ((settings as any)?.[`${prefix}ImageRadius`]    ?? 0)       as number,
   });
 
   const cards = [
