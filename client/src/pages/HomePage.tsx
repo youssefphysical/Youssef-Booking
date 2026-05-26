@@ -826,8 +826,6 @@ function ServicesSection() {
               <div
                 className="svc-img-wrap w-full"
                 style={{
-                  "--svc-mobile-h":  `${card.imgCfg.mobileH}px`,
-                  "--svc-desktop-h": `${card.imgCfg.desktopH}px`,
                   borderRadius: card.imgCfg.radius > 0 ? `${card.imgCfg.radius}px` : undefined,
                 } as React.CSSProperties}
               >

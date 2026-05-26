@@ -2683,13 +2683,13 @@ html[dir="rtl"] .hero-eyebrow-rule {
    SERVICE CARD IMAGE — responsive height via CSS custom properties
    ===================================================================== */
 .svc-img-wrap {
-  height: var(--svc-mobile-h, 220px);
+  height: clamp(180px, 52vw, 240px);
   overflow: hidden;
   position: relative;
 }
 @media (min-width: 768px) {
   .svc-img-wrap {
-    height: var(--svc-desktop-h, 260px);
+    height: clamp(240px, 26vw, 360px);
   }
 }
 

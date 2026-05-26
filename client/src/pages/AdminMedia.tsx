@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   ScanLine,
   Maximize2,
+  RotateCcw,
+  ChevronDown,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -47,8 +49,8 @@ const HERO_ASPECTS: AspectPreset[] = [
   { key: "21x9",  label: "21:9",  ratio: 21 / 9 },
 ];
 const SERVICE_ASPECTS: AspectPreset[] = [
-  { key: "3x2",   label: "3:2",   ratio: 3 / 2 },
   { key: "16x9",  label: "16:9",  ratio: 16 / 9 },
+  { key: "3x2",   label: "3:2",   ratio: 3 / 2 },
   { key: "1x1",   label: "1:1",   ratio: 1 },
 ];
 
@@ -646,9 +648,9 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 type ServiceCard = "personalTraining" | "nutrition" | "supplement";
 
 const SERVICE_META: { key: ServiceCard; label: string; desc: string }[] = [
-  { key: "personalTraining", label: "Personal Training",    desc: "3:2 · 1200×800" },
-  { key: "nutrition",        label: "Nutrition Plans",      desc: "3:2 · 1200×800" },
-  { key: "supplement",       label: "Supplement Protocol",  desc: "3:2 · 1200×800" },
+  { key: "personalTraining", label: "Personal Training",    desc: "16:9 · 1920×1080" },
+  { key: "nutrition",        label: "Nutrition Plans",      desc: "16:9 · 1920×1080" },
+  { key: "supplement",       label: "Supplement Protocol",  desc: "16:9 · 1920×1080" },
 ];
 
 function ServiceCardEditor({ cardKey, label, desc, settings }: {
@@ -662,6 +664,7 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
   const [showGuide, setShowGuide] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const prefix = cardKey;
   const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]     ?? null;
@@ -688,6 +691,31 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
     radius:    Number(rawMobileSettings.radius    ?? 0),
   });
 
+  // ── settingsMutation defined FIRST so uploadMutation.onSuccess can reference it ──
+  const settingsMutation = useMutation({
+    mutationFn: async (body: Record<string, unknown>) => {
+      const res = await apiRequest("PATCH", `/api/admin/media/services/${cardKey}/settings`, body);
+      if (!res.ok) throw new Error("Save failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Settings saved", description: "Display settings updated." });
+    },
+    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
+  });
+
+  // Auto Fit / Reset — centers focal point and saves immediately
+  const AUTO_FIT_BODY = {
+    fit: "cover", positionX: 50, positionY: 50, zoom: 1,
+    mobileSettings: { fit: "cover", positionX: 50, positionY: 50, zoom: 1 },
+  } as const;
+  const applyAutoFit = () => {
+    setDesktop(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
+    setMob(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
+    settingsMutation.mutate(AUTO_FIT_BODY);
+  };
+
   const uploadMutation = useMutation({
     mutationFn: async (data: { imageDataUrl: string }) => {
       const res = await apiRequest("POST", `/api/admin/media/services/${cardKey}`, data);
@@ -701,21 +729,12 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
       invalidateMedia();
       toast({ title: `${label} updated`, description: "Image uploaded and optimised for all screens." });
       setCropperOpen(false);
+      // Auto-centre focal point so the image looks perfect immediately
+      setDesktop(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
+      setMob(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
+      settingsMutation.mutate(AUTO_FIT_BODY);
     },
     onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-  });
-
-  const settingsMutation = useMutation({
-    mutationFn: async (body: Record<string, unknown>) => {
-      const res = await apiRequest("PATCH", `/api/admin/media/services/${cardKey}/settings`, body);
-      if (!res.ok) throw new Error("Save failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      invalidateMedia();
-      toast({ title: "Settings saved", description: "Display settings updated." });
-    },
-    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
 
   // Active preview image — show appropriate URL for the tab
@@ -790,62 +809,86 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
       </div>
 
       {/* Card body */}
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-3">
+
+        {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="font-display font-bold text-sm">{label}</h4>
-            <p className="text-[11px] text-muted-foreground">Drag preview to set focal point</p>
+            <p className="text-[11px] text-muted-foreground">
+              {desktopUrl ? "Drag preview to reposition" : "Upload a 16:9 image to get started"}
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowGuide(g => !g)}
-              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
-                showGuide
-                  ? "bg-primary/20 text-primary border-primary/35"
-                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
-              }`}
-            >
-              <ScanLine size={11} />
-              {showGuide ? "Hide Guide" : "Guide"}
-            </button>
-            {desktopUrl && (
-              <button
-                type="button"
-                onClick={() => setEditorOpen(true)}
-                data-testid={`button-fullscreen-${cardKey}`}
-                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border bg-white/5 border-white/10 text-muted-foreground hover:bg-primary/15 hover:text-primary hover:border-primary/30 transition-all duration-200"
-              >
-                <Maximize2 size={11} />
-                Edit
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowGuide(g => !g)}
+            className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
+              showGuide
+                ? "bg-primary/20 text-primary border-primary/35"
+                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+            }`}
+          >
+            <ScanLine size={11} />
+            Guide
+          </button>
         </div>
 
-        {/* Upload / replace button */}
-        {desktopUrl ? (
+        {/* Action buttons */}
+        {!desktopUrl ? (
+          /* No image yet — single prominent upload CTA */
           <button
             type="button"
             onClick={() => setCropperOpen(true)}
             disabled={uploadMutation.isPending}
             data-testid={`button-upload-${cardKey}`}
-            className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl bg-white/6 hover:bg-white/12 border border-white/12 hover:border-white/22 text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-all duration-200"
+            className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-sm font-semibold transition-all duration-200 hover:shadow-[0_0_16px_-4px_hsl(183_100%_60%/0.4)]"
           >
-            <UploadCloud size={13} />
-            Replace Image
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setCropperOpen(true)}
-            disabled={uploadMutation.isPending}
-            data-testid={`button-upload-${cardKey}`}
-            className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-sm font-semibold transition-all duration-200 hover:shadow-[0_0_16px_-4px_hsl(183_100%_60%/0.4)]"
-          >
-            <UploadCloud size={14} />
+            <UploadCloud size={15} />
             Upload Image
           </button>
+        ) : (
+          /* Has image — 2×2 grid of action buttons */
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setCropperOpen(true)}
+              disabled={uploadMutation.isPending}
+              data-testid={`button-upload-${cardKey}`}
+              className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-white/6 hover:bg-white/10 border border-white/12 hover:border-white/20 text-muted-foreground hover:text-foreground text-[12px] font-semibold transition-all duration-200"
+            >
+              <UploadCloud size={13} />
+              Replace
+            </button>
+            <button
+              type="button"
+              onClick={applyAutoFit}
+              disabled={settingsMutation.isPending}
+              data-testid={`button-autofit-${cardKey}`}
+              className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-primary/10 hover:bg-primary/18 border border-primary/20 hover:border-primary/35 text-primary text-[12px] font-semibold transition-all duration-200"
+            >
+              <Maximize2 size={13} />
+              Auto Fit
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditorOpen(true)}
+              data-testid={`button-fullscreen-${cardKey}`}
+              className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-white/6 hover:bg-white/10 border border-white/12 hover:border-white/20 text-muted-foreground hover:text-foreground text-[12px] font-semibold transition-all duration-200"
+            >
+              <Maximize2 size={13} />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={applyAutoFit}
+              disabled={settingsMutation.isPending}
+              data-testid={`button-reset-${cardKey}`}
+              className="inline-flex items-center justify-center gap-1.5 h-11 rounded-xl bg-white/6 hover:bg-white/10 border border-white/12 hover:border-white/20 text-muted-foreground hover:text-foreground text-[12px] font-semibold transition-all duration-200"
+            >
+              <RotateCcw size={13} />
+              Reset
+            </button>
+          </div>
         )}
 
         <ImageCropper
@@ -855,50 +898,69 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           aspects={SERVICE_ASPECTS}
           outputLongEdgePx={2000}
           title={`Upload ${label} image`}
-          description="3:2 recommended. Desktop, mobile, and thumbnail variants are generated automatically."
+          description="16:9 recommended (1920×1080). Desktop, mobile, and thumbnail variants are generated automatically."
           onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
         />
 
-        {/* Settings tabs */}
-        <div className="pt-1">
-          <SettingsTabs value={activeTab} onChange={setActiveTab} id={cardKey} prefix="service" />
-
-          {activeTab === "desktop" && (
-            <div className="space-y-4">
-              <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
-              <SliderRow label="Position X" value={desktop.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionX: v }))} />
-              <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
-              <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
-              <SliderRow label="Desktop height" value={desktop.desktopHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, desktopHeight: v }))} />
-              <SliderRow label="Mobile height" value={desktop.mobileHeight} min={80} max={700} step={4} unit="px" onChange={(v) => setDesktop(p => ({ ...p, mobileHeight: v }))} />
-              <SliderRow label="Radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
-              <SaveBtn
-                onClick={() => settingsMutation.mutate({ ...desktop })}
-                disabled={settingsMutation.isPending}
-                testId={`button-save-desktop-${cardKey}`}
+        {/* Advanced Settings — collapsed by default */}
+        {desktopUrl && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(s => !s)}
+              data-testid={`button-advanced-${cardKey}`}
+              className="w-full inline-flex items-center justify-between gap-2 px-3 h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07] text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-all duration-200"
+            >
+              <span className="flex items-center gap-1.5">
+                <Settings2 size={11} />
+                Advanced Settings
+              </span>
+              <ChevronDown
+                size={12}
+                className={`transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}
               />
-            </div>
-          )}
+            </button>
 
-          {activeTab === "mobile" && (
-            <div className="space-y-4">
-              <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
-                Mobile settings are fully independent from desktop. Drag the preview above to set the focal point for mobile.
-              </p>
-              <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
-              <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
-              <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
-              <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
-              <SliderRow label="Height" value={mob.height} min={80} max={700} step={4} unit="px" onChange={(v) => setMob(p => ({ ...p, height: v }))} />
-              <SliderRow label="Radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
-              <SaveBtn
-                onClick={() => settingsMutation.mutate({ mobileSettings: mob })}
-                disabled={settingsMutation.isPending}
-                testId={`button-save-mobile-${cardKey}`}
-              />
-            </div>
-          )}
-        </div>
+            {showAdvanced && (
+              <div className="mt-3 space-y-4">
+                <SettingsTabs value={activeTab} onChange={setActiveTab} id={cardKey} prefix="service" />
+
+                {activeTab === "desktop" && (
+                  <div className="space-y-4">
+                    <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
+                    <SliderRow label="Position X" value={desktop.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionX: v }))} />
+                    <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
+                    <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
+                    <SliderRow label="Corner radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
+                    <SaveBtn
+                      onClick={() => settingsMutation.mutate({ ...desktop })}
+                      disabled={settingsMutation.isPending}
+                      testId={`button-save-desktop-${cardKey}`}
+                    />
+                  </div>
+                )}
+
+                {activeTab === "mobile" && (
+                  <div className="space-y-4">
+                    <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
+                      Mobile settings are independent from desktop. Drag the preview above to set the focal point.
+                    </p>
+                    <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
+                    <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
+                    <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
+                    <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
+                    <SliderRow label="Corner radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
+                    <SaveBtn
+                      onClick={() => settingsMutation.mutate({ mobileSettings: mob })}
+                      disabled={settingsMutation.isPending}
+                      testId={`button-save-mobile-${cardKey}`}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Fullscreen touch editor */}
