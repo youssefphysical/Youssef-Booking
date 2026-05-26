@@ -4372,6 +4372,67 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.sendStatus(204);
   });
 
+  // ============== SERVICE-CARD IMAGES ==============
+  // Dedicated upload route so images are compressed through the same
+  // sharp pipeline as hero/transformation/profile uploads.
+  // Accepts a base64 data URL, resizes + converts to WebP, saves the
+  // resulting data URL into the matching settings column, and returns
+  // ONLY { imageUrl } — not the full settings row — so the response
+  // stays small regardless of how many other images are stored.
+  //
+  // IMPORTANT: This is the ONLY correct way to upload service card images.
+  // Do NOT send base64 data URLs via PATCH /api/settings — that route is
+  // for small scalar settings (numbers, text) only, and large payloads
+  // cause timeouts / Vercel body-size limits.
+  const SVC_IMAGE_CARD_KEYS = ["personalTraining", "nutrition", "supplement"] as const;
+  type SvcImageCardKey = (typeof SVC_IMAGE_CARD_KEYS)[number];
+  const SVC_IMAGE_URL_COLUMNS: Record<SvcImageCardKey, string> = {
+    personalTraining: "personalTrainingImageUrl",
+    nutrition:        "nutritionImageUrl",
+    supplement:       "supplementImageUrl",
+  };
+
+  app.post("/api/admin/service-images/:card", requireAdmin, async (req, res) => {
+    const card = req.params.card as SvcImageCardKey;
+    if (!(SVC_IMAGE_CARD_KEYS as readonly string[]).includes(card)) {
+      return res.status(400).json({
+        message: "Invalid card. Must be personalTraining, nutrition, or supplement.",
+      });
+    }
+    const schema = z.object({ imageDataUrl: z.string().min(40, "Image data is required") });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    const result = await processAdminImageDataUrl(parsed.data.imageDataUrl, {
+      width: 1200,
+      height: 800,
+      fit: "cover",
+      quality: 88,
+      allowedMime: new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]),
+      maxDataUrlBytes: 20 * 1024 * 1024,
+      maxDecodedBytes: 15 * 1024 * 1024,
+      typeErrorMessage: "Only JPEG, PNG, or WebP images are allowed.",
+      sizeErrorMessage: "Image must be under 15 MB.",
+    });
+    if (!result.ok) {
+      return res.status(result.status).json({ message: result.message });
+    }
+    const urlColumn = SVC_IMAGE_URL_COLUMNS[card];
+    await storage.updateSettings({ [urlColumn]: result.dataUrl } as any);
+    return res.status(200).json({ imageUrl: result.dataUrl });
+  });
+
+  app.delete("/api/admin/service-images/:card", requireAdmin, async (req, res) => {
+    const card = req.params.card as SvcImageCardKey;
+    if (!(SVC_IMAGE_CARD_KEYS as readonly string[]).includes(card)) {
+      return res.status(400).json({ message: "Invalid card key." });
+    }
+    const urlColumn = SVC_IMAGE_URL_COLUMNS[card];
+    await storage.updateSettings({ [urlColumn]: null } as any);
+    return res.sendStatus(204);
+  });
+
   // ============== TRANSFORMATIONS (before/after gallery) ==============
   // Public list — only active rows, sorted by admin order.
   app.get("/api/transformations", async (_req, res) => {

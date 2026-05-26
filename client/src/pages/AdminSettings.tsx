@@ -1926,11 +1926,14 @@ function ServiceCardImagesSection() {
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
 
-  const MAX_BYTES = 5 * 1024 * 1024;
-  const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  const MAX_BYTES = 15 * 1024 * 1024; // 15 MB — server will compress via sharp
 
   // Single active editor — one card open at a time (same pattern as HeroSlideEditor)
   const [editingKey, setEditingKey] = useState<SvcCardKey | null>(null);
+
+  // Per-card upload loading state (uploading goes through a dedicated route, not
+  // the generic updateSettings mutation, so we track it separately)
+  const [uploadingCard, setUploadingCard] = useState<SvcCardKey | null>(null);
 
   // Editor state — loaded from saved settings when an editor opens
   const [fit,           setFit]           = useState<string>(SVC_DEFAULTS.fit);
@@ -1984,41 +1987,50 @@ function ServiceCardImagesSection() {
     );
   }
 
-  function handleFile(key: SvcCardKey, urlKey: string, file: File | undefined) {
+  // Upload via the dedicated route — images are compressed through sharp
+  // server-side before being stored (same pipeline as hero / profile photos).
+  // NEVER sends raw base64 through PATCH /api/settings.
+  function handleFile(key: SvcCardKey, file: File | undefined) {
     if (!file) return;
+    const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!ALLOWED_MIME.includes(file.type.toLowerCase())) {
       toast({ title: "Only JPEG, PNG, or WebP images are allowed.", variant: "destructive" });
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast({ title: "Image must be under 5 MB.", variant: "destructive" });
+      toast({ title: "Image must be under 15 MB.", variant: "destructive" });
       return;
     }
+    const label = SVC_CARDS.find(c => c.key === key)?.label ?? key;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       if (!dataUrl) return;
-      const label = SVC_CARDS.find(c => c.key === key)?.label ?? key;
-      updateSettings.mutate(
-        { [urlKey]: dataUrl } as any,
-        {
-          onSuccess: () => toast({ title: `${label} image saved.` }),
-          onError: (err: any) => toast({ title: "Upload failed.", description: err?.message, variant: "destructive" }),
-        },
-      );
+      setUploadingCard(key);
+      try {
+        await apiRequest("POST", `/api/admin/service-images/${key}`, { imageDataUrl: dataUrl });
+        queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+        toast({ title: `${label} image saved.` });
+      } catch (err: any) {
+        const msg = err?.message || "Upload failed. Please try again.";
+        toast({ title: "Upload failed.", description: msg, variant: "destructive" });
+      } finally {
+        setUploadingCard(null);
+      }
     };
     reader.onerror = () => toast({ title: "Could not read the file.", variant: "destructive" });
     reader.readAsDataURL(file);
   }
 
-  function handleRemove(urlKey: string, label: string) {
-    updateSettings.mutate(
-      { [urlKey]: null } as any,
-      {
-        onSuccess: () => toast({ title: `${label} image removed.` }),
-        onError: (err: any) => toast({ title: "Remove failed.", description: err?.message, variant: "destructive" }),
-      },
-    );
+  // Remove via the dedicated DELETE route — clean, no large payload
+  async function handleRemove(key: SvcCardKey, label: string) {
+    try {
+      await apiRequest("DELETE", `/api/admin/service-images/${key}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: `${label} image removed.` });
+    } catch (err: any) {
+      toast({ title: "Remove failed.", description: err?.message, variant: "destructive" });
+    }
   }
 
   return (
@@ -2032,9 +2044,10 @@ function ServiceCardImagesSection() {
       {/* ── Card tiles ── */}
       <div className="grid sm:grid-cols-3 gap-5">
         {SVC_CARDS.map(({ key, label, urlKey }) => {
-          const savedUrl = (settings as any)?.[urlKey]?.trim() || "";
-          const inputId  = `service-img-input-${key}`;
+          const savedUrl  = (settings as any)?.[urlKey]?.trim() || "";
+          const inputId   = `service-img-input-${key}`;
           const isEditing = editingKey === key;
+          const isUploading = uploadingCard === key;
           return (
             <div key={key} className="space-y-3">
               <p className="text-sm font-medium">{label}</p>
@@ -2054,37 +2067,49 @@ function ServiceCardImagesSection() {
                     <span className="text-[10px] uppercase tracking-widest">No image</span>
                   </div>
                 )}
+                {isUploading && (
+                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center gap-2">
+                    <Loader2 size={18} className="animate-spin text-primary" />
+                    <span className="text-xs text-primary">Uploading…</span>
+                  </div>
+                )}
               </div>
 
               {/* Action bar */}
               <div className="flex gap-2">
-                <label htmlFor={inputId} className="flex-1">
+                <label
+                  htmlFor={isUploading ? undefined : inputId}
+                  className={`flex-1 ${isUploading ? "pointer-events-none opacity-50" : ""}`}
+                >
                   <input
                     id={inputId}
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     className="sr-only"
-                    onChange={(e) => handleFile(key, urlKey, e.target.files?.[0])}
+                    disabled={isUploading}
+                    onChange={(e) => { handleFile(key, e.target.files?.[0]); e.target.value = ""; }}
                     data-testid={`input-service-img-${key}`}
                   />
                   <span className="inline-flex items-center justify-center gap-1.5 h-9 w-full px-3 rounded-xl border border-white/10 text-xs font-medium cursor-pointer hover:border-primary/40 hover:text-primary transition-colors">
-                    <UploadCloud size={13} />
-                    {savedUrl ? "Replace" : "Upload"}
+                    {isUploading
+                      ? <><Loader2 size={13} className="animate-spin" /> Uploading…</>
+                      : <><UploadCloud size={13} />{savedUrl ? "Replace" : "Upload"}</>
+                    }
                   </span>
                 </label>
-                {savedUrl && (
+                {savedUrl && !isUploading && (
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemove(urlKey, label)}
-                    disabled={updateSettings.isPending}
+                    onClick={() => handleRemove(key, label)}
+                    disabled={uploadingCard !== null || updateSettings.isPending}
                     data-testid={`button-service-img-remove-${key}`}
                   >
                     <Trash2 size={13} />
                   </Button>
                 )}
-                {savedUrl && (
+                {savedUrl && !isUploading && (
                   <Button
                     size="sm"
                     variant={isEditing ? "default" : "outline"}
