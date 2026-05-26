@@ -776,6 +776,7 @@ export const settings = pgTable("settings", {
   personalTrainingMobileSettings: jsonb("personal_training_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   nutritionMobileSettings: jsonb("nutrition_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   supplementMobileSettings: jsonb("supplement_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
+  brandSettings: jsonb("brand_settings").$type<Record<string, number>>().notNull().default({}),
 });
 
 // =============================
@@ -1632,6 +1633,7 @@ export const updateSettingsSchema = z.object({
   supplementMobileUrl: z.string().nullable().optional(),
   supplementThumbnailUrl: z.string().nullable().optional(),
   supplementMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
+  brandSettings: z.record(z.number()).optional(),
 });
 
 export const PACKAGE_TYPES = [

@@ -1,0 +1,399 @@
+UI / BRANDING SYSTEM FINAL PASS – YOUSSEF ELITE
+
+CRITICAL:
+
+Do NOT partially implement.
+
+This is a complete branding system update.
+
+Brand style:
+
+TRON LEGACY
+Luxury futuristic
+Premium coaching platform
+High-end SaaS UX
+Apple level spacing precision
+Tesla style simplicity
+Mobile-first
+
+=================================================
+
+NEW BRAND ASSETS
+
+Asset 1:
+
+YE Icon Logo (transparent PNG)
+
+Usage:
+
+Small branding icon only.
+
+Place here:
+
+1. Navbar top-left
+
+Desktop:
+52–60px
+
+Mobile:
+44–50px
+
+Glow:
+
+drop-shadow(0 0 10px rgba(0,212,255,.35))
+
+Hover:
+
+scale(1.04)
+
+Transition:
+
+0.25s ease
+
+Never blur.
+
+Always sharp.
+
+PNG transparency required.
+
+------------------------------------------------
+
+Asset 2:
+
+YE + YOUSSEF ELITE Horizontal Logo
+
+(New uploaded logo)
+
+Usage:
+
+Brand title beside icon.
+
+Placement:
+
+Navbar top-left.
+
+Structure:
+
+[YE ICON]
+
+SPACE 10–14px
+
+[YOUSSEF ELITE TEXT LOGO]
+
+Desktop:
+
+Text logo width:
+
+120–180px
+
+Mobile:
+
+90–130px
+
+Height auto.
+
+object-fit:contain
+
+PNG transparency only.
+
+No black background.
+
+No cropping.
+
+Never overflow.
+
+Navbar alignment:
+
+display:flex
+
+align-items:center
+
+gap:12px
+
+Logo block max height:
+
+60px
+
+Entire navbar branding clickable.
+
+Link:
+
+/
+
+------------------------------------------------
+
+Asset 3:
+
+Full Main Logo
+
+(Big logo with icon + title)
+
+Usage:
+
+Login page hero
+
+Registration page hero
+
+Forgot password page
+
+Email templates
+
+Client portal hero
+
+Dashboard welcome section
+
+Desktop:
+
+Hero logo width:
+
+250–300px
+
+Mobile:
+
+200–240px
+
+object-fit:contain
+
+PNG transparency required.
+
+No black square.
+
+Remove forced image containers.
+
+Container:
+
+display:flex
+
+justify-content:center
+
+align-items:center
+
+------------------------------------------------
+
+LOGIN + REGISTER FIXES
+
+Current problems:
+
+1.
+
+Logo too small
+
+2.
+
+Empty spaces around logo
+
+3.
+
+Duplicate branding
+
+4.
+
+Black PNG background visible
+
+5.
+
+Visual hierarchy weak
+
+=================================================
+
+REMOVE:
+
+Extra text:
+
+"YOUSSEF ELITE"
+
+Above CLIENT PORTAL.
+
+Reason:
+
+Brand already exists inside logo.
+
+Current:
+
+LOGO
+
+YOUSSEF ELITE
+
+CLIENT PORTAL
+
+BAD UX.
+
+New:
+
+LOGO
+
+CLIENT PORTAL
+
+Only.
+
+=================================================
+
+AUTH HERO SPACING
+
+Desktop:
+
+Padding top:
+
+16px
+
+Logo bottom spacing:
+
+20px
+
+CLIENT PORTAL margin top:
+
+12px
+
+Tab buttons margin top:
+
+18px
+
+Mobile:
+
+Compact luxury spacing.
+
+Reduce empty vertical space.
+
+No floating elements.
+
+=================================================
+
+AUTH LOGO SCALE
+
+Current:
+
+Small.
+
+Required:
+
+Fill surrounding empty space professionally.
+
+Target:
+
+Logo occupies:
+
+70–85% available hero width.
+
+Without overflow.
+
+Without touching borders.
+
+Without distortion.
+
+Maintain ratio.
+
+=================================================
+
+PNG SYSTEM
+
+Every logo PNG:
+
+object-fit:contain
+
+background:transparent
+
+Never black container.
+
+Never crop.
+
+Never forced square.
+
+Never fixed height only.
+
+Use:
+
+max-width
+
+height:auto
+
+=================================================
+
+ADMIN CONTROL PANEL
+
+Create:
+
+Brand Settings
+
+Controls:
+
+Navbar Logo Mobile Size
+
+Navbar Logo Desktop Size
+
+Text Logo Mobile Size
+
+Text Logo Desktop Size
+
+Auth Hero Logo Mobile Size
+
+Auth Hero Logo Desktop Size
+
+Glow Intensity
+
+Vertical Offset
+
+Padding
+
+Logo Gap
+
+Live Preview
+
+No hardcoded values.
+
+=================================================
+
+RESPONSIVE TEST
+
+Test:
+
+320px
+
+360px
+
+390px
+
+430px
+
+768px
+
+1024px
+
+Desktop
+
+Chrome Android
+
+Safari iPhone
+
+No CLS.
+
+No overlap.
+
+No crop.
+
+No overflow.
+
+=================================================
+
+DEPLOY ONLY AFTER:
+
+Mobile verified
+
+Logo visible professionally
+
+No duplicated branding
+
+Transparent PNG working
+
+Luxury Tron Legacy feeling achieved
+
+FINAL GOAL:
+
+Premium futuristic fitness platform.
+
+Logo dominance.
+
+Professional visual hierarchy.
+
+Brand identity visible immediately.
+
+Deploy production after verification.

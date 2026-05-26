@@ -58,6 +58,7 @@ Premium dark-luxury (AMOLED + Tron-cyan) training platform for Youssef Elite —
 - **Coach-notes privacy.** `sanitizeBookingForUser(me, b)` strips `privateCoachNotes` from every non-admin booking response (list, create, cancel, patch, same-day-adjust).
 - **Admin enrichment isolation.** Health-score / intelligence enrichment is opt-in (`{withHealth?:true}` on `sanitizeAndEnrich(Many)`) and only triggered by admin list/detail routes — never by `BookingWithUser` / `PackageWithUser` shapes.
 - **Idempotent crons.** `/api/cron/reminders` uses atomic SQL claim (`UPDATE … WHERE … IS NULL RETURNING id`) so it's safe to invoke as often as desired.
+- **Brand logo hierarchy.** Three assets: `ye-logo.png` (YE icon — favicons, sidebar, footer), `ye-logo-horizontal.png` (icon + "Youssef Elite" text — navbar), `ye-logo-primary.png` (full brand — auth page hero, loading screen). Sizes are admin-configurable via `settings.brand_settings` JSONB, applied as CSS vars (`--brand-navbar-h-desktop`, `--brand-auth-w-desktop`, etc.) at app boot by `App.tsx → applyBrandCSSVars`. Admin UI: Settings → Brand settings panel with live preview.
 
 ## Product surface
 

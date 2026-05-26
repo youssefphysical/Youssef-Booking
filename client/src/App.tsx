@@ -28,6 +28,8 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { OfflineQueueBanner } from "@/components/OfflineQueueBanner";
 import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 import { useFeatureFlag } from "@/lib/featureFlags";
+import { useSettings } from "@/hooks/use-settings";
+import { applyBrandCSSVars } from "@/lib/brandSettings";
 
 // ===== Lazy-loaded routes (split into per-page chunks) =====
 // Every other page is loaded on demand. This keeps the initial JS
@@ -125,6 +127,13 @@ function Router() {
   // so an admin can always log in to flip the flag back.
   const maintenance = useFeatureFlag("maintenance_mode", false);
   const { user } = useAuth();
+
+  // Inject brand CSS variables as soon as settings load so BrandLogo
+  // and AuthPage pick up admin-configured sizes without a page reload.
+  const { data: settings } = useSettings();
+  useEffect(() => {
+    applyBrandCSSVars(settings?.brandSettings as Record<string, number> | undefined);
+  }, [settings?.brandSettings]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
   const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
   const showMaintenance = maintenance && !allowBypass;

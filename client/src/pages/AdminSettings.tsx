@@ -29,6 +29,7 @@ import {
   useSettings,
   useUpdateSettings,
 } from "@/hooks/use-settings";
+import { BRAND_DEFAULTS, applyBrandCSSVars, type BrandSettings } from "@/lib/brandSettings";
 import {
   useBlockedSlots,
   useCreateBlockedSlot,
@@ -99,6 +100,7 @@ export default function AdminSettings() {
 
         <div className="admin-stack">
           <FeatureFlagsSection />
+          <BrandSettingsSection />
           <GeneralSettingsSection />
           <BankDetailsSection />
           <ProfileContentSection />
@@ -760,6 +762,198 @@ function HeroSlideEditor({
 // + shadcn Slider. Kept inline (rather than a generic component) so we
 // can keep the labelling tight and lean on the surrounding section's
 // vertical rhythm.
+// =====================================================================
+// BRAND SETTINGS — logo sizes, glow, spacing. Controls the CSS vars
+// injected globally by BrandSettingsProvider in App.tsx.
+// Live preview: changes apply to CSS vars immediately so admin sees
+// the navbar logo update in real time before saving.
+// =====================================================================
+function BrandSettingsSection() {
+  const { toast } = useToast();
+  const { data: rawSettings, isLoading } = useSettings();
+  const updateSettings = useUpdateSettings();
+
+  const stored = (rawSettings?.brandSettings ?? {}) as Partial<BrandSettings>;
+  const merged = { ...BRAND_DEFAULTS, ...stored };
+
+  const [vals, setVals] = useState<BrandSettings>(merged);
+  const [dirty, setDirty] = useState(false);
+
+  // Sync once settings load for the first time
+  const [initialised, setInitialised] = useState(false);
+  useEffect(() => {
+    if (!isLoading && rawSettings && !initialised) {
+      const m = { ...BRAND_DEFAULTS, ...((rawSettings.brandSettings ?? {}) as Partial<BrandSettings>) };
+      setVals(m);
+      setInitialised(true);
+    }
+  }, [isLoading, rawSettings, initialised]);
+
+  function set<K extends keyof BrandSettings>(key: K, v: number) {
+    const next = { ...vals, [key]: v };
+    setVals(next);
+    setDirty(true);
+    applyBrandCSSVars(next);
+  }
+
+  function handleReset() {
+    setVals(BRAND_DEFAULTS);
+    setDirty(true);
+    applyBrandCSSVars(BRAND_DEFAULTS as unknown as Record<string, number>);
+  }
+
+  function handleSave() {
+    updateSettings.mutate({ brandSettings: vals as unknown as Record<string, number> }, {
+      onSuccess: () => {
+        toast({ title: "Brand settings saved" });
+        setDirty(false);
+      },
+      onError: () => toast({ title: "Save failed", variant: "destructive" }),
+    });
+  }
+
+  return (
+    <section className="admin-card" data-testid="section-brand-settings">
+      <h2 className="font-display font-bold text-lg mb-1">Brand settings</h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        Adjust logo sizes, glow, and spacing. Changes preview live — save to persist.
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 size={14} className="animate-spin" /> Loading…
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Live preview */}
+          <div className="rounded-xl border border-primary/15 bg-background/40 px-4 py-3 flex items-center gap-3">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground mr-2">Preview</span>
+            <img
+              src="/ye-logo-horizontal.png"
+              alt="Youssef Elite"
+              className="object-contain transition-all"
+              style={{
+                height: vals.navbarLogoDesktop,
+                width: "auto",
+                maxWidth: 280,
+                filter: `drop-shadow(0 0 10px rgba(0,212,255,${vals.logoGlow / 100}))`,
+              }}
+            />
+          </div>
+
+          {/* Navbar logo sizes */}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-primary/70 mb-3 font-semibold">Navbar logo</p>
+            <div className="space-y-4">
+              <TuningSlider
+                testId="slider-brand-navbar-desktop"
+                label="Desktop height"
+                value={vals.navbarLogoDesktop}
+                min={32} max={80} step={2}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("navbarLogoDesktop", v)}
+              />
+              <TuningSlider
+                testId="slider-brand-navbar-mobile"
+                label="Mobile height"
+                value={vals.navbarLogoMobile}
+                min={28} max={64} step={2}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("navbarLogoMobile", v)}
+              />
+              <TuningSlider
+                testId="slider-brand-navbar-gap"
+                label="Logo gap"
+                value={vals.navbarLogoGap}
+                min={0} max={24} step={2}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("navbarLogoGap", v)}
+              />
+            </div>
+          </div>
+
+          {/* Auth hero logo sizes */}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-primary/70 mb-3 font-semibold">Auth hero logo</p>
+            <div className="space-y-4">
+              <TuningSlider
+                testId="slider-brand-auth-desktop"
+                label="Desktop width"
+                value={vals.authLogoDesktop}
+                min={160} max={400} step={10}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("authLogoDesktop", v)}
+              />
+              <TuningSlider
+                testId="slider-brand-auth-mobile"
+                label="Mobile width"
+                value={vals.authLogoMobile}
+                min={120} max={320} step={10}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("authLogoMobile", v)}
+              />
+            </div>
+          </div>
+
+          {/* Glow + offset */}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-primary/70 mb-3 font-semibold">Glow & position</p>
+            <div className="space-y-4">
+              <TuningSlider
+                testId="slider-brand-glow"
+                label="Glow intensity"
+                value={vals.logoGlow}
+                min={0} max={80} step={5}
+                format={(v) => `${v}%`}
+                onChange={(v) => set("logoGlow", v)}
+              />
+              <TuningSlider
+                testId="slider-brand-voffset"
+                label="Vertical offset"
+                value={vals.logoVerticalOffset}
+                min={-12} max={12} step={1}
+                format={(v) => `${v > 0 ? "+" : ""}${v} px`}
+                onChange={(v) => set("logoVerticalOffset", v)}
+              />
+              <TuningSlider
+                testId="slider-brand-padding"
+                label="Padding"
+                value={vals.logoPadding}
+                min={0} max={16} step={1}
+                format={(v) => `${v} px`}
+                onChange={(v) => set("logoPadding", v)}
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              data-testid="button-brand-reset"
+            >
+              Reset defaults
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSave}
+              disabled={!dirty || updateSettings.isPending}
+              data-testid="button-brand-save"
+            >
+              {updateSettings.isPending && <Loader2 size={12} className="mr-1.5 animate-spin" />}
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function TuningSlider({
   label, value, min, max, step, onChange, format, testId,
 }: {

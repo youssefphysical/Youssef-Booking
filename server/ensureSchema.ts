@@ -94,6 +94,9 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS supplement_thumbnail_url text,
       ADD COLUMN IF NOT EXISTS supplement_mobile_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS brand_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

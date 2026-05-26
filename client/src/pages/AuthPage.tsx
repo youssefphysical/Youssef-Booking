@@ -185,19 +185,19 @@ export default function AuthPage({
           <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
-          <div className="relative flex flex-col items-center mb-6">
+          <div className="relative flex flex-col items-center pt-4 mb-5">
             {/* Soft ambient glow behind the logo */}
             <div
               aria-hidden
               className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
-                width: 280,
-                height: 280,
-                background: "radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%)",
+                width: 300,
+                height: 300,
+                background: "radial-gradient(circle, rgba(0,212,255,0.09) 0%, transparent 70%)",
                 filter: "blur(24px)",
               }}
             />
-            {/* Floating + pulse logo */}
+            {/* Floating + pulse logo — primary full-brand asset */}
             <motion.img
               src={logoSrc}
               alt="Youssef Elite"
@@ -211,15 +211,36 @@ export default function AuthPage({
                 ],
               }}
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative w-[220px] sm:w-[300px] md:w-[360px] max-w-full"
-              style={{ objectFit: "contain" }}
+              style={{
+                objectFit: "contain",
+                width: "var(--brand-auth-w-mobile,210px)",
+                maxWidth: "85%",
+              }}
+              className="relative sm:hidden"
+            />
+            <motion.img
+              src={logoSrc}
+              alt="Youssef Elite"
+              aria-hidden="true"
+              animate={{
+                y: [0, -3, 0],
+                filter: [
+                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                  "drop-shadow(0 0 22px rgba(0,212,255,0.60))",
+                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                ],
+              }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              style={{
+                objectFit: "contain",
+                width: "var(--brand-auth-w-desktop,280px)",
+                maxWidth: "85%",
+              }}
+              className="relative hidden sm:block"
             />
 
-            {/* Brand label + portal badge */}
-            <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold mt-4">
-              {t("nav.brand")}
-            </p>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-2">
+            {/* Portal badge — no duplicate brand name; logo already carries brand identity */}
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
               {mode === "admin-login" ? t("auth.adminAccess") : t("auth.clientPortal")}
             </p>
           </div>
