@@ -42,7 +42,7 @@ export function PremiumPageLoader() {
           }}
         />
         <motion.img
-          src="/ye-logo-primary.png"
+          src="/ye-logo.png"
           alt="Youssef Elite"
           aria-hidden="true"
           animate={{
@@ -54,7 +54,8 @@ export function PremiumPageLoader() {
             ],
           }}
           transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative w-[200px] sm:w-[240px] md:w-[300px] max-w-full object-contain"
+          className="relative object-contain"
+          style={{ width: "clamp(90px, 22vw, 120px)" }}
         />
       </div>
 

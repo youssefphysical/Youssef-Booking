@@ -1,0 +1,123 @@
+SMALL LOGO / MICRO BRANDING SYSTEM UPDATE
+
+I uploaded the small YE icon logo.
+
+This logo must be used for all small branding areas across the website and app.
+
+IMPORTANT:
+Use the icon logo only, not the full Youssef Elite text logo, for small spaces.
+
+Apply this small logo to:
+
+1. Navbar small logo
+- Top-left logo on all pages
+- Homepage
+- Auth page
+- Dashboard
+- Admin / Control Panel
+- Mobile menu
+
+2. Browser / app icons
+- Favicon 16x16
+- Favicon 32x32
+- Favicon 48x48
+- Apple touch icon
+- Android icon
+- PWA icon 192x192
+- PWA icon 512x512
+- Manifest app icon
+
+3. Email branding
+- Password reset email
+- Booking confirmation email
+- Session reminder email
+- Package expiry email
+- Welcome email
+- Admin notification email
+
+Use small logo in email header only.
+
+4. Loading states
+- Login loading
+- Register loading
+- Page loading
+- Upload loading
+- Payment/request loading if available
+
+5. Empty states / placeholders
+- Profile placeholder
+- No image placeholder
+- No package placeholder
+- No bookings placeholder
+- Admin empty state
+
+6. Share / preview
+- Open Graph image icon
+- WhatsApp link preview if applicable
+- Social preview metadata
+- PWA splash screen
+
+Design rules:
+
+- The icon must be clearly visible.
+- Do not make it tiny.
+- Do not crop it.
+- Do not stretch it.
+- Do not use the full horizontal logo in tiny places.
+- Use object-fit: contain.
+- Use transparent PNG/WebP.
+- Keep cyan glow visible.
+- Keep safe padding around the logo.
+
+Recommended sizes:
+
+Navbar mobile:
+44–52px height
+
+Navbar desktop:
+52–64px height
+
+Favicon:
+16, 32, 48px generated from icon
+
+Email header:
+56–72px height
+
+Loading screen:
+90–120px height
+
+Dashboard small branding:
+42–56px height
+
+Admin panel:
+42–56px height
+
+Profile placeholder:
+64–96px
+
+PWA icons:
+192x192 and 512x512 with safe padding
+
+Important navbar fix:
+The current top-left logo is too small and sometimes visually clipped.
+Make it larger and move it slightly down if needed.
+
+Mobile navbar:
+height 44–52px
+translateY 3–5px if needed
+
+Desktop navbar:
+height 52–64px
+translateY 2–4px if needed
+
+Also:
+- Add Brand Settings controls in Admin:
+  - Small logo mobile size
+  - Small logo desktop size
+  - Logo vertical offset
+  - Logo glow intensity
+  - Logo safe padding
+  - Live preview
+
+Final result:
+The small YE icon should become the official micro-branding logo everywhere small branding is needed, while the full Youssef Elite logo remains only for large hero/marketing sections.

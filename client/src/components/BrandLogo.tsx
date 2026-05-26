@@ -2,10 +2,10 @@
  * BrandLogo — Youssef Elite unified brand identity component.
  *
  * Brand hierarchy:
- *  "navbar"  — horizontal logo (icon + "Youssef Elite" text in one PNG).
- *              Desktop height driven by --brand-navbar-h-desktop (default 52px),
- *              mobile by --brand-navbar-h-mobile (default 40px).
- *              Hover: scale(1.04), glow pulse.
+ *  "navbar"  — YE icon only (micro-branding spec). Height driven by
+ *              --brand-navbar-h-desktop (default 60px) /
+ *              --brand-navbar-h-mobile (default 52px).
+ *              Hover: scale(1.04), glow. No text beside icon.
  *  "sidebar" — YE icon only, 32 px (compact admin sidebar column).
  *  "footer"  — YE icon only, 22 px (small elegant footer branding).
  *  "icon"    — YE icon only, 36 px (favicon-style compact slot).
@@ -29,36 +29,35 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
   if (variant === "navbar") {
     return (
       <span
-        className={`inline-flex items-center shrink-0 ${className}`}
+        className={`inline-flex items-center justify-center shrink-0 ${className}`}
         aria-label="Youssef Elite"
         style={{
-          padding: `max(var(--brand-logo-padding,0px), 5px) 0`,
-          gap: "var(--brand-navbar-gap,12px)",
+          padding: `max(var(--brand-logo-padding,5px), 5px) 4px`,
           overflow: "visible",
         }}
       >
+        {/* Mobile — icon only */}
         <img
-          src="/ye-logo-horizontal.png"
+          src="/ye-logo.png"
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] block md:hidden"
           style={{
-            height: "var(--brand-navbar-h-mobile,46px)",
+            height: "var(--brand-navbar-h-mobile,52px)",
             width: "auto",
-            maxWidth: "220px",
             filter: GLOW,
             transform: "translateY(var(--brand-logo-voffset,0px))",
           }}
         />
+        {/* Desktop — icon only */}
         <img
-          src="/ye-logo-horizontal.png"
+          src="/ye-logo.png"
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] hidden md:block"
           style={{
-            height: "var(--brand-navbar-h-desktop,56px)",
+            height: "var(--brand-navbar-h-desktop,60px)",
             width: "auto",
-            maxWidth: "280px",
             filter: GLOW,
             transform: "translateY(var(--brand-logo-voffset,0px))",
           }}

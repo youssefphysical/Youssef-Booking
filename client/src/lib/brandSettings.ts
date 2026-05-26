@@ -10,14 +10,14 @@ export interface BrandSettings {
 }
 
 export const BRAND_DEFAULTS: BrandSettings = {
-  navbarLogoDesktop: 56,  // spec: 52–60px
-  navbarLogoMobile: 46,   // spec: 42–50px
-  authLogoDesktop: 480,   // spec: max 500px desktop
-  authLogoMobile: 400,    // spec: max 420px mobile
+  navbarLogoDesktop: 60,  // icon-only spec: 52–64px desktop
+  navbarLogoMobile: 52,   // icon-only spec: 44–52px mobile
+  authLogoDesktop: 480,   // auth hero max 500px desktop
+  authLogoMobile: 400,    // auth hero max 420px mobile
   logoGlow: 35,
   logoVerticalOffset: 0,
-  logoPadding: 0,
-  navbarLogoGap: 10,      // spec: 8–12px
+  logoPadding: 5,         // min 5px padding keeps icon away from edges
+  navbarLogoGap: 0,       // no gap — icon-only, no adjacent text
 };
 
 export function applyBrandCSSVars(raw?: Record<string, number> | null) {
