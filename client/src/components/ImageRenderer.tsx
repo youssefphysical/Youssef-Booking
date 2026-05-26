@@ -24,9 +24,30 @@ import { Image as ImageIcon } from "lucide-react";
 const HERO_REF_W = 1440;
 const HERO_REF_H = 810;
 
+// ─── Content type meta ────────────────────────────────────────────────────────
+const CONTENT_TYPE_LABELS: Record<string, { label: string; color: string }> = {
+  person:      { label: "Person",      color: "hsl(183 100% 74%)" },
+  nutrition:   { label: "Food",        color: "#7dd87d" },
+  supplement:  { label: "Supplement",  color: "#f59e5a" },
+  logo:        { label: "Logo",        color: "#c084fc" },
+  auto:        { label: "Auto",        color: "rgba(255,255,255,0.55)" },
+};
+
 // ─── Crop guide overlay ───────────────────────────────────────────────────────
-export function CropGuideOverlay({ show }: { show: boolean }) {
+export function CropGuideOverlay({
+  show,
+  contentType,
+  showMobileZone = false,
+}: {
+  show: boolean;
+  contentType?: string;
+  showMobileZone?: boolean;
+}) {
   if (!show) return null;
+
+  const ctMeta = contentType ? CONTENT_TYPE_LABELS[contentType] : null;
+  const isLogo = contentType === "logo";
+
   return (
     <div
       className="absolute inset-0 pointer-events-none select-none"
@@ -69,7 +90,8 @@ export function CropGuideOverlay({ show }: { show: boolean }) {
           />
         )),
       )}
-      {/* Safe zone — 10% inset on every side */}
+
+      {/* Safe zone — 10% inset on every side (desktop frame safe area) */}
       <div
         style={{
           position: "absolute",
@@ -96,6 +118,75 @@ export function CropGuideOverlay({ show }: { show: boolean }) {
           SAFE ZONE
         </span>
       </div>
+
+      {/* Mobile viewport crop indicator — visible on 390px mobile, 16:10 ratio clip */}
+      {showMobileZone && (
+        <div
+          style={{
+            position: "absolute",
+            left: "12%",
+            right: "12%",
+            top: "5%",
+            bottom: "5%",
+            border: "1.5px dashed rgba(255,180,80,0.55)",
+            borderRadius: 4,
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              bottom: 4,
+              right: 4,
+              fontSize: 9,
+              fontWeight: 700,
+              color: "rgba(255,180,80,0.9)",
+              background: "rgba(0,0,0,0.6)",
+              padding: "1px 5px",
+              borderRadius: 3,
+              letterSpacing: "0.06em",
+              pointerEvents: "none",
+            }}
+          >
+            MOBILE CROP
+          </span>
+        </div>
+      )}
+
+      {/* Logo protection zone — centered 40% area, shown for logo content type */}
+      {isLogo && (
+        <div
+          style={{
+            position: "absolute",
+            left: "30%",
+            right: "30%",
+            top: "30%",
+            bottom: "30%",
+            border: "1.5px dashed rgba(192,132,252,0.65)",
+            borderRadius: 4,
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              top: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
+              fontSize: 9,
+              fontWeight: 700,
+              color: "rgba(192,132,252,0.9)",
+              background: "rgba(0,0,0,0.6)",
+              padding: "1px 5px",
+              borderRadius: 3,
+              letterSpacing: "0.06em",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            LOGO ZONE
+          </span>
+        </div>
+      )}
+
       {/* Center crosshair */}
       <div
         style={{
@@ -113,6 +204,29 @@ export function CropGuideOverlay({ show }: { show: boolean }) {
           <circle cx="9" cy="9" r="3" stroke="hsl(183 100% 74%)" strokeWidth="1" />
         </svg>
       </div>
+
+      {/* Content type badge — top-right corner */}
+      {ctMeta && (
+        <div
+          style={{
+            position: "absolute",
+            top: 6,
+            right: 6,
+            fontSize: 9,
+            fontWeight: 700,
+            color: ctMeta.color,
+            background: "rgba(0,0,0,0.7)",
+            border: `1px solid ${ctMeta.color}55`,
+            padding: "2px 6px",
+            borderRadius: 4,
+            letterSpacing: "0.08em",
+            pointerEvents: "none",
+            textTransform: "uppercase",
+          }}
+        >
+          {ctMeta.label}
+        </div>
+      )}
     </div>
   );
 }
@@ -334,6 +448,8 @@ export function ServiceImageFrame({
   positionY = 50,
   zoom = 1,
   showGuide = false,
+  contentType,
+  showMobileZone = false,
   onPositionChange,
   className = "",
 }: {
@@ -343,6 +459,8 @@ export function ServiceImageFrame({
   positionY?: number;
   zoom?: number;
   showGuide?: boolean;
+  contentType?: string;
+  showMobileZone?: boolean;
   /** Called with updated (posX, posY) while the user drags */
   onPositionChange?: (posX: number, posY: number) => void;
   className?: string;
@@ -426,7 +544,11 @@ export function ServiceImageFrame({
     >
       <img src={src} alt="" draggable={false} style={imgStyle} />
 
-      <CropGuideOverlay show={showGuide} />
+      <CropGuideOverlay
+        show={showGuide}
+        contentType={contentType}
+        showMobileZone={showMobileZone}
+      />
 
       {onPositionChange && (
         <>

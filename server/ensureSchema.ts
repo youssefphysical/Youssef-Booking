@@ -91,6 +91,12 @@ async function run(): Promise<void> {
     ALTER TABLE IF EXISTS settings
       ADD COLUMN IF NOT EXISTS brand_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
 
+    -- Global Logo Manager — uploadable brand logo variants (override static /ye-logo*.png)
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS logo_icon_url   text,
+      ADD COLUMN IF NOT EXISTS logo_navbar_url text,
+      ADD COLUMN IF NOT EXISTS logo_auth_url   text;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

@@ -1,0 +1,285 @@
+Build final premium Service Image System improvements.
+
+IMPORTANT:
+Modify ONLY service image management + logo management.
+Do NOT touch unrelated systems.
+Do NOT modify booking, auth, clients, payments or homepage logic outside image rendering.
+
+GOALS:
+
+1. AI SMART AUTO COMPOSITION
+
+When uploading service images:
+
+AI detects:
+
+- Face / Person
+- Logo
+- Product
+- Food
+- Supplement bottles
+- Scene center
+
+Priority logic:
+
+Personal Training:
+Face > Body > Logo > Scene
+
+Nutrition:
+Food > Meal box > Logo > Scene
+
+Supplement Protocol:
+Supplement bottles > Product > Logo > Scene
+
+Branding:
+Logo > Scene
+
+Auto:
+AI decides automatically.
+
+Rules:
+
+- Never stretch images
+- Never squash images
+- Never create tall/alien effect
+- Never create compressed/dwarf effect
+- Zoom max 1.15x
+- Fallback:
+X=50
+Y=50
+Zoom=1
+
+Timeout fallback:
+12 seconds
+
+If AI unavailable:
+Use centered composition.
+
+--------------------------------
+
+2. SAFE ZONES SYSTEM
+
+Create safe zones inside preview:
+
+Desktop safe area
+
+Mobile safe area
+
+Logo protection zone
+
+Rule:
+
+Important content must stay visible:
+
+- Logo
+- Face
+- Food
+- Supplements
+
+Preview overlays visible ONLY inside admin.
+
+Client never sees overlays.
+
+--------------------------------
+
+3. CONTENT TYPE SELECTOR
+
+Add selector:
+
+Auto
+
+Person
+
+Nutrition
+
+Supplement
+
+Logo
+
+Branding
+
+AI composition adapts automatically.
+
+--------------------------------
+
+4. PREMIUM MEDIA CONTROLS
+
+Replace current difficult controls.
+
+Main controls:
+
+Upload
+
+Auto Fit
+
+Edit
+
+Reset
+
+Advanced Settings (collapsed)
+
+Advanced only:
+
+X
+
+Y
+
+Zoom
+
+Fit
+
+Radius
+
+Power users only.
+
+Default admin workflow:
+
+Upload -> Auto -> Save
+
+No manual work.
+
+--------------------------------
+
+5. UNIVERSAL RESPONSIVE SYSTEM
+
+Image uploaded once.
+
+Must automatically work:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Future app version
+
+No separate crop systems.
+
+No separate mobile image.
+
+No separate desktop image.
+
+Single rendering engine.
+
+Admin preview = Live site.
+
+100% WYSIWYG.
+
+--------------------------------
+
+6. SMART IMAGE VALIDATION
+
+Before save:
+
+Run validation.
+
+If important subject clipped:
+
+Show warning:
+
+"Main content may be cropped."
+
+Allow override.
+
+--------------------------------
+
+7. GLOBAL LOGO MANAGEMENT SYSTEM
+
+Create dedicated:
+
+Settings -> Branding -> Logo Manager
+
+Admin can manage:
+
+Main Logo
+
+Header Logo
+
+Footer Logo
+
+Dark Logo
+
+Light Logo
+
+Watermark Logo
+
+Email Logo
+
+App Icon
+
+Favicon
+
+Loading Logo
+
+Future Mobile App Logo
+
+Controls:
+
+Upload
+
+Replace
+
+Crop
+
+Preview desktop
+
+Preview mobile
+
+Auto optimize
+
+AI logo positioning
+
+Safe padding
+
+Size sliders
+
+Border radius
+
+Logo visibility toggles
+
+Instant preview.
+
+Global update:
+
+Change logo once.
+
+Updates entire site automatically.
+
+No manual replacement page by page.
+
+--------------------------------
+
+8. LOGO SAFETY RULES
+
+Logos always protected.
+
+Keep logos inside safe zone.
+
+Never crop logo.
+
+Never stretch logo.
+
+Keep logo aspect ratio locked.
+
+--------------------------------
+
+Premium quality only.
+
+Think:
+
+Apple
+
+Instagram
+
+Shopify
+
+Canva
+
+Modern SaaS admin systems.
+
+No childish UI.
+
+Luxury fitness brand quality.
+
+Tron Legacy visual language remains unchanged.

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Settings } from "@shared/schema";
 
 /**
  * Non-blocking page loader.
@@ -10,9 +12,17 @@ import { Loader2 } from "lucide-react";
  * all. Only on genuinely slow responses (cold-start serverless, slow 3G)
  * does the brand logo + spinner appear. No full-screen black overlay,
  * no marketing copy — just the premium identity at rest.
+ *
+ * Uses the custom icon logo from settings when one has been uploaded via the
+ * Logo Manager, falling back to the static /ye-logo.png.
  */
 export function PremiumPageLoader() {
   const [visible, setVisible] = useState(false);
+  const { data: settings } = useQuery<Settings>({
+    queryKey: ["/api/settings"],
+    staleTime: 5 * 60 * 1000,
+  });
+  const logoSrc = settings?.logoIconUrl || "/ye-logo.png";
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 700);
@@ -42,7 +52,7 @@ export function PremiumPageLoader() {
           }}
         />
         <motion.img
-          src="/ye-logo.png"
+          src={logoSrc}
           alt="Youssef Elite"
           aria-hidden="true"
           animate={{
@@ -58,15 +68,7 @@ export function PremiumPageLoader() {
           style={{ width: "clamp(90px, 22vw, 120px)" }}
         />
       </div>
-
-      {/* Secondary: small Tron-cyan spinner */}
-      <Loader2
-        className="h-5 w-5 animate-spin text-primary"
-        style={{ filter: "drop-shadow(0 0 6px hsl(183 100% 60% / 0.4))" }}
-        aria-hidden="true"
-      />
+      <Loader2 size={16} className="animate-spin text-primary/50" />
     </div>
   );
 }
-
-export default PremiumPageLoader;

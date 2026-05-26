@@ -646,11 +646,26 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 
 // ─── Services section ─────────────────────────────────────────────────────────
 type ServiceCard = "personalTraining" | "nutrition" | "supplement";
+type ContentType = "auto" | "person" | "nutrition" | "supplement" | "logo";
 
 const SERVICE_META: { key: ServiceCard; label: string; desc: string }[] = [
   { key: "personalTraining", label: "Personal Training",    desc: "16:9 · 1920×1080" },
   { key: "nutrition",        label: "Nutrition Plans",      desc: "16:9 · 1920×1080" },
   { key: "supplement",       label: "Supplement Protocol",  desc: "16:9 · 1920×1080" },
+];
+
+const CARD_DEFAULT_CONTENT_TYPE: Record<ServiceCard, ContentType> = {
+  personalTraining: "person",
+  nutrition:        "nutrition",
+  supplement:       "supplement",
+};
+
+const CONTENT_TYPES: { key: ContentType; label: string }[] = [
+  { key: "auto",        label: "Auto" },
+  { key: "person",      label: "Person" },
+  { key: "nutrition",   label: "Food" },
+  { key: "supplement",  label: "Supplement" },
+  { key: "logo",        label: "Logo" },
 ];
 
 function ServiceCardEditor({ cardKey, label, desc, settings }: {
@@ -663,8 +678,10 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
   const [showGuide, setShowGuide] = useState(false);
+  const [showMobileZone, setShowMobileZone] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [contentType, setContentType] = useState<ContentType>(CARD_DEFAULT_CONTENT_TYPE[cardKey]);
 
   const prefix = cardKey;
   const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]     ?? null;
@@ -715,7 +732,10 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { imageDataUrl: string }) => {
-      const res = await apiRequest("POST", `/api/admin/media/services/${cardKey}`, data);
+      const res = await apiRequest("POST", `/api/admin/media/services/${cardKey}`, {
+        ...data,
+        contentType,
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || "Upload failed");
@@ -775,6 +795,8 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           positionY={activePosY}
           zoom={activeZoom}
           showGuide={showGuide}
+          contentType={contentType}
+          showMobileZone={showMobileZone}
           onPositionChange={(posX, posY) => {
             if (activeTab === "desktop") {
               setDesktop(p => ({ ...p, positionX: posX, positionY: posY }));
@@ -841,18 +863,57 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
               {desktopUrl ? "Drag preview to reposition" : "Upload a 16:9 image to get started"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowGuide(g => !g)}
-            className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
-              showGuide
-                ? "bg-primary/20 text-primary border-primary/35"
-                : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
-            }`}
-          >
-            <ScanLine size={11} />
-            Guide
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowMobileZone(z => !z)}
+              title="Toggle mobile crop zone"
+              className={`inline-flex items-center gap-1.5 px-2 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
+                showMobileZone
+                  ? "bg-orange-500/20 text-orange-400 border-orange-500/35"
+                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+              }`}
+            >
+              <Smartphone size={11} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowGuide(g => !g)}
+              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
+                showGuide
+                  ? "bg-primary/20 text-primary border-primary/35"
+                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+              }`}
+            >
+              <ScanLine size={11} />
+              Guide
+            </button>
+          </div>
+        </div>
+
+        {/* Content type selector — tells AI what subject to prioritise */}
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1.5 font-semibold">AI subject type</p>
+          <div className="flex flex-wrap gap-1">
+            {CONTENT_TYPES.map(({ key, label: ctLabel }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setContentType(key)}
+                data-testid={`button-content-type-${key}-${cardKey}`}
+                className={`px-2.5 h-6 rounded-lg text-[10px] font-semibold border transition-all duration-150 ${
+                  contentType === key
+                    ? "bg-primary/20 text-primary border-primary/40"
+                    : "bg-white/[0.04] border-white/10 text-muted-foreground hover:bg-white/8 hover:border-white/18"
+                }`}
+              >
+                {ctLabel}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground/45 mt-1">
+            Used on next upload to guide AI focal detection.
+          </p>
         </div>
 
         {/* Action buttons */}
@@ -954,6 +1015,13 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
                     <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
                     <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
                     <SliderRow label="Corner radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
+                    {/* Smart clipping validation — warn when focal point is very near the edge */}
+                    {(desktop.positionX < 8 || desktop.positionX > 92 || desktop.positionY < 8 || desktop.positionY > 92) && (
+                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/25 text-[11px] text-amber-400">
+                        <span className="text-[13px] leading-none mt-0.5">⚠</span>
+                        <span>Focal point is near the edge — main subject may be clipped on some screens. Check the preview.</span>
+                      </div>
+                    )}
                     <SaveBtn
                       onClick={() => settingsMutation.mutate({ ...desktop })}
                       disabled={settingsMutation.isPending}
@@ -972,6 +1040,13 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
                     <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
                     <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
                     <SliderRow label="Corner radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
+                    {/* Smart clipping validation for mobile */}
+                    {(mob.positionX < 8 || mob.positionX > 92 || mob.positionY < 8 || mob.positionY > 92) && (
+                      <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/25 text-[11px] text-amber-400">
+                        <span className="text-[13px] leading-none mt-0.5">⚠</span>
+                        <span>Mobile focal point is near the edge — subject may be clipped on narrow screens.</span>
+                      </div>
+                    )}
                     <SaveBtn
                       onClick={() => settingsMutation.mutate({ mobileSettings: mob })}
                       disabled={settingsMutation.isPending}
@@ -1034,22 +1109,266 @@ function ServicesSection({ settings }: { settings: Settings }) {
   );
 }
 
-// ─── Branding section ─────────────────────────────────────────────────────────
+// ─── Logo Manager (Branding section) ──────────────────────────────────────────
+type LogoSlot = "icon" | "navbar" | "auth";
+
+const LOGO_SLOTS: {
+  key: LogoSlot;
+  label: string;
+  desc: string;
+  fallback: string;
+  hint: string;
+  maxLabel: string;
+}[] = [
+  {
+    key: "icon",
+    label: "Icon Logo",
+    desc: "Navbar, sidebar, footer, loading screen",
+    fallback: "/ye-logo.png",
+    hint: "Square or icon format recommended. PNG with transparency works best.",
+    maxLabel: "400 × 400 px",
+  },
+  {
+    key: "navbar",
+    label: "Horizontal Logo",
+    desc: "Admin brand preview (Settings → Brand)",
+    fallback: "/ye-logo-horizontal.png",
+    hint: "Wide format with text. PNG with transparent background.",
+    maxLabel: "800 × 300 px",
+  },
+  {
+    key: "auth",
+    label: "Auth / Hero Logo",
+    desc: "Auth page hero, onboarding screens",
+    fallback: "/ye-logo-primary.png",
+    hint: "Full brand logo. Used on the login / registration pages.",
+    maxLabel: "600 × 600 px",
+  },
+];
+
+function LogoSlotCard({
+  slot, label, desc, fallback, hint, maxLabel, currentUrl,
+  onUpload, onRemove, uploading, removing,
+}: {
+  slot: LogoSlot;
+  label: string;
+  desc: string;
+  fallback: string;
+  hint: string;
+  maxLabel: string;
+  currentUrl: string | null | undefined;
+  onUpload: (dataUrl: string) => void;
+  onRemove: () => void;
+  uploading: boolean;
+  removing: boolean;
+}) {
+  const { toast } = useToast();
+  const isCustom = Boolean(currentUrl);
+  const displaySrc = currentUrl || fallback;
+
+  function triggerUpload() {
+    const el = document.getElementById(`logo-input-${slot}`) as HTMLInputElement | null;
+    el?.click();
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 5 MB.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) onUpload(dataUrl);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm overflow-hidden">
+      {/* Preview */}
+      <div
+        className="relative flex items-center justify-center bg-black/40"
+        style={{ aspectRatio: "16/9", minHeight: 120 }}
+      >
+        {(uploading || removing) ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 backdrop-blur-[2px]">
+            <RefreshCw size={14} className="text-primary animate-spin" />
+            <span className="text-[11px] text-primary font-semibold">{uploading ? "Uploading…" : "Removing…"}</span>
+          </div>
+        ) : (
+          <img
+            src={displaySrc}
+            alt={label}
+            className="max-h-24 max-w-[80%] object-contain"
+            style={{ filter: "drop-shadow(0 0 8px rgba(0,212,255,0.25))" }}
+          />
+        )}
+        {isCustom && !uploading && !removing && (
+          <div className="absolute top-2 right-2">
+            <span className="text-[9px] bg-primary/20 border border-primary/30 text-primary px-2 py-0.5 rounded-md font-semibold">Custom</span>
+          </div>
+        )}
+        {!isCustom && !uploading && !removing && (
+          <div className="absolute top-2 right-2">
+            <span className="text-[9px] bg-white/8 border border-white/10 text-muted-foreground px-2 py-0.5 rounded-md font-semibold">Default</span>
+          </div>
+        )}
+      </div>
+
+      {/* Card body */}
+      <div className="p-4 space-y-3">
+        <div>
+          <h4 className="font-display font-bold text-sm">{label}</h4>
+          <p className="text-[11px] text-muted-foreground">{desc}</p>
+        </div>
+
+        <p className="text-[10px] text-muted-foreground/50">{hint}</p>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={triggerUpload}
+            disabled={uploading || removing}
+            data-testid={`button-logo-upload-${slot}`}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl bg-primary/10 hover:bg-primary/18 border border-primary/20 hover:border-primary/35 text-primary text-[12px] font-semibold transition-all duration-200 disabled:opacity-40"
+          >
+            <UploadCloud size={13} />
+            {isCustom ? "Replace" : "Upload"}
+          </button>
+          {isCustom && (
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={uploading || removing}
+              data-testid={`button-logo-remove-${slot}`}
+              className="inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-xl bg-red-500/8 hover:bg-red-500/16 border border-red-500/20 hover:border-red-500/35 text-red-400 text-[12px] font-semibold transition-all duration-200 disabled:opacity-40"
+            >
+              <Trash2 size={13} />
+              Remove
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground/35">Max {maxLabel} · PNG, JPG, WebP · 5 MB</p>
+      </div>
+
+      <input
+        id={`logo-input-${slot}`}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="sr-only"
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
+
 function BrandingSection() {
+  const { toast } = useToast();
+  const { data, isLoading } = useMediaData();
+  const settings = data?.settings;
+
+  const uploadMutations = {
+    icon:   useMutation({
+      mutationFn: async (dataUrl: string) => {
+        const res = await apiRequest("POST", "/api/admin/media/logo/icon", { imageDataUrl: dataUrl });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+        return res.json();
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo updated" }); },
+      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+    }),
+    navbar: useMutation({
+      mutationFn: async (dataUrl: string) => {
+        const res = await apiRequest("POST", "/api/admin/media/logo/navbar", { imageDataUrl: dataUrl });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+        return res.json();
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo updated" }); },
+      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+    }),
+    auth:   useMutation({
+      mutationFn: async (dataUrl: string) => {
+        const res = await apiRequest("POST", "/api/admin/media/logo/auth", { imageDataUrl: dataUrl });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+        return res.json();
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Auth logo updated" }); },
+      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+    }),
+  };
+
+  const removeMutations = {
+    icon:   useMutation({
+      mutationFn: async () => {
+        const res = await apiRequest("DELETE", "/api/admin/media/logo/icon");
+        if (!res.ok) throw new Error("Remove failed");
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo removed — default restored" }); },
+      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
+    }),
+    navbar: useMutation({
+      mutationFn: async () => {
+        const res = await apiRequest("DELETE", "/api/admin/media/logo/navbar");
+        if (!res.ok) throw new Error("Remove failed");
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo removed — default restored" }); },
+      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
+    }),
+    auth:   useMutation({
+      mutationFn: async () => {
+        const res = await apiRequest("DELETE", "/api/admin/media/logo/auth");
+        if (!res.ok) throw new Error("Remove failed");
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Auth logo removed — default restored" }); },
+      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
+    }),
+  };
+
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="font-display font-bold text-lg">Branding</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Logo assets and brand identity</p>
+        <h3 className="font-display font-bold text-lg">Logo Manager</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Upload custom logo variants. Falls back to the default Youssef Elite logos when none is set.
+          Changes apply immediately site-wide.
+        </p>
       </div>
-      <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] py-20 flex flex-col items-center gap-4 text-muted-foreground">
-        <div className="w-16 h-16 rounded-2xl border border-white/10 flex items-center justify-center bg-white/[0.03]">
-          <Palette size={28} className="opacity-30" />
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {[0, 1, 2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
         </div>
-        <div className="text-center">
-          <p className="text-sm font-semibold">Logo upload coming soon</p>
-          <p className="text-xs opacity-50 mt-1">Profile photo is managed in Settings → Profile</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {LOGO_SLOTS.map(({ key, label, desc, fallback, hint, maxLabel }) => (
+            <LogoSlotCard
+              key={key}
+              slot={key}
+              label={label}
+              desc={desc}
+              fallback={fallback}
+              hint={hint}
+              maxLabel={maxLabel}
+              currentUrl={(settings as any)?.[`logo${key.charAt(0).toUpperCase()}${key.slice(1)}Url`]}
+              onUpload={(dataUrl) => uploadMutations[key].mutate(dataUrl)}
+              onRemove={() => removeMutations[key].mutate()}
+              uploading={uploadMutations[key].isPending}
+              removing={removeMutations[key].isPending}
+            />
+          ))}
         </div>
+      )}
+
+      <div className="flex items-start gap-3 p-3.5 bg-white/[0.03] border border-white/8 rounded-xl">
+        <Palette size={13} className="mt-0.5 shrink-0 text-muted-foreground/60" />
+        <p className="text-[11px] text-muted-foreground/70">
+          Logo sizes and glow intensity are configured in <strong className="text-foreground/80">Settings → Brand settings</strong>.
+          The profile photo is managed in <strong className="text-foreground/80">Settings → Profile</strong>.
+        </p>
       </div>
     </div>
   );

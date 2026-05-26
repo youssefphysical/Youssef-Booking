@@ -4637,9 +4637,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // scene) and returns focal coords (0-100) + zoom (1.0–1.15 max).
   // Gracefully falls back to {50, 50, 1.0} when OpenAI is unavailable.
   type FocalResult = { positionX: number; positionY: number; zoom: number; subjectType: string };
-  async function analyzeServiceImageFocalPoint(dataUrl: string): Promise<FocalResult> {
+  async function analyzeServiceImageFocalPoint(dataUrl: string, contentType?: string): Promise<FocalResult> {
     const fallback: FocalResult = { positionX: 50, positionY: 50, zoom: 1.0, subjectType: "center" };
+    // Logo content type: always center, no zoom — skip vision call
+    if (contentType === "logo") return { positionX: 50, positionY: 50, zoom: 1.0, subjectType: "logo" };
     if (!process.env.OPENAI_API_KEY) return fallback;
+    // Build card-aware priority hint for the AI prompt
+    const priorityHint: Record<string, string> = {
+      person:      "Subject priority (highest first): human face or person body > body pose > brand logo > scene/background.",
+      nutrition:   "Subject priority (highest first): food dish or meal prep bowl > healthy ingredients > brand logo > scene/background.",
+      supplement:  "Subject priority (highest first): supplement product bottle or container > fitness equipment > brand logo > scene/background.",
+      auto:        "Subject priority (highest first): human face or person > brand logo > physical product > scene/background.",
+    };
+    const priority = priorityHint[contentType ?? "auto"] ?? priorityHint["auto"];
     try {
       const { default: OpenAI } = await import("openai");
       const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -4669,10 +4679,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 type: "text",
                 text: `Analyze this marketing/fitness image and locate the single most important visual subject.
 
-Subject priority (highest first): human face or person > brand logo > physical product > scene/background.
+${priority}
 
 Return ONLY a JSON object with exactly these fields:
-- subjectType: one of "face", "logo", "product", "scene"
+- subjectType: one of "face", "person", "food", "product", "logo", "scene"
 - positionX: integer 0-100 (horizontal center of the subject, 0=far left, 50=center, 100=far right)
 - positionY: integer 0-100 (vertical center of the subject, 0=top, 50=middle, 100=bottom)
 - zoom: float 1.00-1.15 (1.00 = no zoom, 1.10-1.15 only if subject is clearly off-center and small — never upscale beyond 1.15)
@@ -4680,7 +4690,7 @@ Return ONLY a JSON object with exactly these fields:
 Rules:
 - For faces/people: point to the face/upper body center; zoom ≤ 1.10
 - For logos: keep near center (positionX 40-60, positionY 40-60); zoom = 1.00
-- For products: center on the main product; zoom ≤ 1.10
+- For products/food: center on the main item; zoom ≤ 1.10
 - For scene/no clear subject: positionX=50, positionY=50, zoom=1.00
 - NEVER set zoom above 1.15
 
@@ -4725,7 +4735,10 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     if (!(VALID as readonly string[]).includes(card)) {
       return res.status(400).json({ success: false, error: "Invalid card. Must be personalTraining, nutrition, or supplement." });
     }
-    const schema = z.object({ imageDataUrl: z.string().min(40) });
+    const schema = z.object({
+      imageDataUrl: z.string().min(40),
+      contentType: z.string().optional(),
+    });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
 
@@ -4734,7 +4747,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       processImageMultiRes(parsed.data.imageDataUrl, {
         desktopWidth: 1920, desktopHeight: 1080, desktopFit: "cover",
       }),
-      analyzeServiceImageFocalPoint(parsed.data.imageDataUrl),
+      analyzeServiceImageFocalPoint(parsed.data.imageDataUrl, parsed.data.contentType),
     ]);
     if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
 
@@ -4802,6 +4815,79 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     await storage.updateSettings(updates as any);
     const updated = await storage.getSettings();
     return res.json({ success: true, settings: updated });
+  });
+
+  // POST /api/admin/media/logo/:slot — upload a custom logo variant.
+  // slot: "icon" | "navbar" | "auth"
+  // Accepts a base64 data URL. Processes with sharp (preserve transparency,
+  // resize to reasonable max), stores as base64 WebP in settings.
+  app.post("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
+    const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
+    if (!checkUploadRateLimit(ip)) {
+      return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again." });
+    }
+    const VALID_SLOTS = ["icon", "navbar", "auth"] as const;
+    type LogoSlot = (typeof VALID_SLOTS)[number];
+    const slot = req.params.slot as LogoSlot;
+    if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
+      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, or auth." });
+    }
+    const schema = z.object({ imageDataUrl: z.string().min(40) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+
+    // Validate magic bytes
+    const { imageDataUrl } = parsed.data;
+    const match = imageDataUrl.match(/^data:(image\/[^;]+);base64,([\s\S]+)$/);
+    if (!match) return res.status(400).json({ success: false, error: "Invalid image data URL." });
+    const mime = match[1];
+    const ALLOWED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
+    if (!ALLOWED_MIMES.includes(mime)) return res.status(400).json({ success: false, error: "Unsupported image type." });
+
+    // Size limit: 5 MB for logos
+    const raw = Buffer.from(match[2], "base64");
+    if (raw.length > 5 * 1024 * 1024) return res.status(400).json({ success: false, error: "Logo too large (max 5 MB)." });
+
+    // Max dimensions per slot
+    const MAX_DIM: Record<LogoSlot, { w: number; h: number }> = {
+      icon:   { w: 400,  h: 400 },
+      navbar: { w: 800,  h: 300 },
+      auth:   { w: 600,  h: 600 },
+    };
+    const { w: maxW, h: maxH } = MAX_DIM[slot];
+
+    let outputDataUrl = imageDataUrl;
+    if (_sharp && mime !== "image/svg+xml") {
+      try {
+        const processed = await _sharp(raw, { failOn: "none" })
+          .resize({ width: maxW, height: maxH, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 92, effort: 4 })
+          .toBuffer();
+        outputDataUrl = `data:image/webp;base64,${processed.toString("base64")}`;
+      } catch (e) {
+        console.warn("[logo-upload] sharp processing failed, using original:", (e as Error).message);
+      }
+    }
+
+    const SLOT_KEY: Record<LogoSlot, string> = {
+      icon:   "logoIconUrl",
+      navbar: "logoNavbarUrl",
+      auth:   "logoAuthUrl",
+    };
+    await storage.updateSettings({ [SLOT_KEY[slot]]: outputDataUrl } as any);
+    return res.json({ success: true, url: outputDataUrl });
+  });
+
+  // DELETE /api/admin/media/logo/:slot — remove custom logo, revert to static file.
+  app.delete("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
+    const VALID_SLOTS = ["icon", "navbar", "auth"] as const;
+    const slot = req.params.slot as "icon" | "navbar" | "auth";
+    if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
+      return res.status(400).json({ success: false, error: "Invalid slot." });
+    }
+    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl" };
+    await storage.updateSettings({ [SLOT_KEY[slot]]: null } as any);
+    return res.json({ success: true });
   });
 
   // ============== TRANSFORMATIONS (before/after gallery) ==============

@@ -9,7 +9,15 @@
  *  "sidebar" — YE icon only, 32 px (compact admin sidebar column).
  *  "footer"  — YE icon only, 22 px (small elegant footer branding).
  *  "icon"    — YE icon only, 36 px (favicon-style compact slot).
+ *
+ * Custom logo: when Youssef uploads a custom icon logo via the Logo Manager
+ * (Settings → Media → Branding), it is stored in settings.logoIconUrl and
+ * takes precedence over the static /ye-logo.png file. Falls back to static
+ * immediately so there is never a missing-image state.
  */
+
+import { useQuery } from "@tanstack/react-query";
+import type { Settings } from "@shared/schema";
 
 interface BrandLogoProps {
   variant?: "navbar" | "sidebar" | "footer" | "icon";
@@ -26,6 +34,13 @@ const GLOW = "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-logo-glow,0.35)))"
 const GLOW_ICON = "drop-shadow(0 0 7px rgba(0,212,255,var(--brand-logo-glow,0.35)))";
 
 export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps) {
+  const { data: settings } = useQuery<Settings>({
+    queryKey: ["/api/settings"],
+    staleTime: 5 * 60 * 1000,
+  });
+  const customSrc = settings?.logoIconUrl ?? null;
+  const iconSrc = customSrc || "/ye-logo.png";
+
   if (variant === "navbar") {
     return (
       <span
@@ -38,7 +53,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
       >
         {/* Mobile — icon only */}
         <img
-          src="/ye-logo.png"
+          src={iconSrc}
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] block md:hidden"
@@ -51,7 +66,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         />
         {/* Desktop — icon only */}
         <img
-          src="/ye-logo.png"
+          src={iconSrc}
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] hidden md:block"
@@ -73,7 +88,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
       aria-label="Youssef Elite"
     >
       <img
-        src="/ye-logo.png"
+        src={iconSrc}
         alt=""
         aria-hidden="true"
         width={size}

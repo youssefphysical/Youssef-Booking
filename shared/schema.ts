@@ -771,6 +771,12 @@ export const settings = pgTable("settings", {
   nutritionMobileSettings: jsonb("nutrition_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   supplementMobileSettings: jsonb("supplement_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   brandSettings: jsonb("brand_settings").$type<Record<string, number>>().notNull().default({}),
+  // ====== Global Logo Manager — uploadable brand logo variants ======
+  // When set, these override the static /ye-logo*.png files in the UI.
+  // Stored as base64 WebP data URLs (same pattern as hero/service images).
+  logoIconUrl:    text("logo_icon_url"),    // icon-only (navbar, sidebar, footer, loader)
+  logoNavbarUrl:  text("logo_navbar_url"),  // horizontal icon+text logo (admin brand preview)
+  logoAuthUrl:    text("logo_auth_url"),    // full-brand logo (auth hero, loading screen)
 });
 
 // =============================
