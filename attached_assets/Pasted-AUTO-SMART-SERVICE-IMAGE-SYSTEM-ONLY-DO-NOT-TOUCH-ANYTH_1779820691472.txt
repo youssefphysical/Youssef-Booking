@@ -1,0 +1,120 @@
+AUTO SMART SERVICE IMAGE SYSTEM ONLY — DO NOT TOUCH ANYTHING ELSE
+
+Scope:
+Only update the image handling system for these service cards:
+- Personal Training
+- Nutrition Plans
+- Supplement Protocol
+
+Do NOT modify:
+- layout text
+- pricing
+- booking flow
+- authentication
+- navbar
+- database unrelated to service images
+- colors outside this section
+- any other website section
+
+Goal:
+Make service images fully automatic, smart, responsive, and professional so I do not need to manually fight with X/Y sliders.
+
+Build a modern AI-inspired / premium SaaS media system like the latest global products:
+- auto crop
+- smart focal point
+- safe-zone detection
+- responsive rendering
+- one image works beautifully on mobile and desktop
+
+Required behavior:
+
+1. One image upload per service.
+The system automatically makes it look good on:
+- mobile
+- desktop
+- tablet
+- future app card
+
+2. No distortion ever.
+Never stretch.
+Never squash.
+Never make images look tall, flat, wide, or weird.
+
+3. Auto smart crop:
+When image is uploaded:
+- detect image dimensions
+- detect aspect ratio
+- set focal point automatically
+- keep subject/logo/product centered
+- avoid cutting important objects
+- use safe crop rules
+- apply best zoom automatically
+
+4. Default service image ratio:
+Use professional marketing ratio:
+16:9
+
+Recommended upload:
+1920x1080 WebP/JPG/PNG
+
+Minimum:
+1200x675
+
+5. Frontend image frame:
+Desktop:
+height: clamp(240px, 26vw, 360px)
+
+Mobile:
+height: clamp(180px, 52vw, 240px)
+
+Use:
+object-fit: cover;
+object-position: smart focal point;
+
+6. Admin should be simple:
+Main buttons only:
+- Upload / Replace
+- Auto Fit
+- Edit
+- Reset
+
+Hide advanced controls under:
+Advanced Settings
+
+7. Auto Fit button:
+Automatically chooses the best crop and focal point.
+
+8. Edit button:
+Open fullscreen editor only if needed.
+Mobile editor must support:
+- drag image
+- pinch zoom
+- safe zone overlay
+- Save / Cancel sticky buttons
+
+9. Safe zone:
+Show guide:
+“Keep logos, faces, and products inside this area.”
+
+10. Admin preview must equal live website.
+Use one shared renderer.
+No separate crop logic.
+
+11. Image optimization:
+Convert uploaded images to WebP.
+Generate responsive sizes.
+Keep quality high.
+
+12. Final result:
+I upload one good image.
+The system handles the rest automatically.
+Mobile looks perfect.
+Desktop looks perfect.
+No manual struggle.
+No broken crop.
+No childish admin controls.
+
+Important:
+Do this only for the service card image system.
+Do not redesign the whole website.
+Do not change unrelated systems.
