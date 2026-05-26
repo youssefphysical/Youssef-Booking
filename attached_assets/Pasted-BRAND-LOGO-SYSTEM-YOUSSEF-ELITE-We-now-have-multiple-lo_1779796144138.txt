@@ -1,0 +1,206 @@
+BRAND LOGO SYSTEM — YOUSSEF ELITE
+
+We now have multiple logo versions.
+
+Create a professional brand logo system.
+
+=================================================
+
+PRIMARY LOGO (FULL BRAND LOGO)
+
+Asset:
+
+Youssef Elite Full Logo
+
+(Full YE + icon + brand name + coaching text)
+
+Purpose:
+
+Use ONLY in premium large branding areas:
+
+- Hero section
+- Login hero
+- Register hero
+- Landing page main section
+- Website desktop branding sections
+- Marketing banners
+- Main loading screen
+- Premium presentation sections
+- Future PDF branding
+- Premium onboarding emails header
+- Website OpenGraph social preview image
+- Website share preview image
+
+Desktop size:
+
+240–340px
+
+Mobile:
+
+180–260px
+
+Never use full logo in navbar.
+
+=================================================
+
+SECONDARY LOGO (ICON VERSION)
+
+Asset:
+
+YE Icon Transparent PNG
+
+(The simplified logo without text)
+
+Purpose:
+
+Small branding areas only:
+
+- Navbar logo
+- Mobile navbar logo
+- App icon
+- PWA app icon
+- Browser favicon
+- Email logo
+- Email notification header
+- Password reset email
+- Session reminder emails
+- Package expiry emails
+- Booking confirmation emails
+- WhatsApp share thumbnail
+- Mobile splash screen
+- Future app launcher icon
+- Small admin panel branding
+- Profile placeholder branding
+- Future invoice branding
+- PDF corner branding
+- Footer small branding
+- Browser tab icon
+
+Sizes:
+
+Navbar desktop:
+
+34–42px
+
+Navbar mobile:
+
+28–36px
+
+Email:
+
+48–70px
+
+Favicon:
+
+16x16
+32x32
+48x48
+
+PWA:
+
+192x192
+512x512
+
+App icon:
+
+1024x1024
+
+=================================================
+
+LOGO RULES
+
+Primary logo:
+
+Never squeeze.
+
+Never crop.
+
+Never stretch.
+
+Use:
+
+object-fit: contain
+
+Secondary logo:
+
+Always centered.
+
+Never distort glow.
+
+Keep Tron Legacy identity.
+
+=================================================
+
+EMAIL SYSTEM
+
+Use Secondary Logo ONLY.
+
+Never use giant logo in email.
+
+Email style:
+
+Luxury.
+
+Clean.
+
+Professional.
+
+=================================================
+
+NAVBAR SYSTEM
+
+Desktop navbar:
+
+Secondary icon logo only.
+
+No giant branding.
+
+Luxury premium feel.
+
+=================================================
+
+LOADING SCREEN
+
+Use:
+
+Primary Logo.
+
+Center screen.
+
+Luxury glow.
+
+=================================================
+
+LOGIN / REGISTER
+
+Use:
+
+Primary logo.
+
+=================================================
+
+FOOTER
+
+Use:
+
+Secondary logo.
+
+Small elegant branding.
+
+=================================================
+
+Future rule:
+
+Any future section requiring branding must choose:
+
+Primary Logo
+
+or
+
+Secondary Logo
+
+based on visual hierarchy.
+
+Never randomly reuse logos.
+
+Brand consistency is critical.

@@ -1,0 +1,138 @@
+URGENT AUTH LOGO FIX — MAKE IT PROFESSIONAL
+
+The current Auth page logo implementation is not acceptable.
+
+Current problems:
+
+- The uploaded logo appears inside a black square image background.
+- The logo does not blend with the card.
+- The image is too small and not using the available hero area properly.
+- "Youssef Elite" appears twice: once inside the logo and again above "Client Portal".
+- The logo placement feels like a pasted image, not a premium brand hero.
+- This does not look professional.
+
+Fix immediately.
+
+1. Remove black background from logo
+
+The logo must appear as a transparent PNG/WebP asset.
+
+If the uploaded image has a black background:
+
+- Remove / key out the black background.
+- Export a transparent logo version.
+- Preserve cyan glow.
+- Preserve logo details.
+- Do not leave any visible black square.
+- Do not crop the logo incorrectly.
+
+Use the transparent logo on the Auth page.
+
+2. Auth hero logo sizing
+
+The logo should fill the hero logo area professionally.
+
+Mobile:
+
+- Logo width: 82% of card width
+- Max width: 340px
+- Height: auto
+- object-fit: contain
+- No cropping
+- No stretching
+
+Desktop:
+
+- Logo width: 360–460px
+- Height: auto
+- object-fit: contain
+
+The logo should look integrated, not pasted.
+
+3. Remove duplicated brand text
+
+Because the logo already contains "Youssef Elite", remove the extra text:
+
+YOUSSEF ELITE
+
+above:
+
+CLIENT PORTAL
+
+Keep only:
+
+CLIENT PORTAL
+
+below the logo.
+
+No duplicated brand name.
+
+4. Improve spacing
+
+Auth hero layout should be:
+
+[Transparent Youssef Elite Logo]
+
+Spacing: 18–24px
+
+CLIENT PORTAL
+
+Spacing: 28–36px
+
+Login / Create Account tabs
+
+The logo should not be squeezed.
+The card should breathe.
+Everything must feel luxury and premium.
+
+5. Background behind logo
+
+Use only subtle cyan ambient glow behind the transparent logo:
+
+background radial glow:
+rgba(0, 212, 255, 0.10)
+
+Do not use a black square container behind the image.
+
+No hard rectangular background.
+
+6. Card design
+
+Keep the Tron Legacy style, but make it elegant:
+
+- Soft cyan card border
+- Subtle HUD corners
+- No excessive glow
+- No cheap gaming look
+
+7. Image quality
+
+Use high-quality optimized transparent WebP/PNG.
+Do not compress too much.
+No blur.
+No pixelation.
+No artifacts.
+
+8. Responsive testing
+
+Test both:
+
+- Login tab
+- Create Account tab
+
+On:
+
+- Mobile
+- Desktop
+
+The logo must:
+
+- Not overflow
+- Not crop
+- Not show black square
+- Not duplicate text
+- Look centered
+- Look premium
+
+Final required result:
+The Auth page should look like a premium Youssef Elite branded portal, with a clean transparent glowing logo integrated into the card, not a pasted black image.
