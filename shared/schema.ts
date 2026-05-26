@@ -1678,6 +1678,8 @@ export type AdjustPackageSessionsInput = z.infer<typeof adjustPackageSessionsSch
 export const addBonusSessionsSchema = z.object({
   bonusSessions: z.number().int().min(1).max(100),
   reason: z.string().min(1, "Please provide a reason").max(500),
+  // Optional free-form note visible only to admins (stored in history).
+  adminNote: z.string().max(1000).optional(),
   // Optional expiry extension applied at the same time as the bonus grant.
   expiryExtension: z
     .discriminatedUnion("type", [

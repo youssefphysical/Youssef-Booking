@@ -180,16 +180,55 @@ export function PackageStatusHero({
                 <Users size={11} /> {t("dashboard.packageDuo", "Duo")}
               </span>
             )}
-            {((active as any).bonusSessions ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/12 border border-emerald-400/30 px-2 py-1 text-emerald-300 text-[11px] font-display font-bold shadow-[0_0_14px_-6px_rgba(16,185,129,0.5)]">
-                <Sparkles size={11} /> +{(active as any).bonusSessions}{" "}
-                {t("home.packages.bonus", "bonus")}
-              </span>
-            )}
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] text-muted-foreground">
               {pct}% {t("dashboard.packageUsed", "used")}
             </span>
           </div>
+
+          {/* Session breakdown — only shown when package has bonus sessions */}
+          {((active as any).bonusSessions ?? 0) > 0 && (
+            <div
+              className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] px-3.5 py-3"
+              data-testid="package-hero-breakdown"
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <Sparkles size={11} className="text-emerald-400 shrink-0" />
+                <span className="text-[9px] uppercase tracking-[0.18em] text-emerald-300 font-semibold">
+                  {t("dashboard.sessionBreakdown", "Session breakdown")}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 text-center">
+                <div className="rounded-xl border border-white/5 bg-white/[0.03] px-1.5 py-2">
+                  <p className="text-base font-display font-bold tabular-nums leading-none text-foreground">
+                    {(active as any).paidSessions ?? (active.totalSessions - ((active as any).bonusSessions ?? 0))}
+                  </p>
+                  <p className="text-[9px] uppercase tracking-[0.13em] text-muted-foreground mt-1">
+                    {t("dashboard.purchasedSessions", "Purchased")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-1.5 py-2">
+                  <p className="text-base font-display font-bold tabular-nums leading-none text-emerald-300">
+                    +{(active as any).bonusSessions}
+                  </p>
+                  <p className="text-[9px] uppercase tracking-[0.13em] text-emerald-400/80 mt-1">
+                    {t("dashboard.bonusSessions", "Bonus")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-primary/25 bg-primary/[0.06] px-1.5 py-2">
+                  <p className="text-base font-display font-bold tabular-nums leading-none text-primary">
+                    {active.totalSessions}
+                  </p>
+                  <p className="text-[9px] uppercase tracking-[0.13em] text-primary/80 mt-1">
+                    {t("dashboard.totalSessions", "Total")}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] text-muted-foreground px-0.5">
+                <span>{t("dashboard.usedSessionsLabel", "Used")}: <span className="text-foreground/80 tabular-nums">{active.usedSessions}</span></span>
+                <span>{t("dashboard.remainingSessionsLabel", "Remaining")}: <span className="text-primary tabular-nums font-semibold">{remaining}</span></span>
+              </div>
+            </div>
+          )}
 
           {active.expiryDate && (
             <div

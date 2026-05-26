@@ -215,15 +215,49 @@ export function PackageConfidenceCard({
         </div>
       </div>
 
-      {/* Bonus chip — kept from prior surface, lives inline below numbers */}
+      {/* Session breakdown — shown when bonus sessions exist so client
+          can clearly see purchased vs. bonus vs. total */}
       {((pkg as any).bonusSessions ?? 0) > 0 && (
-        <div className="mb-3">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/12 border border-emerald-400/30 px-2 py-0.5 text-emerald-300 shadow-[0_0_14px_-6px_rgba(16,185,129,0.5)]">
-            <Sparkles size={11} className="shrink-0" />
-            <span className="text-[11px] font-display font-bold tabular-nums leading-none">
-              +{(pkg as any).bonusSessions} {t("home.packages.bonus", "bonus")}
+        <div
+          className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-3.5"
+          data-testid={`package-breakdown-${pkg.id}`}
+        >
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <Sparkles size={12} className="text-emerald-400 shrink-0" />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-300 font-semibold">
+              {t("dashboard.sessionBreakdown", "Session breakdown")}
             </span>
-          </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl border border-white/5 bg-white/[0.03] px-2 py-2">
+              <p className="text-lg font-display font-bold tabular-nums leading-none text-foreground" data-testid={`text-paid-sessions-${pkg.id}`}>
+                {(pkg as any).paidSessions ?? (pkg.totalSessions - ((pkg as any).bonusSessions ?? 0))}
+              </p>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mt-1.5">
+                {t("dashboard.purchasedSessions", "Purchased")}
+              </p>
+            </div>
+            <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-2 py-2">
+              <p className="text-lg font-display font-bold tabular-nums leading-none text-emerald-300" data-testid={`text-bonus-sessions-${pkg.id}`}>
+                +{(pkg as any).bonusSessions}
+              </p>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-emerald-400/80 mt-1.5">
+                {t("dashboard.bonusSessions", "Bonus")}
+              </p>
+            </div>
+            <div className="rounded-xl border border-primary/25 bg-primary/[0.06] px-2 py-2">
+              <p className="text-lg font-display font-bold tabular-nums leading-none text-primary" data-testid={`text-total-sessions-${pkg.id}`}>
+                {pkg.totalSessions}
+              </p>
+              <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mt-1.5">
+                {t("dashboard.totalSessions", "Total")}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2.5 flex justify-between text-[10px] text-muted-foreground px-0.5">
+            <span>{t("dashboard.usedSessionsLabel", "Used")}: <span className="text-foreground/80 tabular-nums">{completed}</span></span>
+            <span>{t("dashboard.remainingSessionsLabel", "Remaining")}: <span className="text-primary tabular-nums font-semibold">{remaining}</span></span>
+          </div>
         </div>
       )}
 

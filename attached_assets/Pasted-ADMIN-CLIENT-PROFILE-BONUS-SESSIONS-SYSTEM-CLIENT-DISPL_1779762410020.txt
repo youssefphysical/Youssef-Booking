@@ -1,0 +1,160 @@
+ADMIN CLIENT PROFILE — BONUS SESSIONS SYSTEM + CLIENT DISPLAY
+
+Goal:
+
+Admin must be able to enter ANY client profile and manually add bonus sessions directly.
+
+No new order.
+No package purchase.
+No checkout.
+No payment flow.
+Pure admin adjustment.
+
+LOCATION:
+
+Control Panel →
+Client Profile →
+Package / Sessions Section →
+Quick Actions
+
+Create premium Tron Legacy style action:
+
+✨ Bonus Sessions
+
+WHEN CLICKED:
+
+Open premium Tron-style modal.
+
+Fields:
+
+1. Bonus Sessions Count
+Input: 1–100
+
+2. Reason
+Dropdown:
+- Promotion Bonus
+- Renewal Bonus
+- Compensation
+- Loyalty Reward
+- VIP Gift
+- Manual Adjustment
+- Other
+
+If “Other”:
+Show custom text field.
+
+3. Expiry Extension optional
+Options:
+- No extension
+- Extend by days
+- Set custom expiry date
+
+4. Internal Admin Note optional
+
+BEHAVIOR:
+
+Added bonus sessions must:
+
+- Increase remaining sessions
+- Increase total available sessions
+- Keep booking system working normally
+- Be usable for bookings
+
+Do NOT:
+
+- Create order
+- Create invoice
+- Trigger payment
+- Change payment status
+- Modify purchased package price
+- Affect paid sessions count
+
+CLIENT DASHBOARD DISPLAY:
+
+Client must clearly see the difference between purchased package sessions and bonus sessions.
+
+Show in Package / Sessions card:
+
+- Package Sessions: original paid sessions
+- Bonus Sessions: added bonus sessions
+- Total Available Sessions: package sessions + bonus sessions
+- Used Sessions
+- Remaining Sessions
+- Expiry Date
+
+Example:
+
+Package Sessions: 20
+Bonus Sessions: +3
+Total Available: 23
+Used: 5
+Remaining: 18
+
+Important:
+
+Do NOT hide bonus sessions inside total only.
+
+Client should clearly understand:
+
+“I bought 20 sessions and received 3 bonus sessions.”
+
+HISTORY:
+
+Client history entry:
+
+✨ Bonus Sessions Added
++3 Sessions
+Reason: Renewal Bonus
+Date
+
+Admin history entry:
+
+Store:
+- Admin user
+- Client
+- Number of bonus sessions
+- Reason
+- Date/time
+- Internal note
+- Expiry extension if applied
+
+UI DESIGN:
+
+Keep Tron Legacy style.
+
+Emerald / cyan premium glow.
+
+Same luxury styling.
+
+Mobile optimized.
+
+Clear and easy to find.
+
+No clutter.
+
+IMPORTANT:
+
+Must work from ANY client profile.
+
+Admin →
+Client →
+Open Profile →
+✨ Bonus Sessions →
+Add →
+Done
+
+NO NEW ORDER REQUIRED.
+NO CHECKOUT REQUIRED.
+NO CLIENT PAYMENT REQUIRED.
+
+Do NOT change:
+
+- Booking logic
+- Package purchase logic
+- Nutrition flow
+- Supplement flow
+- Dashboard design
+- Public website design
+- Payment logic
+
+Only add premium Bonus Sessions control and clear client package display.

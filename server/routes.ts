@@ -4916,7 +4916,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const pkg = await storage.getPackage(id);
     if (!pkg) return res.status(404).json({ message: "Package not found" });
     const me = req.user as User;
-    const { bonusSessions, reason, expiryExtension } = parsed.data;
+    const { bonusSessions, reason, adminNote, expiryExtension } = parsed.data;
 
     // Compute optional expiry update.
     let newExpiryDate: string | undefined;
@@ -4946,7 +4946,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         action: "bonus_added",
         sessionsDelta: bonusSessions,
         performedByUserId: me.id,
-        reason,
+        reason: adminNote ? `${reason}\n[Admin note: ${adminNote}]` : reason,
       } as any);
       if (newExpiryDate) {
         await storage.createPackageSessionHistory({
