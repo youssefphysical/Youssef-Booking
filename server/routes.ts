@@ -4443,6 +4443,270 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     return res.sendStatus(204);
   });
 
+  // ============================================================
+  // MEDIA MANAGER v2
+  // ============================================================
+  // Rate limiting: simple in-memory per-IP counter.
+  // In serverless (Vercel) this resets per cold start — acceptable
+  // since the goal is abuse prevention, not strict enforcement.
+  const _uploadRateMap = new Map<string, { count: number; resetAt: number }>();
+  function checkUploadRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const WINDOW_MS = 5 * 60 * 1000;
+    const MAX = 30;
+    const entry = _uploadRateMap.get(ip);
+    if (!entry || entry.resetAt < now) {
+      _uploadRateMap.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+      return true;
+    }
+    if (entry.count >= MAX) return false;
+    entry.count++;
+    return true;
+  }
+
+  // Magic bytes validation — only accept JPEG, PNG, WebP at the binary level.
+  // Guards against polyglot files where the MIME claim doesn't match content.
+  function checkMagicBytes(buf: Buffer): boolean {
+    if (buf.length < 12) return false;
+    // JPEG: FF D8 FF
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true;
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true;
+    // WebP: RIFF....WEBP
+    if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+        buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return true;
+    return false;
+  }
+
+  // Multi-resolution image processor: original + desktop + mobile + thumbnail.
+  // Returns all four variants in one sharp pipeline pass so we only decode once.
+  type MultiResResult =
+    | { ok: true; original: string; desktop: string; mobile: string; thumbnail: string }
+    | { ok: false; status: number; message: string };
+
+  async function processImageMultiRes(
+    dataUrl: string,
+    opts: {
+      desktopWidth: number;
+      desktopHeight?: number;
+      desktopFit?: "cover" | "inside";
+      maxDataUrlMB?: number;
+    },
+  ): Promise<MultiResResult> {
+    if (typeof dataUrl !== "string" || dataUrl.length < 40) {
+      return { ok: false, status: 400, message: "Image data is required" };
+    }
+    const maxBytes = (opts.maxDataUrlMB ?? 40) * 1024 * 1024;
+    if (dataUrl.length > maxBytes) {
+      return { ok: false, status: 400, message: "Image must be under 25 MB" };
+    }
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+\-]+);base64,([\s\S]+)$/);
+    if (!match) {
+      return { ok: false, status: 400, message: "Invalid format — must be a base64 data URL" };
+    }
+    const ALLOWED = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+    if (!ALLOWED.has(match[1].toLowerCase())) {
+      return { ok: false, status: 400, message: "Only JPG, PNG, or WebP images are accepted" };
+    }
+    let buffer: Buffer;
+    try { buffer = Buffer.from(match[2], "base64"); } catch {
+      return { ok: false, status: 400, message: "Could not decode image data" };
+    }
+    if (buffer.byteLength > 25 * 1024 * 1024) {
+      return { ok: false, status: 400, message: "Image must be under 25 MB after decoding" };
+    }
+    // Security: validate actual binary content, not just MIME claim.
+    if (!checkMagicBytes(buffer)) {
+      return { ok: false, status: 400, message: "Image content does not match its declared type" };
+    }
+    if (!_sharp) {
+      return { ok: false, status: 503, message: "Image processing unavailable — try again shortly" };
+    }
+    try {
+      // Single decode; clone for each variant.
+      const base = _sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 }).rotate();
+      // Desktop
+      let dPipe = base.clone();
+      if (opts.desktopHeight && opts.desktopFit === "cover") {
+        dPipe = dPipe.resize(opts.desktopWidth, opts.desktopHeight, { fit: "cover" });
+      } else {
+        dPipe = dPipe.resize({ width: opts.desktopWidth, withoutEnlargement: true });
+      }
+      const [desktopBuf, mobileBuf, thumbBuf] = await Promise.all([
+        dPipe.webp({ quality: 92, effort: 5 }).toBuffer(),
+        base.clone().resize({ width: 768, withoutEnlargement: true }).webp({ quality: 88, effort: 5 }).toBuffer(),
+        base.clone().resize({ width: 400, withoutEnlargement: true }).webp({ quality: 75, effort: 4 }).toBuffer(),
+      ]);
+      return {
+        ok: true,
+        original: dataUrl, // pristine — client-side crop at full quality
+        desktop: `data:image/webp;base64,${desktopBuf.toString("base64")}`,
+        mobile:  `data:image/webp;base64,${mobileBuf.toString("base64")}`,
+        thumbnail: `data:image/webp;base64,${thumbBuf.toString("base64")}`,
+      };
+    } catch (e) {
+      console.error("[media-upload] sharp error:", e);
+      return { ok: false, status: 400, message: "Could not process image. Please try a different photo." };
+    }
+  }
+
+  // GET /api/admin/media — combined payload for the Media Manager page.
+  app.get("/api/admin/media", requireAdmin, async (_req, res) => {
+    try {
+      const [heroImages, settings] = await Promise.all([
+        storage.getHeroImages(),
+        storage.getSettings(),
+      ]);
+      res.json({ heroImages, settings });
+    } catch (e) {
+      console.error("[media] GET failed:", e);
+      res.status(500).json({ success: false, error: "Failed to load media data" });
+    }
+  });
+
+  // POST /api/admin/media/hero — upload hero slide with multi-resolution processing.
+  app.post("/api/admin/media/hero", requireAdmin, async (req, res) => {
+    const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
+    if (!checkUploadRateLimit(ip)) {
+      return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again" });
+    }
+    const schema = z.object({
+      imageDataUrl: z.string().min(40),
+      title: z.string().max(140).nullish(),
+      subtitle: z.string().max(240).nullish(),
+      badge: z.string().max(60).nullish(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message || "Invalid request" });
+    }
+    const existing = await storage.getHeroImages();
+    if (existing.length >= 12) {
+      return res.status(400).json({ success: false, error: "Maximum of 12 hero slides. Delete one first." });
+    }
+    const result = await processImageMultiRes(parsed.data.imageDataUrl, {
+      desktopWidth: 1920, desktopHeight: 1080, desktopFit: "cover",
+    });
+    if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
+    const nextOrder = existing.length ? Math.max(...existing.map((h) => h.sortOrder)) + 1 : 0;
+    const created = await storage.createHeroImage({
+      imageDataUrl: result.desktop,
+      originalDataUrl: result.original,
+      mobileDataUrl: result.mobile,
+      thumbnailDataUrl: result.thumbnail,
+      sortOrder: nextOrder,
+      title: parsed.data.title ?? null,
+      subtitle: parsed.data.subtitle ?? null,
+      badge: parsed.data.badge ?? null,
+      isActive: true,
+      focalX: 0, focalY: 0, zoom: 1.0, rotate: 0,
+      brightness: 1.0, contrast: 1.0, overlayOpacity: 35,
+      mobileSettings: {},
+    });
+    return res.status(201).json(created);
+  });
+
+  // PATCH /api/admin/media/hero/:id/settings — desktop + mobile display settings.
+  app.patch("/api/admin/media/hero/:id/settings", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ success: false, error: "Invalid id" });
+    const schema = z.object({
+      focalX: z.number().min(-200).max(200).optional(),
+      focalY: z.number().min(-200).max(200).optional(),
+      zoom: z.number().min(0.8).max(2.0).optional(),
+      rotate: z.number().min(-10).max(10).optional(),
+      brightness: z.number().min(0.9).max(1.2).optional(),
+      contrast: z.number().min(0.95).max(1.2).optional(),
+      overlayOpacity: z.number().min(0).max(60).optional(),
+      title: z.string().max(140).nullish(),
+      subtitle: z.string().max(240).nullish(),
+      badge: z.string().max(60).nullish(),
+      isActive: z.boolean().optional(),
+      sortOrder: z.number().int().min(0).max(999).optional(),
+      mobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+    const updated = await storage.updateHeroImage(id, parsed.data as any);
+    if (!updated) return res.status(404).json({ success: false, error: "Hero image not found" });
+    return res.json(updated);
+  });
+
+  // POST /api/admin/media/services/:card — upload service card image (multi-res).
+  app.post("/api/admin/media/services/:card", requireAdmin, async (req, res) => {
+    const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
+    if (!checkUploadRateLimit(ip)) {
+      return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again" });
+    }
+    const card = req.params.card as "personalTraining" | "nutrition" | "supplement";
+    const VALID = ["personalTraining", "nutrition", "supplement"] as const;
+    if (!(VALID as readonly string[]).includes(card)) {
+      return res.status(400).json({ success: false, error: "Invalid card. Must be personalTraining, nutrition, or supplement." });
+    }
+    const schema = z.object({ imageDataUrl: z.string().min(40) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+
+    const result = await processImageMultiRes(parsed.data.imageDataUrl, {
+      desktopWidth: 1200, desktopHeight: 800, desktopFit: "cover",
+    });
+    if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
+
+    const prefix = card; // 'personalTraining' | 'nutrition' | 'supplement'
+    const urlKey   = `${prefix}ImageUrl` as any;
+    const origKey  = `${prefix}OriginalUrl` as any;
+    const mobKey   = `${prefix}MobileUrl` as any;
+    const thumbKey = `${prefix}ThumbnailUrl` as any;
+    const updates: Record<string, string> = {
+      [urlKey]:   result.desktop,
+      [origKey]:  result.original,
+      [mobKey]:   result.mobile,
+      [thumbKey]: result.thumbnail,
+    };
+    await storage.updateSettings(updates as any);
+    return res.status(200).json({
+      success: true,
+      desktop: result.desktop,
+      mobile: result.mobile,
+      thumbnail: result.thumbnail,
+    });
+  });
+
+  // PATCH /api/admin/media/services/:card/settings — save desktop + mobile display settings.
+  app.patch("/api/admin/media/services/:card/settings", requireAdmin, async (req, res) => {
+    const card = req.params.card as "personalTraining" | "nutrition" | "supplement";
+    const VALID = ["personalTraining", "nutrition", "supplement"] as const;
+    if (!(VALID as readonly string[]).includes(card)) {
+      return res.status(400).json({ success: false, error: "Invalid card." });
+    }
+    const schema = z.object({
+      fit: z.string().optional(),
+      positionX: z.number().min(0).max(100).optional(),
+      positionY: z.number().min(0).max(100).optional(),
+      zoom: z.number().min(0.5).max(3).optional(),
+      desktopHeight: z.number().int().min(80).max(700).optional(),
+      mobileHeight: z.number().int().min(80).max(700).optional(),
+      radius: z.number().int().min(0).max(50).optional(),
+      mobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+    const d = parsed.data;
+    const p = card; // prefix
+    const updates: Record<string, unknown> = {};
+    if (d.fit         !== undefined) updates[`${p}ImageFit`]           = d.fit;
+    if (d.positionX   !== undefined) updates[`${p}ImagePositionX`]     = d.positionX;
+    if (d.positionY   !== undefined) updates[`${p}ImagePositionY`]     = d.positionY;
+    if (d.zoom        !== undefined) updates[`${p}ImageZoom`]          = d.zoom;
+    if (d.desktopHeight !== undefined) updates[`${p}ImageDesktopHeight`] = d.desktopHeight;
+    if (d.mobileHeight  !== undefined) updates[`${p}ImageMobileHeight`]  = d.mobileHeight;
+    if (d.radius      !== undefined) updates[`${p}ImageRadius`]        = d.radius;
+    if (d.mobileSettings !== undefined) updates[`${p}MobileSettings`]  = d.mobileSettings;
+    await storage.updateSettings(updates as any);
+    const updated = await storage.getSettings();
+    return res.json({ success: true, settings: updated });
+  });
+
   // ============== TRANSFORMATIONS (before/after gallery) ==============
   // Public list — only active rows, sorted by admin order.
   app.get("/api/transformations", async (_req, res) => {

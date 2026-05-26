@@ -72,6 +72,28 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS supplement_image_desktop_height integer DEFAULT 260,
       ADD COLUMN IF NOT EXISTS supplement_image_radius integer DEFAULT 0;
 
+    -- Media Manager v2 — hero_images: original backup, mobile, thumbnail, mobile settings JSONB
+    ALTER TABLE IF EXISTS hero_images
+      ADD COLUMN IF NOT EXISTS original_data_url text,
+      ADD COLUMN IF NOT EXISTS mobile_data_url text,
+      ADD COLUMN IF NOT EXISTS thumbnail_data_url text,
+      ADD COLUMN IF NOT EXISTS mobile_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+    -- Media Manager v2 — settings: service image originals, mobile variants, thumbnails, mobile JSONB settings
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS personal_training_original_url text,
+      ADD COLUMN IF NOT EXISTS personal_training_mobile_url text,
+      ADD COLUMN IF NOT EXISTS personal_training_thumbnail_url text,
+      ADD COLUMN IF NOT EXISTS personal_training_mobile_settings jsonb NOT NULL DEFAULT '{}'::jsonb,
+      ADD COLUMN IF NOT EXISTS nutrition_original_url text,
+      ADD COLUMN IF NOT EXISTS nutrition_mobile_url text,
+      ADD COLUMN IF NOT EXISTS nutrition_thumbnail_url text,
+      ADD COLUMN IF NOT EXISTS nutrition_mobile_settings jsonb NOT NULL DEFAULT '{}'::jsonb,
+      ADD COLUMN IF NOT EXISTS supplement_original_url text,
+      ADD COLUMN IF NOT EXISTS supplement_mobile_url text,
+      ADD COLUMN IF NOT EXISTS supplement_thumbnail_url text,
+      ADD COLUMN IF NOT EXISTS supplement_mobile_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

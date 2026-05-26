@@ -758,6 +758,24 @@ export const settings = pgTable("settings", {
   supplementImageMobileHeight: integer("supplement_image_mobile_height").default(220),
   supplementImageDesktopHeight: integer("supplement_image_desktop_height").default(260),
   supplementImageRadius: integer("supplement_image_radius").default(0),
+  // ====== Media Manager v2 — original + mobile variants per service ======
+  // Original (pristine, never overwritten after first upload).
+  personalTrainingOriginalUrl: text("personal_training_original_url"),
+  nutritionOriginalUrl: text("nutrition_original_url"),
+  supplementOriginalUrl: text("supplement_original_url"),
+  // Mobile-optimised image (768 px max-edge, WebP 88).
+  personalTrainingMobileUrl: text("personal_training_mobile_url"),
+  nutritionMobileUrl: text("nutrition_mobile_url"),
+  supplementMobileUrl: text("supplement_mobile_url"),
+  // Thumbnail (400 px max-edge, WebP 75) — used in admin card previews.
+  personalTrainingThumbnailUrl: text("personal_training_thumbnail_url"),
+  nutritionThumbnailUrl: text("nutrition_thumbnail_url"),
+  supplementThumbnailUrl: text("supplement_thumbnail_url"),
+  // Mobile-specific display settings (JSONB — avoids N new flat columns).
+  // Keys: positionX, positionY, zoom, height, fit, radius.
+  personalTrainingMobileSettings: jsonb("personal_training_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
+  nutritionMobileSettings: jsonb("nutrition_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
+  supplementMobileSettings: jsonb("supplement_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
 });
 
 // =============================
@@ -809,6 +827,16 @@ export const heroImages = pgTable("hero_images", {
   brightness: doublePrecision("brightness").default(1.0),  // 0.9 → 1.2
   contrast: doublePrecision("contrast").default(1.0),      // 0.95 → 1.2
   overlayOpacity: doublePrecision("overlay_opacity").default(35), // 0 → 60 %
+  // Media Manager v2 — original backup + mobile-optimised variant.
+  // NULL-safe: pre-existing slides that were uploaded before this
+  // feature simply have no original/mobile URL and render normally.
+  originalDataUrl: text("original_data_url"),
+  mobileDataUrl: text("mobile_data_url"),
+  thumbnailDataUrl: text("thumbnail_data_url"),
+  // Independent mobile display settings stored as JSONB so adding
+  // new keys never requires another ALTER TABLE. Defaults to {}
+  // (renders with sensible CSS defaults on the homepage).
+  mobileSettings: jsonb("mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1591,6 +1619,19 @@ export const updateSettingsSchema = z.object({
   supplementImageMobileHeight: z.number().int().nullable().optional(),
   supplementImageDesktopHeight: z.number().int().nullable().optional(),
   supplementImageRadius: z.number().int().nullable().optional(),
+  // Media Manager v2 — mobile variants + original URLs
+  personalTrainingOriginalUrl: z.string().nullable().optional(),
+  personalTrainingMobileUrl: z.string().nullable().optional(),
+  personalTrainingThumbnailUrl: z.string().nullable().optional(),
+  personalTrainingMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
+  nutritionOriginalUrl: z.string().nullable().optional(),
+  nutritionMobileUrl: z.string().nullable().optional(),
+  nutritionThumbnailUrl: z.string().nullable().optional(),
+  nutritionMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
+  supplementOriginalUrl: z.string().nullable().optional(),
+  supplementMobileUrl: z.string().nullable().optional(),
+  supplementThumbnailUrl: z.string().nullable().optional(),
+  supplementMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
 });
 
 export const PACKAGE_TYPES = [
@@ -1967,6 +2008,7 @@ export const updateHeroImageSchema = z.object({
   brightness: z.number().min(0.9).max(1.2).nullish(),
   contrast: z.number().min(0.95).max(1.2).nullish(),
   overlayOpacity: z.number().min(0).max(60).nullish(),
+  mobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
 });
 export type HeroImage = typeof heroImages.$inferSelect;
 export type InsertHeroImage = z.infer<typeof insertHeroImageSchema>;

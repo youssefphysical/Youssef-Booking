@@ -1,0 +1,649 @@
+CRITICAL MEDIA SYSTEM REBUILD — PRODUCTION LEVEL
+
+We need to rebuild the entire website image system professionally.
+
+Current problems:
+
+- Image controls feel difficult and not smooth.
+- Cropping experience is not professional.
+- Image sizing feels hard to manage.
+- Images with Tron frames sometimes get cut incorrectly.
+- Mobile image editing experience is weak.
+- We had production crashes before.
+- Security must be enterprise-grade.
+- No vulnerabilities allowed.
+
+Goal:
+
+Build a professional Media Manager system similar to Canva / Instagram crop / premium website builders.
+
+This must feel smooth, professional, mobile-friendly, and safe.
+
+==================================================
+
+SECTIONS TO SUPPORT
+
+Hero Images:
+
+- Hero 1
+- Hero 2
+- Hero 3
+- Hero 4
+
+Services:
+
+- Personal Training image
+- Nutrition Plans image
+- Supplement Protocol image
+
+Branding:
+
+- Logo
+- Future branding assets
+
+Future:
+
+- Any future image section
+
+IMPORTANT:
+
+Every image must have fully independent settings.
+
+Changing one image must NEVER affect another image.
+
+==================================================
+
+CONTROL PANEL STRUCTURE
+
+Create:
+
+Control Panel
+
+→ Media Manager
+
+Sections:
+
+1. Hero Images
+2. Services Images
+3. Branding
+4. Future Images
+
+Each image card shows:
+
+- Image name
+- Current live preview
+- Current dimensions
+- Current file size
+- Recommended aspect ratio
+- Last updated
+- Upload button
+- Replace button
+- Edit button
+- Mobile preview
+- Desktop preview
+- Reset settings
+- Restore original image
+
+==================================================
+
+IMAGE EDITOR EXPERIENCE
+
+When clicking:
+
+Edit Image
+
+Open professional fullscreen editor.
+
+Recommended libraries:
+
+Frontend:
+
+react-easy-crop
+
+OR
+
+react-cropper
+
+CropperJS
+
+Use whichever integrates best.
+
+Need:
+
+Crop image
+
+Zoom image
+
+Move image
+
+Resize image
+
+Aspect ratio selection
+
+Preview before save
+
+Rotation support
+
+Reset crop
+
+Restore original
+
+==================================================
+
+SUPPORTED ASPECT RATIOS
+
+Auto
+
+21:9
+
+16:9
+
+3:2
+
+4:3
+
+1:1
+
+4:5
+
+9:16
+
+Custom
+
+Recommended defaults:
+
+Hero Desktop:
+
+21:9
+
+Hero Mobile:
+
+4:5
+
+or
+
+9:16
+
+Services:
+
+3:2
+
+Logo:
+
+Contain mode
+
+No crop default
+
+==================================================
+
+SEPARATE MOBILE / TABLET / DESKTOP SETTINGS
+
+Each image must have:
+
+Desktop tab
+
+Tablet tab
+
+Mobile tab
+
+Every tab has independent:
+
+Crop
+
+Zoom
+
+Position X
+
+Position Y
+
+Object Fit
+
+Object Position
+
+Height
+
+Width behavior
+
+Border Radius
+
+Aspect Ratio
+
+Desktop changes must NOT affect mobile.
+
+Mobile changes must NOT affect desktop.
+
+==================================================
+
+IMAGE POSITIONING CONTROLS
+
+Need:
+
+Drag image freely
+
+Zoom slider
+
+Position X slider
+
+Position Y slider
+
+Height slider
+
+Border Radius slider
+
+Object Fit:
+
+Cover
+
+Contain
+
+Object Position:
+
+Center
+
+Top
+
+Bottom
+
+Left
+
+Right
+
+Custom X/Y
+
+Live preview updates instantly.
+
+==================================================
+
+AUTO IMAGE SYSTEM
+
+Need smart auto image handling.
+
+System automatically:
+
+Preserve quality
+
+Prevent stretching
+
+Prevent ugly crop
+
+Keep Tron frame visible
+
+Avoid squeezing
+
+Keep service cards premium
+
+Keep hero cinematic
+
+Prevent blurry images
+
+Preserve important image areas
+
+Responsive everywhere
+
+Service cards default:
+
+3:2
+
+Hero:
+
+16:9 desktop
+
+4:5 mobile
+
+==================================================
+
+UPLOAD SYSTEM
+
+Need professional upload.
+
+Support:
+
+JPG
+
+JPEG
+
+PNG
+
+WEBP
+
+Large premium uploads:
+
+Minimum:
+
+25MB
+
+Admin configurable max size.
+
+Requirements:
+
+Progress bar
+
+Upload percentage
+
+Compression
+
+Optimization
+
+Thumbnail generation
+
+Mobile image generation
+
+Tablet image generation
+
+Desktop image generation
+
+Safe resize backend
+
+Prevent crash from large upload
+
+Clear upload errors
+
+==================================================
+
+IMAGE STORAGE SYSTEM
+
+Store:
+
+Original image
+
+Desktop optimized
+
+Tablet optimized
+
+Mobile optimized
+
+Thumbnail
+
+Keep original forever.
+
+Never overwrite original.
+
+==================================================
+
+DATABASE STORAGE
+
+Store independently:
+
+original_image_url
+
+desktop_image_url
+
+tablet_image_url
+
+mobile_image_url
+
+thumbnail_url
+
+desktop_crop_x
+
+desktop_crop_y
+
+desktop_zoom
+
+desktop_height
+
+desktop_ratio
+
+tablet_crop_x
+
+tablet_crop_y
+
+tablet_zoom
+
+tablet_height
+
+tablet_ratio
+
+mobile_crop_x
+
+mobile_crop_y
+
+mobile_zoom
+
+mobile_height
+
+mobile_ratio
+
+object_fit
+
+object_position
+
+radius
+
+updated_at
+
+Every image has its own settings.
+
+==================================================
+
+SECURITY
+
+CRITICAL
+
+NO SECURITY VULNERABILITIES.
+
+Admin only.
+
+Protect ALL media routes.
+
+Server-side role validation ONLY.
+
+Frontend validation alone NOT allowed.
+
+Normal users:
+
+NO upload
+
+NO delete
+
+NO replace
+
+NO edit
+
+Unauthorized:
+
+Return:
+
+{
+"success":false,
+"error":"Unauthorized"
+}
+
+==================================================
+
+UPLOAD SECURITY
+
+Allow ONLY:
+
+jpg
+
+jpeg
+
+png
+
+webp
+
+Validate:
+
+Mime type
+
+Extension
+
+Magic bytes
+
+Reject:
+
+svg
+
+html
+
+php
+
+js
+
+exe
+
+zip
+
+pdf
+
+bat
+
+sh
+
+anything executable
+
+Random filenames only.
+
+Never trust original filename.
+
+Strip metadata.
+
+Strip EXIF.
+
+Prevent path traversal.
+
+Prevent overwrite attacks.
+
+Prevent malicious upload.
+
+==================================================
+
+BACKEND SECURITY
+
+Rate limiting
+
+CSRF protection
+
+Secure cookies
+
+No stack traces production
+
+No environment leak
+
+No DB leak
+
+No server path leak
+
+Parameterized queries ONLY
+
+No raw SQL unsafe input
+
+==================================================
+
+DATABASE SAFETY
+
+IMPORTANT
+
+Any future columns:
+
+ALWAYS:
+
+ADD COLUMN IF NOT EXISTS
+
+before queries.
+
+Production DB MUST self-heal.
+
+Missing columns must NEVER crash production.
+
+Never allow:
+
+"column does not exist"
+
+Never allow:
+
+500 Server Error
+
+Never allow:
+
+Server failed to start
+
+==================================================
+
+ERROR SYSTEM
+
+Return safe JSON.
+
+Never crash backend.
+
+Example:
+
+{
+"success":false,
+"error":"Image upload failed"
+}
+
+Keep detailed logs internally.
+
+==================================================
+
+PRODUCTION TESTING
+
+MUST TEST BEFORE FINISH:
+
+Admin login
+
+Client login
+
+Media Manager opens
+
+Upload 1MB
+
+Upload 5MB
+
+Upload 15MB
+
+Upload 25MB
+
+Hero crop desktop
+
+Hero crop mobile
+
+Personal Training crop
+
+Nutrition crop
+
+Supplement crop
+
+Save image settings
+
+Refresh persists settings
+
+Mobile website
+
+Desktop website
+
+Unauthorized upload blocked
+
+Fake image blocked
+
+Invalid type blocked
+
+No 500 errors
+
+No crash
+
+No server failed to start
+
+==================================================
+
+FINAL RESULT
+
+I want professional premium image management.
+
+Smooth.
+
+Fast.
+
+Mobile-friendly.
+
+Enterprise-level secure.
+
+No vulnerabilities.
+
+No production crashes.
+
+Every image independently controlled.
+
+Feels premium like Canva + Instagram crop + professional website builders.

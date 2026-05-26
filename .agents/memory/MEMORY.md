@@ -1,1 +1,3 @@
 - [ensureSchema discipline](ensureschema-discipline.md) — every new shared/schema.ts column needs a matching ADD COLUMN IF NOT EXISTS in ensureSchema.ts or prod cold-starts crash.
+- [Media Manager v2 architecture](media-manager-v2.md) — desktop/mobile independence via jsonb mobileSettings; multi-res via one sharp pipeline; magic bytes + in-memory rate limiting.
+- [TypeScript regex dotAll](ts-regex-flags.md) — /s dotAll flag requires tsconfig target ≥ es2018; use [\s\S]+ as a safe cross-target substitute.

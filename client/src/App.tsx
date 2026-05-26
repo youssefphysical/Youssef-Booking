@@ -62,6 +62,7 @@ const AdminClientDetail = lazy(() => import("@/pages/AdminClientDetail"));
 const AdminPackages = lazy(() => import("@/pages/AdminPackages"));
 const AdminPackageBuilder = lazy(() => import("@/pages/AdminPackageBuilder"));
 const AdminSettings = lazy(() => import("@/pages/AdminSettings"));
+const AdminMedia = lazy(() => import("@/pages/AdminMedia"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
 const AdminMergeClients = lazy(() => import("@/pages/AdminMergeClients"));
@@ -259,6 +260,9 @@ function Router() {
           </Route>
           <Route path="/admin/settings">
             <ProtectedRoute component={AdminSettings} adminOnly />
+          </Route>
+          <Route path="/admin/media">
+            <ProtectedRoute component={AdminMedia} adminOnly />
           </Route>
           <Route path="/admin/staff">
             <ProtectedRoute component={AdminStaffPage} superAdminOnly />

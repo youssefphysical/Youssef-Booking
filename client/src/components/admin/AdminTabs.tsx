@@ -71,6 +71,7 @@ const ADMIN_TABS: TabSpec[] = [
   { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
   { href: "/admin/audit-log", labelKey: "admin.tabs.auditLog", fallback: "Audit log", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/audit-log") },
   { href: "/admin/merge-clients", labelKey: "admin.tabs.merge", fallback: "Merge", icon: <Merge size={15} />, matches: (p) => p.startsWith("/admin/merge-clients") },
+  { href: "/admin/media", labelKey: "admin.tabs.media", fallback: "Media", icon: <Camera size={15} />, matches: (p) => p.startsWith("/admin/media") },
   { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
 ];
 
@@ -91,6 +92,7 @@ const ADMIN_PRELOAD: Record<string, () => Promise<unknown>> = {
   "/admin/audit-log": () => import("@/pages/AdminAuditLog"),
   "/admin/merge-clients": () => import("@/pages/AdminMergeClients"),
   "/admin/settings": () => import("@/pages/AdminSettings"),
+  "/admin/media":    () => import("@/pages/AdminMedia"),
 };
 
 function preloadAdminRoute(href: string) {
