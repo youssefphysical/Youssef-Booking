@@ -4648,7 +4648,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
 
     const result = await processImageMultiRes(parsed.data.imageDataUrl, {
-      desktopWidth: 1200, desktopHeight: 800, desktopFit: "cover",
+      desktopWidth: 1920, desktopHeight: 1080, desktopFit: "cover",
     });
     if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
 
