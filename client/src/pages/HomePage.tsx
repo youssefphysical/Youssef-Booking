@@ -728,10 +728,22 @@ function ServicesSection() {
   const nutritionMsg = "Hi Youssef, I'm interested in a personalised nutrition plan. I'd like to know more about your approach and how we can get started.";
   const supplementMsg = "Hi Youssef, I'm interested in a personalised supplement protocol. Can you share more about what you recommend and how it works?";
 
+  // Helper: read a display-tuning field from settings, with fallback
+  const svcCfg = (prefix: string) => ({
+    fit:           ((settings as any)?.[`${prefix}ImageFit`]           ?? "cover") as string,
+    posX:          ((settings as any)?.[`${prefix}ImagePositionX`]     ?? 50)      as number,
+    posY:          ((settings as any)?.[`${prefix}ImagePositionY`]     ?? 50)      as number,
+    zoom:          ((settings as any)?.[`${prefix}ImageZoom`]          ?? 1.0)     as number,
+    mobileH:       ((settings as any)?.[`${prefix}ImageMobileHeight`]  ?? 220)     as number,
+    desktopH:      ((settings as any)?.[`${prefix}ImageDesktopHeight`] ?? 260)     as number,
+    radius:        ((settings as any)?.[`${prefix}ImageRadius`]        ?? 0)       as number,
+  });
+
   const cards = [
     {
       key: "pt",
       imageUrl: settings?.personalTrainingImageUrl || "",
+      imgCfg: svcCfg("personalTraining"),
       icon: <Dumbbell size={28} className="text-primary" />,
       eyebrow: "Personal Training",
       title: "1-on-1 Personal Training",
@@ -751,6 +763,7 @@ function ServicesSection() {
     {
       key: "nutrition",
       imageUrl: settings?.nutritionImageUrl || "",
+      imgCfg: svcCfg("nutrition"),
       icon: <Utensils size={28} className="text-primary" />,
       eyebrow: "Nutrition Plans",
       title: "Personalised Nutrition",
@@ -771,6 +784,7 @@ function ServicesSection() {
     {
       key: "supplement",
       imageUrl: settings?.supplementImageUrl || "",
+      imgCfg: svcCfg("supplement"),
       icon: <FlaskConical size={28} className="text-primary" />,
       eyebrow: "Supplement Protocol",
       title: "Supplement Protocol",
@@ -807,13 +821,27 @@ function ServicesSection() {
             className="tron-card rounded-3xl overflow-hidden flex flex-col"
             data-testid={`card-service-${card.key}`}
           >
-            {/* Image or icon header */}
+            {/* Image or icon header — dimensions + rendering controlled by admin */}
             {card.imageUrl ? (
-              <div className="w-full aspect-[16/9] overflow-hidden">
+              <div
+                className="svc-img-wrap w-full"
+                style={{
+                  "--svc-mobile-h":  `${card.imgCfg.mobileH}px`,
+                  "--svc-desktop-h": `${card.imgCfg.desktopH}px`,
+                  borderRadius: card.imgCfg.radius > 0 ? `${card.imgCfg.radius}px` : undefined,
+                } as React.CSSProperties}
+              >
                 <img
                   src={card.imageUrl}
                   alt={card.title}
-                  className="w-full h-full object-cover"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: card.imgCfg.fit as React.CSSProperties["objectFit"],
+                    objectPosition: `${card.imgCfg.posX}% ${card.imgCfg.posY}%`,
+                    transform: card.imgCfg.zoom !== 1 ? `scale(${card.imgCfg.zoom})` : undefined,
+                    transformOrigin: `${card.imgCfg.posX}% ${card.imgCfg.posY}%`,
+                  }}
                 />
               </div>
             ) : (

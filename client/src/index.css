@@ -2679,6 +2679,20 @@ html[dir="rtl"] .hero-eyebrow-rule {
   opacity: 0.5;
 }
 
+/* =====================================================================
+   SERVICE CARD IMAGE — responsive height via CSS custom properties
+   ===================================================================== */
+.svc-img-wrap {
+  height: var(--svc-mobile-h, 220px);
+  overflow: hidden;
+  position: relative;
+}
+@media (min-width: 768px) {
+  .svc-img-wrap {
+    height: var(--svc-desktop-h, 260px);
+  }
+}
+
 .pdf-print-only { display: none; }
 
 /* Native print: hide all chrome, render only the document. */

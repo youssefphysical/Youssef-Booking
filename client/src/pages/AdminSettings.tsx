@@ -1900,8 +1900,28 @@ function BlockedSlotsSection() {
 // is no filesystem dependency (Vercel-safe). Same architecture as the
 // profile photo uploader above.
 // =====================================================================
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICE CARD IMAGES — full display-tuning editor, mirroring HeroSlideEditor
+// ─────────────────────────────────────────────────────────────────────────────
+const SVC_DEFAULTS = {
+  fit: "cover",
+  positionX: 50,
+  positionY: 50,
+  zoom: 1.0,
+  mobileHeight: 220,
+  desktopHeight: 260,
+  radius: 0,
+} as const;
+
+type SvcCardKey = "personalTraining" | "nutrition" | "supplement";
+
+const SVC_CARDS: { key: SvcCardKey; label: string; urlKey: string }[] = [
+  { key: "personalTraining", label: "Personal Training", urlKey: "personalTrainingImageUrl" },
+  { key: "nutrition",        label: "Nutrition Plans",   urlKey: "nutritionImageUrl" },
+  { key: "supplement",       label: "Supplement Protocol", urlKey: "supplementImageUrl" },
+];
+
 function ServiceCardImagesSection() {
-  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: settings } = useSettings();
   const updateSettings = useUpdateSettings();
@@ -1909,21 +1929,62 @@ function ServiceCardImagesSection() {
   const MAX_BYTES = 5 * 1024 * 1024;
   const ALLOWED_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-  type CardKey = "personalTrainingImageUrl" | "nutritionImageUrl" | "supplementImageUrl";
+  // Single active editor — one card open at a time (same pattern as HeroSlideEditor)
+  const [editingKey, setEditingKey] = useState<SvcCardKey | null>(null);
 
-  const [pending, setPending] = useState<Record<CardKey, string | null>>({
-    personalTrainingImageUrl: null,
-    nutritionImageUrl: null,
-    supplementImageUrl: null,
-  });
+  // Editor state — loaded from saved settings when an editor opens
+  const [fit,           setFit]           = useState<string>(SVC_DEFAULTS.fit);
+  const [positionX,     setPositionX]     = useState<number>(SVC_DEFAULTS.positionX);
+  const [positionY,     setPositionY]     = useState<number>(SVC_DEFAULTS.positionY);
+  const [zoom,          setZoom]          = useState<number>(SVC_DEFAULTS.zoom);
+  const [mobileHeight,  setMobileHeight]  = useState<number>(SVC_DEFAULTS.mobileHeight);
+  const [desktopHeight, setDesktopHeight] = useState<number>(SVC_DEFAULTS.desktopHeight);
+  const [radius,        setRadius]        = useState<number>(SVC_DEFAULTS.radius);
 
-  const cards: { key: CardKey; label: string }[] = [
-    { key: "personalTrainingImageUrl", label: "Personal Training" },
-    { key: "nutritionImageUrl", label: "Nutrition Plans" },
-    { key: "supplementImageUrl", label: "Supplement Protocol" },
-  ];
+  function openEditor(key: SvcCardKey) {
+    const s = settings as any;
+    setFit          (s?.[`${key}ImageFit`]            ?? SVC_DEFAULTS.fit);
+    setPositionX    (s?.[`${key}ImagePositionX`]      ?? SVC_DEFAULTS.positionX);
+    setPositionY    (s?.[`${key}ImagePositionY`]      ?? SVC_DEFAULTS.positionY);
+    setZoom         (s?.[`${key}ImageZoom`]           ?? SVC_DEFAULTS.zoom);
+    setMobileHeight (s?.[`${key}ImageMobileHeight`]   ?? SVC_DEFAULTS.mobileHeight);
+    setDesktopHeight(s?.[`${key}ImageDesktopHeight`]  ?? SVC_DEFAULTS.desktopHeight);
+    setRadius       (s?.[`${key}ImageRadius`]         ?? SVC_DEFAULTS.radius);
+    setEditingKey(key);
+  }
 
-  function handleFile(cardKey: CardKey, file: File | undefined) {
+  function resetToDefaults() {
+    setFit(SVC_DEFAULTS.fit);
+    setPositionX(SVC_DEFAULTS.positionX);
+    setPositionY(SVC_DEFAULTS.positionY);
+    setZoom(SVC_DEFAULTS.zoom);
+    setMobileHeight(SVC_DEFAULTS.mobileHeight);
+    setDesktopHeight(SVC_DEFAULTS.desktopHeight);
+    setRadius(SVC_DEFAULTS.radius);
+  }
+
+  function saveDisplaySettings(key: SvcCardKey) {
+    updateSettings.mutate(
+      {
+        [`${key}ImageFit`]:            fit,
+        [`${key}ImagePositionX`]:      positionX,
+        [`${key}ImagePositionY`]:      positionY,
+        [`${key}ImageZoom`]:           zoom,
+        [`${key}ImageMobileHeight`]:   mobileHeight,
+        [`${key}ImageDesktopHeight`]:  desktopHeight,
+        [`${key}ImageRadius`]:         radius,
+      } as any,
+      {
+        onSuccess: () => {
+          const label = SVC_CARDS.find(c => c.key === key)?.label ?? key;
+          toast({ title: `${label} display settings saved.` });
+        },
+        onError: (err: any) => toast({ title: "Save failed.", description: err?.message, variant: "destructive" }),
+      },
+    );
+  }
+
+  function handleFile(key: SvcCardKey, urlKey: string, file: File | undefined) {
     if (!file) return;
     if (!ALLOWED_MIME.includes(file.type.toLowerCase())) {
       toast({ title: "Only JPEG, PNG, or WebP images are allowed.", variant: "destructive" });
@@ -1937,18 +1998,12 @@ function ServiceCardImagesSection() {
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       if (!dataUrl) return;
-      setPending((p) => ({ ...p, [cardKey]: dataUrl }));
+      const label = SVC_CARDS.find(c => c.key === key)?.label ?? key;
       updateSettings.mutate(
-        { [cardKey]: dataUrl },
+        { [urlKey]: dataUrl } as any,
         {
-          onSuccess: () => {
-            setPending((p) => ({ ...p, [cardKey]: null }));
-            toast({ title: `${cards.find((c) => c.key === cardKey)?.label} image saved.` });
-          },
-          onError: (err: any) => {
-            setPending((p) => ({ ...p, [cardKey]: null }));
-            toast({ title: "Upload failed. Please try again.", description: err?.message, variant: "destructive" });
-          },
+          onSuccess: () => toast({ title: `${label} image saved.` }),
+          onError: (err: any) => toast({ title: "Upload failed.", description: err?.message, variant: "destructive" }),
         },
       );
     };
@@ -1956,11 +2011,11 @@ function ServiceCardImagesSection() {
     reader.readAsDataURL(file);
   }
 
-  function handleRemove(cardKey: CardKey) {
+  function handleRemove(urlKey: string, label: string) {
     updateSettings.mutate(
-      { [cardKey]: null },
+      { [urlKey]: null } as any,
       {
-        onSuccess: () => toast({ title: `${cards.find((c) => c.key === cardKey)?.label} image removed.` }),
+        onSuccess: () => toast({ title: `${label} image removed.` }),
         onError: (err: any) => toast({ title: "Remove failed.", description: err?.message, variant: "destructive" }),
       },
     );
@@ -1970,22 +2025,25 @@ function ServiceCardImagesSection() {
     <section className="admin-card">
       <h2 className="font-display font-bold text-lg mb-1">Service Card Images</h2>
       <p className="text-sm text-muted-foreground mb-5">
-        Upload an image for each public service card on the homepage. If no image is set, the card shows a default icon.
-        JPEG, PNG, or WebP — max 5 MB.
+        Upload and configure each service card image independently. Position, zoom, height, object fit, and border radius
+        all mirror the Hero image control system — changes apply live on the website.
       </p>
+
+      {/* ── Card tiles ── */}
       <div className="grid sm:grid-cols-3 gap-5">
-        {cards.map(({ key, label }) => {
-          const savedUrl = (settings as any)?.[key]?.trim() || "";
-          const previewUrl = pending[key] || savedUrl;
-          const inputId = `service-img-input-${key}`;
+        {SVC_CARDS.map(({ key, label, urlKey }) => {
+          const savedUrl = (settings as any)?.[urlKey]?.trim() || "";
+          const inputId  = `service-img-input-${key}`;
+          const isEditing = editingKey === key;
           return (
             <div key={key} className="space-y-3">
               <p className="text-sm font-medium">{label}</p>
-              {/* Preview */}
+
+              {/* Thumbnail preview */}
               <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-primary/10 to-black/40">
-                {previewUrl ? (
+                {savedUrl ? (
                   <img
-                    src={previewUrl}
+                    src={savedUrl}
                     alt={label}
                     className="w-full h-full object-cover"
                     data-testid={`img-service-card-${key}`}
@@ -1996,13 +2054,9 @@ function ServiceCardImagesSection() {
                     <span className="text-[10px] uppercase tracking-widest">No image</span>
                   </div>
                 )}
-                {pending[key] && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <Loader2 size={20} className="animate-spin text-primary" />
-                  </div>
-                )}
               </div>
-              {/* Actions */}
+
+              {/* Action bar */}
               <div className="flex gap-2">
                 <label htmlFor={inputId} className="flex-1">
                   <input
@@ -2010,7 +2064,7 @@ function ServiceCardImagesSection() {
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     className="sr-only"
-                    onChange={(e) => handleFile(key, e.target.files?.[0])}
+                    onChange={(e) => handleFile(key, urlKey, e.target.files?.[0])}
                     data-testid={`input-service-img-${key}`}
                   />
                   <span className="inline-flex items-center justify-center gap-1.5 h-9 w-full px-3 rounded-xl border border-white/10 text-xs font-medium cursor-pointer hover:border-primary/40 hover:text-primary transition-colors">
@@ -2023,11 +2077,23 @@ function ServiceCardImagesSection() {
                     size="sm"
                     variant="ghost"
                     className="h-9 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemove(key)}
+                    onClick={() => handleRemove(urlKey, label)}
                     disabled={updateSettings.isPending}
                     data-testid={`button-service-img-remove-${key}`}
                   >
                     <Trash2 size={13} />
+                  </Button>
+                )}
+                {savedUrl && (
+                  <Button
+                    size="sm"
+                    variant={isEditing ? "default" : "outline"}
+                    className="h-9 px-3 text-xs gap-1"
+                    onClick={() => isEditing ? setEditingKey(null) : openEditor(key)}
+                    data-testid={`button-service-edit-${key}`}
+                  >
+                    <Pencil size={12} />
+                    {isEditing ? "Close" : "Edit"}
                   </Button>
                 )}
               </div>
@@ -2035,6 +2101,165 @@ function ServiceCardImagesSection() {
           );
         })}
       </div>
+
+      {/* ── Inline editor — same UX as HeroSlideEditor ── */}
+      {editingKey !== null && (() => {
+        const card    = SVC_CARDS.find(c => c.key === editingKey)!;
+        const savedUrl = (settings as any)?.[card.urlKey]?.trim() || "";
+        return (
+          <div
+            className="mt-6 rounded-2xl border border-primary/30 bg-primary/[0.04] p-5"
+            data-testid={`service-editor-${editingKey}`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display font-bold text-sm">
+                {card.label} — Display Settings
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={resetToDefaults}
+                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                  data-testid={`button-service-reset-${editingKey}`}
+                >
+                  Reset to default
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingKey(null)}
+                  className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center"
+                  data-testid={`button-service-editor-close-${editingKey}`}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground mb-4">
+              Live preview mirrors what visitors see. Changes apply the moment you click Save.
+            </p>
+
+            {/* Live preview — mirrors homepage rendering exactly */}
+            <div
+              className="relative w-full border border-white/10 bg-black mb-5"
+              style={{
+                height: `${desktopHeight}px`,
+                borderRadius: `${radius}px`,
+                overflow: "hidden",
+              }}
+              data-testid={`preview-service-${editingKey}`}
+            >
+              {savedUrl ? (
+                <img
+                  src={savedUrl}
+                  alt="Live preview"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: fit as any,
+                    objectPosition: `${positionX}% ${positionY}%`,
+                    transform: `scale(${zoom})`,
+                    transformOrigin: `${positionX}% ${positionY}%`,
+                  }}
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
+                  <ImageIcon size={32} className="opacity-30" />
+                  <span className="ml-2 text-xs">Upload an image first</span>
+                </div>
+              )}
+            </div>
+
+            {/* Sliders — same TuningSlider component used by hero editor */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3">
+              <TuningSlider
+                testId={`slider-service-positionx-${editingKey}`}
+                label="Position X"
+                value={positionX} min={0} max={100} step={1}
+                format={(v) => `${Math.round(v)}%`}
+                onChange={setPositionX}
+              />
+              <TuningSlider
+                testId={`slider-service-positiony-${editingKey}`}
+                label="Position Y"
+                value={positionY} min={0} max={100} step={1}
+                format={(v) => `${Math.round(v)}%`}
+                onChange={setPositionY}
+              />
+              <TuningSlider
+                testId={`slider-service-zoom-${editingKey}`}
+                label="Zoom"
+                value={zoom} min={1.0} max={2.0} step={0.01}
+                format={(v) => `${v.toFixed(2)}×`}
+                onChange={setZoom}
+              />
+              <TuningSlider
+                testId={`slider-service-radius-${editingKey}`}
+                label="Border radius"
+                value={radius} min={0} max={24} step={1}
+                format={(v) => `${Math.round(v)} px`}
+                onChange={setRadius}
+              />
+              <TuningSlider
+                testId={`slider-service-mobileheight-${editingKey}`}
+                label="Mobile height"
+                value={mobileHeight} min={120} max={420} step={4}
+                format={(v) => `${Math.round(v)} px`}
+                onChange={setMobileHeight}
+              />
+              <TuningSlider
+                testId={`slider-service-desktopheight-${editingKey}`}
+                label="Desktop height"
+                value={desktopHeight} min={160} max={520} step={4}
+                format={(v) => `${Math.round(v)} px`}
+                onChange={setDesktopHeight}
+              />
+            </div>
+
+            {/* Object fit — three-way toggle */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Object fit
+                </label>
+                <span className="text-[11px] text-foreground/70 tabular-nums capitalize">{fit}</span>
+              </div>
+              <div className="flex gap-2">
+                {(["cover", "contain", "fill"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setFit(f)}
+                    data-testid={`button-service-fit-${f}-${editingKey}`}
+                    className={`h-8 flex-1 rounded-lg border text-[11px] transition-colors capitalize ${
+                      fit === f
+                        ? "border-primary/60 bg-primary/10 text-primary font-semibold"
+                        : "border-white/10 bg-white/[0.03] text-foreground/70 hover:border-white/20"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Save */}
+            <div className="flex justify-end mt-5 pt-3 border-t border-white/5">
+              <Button
+                type="button"
+                onClick={() => saveDisplaySettings(editingKey)}
+                disabled={updateSettings.isPending}
+                data-testid={`button-service-save-${editingKey}`}
+              >
+                {updateSettings.isPending && <Loader2 size={14} className="mr-2 animate-spin" />}
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
     </section>
   );
 }

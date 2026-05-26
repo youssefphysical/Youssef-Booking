@@ -734,6 +734,30 @@ export const settings = pgTable("settings", {
   personalTrainingImageUrl: text("personal_training_image_url"),
   nutritionImageUrl: text("nutrition_image_url"),
   supplementImageUrl: text("supplement_image_url"),
+  // Service card display tuning — Personal Training
+  personalTrainingImageFit: text("personal_training_image_fit").default("cover"),
+  personalTrainingImagePositionX: doublePrecision("personal_training_image_position_x").default(50),
+  personalTrainingImagePositionY: doublePrecision("personal_training_image_position_y").default(50),
+  personalTrainingImageZoom: doublePrecision("personal_training_image_zoom").default(1.0),
+  personalTrainingImageMobileHeight: integer("personal_training_image_mobile_height").default(220),
+  personalTrainingImageDesktopHeight: integer("personal_training_image_desktop_height").default(260),
+  personalTrainingImageRadius: integer("personal_training_image_radius").default(0),
+  // Service card display tuning — Nutrition Plans
+  nutritionImageFit: text("nutrition_image_fit").default("cover"),
+  nutritionImagePositionX: doublePrecision("nutrition_image_position_x").default(50),
+  nutritionImagePositionY: doublePrecision("nutrition_image_position_y").default(50),
+  nutritionImageZoom: doublePrecision("nutrition_image_zoom").default(1.0),
+  nutritionImageMobileHeight: integer("nutrition_image_mobile_height").default(220),
+  nutritionImageDesktopHeight: integer("nutrition_image_desktop_height").default(260),
+  nutritionImageRadius: integer("nutrition_image_radius").default(0),
+  // Service card display tuning — Supplement Protocol
+  supplementImageFit: text("supplement_image_fit").default("cover"),
+  supplementImagePositionX: doublePrecision("supplement_image_position_x").default(50),
+  supplementImagePositionY: doublePrecision("supplement_image_position_y").default(50),
+  supplementImageZoom: doublePrecision("supplement_image_zoom").default(1.0),
+  supplementImageMobileHeight: integer("supplement_image_mobile_height").default(220),
+  supplementImageDesktopHeight: integer("supplement_image_desktop_height").default(260),
+  supplementImageRadius: integer("supplement_image_radius").default(0),
 });
 
 // =============================
@@ -1543,6 +1567,30 @@ export const updateSettingsSchema = z.object({
   personalTrainingImageUrl: z.string().nullable().optional(),
   nutritionImageUrl: z.string().nullable().optional(),
   supplementImageUrl: z.string().nullable().optional(),
+  // Service card display tuning — Personal Training
+  personalTrainingImageFit: z.string().nullable().optional(),
+  personalTrainingImagePositionX: z.number().nullable().optional(),
+  personalTrainingImagePositionY: z.number().nullable().optional(),
+  personalTrainingImageZoom: z.number().nullable().optional(),
+  personalTrainingImageMobileHeight: z.number().int().nullable().optional(),
+  personalTrainingImageDesktopHeight: z.number().int().nullable().optional(),
+  personalTrainingImageRadius: z.number().int().nullable().optional(),
+  // Service card display tuning — Nutrition Plans
+  nutritionImageFit: z.string().nullable().optional(),
+  nutritionImagePositionX: z.number().nullable().optional(),
+  nutritionImagePositionY: z.number().nullable().optional(),
+  nutritionImageZoom: z.number().nullable().optional(),
+  nutritionImageMobileHeight: z.number().int().nullable().optional(),
+  nutritionImageDesktopHeight: z.number().int().nullable().optional(),
+  nutritionImageRadius: z.number().int().nullable().optional(),
+  // Service card display tuning — Supplement Protocol
+  supplementImageFit: z.string().nullable().optional(),
+  supplementImagePositionX: z.number().nullable().optional(),
+  supplementImagePositionY: z.number().nullable().optional(),
+  supplementImageZoom: z.number().nullable().optional(),
+  supplementImageMobileHeight: z.number().int().nullable().optional(),
+  supplementImageDesktopHeight: z.number().int().nullable().optional(),
+  supplementImageRadius: z.number().int().nullable().optional(),
 });
 
 export const PACKAGE_TYPES = [
