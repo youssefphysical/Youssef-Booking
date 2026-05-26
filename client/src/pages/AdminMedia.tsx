@@ -720,16 +720,32 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any).error || "Upload failed");
       }
-      return res.json();
+      return res.json() as Promise<{
+        success: boolean;
+        desktop: string;
+        mobile: string;
+        thumbnail: string;
+        focalPoint?: { positionX: number; positionY: number; zoom: number; subjectType: string };
+      }>;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       invalidateMedia();
-      toast({ title: `${label} updated`, description: "Image uploaded and optimised for all screens." });
       setCropperOpen(false);
-      // Auto-centre focal point so the image looks perfect immediately
-      setDesktop(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
-      setMob(p => ({ ...p, fit: "cover", positionX: 50, positionY: 50, zoom: 1 }));
-      settingsMutation.mutate(AUTO_FIT_BODY);
+      // Apply AI-detected focal point, or fall back to centered composition
+      const fp = data.focalPoint;
+      const positionX = fp?.positionX ?? 50;
+      const positionY = fp?.positionY ?? 50;
+      const zoom      = fp?.zoom      ?? 1;
+      const aiUsed    = fp && fp.subjectType !== "center";
+      setDesktop(p => ({ ...p, fit: "cover", positionX, positionY, zoom }));
+      setMob(p => ({ ...p, fit: "cover", positionX, positionY, zoom }));
+      // Focal settings are already persisted server-side — no extra PATCH needed
+      toast({
+        title: `${label} updated`,
+        description: aiUsed
+          ? `AI detected a ${fp!.subjectType} — composition auto-optimised.`
+          : "Image uploaded and centred for all screens.",
+      });
     },
     onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
   });
@@ -896,7 +912,7 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           outputLongEdgePx={2000}
           title={`Upload ${label} image`}
           description="16:9 format (1920×1080 recommended). Desktop, mobile, and thumbnail variants are generated automatically."
-          onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
+          onCropped={(url) => { void uploadMutation.mutateAsync({ imageDataUrl: url }); }}
         />
 
         {/* Advanced Settings — collapsed by default */}

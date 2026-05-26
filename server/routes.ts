@@ -4632,6 +4632,88 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     return res.json(updated);
   });
 
+  // ── AI focal point analyser ────────────────────────────────────────────────
+  // Uses OpenAI Vision to detect the dominant subject (face > logo > product >
+  // scene) and returns focal coords (0-100) + zoom (1.0–1.15 max).
+  // Gracefully falls back to {50, 50, 1.0} when OpenAI is unavailable.
+  type FocalResult = { positionX: number; positionY: number; zoom: number; subjectType: string };
+  async function analyzeServiceImageFocalPoint(dataUrl: string): Promise<FocalResult> {
+    const fallback: FocalResult = { positionX: 50, positionY: 50, zoom: 1.0, subjectType: "center" };
+    if (!process.env.OPENAI_API_KEY) return fallback;
+    try {
+      const { default: OpenAI } = await import("openai");
+      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      // Use a small preview so vision call is fast and cheap
+      let visionUrl = dataUrl;
+      if (_sharp) {
+        try {
+          const match = dataUrl.match(/^data:(image\/[^;]+);base64,([\s\S]+)$/);
+          if (match) {
+            const buf = Buffer.from(match[2], "base64");
+            const small = await _sharp(buf, { failOn: "none" })
+              .resize({ width: 640, withoutEnlargement: true })
+              .jpeg({ quality: 75 })
+              .toBuffer();
+            visionUrl = `data:image/jpeg;base64,${small.toString("base64")}`;
+          }
+        } catch { /* use original */ }
+      }
+      const completion = await Promise.race([
+        client.chat.completions.create({
+          // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
+          model: "gpt-5",
+          messages: [{
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Analyze this marketing/fitness image and locate the single most important visual subject.
+
+Subject priority (highest first): human face or person > brand logo > physical product > scene/background.
+
+Return ONLY a JSON object with exactly these fields:
+- subjectType: one of "face", "logo", "product", "scene"
+- positionX: integer 0-100 (horizontal center of the subject, 0=far left, 50=center, 100=far right)
+- positionY: integer 0-100 (vertical center of the subject, 0=top, 50=middle, 100=bottom)
+- zoom: float 1.00-1.15 (1.00 = no zoom, 1.10-1.15 only if subject is clearly off-center and small — never upscale beyond 1.15)
+
+Rules:
+- For faces/people: point to the face/upper body center; zoom ≤ 1.10
+- For logos: keep near center (positionX 40-60, positionY 40-60); zoom = 1.00
+- For products: center on the main product; zoom ≤ 1.10
+- For scene/no clear subject: positionX=50, positionY=50, zoom=1.00
+- NEVER set zoom above 1.15
+
+Respond ONLY with raw JSON, no markdown, no commentary.`,
+              },
+              { type: "image_url", image_url: { url: visionUrl } },
+            ],
+          }],
+          response_format: { type: "json_object" },
+          max_tokens: 80,
+        }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("vision timeout")), 12000)),
+      ]);
+      const raw = (completion as { choices: Array<{ message: { content: string | null } }> })
+        .choices[0]?.message?.content;
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw);
+      const clamp = (v: unknown, lo: number, hi: number, def: number) => {
+        const n = typeof v === "number" ? v : def;
+        return Math.max(lo, Math.min(hi, n));
+      };
+      return {
+        positionX:   clamp(parsed.positionX,   0,   100, 50),
+        positionY:   clamp(parsed.positionY,   0,   100, 50),
+        zoom:        clamp(parsed.zoom,       1.0,  1.15, 1.0),
+        subjectType: typeof parsed.subjectType === "string" ? parsed.subjectType : "scene",
+      };
+    } catch (err) {
+      console.warn("[service-ai-focal] falling back to center:", (err as Error).message);
+      return fallback;
+    }
+  }
+
   // POST /api/admin/media/services/:card — upload service card image (multi-res).
   app.post("/api/admin/media/services/:card", requireAdmin, async (req, res) => {
     const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
@@ -4647,9 +4729,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
 
-    const result = await processImageMultiRes(parsed.data.imageDataUrl, {
-      desktopWidth: 1920, desktopHeight: 1080, desktopFit: "cover",
-    });
+    // Run image processing and AI focal analysis concurrently
+    const [result, focal] = await Promise.all([
+      processImageMultiRes(parsed.data.imageDataUrl, {
+        desktopWidth: 1920, desktopHeight: 1080, desktopFit: "cover",
+      }),
+      analyzeServiceImageFocalPoint(parsed.data.imageDataUrl),
+    ]);
     if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
 
     const prefix = card; // 'personalTraining' | 'nutrition' | 'supplement'
@@ -4657,11 +4743,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const origKey  = `${prefix}OriginalUrl` as any;
     const mobKey   = `${prefix}MobileUrl` as any;
     const thumbKey = `${prefix}ThumbnailUrl` as any;
-    const updates: Record<string, string> = {
+    // Auto-save AI focal settings to DB so the image renders perfectly on first view
+    const focalSettings: Record<string, unknown> = {
+      [`${prefix}ImageFit`]:       "cover",
+      [`${prefix}ImagePositionX`]: focal.positionX,
+      [`${prefix}ImagePositionY`]: focal.positionY,
+      [`${prefix}ImageZoom`]:      focal.zoom,
+      [`${prefix}MobileSettings`]: {
+        fit: "cover",
+        positionX: focal.positionX,
+        positionY: focal.positionY,
+        zoom: focal.zoom,
+      },
+    };
+    const updates: Record<string, unknown> = {
       [urlKey]:   result.desktop,
       [origKey]:  result.original,
       [mobKey]:   result.mobile,
       [thumbKey]: result.thumbnail,
+      ...focalSettings,
     };
     await storage.updateSettings(updates as any);
     return res.status(200).json({
@@ -4669,6 +4769,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       desktop: result.desktop,
       mobile: result.mobile,
       thumbnail: result.thumbnail,
+      focalPoint: focal,
     });
   });
 
