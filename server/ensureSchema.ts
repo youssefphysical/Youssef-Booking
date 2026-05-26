@@ -45,6 +45,33 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS nutrition_image_url text,
       ADD COLUMN IF NOT EXISTS supplement_image_url text;
 
+    -- Service card display-tuning columns (personal training, nutrition, supplement).
+    -- These were added to shared/schema.ts but never backfilled in ensureSchema,
+    -- causing "column does not exist" on cold-start and "Server failed to start"
+    -- for every request on the production Neon database.
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS personal_training_image_fit text DEFAULT 'cover',
+      ADD COLUMN IF NOT EXISTS personal_training_image_position_x double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS personal_training_image_position_y double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS personal_training_image_zoom double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS personal_training_image_mobile_height integer DEFAULT 220,
+      ADD COLUMN IF NOT EXISTS personal_training_image_desktop_height integer DEFAULT 260,
+      ADD COLUMN IF NOT EXISTS personal_training_image_radius integer DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS nutrition_image_fit text DEFAULT 'cover',
+      ADD COLUMN IF NOT EXISTS nutrition_image_position_x double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS nutrition_image_position_y double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS nutrition_image_zoom double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS nutrition_image_mobile_height integer DEFAULT 220,
+      ADD COLUMN IF NOT EXISTS nutrition_image_desktop_height integer DEFAULT 260,
+      ADD COLUMN IF NOT EXISTS nutrition_image_radius integer DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS supplement_image_fit text DEFAULT 'cover',
+      ADD COLUMN IF NOT EXISTS supplement_image_position_x double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS supplement_image_position_y double precision DEFAULT 50,
+      ADD COLUMN IF NOT EXISTS supplement_image_zoom double precision DEFAULT 1.0,
+      ADD COLUMN IF NOT EXISTS supplement_image_mobile_height integer DEFAULT 220,
+      ADD COLUMN IF NOT EXISTS supplement_image_desktop_height integer DEFAULT 260,
+      ADD COLUMN IF NOT EXISTS supplement_image_radius integer DEFAULT 0;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

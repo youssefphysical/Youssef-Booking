@@ -1,1 +1,1 @@
-- [Vercel sharp bundling](vercel-sharp-bundling.md) — static top-level `import sharp` crashes the Vercel cold-start; use lazy void-import pattern + includeFiles glob for @img/**.
+- [ensureSchema discipline](ensureschema-discipline.md) — every new shared/schema.ts column needs a matching ADD COLUMN IF NOT EXISTS in ensureSchema.ts or prod cold-starts crash.
