@@ -1,0 +1,308 @@
+AUTH PAGE HERO LOGO REDESIGN — YOUSSEF ELITE TRON LEGACY BRAND
+
+Goal:
+
+Use the uploaded Youssef Elite logo image as the MAIN HERO ELEMENT for both:
+
+- Login page
+- Create Account page
+
+IMPORTANT:
+
+Do NOT redesign the logo.
+
+Use the uploaded logo EXACTLY AS PROVIDED.
+
+Keep original glow.
+
+Keep original cyan Tron Legacy styling.
+
+Keep original proportions.
+
+Keep original neon feeling.
+
+===================================
+
+AUTH PAGE STRUCTURE
+
+Desktop + Mobile optimized.
+
+Top navigation remains unchanged.
+
+Inside Login / Register Card:
+
+Layout:
+
+Back to Home
+
+(Spacing 24px)
+
+[ HERO LOGO AREA ]
+
+Uploaded Youssef Elite logo centered.
+
+Width Mobile:
+
+220–260px
+
+Width Desktop:
+
+320–420px
+
+Logo must scale responsively.
+
+Do NOT stretch.
+
+Use:
+
+object-fit: contain
+
+Keep transparency.
+
+No crop.
+
+No compression artifacts.
+
+===================================
+
+HERO LOGO EFFECTS
+
+Luxury Tron Legacy style.
+
+Add ONLY subtle effects.
+
+DO NOT overdo.
+
+Effects:
+
+1.
+
+Soft cyan ambient glow behind logo:
+
+rgba(0,212,255,0.08)
+
+Blur:
+
+70–100px
+
+2.
+
+Subtle floating animation:
+
+translateY:
+
+0px → -3px → 0px
+
+Duration:
+
+5–6 seconds
+
+Infinite.
+
+Very smooth.
+
+3.
+
+Glow pulse:
+
+100%
+
+→
+
+108%
+
+→
+
+100%
+
+Every:
+
+5 seconds.
+
+Very subtle.
+
+4.
+
+NO spinning.
+
+NO gaming effects.
+
+NO aggressive movement.
+
+Premium luxury only.
+
+===================================
+
+BACKGROUND BEHIND LOGO
+
+Very subtle.
+
+5% opacity.
+
+Add:
+
+Cyber circuit pattern.
+
+Tron HUD lines.
+
+Very soft.
+
+Keep luxury.
+
+NOT gaming.
+
+===================================
+
+REMOVE THIS SECTION:
+
+Certified Personal Trainer
+
+Physical Education Teacher
+
+Movement & Kinesiology Specialist
+
+Remove from Login / Register.
+
+Too much text.
+
+Cleaner premium feel.
+
+===================================
+
+KEEP ONLY:
+
+YOUSSEF ELITE
+
+CLIENT PORTAL
+
+Below hero logo.
+
+Spacing:
+
+Perfect luxury spacing.
+
+Typography:
+
+Luxury.
+
+Minimal.
+
+Premium.
+
+===================================
+
+LOGIN CARD DESIGN
+
+Card style:
+
+Luxury Tron Legacy.
+
+Add:
+
+Neon cyber corners.
+
+Soft cyan edge glow.
+
+No heavy border.
+
+Card glow:
+
+0 0 40px rgba(0,212,255,0.08)
+
+===================================
+
+INPUT FIELDS
+
+Focus effect:
+
+Soft cyan glow.
+
+Border animate smoothly.
+
+Luxury feel.
+
+NOT gaming.
+
+===================================
+
+BUTTONS
+
+Sign In
+
+Create Account
+
+Hover:
+
+Glow increase:
+
+10%
+
+Micro scale:
+
+1.01
+
+Smooth transition:
+
+250ms
+
+===================================
+
+MOBILE PRIORITY
+
+Test:
+
+Samsung phones.
+
+Android.
+
+iPhone.
+
+Logo never cropped.
+
+Never overflow.
+
+Never blurry.
+
+===================================
+
+IMAGE QUALITY
+
+Keep original uploaded logo quality.
+
+Do NOT compress aggressively.
+
+Serve:
+
+WebP optimized.
+
+Retina quality.
+
+2x support.
+
+===================================
+
+FINAL FEEL:
+
+Tesla luxury
+
++
+
+Tron Legacy
+
++
+
+High-end personal training brand
+
++
+
+Premium elite coaching company
+
+The user should feel:
+
+"Luxury elite performance brand"
+
+NOT gaming website.
+
+NOT AI template.
+
+NOT generic fitness website.

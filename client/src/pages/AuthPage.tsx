@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import logoSrc from "@assets/file_00000000b3687246a13bd5863c0a5b80_1779795159837.png";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -118,9 +119,33 @@ export default function AuthPage({
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-16 pt-24 relative overflow-hidden">
+      {/* Base gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+      {/* Ambient cyan orbs */}
       <div className="absolute top-0 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Subtle Tron circuit grid — 5 % opacity, luxury not gaming */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 w-full h-full"
+        style={{ opacity: 0.05 }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="auth-circuit" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+            {/* Grid lines */}
+            <path d="M80 0 L0 0 0 80" fill="none" stroke="hsl(183 100% 74%)" strokeWidth="0.5" />
+            {/* HUD corner accent */}
+            <path d="M0 0 L12 0 M0 0 L0 12" fill="none" stroke="hsl(183 100% 74%)" strokeWidth="1.2" />
+            <path d="M80 80 L68 80 M80 80 L80 68" fill="none" stroke="hsl(183 100% 74%)" strokeWidth="1.2" />
+            {/* Circuit dot nodes */}
+            <circle cx="40" cy="40" r="1.2" fill="hsl(183 100% 74%)" />
+            <circle cx="0"  cy="40" r="0.8" fill="hsl(183 100% 74%)" />
+            <circle cx="40" cy="0"  r="0.8" fill="hsl(183 100% 74%)" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#auth-circuit)" />
+      </svg>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -135,7 +160,10 @@ export default function AuthPage({
           <ArrowLeft size={14} /> {t("auth.backToHome")}
         </Link>
 
-        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
+        {/* Card with neon cyber-corner accents */}
+        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl p-8 shadow-2xl"
+          style={{ boxShadow: "0 0 40px rgba(0,212,255,0.08), 0 25px 60px rgba(0,0,0,0.5)" }}
+        >
           {/* Cyan hairline top accent — Tron HUD signature */}
           <CyanHairline intensity="hero" inset="inset-x-8" />
           {/* Soft cyan corner halo */}
@@ -147,16 +175,51 @@ export default function AuthPage({
                 "radial-gradient(circle, hsl(183 100% 60% / 0.15), transparent 70%)",
             }}
           />
+          {/* Neon cyber corner — top-left */}
+          <span aria-hidden className="pointer-events-none absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl" />
+          {/* Neon cyber corner — top-right */}
+          <span aria-hidden className="pointer-events-none absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl" />
+          {/* Neon cyber corner — bottom-left */}
+          <span aria-hidden className="pointer-events-none absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl" />
+          {/* Neon cyber corner — bottom-right */}
+          <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
-          <div className="relative text-center mb-6">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold">
+          {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
+          <div className="relative flex flex-col items-center mb-6">
+            {/* Soft ambient glow behind the logo */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                width: 280,
+                height: 280,
+                background: "radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%)",
+                filter: "blur(24px)",
+              }}
+            />
+            {/* Floating + pulse logo */}
+            <motion.img
+              src={logoSrc}
+              alt="Youssef Elite"
+              data-testid="img-auth-logo"
+              animate={{
+                y: [0, -3, 0],
+                filter: [
+                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                  "drop-shadow(0 0 22px rgba(0,212,255,0.60))",
+                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                ],
+              }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              className="relative w-[220px] sm:w-[300px] md:w-[360px] max-w-full"
+              style={{ objectFit: "contain" }}
+            />
+
+            {/* Brand label + portal badge */}
+            <p className="text-[10px] uppercase tracking-[0.32em] text-primary/80 font-semibold mt-4">
               {t("nav.brand")}
             </p>
-            <h1 className="text-2xl font-display font-bold text-gradient-blue mt-1">{t("hero.title")}</h1>
-            <p className="text-[11px] text-muted-foreground tracking-wide mt-2 leading-relaxed">
-              {t("hero.role")}
-            </p>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-2">
               {mode === "admin-login" ? t("auth.adminAccess") : t("auth.clientPortal")}
             </p>
           </div>
