@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
+import { MobileImageEditor } from "@/components/MobileImageEditor";
 import type { HeroImage, Settings } from "@shared/schema";
 import {
   Monitor,
@@ -22,6 +23,7 @@ import {
   Settings2,
   CheckCircle2,
   ScanLine,
+  Maximize2,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -246,6 +248,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Record<number, "desktop" | "mobile">>({});
   const [showGuide, setShowGuide] = useState<Record<number, boolean>>({});
+  const [fullscreenId, setFullscreenId] = useState<number | null>(null);
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { imageDataUrl: string }) => {
@@ -444,8 +447,13 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                     <IconBtn icon={<ArrowUp size={13} />} onClick={() => move(i, -1)} disabled={i === 0} testId={`button-hero-up-${img.id}`} />
                     <IconBtn icon={<ArrowDown size={13} />} onClick={() => move(i, 1)} disabled={i === sorted.length - 1} testId={`button-hero-down-${img.id}`} />
                     <IconBtn
-                      icon={isExpanded ? <Settings2 size={13} /> : <Settings2 size={13} />}
-                      label={isExpanded ? "Close" : "Edit"}
+                      icon={<Maximize2 size={13} />}
+                      label="Edit"
+                      onClick={() => setFullscreenId(img.id)}
+                      testId={`button-hero-fullscreen-${img.id}`}
+                    />
+                    <IconBtn
+                      icon={<Settings2 size={13} />}
                       onClick={() => setExpandedId(isExpanded ? null : img.id)}
                       active={isExpanded}
                       testId={`button-hero-expand-${img.id}`}
@@ -595,6 +603,41 @@ function HeroSection({ images }: { images: HeroImage[] }) {
           )}
         </div>
       )}
+
+      {/* Fullscreen mobile editor — portal, mounts once at section level */}
+      {(() => {
+        const fsImg = fullscreenId ? sorted.find((i) => i.id === fullscreenId) : null;
+        if (!fsImg) return null;
+        const fsDesktop = getDesktop(fsImg);
+        const fsMobile  = getMobileDefaults(fsImg);
+        return (
+          <MobileImageEditor
+            open={fullscreenId !== null}
+            onClose={() => setFullscreenId(null)}
+            saving={settingsMutation.isPending}
+            config={{
+              type: "hero",
+              imageUrl: fsImg.imageDataUrl,
+              label: fsImg.title || `Slide ${sorted.findIndex((x) => x.id === fullscreenId) + 1}`,
+              initialDesktop: fsDesktop,
+              initialMobile: { positionX: fsMobile.positionX, positionY: fsMobile.positionY, zoom: fsMobile.zoom },
+            }}
+            onSave={(payload) => {
+              settingsMutation.mutate({
+                id: fsImg.id,
+                updates: {
+                  ...payload.desktop,
+                  mobileSettings: {
+                    ...fsMobile,
+                    ...(payload.mobile as Record<string, unknown>),
+                  },
+                },
+              });
+              setFullscreenId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -618,6 +661,7 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
   const [showGuide, setShowGuide] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const prefix = cardKey;
   const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]     ?? null;
@@ -765,6 +809,17 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
               <ScanLine size={11} />
               {showGuide ? "Hide Guide" : "Guide"}
             </button>
+            {desktopUrl && (
+              <button
+                type="button"
+                onClick={() => setEditorOpen(true)}
+                data-testid={`button-fullscreen-${cardKey}`}
+                className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border bg-white/5 border-white/10 text-muted-foreground hover:bg-primary/15 hover:text-primary hover:border-primary/30 transition-all duration-200"
+              >
+                <Maximize2 size={11} />
+                Edit
+              </button>
+            )}
           </div>
         </div>
 
@@ -845,6 +900,34 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           )}
         </div>
       </div>
+
+      {/* Fullscreen touch editor */}
+      <MobileImageEditor
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        saving={settingsMutation.isPending}
+        config={{
+          type: "service",
+          imageUrl: thumbnailUrl ?? desktopUrl ?? "",
+          label,
+          initialDesktop: { fit: desktop.fit, positionX: desktop.positionX, positionY: desktop.positionY, zoom: desktop.zoom },
+          initialMobile:  { fit: mob.fit,     positionX: mob.positionX,     positionY: mob.positionY,     zoom: mob.zoom },
+        }}
+        onSave={(payload) => {
+          const d = payload.desktop as { fit: string; positionX: number; positionY: number; zoom: number };
+          const m = payload.mobile  as { fit: string; positionX: number; positionY: number; zoom: number };
+          setDesktop((p) => ({ ...p, fit: d.fit, positionX: d.positionX, positionY: d.positionY, zoom: d.zoom }));
+          setMob((p) => ({ ...p, fit: m.fit, positionX: m.positionX, positionY: m.positionY, zoom: m.zoom }));
+          settingsMutation.mutate({
+            fit:        d.fit,
+            positionX:  d.positionX,
+            positionY:  d.positionY,
+            zoom:       d.zoom,
+            mobileSettings: { ...mob, fit: m.fit, positionX: m.positionX, positionY: m.positionY, zoom: m.zoom },
+          });
+          setEditorOpen(false);
+        }}
+      />
     </div>
   );
 }
