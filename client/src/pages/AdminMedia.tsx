@@ -895,10 +895,10 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           open={cropperOpen}
           onOpenChange={setCropperOpen}
           saving={uploadMutation.isPending}
-          aspects={SERVICE_ASPECTS}
+          aspects={[{ key: "16x9", label: "16:9", ratio: 16 / 9 }]}
           outputLongEdgePx={2000}
           title={`Upload ${label} image`}
-          description="16:9 recommended (1920×1080). Desktop, mobile, and thumbnail variants are generated automatically."
+          description="16:9 format (1920×1080 recommended). Desktop, mobile, and thumbnail variants are generated automatically."
           onCropped={(url) => uploadMutation.mutateAsync({ imageDataUrl: url })}
         />
 
