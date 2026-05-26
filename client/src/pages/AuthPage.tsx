@@ -161,7 +161,7 @@ export default function AuthPage({
         </Link>
 
         {/* Card with neon cyber-corner accents */}
-        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl p-8 shadow-2xl"
+        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl px-6 pb-7 pt-5 sm:px-8 sm:pb-8 sm:pt-5 shadow-2xl"
           style={{ boxShadow: "0 0 40px rgba(0,212,255,0.08), 0 25px 60px rgba(0,0,0,0.5)" }}
         >
           {/* Cyan hairline top accent — Tron HUD signature */}
@@ -185,36 +185,36 @@ export default function AuthPage({
           <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
-          <div className="relative flex flex-col items-center pt-4 mb-5">
-            {/* Soft ambient glow behind the logo */}
+          <div className="relative flex flex-col items-center mb-4">
+            {/* Ambient glow — scales with the logo */}
             <div
               aria-hidden
               className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
-                width: 300,
-                height: 300,
-                background: "radial-gradient(circle, rgba(0,212,255,0.09) 0%, transparent 70%)",
-                filter: "blur(24px)",
+                width: "120%",
+                height: "120%",
+                background: "radial-gradient(circle, rgba(0,212,255,0.10) 0%, transparent 70%)",
+                filter: "blur(28px)",
               }}
             />
-            {/* Floating + pulse logo — primary full-brand asset */}
+            {/* Floating + pulse logo — fills 90–95% of card width up to spec max */}
             <motion.img
               src={logoSrc}
               alt="Youssef Elite"
               data-testid="img-auth-logo"
               animate={{
-                y: [0, -3, 0],
+                y: [0, -4, 0],
                 filter: [
-                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
-                  "drop-shadow(0 0 22px rgba(0,212,255,0.60))",
-                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                  "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
                 ],
               }}
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
               style={{
                 objectFit: "contain",
-                width: "var(--brand-auth-w-mobile,210px)",
-                maxWidth: "85%",
+                width: `min(var(--brand-auth-w-mobile,400px), 92%)`,
+                maxWidth: "420px",
               }}
               className="relative sm:hidden"
             />
@@ -223,24 +223,31 @@ export default function AuthPage({
               alt="Youssef Elite"
               aria-hidden="true"
               animate={{
-                y: [0, -3, 0],
+                y: [0, -4, 0],
                 filter: [
-                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
-                  "drop-shadow(0 0 22px rgba(0,212,255,0.60))",
-                  "drop-shadow(0 0 16px rgba(0,212,255,0.45))",
+                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                  "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
                 ],
               }}
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
               style={{
                 objectFit: "contain",
-                width: "var(--brand-auth-w-desktop,280px)",
-                maxWidth: "85%",
+                width: `min(var(--brand-auth-w-desktop,480px), 92%)`,
+                maxWidth: "500px",
               }}
               className="relative hidden sm:block"
             />
 
-            {/* Portal badge — no duplicate brand name; logo already carries brand identity */}
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-3">
+            {/* Portal badge — brand name already inside logo, no duplication */}
+            <p
+              className="uppercase font-semibold mt-3 sm:mt-4"
+              style={{
+                fontSize: "clamp(16px, 4.5vw, 24px)",
+                letterSpacing: "0.18em",
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
               {mode === "admin-login" ? t("auth.adminAccess") : t("auth.clientPortal")}
             </p>
           </div>

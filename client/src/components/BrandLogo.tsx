@@ -39,9 +39,9 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] block md:hidden"
           style={{
-            height: "var(--brand-navbar-h-mobile,40px)",
+            height: "var(--brand-navbar-h-mobile,46px)",
             width: "auto",
-            maxWidth: "200px",
+            maxWidth: "220px",
             filter: GLOW,
             transform: "translateY(var(--brand-logo-voffset,0px))",
           }}
@@ -52,9 +52,9 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] hidden md:block"
           style={{
-            height: "var(--brand-navbar-h-desktop,52px)",
+            height: "var(--brand-navbar-h-desktop,56px)",
             width: "auto",
-            maxWidth: "260px",
+            maxWidth: "280px",
             filter: GLOW,
             transform: "translateY(var(--brand-logo-voffset,0px))",
           }}
