@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -6,25 +6,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
+import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
 import type { HeroImage, Settings } from "@shared/schema";
 import {
-  Image as ImageIcon,
   Monitor,
   Smartphone,
   UploadCloud,
   Trash2,
-  ChevronDown,
-  ChevronUp,
   ArrowUp,
   ArrowDown,
-  Eye,
-  EyeOff,
   Film,
   Layers,
   Palette,
   RefreshCw,
   Settings2,
   CheckCircle2,
+  ScanLine,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -47,18 +44,13 @@ const HERO_ASPECTS: AspectPreset[] = [
   { key: "16x9",  label: "16:9",  ratio: 16 / 9 },
   { key: "21x9",  label: "21:9",  ratio: 21 / 9 },
 ];
-const HERO_MOBILE_ASPECTS: AspectPreset[] = [
-  { key: "4x5",   label: "4:5",   ratio: 4 / 5 },
-  { key: "9x16",  label: "9:16",  ratio: 9 / 16 },
-  { key: "1x1",   label: "1:1",   ratio: 1 },
-];
 const SERVICE_ASPECTS: AspectPreset[] = [
   { key: "3x2",   label: "3:2",   ratio: 3 / 2 },
   { key: "16x9",  label: "16:9",  ratio: 16 / 9 },
   { key: "1x1",   label: "1:1",   ratio: 1 },
 ];
 
-// ─── Premium slider row ───────────────────────────────────────────────────────
+// ─── Slider row ───────────────────────────────────────────────────────────────
 function SliderRow({
   label, value, min, max, step = 0.01, unit = "", onChange,
 }: {
@@ -147,20 +139,11 @@ function IconBtn({
 
 // ─── Drag-and-drop upload zone ────────────────────────────────────────────────
 function DropZone({
-  onTrigger, accept = "image/*", disabled = false, compact = false,
+  onTrigger, disabled = false, compact = false,
 }: {
-  onTrigger: () => void; accept?: string; disabled?: boolean; compact?: boolean;
+  onTrigger: () => void; disabled?: boolean; compact?: boolean;
 }) {
   const [dragging, setDragging] = useState(false);
-
-  const handleDragEnter = (e: React.DragEvent) => { e.preventDefault(); if (!disabled) setDragging(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setDragging(false); };
-  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); };
-  const handleDrop      = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    if (!disabled) onTrigger();
-  };
 
   if (compact) {
     return (
@@ -171,21 +154,21 @@ function DropZone({
         className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.4)]"
       >
         <UploadCloud size={15} />
-        Upload Image
+        Add Another Slide
       </button>
     );
   }
 
   return (
     <div
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      onDragEnter={(e) => { e.preventDefault(); if (!disabled) setDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setDragging(false); }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); setDragging(false); if (!disabled) onTrigger(); }}
       onClick={onTrigger}
       className={`
         relative cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 select-none
-        flex flex-col items-center justify-center gap-3 py-10
+        flex flex-col items-center justify-center gap-3 py-12
         ${dragging
           ? "border-primary/60 bg-primary/8 shadow-[0_0_30px_-8px_hsl(183_100%_60%/0.3)]"
           : "border-white/12 bg-white/[0.02] hover:border-primary/30 hover:bg-primary/5"
@@ -193,51 +176,23 @@ function DropZone({
         ${disabled ? "opacity-40 cursor-not-allowed" : ""}
       `}
     >
-      <motion.div
-        animate={dragging ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      >
-        <UploadCloud size={32} className={dragging ? "text-primary" : "text-muted-foreground/50"} />
+      <motion.div animate={dragging ? { scale: 1.15, y: -4 } : { scale: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
+        <UploadCloud size={30} className={dragging ? "text-primary" : "text-muted-foreground/50"} />
       </motion.div>
       <div className="text-center">
         <p className={`text-sm font-semibold ${dragging ? "text-primary" : "text-muted-foreground"}`}>
           {dragging ? "Release to upload" : "Drop image here"}
         </p>
-        <p className="text-[11px] text-muted-foreground/60 mt-0.5">or click to browse · Max 25 MB</p>
+        <p className="text-[11px] text-muted-foreground/55 mt-0.5">or click to browse · Max 25 MB</p>
       </div>
     </div>
   );
 }
 
-// ─── Preview chip (desktop / mobile) ─────────────────────────────────────────
-function PreviewTab({
-  value, onChange,
-}: { value: "desktop" | "mobile"; onChange: (v: "desktop" | "mobile") => void }) {
-  return (
-    <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit">
-      {(["desktop", "mobile"] as const).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => onChange(t)}
-          className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
-            value === t
-              ? "bg-primary/20 text-primary shadow-[0_0_10px_-3px_hsl(183_100%_60%/0.35)]"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
-          {t === "desktop" ? "Desktop" : "Mobile"}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // ─── Settings tab bar ─────────────────────────────────────────────────────────
-function SettingsTabBar({
-  value, onChange, id,
-}: { value: "desktop" | "mobile"; onChange: (v: "desktop" | "mobile") => void; id: string | number }) {
+function SettingsTabs({
+  value, onChange, id, prefix,
+}: { value: "desktop" | "mobile"; onChange: (v: "desktop" | "mobile") => void; id: string | number; prefix: string }) {
   return (
     <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit mb-4">
       {(["desktop", "mobile"] as const).map((t) => (
@@ -245,7 +200,7 @@ function SettingsTabBar({
           key={t}
           type="button"
           onClick={() => onChange(t)}
-          data-testid={`tab-hero-${t}-${id}`}
+          data-testid={`tab-${prefix}-${t}-${id}`}
           className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
             value === t
               ? "bg-primary/20 text-primary"
@@ -261,9 +216,7 @@ function SettingsTabBar({
 }
 
 // ─── Save button ──────────────────────────────────────────────────────────────
-function SaveBtn({
-  onClick, disabled, testId,
-}: { onClick: () => void; disabled?: boolean; testId?: string }) {
+function SaveBtn({ onClick, disabled, testId }: { onClick: () => void; disabled?: boolean; testId?: string }) {
   return (
     <button
       type="button"
@@ -280,11 +233,10 @@ function SaveBtn({
 
 // ─── Section tab bar ──────────────────────────────────────────────────────────
 type Section = "hero" | "services" | "branding";
-
-const SECTIONS: { key: Section; label: string; icon: React.ReactNode; desc: string }[] = [
-  { key: "hero",     label: "Hero Slider",    icon: <Film size={16} />,    desc: "Homepage slides" },
-  { key: "services", label: "Services",       icon: <Layers size={16} />,  desc: "Card images" },
-  { key: "branding", label: "Branding",       icon: <Palette size={16} />, desc: "Logo & icons" },
+const SECTIONS: { key: Section; label: string; icon: React.ReactNode }[] = [
+  { key: "hero",     label: "Hero Slider",  icon: <Film size={15} /> },
+  { key: "services", label: "Services",     icon: <Layers size={15} /> },
+  { key: "branding", label: "Branding",     icon: <Palette size={15} /> },
 ];
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
@@ -293,6 +245,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<Record<number, "desktop" | "mobile">>({});
+  const [showGuide, setShowGuide] = useState<Record<number, boolean>>({});
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { imageDataUrl: string }) => {
@@ -352,6 +305,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 
   const tab = useCallback((id: number) => activeTab[id] ?? "desktop", [activeTab]);
   const setTab = (id: number, t: "desktop" | "mobile") => setActiveTab(prev => ({ ...prev, [id]: t }));
+  const toggleGuide = (id: number) => setShowGuide(prev => ({ ...prev, [id]: !prev[id] }));
 
   const [localDesktop, setLocalDesktop] = useState<Record<number, Record<string, number>>>({});
   const [localMobile, setLocalMobile] = useState<Record<number, Record<string, number | string>>>({});
@@ -391,12 +345,11 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 
   return (
     <div className="space-y-5">
-      {/* Section header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-display font-bold text-lg">Hero Slides</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {images.length} / 12 slides · Reorder with arrows · Changes apply live
+            {images.length} / 12 slides · Preview matches client view exactly
           </p>
         </div>
         <button
@@ -430,7 +383,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
             const currentTab = tab(img.id);
             const desktop = getDesktop(img);
             const mobile = getMobileDefaults(img);
-            const thumbSrc = img.thumbnailDataUrl ?? img.imageDataUrl;
+            const guide = showGuide[img.id] ?? false;
 
             return (
               <motion.div
@@ -444,72 +397,60 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                 style={{ boxShadow: isExpanded ? "0 0 30px -10px hsl(183 100% 60% / 0.12)" : "none" }}
                 data-testid={`hero-card-${img.id}`}
               >
-                {/* Card header */}
-                <div className="flex items-center gap-4 p-4">
-                  {/* Thumbnail */}
-                  <div className="relative w-44 h-[100px] rounded-xl overflow-hidden shrink-0 border border-white/10 bg-black/40">
-                    <img src={thumbSrc} alt="" className="w-full h-full object-cover" />
-                    {img.isActive === false && (
-                      <div className="absolute inset-0 bg-black/65 flex items-center justify-center gap-1.5">
-                        <EyeOff size={14} className="text-white/70" />
-                        <span className="text-[10px] text-white/70 font-medium">Hidden</span>
-                      </div>
-                    )}
-                    {/* Status pill */}
-                    <div className="absolute top-1.5 left-1.5">
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${
-                        img.isActive !== false
-                          ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                          : "bg-white/8 text-muted-foreground border-white/12"
-                      }`}>
-                        {img.isActive !== false ? "● Live" : "○ Off"}
+                {/* WYSIWYG thumbnail — uses exact production rendering formula */}
+                <div className="relative">
+                  <HeroImageFrame
+                    src={img.imageDataUrl}
+                    focalX={desktop.focalX}
+                    focalY={desktop.focalY}
+                    zoom={desktop.zoom}
+                    rotate={desktop.rotate}
+                    brightness={desktop.brightness}
+                    contrast={desktop.contrast}
+                    overlayOpacity={desktop.overlayOpacity}
+                    className="w-full rounded-t-2xl"
+                  />
+                  {/* Status pill */}
+                  <div className="absolute top-2.5 left-2.5">
+                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border backdrop-blur-sm ${
+                      img.isActive !== false
+                        ? "bg-emerald-500/25 text-emerald-400 border-emerald-500/35"
+                        : "bg-black/60 text-muted-foreground border-white/15"
+                    }`}>
+                      {img.isActive !== false ? "● Live" : "○ Off"}
+                    </span>
+                  </div>
+                  {/* Mobile badge */}
+                  {img.mobileDataUrl && (
+                    <div className="absolute top-2.5 right-2.5">
+                      <span className="text-[9px] bg-primary/20 backdrop-blur-sm text-primary px-2 py-0.5 rounded-full border border-primary/30 flex items-center gap-1">
+                        <Smartphone size={8} />Mobile ✓
                       </span>
                     </div>
+                  )}
+                  {/* Slide number */}
+                  <div className="absolute bottom-2.5 right-2.5 text-[9px] bg-black/60 backdrop-blur-sm text-white/60 px-2 py-0.5 rounded-md border border-white/10">
+                    {i + 1}/{sorted.length}
                   </div>
+                </div>
 
-                  {/* Meta */}
-                  <div className="flex-1 min-w-0 space-y-1">
+                {/* Card footer row */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate">{img.title || `Slide ${i + 1}`}</p>
-                    <p className="text-xs text-muted-foreground truncate">{img.subtitle || "No subtitle set"}</p>
-                    <div className="flex items-center gap-2 pt-0.5">
-                      {img.mobileDataUrl && (
-                        <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Smartphone size={8} />Mobile ready
-                        </span>
-                      )}
-                      <span className="text-[10px] text-muted-foreground/60">
-                        Slide {i + 1} of {sorted.length}
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground truncate">{img.subtitle || "No subtitle"}</p>
                   </div>
-
-                  {/* Actions */}
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <IconBtn icon={<ArrowUp size={13} />} onClick={() => move(i, -1)} disabled={i === 0} testId={`button-hero-up-${img.id}`} />
+                    <IconBtn icon={<ArrowDown size={13} />} onClick={() => move(i, 1)} disabled={i === sorted.length - 1} testId={`button-hero-down-${img.id}`} />
                     <IconBtn
-                      icon={<ArrowUp size={13} />}
-                      onClick={() => move(i, -1)}
-                      disabled={i === 0}
-                      testId={`button-hero-up-${img.id}`}
-                    />
-                    <IconBtn
-                      icon={<ArrowDown size={13} />}
-                      onClick={() => move(i, 1)}
-                      disabled={i === sorted.length - 1}
-                      testId={`button-hero-down-${img.id}`}
-                    />
-                    <IconBtn
-                      icon={isExpanded ? <ChevronUp size={13} /> : <Settings2 size={13} />}
+                      icon={isExpanded ? <Settings2 size={13} /> : <Settings2 size={13} />}
                       label={isExpanded ? "Close" : "Edit"}
                       onClick={() => setExpandedId(isExpanded ? null : img.id)}
                       active={isExpanded}
                       testId={`button-hero-expand-${img.id}`}
                     />
-                    <IconBtn
-                      icon={<Trash2 size={13} />}
-                      onClick={() => deleteMutation.mutate(img.id)}
-                      danger
-                      testId={`button-hero-delete-${img.id}`}
-                    />
+                    <IconBtn icon={<Trash2 size={13} />} onClick={() => deleteMutation.mutate(img.id)} danger testId={`button-hero-delete-${img.id}`} />
                   </div>
                 </div>
 
@@ -524,6 +465,46 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                       className="overflow-hidden"
                     >
                       <div className="border-t border-white/[0.07] p-5 space-y-5 bg-black/25">
+
+                        {/* WYSIWYG live preview + guide toggle */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                              Live Preview — drag to set focal point
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => toggleGuide(img.id)}
+                              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
+                                guide
+                                  ? "bg-primary/20 text-primary border-primary/35"
+                                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+                              }`}
+                            >
+                              <ScanLine size={11} />
+                              {guide ? "Hide Guide" : "Show Guide"}
+                            </button>
+                          </div>
+                          <HeroImageFrame
+                            src={img.imageDataUrl}
+                            focalX={desktop.focalX}
+                            focalY={desktop.focalY}
+                            zoom={desktop.zoom}
+                            rotate={desktop.rotate}
+                            brightness={desktop.brightness}
+                            contrast={desktop.contrast}
+                            overlayOpacity={desktop.overlayOpacity}
+                            showGuide={guide}
+                            onFocalChange={(fx, fy) => {
+                              patchDesktop(img, "focalX", fx);
+                              patchDesktop(img, "focalY", fy);
+                            }}
+                            className="w-full rounded-xl border border-white/10"
+                          />
+                          <p className="text-[10px] text-muted-foreground/55 text-center">
+                            Focal X: {desktop.focalX}px · Focal Y: {desktop.focalY}px — drag the preview or use sliders below
+                          </p>
+                        </div>
 
                         {/* Visibility toggle */}
                         <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/8">
@@ -563,7 +544,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 
                         {/* Desktop / Mobile tabs */}
                         <div>
-                          <SettingsTabBar value={currentTab} onChange={(t) => setTab(img.id, t)} id={img.id} />
+                          <SettingsTabs value={currentTab} onChange={(t) => setTab(img.id, t)} id={img.id} prefix="hero" />
 
                           {currentTab === "desktop" && (
                             <div className="space-y-4">
@@ -609,7 +590,6 @@ function HeroSection({ images }: { images: HeroImage[] }) {
             );
           })}
 
-          {/* Add more */}
           {images.length < 12 && (
             <DropZone onTrigger={() => setCropperOpen(true)} disabled={uploadMutation.isPending} compact />
           )}
@@ -623,9 +603,9 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 type ServiceCard = "personalTraining" | "nutrition" | "supplement";
 
 const SERVICE_META: { key: ServiceCard; label: string; desc: string }[] = [
-  { key: "personalTraining", label: "Personal Training", desc: "3:2 · 1200×800" },
-  { key: "nutrition",        label: "Nutrition Plans",   desc: "3:2 · 1200×800" },
-  { key: "supplement",       label: "Supplement Protocol", desc: "3:2 · 1200×800" },
+  { key: "personalTraining", label: "Personal Training",    desc: "3:2 · 1200×800" },
+  { key: "nutrition",        label: "Nutrition Plans",      desc: "3:2 · 1200×800" },
+  { key: "supplement",       label: "Supplement Protocol",  desc: "3:2 · 1200×800" },
 ];
 
 function ServiceCardEditor({ cardKey, label, desc, settings }: {
@@ -637,12 +617,12 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const { toast } = useToast();
   const [cropperOpen, setCropperOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"desktop" | "mobile">("desktop");
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [showGuide, setShowGuide] = useState(false);
 
   const prefix = cardKey;
-  const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]        ?? null;
-  const mobileUrl    = (settings as any)[`${prefix}MobileUrl`]       ?? null;
-  const thumbnailUrl = (settings as any)[`${prefix}ThumbnailUrl`]    ?? null;
+  const desktopUrl   = (settings as any)[`${prefix}ImageUrl`]     ?? null;
+  const mobileUrl    = (settings as any)[`${prefix}MobileUrl`]    ?? null;
+  const thumbnailUrl = (settings as any)[`${prefix}ThumbnailUrl`] ?? null;
 
   const [desktop, setDesktop] = useState({
     fit:           String((settings as any)[`${prefix}ImageFit`]           ?? "cover"),
@@ -694,88 +674,123 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
 
-  const displaySrc = previewMode === "mobile" && mobileUrl ? mobileUrl : (thumbnailUrl ?? desktopUrl);
+  // Active preview image — show appropriate URL for the tab
+  const previewSrc = activeTab === "mobile" && mobileUrl
+    ? mobileUrl
+    : (thumbnailUrl ?? desktopUrl);
+
+  // Active settings for the preview
+  const activeFit = activeTab === "desktop" ? desktop.fit : mob.fit;
+  const activePosX = activeTab === "desktop" ? desktop.positionX : mob.positionX;
+  const activePosY = activeTab === "desktop" ? desktop.positionY : mob.positionY;
+  const activeZoom = activeTab === "desktop" ? desktop.zoom : mob.zoom;
 
   return (
     <div
-      className="rounded-2xl border border-white/[0.08] bg-card/60 overflow-hidden backdrop-blur-sm space-y-0"
+      className="rounded-2xl border border-white/[0.08] bg-card/60 overflow-hidden backdrop-blur-sm"
       data-testid={`service-card-${cardKey}`}
     >
-      {/* Preview area */}
-      <div className="relative w-full bg-black/40" style={{ aspectRatio: "16/9" }}>
-        {displaySrc ? (
-          <img
-            src={displaySrc}
-            alt={label}
-            className="w-full h-full"
-            style={{
-              objectFit: (previewMode === "desktop" ? desktop.fit : mob.fit) as any,
-              objectPosition: previewMode === "desktop"
-                ? `${desktop.positionX}% ${desktop.positionY}%`
-                : `${mob.positionX}% ${mob.positionY}%`,
-              transform: `scale(${previewMode === "desktop" ? desktop.zoom : mob.zoom})`,
-              transformOrigin: "center",
-              display: "block",
-            }}
-          />
-        ) : (
+      {/* WYSIWYG preview — uses exact production rendering formula */}
+      <div className="relative">
+        <ServiceImageFrame
+          src={previewSrc}
+          fit={activeFit}
+          positionX={activePosX}
+          positionY={activePosY}
+          zoom={activeZoom}
+          showGuide={showGuide}
+          onPositionChange={(posX, posY) => {
+            if (activeTab === "desktop") {
+              setDesktop(p => ({ ...p, positionX: posX, positionY: posY }));
+            } else {
+              setMob(p => ({ ...p, positionX: posX, positionY: posY }));
+            }
+          }}
+          className="w-full"
+        />
+        {/* Empty state click-to-upload overlay */}
+        {!previewSrc && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer group"
             onClick={() => setCropperOpen(true)}
           >
             <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-white/15 group-hover:border-primary/40 flex items-center justify-center transition-colors">
-              <ImageIcon size={22} className="text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+              <UploadCloud size={20} className="text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
             </div>
-            <p className="text-xs text-muted-foreground/60 group-hover:text-muted-foreground transition-colors">
-              Click to upload
-            </p>
+            <p className="text-xs text-muted-foreground/55 group-hover:text-muted-foreground transition-colors">Click to upload</p>
           </div>
         )}
-
         {/* Overlay badges */}
         {desktopUrl && (
-          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-            <span className="text-[9px] bg-black/70 backdrop-blur-sm text-white/70 px-2 py-1 rounded-lg border border-white/10">
-              {label}
-            </span>
-            {mobileUrl && (
-              <span className="text-[9px] bg-primary/20 backdrop-blur-sm text-primary px-2 py-1 rounded-lg border border-primary/25 flex items-center gap-1">
-                <Smartphone size={8} />Mobile ✓
+          <>
+            <div className="absolute top-2.5 left-2.5">
+              <span className="text-[9px] bg-black/65 backdrop-blur-sm text-white/65 px-2 py-1 rounded-lg border border-white/10">
+                {label}
               </span>
+            </div>
+            {mobileUrl && (
+              <div className="absolute top-2.5 right-2.5">
+                <span className="text-[9px] bg-primary/20 backdrop-blur-sm text-primary px-2 py-1 rounded-lg border border-primary/25 flex items-center gap-1">
+                  <Smartphone size={8} />Mobile ✓
+                </span>
+              </div>
             )}
+          </>
+        )}
+        {/* Preview tab in corner */}
+        {desktopUrl && (
+          <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between pointer-events-none">
+            <span className="text-[9px] text-muted-foreground/50">{desc}</span>
           </div>
         )}
       </div>
 
       {/* Card body */}
       <div className="p-4 space-y-4">
-        {/* Header row */}
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="font-display font-bold text-sm">{label}</h4>
-            <p className="text-[11px] text-muted-foreground">{desc}</p>
+            <p className="text-[11px] text-muted-foreground">Drag preview to set focal point</p>
           </div>
           <div className="flex items-center gap-2">
-            <PreviewTab value={previewMode} onChange={setPreviewMode} />
+            <button
+              type="button"
+              onClick={() => setShowGuide(g => !g)}
+              className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
+                showGuide
+                  ? "bg-primary/20 text-primary border-primary/35"
+                  : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
+              }`}
+            >
+              <ScanLine size={11} />
+              {showGuide ? "Hide Guide" : "Guide"}
+            </button>
           </div>
         </div>
 
-        {/* Upload zone or replace button */}
-        {!desktopUrl ? (
-          <DropZone onTrigger={() => setCropperOpen(true)} disabled={uploadMutation.isPending} />
+        {/* Upload / replace button */}
+        {desktopUrl ? (
+          <button
+            type="button"
+            onClick={() => setCropperOpen(true)}
+            disabled={uploadMutation.isPending}
+            data-testid={`button-upload-${cardKey}`}
+            className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl bg-white/6 hover:bg-white/12 border border-white/12 hover:border-white/22 text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-all duration-200"
+          >
+            <UploadCloud size={13} />
+            Replace Image
+          </button>
         ) : (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setCropperOpen(true)}
-              disabled={uploadMutation.isPending}
-              data-testid={`button-upload-${cardKey}`}
-              className="flex-1 inline-flex items-center justify-center gap-2 h-9 rounded-xl bg-white/6 hover:bg-white/12 border border-white/12 hover:border-white/22 text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-all duration-200"
-            >
-              <UploadCloud size={13} />
-              Replace Image
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setCropperOpen(true)}
+            disabled={uploadMutation.isPending}
+            data-testid={`button-upload-${cardKey}`}
+            className="w-full inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-sm font-semibold transition-all duration-200 hover:shadow-[0_0_16px_-4px_hsl(183_100%_60%/0.4)]"
+          >
+            <UploadCloud size={14} />
+            Upload Image
+          </button>
         )}
 
         <ImageCropper
@@ -791,24 +806,7 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
 
         {/* Settings tabs */}
         <div className="pt-1">
-          <div className="flex gap-1 p-0.5 bg-black/30 rounded-xl border border-white/8 w-fit mb-4">
-            {(["desktop", "mobile"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setActiveTab(t)}
-                data-testid={`tab-service-${t}-${cardKey}`}
-                className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold transition-all duration-200 ${
-                  activeTab === t
-                    ? "bg-primary/20 text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t === "desktop" ? <Monitor size={11} /> : <Smartphone size={11} />}
-                {t === "desktop" ? "Desktop" : "Mobile"}
-              </button>
-            ))}
-          </div>
+          <SettingsTabs value={activeTab} onChange={setActiveTab} id={cardKey} prefix="service" />
 
           {activeTab === "desktop" && (
             <div className="space-y-4">
@@ -830,7 +828,7 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
           {activeTab === "mobile" && (
             <div className="space-y-4">
               <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
-                Mobile settings are fully independent from desktop.
+                Mobile settings are fully independent from desktop. Drag the preview above to set the focal point for mobile.
               </p>
               <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
               <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
@@ -857,7 +855,7 @@ function ServicesSection({ settings }: { settings: Settings }) {
       <div>
         <h3 className="font-display font-bold text-lg">Service Images</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Desktop and mobile settings are independent. Uploads generate all three size variants automatically.
+          Preview matches the live site exactly. Drag on any image to set the focal point — no important subject will be clipped.
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -917,31 +915,29 @@ export default function AdminMedia() {
 
   return (
     <div className="space-y-7" data-testid="page-admin-media">
-      {/* Page header */}
       <div>
         <h1 className="font-display font-bold text-2xl tracking-tight">Media Manager</h1>
         <p className="text-sm text-muted-foreground mt-1.5">
-          Upload, organise, and fine-tune every image on the site. Desktop and mobile controls are always independent.
+          WYSIWYG: every preview uses the exact same rendering engine as the live site. What you see here is what clients see.
         </p>
       </div>
 
       {/* Section selector */}
-      <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-3 sm:w-fit">
-        {SECTIONS.map(({ key, label, icon, desc }) => (
+      <div className="flex gap-3 w-fit">
+        {SECTIONS.map(({ key, label, icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => setActiveSection(key)}
             data-testid={`tab-section-${key}`}
-            className={`flex flex-col sm:flex-row items-center sm:items-center gap-2 px-4 sm:px-5 py-3 sm:py-0 sm:h-12 rounded-2xl text-sm font-semibold border transition-all duration-200 ${
+            className={`flex items-center gap-2 px-5 h-11 rounded-2xl text-sm font-semibold border transition-all duration-200 ${
               activeSection === key
                 ? "bg-primary/15 text-primary border-primary/35 shadow-[0_0_20px_-6px_hsl(183_100%_60%/0.4)]"
                 : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:border-white/15 hover:text-foreground"
             }`}
           >
             {icon}
-            <span className="hidden sm:block">{label}</span>
-            <span className="text-[10px] sm:hidden text-center leading-tight">{label}</span>
+            {label}
           </button>
         ))}
       </div>
