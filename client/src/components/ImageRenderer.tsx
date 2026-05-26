@@ -390,8 +390,7 @@ export function ServiceImageFrame({
   if (!src) {
     return (
       <div
-        className={`relative bg-black/40 flex flex-col items-center justify-center gap-2 ${className}`}
-        style={{ aspectRatio: "16/9" }}
+        className={`svc-img-wrap relative bg-black/40 flex flex-col items-center justify-center gap-2 ${className}`}
       >
         <ImageIcon size={20} className="text-muted-foreground/25" />
         <p className="text-[10px] text-muted-foreground/35">No image uploaded</p>
@@ -416,9 +415,8 @@ export function ServiceImageFrame({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden select-none ${className}`}
+      className={`svc-img-wrap relative overflow-hidden select-none ${className}`}
       style={{
-        aspectRatio: "16/9",
         cursor: onPositionChange ? "crosshair" : "default",
       }}
       onPointerDown={onPointerDown}
