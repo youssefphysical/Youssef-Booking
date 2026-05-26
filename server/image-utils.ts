@@ -1,6 +1,11 @@
 import path from "path";
 import fs from "fs";
-import sharp from "sharp";
+import type SharpType from "sharp";
+// Resilient sharp loader — never crashes the module on Vercel cold-start.
+let _sharp: typeof SharpType | null = null;
+void import("sharp")
+  .then((m) => { _sharp = (m.default ?? m) as typeof SharpType; })
+  .catch((e: unknown) => { console.warn("[boot] sharp unavailable:", (e as Error)?.message ?? e); });
 
 /**
  * Optimize an image file in place: re-encode for the web and create a thumbnail.
@@ -27,8 +32,9 @@ export async function optimizeImageFile(
   const optimizedPath = path.join(dir, optimizedFilename);
 
   try {
+    if (!_sharp) throw new Error("sharp_unavailable");
     const original = await fs.promises.stat(fullPath);
-    const pipeline = sharp(fullPath, { failOn: "none" }).rotate();
+    const pipeline = _sharp(fullPath, { failOn: "none" }).rotate();
     const meta = await pipeline.metadata();
     const targetWidth =
       opts.maxWidth && meta.width && meta.width > opts.maxWidth
@@ -44,7 +50,7 @@ export async function optimizeImageFile(
     if (opts.thumb !== false) {
       thumbnailFilename = `${base}_thumb.webp`;
       const thumbPath = path.join(dir, thumbnailFilename);
-      await sharp(fullPath, { failOn: "none" })
+      await _sharp!(fullPath, { failOn: "none" })
         .rotate()
         .resize({ width: 480, withoutEnlargement: true })
         .webp({ quality: 70, effort: 4 })

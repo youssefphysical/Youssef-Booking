@@ -1,0 +1,1 @@
+- [Vercel sharp bundling](vercel-sharp-bundling.md) — static top-level `import sharp` crashes the Vercel cold-start; use lazy void-import pattern + includeFiles glob for @img/**.

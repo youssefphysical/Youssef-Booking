@@ -5,7 +5,15 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { setupAuth, hashPassword, sanitizeUser, sanitizeUserAdminView, sanitizeAndEnrich, sanitizeAndEnrichMany, computeIsVerified, rateLimit } from "./auth";
-import sharp from "sharp";
+import type SharpType from "sharp";
+// Resilient sharp loader — the server starts even if native binaries are
+// absent (e.g. Vercel cold-start before @img/* is bundled). Every call site
+// already lives inside try/catch so a null-throw surfaces a proper 4xx
+// instead of crashing the entire serverless function.
+let _sharp: typeof SharpType | null = null;
+void import("sharp")
+  .then((m) => { _sharp = (m.default ?? m) as typeof SharpType; })
+  .catch((e: unknown) => { console.warn("[boot] sharp unavailable:", (e as Error)?.message ?? e); });
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
 import { pool } from "./db";
 import {
@@ -1436,7 +1444,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // `limitInputPixels` is a hard ceiling on decoded pixel count — protects
       // sharp/libvips from "pixel bomb" inputs (small compressed payloads that
       // expand to massive bitmaps). 24MP is plenty for an avatar source.
-      const webp = await sharp(buffer, { failOn: "none", limitInputPixels: 24_000_000 })
+      if (!_sharp) throw new Error("sharp_unavailable");
+      const webp = await _sharp(buffer, { failOn: "none", limitInputPixels: 24_000_000 })
         .rotate()
         .resize(256, 256, { fit: "cover", position: "center" })
         .webp({ quality: 75, effort: 4 })
@@ -4273,7 +4282,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (buffer.byteLength > maxDecodedBytes) {
         return { ok: false, status: 400, message: opts.sizeErrorMessage ?? "Image is too large after decoding" };
       }
-      let pipeline = sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 }).rotate();
+      if (!_sharp) throw new Error("sharp_unavailable");
+      let pipeline = _sharp(buffer, { failOn: "none", limitInputPixels: 50_000_000 }).rotate();
       if (opts.fit === "cover" && opts.height) {
         pipeline = pipeline.resize(opts.width, opts.height, { fit: "cover", position: "center" });
       } else {
@@ -7945,6 +7955,7 @@ async function seedDatabase() {
   const LEGACY_BIO_PREFIXES = [
     "Youssef Tarek Hashim Ahmed is a certified",
     "Certified personal trainer and physical education teacher based in Dubai",
+    "Youssef Ahmed provides premium personal training services",
   ];
   const trimmedBio = (s.profileBio || "").trim();
   const isLegacySeededBio = LEGACY_BIO_PREFIXES.some((p) => trimmedBio.startsWith(p));

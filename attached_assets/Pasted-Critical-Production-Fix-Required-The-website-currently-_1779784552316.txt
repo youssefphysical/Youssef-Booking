@@ -1,0 +1,198 @@
+Critical Production Fix Required
+
+The website currently fails in multiple places with:
+
+"Server failed to start"
+
+This happens during:
+
+- Login
+- Image upload
+- Admin / Control Panel actions
+
+This confirms a global backend/runtime failure, not a single button issue.
+
+Your task:
+Debug, fix, test, and redeploy the entire backend so the production website becomes stable again.
+
+1. Root Cause Debugging
+
+Check all recent changes related to:
+
+- Image upload system
+- Service image controls
+- Hero image controls
+- Branding update to "Youssef Elite"
+- Logo integration
+- Admin Control Panel changes
+- Auth/login routes
+
+Check:
+
+- Server startup logs
+- Runtime logs
+- Build logs
+- API route logs
+- Vercel/Replit deployment logs
+- Database connection
+- Storage provider connection
+- Environment variables
+- Broken imports
+- Missing packages
+- TypeScript errors
+- Runtime-only errors
+- Memory/timeout problems
+
+2. Fix Backend Stability
+
+Requirements:
+
+- The backend must start successfully every time.
+- No route should return "Server failed to start".
+- Login must work.
+- Admin authentication must work.
+- Control Panel must load.
+- Image upload must work.
+- Image settings must save and persist.
+- Public website must load normally.
+- Errors must return clean JSON responses, not crash the server.
+
+3. Fix Authentication
+
+Test and fix:
+
+- Login with admin account: youssef.physical@gmail.com
+- Admin role detection
+- Protected Control Panel access
+- Normal client login
+- Logout
+- Refresh after login
+- Session persistence
+
+4. Fix Upload System Globally
+
+Test and fix uploads for:
+
+- Hero images
+- Personal Training image
+- Nutrition Plans image
+- Supplement Protocol image
+- Logo upload if applicable
+
+Requirements:
+
+- Validate file type
+- Validate file size
+- Compress/resize safely before saving
+- Prevent server crashes on failed upload
+- Return clear error messages
+- Save uploaded image URL correctly
+- Persist after refresh
+- Work on mobile and desktop
+
+5. Fix Image Controls
+
+Make sure these controls work independently for every image:
+
+- Upload / replace
+- Zoom
+- Crop / position
+- Mobile height
+- Desktop height
+- Object fit
+- Object position
+- Border radius
+- Save
+- Reset
+- Restore original image
+
+Each image must have independent settings:
+
+- Hero images
+- Personal Training
+- Nutrition Plans
+- Supplement Protocol
+
+6. Database & Environment Safety
+
+Check:
+
+- Database schema/migrations
+- Missing columns
+- Broken references
+- Environment variables
+- Storage bucket/settings
+- Production vs development config
+- API base URLs
+- CORS if needed
+
+Do not assume development works means production works.
+
+7. Branding Check
+
+Confirm all branding is updated globally to:
+
+Youssef Elite
+
+No remaining "Youssef Ahmed" should appear anywhere.
+
+Check:
+
+- Navbar
+- Footer
+- Auth pages
+- Admin panel
+- Dashboard
+- Browser title
+- Meta tags
+- Emails
+- PWA/app name
+- SEO/Open Graph
+- Hardcoded text
+
+8. Production Testing Checklist
+
+Before finishing, test all of this on the live production website:
+
+- Home page loads
+- Auth page loads
+- Admin login works
+- Control Panel opens
+- Hero image upload works
+- Service image upload works
+- Service image settings save
+- Refresh keeps saved image settings
+- Mobile view works
+- Desktop view works
+- No "Server failed to start"
+- No 500 errors
+- No broken console errors
+- No broken API responses
+- Public users cannot access admin routes
+- Non-admin API calls return proper JSON unauthorized response
+
+9. Error Handling
+
+Add proper error handling so future backend errors do not crash the whole app.
+
+Expected JSON format:
+
+{
+"success": false,
+"error": "Clear human-readable error message"
+}
+
+10. Final Report
+
+After fixing, give me a short report with:
+
+- Root cause
+- Files changed
+- What was fixed
+- What was tested
+- Confirmation that production login and uploads work
+
+Important:
+Do not only patch the visible error.
+Find and fix the real backend startup issue globally.
+Do not finish until login, admin, upload, and image controls are tested successfully in production.

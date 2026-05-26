@@ -42,7 +42,7 @@ function validateBootEnv() {
   const isProd = process.env.NODE_ENV === "production";
   const required: Array<{ name: string; reason: string; prodOnly?: boolean }> = [
     { name: "DATABASE_URL", reason: "DB unreachable — every route will 500" },
-    { name: "JWT_SECRET", reason: "session/JWT signing — auth will fail" },
+    { name: "SESSION_SECRET", reason: "session cookies unsigned — auth will fail" },
     { name: "CRON_SECRET", reason: "external cron will be rejected with 401 — auto-complete + reminders won't run", prodOnly: true },
     { name: "PUBLIC_APP_URL", reason: "GitHub Actions cron has no target URL", prodOnly: true },
     { name: "RESEND_API_KEY", reason: "password-reset + booking emails will silently no-op", prodOnly: true },
