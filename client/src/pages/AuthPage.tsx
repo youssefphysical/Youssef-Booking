@@ -161,7 +161,7 @@ export default function AuthPage({
         </Link>
 
         {/* Card with neon cyber-corner accents */}
-        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl px-6 pb-7 pt-5 sm:px-8 sm:pb-8 sm:pt-5 shadow-2xl"
+        <div className="relative overflow-hidden bg-card/80 border border-primary/15 backdrop-blur-md rounded-3xl px-6 pb-6 pt-3 sm:px-8 sm:pb-7 sm:pt-4 shadow-2xl"
           style={{ boxShadow: "0 0 40px rgba(0,212,255,0.08), 0 25px 60px rgba(0,0,0,0.5)" }}
         >
           {/* Cyan hairline top accent — Tron HUD signature */}
@@ -185,7 +185,7 @@ export default function AuthPage({
           <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
-          <div className="relative flex flex-col items-center mb-4">
+          <div className="relative flex flex-col items-center mb-2">
             {/* Ambient glow — scales with the logo */}
             <div
               aria-hidden
@@ -213,8 +213,8 @@ export default function AuthPage({
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
               style={{
                 objectFit: "contain",
-                width: `min(var(--brand-auth-w-mobile,400px), 92%)`,
-                maxWidth: "420px",
+                width: "96%",
+                maxWidth: "460px",
               }}
               className="relative sm:hidden"
             />
@@ -233,15 +233,15 @@ export default function AuthPage({
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
               style={{
                 objectFit: "contain",
-                width: `min(var(--brand-auth-w-desktop,480px), 92%)`,
-                maxWidth: "500px",
+                width: "94%",
+                maxWidth: "520px",
               }}
               className="relative hidden sm:block"
             />
 
             {/* Portal badge — brand name already inside logo, no duplication */}
             <p
-              className="uppercase font-semibold mt-3 sm:mt-4"
+              className="uppercase font-semibold mt-1 sm:mt-2"
               style={{
                 fontSize: "clamp(16px, 4.5vw, 24px)",
                 letterSpacing: "0.18em",
