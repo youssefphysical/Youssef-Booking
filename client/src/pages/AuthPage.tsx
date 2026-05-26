@@ -197,47 +197,41 @@ export default function AuthPage({
                 filter: "blur(28px)",
               }}
             />
-            {/* Floating + pulse logo — fills 90–95% of card width up to spec max */}
-            <motion.img
-              src={logoSrc}
-              alt="Youssef Elite"
-              data-testid="img-auth-logo"
-              animate={{
-                y: [0, -4, 0],
-                filter: [
-                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                  "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
-                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                ],
-              }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              style={{
-                objectFit: "contain",
-                width: "96%",
-                maxWidth: "460px",
-              }}
-              className="relative sm:hidden"
-            />
-            <motion.img
-              src={logoSrc}
-              alt="Youssef Elite"
-              aria-hidden="true"
-              animate={{
-                y: [0, -4, 0],
-                filter: [
-                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                  "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
-                  "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                ],
-              }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              style={{
-                objectFit: "contain",
-                width: "94%",
-                maxWidth: "520px",
-              }}
-              className="relative hidden sm:block"
-            />
+            {/* Floating + pulse logo — fills hero card width; scale(1.08) wrapper for extra zoom */}
+            <div className="relative sm:hidden" style={{ width: "96%", maxWidth: "460px", transform: "scale(1.08)", transformOrigin: "center center", overflow: "visible" }}>
+              <motion.img
+                src={logoSrc}
+                alt="Youssef Elite"
+                data-testid="img-auth-logo"
+                animate={{
+                  y: [0, -4, 0],
+                  filter: [
+                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                    "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                  ],
+                }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{ objectFit: "contain", width: "100%", display: "block" }}
+              />
+            </div>
+            <div className="relative hidden sm:block" style={{ width: "94%", maxWidth: "520px", transform: "scale(1.08)", transformOrigin: "center center", overflow: "visible" }}>
+              <motion.img
+                src={logoSrc}
+                alt="Youssef Elite"
+                aria-hidden="true"
+                animate={{
+                  y: [0, -4, 0],
+                  filter: [
+                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                    "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                  ],
+                }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{ objectFit: "contain", width: "100%", display: "block" }}
+              />
+            </div>
 
             {/* Portal badge — brand name already inside logo, no duplication */}
             <p
