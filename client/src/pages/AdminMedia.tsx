@@ -796,8 +796,17 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
             <p className="text-xs text-muted-foreground/55 group-hover:text-muted-foreground transition-colors">Click to upload</p>
           </div>
         )}
+        {/* AI analysing overlay — shown while upload+analysis is in flight */}
+        {uploadMutation.isPending && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 backdrop-blur-[2px]">
+            <div className="flex items-center gap-2 bg-black/70 border border-primary/30 rounded-xl px-3 py-2">
+              <RefreshCw size={11} className="text-primary animate-spin" />
+              <span className="text-[11px] font-semibold text-primary">AI analysing…</span>
+            </div>
+          </div>
+        )}
         {/* Overlay badges */}
-        {desktopUrl && (
+        {desktopUrl && !uploadMutation.isPending && (
           <>
             <div className="absolute top-2.5 left-2.5">
               <span className="text-[9px] bg-black/65 backdrop-blur-sm text-white/65 px-2 py-1 rounded-lg border border-white/10">
