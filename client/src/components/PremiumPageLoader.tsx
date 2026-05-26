@@ -8,13 +8,13 @@ import type { Settings } from "@shared/schema";
  * Non-blocking page loader.
  *
  * Renders nothing for the first 700 ms — fast auth checks and cached chunk
- * loads complete within this window and the user never sees any loader at
- * all. Only on genuinely slow responses (cold-start serverless, slow 3G)
- * does the brand logo + spinner appear. No full-screen black overlay,
- * no marketing copy — just the premium identity at rest.
+ * loads complete within this window and the user never sees any loader at all.
+ * Only on genuinely slow responses (cold-start serverless, slow 3G) does the
+ * brand logo + spinner appear.
  *
- * Uses the custom icon logo from settings when one has been uploaded via the
- * Logo Manager, falling back to the static /ye-logo.png.
+ * Respects:
+ *  - settings.logoIconUrl        — custom logo upload (falls back to /ye-logo.png)
+ *  - settings.brandSettings.logoShowLoading — visibility toggle from Logo Manager
  */
 export function PremiumPageLoader() {
   const [visible, setVisible] = useState(false);
@@ -22,7 +22,10 @@ export function PremiumPageLoader() {
     queryKey: ["/api/settings"],
     staleTime: 5 * 60 * 1000,
   });
-  const logoSrc = settings?.logoIconUrl || "/ye-logo.png";
+
+  const bs          = (settings?.brandSettings ?? {}) as Record<string, number>;
+  const logoSrc     = settings?.logoIconUrl || "/ye-logo.png";
+  const showLoading = (bs.logoShowLoading ?? 1) !== 0;
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 700);
@@ -38,36 +41,35 @@ export function PremiumPageLoader() {
       role="status"
       aria-label="Loading"
     >
-      {/* Primary brand logo — float + glow-pulse, mirrors auth page treatment */}
-      <div className="relative flex items-center justify-center">
-        {/* Ambient glow behind the logo */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute rounded-full"
-          style={{
-            width: 220,
-            height: 220,
-            background: "radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%)",
-            filter: "blur(20px)",
-          }}
-        />
-        <motion.img
-          src={logoSrc}
-          alt="Youssef Elite"
-          aria-hidden="true"
-          animate={{
-            y: [0, -3, 0],
-            filter: [
-              "drop-shadow(0 0 14px rgba(0,212,255,0.40))",
-              "drop-shadow(0 0 20px rgba(0,212,255,0.58))",
-              "drop-shadow(0 0 14px rgba(0,212,255,0.40))",
-            ],
-          }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-          className="relative object-contain"
-          style={{ width: "clamp(90px, 22vw, 120px)" }}
-        />
-      </div>
+      {showLoading && (
+        <div className="relative flex items-center justify-center">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute rounded-full"
+            style={{
+              width: 220, height: 220,
+              background: "radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%)",
+              filter: "blur(20px)",
+            }}
+          />
+          <motion.img
+            src={logoSrc}
+            alt="Youssef Elite"
+            aria-hidden="true"
+            animate={{
+              y: [0, -3, 0],
+              filter: [
+                "drop-shadow(0 0 14px rgba(0,212,255,0.40))",
+                "drop-shadow(0 0 20px rgba(0,212,255,0.58))",
+                "drop-shadow(0 0 14px rgba(0,212,255,0.40))",
+              ],
+            }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+            className="relative object-contain"
+            style={{ width: "clamp(90px, 22vw, 120px)" }}
+          />
+        </div>
+      )}
       <Loader2 size={16} className="animate-spin text-primary/50" />
     </div>
   );

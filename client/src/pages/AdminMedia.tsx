@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -12,6 +12,7 @@ import type { HeroImage, Settings } from "@shared/schema";
 import {
   Monitor,
   Smartphone,
+  Tablet,
   UploadCloud,
   Trash2,
   ArrowUp,
@@ -26,6 +27,10 @@ import {
   Maximize2,
   RotateCcw,
   ChevronDown,
+  Eye,
+  EyeOff,
+  Download,
+  Shield,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -1266,13 +1271,284 @@ function LogoSlotCard({
   );
 }
 
+// ─── Logo config helpers ───────────────────────────────────────────────────────
+
+interface LogoConfig {
+  showNavbar:     boolean;
+  showFooter:     boolean;
+  showLoading:    boolean;
+  showEmail:      boolean;
+  showApp:        boolean;
+  showFavicon:    boolean;
+  showHero:       boolean;
+  desktopPadding: number;
+  mobilePadding:  number;
+  aiProtection:   boolean;
+}
+
+const DEFAULT_LOGO_CONFIG: LogoConfig = {
+  showNavbar: true, showFooter: true, showLoading: true,
+  showEmail:  true, showApp:    true, showFavicon: true, showHero: true,
+  desktopPadding: 5, mobilePadding: 4, aiProtection: true,
+};
+
+function brandSettingsToConfig(bs: Record<string, number>): LogoConfig {
+  return {
+    showNavbar:     (bs.logoShowNavbar    ?? 1) !== 0,
+    showFooter:     (bs.logoShowFooter    ?? 1) !== 0,
+    showLoading:    (bs.logoShowLoading   ?? 1) !== 0,
+    showEmail:      (bs.logoShowEmail     ?? 1) !== 0,
+    showApp:        (bs.logoShowApp       ?? 1) !== 0,
+    showFavicon:    (bs.logoShowFavicon   ?? 1) !== 0,
+    showHero:       (bs.logoShowHero      ?? 1) !== 0,
+    desktopPadding: bs.logoDesktopPadding ?? DEFAULT_LOGO_CONFIG.desktopPadding,
+    mobilePadding:  bs.logoMobilePadding  ?? DEFAULT_LOGO_CONFIG.mobilePadding,
+    aiProtection:   (bs.logoAiProtection  ?? 1) !== 0,
+  };
+}
+
+function configToBrandPatch(cfg: LogoConfig): Record<string, number> {
+  return {
+    logoShowNavbar:     cfg.showNavbar    ? 1 : 0,
+    logoShowFooter:     cfg.showFooter    ? 1 : 0,
+    logoShowLoading:    cfg.showLoading   ? 1 : 0,
+    logoShowEmail:      cfg.showEmail     ? 1 : 0,
+    logoShowApp:        cfg.showApp       ? 1 : 0,
+    logoShowFavicon:    cfg.showFavicon   ? 1 : 0,
+    logoShowHero:       cfg.showHero      ? 1 : 0,
+    logoDesktopPadding: cfg.desktopPadding,
+    logoMobilePadding:  cfg.mobilePadding,
+    logoAiProtection:   cfg.aiProtection  ? 1 : 0,
+  };
+}
+
+const VISIBILITY_ROWS: {
+  key: keyof Pick<LogoConfig,
+    "showNavbar"|"showFooter"|"showLoading"|"showHero"|"showEmail"|"showApp"|"showFavicon">;
+  label: string;
+  desc: string;
+  badge?: string;
+}[] = [
+  { key: "showNavbar",  label: "Navbar logo",    desc: "Top navigation bar on all pages" },
+  { key: "showFooter",  label: "Footer logo",    desc: "Page footer — public & client area" },
+  { key: "showLoading", label: "Loading screen", desc: "Splash loader on cold start" },
+  { key: "showHero",    label: "Hero / Auth",    desc: "Login, registration & auth hero" },
+  { key: "showEmail",   label: "Email",          desc: "Transactional emails",   badge: "Export" },
+  { key: "showApp",     label: "App icon",       desc: "PWA homescreen icon",     badge: "Export" },
+  { key: "showFavicon", label: "Favicon",        desc: "Browser tab icon",        badge: "Export" },
+];
+
+const EXPORT_PRESETS: {
+  key: string; label: string; desc: string;
+  files: { w: number; h: number; name: string }[];
+}[] = [
+  {
+    key: "website",
+    label: "Website",
+    desc: "Icon 400×400 + Navbar 800×300",
+    files: [
+      { w: 400, h: 400, name: "ye-logo-icon.png" },
+      { w: 800, h: 300, name: "ye-logo-navbar.png" },
+    ],
+  },
+  {
+    key: "mobile",
+    label: "Mobile App",
+    desc: "App icons 1024×1024 + 512×512",
+    files: [
+      { w: 1024, h: 1024, name: "ye-logo-app-1024.png" },
+      { w: 512,  h: 512,  name: "ye-logo-app-512.png"  },
+    ],
+  },
+  {
+    key: "email",
+    label: "Email",
+    desc: "Email header 300×80",
+    files: [
+      { w: 300, h: 80, name: "ye-logo-email.png" },
+    ],
+  },
+  {
+    key: "pwa",
+    label: "PWA",
+    desc: "PWA icons 512×512 + 192×192",
+    files: [
+      { w: 512, h: 512, name: "ye-logo-pwa-512.png" },
+      { w: 192, h: 192, name: "ye-logo-pwa-192.png" },
+    ],
+  },
+];
+
+async function exportLogoPreset(presetKey: string, logoSrc: string) {
+  const preset = EXPORT_PRESETS.find(p => p.key === presetKey);
+  if (!preset) return;
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = logoSrc;
+  });
+
+  for (const { w, h, name } of preset.files) {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
+    // contain fit — never crop, preserve aspect ratio
+    const ratio = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+    const sw = img.naturalWidth  * ratio;
+    const sh = img.naturalHeight * ratio;
+    ctx.drawImage(img, (w - sw) / 2, (h - sh) / 2, sw, sh);
+    await new Promise<void>(res => {
+      canvas.toBlob(blob => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a   = document.createElement("a");
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+        setTimeout(res, 220);
+      }, "image/png");
+    });
+  }
+}
+
+type PreviewDevice = "desktop" | "tablet" | "mobile";
+
+function LogoLivePreview({ logoSrc, config }: { logoSrc: string; config: LogoConfig }) {
+  const [device, setDevice] = useState<PreviewDevice>("desktop");
+
+  const DEVICES: { key: PreviewDevice; label: string; icon: React.ReactNode; viewW: number }[] = [
+    { key: "desktop", label: "Desktop", icon: <Monitor size={12} />,    viewW: 1280 },
+    { key: "tablet",  label: "Tablet",  icon: <Tablet size={12} />,     viewW: 768  },
+    { key: "mobile",  label: "Mobile",  icon: <Smartphone size={12} />, viewW: 390  },
+  ];
+
+  const cur    = DEVICES.find(d => d.key === device)!;
+  const PANELW = 540;
+  const scale  = PANELW / cur.viewW;
+  const pad    = device === "mobile" ? config.mobilePadding : config.desktopPadding;
+  const navH   = device === "mobile" ? 60 : 72;
+  const logoH  = device === "mobile" ? 36 + pad : 44 + pad;
+
+  return (
+    <div className="space-y-3">
+      {/* Device tabs */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {DEVICES.map(d => (
+          <button
+            key={d.key}
+            type="button"
+            onClick={() => setDevice(d.key)}
+            className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-150 ${
+              device === d.key
+                ? "bg-primary/12 text-primary border-primary/30"
+                : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:text-foreground"
+            }`}
+          >
+            {d.icon} {d.label}
+          </button>
+        ))}
+        <span className="ml-auto text-[10px] text-muted-foreground/35 self-center">{cur.viewW}px</span>
+      </div>
+
+      {/* Viewport simulation */}
+      <div
+        className="relative rounded-xl border border-white/10 bg-[#050505] overflow-hidden"
+        style={{ height: Math.round(navH * scale) + 2 }}
+      >
+        <div
+          style={{
+            position: "absolute", top: 0, left: 0,
+            width: cur.viewW,
+            transformOrigin: "top left",
+            transform: `scale(${scale})`,
+            background: "#050505",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <div style={{
+            height: navH,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: `0 ${device === "mobile" ? 16 : 24}px`,
+          }}>
+            {/* Logo */}
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {config.showNavbar ? (
+                <img
+                  src={logoSrc}
+                  alt=""
+                  style={{
+                    height: logoH, width: "auto", objectFit: "contain",
+                    padding: `${pad}px`,
+                    filter: "drop-shadow(0 0 8px rgba(0,212,255,0.30))",
+                    maxWidth: device === "mobile" ? 100 : 180,
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 48, height: 48,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px dashed rgba(255,255,255,0.12)",
+                  borderRadius: 6,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>OFF</span>
+                </div>
+              )}
+            </div>
+            {/* Nav links — desktop only */}
+            {device === "desktop" && (
+              <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
+                {["Home", "Book", "How it Works", "FAQ"].map(t => (
+                  <span key={t} style={{ color: "rgba(255,255,255,0.38)", fontSize: 13 }}>{t}</span>
+                ))}
+              </div>
+            )}
+            {/* Right action */}
+            {device !== "mobile" ? (
+              <div style={{
+                height: 36, paddingInline: 16,
+                background: "hsl(183 100% 74% / 0.13)",
+                border: "1px solid hsl(183 100% 74% / 0.28)",
+                borderRadius: 10,
+                display: "flex", alignItems: "center",
+              }}>
+                <span style={{ color: "hsl(183 100% 74%)", fontSize: 12, fontWeight: 600 }}>Sign in</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {[20, 14, 20].map((w, i) => (
+                  <div key={i} style={{ width: w, height: 2, background: "rgba(255,255,255,0.42)", borderRadius: 1 }} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground/40">
+        {device === "mobile" ? `Mobile padding: ${config.mobilePadding}px` : `Desktop padding: ${config.desktopPadding}px`}
+        {!config.showNavbar && <span className="text-amber-400/70 ml-2">· Navbar logo hidden</span>}
+      </p>
+    </div>
+  );
+}
+
+// ─── Branding section ──────────────────────────────────────────────────────────
 function BrandingSection() {
   const { toast } = useToast();
   const { data, isLoading } = useMediaData();
   const settings = data?.settings;
 
+  // ── Upload / remove mutations (unchanged) ─────────────────────────────────
   const uploadMutations = {
-    icon:   useMutation({
+    icon: useMutation({
       mutationFn: async (dataUrl: string) => {
         const res = await apiRequest("POST", "/api/admin/media/logo/icon", { imageDataUrl: dataUrl });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
@@ -1290,7 +1566,7 @@ function BrandingSection() {
       onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo updated" }); },
       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
     }),
-    auth:   useMutation({
+    auth: useMutation({
       mutationFn: async (dataUrl: string) => {
         const res = await apiRequest("POST", "/api/admin/media/logo/auth", { imageDataUrl: dataUrl });
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
@@ -1300,9 +1576,8 @@ function BrandingSection() {
       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
     }),
   };
-
   const removeMutations = {
-    icon:   useMutation({
+    icon: useMutation({
       mutationFn: async () => {
         const res = await apiRequest("DELETE", "/api/admin/media/logo/icon");
         if (!res.ok) throw new Error("Remove failed");
@@ -1318,7 +1593,7 @@ function BrandingSection() {
       onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo removed — default restored" }); },
       onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
     }),
-    auth:   useMutation({
+    auth: useMutation({
       mutationFn: async () => {
         const res = await apiRequest("DELETE", "/api/admin/media/logo/auth");
         if (!res.ok) throw new Error("Remove failed");
@@ -1328,48 +1603,340 @@ function BrandingSection() {
     }),
   };
 
+  // ── Logo config state ─────────────────────────────────────────────────────
+  const [cfg, setCfg]                       = useState<LogoConfig>(DEFAULT_LOGO_CONFIG);
+  const [isDirty, setIsDirty]               = useState(false);
+  const [activeTab, setActiveTab]           = useState<"uploads"|"preview"|"settings"|"export">("uploads");
+  const [exportingPreset, setExportingPreset] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings?.brandSettings) {
+      setCfg(brandSettingsToConfig(settings.brandSettings as Record<string, number>));
+      setIsDirty(false);
+    }
+  }, [settings?.brandSettings]);
+
+  function patchCfg(patch: Partial<LogoConfig>) {
+    setCfg(prev => ({ ...prev, ...patch }));
+    setIsDirty(true);
+  }
+
+  const saveConfigMutation = useMutation({
+    mutationFn: async (patch: Record<string, number>) => {
+      const res = await apiRequest("PATCH", "/api/admin/media/logo/config", patch);
+      if (!res.ok) throw new Error("Save failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateMedia();
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      setIsDirty(false);
+      toast({ title: "Logo settings saved" });
+    },
+    onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
+  });
+
+  const iconLogoSrc = (settings as any)?.logoIconUrl || "/ye-logo.png";
+
+  const TAB_LABELS: Record<typeof activeTab, string> = {
+    uploads:  "Logo Uploads",
+    preview:  "Live Preview",
+    settings: "Visibility & Padding",
+    export:   "Export Presets",
+  };
+
   return (
     <div className="space-y-5">
+      {/* Header */}
       <div>
         <h3 className="font-display font-bold text-lg">Logo Manager</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Upload custom logo variants. Falls back to the default Youssef Elite logos when none is set.
-          Changes apply immediately site-wide.
+          Upload custom logos, preview across devices, control visibility per placement, set safe padding, and export for every platform.
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {[0, 1, 2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {LOGO_SLOTS.map(({ key, label, desc, fallback, hint, maxLabel }) => (
-            <LogoSlotCard
-              key={key}
-              slot={key}
-              label={label}
-              desc={desc}
-              fallback={fallback}
-              hint={hint}
-              maxLabel={maxLabel}
-              currentUrl={(settings as any)?.[`logo${key.charAt(0).toUpperCase()}${key.slice(1)}Url`]}
-              onUpload={(dataUrl) => uploadMutations[key].mutate(dataUrl)}
-              onRemove={() => removeMutations[key].mutate()}
-              uploading={uploadMutations[key].isPending}
-              removing={removeMutations[key].isPending}
-            />
-          ))}
+      {/* Sub-tabs */}
+      <div className="flex gap-2 flex-wrap" data-testid="logo-manager-tabs">
+        {(["uploads","preview","settings","export"] as const).map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setActiveTab(t)}
+            data-testid={`tab-logo-${t}`}
+            className={`px-4 h-8 rounded-xl text-[12px] font-semibold border transition-all duration-150 ${
+              activeTab === t
+                ? "bg-primary/12 text-primary border-primary/30 shadow-[0_0_16px_-5px_hsl(183_100%_60%/0.3)]"
+                : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:text-foreground"
+            }`}
+          >
+            {TAB_LABELS[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Logo Uploads ─────────────────────────────────────────────── */}
+      {activeTab === "uploads" && (
+        isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {[0,1,2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {LOGO_SLOTS.map(({ key, label, desc, fallback, hint, maxLabel }) => (
+              <LogoSlotCard
+                key={key}
+                slot={key}
+                label={label}
+                desc={desc}
+                fallback={fallback}
+                hint={hint}
+                maxLabel={maxLabel}
+                currentUrl={(settings as any)?.[`logo${key.charAt(0).toUpperCase()}${key.slice(1)}Url`]}
+                onUpload={(dataUrl) => uploadMutations[key].mutate(dataUrl)}
+                onRemove={() => removeMutations[key].mutate()}
+                uploading={uploadMutations[key].isPending}
+                removing={removeMutations[key].isPending}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {/* ── Tab: Live Preview ─────────────────────────────────────────────── */}
+      {activeTab === "preview" && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Navbar</p>
+            <LogoLivePreview logoSrc={iconLogoSrc} config={cfg} />
+          </div>
+
+          {/* Footer preview */}
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Footer</p>
+            <div className="rounded-xl border border-white/8 bg-black/40 px-6 py-4 flex items-center justify-between">
+              {cfg.showFooter ? (
+                <img
+                  src={iconLogoSrc} alt=""
+                  style={{ height: 22, width: "auto", objectFit: "contain",
+                    filter: "drop-shadow(0 0 6px rgba(0,212,255,0.22))", opacity: 0.8 }}
+                />
+              ) : (
+                <div style={{ width: 22, height: 22, background: "rgba(255,255,255,0.04)",
+                  border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 9 }}>OFF</span>
+                </div>
+              )}
+              <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 11 }}>© 2025 Youssef Elite</span>
+            </div>
+          </div>
+
+          {/* Loading screen preview */}
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Loading Screen</p>
+            <div className="rounded-xl border border-white/8 bg-black/40 h-36 flex flex-col items-center justify-center gap-4">
+              {cfg.showLoading ? (
+                <img
+                  src={iconLogoSrc} alt=""
+                  style={{ height: 64, width: "auto", objectFit: "contain",
+                    filter: "drop-shadow(0 0 14px rgba(0,212,255,0.38))" }}
+                />
+              ) : (
+                <div style={{ width: 64, height: 64, background: "rgba(255,255,255,0.04)",
+                  border: "1px dashed rgba(255,255,255,0.1)", borderRadius: 8,
+                  display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>OFF</span>
+                </div>
+              )}
+              <div style={{ width: 18, height: 18, borderRadius: "50%",
+                border: "2px solid rgba(94,231,255,0.45)", borderTopColor: "transparent" }} />
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="flex items-start gap-3 p-3.5 bg-white/[0.03] border border-white/8 rounded-xl">
-        <Palette size={13} className="mt-0.5 shrink-0 text-muted-foreground/60" />
-        <p className="text-[11px] text-muted-foreground/70">
-          Logo sizes and glow intensity are configured in <strong className="text-foreground/80">Settings → Brand settings</strong>.
-          The profile photo is managed in <strong className="text-foreground/80">Settings → Profile</strong>.
-        </p>
-      </div>
+      {/* ── Tab: Visibility & Padding ─────────────────────────────────────── */}
+      {activeTab === "settings" && (
+        <div className="space-y-4">
+          {/* Visibility toggles */}
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
+            <div>
+              <h4 className="font-display font-bold text-sm">Visibility Toggles</h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Control where your logo appears. <span className="text-amber-400/80">Export</span>-tagged placements affect download presets, not live rendering.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {VISIBILITY_ROWS.map(({ key, label, desc, badge }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.025] border border-white/[0.06] hover:bg-white/[0.04] transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      {(cfg as any)[key]
+                        ? <Eye size={11} className="text-primary/60 shrink-0" />
+                        : <EyeOff size={11} className="text-muted-foreground/40 shrink-0" />
+                      }
+                      <span className="text-[12px] font-semibold">{label}</span>
+                      {badge && (
+                        <span className="text-[9px] bg-amber-400/12 border border-amber-400/22 text-amber-400 px-1.5 py-0.5 rounded font-semibold">{badge}</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/55 truncate pl-4">{desc}</p>
+                  </div>
+                  <Switch
+                    checked={(cfg as any)[key] as boolean}
+                    onCheckedChange={v => patchCfg({ [key]: v } as Partial<LogoConfig>)}
+                    data-testid={`toggle-logo-${key}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Padding sliders */}
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
+            <div>
+              <h4 className="font-display font-bold text-sm">Safe Padding</h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Internal breathing room inside each logo container. Prevents the logo from touching its slot edge.
+                Live preview updates instantly — save to apply site-wide.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-semibold flex items-center gap-1.5">
+                    <Monitor size={12} className="text-muted-foreground" /> Desktop padding
+                  </label>
+                  <span className="text-[11px] font-mono text-primary">{cfg.desktopPadding}px</span>
+                </div>
+                <Slider
+                  min={0} max={32} step={1}
+                  value={[cfg.desktopPadding]}
+                  onValueChange={([v]) => patchCfg({ desktopPadding: v })}
+                  data-testid="slider-logo-desktop-padding"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-semibold flex items-center gap-1.5">
+                    <Smartphone size={12} className="text-muted-foreground" /> Mobile padding
+                  </label>
+                  <span className="text-[11px] font-mono text-primary">{cfg.mobilePadding}px</span>
+                </div>
+                <Slider
+                  min={0} max={32} step={1}
+                  value={[cfg.mobilePadding]}
+                  onValueChange={([v]) => patchCfg({ mobilePadding: v })}
+                  data-testid="slider-logo-mobile-padding"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* AI logo protection */}
+          <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Shield size={16} className="mt-0.5 shrink-0 text-primary/70" />
+                <div>
+                  <h4 className="font-display font-bold text-sm">AI Logo Protection</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    All logo uploads are processed with <em>contain</em> fit — the logo is never cropped and its aspect ratio is always preserved.
+                    Disable only if you intentionally want to crop uploaded logos.
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={cfg.aiProtection}
+                onCheckedChange={v => patchCfg({ aiProtection: v })}
+                data-testid="toggle-logo-ai-protection"
+              />
+            </div>
+          </div>
+
+          {/* Save */}
+          <div className="flex items-center gap-3 justify-end">
+            {isDirty && <span className="text-[11px] text-amber-400/80">Unsaved changes</span>}
+            <button
+              type="button"
+              onClick={() => saveConfigMutation.mutate(configToBrandPatch(cfg))}
+              disabled={!isDirty || saveConfigMutation.isPending}
+              data-testid="button-logo-settings-save"
+              className="inline-flex items-center gap-2 px-5 h-9 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-[12px] font-semibold transition-all duration-200 disabled:opacity-40"
+            >
+              {saveConfigMutation.isPending
+                ? <><RefreshCw size={12} className="animate-spin" /> Saving…</>
+                : isDirty
+                  ? <><CheckCircle2 size={12} /> Save settings</>
+                  : <><CheckCircle2 size={12} /> Saved</>
+              }
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tab: Export Presets ───────────────────────────────────────────── */}
+      {activeTab === "export" && (
+        <div className="space-y-4">
+          <p className="text-[12px] text-muted-foreground">
+            Downloads are generated from your active logo (custom or default) at the exact dimensions for each platform.
+            The logo is always contain-fitted — never cropped, aspect ratio preserved.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {EXPORT_PRESETS.map(preset => (
+              <div
+                key={preset.key}
+                className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-3"
+              >
+                <div>
+                  <h4 className="font-display font-bold text-sm">{preset.label}</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{preset.desc}</p>
+                </div>
+                <div className="space-y-1">
+                  {preset.files.map(f => (
+                    <div key={f.name} className="flex items-center gap-2 text-[10px] text-muted-foreground/55">
+                      <div className="w-1 h-1 rounded-full bg-muted-foreground/30 shrink-0" />
+                      <span className="font-mono">{f.name}</span>
+                      <span className="text-muted-foreground/35">— {f.w}×{f.h}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  disabled={exportingPreset === preset.key}
+                  data-testid={`button-export-${preset.key}`}
+                  onClick={async () => {
+                    setExportingPreset(preset.key);
+                    try {
+                      await exportLogoPreset(preset.key, iconLogoSrc);
+                      toast({ title: `${preset.label} logos downloaded` });
+                    } catch {
+                      toast({ title: "Export failed", description: "Could not generate logo files.", variant: "destructive" });
+                    } finally {
+                      setExportingPreset(null);
+                    }
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/8 hover:border-white/18 text-foreground/75 hover:text-foreground text-[12px] font-semibold transition-all duration-200 disabled:opacity-40"
+                >
+                  {exportingPreset === preset.key
+                    ? <><RefreshCw size={12} className="animate-spin" /> Generating…</>
+                    : <><Download size={12} /> Download {preset.label}</>
+                  }
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-start gap-3 p-3.5 bg-white/[0.03] border border-white/8 rounded-xl">
+            <Shield size={13} className="mt-0.5 shrink-0 text-muted-foreground/60" />
+            <p className="text-[11px] text-muted-foreground/70">
+              All exports use <strong className="text-foreground/80">contain fit</strong> — logo is never cropped and aspect ratio is always preserved. Transparent areas are included in the PNG output.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

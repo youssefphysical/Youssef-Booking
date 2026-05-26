@@ -4890,6 +4890,31 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     return res.json({ success: true });
   });
 
+  // PATCH /api/admin/media/logo/config — save logo visibility toggles, padding, AI protection.
+  // Values are merged into settings.brand_settings (JSONB) so no schema migration is needed.
+  app.patch("/api/admin/media/logo/config", requireAdmin, async (req, res) => {
+    const schema = z.object({
+      logoShowNavbar:     z.number().int().min(0).max(1).optional(),
+      logoShowFooter:     z.number().int().min(0).max(1).optional(),
+      logoShowLoading:    z.number().int().min(0).max(1).optional(),
+      logoShowEmail:      z.number().int().min(0).max(1).optional(),
+      logoShowApp:        z.number().int().min(0).max(1).optional(),
+      logoShowFavicon:    z.number().int().min(0).max(1).optional(),
+      logoShowHero:       z.number().int().min(0).max(1).optional(),
+      logoDesktopPadding: z.number().min(0).max(64).optional(),
+      logoMobilePadding:  z.number().min(0).max(64).optional(),
+      logoAiProtection:   z.number().int().min(0).max(1).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+    }
+    const current = await storage.getSettings();
+    const merged  = { ...(current.brandSettings as Record<string, number> ?? {}), ...parsed.data };
+    await storage.updateSettings({ brandSettings: merged } as any);
+    return res.json({ success: true, brandSettings: merged });
+  });
+
   // ============== TRANSFORMATIONS (before/after gallery) ==============
   // Public list — only active rows, sorted by admin order.
   app.get("/api/transformations", async (_req, res) => {
