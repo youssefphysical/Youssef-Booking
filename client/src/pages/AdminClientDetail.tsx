@@ -2298,8 +2298,8 @@ function PackagesPanel({ client }: { client: UserResponse }) {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                  <SessionStat label="Base" value={base} />
-                  <SessionStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-cyan-300" : undefined} />
+                  <SessionStat label="Paid" value={base} />
+                  <SessionStat label="Bonus" value={bonus} accent={bonus > 0 ? "text-emerald-400" : undefined} />
                   <SessionStat label="Total" value={p.totalSessions} accent="text-primary" />
                 </div>
 

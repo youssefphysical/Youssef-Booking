@@ -10,6 +10,7 @@ import {
   CalendarPlus,
   CalendarClock,
   Gauge,
+  Info,
 } from "lucide-react";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { Button } from "@/components/ui/button";
@@ -20,15 +21,10 @@ import type { Package, Booking, BookingWithUser } from "@shared/schema";
 type AnyBooking = Booking | BookingWithUser;
 export type PackageStatus = "active" | "expiring_soon" | "expired" | "completed";
 
-// ---------------------------------------------------------------------
-// Pure helpers (exported for testability / reuse).
-// ---------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Sessions-per-week pace, averaged over the last 4 weeks of completed
- * bookings. Pure: takes the booking list + an optional `now` anchor.
- * `now` parameter exists so tests / consumers can pin the window.
- */
 export function computeSessionsPerWeek(
   bookings: AnyBooking[],
   now: number = Date.now(),
@@ -54,11 +50,6 @@ export interface EtaCopy {
   fallback: string;
 }
 
-/**
- * Human ETA copy from pace + remaining sessions. Caller passes the i18n
- * strings so this helper stays presentation-pure. `{weeks}` is the only
- * placeholder substituted.
- */
 export function formatEta(
   remainingSessions: number,
   sessionsPerWeek: number,
@@ -71,9 +62,29 @@ export function formatEta(
   return copy.weeks.replace("{weeks}", String(weeks));
 }
 
-// ---------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// Tier badge mapping
+// ─────────────────────────────────────────────────────────────────────────────
+
+function tierBadgeFor(type: string): { label: string; cls: string } {
+  const t = type.toLowerCase();
+  if (t.includes("platinum"))
+    return { label: "Platinum Package", cls: "border-violet-400/40 text-violet-300 bg-violet-400/[0.06]" };
+  if (t.includes("gold"))
+    return { label: "Gold Package", cls: "border-amber-400/40 text-amber-300 bg-amber-400/[0.06]" };
+  if (t.includes("silver"))
+    return { label: "Silver Package", cls: "border-slate-400/40 text-slate-300 bg-slate-400/[0.07]" };
+  if (t.includes("duo"))
+    return { label: "Duo Package", cls: "border-cyan-400/40 text-cyan-300 bg-cyan-400/[0.06]" };
+  return {
+    label: type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) + " Package",
+    cls: "border-primary/30 text-primary bg-primary/[0.06]",
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Component
-// ---------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface PackageConfidenceCardProps {
   pkg: Package;
@@ -99,8 +110,9 @@ export function PackageConfidenceCard({
   const total = Math.max(pkg.totalSessions, 1);
   const remaining = Math.max(0, pkg.totalSessions - pkg.usedSessions);
   const pct = Math.min(100, Math.round((completed / total) * 100));
+  const bonusSessions = (pkg as any).bonusSessions ?? 0;
+  const paidSessions = (pkg as any).paidSessions ?? (pkg.totalSessions - bonusSessions);
 
-  // Pace + ETA — pure derivations.
   const pace = computeSessionsPerWeek(bookings);
   const etaText = formatEta(remaining, pace, {
     weeks: t("dashboard.packageEtaWeeks", "Estimated completion: ~{weeks} weeks remaining"),
@@ -108,18 +120,18 @@ export function PackageConfidenceCard({
     fallback: t("dashboard.packageEtaFallback", "Pace your sessions to finish strong."),
   });
 
-  // Valid-until — gracefully hidden when null (legacy packages).
   const expiry = pkg.expiryDate ? new Date(pkg.expiryDate as any) : null;
   const validUntilDate = expiry && Number.isFinite(expiry.getTime())
     ? format(expiry, "d MMM yyyy")
     : null;
 
-  // Payment + lifecycle surfacing (preserved from prior card).
   const totalPrice = ((pkg as any).totalPrice ?? 0) as number;
   const amountPaid = ((pkg as any).amountPaid ?? 0) as number;
   const outstanding = Math.max(0, totalPrice - amountPaid);
   const payStatus = (((pkg as any).paymentStatus ?? "unpaid") as string);
   const isFrozen = !!(pkg as any).frozen;
+
+  const tier = tierBadgeFor(pkg.type);
 
   const payBadge =
     payStatus === "paid"
@@ -141,7 +153,6 @@ export function PackageConfidenceCard({
             ? { label: t("dashboard.packageStatusCompleted", "Completed"), cls: "bg-sky-500/10 border-sky-500/30 text-sky-300" }
             : { label: t("dashboard.packageStatusActive", "Active"), cls: "bg-primary/10 border-primary/30 text-primary" };
 
-  // Renewal CTA trigger: low sessions OR low days OR lifecycle state.
   const lowSessions = remaining > 0 && remaining <= 3;
   const lowDays = daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
   const showRenewalCta =
@@ -161,15 +172,19 @@ export function PackageConfidenceCard({
     >
       {pkg.isActive && <CyanHairline intensity="strong" inset="inset-x-5 sm:inset-x-6" />}
 
-      {/* Header — name + status / payment badges */}
+      {/* Header — name + tier badge + status / payment badges */}
       <div className="relative flex items-start justify-between gap-4 mb-5">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.2em] text-primary mb-1 truncate" data-testid={`text-package-name-${pkg.id}`}>
             {(pkg as any).name || def?.label || `${pkg.type} Package`}
           </p>
-          {def?.tagline && (
-            <p className="text-[11px] text-muted-foreground/70 mt-0.5">{def.tagline}</p>
-          )}
+          {/* Luxury tier badge */}
+          <span
+            className={`inline-flex items-center text-[9px] uppercase tracking-[0.22em] font-black px-2 py-0.5 rounded border ${tier.cls}`}
+            data-testid={`package-tier-badge-${pkg.id}`}
+          >
+            {tier.label}
+          </span>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span
@@ -193,9 +208,7 @@ export function PackageConfidenceCard({
         </div>
       </div>
 
-      {/* Big dual-number row: Completed | Remaining.
-          Replaces the old "12 / 25" stack — gives the client a clear
-          read on both sides of the package without duplicating counts. */}
+      {/* Big dual-number row: Completed | Remaining */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3" data-testid={`text-package-completed-${pkg.id}`}>
           <p className="text-3xl font-display font-bold tabular-nums leading-none text-foreground">
@@ -215,23 +228,39 @@ export function PackageConfidenceCard({
         </div>
       </div>
 
-      {/* Session breakdown — shown when bonus sessions exist so client
-          can clearly see purchased vs. bonus vs. total */}
-      {((pkg as any).bonusSessions ?? 0) > 0 && (
+      {/* Session breakdown — shown when bonus sessions exist */}
+      {bonusSessions > 0 && (
         <div
           className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-3.5"
           data-testid={`package-breakdown-${pkg.id}`}
         >
-          <div className="flex items-center gap-1.5 mb-2.5">
-            <Sparkles size={12} className="text-emerald-400 shrink-0" />
-            <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-300 font-semibold">
-              {t("dashboard.sessionBreakdown", "Session breakdown")}
+          {/* Header row: label + Coach Reward badge + info tooltip */}
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={12} className="text-emerald-400 shrink-0" />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-emerald-300 font-semibold">
+                {t("dashboard.sessionBreakdown", "Session breakdown")}
+              </span>
+              <button
+                type="button"
+                title="Coach bonus sessions added to your package."
+                aria-label="About bonus sessions"
+                className="text-muted-foreground/50 hover:text-emerald-300/80 transition-colors cursor-help"
+                data-testid={`button-bonus-info-${pkg.id}`}
+              >
+                <Info size={11} />
+              </button>
+            </div>
+            {/* ✨ Coach Reward luxury badge */}
+            <span className="inline-flex items-center gap-1 rounded border border-emerald-400/30 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-emerald-300 font-black shadow-[0_0_10px_-5px_rgba(16,185,129,0.5)]">
+              ✨ Coach Reward
             </span>
           </div>
+          {/* 3-column grid: Purchased | +Bonus | Total */}
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-xl border border-white/5 bg-white/[0.03] px-2 py-2">
               <p className="text-lg font-display font-bold tabular-nums leading-none text-foreground" data-testid={`text-paid-sessions-${pkg.id}`}>
-                {(pkg as any).paidSessions ?? (pkg.totalSessions - ((pkg as any).bonusSessions ?? 0))}
+                {paidSessions}
               </p>
               <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mt-1.5">
                 {t("dashboard.purchasedSessions", "Purchased")}
@@ -239,7 +268,7 @@ export function PackageConfidenceCard({
             </div>
             <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-2 py-2">
               <p className="text-lg font-display font-bold tabular-nums leading-none text-emerald-300" data-testid={`text-bonus-sessions-${pkg.id}`}>
-                +{(pkg as any).bonusSessions}
+                +{bonusSessions}
               </p>
               <p className="text-[9px] uppercase tracking-[0.15em] text-emerald-400/80 mt-1.5">
                 {t("dashboard.bonusSessions", "Bonus")}
@@ -254,14 +283,10 @@ export function PackageConfidenceCard({
               </p>
             </div>
           </div>
-          <div className="mt-2.5 flex justify-between text-[10px] text-muted-foreground px-0.5">
-            <span>{t("dashboard.usedSessionsLabel", "Used")}: <span className="text-foreground/80 tabular-nums">{completed}</span></span>
-            <span>{t("dashboard.remainingSessionsLabel", "Remaining")}: <span className="text-primary tabular-nums font-semibold">{remaining}</span></span>
-          </div>
         </div>
       )}
 
-      {/* Outstanding balance — same treatment as before, informational only */}
+      {/* Outstanding balance */}
       {outstanding > 0 && payStatus !== "complimentary" && pkg.isActive && (
         <div
           className="mb-4 rounded-xl border border-cyan-400/25 bg-cyan-500/[0.07] px-3.5 py-2.5 flex items-center justify-between gap-3"
@@ -284,53 +309,61 @@ export function PackageConfidenceCard({
         </div>
       )}
 
-      {/* Progress bar — Tron cyan fill, soft glow on active packages */}
-      <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all"
-          style={{
-            width: `${pct}%`,
-            boxShadow: pkg.isActive
-              ? "0 0 6px hsl(183 100% 60% / 0.35)"
-              : undefined,
-          }}
-        />
-      </div>
-      <p className="text-[11px] text-muted-foreground mt-2 tabular-nums" data-testid={`text-package-progress-${pkg.id}`}>
-        {t("dashboard.packagePctComplete", "{pct}% complete · {total} total sessions")
-          .replace("{pct}", String(pct))
-          .replace("{total}", String(pkg.totalSessions))}
-      </p>
-
-      {/* Confidence lines — valid-until + ETA. The valid-until line is
-          always present when expiryDate exists; never shows "Invalid Date". */}
-      <div className="mt-4 space-y-2">
-        {validUntilDate && (
-          <div className="flex items-center gap-2 text-xs text-foreground/85" data-testid={`text-package-valid-until-${pkg.id}`}>
-            <CalendarClock size={13} className="shrink-0 text-primary/80" />
-            <span>
-              {t("dashboard.packageValidUntil", "Package valid until {date}").replace("{date}", validUntilDate)}
-              {daysUntilExpiry !== null && daysUntilExpiry >= 0 && status !== "completed" && (
-                <span className={`ml-1.5 ${status === "expiring_soon" ? "text-cyan-300 font-semibold" : "text-muted-foreground"}`}>
-                  · {t("dashboard.packageExpiresIn", "{days} days left").replace("{days}", String(daysUntilExpiry))}
-                </span>
-              )}
-              {daysUntilExpiry !== null && daysUntilExpiry < 0 && (
-                <span className="ml-1.5 text-red-300 font-semibold">
-                  · {t("dashboard.packageExpired", "Expired")}
-                </span>
-              )}
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground" data-testid={`text-package-eta-${pkg.id}`}>
-          <Gauge size={13} className="shrink-0 text-primary/70" />
-          <span>{etaText}</span>
+      {/* Progress bar — Tron cyan with glow + "X / Y Sessions Remaining" label */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-[11px] tabular-nums">
+          <span className="text-foreground/80 font-medium" data-testid={`text-package-progress-${pkg.id}`}>
+            {remaining} / {pkg.totalSessions} {t("dashboard.sessionsRemainingLabel", "Sessions Remaining")}
+          </span>
+          <span className="text-muted-foreground">{pct}% {t("dashboard.packageUsed", "used")}</span>
         </div>
+        <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-700"
+            style={{
+              width: `${pct}%`,
+              boxShadow: pkg.isActive ? "0 0 8px hsl(183 100% 60% / 0.5)" : undefined,
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-muted-foreground tabular-nums">
+          {completed} {t("dashboard.sessionsUsedLabel", "used")} · {pkg.totalSessions} {t("dashboard.sessionsTotalLabel", "total")}
+        </p>
       </div>
 
-      {/* Action row — renewal / extension. Renewal fires on ≤3 sessions,
-          ≤7 days, expired, expiring soon, or completed. */}
+      {/* Expiry chip — prominent placement directly after progress bar */}
+      {validUntilDate && (
+        <div
+          className={`mt-3 inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+            status === "expiring_soon" || (daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry <= 14)
+              ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
+              : "border-white/10 bg-white/[0.04] text-muted-foreground"
+          }`}
+          data-testid={`text-package-valid-until-${pkg.id}`}
+        >
+          <CalendarClock size={12} className="shrink-0" />
+          <span>
+            <span className="font-medium">{t("dashboard.packageExpiresLabel", "Expires")}: </span>
+            {validUntilDate}
+            {daysUntilExpiry !== null && daysUntilExpiry >= 0 && status !== "completed" && (
+              <span className={`ml-1.5 ${daysUntilExpiry <= 14 ? "text-cyan-300 font-semibold" : "text-muted-foreground"}`}>
+                · {daysUntilExpiry}d {t("dashboard.daysLeft", "left")}
+              </span>
+            )}
+            {daysUntilExpiry !== null && daysUntilExpiry < 0 && (
+              <span className="ml-1.5 text-red-300 font-semibold">· {t("dashboard.packageExpired", "Expired")}</span>
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* ETA pace line */}
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground" data-testid={`text-package-eta-${pkg.id}`}>
+        <Gauge size={13} className="shrink-0 text-primary/70" />
+        <span>{etaText}</span>
+      </div>
+
+      {/* Action row */}
       {(showRenewalCta || showExtensionCta) && (
         <div className="flex flex-col sm:flex-row gap-2 mt-4">
           {showRenewalCta && (
