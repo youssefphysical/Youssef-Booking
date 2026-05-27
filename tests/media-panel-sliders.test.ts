@@ -128,6 +128,31 @@ check("No duplicate label values in SERVICE_CARD_SLIDER_FIELDS", () => {
   );
 });
 
+// ── 4. Scoped data-testid prefixes present in the Advanced Settings block ─────
+console.log("\n[4] Scoped slider data-testid prefixes");
+
+check('Desktop SliderRows use "slider-row-desktop-" prefix', () => {
+  const advancedStart = adminMediaSrc.indexOf('{showAdvanced && (');
+  assert(advancedStart !== -1, 'Could not find the showAdvanced block in AdminMedia.tsx');
+  const advancedSection = adminMediaSrc.slice(advancedStart, advancedStart + 3000);
+  assert(
+    advancedSection.includes("slider-row-desktop-"),
+    'Desktop SliderRows in Advanced Settings do not use the "slider-row-desktop-" scoped testId prefix.\n' +
+    '     Pass testId={`slider-row-desktop-${...}`} to each desktop SliderRow.',
+  );
+});
+
+check('Mobile SliderRows use "slider-row-mobile-" prefix', () => {
+  const advancedStart = adminMediaSrc.indexOf('{showAdvanced && (');
+  assert(advancedStart !== -1, 'Could not find the showAdvanced block in AdminMedia.tsx');
+  const advancedSection = adminMediaSrc.slice(advancedStart, advancedStart + 3000);
+  assert(
+    advancedSection.includes("slider-row-mobile-"),
+    'Mobile SliderRows in Advanced Settings do not use the "slider-row-mobile-" scoped testId prefix.\n' +
+    '     Pass testId={`slider-row-mobile-${...}`} to each mobile SliderRow.',
+  );
+});
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 console.log("\n" + "─".repeat(55));
 if (failed > 0) {

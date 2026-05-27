@@ -97,8 +97,15 @@ async function renderAndOpenAdvancedSettings() {
 
 // ── Expected controls (derived from canonical list — NOT hardcoded) ────────────
 //  If SERVICE_CARD_SLIDER_FIELDS changes (= schema change), these all update.
-const EXPECTED_TESTIDS = SERVICE_CARD_SLIDER_FIELDS.map(
-  (f) => `slider-row-${f.label.toLowerCase().replace(/\s+/g, "-")}`,
+//  Scoped: desktop tab → slider-row-desktop-*, mobile tab → slider-row-mobile-*
+function toScopedTestId(scope: "desktop" | "mobile", label: string): string {
+  return `slider-row-${scope}-${label.toLowerCase().replace(/\s+/g, "-")}`;
+}
+const DESKTOP_TESTIDS = SERVICE_CARD_SLIDER_FIELDS.map((f) =>
+  toScopedTestId("desktop", f.label),
+);
+const MOBILE_TESTIDS = SERVICE_CARD_SLIDER_FIELDS.map((f) =>
+  toScopedTestId("mobile", f.label),
 );
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -112,7 +119,7 @@ describe("ServiceCardEditor — Advanced Settings (schema-coupled)", () => {
         screen.getByTestId("tab-service-desktop-personalTraining"),
       ).toBeInTheDocument();
 
-      for (const testId of EXPECTED_TESTIDS) {
+      for (const testId of DESKTOP_TESTIDS) {
         expect(
           screen.getByTestId(testId),
           `Desktop tab: missing SliderRow with testid "${testId}" — remove it from service-card-fields.ts if the schema field was deleted`,
@@ -125,7 +132,7 @@ describe("ServiceCardEditor — Advanced Settings (schema-coupled)", () => {
     it("does NOT render extra sliders beyond SERVICE_CARD_SLIDER_FIELDS", async () => {
       await renderAndOpenAdvancedSettings();
 
-      const found = document.querySelectorAll('[data-testid^="slider-row-"]');
+      const found = document.querySelectorAll('[data-testid^="slider-row-desktop-"]');
       expect(
         found.length,
         `Desktop tab: found ${found.length} slider(s) but SERVICE_CARD_SLIDER_FIELDS defines ${SERVICE_CARD_SLIDER_FIELDS.length} — keep them in sync`,
@@ -182,7 +189,7 @@ describe("ServiceCardEditor — Advanced Settings (schema-coupled)", () => {
         screen.getByTestId("tab-service-mobile-personalTraining"),
       );
 
-      for (const testId of EXPECTED_TESTIDS) {
+      for (const testId of MOBILE_TESTIDS) {
         expect(
           screen.getByTestId(testId),
           `Mobile tab: missing SliderRow with testid "${testId}"`,
@@ -200,7 +207,7 @@ describe("ServiceCardEditor — Advanced Settings (schema-coupled)", () => {
         screen.getByTestId("tab-service-mobile-personalTraining"),
       );
 
-      const found = document.querySelectorAll('[data-testid^="slider-row-"]');
+      const found = document.querySelectorAll('[data-testid^="slider-row-mobile-"]');
       expect(
         found.length,
         `Mobile tab: found ${found.length} slider(s) but SERVICE_CARD_SLIDER_FIELDS defines ${SERVICE_CARD_SLIDER_FIELDS.length}`,

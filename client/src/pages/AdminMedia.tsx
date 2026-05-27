@@ -1022,7 +1022,8 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
                       <SliderRow
                         key={schemaKey}
                         label={label}
-                        value={(desktop as Record<string, number>)[schemaKey] ?? 0}
+                        testId={`slider-row-desktop-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                        value={((desktop as unknown) as Record<string, number>)[schemaKey] ?? 0}
                         min={min} max={max} step={step} unit={unit}
                         onChange={(v) => setDesktop(p => ({ ...p, [schemaKey]: v }))}
                       />
@@ -1052,7 +1053,8 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
                       <SliderRow
                         key={schemaKey}
                         label={label}
-                        value={(mob as Record<string, number>)[schemaKey] ?? 0}
+                        testId={`slider-row-mobile-${label.toLowerCase().replace(/\s+/g, "-")}`}
+                        value={((mob as unknown) as Record<string, number>)[schemaKey] ?? 0}
                         min={min} max={max} step={step} unit={unit}
                         onChange={(v) => setMob(p => ({ ...p, [schemaKey]: v }))}
                       />
