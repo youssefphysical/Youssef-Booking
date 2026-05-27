@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { SERVICE_CARD_SLIDER_FIELDS } from "@/lib/service-card-fields";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -61,13 +62,14 @@ const SERVICE_ASPECTS: AspectPreset[] = [
 
 // ─── Slider row ───────────────────────────────────────────────────────────────
 function SliderRow({
-  label, value, min, max, step = 0.01, unit = "", onChange,
+  label, value, min, max, step = 0.01, unit = "", onChange, testId,
 }: {
   label: string; value: number; min: number; max: number;
-  step?: number; unit?: string; onChange: (v: number) => void;
+  step?: number; unit?: string; onChange: (v: number) => void; testId?: string;
 }) {
+  const derivedTestId = testId ?? `slider-row-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5" data-testid={derivedTestId}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{label}</span>
         <span className="text-[11px] tabular-nums font-mono text-primary/80 bg-primary/8 px-2 py-0.5 rounded-md border border-primary/15">
@@ -673,7 +675,7 @@ const CONTENT_TYPES: { key: ContentType; label: string }[] = [
   { key: "logo",        label: "Logo" },
 ];
 
-function ServiceCardEditor({ cardKey, label, desc, settings }: {
+export function ServiceCardEditor({ cardKey, label, desc, settings }: {
   cardKey: ServiceCard;
   label: string;
   desc: string;
@@ -1016,10 +1018,15 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
                 {activeTab === "desktop" && (
                   <div className="space-y-4">
                     <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
-                    <SliderRow label="Position X" value={desktop.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionX: v }))} />
-                    <SliderRow label="Position Y" value={desktop.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setDesktop(p => ({ ...p, positionY: v }))} />
-                    <SliderRow label="Zoom" value={desktop.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setDesktop(p => ({ ...p, zoom: v }))} />
-                    <SliderRow label="Corner radius" value={desktop.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setDesktop(p => ({ ...p, radius: v }))} />
+                    {SERVICE_CARD_SLIDER_FIELDS.map(({ schemaKey, label, min, max, step, unit }) => (
+                      <SliderRow
+                        key={schemaKey}
+                        label={label}
+                        value={(desktop as Record<string, number>)[schemaKey] ?? 0}
+                        min={min} max={max} step={step} unit={unit}
+                        onChange={(v) => setDesktop(p => ({ ...p, [schemaKey]: v }))}
+                      />
+                    ))}
                     {/* Smart clipping validation — warn when focal point is very near the edge */}
                     {(desktop.positionX < 8 || desktop.positionX > 92 || desktop.positionY < 8 || desktop.positionY > 92) && (
                       <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/25 text-[11px] text-amber-400">
@@ -1041,10 +1048,15 @@ function ServiceCardEditor({ cardKey, label, desc, settings }: {
                       Mobile settings are independent from desktop. Drag the preview above to set the focal point.
                     </p>
                     <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
-                    <SliderRow label="Position X" value={mob.positionX} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionX: v }))} />
-                    <SliderRow label="Position Y" value={mob.positionY} min={0} max={100} step={1} unit="%" onChange={(v) => setMob(p => ({ ...p, positionY: v }))} />
-                    <SliderRow label="Zoom" value={mob.zoom} min={0.5} max={3} step={0.01} onChange={(v) => setMob(p => ({ ...p, zoom: v }))} />
-                    <SliderRow label="Corner radius" value={mob.radius} min={0} max={50} step={1} unit="px" onChange={(v) => setMob(p => ({ ...p, radius: v }))} />
+                    {SERVICE_CARD_SLIDER_FIELDS.map(({ schemaKey, label, min, max, step, unit }) => (
+                      <SliderRow
+                        key={schemaKey}
+                        label={label}
+                        value={(mob as Record<string, number>)[schemaKey] ?? 0}
+                        min={min} max={max} step={step} unit={unit}
+                        onChange={(v) => setMob(p => ({ ...p, [schemaKey]: v }))}
+                      />
+                    ))}
                     {/* Smart clipping validation for mobile */}
                     {(mob.positionX < 8 || mob.positionX > 92 || mob.positionY < 8 || mob.positionY > 92) && (
                       <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/25 text-[11px] text-amber-400">
