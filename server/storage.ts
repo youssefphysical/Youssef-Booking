@@ -1799,9 +1799,19 @@ export class DatabaseStorage implements IStorage {
 
   async updateSettings(updates: UpdateSettings) {
     const current = await this.getSettings();
+    // Deep-merge JSONB fields so a partial-section save (e.g. only CTA keys)
+    // never silently erases keys written by a previous save (e.g. Services keys).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const merged: any = { ...updates };
+    if (updates.contentSettings !== undefined) {
+      merged.contentSettings = {
+        ...((current.contentSettings as Record<string, string>) ?? {}),
+        ...updates.contentSettings,
+      };
+    }
     const [updated] = await db
       .update(settings)
-      .set(updates)
+      .set(merged)
       .where(eq(settings.id, current.id))
       .returning();
     return updated;

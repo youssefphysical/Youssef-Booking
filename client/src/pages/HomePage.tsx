@@ -168,7 +168,10 @@ export default function HomePage() {
   // immediate source. (Admin can still read/write `profileBio` via
   // the admin panel for other purposes; this just decouples the
   // public homepage from that source.)
-  const bio = t("home.bio.fallback");
+  // aboutBody from contentSettings overrides the i18n fallback when set.
+  // i18n text is still the instant-render default (no blank flicker on cold load).
+  const cs = (settings?.contentSettings ?? {}) as Record<string, string>;
+  const bio = cs.aboutBody || t("home.bio.fallback");
 
   // v8.8 (May-2026): the parent div now carries `.homepage-shell`,
   // which applies ONE continuous page-level background (radial accent
@@ -200,7 +203,7 @@ export default function HomePage() {
               <MapPin size={12} className="text-primary" />
               <span>{t("hero.location")}</span>
               <span className="amber-dot" aria-hidden="true" />
-              <span>{t("hero.tagline")}</span>
+              <span>{cs.heroTagline || t("hero.tagline")}</span>
             </div>
             <h1
               className="hero-headline-fluid-secondary font-display font-bold leading-[1.12]"
@@ -209,9 +212,9 @@ export default function HomePage() {
               {t("hero.title")}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground mt-5 leading-relaxed max-w-xl">
-              {t("hero.role")}
+              {cs.heroRole || t("hero.role")}
             </p>
-            <p className="text-base text-foreground/80 mt-4 max-w-xl">{t("hero.subtitle")}</p>
+            <p className="text-base text-foreground/80 mt-4 max-w-xl">{cs.heroSubtitle || t("hero.subtitle")}</p>
 
             <div className="mt-6 flex flex-wrap gap-1.5">
               {TRAIN_KEYS.map((key) => (
@@ -303,7 +306,7 @@ export default function HomePage() {
           {bio}
         </p>
         <p className="text-base text-muted-foreground/85 leading-relaxed mt-6">
-          {t("section.about.extra")}
+          {cs.aboutExtra || t("section.about.extra")}
         </p>
       </section>
 

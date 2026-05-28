@@ -1,88 +1,120 @@
 import { useState, useEffect } from "react";
-import { Loader2, FileText, Megaphone, Gift, Globe, Dumbbell, Utensils, FlaskConical, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  Megaphone,
+  Globe,
+  Dumbbell,
+  Utensils,
+  FlaskConical,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Sparkles,
+  User as UserIcon,
+  ArrowRight,
+  Eye,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 
-// ── Default copy mirrored from HomePage.tsx ──────────────────────────────────
-const DEFAULTS: Record<string, string> = {
-  servicePtTitle:             "1-on-1 Personal Training",
-  servicePtBody:              "Fully customised sessions designed around your goals, fitness level, and schedule — with real-time coaching and form correction.",
-  serviceNutritionTitle:      "Personalised Nutrition",
-  serviceNutritionBody:       "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
-  serviceSupplementTitle:     "Supplement Protocol",
-  serviceSupplementBody:      "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",
-  ctaEyebrow:                 "Ready to Start?",
-  ctaTitle:                   "Book Your First Session",
-  ctaSubtitle:                "Join clients who train with purpose. Personalised coaching, proven methods, real results.",
-  trialEyebrow:               "Free Trial",
-  trialTitle:                 "Try a Free Session",
-  trialBody:                  "Not sure where to start? Book a complimentary trial session — no commitment, no pressure. Just results.",
-  footerTagline:              "Premium Personal Training · Dubai",
+// ─── Section definitions ─────────────────────────────────────────────────────
+const SECTIONS = [
+  { id: "hero",     label: "Hero",     icon: <Sparkles size={14} /> },
+  { id: "services", label: "Services", icon: <Dumbbell size={14} /> },
+  { id: "about",    label: "About",    icon: <UserIcon  size={14} /> },
+  { id: "cta",      label: "CTA",      icon: <Megaphone size={14} /> },
+  { id: "footer",   label: "Footer",   icon: <Globe     size={14} /> },
+] as const;
+
+type SectionId = (typeof SECTIONS)[number]["id"];
+
+// ─── Keys per section ─────────────────────────────────────────────────────────
+const SECTION_KEYS: Record<SectionId, string[]> = {
+  hero:     ["heroTagline", "heroRole", "heroSubtitle"],
+  services: ["servicePtTitle", "servicePtBody", "serviceNutritionTitle", "serviceNutritionBody", "serviceSupplementTitle", "serviceSupplementBody"],
+  about:    ["aboutBody", "aboutExtra"],
+  cta:      ["ctaEyebrow", "ctaTitle", "ctaSubtitle"],
+  footer:   ["footerTagline"],
 };
 
-// ── Field limits ──────────────────────────────────────────────────────────────
-const LIMITS: Record<string, number> = {
-  servicePtTitle:         60,
-  servicePtBody:          220,
-  serviceNutritionTitle:  60,
-  serviceNutritionBody:   220,
-  serviceSupplementTitle: 60,
-  serviceSupplementBody:  220,
-  ctaEyebrow:             50,
-  ctaTitle:               80,
-  ctaSubtitle:            200,
-  trialEyebrow:           50,
-  trialTitle:             80,
-  trialBody:              220,
-  footerTagline:          80,
-};
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-type Fields = Record<string, string>;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function charCount(val: string, limit: number) {
-  const over = val.length > limit;
-  return (
-    <span className={`text-[10px] tabular-nums ${over ? "text-red-400" : "text-muted-foreground/60"}`}>
-      {val.length}/{limit}
-    </span>
-  );
+function sectionOf(key: string): SectionId {
+  for (const [sId, keys] of Object.entries(SECTION_KEYS) as [SectionId, string[]][]) {
+    if (keys.includes(key)) return sId;
+  }
+  return "hero";
 }
 
-// ── Field component ───────────────────────────────────────────────────────────
+// ─── Defaults (English fallback shown as placeholder) ────────────────────────
+const DEFAULTS: Record<string, string> = {
+  heroTagline:             "Available Dubai Wide",
+  heroRole:                "Certified Personal Trainer & Nutrition Coach · Dubai",
+  heroSubtitle:            "Real coaching. Real results. Personalised programmes that fit your life.",
+  servicePtTitle:          "1-on-1 Personal Training",
+  servicePtBody:           "Fully customised sessions designed around your goals, fitness level, and schedule — with real-time coaching and form correction.",
+  serviceNutritionTitle:   "Personalised Nutrition",
+  serviceNutritionBody:    "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
+  serviceSupplementTitle:  "Supplement Protocol",
+  serviceSupplementBody:   "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",
+  aboutBody:               "With over 10 years of coaching experience across Dubai, I specialise in fat loss, muscle building, and body recomposition for all fitness levels.",
+  aboutExtra:              "My approach combines evidence-based training with sustainable nutrition — so results stick and clients stay motivated long-term.",
+  ctaEyebrow:              "Ready to Start?",
+  ctaTitle:                "Book Your First Session",
+  ctaSubtitle:             "Join clients who train with purpose. Personalised coaching, proven methods, real results.",
+  footerTagline:           "Premium Personal Training · Dubai",
+};
+
+// ─── Character limits ─────────────────────────────────────────────────────────
+const LIMITS: Record<string, number> = {
+  heroTagline:             60,
+  heroRole:                100,
+  heroSubtitle:            200,
+  servicePtTitle:          60,
+  servicePtBody:           220,
+  serviceNutritionTitle:   60,
+  serviceNutritionBody:    220,
+  serviceSupplementTitle:  60,
+  serviceSupplementBody:   220,
+  aboutBody:               400,
+  aboutExtra:              300,
+  ctaEyebrow:              50,
+  ctaTitle:                80,
+  ctaSubtitle:             200,
+  footerTagline:           80,
+};
+
+type Fields = Record<string, string>;
+
+// ─── Shared field editor ──────────────────────────────────────────────────────
 function ContentField({
-  fieldKey,
-  label,
-  values,
-  onChange,
-  multiline = false,
+  fieldKey, label, values, onChange, multiline = false,
 }: {
   fieldKey: string;
   label: string;
   values: Fields;
-  onChange: (key: string, val: string) => void;
+  onChange: (k: string, v: string) => void;
   multiline?: boolean;
 }) {
   const val = values[fieldKey] ?? "";
   const limit = LIMITS[fieldKey] ?? 200;
-  const placeholder = DEFAULTS[fieldKey] ?? "";
+  const over = val.length > limit;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-          {label}
-        </label>
-        {charCount(val, limit)}
+        <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</label>
+        <span className={cn("text-[10px] tabular-nums", over ? "text-red-400" : "text-muted-foreground/60")}>
+          {val.length}/{limit}
+        </span>
       </div>
       {multiline ? (
         <Textarea
           value={val}
-          placeholder={placeholder}
+          placeholder={DEFAULTS[fieldKey] ?? ""}
           rows={3}
           maxLength={limit + 40}
           onChange={(e) => onChange(fieldKey, e.target.value)}
@@ -92,107 +124,192 @@ function ContentField({
       ) : (
         <Input
           value={val}
-          placeholder={placeholder}
+          placeholder={DEFAULTS[fieldKey] ?? ""}
           maxLength={limit + 20}
           onChange={(e) => onChange(fieldKey, e.target.value)}
           className="text-sm"
           data-testid={`input-content-${fieldKey}`}
         />
       )}
-      {val.length > limit && (
-        <p className="text-[10px] text-red-400 mt-0.5">
-          Over {limit}-character limit — trim before saving.
-        </p>
-      )}
+      {over && <p className="text-[10px] text-red-400 mt-0.5">Over {limit}-character limit — trim before saving.</p>}
     </div>
   );
 }
 
-// ── Section accordion ─────────────────────────────────────────────────────────
-function ContentSection({
-  id,
-  icon,
-  title,
-  description,
-  children,
-  dirty,
-  saving,
-  onSave,
-  onReset,
+// ─── Save/Reset footer strip ──────────────────────────────────────────────────
+function SectionActions({
+  sectionId, dirty, saving, onSave, onReset,
 }: {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  sectionId: SectionId;
   dirty: boolean;
   saving: boolean;
   onSave: () => void;
   onReset: () => void;
 }) {
-  const [open, setOpen] = useState(true);
-
   return (
-    <section className="admin-card" data-testid={`section-content-${id}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="flex w-full items-start justify-between gap-3 text-left"
-        data-testid={`toggle-content-${id}`}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <h2 className="font-display font-bold text-base leading-snug">{title}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
-          </div>
-        </div>
-        <div className="shrink-0 pt-1 text-muted-foreground">
-          {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </div>
-      </button>
-
-      {open && (
-        <div className="mt-5 space-y-4">
-          {children}
-          <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onReset}
-              data-testid={`button-content-reset-${id}`}
-            >
-              <RotateCcw size={13} className="mr-1.5" />
-              Reset defaults
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!dirty || saving}
-              onClick={onSave}
-              data-testid={`button-content-save-${id}`}
-            >
-              {saving && <Loader2 size={13} className="mr-1.5 animate-spin" />}
-              Save
-            </Button>
-          </div>
-        </div>
-      )}
-    </section>
+    <div className="flex items-center gap-3 pt-4 border-t border-white/5 mt-4">
+      <Button type="button" variant="outline" size="sm" onClick={onReset} data-testid={`button-content-reset-${sectionId}`}>
+        <RotateCcw size={12} className="mr-1.5" />
+        Reset defaults
+      </Button>
+      <Button type="button" size="sm" disabled={!dirty || saving} onClick={onSave} data-testid={`button-content-save-${sectionId}`}>
+        {saving && <Loader2 size={12} className="mr-1.5 animate-spin" />}
+        Save
+      </Button>
+    </div>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ─── Preview wrapper ──────────────────────────────────────────────────────────
+function PreviewBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-primary/15 bg-background/40 p-4 mb-5">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-primary/70 font-semibold mb-3">
+        <Eye size={11} /> Preview
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─── Section contents ─────────────────────────────────────────────────────────
+function HeroContent({ vals, onChange }: { vals: Fields; onChange: (k: string, v: string) => void }) {
+  const v = (k: string) => vals[k] || DEFAULTS[k];
+  return (
+    <>
+      <PreviewBox>
+        <div className="space-y-1.5 max-w-sm">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            {v("heroTagline")}
+          </div>
+          <p className="text-[11px] text-muted-foreground">{v("heroRole")}</p>
+          <p className="text-[11px] text-muted-foreground/70 leading-relaxed">{v("heroSubtitle")}</p>
+        </div>
+      </PreviewBox>
+      <div className="space-y-4">
+        <ContentField fieldKey="heroTagline"  label="Availability badge"     values={vals} onChange={onChange} />
+        <ContentField fieldKey="heroRole"     label="Role / subtitle line"   values={vals} onChange={onChange} />
+        <ContentField fieldKey="heroSubtitle" label="Intro paragraph"        values={vals} onChange={onChange} multiline />
+      </div>
+    </>
+  );
+}
+
+function ServicesContent({ vals, onChange }: { vals: Fields; onChange: (k: string, v: string) => void }) {
+  const v = (k: string) => vals[k] || DEFAULTS[k];
+  return (
+    <>
+      <PreviewBox>
+        <div className="grid grid-cols-3 gap-2">
+          {(["pt", "nutrition", "supplement"] as const).map((s) => (
+            <div key={s} className="rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                {s === "pt" && <Dumbbell size={12} className="text-primary shrink-0" />}
+                {s === "nutrition" && <Utensils size={12} className="text-primary shrink-0" />}
+                {s === "supplement" && <FlaskConical size={12} className="text-primary shrink-0" />}
+              </div>
+              <p className="text-[11px] font-semibold leading-snug line-clamp-2">{v(`service${capitalize(s)}Title`)}</p>
+              <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed line-clamp-3">{v(`service${capitalize(s)}Body`)}</p>
+            </div>
+          ))}
+        </div>
+      </PreviewBox>
+      <div className="space-y-5">
+        {[
+          { prefix: "servicePt",         eyebrow: "Personal Training",  icon: <Dumbbell size={12} className="text-primary" /> },
+          { prefix: "serviceNutrition",  eyebrow: "Nutrition Plans",    icon: <Utensils size={12} className="text-primary" /> },
+          { prefix: "serviceSupplement", eyebrow: "Supplement Protocol",icon: <FlaskConical size={12} className="text-primary" /> },
+        ].map(({ prefix, eyebrow, icon }) => (
+          <div key={prefix} className="border-t border-white/5 pt-4 first:border-t-0 first:pt-0">
+            <p className="text-[10px] uppercase tracking-widest text-primary/70 font-semibold mb-3 flex items-center gap-1.5">
+              {icon} {eyebrow}
+            </p>
+            <div className="space-y-3">
+              <ContentField fieldKey={`${prefix}Title`} label="Card title" values={vals} onChange={onChange} />
+              <ContentField fieldKey={`${prefix}Body`}  label="Card body"  values={vals} onChange={onChange} multiline />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function AboutContent({ vals, onChange }: { vals: Fields; onChange: (k: string, v: string) => void }) {
+  const v = (k: string) => vals[k] || DEFAULTS[k];
+  return (
+    <>
+      <PreviewBox>
+        <div className="space-y-2 max-w-lg">
+          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-4">{v("aboutBody")}</p>
+          <p className="text-[11px] text-muted-foreground/70 leading-relaxed line-clamp-3">{v("aboutExtra")}</p>
+        </div>
+      </PreviewBox>
+      <div className="space-y-4">
+        <ContentField fieldKey="aboutBody"  label="Main bio paragraph"      values={vals} onChange={onChange} multiline />
+        <ContentField fieldKey="aboutExtra" label="Secondary paragraph"     values={vals} onChange={onChange} multiline />
+      </div>
+    </>
+  );
+}
+
+function CtaContent({ vals, onChange }: { vals: Fields; onChange: (k: string, v: string) => void }) {
+  const v = (k: string) => vals[k] || DEFAULTS[k];
+  return (
+    <>
+      <PreviewBox>
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center max-w-sm mx-auto">
+          <p className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-1">{v("ctaEyebrow")}</p>
+          <h3 className="font-display font-bold text-base leading-snug">{v("ctaTitle")}</h3>
+          <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed line-clamp-2">{v("ctaSubtitle")}</p>
+          <div className="mt-3 inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-black text-[11px] font-semibold">
+            Book Session <ArrowRight size={11} />
+          </div>
+        </div>
+      </PreviewBox>
+      <div className="space-y-4">
+        <ContentField fieldKey="ctaEyebrow"  label="Eyebrow (small label above title)" values={vals} onChange={onChange} />
+        <ContentField fieldKey="ctaTitle"    label="Headline"                           values={vals} onChange={onChange} />
+        <ContentField fieldKey="ctaSubtitle" label="Subtext"                            values={vals} onChange={onChange} multiline />
+      </div>
+    </>
+  );
+}
+
+function FooterContent({ vals, onChange }: { vals: Fields; onChange: (k: string, v: string) => void }) {
+  const v = (k: string) => vals[k] || DEFAULTS[k];
+  return (
+    <>
+      <PreviewBox>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground/80">
+          <div className="w-5 h-5 rounded bg-primary/20 border border-primary/30 grid place-items-center shrink-0">
+            <Globe size={10} className="text-primary" />
+          </div>
+          <span className="text-muted-foreground/60">·</span>
+          <span>{v("footerTagline")}</span>
+        </div>
+      </PreviewBox>
+      <ContentField fieldKey="footerTagline" label="Footer tagline" values={vals} onChange={onChange} />
+    </>
+  );
+}
+
+// ─── Util ─────────────────────────────────────────────────────────────────────
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AdminContent() {
   const { toast } = useToast();
   const { data: rawSettings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
 
   const [vals, setVals] = useState<Fields>({});
-  const [dirty, setDirty] = useState<Record<string, boolean>>({});
+  const [dirty, setDirty] = useState<Partial<Record<SectionId, boolean>>>({});
+  const [activeTab, setActiveTab] = useState<SectionId>("hero");
+  const [mobileOpen, setMobileOpen] = useState<Partial<Record<SectionId, boolean>>>({ hero: true });
   const [initialised, setInitialised] = useState(false);
 
   useEffect(() => {
@@ -204,11 +321,11 @@ export default function AdminContent() {
 
   function handleChange(key: string, val: string) {
     setVals((p) => ({ ...p, [key]: val }));
-    const sectionId = sectionOf(key);
-    setDirty((p) => ({ ...p, [sectionId]: true }));
+    setDirty((p) => ({ ...p, [sectionOf(key)]: true }));
   }
 
-  function handleReset(sectionId: string, keys: string[]) {
+  function handleReset(sectionId: SectionId) {
+    const keys = SECTION_KEYS[sectionId];
     setVals((p) => {
       const next = { ...p };
       keys.forEach((k) => delete next[k]);
@@ -217,10 +334,9 @@ export default function AdminContent() {
     setDirty((p) => ({ ...p, [sectionId]: true }));
   }
 
-  function handleSave(sectionId: string) {
-    // Guard: no value may exceed its character limit
-    const sectionKeys = SECTION_KEYS[sectionId] ?? [];
-    for (const k of sectionKeys) {
+  function handleSave(sectionId: SectionId) {
+    const keys = SECTION_KEYS[sectionId];
+    for (const k of keys) {
       const limit = LIMITS[k] ?? 200;
       if ((vals[k] ?? "").length > limit) {
         toast({ title: `"${k}" exceeds ${limit} characters`, variant: "destructive" });
@@ -246,6 +362,31 @@ export default function AdminContent() {
     );
   }
 
+  const sectionProps = (id: SectionId) => ({
+    vals,
+    onChange: handleChange,
+  });
+
+  const sectionActions = (id: SectionId) => (
+    <SectionActions
+      sectionId={id}
+      dirty={!!dirty[id]}
+      saving={updateSettings.isPending}
+      onSave={() => handleSave(id)}
+      onReset={() => handleReset(id)}
+    />
+  );
+
+  const renderContent = (id: SectionId) => {
+    switch (id) {
+      case "hero":     return <HeroContent     {...sectionProps(id)} />;
+      case "services": return <ServicesContent {...sectionProps(id)} />;
+      case "about":    return <AboutContent    {...sectionProps(id)} />;
+      case "cta":      return <CtaContent      {...sectionProps(id)} />;
+      case "footer":   return <FooterContent   {...sectionProps(id)} />;
+    }
+  };
+
   return (
     <div className="admin-shell">
       <div className="admin-container">
@@ -255,113 +396,92 @@ export default function AdminContent() {
             Website Content
           </h1>
           <p className="text-muted-foreground text-sm leading-relaxed mt-1">
-            Edit public-facing text for the homepage. Leave a field empty to use the default copy.
+            Edit public-facing text for each homepage section. Leave a field empty to use the default copy.
           </p>
         </div>
 
-        <div className="admin-stack">
-          {/* SERVICES */}
-          <ContentSection
-            id="services"
-            icon={<Dumbbell size={16} />}
-            title="Services"
-            description="Titles and body text for the three service cards (Personal Training, Nutrition, Supplement)."
-            dirty={!!dirty["services"]}
-            saving={updateSettings.isPending}
-            onSave={() => handleSave("services")}
-            onReset={() => handleReset("services", SECTION_KEYS["services"])}
+        {/* ── DESKTOP: tabbed editor ──────────────────────────────────────── */}
+        <div className="hidden md:flex gap-6 items-start">
+          {/* Tab strip */}
+          <nav
+            className="w-40 shrink-0 flex flex-col gap-1 sticky top-20"
+            data-testid="content-tab-strip"
+            role="tablist"
           >
-            <div className="pb-1">
-              <p className="text-[10px] uppercase tracking-widest text-primary/70 font-semibold mb-3 flex items-center gap-1.5">
-                <Dumbbell size={12} /> Personal Training
-              </p>
-              <div className="space-y-3">
-                <ContentField fieldKey="servicePtTitle" label="Card title" values={vals} onChange={handleChange} />
-                <ContentField fieldKey="servicePtBody" label="Card body" values={vals} onChange={handleChange} multiline />
-              </div>
-            </div>
-            <div className="border-t border-white/5 pt-4 pb-1">
-              <p className="text-[10px] uppercase tracking-widest text-primary/70 font-semibold mb-3 flex items-center gap-1.5">
-                <Utensils size={12} /> Nutrition Plans
-              </p>
-              <div className="space-y-3">
-                <ContentField fieldKey="serviceNutritionTitle" label="Card title" values={vals} onChange={handleChange} />
-                <ContentField fieldKey="serviceNutritionBody" label="Card body" values={vals} onChange={handleChange} multiline />
-              </div>
-            </div>
-            <div className="border-t border-white/5 pt-4">
-              <p className="text-[10px] uppercase tracking-widest text-primary/70 font-semibold mb-3 flex items-center gap-1.5">
-                <FlaskConical size={12} /> Supplement Protocol
-              </p>
-              <div className="space-y-3">
-                <ContentField fieldKey="serviceSupplementTitle" label="Card title" values={vals} onChange={handleChange} />
-                <ContentField fieldKey="serviceSupplementBody" label="Card body" values={vals} onChange={handleChange} multiline />
-              </div>
-            </div>
-          </ContentSection>
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                role="tab"
+                aria-selected={activeTab === s.id}
+                onClick={() => setActiveTab(s.id)}
+                data-testid={`tab-content-${s.id}`}
+                className={cn(
+                  "relative flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all text-left",
+                  activeTab === s.id
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                )}
+              >
+                {activeTab === s.id && (
+                  <span aria-hidden className="absolute left-0 top-2 bottom-2 w-[2px] rounded-full bg-primary" />
+                )}
+                <span className="shrink-0">{s.icon}</span>
+                {s.label}
+                {dirty[s.id] && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" aria-label="unsaved changes" />
+                )}
+              </button>
+            ))}
+          </nav>
 
-          {/* CTA */}
-          <ContentSection
-            id="cta"
-            icon={<Megaphone size={16} />}
-            title="Call to Action"
-            description="The bottom-of-page conversion section with the Book Session button."
-            dirty={!!dirty["cta"]}
-            saving={updateSettings.isPending}
-            onSave={() => handleSave("cta")}
-            onReset={() => handleReset("cta", SECTION_KEYS["cta"])}
-          >
-            <ContentField fieldKey="ctaEyebrow" label="Eyebrow (small label above title)" values={vals} onChange={handleChange} />
-            <ContentField fieldKey="ctaTitle" label="Headline" values={vals} onChange={handleChange} />
-            <ContentField fieldKey="ctaSubtitle" label="Subtext" values={vals} onChange={handleChange} multiline />
-          </ContentSection>
+          {/* Active panel */}
+          <div className="flex-1 admin-card" role="tabpanel" data-testid={`panel-content-${activeTab}`}>
+            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-white/5">
+              <span className="text-primary">{SECTIONS.find((s) => s.id === activeTab)?.icon}</span>
+              <h2 className="font-display font-bold text-lg">{SECTIONS.find((s) => s.id === activeTab)?.label}</h2>
+            </div>
+            {renderContent(activeTab)}
+            {sectionActions(activeTab)}
+          </div>
+        </div>
 
-          {/* FREE TRIAL */}
-          <ContentSection
-            id="trial"
-            icon={<Gift size={16} />}
-            title="Free Trial"
-            description="The free trial offer card that appears above the FAQ section."
-            dirty={!!dirty["trial"]}
-            saving={updateSettings.isPending}
-            onSave={() => handleSave("trial")}
-            onReset={() => handleReset("trial", SECTION_KEYS["trial"])}
-          >
-            <ContentField fieldKey="trialEyebrow" label="Eyebrow" values={vals} onChange={handleChange} />
-            <ContentField fieldKey="trialTitle" label="Headline" values={vals} onChange={handleChange} />
-            <ContentField fieldKey="trialBody" label="Body text" values={vals} onChange={handleChange} multiline />
-          </ContentSection>
+        {/* ── MOBILE: accordion ───────────────────────────────────────────── */}
+        <div className="md:hidden admin-stack">
+          {SECTIONS.map((s) => {
+            const isOpen = !!mobileOpen[s.id];
+            return (
+              <section key={s.id} className="admin-card" data-testid={`accordion-content-${s.id}`}>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen((p) => ({ ...p, [s.id]: !p[s.id] }))}
+                  className="flex w-full items-center justify-between gap-3 text-left"
+                  data-testid={`toggle-content-${s.id}`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                      {s.icon}
+                    </div>
+                    <span className="font-display font-bold text-base">{s.label}</span>
+                    {dirty[s.id] && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" aria-label="unsaved changes" />
+                    )}
+                  </div>
+                  <span className="shrink-0 text-muted-foreground">
+                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </button>
 
-          {/* FOOTER */}
-          <ContentSection
-            id="footer"
-            icon={<Globe size={16} />}
-            title="Footer"
-            description="Tagline shown next to the brand logo in the page footer."
-            dirty={!!dirty["footer"]}
-            saving={updateSettings.isPending}
-            onSave={() => handleSave("footer")}
-            onReset={() => handleReset("footer", SECTION_KEYS["footer"])}
-          >
-            <ContentField fieldKey="footerTagline" label="Footer tagline" values={vals} onChange={handleChange} />
-          </ContentSection>
+                {isOpen && (
+                  <div className="mt-5">
+                    {renderContent(s.id)}
+                    {sectionActions(s.id)}
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>
   );
-}
-
-// ── Section → keys mapping (used for reset + guard) ───────────────────────────
-const SECTION_KEYS: Record<string, string[]> = {
-  services: ["servicePtTitle", "servicePtBody", "serviceNutritionTitle", "serviceNutritionBody", "serviceSupplementTitle", "serviceSupplementBody"],
-  cta:      ["ctaEyebrow", "ctaTitle", "ctaSubtitle"],
-  trial:    ["trialEyebrow", "trialTitle", "trialBody"],
-  footer:   ["footerTagline"],
-};
-
-function sectionOf(key: string): string {
-  for (const [sId, keys] of Object.entries(SECTION_KEYS)) {
-    if (keys.includes(key)) return sId;
-  }
-  return "services";
 }
