@@ -121,12 +121,15 @@ import {
   type Package,
   type ProgressPhoto,
 } from "@shared/schema";
-import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles, Upload } from "lucide-react";
+import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles, Upload, Pencil } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { usePackageTemplates as usePackageTemplatesForConvert } from "@/hooks/use-package-templates";
 import { CreatePaymentDialog } from "@/pages/AdminPayments";
 import {
   PAYMENT_RECORD_STATUS_LABELS,
   PAYMENT_RECORD_METHOD_LABELS,
+  PAYMENT_RECORD_STATUSES,
+  PAYMENT_RECORD_METHODS,
   type Payment,
 } from "@shared/schema";
 import {
@@ -3659,9 +3662,276 @@ type ClientPaymentRow = Payment & {
   package: { id: number; name: string | null; type: string | null } | null;
 };
 
+const editPaymentFormSchema = z.object({
+  amount: z.number().int().min(1, "Must be at least AED 1"),
+  method: z.enum(PAYMENT_RECORD_METHODS as [string, ...string[]]),
+  status: z.enum(PAYMENT_RECORD_STATUSES as [string, ...string[]]),
+  paidAt: z.string().optional(),
+  receiptReference: z.string().optional(),
+  notes: z.string().optional(),
+  packageId: z.number().int().optional(),
+});
+type EditPaymentForm = z.infer<typeof editPaymentFormSchema>;
+
+function EditPaymentDialog({
+  payment,
+  clientPackages,
+  open,
+  onOpenChange,
+  onUpdated,
+}: {
+  payment: ClientPaymentRow | null;
+  clientPackages: { id: number; name: string | null; type: string | null }[];
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onUpdated: () => void;
+}) {
+  const { toast } = useToast();
+
+  const form = useForm<EditPaymentForm>({
+    resolver: zodResolver(editPaymentFormSchema),
+    defaultValues: {
+      amount: 0,
+      method: "cash",
+      status: "pending",
+      paidAt: "",
+      receiptReference: "",
+      notes: "",
+      packageId: undefined,
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: (body: EditPaymentForm) =>
+      apiRequest("PATCH", `/api/admin/payments/${payment!.id}`, {
+        ...body,
+        packageId: body.packageId ?? null,
+        paidAt: body.paidAt || null,
+        receiptReference: body.receiptReference || null,
+        notes: body.notes || null,
+      }).then((r) => r.json()),
+    onSuccess: () => {
+      onUpdated();
+      onOpenChange(false);
+      toast({ title: "Payment updated" });
+    },
+    onError: (e: any) => toast({ title: e?.message || "Update failed", variant: "destructive" }),
+  });
+
+  const prevIdRef = useRef<number | null>(null);
+  if (open && payment && payment.id !== prevIdRef.current) {
+    prevIdRef.current = payment.id;
+    form.reset({
+      amount: payment.amount,
+      method: payment.method,
+      status: payment.status,
+      paidAt: payment.paidAt ? String(payment.paidAt).slice(0, 10) : "",
+      receiptReference: payment.receiptReference ?? "",
+      notes: payment.notes ?? "",
+      packageId: payment.packageId ?? undefined,
+    });
+  }
+  if (!open && prevIdRef.current !== null) {
+    prevIdRef.current = null;
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CreditCard size={18} className="text-primary" />
+            Edit Payment
+          </DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((d) => editMutation.mutate(d))}
+            className="space-y-4"
+            data-testid="form-edit-payment"
+          >
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount (AED) *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      placeholder="e.g. 2500"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      data-testid="input-edit-payment-amount"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Method *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-payment-method">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PAYMENT_RECORD_METHODS.map((m) => (
+                          <SelectItem key={m} value={m}>{PAYMENT_RECORD_METHOD_LABELS[m as keyof typeof PAYMENT_RECORD_METHOD_LABELS]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-payment-status">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PAYMENT_RECORD_STATUSES.map((s) => (
+                          <SelectItem key={s} value={s}>{PAYMENT_RECORD_STATUS_LABELS[s as keyof typeof PAYMENT_RECORD_STATUS_LABELS]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {clientPackages.length > 0 && (
+              <FormField
+                control={form.control}
+                name="packageId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Package (optional)</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(v === "none" ? undefined : Number(v))}
+                      value={field.value ? String(field.value) : "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-edit-payment-package">
+                          <SelectValue placeholder="Link to package…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No package</SelectItem>
+                        {clientPackages.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.name || p.type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <FormField
+              control={form.control}
+              name="receiptReference"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Receipt Reference</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. TXN-1234"
+                      {...field}
+                      value={field.value ?? ""}
+                      data-testid="input-edit-payment-reference"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="paidAt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value ?? ""}
+                      data-testid="input-edit-payment-date"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Optional notes…"
+                      rows={2}
+                      {...field}
+                      value={field.value ?? ""}
+                      className="bg-white/5 border-white/10 resize-none"
+                      data-testid="textarea-edit-payment-notes"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editMutation.isPending} data-testid="button-save-edit-payment">
+                {editMutation.isPending && <Loader2 size={13} className="animate-spin mr-1.5" />}
+                Save changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ClientPaymentsPanel({ client }: { client: UserResponse }) {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState<ClientPaymentRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClientPaymentRow | null>(null);
 
   const { data: payments = [], isLoading } = useQuery<ClientPaymentRow[]>({
     queryKey: ["/api/admin/payments", `userId=${client.id}`],
@@ -3669,6 +3939,28 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
       fetch(`/api/admin/payments?userId=${client.id}`, { credentials: "include" }).then((r) =>
         r.json(),
       ),
+  });
+
+  const { data: rawPackages = [] } = usePackages({ userId: client.id });
+  const clientPackages = (rawPackages as Package[]).map((p) => ({
+    id: p.id,
+    name: p.name ?? null,
+    type: p.type ?? null,
+  }));
+
+  const invalidatePayments = () => {
+    qc.invalidateQueries({ queryKey: ["/api/admin/payments"] });
+    qc.invalidateQueries({ queryKey: ["/api/admin/payments/summary"] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/payments/${id}`),
+    onSuccess: () => {
+      invalidatePayments();
+      setDeleteTarget(null);
+      toast({ title: "Payment deleted" });
+    },
+    onError: (e: any) => toast({ title: e?.message || "Delete failed", variant: "destructive" }),
   });
 
   const totalReceived = (payments as ClientPaymentRow[])
@@ -3741,6 +4033,7 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
                     <th className="px-4 py-3 text-left font-medium">Status</th>
                     <th className="px-4 py-3 text-left font-medium">Package</th>
                     <th className="px-4 py-3 text-left font-medium">Ref</th>
+                    <th className="px-4 py-3 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
@@ -3750,7 +4043,7 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.03, 0.2) }}
-                      className="hover:bg-white/[0.02] transition-colors"
+                      className="hover:bg-white/[0.02] transition-colors group"
                       data-testid={`row-client-payment-${p.id}`}
                     >
                       <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
@@ -3786,6 +4079,28 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
                       <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
                         {p.receiptReference || "—"}
                       </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => setEditTarget(p)}
+                            className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                            data-testid={`button-edit-payment-${p.id}`}
+                            title="Edit payment"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(p)}
+                            className="p-1.5 rounded-md hover:bg-red-500/15 text-muted-foreground hover:text-red-400 transition-colors"
+                            data-testid={`button-delete-payment-${p.id}`}
+                            title="Delete payment"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -3806,14 +4121,34 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-primary tabular-nums">{FMT_AED_ADMIN(p.amount)}</span>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-                      PAYMENT_STATUS_COLORS[p.status] ?? "bg-white/10 text-muted-foreground border-white/10"
-                    }`}
-                  >
-                    {PAYMENT_STATUS_ICONS[p.status]}
-                    {PAYMENT_RECORD_STATUS_LABELS[p.status as keyof typeof PAYMENT_RECORD_STATUS_LABELS] ?? p.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                        PAYMENT_STATUS_COLORS[p.status] ?? "bg-white/10 text-muted-foreground border-white/10"
+                      }`}
+                    >
+                      {PAYMENT_STATUS_ICONS[p.status]}
+                      {PAYMENT_RECORD_STATUS_LABELS[p.status as keyof typeof PAYMENT_RECORD_STATUS_LABELS] ?? p.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget(p)}
+                      className="p-1.5 rounded-md hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid={`button-edit-payment-mobile-${p.id}`}
+                      title="Edit payment"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(p)}
+                      className="p-1.5 rounded-md hover:bg-red-500/15 text-muted-foreground hover:text-red-400 transition-colors"
+                      data-testid={`button-delete-payment-mobile-${p.id}`}
+                      title="Delete payment"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="capitalize">
@@ -3844,11 +4179,43 @@ function ClientPaymentsPanel({ client }: { client: UserResponse }) {
         onOpenChange={setShowCreate}
         prefillUserId={client.id}
         prefillUserName={clientName}
-        onCreated={() => {
-          qc.invalidateQueries({ queryKey: ["/api/admin/payments"] });
-          qc.invalidateQueries({ queryKey: ["/api/admin/payments/summary"] });
-        }}
+        onCreated={invalidatePayments}
       />
+
+      <EditPaymentDialog
+        payment={editTarget}
+        clientPackages={clientPackages}
+        open={!!editTarget}
+        onOpenChange={(o) => { if (!o) setEditTarget(null); }}
+        onUpdated={invalidatePayments}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the{" "}
+              <span className="font-semibold text-foreground">
+                {deleteTarget ? FMT_AED_ADMIN(deleteTarget.amount) : ""}
+              </span>{" "}
+              payment record. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-payment">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="button-confirm-delete-payment"
+            >
+              {deleteMutation.isPending && <Loader2 size={13} className="animate-spin mr-1.5" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
