@@ -18,15 +18,20 @@ name: E2E · Playwright browser tests
 # ── Blocking merges ─────────────────────────────────────────────────────────
 # Branch protection on `main` is ACTIVE and blocks ALL merges (including repo
 # admins / Youssef) when this check is red.  Current settings (set via API):
-#   required_status_checks : strict=true, context="Playwright e2e"
-#   enforce_admins         : true   ← admins cannot bypass a failing check
+#   required_status_checks        : strict=true, context="Playwright e2e"
+#   enforce_admins                : true   ← admins cannot bypass a failing check
 #   required_pull_request_reviews : 1 approving review, dismiss_stale=true
+#   required_conversation_resolution : true  ← all PR comments must be resolved
+#
+# The status check context "Playwright e2e" matches the job `name:` on line 58
+# of this file exactly — a mismatch would make the required check unfulfillable.
 #
 # To change these settings:
 #   Repository → Settings → Branches → Edit branch protection rule for `main`
 #     ✅  Require status checks to pass before merging
 #         Required check: "Playwright e2e"
 #     ✅  Require branches to be up to date before merging
+#     ✅  Require conversation resolution before merging
 #     ✅  Do not allow bypassing the above settings  (enforce_admins=true)
 #
 # ── Required GitHub repo secrets ────────────────────────────────────────────
