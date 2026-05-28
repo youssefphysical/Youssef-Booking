@@ -1,0 +1,133 @@
+I want to restructure all image/upload management into one centralized admin section called:
+
+Media Center
+
+Goal:
+All website images, brand images, logos, hero images, email images, profile marketing images, and any uploaded visual assets must be managed from one dedicated place only.
+
+Route:
+"/admin/media"
+
+Important:
+Remove image upload controls from Settings and any other scattered admin pages.
+Settings should no longer contain any image upload features.
+Settings should only keep text/configuration/system preferences.
+
+Media Center must manage ALL image-related assets.
+
+Required Media Center categories:
+
+1. Brand Assets
+
+- Primary logo
+- Secondary logo
+- Icon logo
+- Favicon
+- Email header logo
+- Footer logo
+- Light logo version
+- Dark logo version
+
+2. Website Images
+
+- Homepage hero images
+- Rotating cover images
+- Service section images
+- Nutrition section image
+- Body transformation section image
+- Training program section image
+- About/coach images
+- CTA banner images
+
+3. Email Assets
+
+- Welcome email hero image
+- Session confirmed hero image
+- Reminder hero image
+- Payment confirmed hero image
+- Package expiry hero image
+- Password reset image/icon
+- Email footer logo
+- Email social icons if custom
+
+4. Client/Profile Assets
+
+- Default avatar
+- Verification badge icon
+- InBody placeholder image
+- Package icons
+- Session type icons
+
+5. Admin/System Assets
+
+- Admin dashboard icons/images
+- Empty state images
+- Error state images
+- Loading/success visuals
+
+Media Center features:
+
+- Upload image
+- Replace image
+- Delete image
+- Preview image
+- Copy image URL
+- See where the image is used
+- Image category/tag
+- Image name/title
+- Alt text field
+- Recommended size shown for every asset
+- File size shown
+- Dimensions shown
+- Last updated date
+- Uploaded by admin name
+- Active/inactive status
+- Safe confirmation before deleting
+
+Technical requirements:
+
+- All image uploads should go through the same upload pipeline.
+- Store image metadata in a consistent database structure if needed.
+- Use optimized storage.
+- Compress/resize large uploaded images where possible.
+- Prevent broken image URLs.
+- Support JPG, PNG, WEBP, SVG where safe.
+- Validate file size and type.
+- Show clear upload errors.
+- Keep existing live images working during migration.
+- Do not break current homepage, emails, or admin dashboard.
+- Do not delete existing assets.
+- Migrate existing image references into the Media Center progressively.
+
+Very important:
+Any future image used anywhere in the app must be selected from Media Center, not uploaded from random pages.
+
+Settings cleanup:
+
+- Remove all logo upload fields from Settings.
+- Remove all hero image upload fields from Settings.
+- Remove all email image upload fields from Settings.
+- Replace them with links/buttons:
+  “Manage in Media Center”
+
+UI requirements:
+
+- Premium admin design
+- Clean grid/list view
+- Search assets
+- Filter by category
+- Sort by updated date/name/category
+- Quick preview modal
+- Image details side panel
+- Mobile responsive admin layout
+
+Access control:
+
+- Only admin/super admin can access "/admin/media"
+- Protect API routes:
+  "/api/admin/media/*"
+- Normal users must never see this route.
+- Return JSON "{ "error": "Unauthorized" }" for unauthorized API access.
+
+Final result:
+A single professional Media Center that controls every image in the website and email system, including logos.
