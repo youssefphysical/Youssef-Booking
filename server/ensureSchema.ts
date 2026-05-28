@@ -1093,6 +1093,23 @@ async function run(): Promise<void> {
         last_success_at timestamp,
         updated_at timestamp NOT NULL DEFAULT now()
       );
+
+      -- Task #111 — Payments management
+      CREATE TABLE IF NOT EXISTS payments (
+        id serial PRIMARY KEY,
+        user_id integer NOT NULL REFERENCES users(id),
+        package_id integer REFERENCES packages(id),
+        amount integer NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        method text NOT NULL DEFAULT 'cash',
+        receipt_reference text,
+        notes text,
+        paid_at timestamp,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS payments_user_idx ON payments (user_id);
+      CREATE INDEX IF NOT EXISTS payments_status_idx ON payments (status);
+      CREATE INDEX IF NOT EXISTS payments_created_idx ON payments (created_at DESC);
     `);
 
     console.log("[ensureSchema] OK");

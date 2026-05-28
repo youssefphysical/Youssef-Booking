@@ -68,6 +68,7 @@ const AdminMedia = lazy(() => import("@/pages/AdminMedia"));
 const AdminStaffPage = lazy(() => import("@/pages/AdminStaffPage"));
 const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
 const AdminMergeClients = lazy(() => import("@/pages/AdminMergeClients"));
+const AdminPayments = lazy(() => import("@/pages/AdminPayments"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
@@ -281,6 +282,9 @@ function Router() {
           </Route>
           <Route path="/admin/merge-clients">
             <ProtectedRoute component={AdminMergeClients} adminOnly />
+          </Route>
+          <Route path="/admin/payments">
+            <ProtectedRoute component={AdminPayments} adminOnly />
           </Route>
 
           <Route component={NotFound} />

@@ -139,8 +139,12 @@ import {
   waitlists,
   type Waitlist,
   type InsertWaitlist,
+  // Task #111 — Payments
+  payments,
+  type Payment,
+  type InsertPayment,
 } from "@shared/schema";
-import { eq, and, or, gte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
+import { eq, and, or, gte, lte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -585,6 +589,27 @@ export interface IStorage {
     limit?: number;
   }): Promise<PackageSessionHistory[]>;
   createPackageSessionHistory(entry: InsertPackageSessionHistory): Promise<PackageSessionHistory>;
+
+  // ===== Task #111 — Payments =====
+  getPayments(filters?: {
+    userId?: number;
+    status?: string;
+    method?: string;
+    from?: string;
+    to?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Array<Payment & { user: Pick<User, "id" | "fullName" | "email"> | null }>>;
+  getPayment(id: number): Promise<Payment | undefined>;
+  createPayment(input: InsertPayment): Promise<Payment>;
+  updatePayment(id: number, updates: Partial<Payment>): Promise<Payment>;
+  deletePayment(id: number): Promise<void>;
+  getPaymentsSummary(): Promise<{
+    totalReceived: number;
+    totalPending: number;
+    countThisMonth: number;
+  }>;
 
   sessionStore: session.Store;
 }
@@ -4626,6 +4651,162 @@ declare module "./storage" {
     })
     .returning();
   return row;
+};
+
+// ===== Task #111 — Payments implementation =====
+declare module "./storage" {
+  interface DatabaseStorage {
+    getPayments(filters?: {
+      userId?: number;
+      status?: string;
+      method?: string;
+      from?: string;
+      to?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<Array<Payment & { user: Pick<User, "id" | "fullName" | "email"> | null; package: { id: number; name: string | null; type: string | null } | null }>>;
+    getPayment(id: number): Promise<Payment | undefined>;
+    createPayment(input: InsertPayment): Promise<Payment>;
+    updatePayment(id: number, updates: Partial<Payment>): Promise<Payment>;
+    deletePayment(id: number): Promise<void>;
+    getPaymentsSummary(): Promise<{
+      totalReceived: number;
+      totalPending: number;
+      countThisMonth: number;
+    }>;
+  }
+}
+
+(DatabaseStorage.prototype as any).getPayments = async function (
+  filters: {
+    userId?: number;
+    status?: string;
+    method?: string;
+    from?: string;
+    to?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<Array<Payment & { user: Pick<User, "id" | "fullName" | "email"> | null; package: { id: number; name: string | null; type: string | null } | null }>> {
+  const conditions: any[] = [];
+  if (filters.userId) conditions.push(eq(payments.userId, filters.userId));
+  if (filters.status) conditions.push(eq(payments.status, filters.status));
+  if (filters.method) conditions.push(eq(payments.method, filters.method));
+  if (filters.from) conditions.push(gte(payments.createdAt, new Date(filters.from)));
+  if (filters.to) {
+    const toDate = new Date(filters.to);
+    toDate.setDate(toDate.getDate() + 1);
+    conditions.push(lte(payments.createdAt, toDate));
+  }
+  if (filters.search) {
+    const s = `%${filters.search}%`;
+    conditions.push(
+      sql`(${users.fullName} ILIKE ${s} OR ${users.email} ILIKE ${s} OR ${payments.receiptReference} ILIKE ${s})`,
+    );
+  }
+
+  const rows = await db
+    .select({
+      payment: payments,
+      userId: users.id,
+      fullName: users.fullName,
+      email: users.email,
+      pkgId: packages.id,
+      pkgName: packages.name,
+      pkgType: packages.type,
+    })
+    .from(payments)
+    .leftJoin(users, eq(payments.userId, users.id))
+    .leftJoin(packages, eq(payments.packageId, packages.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(payments.createdAt))
+    .limit(filters.limit ?? 500)
+    .offset(filters.offset ?? 0);
+
+  return rows.map((r) => ({
+    ...r.payment,
+    user: r.userId ? { id: r.userId, fullName: r.fullName ?? "", email: r.email } : null,
+    package: r.pkgId ? { id: r.pkgId, name: r.pkgName ?? null, type: r.pkgType } : null,
+  }));
+};
+
+(DatabaseStorage.prototype as any).getPayment = async function (
+  id: number,
+): Promise<Payment | undefined> {
+  const [row] = await db.select().from(payments).where(eq(payments.id, id));
+  return row;
+};
+
+(DatabaseStorage.prototype as any).createPayment = async function (
+  input: InsertPayment,
+): Promise<Payment> {
+  const [row] = await db
+    .insert(payments)
+    .values({
+      userId: input.userId,
+      packageId: input.packageId ?? null,
+      amount: input.amount,
+      status: input.status ?? "pending",
+      method: input.method ?? "cash",
+      receiptReference: input.receiptReference ?? null,
+      notes: input.notes ?? null,
+      paidAt: input.paidAt ? new Date(input.paidAt as string) : null,
+    })
+    .returning();
+  return row;
+};
+
+(DatabaseStorage.prototype as any).updatePayment = async function (
+  id: number,
+  updates: Partial<Payment>,
+): Promise<Payment> {
+  const patch: Record<string, any> = {};
+  if (updates.status !== undefined) patch.status = updates.status;
+  if (updates.method !== undefined) patch.method = updates.method;
+  if (updates.amount !== undefined) patch.amount = updates.amount;
+  if (updates.packageId !== undefined) patch.packageId = updates.packageId;
+  if (updates.receiptReference !== undefined) patch.receiptReference = updates.receiptReference;
+  if (updates.notes !== undefined) patch.notes = updates.notes;
+  if (updates.paidAt !== undefined) patch.paidAt = updates.paidAt;
+  const [row] = await db
+    .update(payments)
+    .set(patch)
+    .where(eq(payments.id, id))
+    .returning();
+  if (!row) throw new Error(`Payment ${id} not found`);
+  return row;
+};
+
+(DatabaseStorage.prototype as any).deletePayment = async function (id: number): Promise<void> {
+  await db.delete(payments).where(eq(payments.id, id));
+};
+
+(DatabaseStorage.prototype as any).getPaymentsSummary = async function (): Promise<{
+  totalReceived: number;
+  totalPending: number;
+  countThisMonth: number;
+}> {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  const result = await db.execute(sql`
+    SELECT
+      COALESCE(SUM(CASE WHEN status = 'received' THEN amount ELSE 0 END), 0)::int AS total_received,
+      COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0)::int  AS total_pending,
+      COUNT(CASE WHEN created_at >= ${monthStart.toISOString()} AND created_at < ${monthEnd.toISOString()} THEN 1 END)::int AS count_this_month
+    FROM payments
+  `);
+  const rows = (result as any).rows ?? (result as any);
+  const summary = Array.isArray(rows) ? rows[0] : {};
+
+  return {
+    totalReceived: Number((summary as any).total_received ?? 0),
+    totalPending: Number((summary as any).total_pending ?? 0),
+    countThisMonth: Number((summary as any).count_this_month ?? 0),
+  };
 };
 
 export const storage = new DatabaseStorage();

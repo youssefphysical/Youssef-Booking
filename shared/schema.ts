@@ -3967,3 +3967,75 @@ export const BADGE_DEFINITIONS: readonly BadgeDefinition[] = [
   { key: "transformation_started", icon: "Sparkles",    tier: "bronze",   order: 60 },
 ] as const;
 
+// =============================
+// TASK #111 — PAYMENTS
+// =============================
+export const PAYMENT_RECORD_STATUSES = [
+  "pending",
+  "received",
+  "failed",
+  "refunded",
+  "partial",
+] as const;
+export type PaymentRecordStatus = (typeof PAYMENT_RECORD_STATUSES)[number];
+
+export const PAYMENT_RECORD_METHODS = [
+  "bank_transfer",
+  "cash",
+  "card",
+  "payment_link",
+  "gateway",
+] as const;
+export type PaymentRecordMethod = (typeof PAYMENT_RECORD_METHODS)[number];
+
+export const PAYMENT_RECORD_STATUS_LABELS: Record<PaymentRecordStatus, string> = {
+  pending: "Pending",
+  received: "Received",
+  failed: "Failed",
+  refunded: "Refunded",
+  partial: "Partial",
+};
+
+export const PAYMENT_RECORD_METHOD_LABELS: Record<PaymentRecordMethod, string> = {
+  bank_transfer: "Bank Transfer",
+  cash: "Cash",
+  card: "Card",
+  payment_link: "Payment Link",
+  gateway: "Gateway",
+};
+
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  packageId: integer("package_id").references(() => packages.id),
+  amount: integer("amount").notNull(),
+  status: text("status").notNull().default("pending"),
+  method: text("method").notNull().default("cash"),
+  receiptReference: text("receipt_reference"),
+  notes: text("notes"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => ({
+  userIdx: index("payments_user_idx").on(t.userId),
+  statusIdx: index("payments_status_idx").on(t.status),
+  createdIdx: index("payments_created_idx").on(t.createdAt),
+}));
+
+export const insertPaymentSchema = createInsertSchema(payments)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    status: z.enum(PAYMENT_RECORD_STATUSES).default("pending"),
+    method: z.enum(PAYMENT_RECORD_METHODS).default("cash"),
+    amount: z.number().int().min(1, "Amount must be at least AED 1"),
+    receiptReference: z.string().max(200).nullish(),
+    notes: z.string().max(1000).nullish(),
+    packageId: z.number().int().nullish(),
+    paidAt: z.string().nullish(),
+  });
+
+export const updatePaymentSchema = insertPaymentSchema.partial().omit({ userId: true });
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type UpdatePayment = z.infer<typeof updatePaymentSchema>;
+

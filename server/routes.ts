@@ -92,6 +92,10 @@ import {
   type ClientStatus,
   type AdminAnalytics,
   type PackagePaymentStatus,
+  insertPaymentSchema,
+  updatePaymentSchema,
+  PAYMENT_RECORD_STATUSES,
+  PAYMENT_RECORD_METHODS,
 } from "@shared/schema";
 import {
   sendEmail,
@@ -8354,6 +8358,116 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       res.status(201).json({ count: created.length });
     },
   );
+
+  // ============== PAYMENTS (Task #111) ==============
+
+  app.get("/api/admin/payments/summary", requireAdmin, async (req, res) => {
+    try {
+      const summary = await (storage as any).getPaymentsSummary();
+      res.json(summary);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.get("/api/admin/payments", requireAdmin, async (req, res) => {
+    try {
+      const { status, method, from, to, search, limit, offset } = req.query as Record<string, string>;
+      const list = await (storage as any).getPayments({
+        status: status || undefined,
+        method: method || undefined,
+        from: from || undefined,
+        to: to || undefined,
+        search: search || undefined,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+      });
+      res.json(list);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/admin/payments", requireAdmin, async (req, res) => {
+    try {
+      const parsed = insertPaymentSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+      const payment = await (storage as any).createPayment(parsed.data);
+      res.status(201).json(payment);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/payments/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid id" });
+    try {
+      const existing = await (storage as any).getPayment(id);
+      if (!existing) return res.status(404).json({ message: "Payment not found" });
+
+      const parsed = updatePaymentSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+
+      const wasReceived = existing.status === "received";
+      const nowReceived = parsed.data.status === "received";
+
+      // Build update object — convert paidAt string to Date if provided
+      const updates: Record<string, any> = { ...parsed.data };
+      if (typeof updates.paidAt === "string") updates.paidAt = new Date(updates.paidAt);
+
+      // Auto-stamp paidAt when transitioning to received
+      if (!wasReceived && nowReceived && !updates.paidAt) {
+        updates.paidAt = new Date();
+      }
+
+      const updated = await (storage as any).updatePayment(id, updates);
+
+      // Trigger payment confirmation notification on Pending → Received
+      if (!wasReceived && nowReceived) {
+        try {
+          const client = await storage.getUser(existing.userId);
+          if (client?.email) {
+            const pkg = existing.packageId ? await storage.getPackage(existing.packageId) : null;
+            await sendPaymentConfirmedNotification({
+              email: client.email,
+              clientName: client.fullName,
+              lang: null,
+              amount: `AED ${existing.amount.toLocaleString()}`,
+              paymentMethod: updated.method || null,
+              paymentReference: updated.receiptReference || null,
+              paymentDate: updated.paidAt ? new Date(updated.paidAt).toLocaleDateString("en-GB") : null,
+              packageName: pkg?.name || pkg?.type || "Package",
+              totalSessions: pkg?.totalSessions ?? null,
+              validityLabel: pkg?.expiryDate ? `until ${pkg.expiryDate}` : null,
+              startDate: pkg?.startDate || null,
+              packageUrl: `${process.env.PUBLIC_APP_URL || "http://localhost:5000"}/dashboard`,
+              bookUrl: `${process.env.PUBLIC_APP_URL || "http://localhost:5000"}/book`,
+            });
+          }
+        } catch (notifErr) {
+          console.warn("[payments] payment confirmed notification failed:", notifErr);
+        }
+      }
+
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/payments/:id", requireAdmin, async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) return res.status(400).json({ message: "Invalid id" });
+    try {
+      const existing = await (storage as any).getPayment(id);
+      if (!existing) return res.status(404).json({ message: "Payment not found" });
+      await (storage as any).deletePayment(id);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
 
   // ============== SEED ==============
   await seedDatabase();
