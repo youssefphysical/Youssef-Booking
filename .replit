@@ -156,7 +156,7 @@ isValidation = true
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npx playwright test e2e/wizard-onboarding.spec.ts --grep 'completes the online-coaching wizard path'"
+args = "npx playwright test e2e/wizard-onboarding.spec.ts --grep 'completes the (online-coaching|other-location) wizard path' --reporter=list"
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0", "github:1.0.0"]

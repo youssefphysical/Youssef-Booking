@@ -708,6 +708,64 @@ test.describe("Wizard Onboarding", () => {
     await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
   });
 
+  test("completes the other-location wizard path (step 1 + step 2) and reaches /book", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("other-happy");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker ─────────────────────────────────────────────────
+    await expect(page.getByTestId("text-wizard-title")).toBeVisible();
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Select "Outdoor / Custom Workout" — advances to step 2.
+    const otherBranchBtn = page.getByTestId("button-branch-other_location");
+    await otherBranchBtn.waitFor({ timeout: 8_000 });
+    await otherBranchBtn.click();
+
+    // ── Step 2: other-location form ───────────────────────────────────────────
+    const otherForm = page.getByTestId("form-other-location");
+    await otherForm.waitFor({ timeout: 8_000 });
+
+    // Fill all three required fields: Maps link, location name, and address.
+    await page.fill(
+      '[data-testid="input-other-location-maps-link"]',
+      "https://maps.google.com/?q=Kite+Beach+Dubai",
+    );
+    await page.fill(
+      '[data-testid="input-other-location-name"]',
+      "Kite Beach",
+    );
+    await page.fill(
+      '[data-testid="input-other-location-address"]',
+      "Kite Beach, Jumeirah, Dubai",
+    );
+
+    // ── Finish ────────────────────────────────────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── Verify redirect to /book ──────────────────────────────────────────────
+    // decideNextRoute resolves to /book?type=free_trial for a client with no
+    // package. Accept any /book path (query string varies).
+    await page.waitForURL((url) => url.pathname.startsWith("/book"), {
+      timeout: 20_000,
+    });
+    expect(new URL(page.url()).pathname).toBe("/book");
+
+    // No inline submission error should have appeared.
+    await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
+  });
+
   test("stays on /wizard and shows an error when Other Location Finish is clicked with blank address", async ({
     page,
   }) => {
