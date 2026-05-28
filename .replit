@@ -37,6 +37,10 @@ args = "media-panel-sliders"
 task = "workflow.run"
 args = "media-panel-sliders-static"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "client-payments-panel-static"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -67,6 +71,17 @@ args = "npx tsx tests/media-panel-sliders.test.ts"
 
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow]]
+name = "client-payments-panel-static"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx tests/client-payments-panel.test.ts"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0", "github:1.0.0"]
