@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { SERVICE_CARD_SLIDER_FIELDS } from "@/lib/service-card-fields";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,10 +6,20 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
 import { MobileImageEditor } from "@/components/MobileImageEditor";
-import type { HeroImage, Settings } from "@shared/schema";
+import { useUpdateSettings } from "@/hooks/use-settings";
+import {
+  useAdminTransformations,
+  useCreateTransformation,
+  useUpdateTransformation,
+  useDeleteTransformation,
+} from "@/hooks/use-transformations";
+import type { HeroImage, Settings, Transformation } from "@shared/schema";
 import {
   Monitor,
   Smartphone,
@@ -32,6 +42,14 @@ import {
   EyeOff,
   Download,
   Shield,
+  User,
+  Sparkles,
+  ImageIcon,
+  MessageSquare,
+  Plus,
+  X,
+  Check,
+  Loader2,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -243,11 +261,13 @@ function SaveBtn({ onClick, disabled, testId }: { onClick: () => void; disabled?
 }
 
 // ─── Section tab bar ──────────────────────────────────────────────────────────
-type Section = "hero" | "services" | "branding";
+type Section = "hero" | "services" | "branding" | "profile" | "transformations";
 const SECTIONS: { key: Section; label: string; icon: React.ReactNode }[] = [
-  { key: "hero",     label: "Hero Slider",  icon: <Film size={15} /> },
-  { key: "services", label: "Services",     icon: <Layers size={15} /> },
-  { key: "branding", label: "Branding",     icon: <Palette size={15} /> },
+  { key: "hero",            label: "Hero Slider",     icon: <Film size={15} /> },
+  { key: "services",        label: "Services",        icon: <Layers size={15} /> },
+  { key: "branding",        label: "Branding",        icon: <Palette size={15} /> },
+  { key: "profile",         label: "Profile",         icon: <User size={15} /> },
+  { key: "transformations", label: "Transformations", icon: <Sparkles size={15} /> },
 ];
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
@@ -1955,6 +1975,611 @@ function BrandingSection() {
   );
 }
 
+// ─── Profile section ──────────────────────────────────────────────────────────
+function ProfileSection({ settings }: { settings: Settings }) {
+  const { toast } = useToast();
+  const updateSettings = useUpdateSettings();
+
+  const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_PHOTO_MIME = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
+  const [imgErrored, setImgErrored] = useState(false);
+  const [bio, setBio] = useState(settings?.profileBio ?? "");
+
+  const savedPhoto = settings?.profilePhotoUrl?.trim() || "";
+  const displayPhoto = pendingPreview || (savedPhoto && !imgErrored ? savedPhoto : "");
+
+  useEffect(() => {
+    setImgErrored(false);
+  }, [savedPhoto]);
+
+  useEffect(() => {
+    setBio(settings?.profileBio ?? "");
+  }, [settings?.profileBio]);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (dataUrl: string) => {
+      const res = await apiRequest("POST", "/api/admin/profile-photo", { imageDataUrl: dataUrl });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || "Upload failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateMedia();
+      setPendingPreview(null);
+      toast({ title: "Photo uploaded", description: "Profile photo updated successfully." });
+    },
+    onError: (e: Error) => {
+      setPendingPreview(null);
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const handleFileSelected = (file: File | undefined) => {
+    if (!file) return;
+    if (!ALLOWED_PHOTO_MIME.includes(file.type.toLowerCase())) {
+      toast({ title: "Invalid file type", description: "Please upload a JPG, PNG, or WebP image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      toast({ title: "File too large", description: "Photo must be under 5 MB.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        toast({ title: "Read failed", description: "Could not read the file. Please try again.", variant: "destructive" });
+        return;
+      }
+      setPendingPreview(result);
+      uploadMutation.mutate(result);
+    };
+    reader.onerror = () => toast({ title: "Read failed", variant: "destructive" });
+    reader.readAsDataURL(file);
+  };
+
+  const deletePhotoMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("PATCH", "/api/settings", { profilePhotoUrl: null });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || "Delete failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      invalidateMedia();
+      toast({ title: "Photo removed", description: "Profile photo cleared." });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Failed to remove photo", description: e.message, variant: "destructive" });
+    },
+  });
+
+  function handleBioSave() {
+    updateSettings.mutate({ profileBio: bio.trim() || null } as any, {
+      onSuccess: () => {
+        invalidateMedia();
+      },
+    });
+  }
+
+  return (
+    <div className="space-y-6" data-testid="section-profile-media">
+      <div>
+        <h3 className="font-display font-bold text-lg">Profile Photo & Bio</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Coach homepage photo and about text shown on the public homepage.
+        </p>
+      </div>
+
+      {/* Photo uploader */}
+      <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <ImageIcon size={12} /> Profile Photo
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-5">
+          {/* 4:5 preview tile */}
+          <div className="relative w-32 sm:w-36 aspect-[4/5] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-primary/10 to-black/40">
+            {displayPhoto ? (
+              <img
+                src={displayPhoto}
+                alt="Profile preview"
+                className="w-full h-full object-cover object-top"
+                onError={() => { if (!pendingPreview) setImgErrored(true); }}
+                data-testid="img-profile-preview-media"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/60 p-2 text-center">
+                <ImageIcon size={28} className="mb-2 opacity-50" />
+                <span className="text-[10px] uppercase tracking-widest">No Photo</span>
+              </div>
+            )}
+            {uploadMutation.isPending && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+                <Loader2 className="animate-spin text-primary" size={22} />
+                <span className="mt-2 text-[10px] uppercase tracking-widest text-white/80">Uploading…</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 flex flex-col gap-3 justify-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                handleFileSelected(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+              data-testid="input-photo-file-media"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadMutation.isPending || deletePhotoMutation.isPending}
+                data-testid="button-upload-profile-photo"
+                className="inline-flex items-center justify-center gap-2 px-5 h-10 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 hover:border-primary/50 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.35)]"
+              >
+                {uploadMutation.isPending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Uploading…</>
+                ) : (
+                  <><UploadCloud size={14} /> {savedPhoto ? "Replace Photo" : "Upload Photo"}</>
+                )}
+              </button>
+              {savedPhoto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("Remove the profile photo? The homepage will show a placeholder until you upload a new one.")) {
+                      deletePhotoMutation.mutate();
+                    }
+                  }}
+                  disabled={uploadMutation.isPending || deletePhotoMutation.isPending}
+                  data-testid="button-delete-profile-photo"
+                  className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/50 text-sm font-semibold transition-all duration-200 disabled:opacity-40"
+                >
+                  {deletePhotoMutation.isPending ? (
+                    <><Loader2 size={14} className="animate-spin" /> Removing…</>
+                  ) : (
+                    <><X size={14} /> Remove Photo</>
+                  )}
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              JPG, PNG, or WebP · Max 5 MB · Stored as optimised WebP (1200×1500, q90). Displayed on the public homepage.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bio editor */}
+      <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <MessageSquare size={12} /> About / Bio
+        </p>
+
+        <Textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={6}
+          placeholder="Write a short bio for the homepage about section…"
+          className="bg-white/5 border-white/10 resize-none"
+          data-testid="input-profile-bio-media"
+        />
+
+        <button
+          type="button"
+          onClick={handleBioSave}
+          disabled={updateSettings.isPending}
+          data-testid="button-save-profile-bio"
+          className="w-full h-10 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 hover:border-primary/50 text-primary text-sm font-semibold transition-all duration-200 disabled:opacity-40 hover:shadow-[0_0_18px_-4px_hsl(183_100%_60%/0.35)] flex items-center justify-center gap-2"
+        >
+          {updateSettings.isPending ? (
+            <><Loader2 size={14} className="animate-spin" /> Saving…</>
+          ) : (
+            <><CheckCircle2 size={14} /> Save Bio</>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Transformations section ──────────────────────────────────────────────────
+const TRANSFORMATION_ASPECTS: AspectPreset[] = [
+  { key: "4x5", label: "4:5", ratio: 4 / 5 },
+  { key: "3x4", label: "3:4", ratio: 3 / 4 },
+  { key: "1x1", label: "1:1", ratio: 1 / 1 },
+];
+
+type TransformationCardProps =
+  | {
+      mode: "create";
+      onCancel: () => void;
+      onSave: (payload: {
+        beforeImageDataUrl: string;
+        afterImageDataUrl: string;
+        displayName: string | null;
+        goal: string | null;
+        duration: string | null;
+        result: string | null;
+        testimonial: string | null;
+      }) => Promise<void>;
+      saving: boolean;
+    }
+  | { mode: "edit"; row: Transformation };
+
+function TransformationCard(props: TransformationCardProps) {
+  const { toast } = useToast();
+  const updateMutation = useUpdateTransformation();
+  const deleteMutation = useDeleteTransformation();
+
+  const initial: Transformation | null = props.mode === "edit" ? props.row : null;
+
+  const [beforeUrl, setBeforeUrl] = useState<string>(initial?.beforeImageDataUrl ?? "");
+  const [afterUrl, setAfterUrl] = useState<string>(initial?.afterImageDataUrl ?? "");
+  const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
+  const [goal, setGoal] = useState(initial?.goal ?? "");
+  const [duration, setDuration] = useState(initial?.duration ?? "");
+  const [result, setResult] = useState(initial?.result ?? "");
+  const [testimonial, setTestimonial] = useState(initial?.testimonial ?? "");
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [beforeCropOpen, setBeforeCropOpen] = useState(false);
+  const [afterCropOpen, setAfterCropOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const id = initial?.id ?? null;
+  const saving =
+    busy ||
+    (props.mode === "create" && props.saving) ||
+    (props.mode === "edit" && updateMutation.isPending);
+
+  async function handleSave() {
+    if (!beforeUrl || !afterUrl) {
+      toast({ title: "Both before and after images are required.", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const norm = (v: string) => (v.trim() ? v.trim() : null);
+      if (props.mode === "create") {
+        await props.onSave({
+          beforeImageDataUrl: beforeUrl,
+          afterImageDataUrl: afterUrl,
+          displayName: norm(displayName),
+          goal: norm(goal),
+          duration: norm(duration),
+          result: norm(result),
+          testimonial: norm(testimonial),
+        });
+        toast({ title: "Transformation saved." });
+      } else if (id !== null) {
+        const updates: Record<string, unknown> = {
+          displayName: norm(displayName),
+          goal: norm(goal),
+          duration: norm(duration),
+          result: norm(result),
+          testimonial: norm(testimonial),
+          isActive,
+        };
+        if (beforeUrl !== initial?.beforeImageDataUrl) updates.beforeImageDataUrl = beforeUrl;
+        if (afterUrl !== initial?.afterImageDataUrl) updates.afterImageDataUrl = afterUrl;
+        await updateMutation.mutateAsync({ id, updates });
+        toast({ title: "Transformation saved." });
+      }
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e?.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-white/10 bg-black/20 p-4"
+      data-testid={props.mode === "create" ? "transformation-card-new" : `transformation-admin-card-${id}`}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_2fr] gap-4">
+        {/* BEFORE slot */}
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Before</p>
+          <div className="aspect-[4/5] rounded-xl border border-white/10 bg-black/40 overflow-hidden flex items-center justify-center">
+            {beforeUrl ? (
+              <img src={beforeUrl} alt="before" className="w-full h-full object-cover" data-testid={`img-admin-before-${id ?? "new"}`} />
+            ) : (
+              <ImageIcon size={28} className="text-muted-foreground/40" />
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full rounded-xl"
+            onClick={() => setBeforeCropOpen(true)}
+            data-testid={`button-crop-before-${id ?? "new"}`}
+          >
+            <UploadCloud size={14} className="mr-1.5" />
+            {beforeUrl ? "Change Before" : "Upload Before"}
+          </Button>
+        </div>
+
+        {/* AFTER slot */}
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">After</p>
+          <div className="aspect-[4/5] rounded-xl border border-white/10 bg-black/40 overflow-hidden flex items-center justify-center">
+            {afterUrl ? (
+              <img src={afterUrl} alt="after" className="w-full h-full object-cover" data-testid={`img-admin-after-${id ?? "new"}`} />
+            ) : (
+              <ImageIcon size={28} className="text-muted-foreground/40" />
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full rounded-xl"
+            onClick={() => setAfterCropOpen(true)}
+            data-testid={`button-crop-after-${id ?? "new"}`}
+          >
+            <UploadCloud size={14} className="mr-1.5" />
+            {afterUrl ? "Change After" : "Upload After"}
+          </Button>
+        </div>
+
+        {/* Metadata */}
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Display Name</label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={80}
+              className="bg-white/5 border-white/10"
+              data-testid={`input-display-name-${id ?? "new"}`}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">Shown on the gallery card. Leave blank to hide.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Goal</label>
+              <Input
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                maxLength={120}
+                placeholder="e.g. Fat loss"
+                className="bg-white/5 border-white/10"
+                data-testid={`input-goal-${id ?? "new"}`}
+              />
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Duration</label>
+              <Input
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                maxLength={60}
+                placeholder="e.g. 12 weeks"
+                className="bg-white/5 border-white/10"
+                data-testid={`input-duration-${id ?? "new"}`}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Result</label>
+            <Input
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              maxLength={160}
+              placeholder="e.g. −12 kg body fat"
+              className="bg-white/5 border-white/10"
+              data-testid={`input-result-${id ?? "new"}`}
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-1 block">Testimonial</label>
+            <Textarea
+              value={testimonial}
+              onChange={(e) => setTestimonial(e.target.value)}
+              maxLength={600}
+              rows={3}
+              placeholder="Client quote (optional)"
+              className="bg-white/5 border-white/10"
+              data-testid={`input-testimonial-${id ?? "new"}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/5">
+        {props.mode === "edit" ? (
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={isActive} onCheckedChange={setIsActive} data-testid={`switch-transformation-active-${id}`} />
+            Active
+          </label>
+        ) : (
+          <Button type="button" variant="ghost" onClick={() => "onCancel" in props && props.onCancel()} data-testid="button-cancel-new-transformation">
+            <X size={14} className="mr-1.5" /> Cancel
+          </Button>
+        )}
+
+        <div className="flex items-center gap-2">
+          {props.mode === "edit" && id !== null && (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-red-300 border-red-500/30 hover:bg-red-500/10 hover:text-red-200"
+              onClick={() => { if (confirm("Delete this transformation?")) deleteMutation.mutate(id); }}
+              disabled={deleteMutation.isPending}
+              data-testid={`button-delete-transformation-${id}`}
+            >
+              <Trash2 size={14} className="mr-1.5" /> Delete
+            </Button>
+          )}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            data-testid={`button-save-transformation-${id ?? "new"}`}
+            className="rounded-xl"
+          >
+            {saving ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Check size={14} className="mr-1.5" />}
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </div>
+
+      <ImageCropper
+        open={beforeCropOpen}
+        onOpenChange={setBeforeCropOpen}
+        saving={false}
+        onCropped={(url) => { setBeforeUrl(url); setBeforeCropOpen(false); }}
+        aspects={TRANSFORMATION_ASPECTS}
+        outputLongEdgePx={1600}
+        title="Upload Before Photo"
+        description="Portrait orientation recommended (4:5 or 3:4). The photo will be shown on the public transformations gallery."
+      />
+      <ImageCropper
+        open={afterCropOpen}
+        onOpenChange={setAfterCropOpen}
+        saving={false}
+        onCropped={(url) => { setAfterUrl(url); setAfterCropOpen(false); }}
+        aspects={TRANSFORMATION_ASPECTS}
+        outputLongEdgePx={1600}
+        title="Upload After Photo"
+        description="Use the same orientation as the before photo for the best gallery appearance."
+      />
+    </div>
+  );
+}
+
+function TransformationsMediaSection() {
+  const { toast } = useToast();
+  const { data: rawRows = [], isLoading } = useAdminTransformations();
+  const createMutation = useCreateTransformation();
+  const reorderMutation = useUpdateTransformation();
+  const [adding, setAdding] = useState(false);
+  const [reordering, setReordering] = useState<number | null>(null);
+
+  // Sort by sortOrder ascending so the list matches the public gallery order.
+  const rows = [...rawRows].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  async function handleMove(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= rows.length) return;
+    const a = rows[index];
+    const b = rows[target];
+    const aOrder = a.sortOrder ?? index;
+    const bOrder = b.sortOrder ?? target;
+    setReordering(a.id);
+    try {
+      await Promise.all([
+        reorderMutation.mutateAsync({ id: a.id, updates: { sortOrder: bOrder } }),
+        reorderMutation.mutateAsync({ id: b.id, updates: { sortOrder: aOrder } }),
+      ]);
+    } catch (e: any) {
+      toast({ title: "Reorder failed", description: e?.message, variant: "destructive" });
+    } finally {
+      setReordering(null);
+    }
+  }
+
+  return (
+    <div className="space-y-5" data-testid="section-transformations-media">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display font-bold text-lg flex items-center gap-2">
+            <Sparkles size={17} className="text-primary" /> Transformations Gallery
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Before/after photo pairs displayed on the public transformations page. Upload, label, and reorder.
+          </p>
+        </div>
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            data-testid="button-add-transformation"
+            className="inline-flex items-center gap-2 px-5 h-10 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 hover:border-primary/50 text-primary text-sm font-semibold transition-all duration-200 hover:shadow-[0_0_20px_-6px_hsl(183_100%_60%/0.5)]"
+          >
+            <Plus size={15} /> Add Transformation
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <TransformationCard
+          mode="create"
+          onCancel={() => setAdding(false)}
+          onSave={async (payload) => {
+            await createMutation.mutateAsync(payload);
+            setAdding(false);
+          }}
+          saving={createMutation.isPending}
+        />
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+          <Loader2 size={16} className="animate-spin mr-2" /> Loading transformations…
+        </div>
+      ) : rows.length === 0 && !adding ? (
+        <p
+          className="text-sm text-muted-foreground py-8 text-center border border-dashed border-white/10 rounded-xl"
+          data-testid="text-no-transformations-media"
+        >
+          No transformations yet. Add your first before/after pair.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((row, index) => (
+            <div key={row.id} className="flex gap-2 items-start">
+              {/* Reorder controls */}
+              <div className="flex flex-col gap-1 pt-4 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleMove(index, -1)}
+                  disabled={index === 0 || reordering !== null}
+                  data-testid={`button-move-up-${row.id}`}
+                  className="w-7 h-7 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Move up"
+                >
+                  {reordering === row.id ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <ArrowUp size={11} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMove(index, 1)}
+                  disabled={index === rows.length - 1 || reordering !== null}
+                  data-testid={`button-move-down-${row.id}`}
+                  className="w-7 h-7 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  title="Move down"
+                >
+                  <ArrowDown size={11} />
+                </button>
+              </div>
+              <div className="flex-1 min-w-0">
+                <TransformationCard mode="edit" row={row} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminMedia() {
   const [activeSection, setActiveSection] = useState<Section>("hero");
@@ -1981,32 +2606,12 @@ export default function AdminMedia() {
   }
 
   return (
-    <div className="space-y-7" data-testid="page-admin-media">
+    <div className="space-y-6" data-testid="page-admin-media">
       <div>
         <h1 className="font-display font-bold text-2xl tracking-tight">Media Manager</h1>
         <p className="text-sm text-muted-foreground mt-1.5">
           WYSIWYG: every preview uses the exact same rendering engine as the live site. What you see here is what clients see.
         </p>
-      </div>
-
-      {/* Section selector */}
-      <div className="flex gap-3 w-fit">
-        {SECTIONS.map(({ key, label, icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveSection(key)}
-            data-testid={`tab-section-${key}`}
-            className={`flex items-center gap-2 px-5 h-11 rounded-2xl text-sm font-semibold border transition-all duration-200 ${
-              activeSection === key
-                ? "bg-primary/15 text-primary border-primary/35 shadow-[0_0_20px_-6px_hsl(183_100%_60%/0.4)]"
-                : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:border-white/15 hover:text-foreground"
-            }`}
-          >
-            {icon}
-            {label}
-          </button>
-        ))}
       </div>
 
       {/* Security notice */}
@@ -2018,20 +2623,71 @@ export default function AdminMedia() {
         </p>
       </div>
 
-      {/* Section content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeSection}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.18 }}
-        >
-          {activeSection === "hero"     && <HeroSection images={data.heroImages} />}
-          {activeSection === "services" && <ServicesSection settings={data.settings} />}
-          {activeSection === "branding" && <BrandingSection />}
-        </motion.div>
-      </AnimatePresence>
+      {/* Main layout: sidebar on desktop, scrollable pills on mobile */}
+      <div className="flex flex-col md:flex-row gap-6">
+
+        {/* Mobile: horizontally scrollable pill row */}
+        <div className="md:hidden overflow-x-auto -mx-4 px-4 pb-0.5">
+          <div className="flex gap-2 w-max">
+            {SECTIONS.map(({ key, label, icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveSection(key)}
+                data-testid={`tab-section-${key}`}
+                className={`flex items-center gap-1.5 px-4 h-9 rounded-2xl text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
+                  activeSection === key
+                    ? "bg-primary/15 text-primary border-primary/35 shadow-[0_0_18px_-6px_hsl(183_100%_60%/0.4)]"
+                    : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:border-white/15 hover:text-foreground"
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop: sidebar nav */}
+        <nav className="hidden md:flex flex-col gap-0.5 w-44 shrink-0 pt-0.5">
+          {SECTIONS.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveSection(key)}
+              data-testid={`tab-section-${key}`}
+              className={`flex items-center gap-2.5 px-3.5 h-10 rounded-xl text-sm font-semibold transition-all duration-200 text-left w-full ${
+                activeSection === key
+                  ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_14px_-5px_hsl(183_100%_60%/0.35)]"
+                  : "border border-transparent text-muted-foreground hover:bg-white/[0.05] hover:border-white/10 hover:text-foreground"
+              }`}
+            >
+              {icon}
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Section content */}
+        <div className="flex-1 min-w-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18 }}
+            >
+              {activeSection === "hero"            && <HeroSection images={data.heroImages} />}
+              {activeSection === "services"        && <ServicesSection settings={data.settings} />}
+              {activeSection === "branding"        && <BrandingSection />}
+              {activeSection === "profile"         && <ProfileSection settings={data.settings} />}
+              {activeSection === "transformations" && <TransformationsMediaSection />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+      </div>
     </div>
   );
 }
