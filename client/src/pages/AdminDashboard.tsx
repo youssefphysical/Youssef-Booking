@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Wallet,
   Sun,
+  CreditCard,
 } from "lucide-react";
 import { dubaiTodayYMD, formatWeekdayShortDate, formatMonthDubai, formatDayDubai } from "@shared/dates";
 import { api } from "@shared/routes";
@@ -162,6 +163,12 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: overdueData } = useQuery<{ count: number; items: any[] }>({
+    queryKey: ["/api/admin/payments/overdue"],
+    staleTime: 60_000,
+  });
+  const overduePayments = overdueData?.count ?? 0;
+
   // Premium revenue snapshot — fetched lazily so the page paints fast
   // even before this larger payload returns. Failure is silent.
   const { data: analytics } = useQuery<AdminAnalytics>({
@@ -187,7 +194,8 @@ export default function AdminDashboard() {
     (stats?.expiringPackages ?? 0) +
     (stats?.pendingRenewals ?? 0) +
     (stats?.pendingExtensions ?? 0) +
-    (stats?.lowSessionClients ?? 0);
+    (stats?.lowSessionClients ?? 0) +
+    overduePayments;
 
   return (
     <div className="admin-shell">
@@ -217,7 +225,7 @@ export default function AdminDashboard() {
         {/* Urgent alerts strip — scannable, color-coded, all link out */}
         {urgentCount > 0 ? (
           <div
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-4 sm:mb-6"
             data-testid="urgent-alerts-strip"
           >
             <AdminAlertRow
@@ -260,8 +268,57 @@ export default function AdminDashboard() {
               tone="warning"
               testId="alert-low-sessions"
             />
+            <AdminAlertRow
+              icon={<CreditCard size={15} />}
+              count={overduePayments}
+              label={t("admin.dashboard.statOverduePayments", "Overdue payments")}
+              href="/admin/payments?status=pending"
+              tone="danger"
+              testId="alert-overdue-payments"
+            />
           </div>
         ) : null}
+
+        {/* Overdue Payments Panel — individual entries with name, amount, age */}
+        {overduePayments > 0 && overdueData?.items && overdueData.items.length > 0 && (
+          <div className="mb-4 sm:mb-6" data-testid="overdue-payments-panel">
+            <AdminSectionTitle title={t("admin.dashboard.overduePaymentsTitle", "Overdue Payments")} />
+            <AdminCard className="divide-y divide-white/[0.06] !p-0 overflow-hidden">
+              {overdueData.items.map((p: any) => {
+                const ageDays = p.ageDays ?? 0;
+                const clientName = p.clientName || p.clientEmail || t("admin.dashboard.unknownClient", "Unknown client");
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/admin/payments?userId=${p.userId}&status=pending`}
+                    data-testid={`overdue-payment-row-${p.id}`}
+                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-500/10 text-red-400 shrink-0">
+                        <CreditCard size={14} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate" data-testid={`overdue-client-name-${p.id}`}>{clientName}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {ageDays === 0
+                            ? t("admin.dashboard.overdueToday", "Due today")
+                            : t("admin.dashboard.overdueNDays", "{{n}} days overdue").replace("{{n}}", String(ageDays))}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-semibold tabular-nums text-red-400" data-testid={`overdue-amount-${p.id}`}>
+                        {FMT_AED.format(p.amount ?? 0)}
+                      </span>
+                      <ChevronRight size={14} className="text-muted-foreground/50" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </AdminCard>
+          </div>
+        )}
 
         <div className="mb-4 sm:mb-6">
           <SmartAlertsPanel />

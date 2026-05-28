@@ -167,13 +167,27 @@ function exportPaymentsToCSV(payments: PaymentWithUser[]) {
 
 export default function AdminPayments() {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [methodFilter, setMethodFilter] = useState("all");
+  const [search, setSearch] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("search") ?? "";
+  });
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("status") ?? "all";
+  });
+  const [methodFilter, setMethodFilter] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("method") ?? "all";
+  });
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PaymentWithUser | null>(null);
+
+  const [userIdFilter] = useState<string>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("userId") ?? "";
+  });
 
   const queryParams = new URLSearchParams();
   if (statusFilter !== "all") queryParams.set("status", statusFilter);
@@ -181,6 +195,7 @@ export default function AdminPayments() {
   if (fromDate) queryParams.set("from", fromDate);
   if (toDate) queryParams.set("to", toDate);
   if (search) queryParams.set("search", search);
+  if (userIdFilter) queryParams.set("userId", userIdFilter);
   const qString = queryParams.toString();
 
   const { data: payments = [], isLoading, error } = useQuery<PaymentWithUser[]>({
@@ -195,7 +210,7 @@ export default function AdminPayments() {
     queryKey: ["/api/admin/payments/summary"],
   });
 
-  const hasFilters = statusFilter !== "all" || methodFilter !== "all" || !!fromDate || !!toDate || !!search;
+  const hasFilters = statusFilter !== "all" || methodFilter !== "all" || !!fromDate || !!toDate || !!search || !!userIdFilter;
   const clearFilters = () => {
     setStatusFilter("all");
     setMethodFilter("all");

@@ -15,7 +15,8 @@ void import("sharp")
   .then((m) => { _sharp = (m.default ?? m) as typeof SharpType; })
   .catch((e: unknown) => { console.warn("[boot] sharp unavailable:", (e as Error)?.message ?? e); });
 import { storage, computePackageStatus, isPackageBlocking } from "./storage";
-import { pool } from "./db";
+import { pool, db } from "./db";
+import { sql } from "drizzle-orm";
 import {
   dubaiTodayYMD,
   dubaiTomorrowYMD,
@@ -8374,6 +8375,32 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   );
 
   // ============== PAYMENTS (Task #111) ==============
+
+  app.get("/api/admin/payments/overdue", requireAdmin, async (req, res) => {
+    try {
+      const rows = await db.execute(sql`
+        SELECT
+          p.id,
+          p.user_id   AS "userId",
+          p.amount,
+          p.status,
+          p.created_at AS "createdAt",
+          u.full_name  AS "clientName",
+          u.email      AS "clientEmail",
+          EXTRACT(DAY FROM NOW() - p.created_at)::int AS "ageDays"
+        FROM payments p
+        LEFT JOIN users u ON u.id = p.user_id
+        WHERE p.status = 'pending'
+          AND p.created_at <= NOW() - INTERVAL '7 days'
+        ORDER BY p.created_at ASC
+        LIMIT 50
+      `);
+      const items = (rows as any).rows ?? rows;
+      res.json({ count: items.length, items });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
 
   app.get("/api/admin/payments/summary", requireAdmin, async (req, res) => {
     try {

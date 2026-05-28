@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard,
@@ -41,6 +42,8 @@ export interface AdminNavItem {
   isActive: (loc: string) => boolean;
   /** Hide unless super-admin */
   superAdminOnly?: boolean;
+  /** Optional alert badge count shown on the nav item */
+  badge?: number;
 }
 
 export interface AdminNavGroup {
@@ -231,9 +234,10 @@ interface SidebarLinkProps {
   label: string;
   active: boolean;
   onClick?: () => void;
+  badge?: number;
 }
 
-function SidebarLink({ href, icon, label, active, onClick }: SidebarLinkProps) {
+function SidebarLink({ href, icon, label, active, onClick, badge }: SidebarLinkProps) {
   return (
     <Link
       href={href}
@@ -257,7 +261,15 @@ function SidebarLink({ href, icon, label, active, onClick }: SidebarLinkProps) {
           />
         )}
         <span className={cn("shrink-0", active ? "text-primary" : "")}>{icon}</span>
-        <span className={cn("font-medium truncate", active && "font-semibold")}>{label}</span>
+        <span className={cn("font-medium truncate flex-1", active && "font-semibold")}>{label}</span>
+        {badge != null && badge > 0 && (
+          <span
+            data-testid={`badge-${label.toLowerCase().replace(/\s+/g, "-")}`}
+            className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold leading-none shrink-0"
+          >
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
       </div>
     </Link>
   );
@@ -288,6 +300,12 @@ export function AdminSidebar({
   const { collapsed, toggle } = useCollapsedGroups();
 
   const groups = useMemo(() => buildAdminNavGroups(t), [t]);
+
+  const { data: overdueData } = useQuery<{ count: number }>({
+    queryKey: ["/api/admin/payments/overdue"],
+    staleTime: 60_000,
+  });
+  const overdueCount = overdueData?.count ?? 0;
 
   return (
     <div className="flex h-full w-full flex-col bg-card">
@@ -365,6 +383,7 @@ export function AdminSidebar({
                       label={it.label}
                       active={it.isActive(location)}
                       onClick={onItemClick}
+                      badge={it.href === "/admin/payments" && overdueCount > 0 ? overdueCount : undefined}
                     />
                   ))}
                 </div>
