@@ -542,7 +542,9 @@ export default function TrainingLocationWizard() {
 
     if (branch === "building") {
       if (!mapsLink.trim()) {
-        toast({ title: t("wizard.building.needMaps", "Google Maps link is required."), variant: "destructive" });
+        const msg = t("wizard.building.needMaps", "Google Maps link is required.");
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       const payload = {

@@ -258,6 +258,49 @@ test.describe("Wizard Onboarding", () => {
     await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
   });
 
+  test("stays on /wizard and shows an error when Finish is clicked with blank required fields", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("blank");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: pick "Building Gym" (requires a Maps link in step 2) ──────────
+    const buildingBranchBtn = page.getByTestId("button-branch-building");
+    await buildingBranchBtn.waitFor({ timeout: 8_000 });
+    await buildingBranchBtn.click();
+
+    // ── Step 2: form visible but leave Maps link blank ────────────────────────
+    const buildingForm = page.getByTestId("form-building-location");
+    await buildingForm.waitFor({ timeout: 8_000 });
+
+    // Confirm the Maps link input exists and is indeed empty.
+    const mapsInput = page.getByTestId("input-building-maps-link");
+    await expect(mapsInput).toBeVisible();
+    await expect(mapsInput).toHaveValue("");
+
+    // ── Click Finish with no Maps link filled ─────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — no navigation should have occurred ─────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── Inline error must appear under the submit button ──────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
   test("fitness-zone card completes the wizard in one click and reaches /book", async ({
     page,
   }) => {
