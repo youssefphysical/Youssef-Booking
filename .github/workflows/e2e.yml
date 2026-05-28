@@ -16,13 +16,18 @@ name: E2E · Playwright browser tests
 #   7. Uploads the HTML report as a build artifact
 #
 # ── Blocking merges ─────────────────────────────────────────────────────────
-# To make a failing run block a pull-request merge, enable branch protection
-# in GitHub:
-#   Repository → Settings → Branches → Add branch protection rule
-#     Branch name pattern : main  (or your default branch)
+# Branch protection on `main` is ACTIVE and blocks ALL merges (including repo
+# admins / Youssef) when this check is red.  Current settings (set via API):
+#   required_status_checks : strict=true, context="Playwright e2e"
+#   enforce_admins         : true   ← admins cannot bypass a failing check
+#   required_pull_request_reviews : 1 approving review, dismiss_stale=true
+#
+# To change these settings:
+#   Repository → Settings → Branches → Edit branch protection rule for `main`
 #     ✅  Require status checks to pass before merging
-#         Search for and add: "Playwright e2e"
+#         Required check: "Playwright e2e"
 #     ✅  Require branches to be up to date before merging
+#     ✅  Do not allow bypassing the above settings  (enforce_admins=true)
 #
 # ── Required GitHub repo secrets ────────────────────────────────────────────
 #   DATABASE_URL    — Neon / Postgres connection string for the test database
