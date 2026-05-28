@@ -240,6 +240,7 @@ function HeroImagesSection() {
       testId="section-hero-images"
       title="Hero Slider"
       description="Upload, reorder, and fine-tune homepage hero slides with live desktop and mobile preview."
+      section="hero"
     />
   );
 }
@@ -477,6 +478,7 @@ function TransformationsSection() {
       testId="section-transformations"
       title="Transformations Gallery"
       description="Upload and manage before/after photo pairs, labels, and ordering for the public transformations gallery."
+      section="transformations"
     />
   );
 }
@@ -725,6 +727,7 @@ function ProfileContentSection() {
       testId="section-profile-content"
       title="Profile Photo & Bio"
       description="Upload the coach homepage photo and edit the about/bio text shown on the public homepage."
+      section="profile"
     />
   );
 }
@@ -920,6 +923,7 @@ function ServiceCardImagesSection() {
       testId="section-service-images"
       title="Service Card Images"
       description="Upload and configure images for the Personal Training, Nutrition Plans, and Supplement Protocol cards."
+      section="services"
     />
   );
 }
@@ -932,16 +936,19 @@ function MediaRedirectCard({
   testId,
   title,
   description,
+  section,
 }: {
   testId?: string;
   title: string;
   description: string;
+  section?: string;
 }) {
+  const href = section ? `/admin/media?section=${section}` : "/admin/media";
   return (
     <section className="admin-card" data-testid={testId}>
       <h2 className="font-display font-bold text-lg mb-1">{title}</h2>
       <p className="text-sm text-muted-foreground mb-5">{description}</p>
-      <a href="/admin/media" data-testid={testId ? `link-${testId}-media` : undefined}>
+      <a href={href} data-testid={testId ? `link-${testId}-media` : undefined}>
         <Button type="button" className="rounded-xl gap-2">
           <ExternalLink size={14} />
           Manage in Media Center

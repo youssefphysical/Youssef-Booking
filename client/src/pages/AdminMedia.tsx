@@ -2580,9 +2580,22 @@ function TransformationsMediaSection() {
   );
 }
 
+// ─── URL ↔ section sync helpers ───────────────────────────────────────────────
+const VALID_SECTIONS: Section[] = ["hero", "services", "branding", "profile", "transformations"];
+
+function getSectionFromUrl(): Section {
+  const param = new URLSearchParams(window.location.search).get("section");
+  return VALID_SECTIONS.includes(param as Section) ? (param as Section) : "hero";
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function AdminMedia() {
-  const [activeSection, setActiveSection] = useState<Section>("hero");
+  const [activeSection, setActiveSection] = useState<Section>(getSectionFromUrl);
+
+  function navigate(section: Section) {
+    setActiveSection(section);
+    window.history.replaceState(null, "", `/admin/media?section=${section}`);
+  }
   const { data, isLoading, error } = useMediaData();
 
   if (isLoading) {
@@ -2633,7 +2646,7 @@ export default function AdminMedia() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setActiveSection(key)}
+                onClick={() => navigate(key)}
                 data-testid={`tab-section-${key}`}
                 className={`flex items-center gap-1.5 px-4 h-9 rounded-2xl text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
                   activeSection === key
@@ -2654,7 +2667,7 @@ export default function AdminMedia() {
             <button
               key={key}
               type="button"
-              onClick={() => setActiveSection(key)}
+              onClick={() => navigate(key)}
               data-testid={`tab-section-${key}`}
               className={`flex items-center gap-2.5 px-3.5 h-10 rounded-xl text-sm font-semibold transition-all duration-200 text-left w-full ${
                 activeSection === key
