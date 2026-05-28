@@ -8386,8 +8386,9 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
   app.get("/api/admin/payments", requireAdmin, async (req, res) => {
     try {
-      const { status, method, from, to, search, limit, offset } = req.query as Record<string, string>;
+      const { status, method, from, to, search, limit, offset, userId } = req.query as Record<string, string>;
       const list = await (storage as any).getPayments({
+        userId: userId ? Number(userId) : undefined,
         status: status || undefined,
         method: method || undefined,
         from: from || undefined,

@@ -627,14 +627,18 @@ function PaymentStatusPopover({ payment }: { payment: PaymentWithUser }) {
   );
 }
 
-function CreatePaymentDialog({
+export function CreatePaymentDialog({
   open,
   onOpenChange,
   onCreated,
+  prefillUserId,
+  prefillUserName,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   onCreated: () => void;
+  prefillUserId?: number;
+  prefillUserName?: string;
 }) {
   const { toast } = useToast();
   const { data: clients = [] } = useClients();
@@ -648,6 +652,7 @@ function CreatePaymentDialog({
   const form = useForm<CreatePaymentForm>({
     resolver: zodResolver(createPaymentFormSchema),
     defaultValues: {
+      userId: prefillUserId,
       status: "pending",
       method: "cash",
       amount: 0,
@@ -656,6 +661,8 @@ function CreatePaymentDialog({
       paidAt: "",
     },
   });
+
+  const isPrefilled = !!prefillUserId;
 
   const selectedUserId = form.watch("userId");
   const selectedClient = useMemo(
@@ -689,7 +696,7 @@ function CreatePaymentDialog({
     onSuccess: () => {
       onCreated();
       onOpenChange(false);
-      form.reset();
+      form.reset({ userId: prefillUserId, status: "pending", method: "cash", amount: 0, receiptReference: "", notes: "", paidAt: "" });
       setClientSearch("");
       toast({ title: "Payment created" });
     },
@@ -718,67 +725,76 @@ function CreatePaymentDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Client *</FormLabel>
-                  <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          data-testid="select-payment-client"
-                          className={cn(
-                            "w-full justify-between font-normal bg-white/5 border-white/10 hover:bg-white/10",
-                            !field.value && "text-muted-foreground",
-                          )}
-                        >
-                          {selectedClient
-                            ? `${selectedClient.fullName}${selectedClient.email ? ` — ${selectedClient.email}` : ""}`
-                            : "Select client…"}
-                          <ChevronsUpDown size={14} className="ms-2 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[380px] p-0" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Search by name or email…"
-                          value={clientSearch}
-                          onValueChange={setClientSearch}
-                          data-testid="input-client-search"
-                        />
-                        <CommandList>
-                          <CommandEmpty>No clients found.</CommandEmpty>
-                          <CommandGroup>
-                            {filteredClients.map((c) => (
-                              <CommandItem
-                                key={c.id}
-                                value={String(c.id)}
-                                onSelect={() => {
-                                  field.onChange(c.id);
-                                  form.setValue("packageId", undefined);
-                                  setClientPickerOpen(false);
-                                  setClientSearch("");
-                                }}
-                              >
-                                <Check
-                                  size={14}
-                                  className={cn(
-                                    "mr-2 shrink-0",
-                                    field.value === c.id ? "opacity-100" : "opacity-0",
-                                  )}
-                                />
-                                <span className="truncate">
-                                  {c.fullName}
-                                  {c.email ? (
-                                    <span className="text-muted-foreground ml-1 text-xs">— {c.email}</span>
-                                  ) : null}
-                                </span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  {isPrefilled ? (
+                    <div
+                      className="flex items-center gap-2 h-9 px-3 rounded-md border border-white/10 bg-white/5 text-sm text-foreground"
+                      data-testid="select-payment-client-prefilled"
+                    >
+                      {prefillUserName ?? `Client #${prefillUserId}`}
+                    </div>
+                  ) : (
+                    <Popover open={clientPickerOpen} onOpenChange={setClientPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            data-testid="select-payment-client"
+                            className={cn(
+                              "w-full justify-between font-normal bg-white/5 border-white/10 hover:bg-white/10",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {selectedClient
+                              ? `${selectedClient.fullName}${selectedClient.email ? ` — ${selectedClient.email}` : ""}`
+                              : "Select client…"}
+                            <ChevronsUpDown size={14} className="ms-2 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[380px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search by name or email…"
+                            value={clientSearch}
+                            onValueChange={setClientSearch}
+                            data-testid="input-client-search"
+                          />
+                          <CommandList>
+                            <CommandEmpty>No clients found.</CommandEmpty>
+                            <CommandGroup>
+                              {filteredClients.map((c) => (
+                                <CommandItem
+                                  key={c.id}
+                                  value={String(c.id)}
+                                  onSelect={() => {
+                                    field.onChange(c.id);
+                                    form.setValue("packageId", undefined);
+                                    setClientPickerOpen(false);
+                                    setClientSearch("");
+                                  }}
+                                >
+                                  <Check
+                                    size={14}
+                                    className={cn(
+                                      "mr-2 shrink-0",
+                                      field.value === c.id ? "opacity-100" : "opacity-0",
+                                    )}
+                                  />
+                                  <span className="truncate">
+                                    {c.fullName}
+                                    {c.email ? (
+                                      <span className="text-muted-foreground ml-1 text-xs">— {c.email}</span>
+                                    ) : null}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

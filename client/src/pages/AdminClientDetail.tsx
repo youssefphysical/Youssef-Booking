@@ -123,6 +123,19 @@ import {
 } from "@shared/schema";
 import { Snowflake, FileText, Bell, FileCheck2, Wallet, Pause, Play, Plus as PlusIcon, Minus, BadgeCheck, Link2, Users, CreditCard, Gift, Sparkles, Upload } from "lucide-react";
 import { usePackageTemplates as usePackageTemplatesForConvert } from "@/hooks/use-package-templates";
+import { CreatePaymentDialog } from "@/pages/AdminPayments";
+import {
+  PAYMENT_RECORD_STATUS_LABELS,
+  PAYMENT_RECORD_METHOD_LABELS,
+  type Payment,
+} from "@shared/schema";
+import {
+  CheckCircle2 as CheckCircle2Icon,
+  Clock as ClockIcon,
+  AlertCircle as AlertCircleIcon,
+  RefreshCcw as RefreshCcwIcon,
+  ReceiptText as ReceiptTextIcon,
+} from "lucide-react";
 
 const FMT_AED_ADMIN = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -160,7 +173,8 @@ const CLIENT_TABS: Array<{ value: string; labelKey: string; fallback: string; ic
   { value: "progress", labelKey: "admin.clientDetail.tabProgress", fallback: "Progress", icon: <Camera size={13} /> },
   { value: "notes", labelKey: "admin.clientDetail.tabNotes", fallback: "Notes", icon: <FileText size={13} /> },
   { value: "documents", labelKey: "admin.clientDetail.tabDocuments", fallback: "Documents", icon: <FileCheck2 size={13} /> },
-  { value: "packages", labelKey: "admin.clientDetail.tabPackage", fallback: "Payments", icon: <Wallet size={13} /> },
+  { value: "packages", labelKey: "admin.clientDetail.tabPackage", fallback: "Packages", icon: <Wallet size={13} /> },
+  { value: "payments", labelKey: "admin.clientDetail.tabPayments", fallback: "Payments", icon: <CreditCard size={13} /> },
   { value: "activity", labelKey: "admin.tabs.activity", fallback: "Activity", icon: <Activity size={13} /> },
   { value: "audit", labelKey: "admin.tabs.audit", fallback: "Audit", icon: <ShieldCheck size={13} /> },
   { value: "alerts", labelKey: "admin.clientDetail.tabAlerts", fallback: "Alerts", icon: <Bell size={13} /> },
@@ -483,6 +497,9 @@ export default function AdminClientDetail() {
           <TabsContent value="progress"><ProgressPanel userId={client.id} /></TabsContent>
           <TabsContent value="notes"><NotesPanel client={client} /></TabsContent>
           <TabsContent value="documents"><DocumentsPanel client={client} /></TabsContent>
+          <TabsContent value="payments">
+            <ClientPaymentsPanel client={client} />
+          </TabsContent>
           <TabsContent value="activity">
             <ActivityFeed
               endpoint={`/api/admin/clients/${client.id}/activity`}
@@ -3616,6 +3633,222 @@ function DocRow({ label, done, detail }: { label: string; done: boolean; detail?
       >
         {done ? "On file" : "Missing"}
       </span>
+    </div>
+  );
+}
+
+// =============== PAYMENTS PANEL ===============
+
+const PAYMENT_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-300 border-amber-500/20",
+  received: "bg-emerald-500/15 text-emerald-300 border-emerald-500/20",
+  failed: "bg-red-500/15 text-red-300 border-red-500/20",
+  refunded: "bg-sky-500/15 text-sky-300 border-sky-500/20",
+  partial: "bg-cyan-500/15 text-cyan-300 border-cyan-500/20",
+};
+
+const PAYMENT_STATUS_ICONS: Record<string, React.ReactNode> = {
+  pending: <ClockIcon size={11} />,
+  received: <CheckCircle2Icon size={11} />,
+  failed: <AlertCircleIcon size={11} />,
+  refunded: <RefreshCcwIcon size={11} />,
+  partial: <ReceiptTextIcon size={11} />,
+};
+
+type ClientPaymentRow = Payment & {
+  package: { id: number; name: string | null; type: string | null } | null;
+};
+
+function ClientPaymentsPanel({ client }: { client: UserResponse }) {
+  const qc = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
+
+  const { data: payments = [], isLoading } = useQuery<ClientPaymentRow[]>({
+    queryKey: ["/api/admin/payments", `userId=${client.id}`],
+    queryFn: () =>
+      fetch(`/api/admin/payments?userId=${client.id}`, { credentials: "include" }).then((r) =>
+        r.json(),
+      ),
+  });
+
+  const totalReceived = (payments as ClientPaymentRow[])
+    .filter((p) => p.status === "received")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const totalPending = (payments as ClientPaymentRow[])
+    .filter((p) => p.status === "pending" || p.status === "partial")
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const clientName = client.fullName ?? client.email ?? `Client #${client.id}`;
+
+  return (
+    <div className="space-y-4" data-testid="panel-client-payments">
+      {/* Summary + action row */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-4">
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Received</p>
+            <p className="text-sm font-semibold text-emerald-300 tabular-nums" data-testid="text-payments-received-total">
+              {FMT_AED_ADMIN(totalReceived)}
+            </p>
+          </div>
+          {totalPending > 0 && (
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Pending</p>
+              <p className="text-sm font-semibold text-amber-300 tabular-nums" data-testid="text-payments-pending-total">
+                {FMT_AED_ADMIN(totalPending)}
+              </p>
+            </div>
+          )}
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowCreate(true)}
+          data-testid="button-add-payment-for-client"
+          className="gap-1.5"
+        >
+          <PlusIcon size={14} />
+          Add Payment
+        </Button>
+      </div>
+
+      {/* Payment list */}
+      {isLoading ? (
+        <AdminCard>
+          <div className="space-y-2 p-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 rounded-lg admin-shimmer" />
+            ))}
+          </div>
+        </AdminCard>
+      ) : (payments as ClientPaymentRow[]).length === 0 ? (
+        <AdminEmptyState
+          icon={<CreditCard size={20} />}
+          title="No payments yet"
+          body={`No payment records found for ${clientName}.`}
+        />
+      ) : (
+        <>
+          {/* Desktop table */}
+          <AdminCard className="hidden md:block overflow-hidden p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/[0.06] text-[11px] text-muted-foreground uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left font-medium">Date</th>
+                    <th className="px-4 py-3 text-left font-medium">Amount</th>
+                    <th className="px-4 py-3 text-left font-medium">Method</th>
+                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                    <th className="px-4 py-3 text-left font-medium">Package</th>
+                    <th className="px-4 py-3 text-left font-medium">Ref</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {(payments as ClientPaymentRow[]).map((p, i) => (
+                    <motion.tr
+                      key={p.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.03, 0.2) }}
+                      className="hover:bg-white/[0.02] transition-colors"
+                      data-testid={`row-client-payment-${p.id}`}
+                    >
+                      <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                        {p.paidAt
+                          ? formatDateDubai(p.paidAt)
+                          : p.createdAt
+                          ? formatDateDubai(p.createdAt)
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 font-semibold tabular-nums text-primary">
+                        {FMT_AED_ADMIN(p.amount)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground capitalize">
+                        {PAYMENT_RECORD_METHOD_LABELS[p.method as keyof typeof PAYMENT_RECORD_METHOD_LABELS] ?? p.method}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                            PAYMENT_STATUS_COLORS[p.status] ?? "bg-white/10 text-muted-foreground border-white/10"
+                          }`}
+                        >
+                          {PAYMENT_STATUS_ICONS[p.status]}
+                          {PAYMENT_RECORD_STATUS_LABELS[p.status as keyof typeof PAYMENT_RECORD_STATUS_LABELS] ?? p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground max-w-[160px]">
+                        {p.package ? (
+                          <span className="truncate block">{p.package.name || p.package.type}</span>
+                        ) : (
+                          <span className="text-white/20">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground font-mono">
+                        {p.receiptReference || "—"}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </AdminCard>
+
+          {/* Mobile stacked cards */}
+          <div className="md:hidden space-y-3">
+            {(payments as ClientPaymentRow[]).map((p, i) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.03, 0.2) }}
+                className="rounded-xl border border-white/[0.07] bg-card/60 p-4 space-y-2"
+                data-testid={`card-client-payment-${p.id}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-primary tabular-nums">{FMT_AED_ADMIN(p.amount)}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                      PAYMENT_STATUS_COLORS[p.status] ?? "bg-white/10 text-muted-foreground border-white/10"
+                    }`}
+                  >
+                    {PAYMENT_STATUS_ICONS[p.status]}
+                    {PAYMENT_RECORD_STATUS_LABELS[p.status as keyof typeof PAYMENT_RECORD_STATUS_LABELS] ?? p.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="capitalize">
+                    {PAYMENT_RECORD_METHOD_LABELS[p.method as keyof typeof PAYMENT_RECORD_METHOD_LABELS] ?? p.method}
+                  </span>
+                  <span className="tabular-nums">
+                    {p.paidAt
+                      ? formatDateDubai(p.paidAt)
+                      : p.createdAt
+                      ? formatDateDubai(p.createdAt)
+                      : "—"}
+                  </span>
+                </div>
+                {p.package && (
+                  <p className="text-xs text-muted-foreground truncate">{p.package.name || p.package.type}</p>
+                )}
+                {p.receiptReference && (
+                  <p className="text-xs font-mono text-muted-foreground">{p.receiptReference}</p>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <CreatePaymentDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        prefillUserId={client.id}
+        prefillUserName={clientName}
+        onCreated={() => {
+          qc.invalidateQueries({ queryKey: ["/api/admin/payments"] });
+          qc.invalidateQueries({ queryKey: ["/api/admin/payments/summary"] });
+        }}
+      />
     </div>
   );
 }
