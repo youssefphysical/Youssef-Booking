@@ -97,6 +97,10 @@ async function run(): Promise<void> {
       ADD COLUMN IF NOT EXISTS logo_navbar_url text,
       ADD COLUMN IF NOT EXISTS logo_auth_url   text;
 
+    -- Website Content Management — public-facing text overrides
+    ALTER TABLE IF EXISTS settings
+      ADD COLUMN IF NOT EXISTS content_settings jsonb;
+
     -- Bookings: every column added after the original schema. All NULL-safe /
     -- defaulted so adding them on prod cannot affect existing rows.
     -- (session_focus / training_goal omission was the cause of the

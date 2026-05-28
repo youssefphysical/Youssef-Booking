@@ -447,12 +447,14 @@ export default function HomePage() {
           <div className="size-12 rounded-2xl bg-primary/10 text-primary grid place-items-center">
             <Gift size={22} />
           </div>
-          <p className="tron-eyebrow text-xs">{t("home.trial.eyebrow")}</p>
+          <p className="tron-eyebrow text-xs">
+            {(settings?.contentSettings as any)?.trialEyebrow || t("home.trial.eyebrow")}
+          </p>
           <h2 className="text-3xl md:text-4xl font-display font-bold">
-            {t("home.trial.title")}
+            {(settings?.contentSettings as any)?.trialTitle || t("home.trial.title")}
           </h2>
           <p className="text-muted-foreground max-w-prose">
-            {t("home.trial.body")}
+            {(settings?.contentSettings as any)?.trialBody || t("home.trial.body")}
           </p>
           <WhatsAppButton
             label={t("home.trial.cta")}
@@ -531,12 +533,14 @@ export default function HomePage() {
           <div className="relative">
             <div className="text-center max-w-xl mx-auto">
               <p className="tron-eyebrow text-xs mb-2">
-                {t("section.cta.eyebrow")}
+                {(settings?.contentSettings as any)?.ctaEyebrow || t("section.cta.eyebrow")}
               </p>
               <h2 className="text-3xl md:text-4xl font-display font-bold">
-                {t("section.cta.title")}
+                {(settings?.contentSettings as any)?.ctaTitle || t("section.cta.title")}
               </h2>
-              <p className="text-muted-foreground mt-3">{t("section.cta.subtitle")}</p>
+              <p className="text-muted-foreground mt-3">
+                {(settings?.contentSettings as any)?.ctaSubtitle || t("section.cta.subtitle")}
+              </p>
             </div>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3 sm:justify-center max-w-md sm:max-w-none mx-auto">
@@ -737,6 +741,8 @@ function ServicesSection() {
     radius: ((settings as any)?.[`${prefix}ImageRadius`]    ?? 0)       as number,
   });
 
+  const cs = (settings?.contentSettings ?? {}) as Record<string, string>;
+
   const cards = [
     {
       key: "pt",
@@ -744,8 +750,8 @@ function ServicesSection() {
       imgCfg: svcCfg("personalTraining"),
       icon: <Dumbbell size={28} className="text-primary" />,
       eyebrow: "Personal Training",
-      title: "1-on-1 Personal Training",
-      body: "Fully customised sessions designed around your goals, fitness level, and schedule — with real-time coaching and form correction.",
+      title: cs.servicePtTitle || "1-on-1 Personal Training",
+      body: cs.servicePtBody || "Fully customised sessions designed around your goals, fitness level, and schedule — with real-time coaching and form correction.",
       features: ["Fat Loss", "Muscle Building", "Athletic Performance", "Rehabilitation"],
       cta: (
         <a
@@ -764,8 +770,8 @@ function ServicesSection() {
       imgCfg: svcCfg("nutrition"),
       icon: <Utensils size={28} className="text-primary" />,
       eyebrow: "Nutrition Plans",
-      title: "Personalised Nutrition",
-      body: "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
+      title: cs.serviceNutritionTitle || "Personalised Nutrition",
+      body: cs.serviceNutritionBody || "Science-backed nutrition plans tailored to your lifestyle, body composition goals, and food preferences — no crash diets.",
       features: ["Macro Tracking", "Meal Planning", "Body Recomposition", "InBody Analysis"],
       cta: (
         <a
@@ -785,8 +791,8 @@ function ServicesSection() {
       imgCfg: svcCfg("supplement"),
       icon: <FlaskConical size={28} className="text-primary" />,
       eyebrow: "Supplement Protocol",
-      title: "Supplement Protocol",
-      body: "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",
+      title: cs.serviceSupplementTitle || "Supplement Protocol",
+      body: cs.serviceSupplementBody || "Targeted supplement guidance based on your blood work, training demands, and health goals — no guesswork, no waste.",
       features: ["Protein & Creatine", "Vitamins & Minerals", "Recovery Support", "Performance Stack"],
       cta: (
         <a

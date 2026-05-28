@@ -777,6 +777,12 @@ export const settings = pgTable("settings", {
   logoIconUrl:    text("logo_icon_url"),    // icon-only (navbar, sidebar, footer, loader)
   logoNavbarUrl:  text("logo_navbar_url"),  // horizontal icon+text logo (admin brand preview)
   logoAuthUrl:    text("logo_auth_url"),    // full-brand logo (auth hero, loading screen)
+  // ====== Website Content Management — public-facing text overrides ======
+  // Keys: servicePtTitle, servicePtBody, serviceNutritionTitle, serviceNutritionBody,
+  //       serviceSupplementTitle, serviceSupplementBody, ctaEyebrow, ctaTitle, ctaSubtitle,
+  //       trialEyebrow, trialTitle, trialBody, footerTagline.
+  // Public components fall back to hardcoded/i18n defaults when fields are null/absent.
+  contentSettings: jsonb("content_settings").$type<Record<string, string>>(),
 });
 
 // =============================
@@ -1628,6 +1634,7 @@ export const updateSettingsSchema = z.object({
   supplementThumbnailUrl: z.string().nullable().optional(),
   supplementMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
   brandSettings: z.record(z.number()).optional(),
+  contentSettings: z.record(z.string()).optional(),
 });
 
 export const PACKAGE_TYPES = [

@@ -12,6 +12,7 @@ import {
   Shield,
   ShieldCheck,
   Settings as SettingsIcon,
+  FileText,
   Plus,
   MoreHorizontal,
   ChevronDown,
@@ -147,6 +148,12 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           icon: <ShieldCheck size={18} />,
           isActive: (loc) => loc.startsWith("/admin/staff"),
           superAdminOnly: true,
+        },
+        {
+          href: "/admin/content",
+          label: t("nav.content", "Content"),
+          icon: <FileText size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/content"),
         },
         {
           href: "/admin/settings",

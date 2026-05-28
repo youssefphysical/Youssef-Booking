@@ -3,9 +3,13 @@ import { SiWhatsapp, SiInstagram } from "react-icons/si";
 import { useTranslation } from "@/i18n";
 import { dubaiTodayYMD } from "@shared/dates";
 import { BrandLogo } from "@/components/BrandLogo";
+import { useSettings } from "@/hooks/use-settings";
 
 export function Footer() {
   const { t } = useTranslation();
+  const { data: settings } = useSettings();
+  const tagline = (settings?.contentSettings as any)?.footerTagline || t("footer.tagline");
+
   return (
     <footer className="relative border-t border-white/5 py-10 mt-10">
       {/* Cyan neon divider continues the TRON system into the footer. */}
@@ -15,7 +19,7 @@ export function Footer() {
           <p className="font-display text-foreground/90 text-sm tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
             <BrandLogo variant="footer" />
             <span className="text-muted-foreground/60">·</span>
-            {t("footer.tagline")}
+            {tagline}
           </p>
           <p className="text-[11px] text-muted-foreground/70 mt-1">
             © {dubaiTodayYMD().slice(0,4)} Youssef Elite. {t("footer.rights")}
