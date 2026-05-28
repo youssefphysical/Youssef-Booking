@@ -5,7 +5,7 @@ import { formatWeekdayShortDate, dubaiTodayYMD } from "@shared/dates";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2, Plus, CreditCard, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Loader2, Trash2, Plus, CreditCard, Eye, EyeOff, ExternalLink, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useFeatureFlags } from "@/lib/featureFlags";
@@ -286,7 +286,8 @@ function BrandSettingsSection() {
   }
 
   function handleSave() {
-    updateSettings.mutate({ brandSettings: vals as unknown as Record<string, number> }, {
+    const existing = (rawSettings?.brandSettings ?? {}) as Record<string, unknown>;
+    updateSettings.mutate({ brandSettings: { ...existing, ...vals } as unknown as Record<string, number> }, {
       onSuccess: () => {
         toast({ title: "Brand settings saved" });
         setDirty(false);
@@ -430,6 +431,27 @@ function BrandSettingsSection() {
               {updateSettings.isPending && <Loader2 size={12} className="mr-1.5 animate-spin" />}
               Save
             </Button>
+          </div>
+
+          {/* Theme & Brand Colors redirect */}
+          <div className="mt-4 rounded-xl border border-primary/15 bg-primary/[0.04] p-4 flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                <Palette size={16} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Theme & brand colors</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Adjust the accent, background, card, border, and muted text color tokens with a live preview.
+                </p>
+              </div>
+            </div>
+            <a href="/admin/theme" data-testid="link-theme-manage">
+              <Button type="button" variant="outline" size="sm" className="gap-1.5 shrink-0">
+                <ExternalLink size={12} />
+                Manage
+              </Button>
+            </a>
           </div>
         </div>
       )}

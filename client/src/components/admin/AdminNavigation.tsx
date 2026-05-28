@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Settings as SettingsIcon,
   FileText,
+  Palette,
   Plus,
   MoreHorizontal,
   ChevronDown,
@@ -154,6 +155,12 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.content", "Content"),
           icon: <FileText size={18} />,
           isActive: (loc) => loc.startsWith("/admin/content"),
+        },
+        {
+          href: "/admin/theme",
+          label: t("nav.theme", "Theme"),
+          icon: <Palette size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/theme"),
         },
         {
           href: "/admin/settings",

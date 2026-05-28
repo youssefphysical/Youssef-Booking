@@ -70,6 +70,7 @@ const AdminAuditLog = lazy(() => import("@/pages/AdminAuditLog"));
 const AdminMergeClients = lazy(() => import("@/pages/AdminMergeClients"));
 const AdminPayments = lazy(() => import("@/pages/AdminPayments"));
 const AdminContent = lazy(() => import("@/pages/AdminContent"));
+const AdminTheme = lazy(() => import("@/pages/AdminTheme"));
 const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
@@ -134,7 +135,7 @@ function Router() {
   // and AuthPage pick up admin-configured sizes without a page reload.
   const { data: settings } = useSettings();
   useEffect(() => {
-    applyBrandCSSVars(settings?.brandSettings as Record<string, number> | undefined);
+    applyBrandCSSVars(settings?.brandSettings as Record<string, number | string> | undefined);
   }, [settings?.brandSettings]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
   const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
@@ -289,6 +290,9 @@ function Router() {
           </Route>
           <Route path="/admin/content">
             <ProtectedRoute component={AdminContent} adminOnly />
+          </Route>
+          <Route path="/admin/theme">
+            <ProtectedRoute component={AdminTheme} adminOnly />
           </Route>
 
           <Route component={NotFound} />
