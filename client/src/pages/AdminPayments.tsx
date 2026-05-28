@@ -18,6 +18,7 @@ import {
   AlertCircle,
   RefreshCcw,
   ReceiptText,
+  Download,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -130,6 +131,40 @@ const createPaymentFormSchema = insertPaymentSchema.omit({ packageId: true, paid
 });
 type CreatePaymentForm = z.infer<typeof createPaymentFormSchema>;
 
+function exportPaymentsToCSV(payments: PaymentWithUser[]) {
+  const today = new Date().toISOString().slice(0, 10);
+  const headers = ["Date", "Client", "Package", "Amount (AED)", "Method", "Status", "Reference", "Notes"];
+
+  const escape = (v: string | null | undefined) => {
+    if (v == null) return "";
+    const s = String(v);
+    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const rows = payments.map((p) => [
+    escape(p.createdAt ? formatDateDubai(p.createdAt) : ""),
+    escape(p.user?.fullName ?? "Unknown"),
+    escape(p.package?.name || p.package?.type || ""),
+    escape(String(p.amount)),
+    escape(PAYMENT_RECORD_METHOD_LABELS[p.method as keyof typeof PAYMENT_RECORD_METHOD_LABELS] ?? p.method),
+    escape(PAYMENT_RECORD_STATUS_LABELS[p.status as keyof typeof PAYMENT_RECORD_STATUS_LABELS] ?? p.status),
+    escape(p.receiptReference ?? ""),
+    escape(p.notes ?? ""),
+  ]);
+
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `payments_${today}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminPayments() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -189,15 +224,28 @@ export default function AdminPayments() {
           subtitle="Track all received and pending payments in AED"
           testId="text-payments-title"
           right={
-            <Button
-              size="sm"
-              onClick={() => setShowCreate(true)}
-              data-testid="button-new-payment"
-              className="gap-2"
-            >
-              <Plus size={14} />
-              New Payment
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportPaymentsToCSV(payments)}
+                disabled={payments.length === 0}
+                data-testid="button-export-payments-csv"
+                className="gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground"
+              >
+                <Download size={14} />
+                Export CSV
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowCreate(true)}
+                data-testid="button-new-payment"
+                className="gap-2"
+              >
+                <Plus size={14} />
+                New Payment
+              </Button>
+            </div>
           }
         />
 
