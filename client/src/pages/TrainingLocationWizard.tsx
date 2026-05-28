@@ -293,6 +293,12 @@ export default function TrainingLocationWizard() {
         body: t("wizard.building.body", "Youssef trains me at my building gym."),
       },
       {
+        key: "home" as const,
+        icon: <Home size={22} className="text-primary" />,
+        title: t("wizard.home.title", "Home"),
+        body: t("wizard.home.body", "Youssef trains me at my home."),
+      },
+      {
         key: "hotel" as const,
         icon: <ConciergeBell size={22} className="text-primary" />,
         title: t("wizard.hotel.title", "Hotel Training"),
