@@ -1,0 +1,572 @@
+I need a complete professional rebuild of the Admin Control Panel.
+
+This is the final stage of the project, so I need the control panel to be clean, stable, mobile-friendly, responsive, scalable, and easy to manage from any device.
+
+VERY IMPORTANT:
+Do NOT bring back any old removed features.
+Do NOT duplicate sections.
+Do NOT create scattered controls.
+Do NOT break existing client booking, registration, packages, sessions, emails, or authentication logic.
+Do NOT redesign the public website.
+This task is ONLY for rebuilding the admin/control panel experience.
+
+Project:
+Youssef Elite Coaching
+Premium personal training booking platform
+Theme:
+Luxury TRON Legacy inspired design
+Dark futuristic UI
+Cyan / blue neon accents
+Professional Dubai elite coaching brand
+
+Main goal:
+Create a professional admin control panel where I can manage everything in the website from one clear, organized place.
+
+Required admin route:
+"/admin"
+
+Admin access:
+
+- Only super admin/admin can access
+- Normal users must never see admin routes
+- Protect all "/api/admin/*"
+- Return JSON "{ "error": "Unauthorized" }" for unauthorized API access
+- Permanent super admin email:
+  "youssef.physical@gmail.com"
+
+GLOBAL CONTROL PANEL REQUIREMENTS:
+
+1. Fully responsive on all mobile sizes
+2. Works perfectly on iPhone, Samsung, Android, tablets, desktop, laptop
+3. No cards cut off
+4. No text overflowing outside cards
+5. No buttons squeezed or broken
+6. No horizontal scrolling on mobile
+7. Auto sizing layout
+8. Safe spacing on all screen sizes
+9. Sticky mobile-friendly navigation
+10. Clean admin sidebar on desktop
+11. Bottom/tab navigation or collapsible navigation on mobile
+12. Every section must have its own purpose
+13. No repeated controls
+14. Every page must have loading, empty, error, and success states
+15. Every form must have validation
+16. Every action must have confirmation when dangerous
+17. All tables must become cards on mobile
+18. Search and filters must work properly
+19. UI must be fast and not overloaded
+
+ADMIN PANEL STRUCTURE:
+
+1. Dashboard Overview
+   Route:
+   "/admin/dashboard"
+
+Show:
+
+- Today’s sessions
+- Upcoming sessions
+- New users
+- Active clients
+- Pending payments
+- Expiring packages
+- Low remaining sessions
+- Missed sessions
+- Emergency cancels used
+- Recent bookings
+- Quick actions
+
+Design:
+
+- Clean cards
+- KPI cards
+- Mobile stacked layout
+- No overcrowding
+- Clear priority colors
+
+2. Client Management
+   Route:
+   "/admin/clients"
+
+Features:
+
+- View all clients
+- Search clients
+- Filter by active/inactive/VIP/package/goal
+- Open client profile
+- View client booking history
+- View package history
+- View payments
+- View notes
+- View uploaded InBody data
+- Add/edit admin notes
+- Assign package
+- Add bonus sessions
+- Add extra sessions
+- Extend expiry date
+- Mark client as VIP manually or automatically
+- See client goals:
+  Fat loss / Muscle gain / Recomposition
+
+Mobile:
+
+- Client list must become clean client cards
+- No broken tables on mobile
+
+3. Booking & Sessions Management
+   Route:
+   "/admin/sessions"
+
+Features:
+
+- View all sessions
+- Calendar view
+- List view
+- Filter by date/client/status/location/session type
+- Session statuses:
+  booked
+  completed
+  cancelled
+  missed
+  rescheduled
+  emergency cancelled
+- Edit session
+- Mark complete
+- Cancel session
+- Reschedule same-day only
+- Enforce booking rules:
+  - Cannot book less than 6 hours before session
+  - Cancellation allowed before 6 hours
+  - Inside 6 hours session is charged
+  - Emergency cancel: 1 per month
+- Show location:
+  Fitness Zone City Walk
+  Building gym
+  Home training
+  Online session
+  Custom location
+- Show session focus:
+  chest
+  back
+  legs
+  shoulders
+  arms
+  core
+  push
+  pull
+  upper front
+  upper back
+  lower front
+  lower back
+  crossfit
+  etc.
+
+4. Package Management
+   Route:
+   "/admin/packages"
+
+Features:
+
+- Create/edit packages
+- Package examples:
+  10+1
+  20+3
+  25+5
+  30 sessions duo
+- Control package name
+- Session count
+- Bonus sessions
+- Price
+- Expiry duration
+- Package visibility
+- Active/inactive
+- Assign package to client
+- See package usage
+- See remaining sessions
+- See expiry date
+- Package completed state
+- Package expiring soon alert
+- Final sessions alert
+
+5. Payment Management
+   Route:
+   "/admin/payments"
+
+Features:
+
+- View payments
+- Payment status:
+  pending
+  received
+  failed
+  refunded
+  partial
+- Manual payment approval
+- Amount in AED only
+- Package linked to payment
+- Payment method:
+  bank transfer
+  cash
+  card
+  payment link
+  gateway
+- Add payment note
+- Receipt reference
+- Trigger payment confirmation email when approved
+- Payment dashboard summaries
+
+Important:
+Do not force full payment gateway yet.
+Keep manual admin control available.
+
+6. Media Center
+   Route:
+   "/admin/media"
+
+This must replace all scattered image uploads.
+
+Remove image upload controls from Settings and any other admin pages.
+
+Media Center must manage ALL images:
+
+- Website logos
+- Primary logo
+- Secondary logo
+- Icon logo
+- Favicon
+- Email logo
+- Footer logo
+- Hero images
+- Homepage cover images
+- Service images
+- Nutrition image
+- Training images
+- Coach images
+- Email hero images
+- Email icons
+- Default avatar
+- InBody placeholder
+- Package icons
+- Session type icons
+- Admin empty state images
+
+Features:
+
+- Upload
+- Replace
+- Delete
+- Preview
+- Copy image URL
+- See where image is used
+- Category/tag
+- Image title
+- Alt text
+- Recommended size
+- Current dimensions
+- File size
+- Last updated
+- Uploaded by
+- Active/inactive
+- Safe delete confirmation
+
+Technical:
+
+- One image upload pipeline only
+- Validate file type
+- Validate file size
+- Compress/resize large images
+- Support JPG, PNG, WEBP, SVG where safe
+- Prevent broken images
+- Keep existing images working
+- Do not delete existing assets during migration
+
+7. Theme & Brand Control
+   Route:
+   "/admin/theme"
+
+I need a full visual control section for website colors and brand styling.
+
+Features:
+
+- Manage global website colors
+- Manage admin colors
+- Manage button colors
+- Manage card colors
+- Manage border colors
+- Manage glow intensity
+- Manage background colors
+- Manage text colors
+- Manage success/warning/error/info colors
+
+TRON Legacy inspired palette:
+Include editable color tokens such as:
+
+- deep black
+- charcoal black
+- dark navy
+- electric cyan
+- neon blue
+- ice blue
+- teal glow
+- soft cyan border
+- muted gray text
+- white text
+- warning amber
+- soft red danger
+- success green
+
+Important:
+
+- Colors must be controlled through design tokens / CSS variables
+- Do not hardcode random colors
+- Changing a theme color should update the website consistently
+- Add preview cards to show how colors look before saving
+- Add reset to default button
+- Add save/publish flow
+
+8. Website Content Management
+   Route:
+   "/admin/content"
+
+Manage text content for:
+
+- Homepage hero title/subtitle
+- Services section
+- Nutrition section
+- Training section
+- About coach section
+- CTA sections
+- Footer text
+- Contact text
+- Policies
+- Terms
+- Privacy
+- Refund/cancellation policy
+
+No image uploads here.
+Only text/content.
+Any image control should link to Media Center.
+
+9. Email Management
+   Route:
+   "/admin/emails"
+
+Features:
+
+- View all email templates
+- Welcome email
+- Email verification
+- Password reset
+- Booking confirmed
+- Session reminder
+- Payment confirmed
+- Package expiry
+- Final sessions
+- Session cancelled
+- Session rescheduled
+- Missed session
+- Emergency cancel used
+- Admin notifications
+
+Features:
+
+- Preview email
+- Send test email
+- See last sent status
+- Manage subject/preheader
+- View linked media assets
+- Link to Media Center for email images
+- Do not edit complex HTML directly unless advanced mode
+
+10. Settings Cleanup
+    Route:
+    "/admin/settings"
+
+Settings should only contain:
+
+- General business info
+- Contact email
+- WhatsApp number
+- Social links
+- Booking rules
+- Cancellation rules
+- Emergency cancel rules
+- Working hours
+- Timezone
+- Notification toggles
+
+Remove from Settings:
+
+- logo uploads
+- hero image uploads
+- email image uploads
+- any image-related controls
+
+Replace them with:
+“Manage in Media Center”
+
+11. Admin Navigation
+    Create clean admin navigation:
+
+Desktop:
+
+- Sidebar navigation
+- Collapsible sidebar
+- Active state
+- Icons
+- Clear labels
+
+Mobile:
+
+- Top bar + menu drawer OR bottom navigation
+- Touch friendly
+- No tiny buttons
+- No hidden inaccessible actions
+
+Admin sections:
+
+- Dashboard
+- Clients
+- Sessions
+- Packages
+- Payments
+- Media
+- Theme
+- Content
+- Emails
+- Settings
+
+12. Responsive Rules
+    Use professional responsive layout rules:
+
+Breakpoints:
+
+- 360px small mobile
+- 390px iPhone
+- 412px Android
+- 768px tablet
+- 1024px laptop
+- 1280px desktop
+
+Requirements:
+
+- No horizontal overflow
+- Cards stack properly
+- Tables convert to cards on mobile
+- Forms become single column on mobile
+- Buttons become full width where needed
+- Modals must fit mobile screen
+- Side panels become bottom sheets or full screen on mobile
+- Text must wrap properly
+- Inputs must not exceed screen width
+- Fixed elements must not cover content
+
+13. UI Quality
+    Every admin page must have:
+
+- Page title
+- Short description
+- Search if needed
+- Filters if needed
+- Clear primary action
+- Empty state
+- Loading state
+- Error state
+- Success toast
+- Confirmation dialogs
+- Consistent card design
+- Consistent spacing
+
+14. Performance
+
+- Lazy load heavy admin data
+- Avoid unnecessary rerenders
+- Paginate long lists
+- Optimize images
+- Do not load all clients/sessions at once if large
+- Keep admin fast on mobile
+
+15. Safety
+
+- Do not break public website
+- Do not break registration
+- Do not break login
+- Do not break booking
+- Do not break emails
+- Do not break existing database
+- Do not delete existing assets
+- Do not remove current data
+- Use safe migration if needed
+- Keep rollback-safe changes
+
+TASK BREAKDOWN:
+
+Phase 1:
+Audit current admin/control panel.
+Find duplicated sections, broken layouts, scattered image controls, mobile issues, and unsafe patterns.
+Do not change anything yet.
+Report the plan.
+
+Phase 2:
+Create new admin shell/layout.
+Responsive sidebar/mobile nav.
+Global admin page structure.
+Protected admin routes.
+
+Phase 3:
+Build Dashboard Overview.
+
+Phase 4:
+Build Client Management.
+
+Phase 5:
+Build Sessions/Bookings Management.
+
+Phase 6:
+Build Packages Management.
+
+Phase 7:
+Build Payments Management.
+
+Phase 8:
+Build Media Center and migrate image controls into it.
+Remove image uploads from Settings.
+
+Phase 9:
+Build Theme & Brand Control with global design tokens and TRON color palette.
+
+Phase 10:
+Build Content Management.
+
+Phase 11:
+Build Email Management.
+
+Phase 12:
+Clean Settings.
+
+Phase 13:
+Mobile QA.
+Test all admin pages on:
+
+- 360px
+- 390px
+- 412px
+- 768px
+- desktop
+
+Phase 14:
+Production QA.
+Check:
+
+- no broken routes
+- no unauthorized access
+- no visual overflow
+- no broken cards
+- no duplicated controls
+- no missing admin actions
+- no old removed features returned
+
+Final requirement:
+Before making major changes, show me the implementation plan.
+Then implement phase by phase.
+Do not rebuild everything randomly in one uncontrolled pass.
