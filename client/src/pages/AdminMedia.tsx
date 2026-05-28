@@ -1,4 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { SERVICE_CARD_SLIDER_FIELDS } from "@/lib/service-card-fields";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -50,6 +67,7 @@ import {
   X,
   Check,
   Loader2,
+  GripVertical,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -2461,34 +2479,114 @@ function TransformationCard(props: TransformationCardProps) {
   );
 }
 
+// ─── Sortable row wrapper ─────────────────────────────────────────────────────
+function SortableTransformationRow({
+  row,
+  isSaving,
+}: {
+  row: Transformation;
+  isSaving: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: row.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex gap-2 items-start ${isDragging ? "opacity-50 z-50 relative" : ""}`}
+    >
+      <div className="flex flex-col items-center justify-center pt-4 shrink-0">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          data-testid={`button-drag-handle-${row.id}`}
+          disabled={isSaving}
+          className="w-7 h-14 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-primary/30 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-grab active:cursor-grabbing touch-none"
+          title="Drag to reorder"
+        >
+          {isSaving ? (
+            <Loader2 size={13} className="animate-spin text-muted-foreground" />
+          ) : (
+            <GripVertical size={13} className="text-muted-foreground" />
+          )}
+        </button>
+      </div>
+      <div className="flex-1 min-w-0">
+        <TransformationCard mode="edit" row={row} />
+      </div>
+    </div>
+  );
+}
+
 function TransformationsMediaSection() {
   const { toast } = useToast();
   const { data: rawRows = [], isLoading } = useAdminTransformations();
   const createMutation = useCreateTransformation();
   const reorderMutation = useUpdateTransformation();
   const [adding, setAdding] = useState(false);
-  const [reordering, setReordering] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Optimistic local order — kept in sync with server data but can be
+  // reordered instantly on drag end before the server responds.
+  const [localIds, setLocalIds] = useState<number[]>([]);
 
   // Sort by sortOrder ascending so the list matches the public gallery order.
-  const rows = [...rawRows].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const sortedRows = [...rawRows].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-  async function handleMove(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= rows.length) return;
-    const a = rows[index];
-    const b = rows[target];
-    const aOrder = a.sortOrder ?? index;
-    const bOrder = b.sortOrder ?? target;
-    setReordering(a.id);
+  // Sync localIds whenever the server data changes (initial load, mutations).
+  useEffect(() => {
+    setLocalIds(sortedRows.map((r) => r.id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawRows]);
+
+  // Build the display list from localIds so optimistic reorder is instant.
+  const rowById = Object.fromEntries(rawRows.map((r) => [r.id, r]));
+  const rows = localIds.map((id) => rowById[id]).filter(Boolean) as Transformation[];
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localIds.indexOf(active.id as number);
+    const newIndex = localIds.indexOf(over.id as number);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Optimistic update
+    const newIds = arrayMove(localIds, oldIndex, newIndex);
+    setLocalIds(newIds);
+
+    // Persist — assign sort_order = array index for all affected rows
+    setIsSaving(true);
     try {
-      await Promise.all([
-        reorderMutation.mutateAsync({ id: a.id, updates: { sortOrder: bOrder } }),
-        reorderMutation.mutateAsync({ id: b.id, updates: { sortOrder: aOrder } }),
-      ]);
+      await Promise.all(
+        newIds.map((id, idx) =>
+          reorderMutation.mutateAsync({ id, updates: { sortOrder: idx } }),
+        ),
+      );
     } catch (e: any) {
       toast({ title: "Reorder failed", description: e?.message, variant: "destructive" });
+      // Roll back optimistic update
+      setLocalIds(sortedRows.map((r) => r.id));
     } finally {
-      setReordering(null);
+      setIsSaving(false);
     }
   }
 
@@ -2500,7 +2598,7 @@ function TransformationsMediaSection() {
             <Sparkles size={17} className="text-primary" /> Transformations Gallery
           </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Before/after photo pairs displayed on the public transformations page. Upload, label, and reorder.
+            Before/after photo pairs displayed on the public transformations page. Drag to reorder.
           </p>
         </div>
         {!adding && (
@@ -2539,42 +2637,23 @@ function TransformationsMediaSection() {
           No transformations yet. Add your first before/after pair.
         </p>
       ) : (
-        <div className="space-y-4">
-          {rows.map((row, index) => (
-            <div key={row.id} className="flex gap-2 items-start">
-              {/* Reorder controls */}
-              <div className="flex flex-col gap-1 pt-4 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleMove(index, -1)}
-                  disabled={index === 0 || reordering !== null}
-                  data-testid={`button-move-up-${row.id}`}
-                  className="w-7 h-7 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  title="Move up"
-                >
-                  {reordering === row.id ? (
-                    <Loader2 size={11} className="animate-spin" />
-                  ) : (
-                    <ArrowUp size={11} />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMove(index, 1)}
-                  disabled={index === rows.length - 1 || reordering !== null}
-                  data-testid={`button-move-down-${row.id}`}
-                  className="w-7 h-7 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  title="Move down"
-                >
-                  <ArrowDown size={11} />
-                </button>
-              </div>
-              <div className="flex-1 min-w-0">
-                <TransformationCard mode="edit" row={row} />
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={localIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {rows.map((row) => (
+                <SortableTransformationRow
+                  key={row.id}
+                  row={row}
+                  isSaving={isSaving}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
