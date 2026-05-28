@@ -26,15 +26,26 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const BASE = "http://localhost:5000";
+const BASE = process.env.E2E_BASE_URL ?? "http://localhost:5000";
+const ADMIN_USERNAME = process.env.E2E_ADMIN_USERNAME ?? "admin";
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "change-this-password";
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 async function adminLogin(page: Page) {
   await page.goto(`${BASE}/admin-access`);
   await page.waitForSelector('[data-testid="input-admin-username"]');
-  await page.fill('[data-testid="input-admin-username"]', "admin");
-  await page.fill('[data-testid="input-admin-password"]', "change-this-password");
+
+  // Dismiss cookie banner if present — it sits fixed at the bottom and
+  // intercepts pointer events on the login submit button.
+  const cookieBanner = page.getByTestId("cookie-banner");
+  if (await cookieBanner.isVisible()) {
+    await page.getByTestId("button-cookie-accept").click();
+    await cookieBanner.waitFor({ state: "hidden", timeout: 3_000 }).catch(() => {});
+  }
+
+  await page.fill('[data-testid="input-admin-username"]', ADMIN_USERNAME);
+  await page.fill('[data-testid="input-admin-password"]', ADMIN_PASSWORD);
   await page.click('[data-testid="button-submit-admin-login"]');
   await page.waitForURL(/\/admin(?!-access)/, { timeout: 10_000 });
 }
@@ -292,15 +303,15 @@ test.describe("Admin Payments — Export CSV", () => {
 
   test("after applying 'Received' status filter every CSV data row has Status = Received", async ({
     page,
-    request,
   }) => {
     await ensurePaymentExists(page);
 
-    // Seed a guaranteed "received" payment so the filter always yields rows.
-    const userId = await getFirstUserId(request);
+    // Seed a guaranteed "received" payment via page.request so the session
+    // cookie established by adminLogin() is included automatically.
+    const userId = await getFirstUserId(page.request);
     let seededId: number | null = null;
     if (userId !== null) {
-      seededId = await createReceivedPayment(request, userId);
+      seededId = await createReceivedPayment(page.request, userId);
     }
 
     try {
@@ -343,7 +354,7 @@ test.describe("Admin Payments — Export CSV", () => {
       }
     } finally {
       if (seededId !== null) {
-        await deletePayment(request, seededId);
+        await deletePayment(page.request, seededId);
       }
     }
   });

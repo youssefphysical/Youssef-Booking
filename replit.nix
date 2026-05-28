@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.xorg.libxcb
     pkgs.dbus
     pkgs.alsa-lib
     pkgs.expat
