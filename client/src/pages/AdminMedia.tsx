@@ -2592,9 +2592,17 @@ function getSectionFromUrl(): Section {
 export default function AdminMedia() {
   const [activeSection, setActiveSection] = useState<Section>(getSectionFromUrl);
 
+  useEffect(() => {
+    function onPopState() {
+      setActiveSection(getSectionFromUrl());
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   function navigate(section: Section) {
     setActiveSection(section);
-    window.history.replaceState(null, "", `/admin/media?section=${section}`);
+    window.history.pushState(null, "", `/admin/media?section=${section}`);
   }
   const { data, isLoading, error } = useMediaData();
 
