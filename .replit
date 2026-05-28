@@ -45,6 +45,10 @@ args = "client-payments-panel-static"
 task = "workflow.run"
 args = "client-payments-panel-spec"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "csv-export-spec"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -94,6 +98,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx vitest run tests/client-payments-panel.spec.tsx"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "csv-export-spec"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx vitest run tests/csv-export.spec.ts"
 
 [workflows.workflow.metadata]
 outputType = "console"

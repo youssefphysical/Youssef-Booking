@@ -131,7 +131,7 @@ const createPaymentFormSchema = insertPaymentSchema.omit({ packageId: true, paid
 });
 type CreatePaymentForm = z.infer<typeof createPaymentFormSchema>;
 
-function exportPaymentsToCSV(payments: PaymentWithUser[]) {
+export function exportPaymentsToCSV(payments: PaymentWithUser[]) {
   const today = new Date().toISOString().slice(0, 10);
   const headers = ["Date", "Client", "Package", "Amount (AED)", "Method", "Status", "Reference", "Notes"];
 
