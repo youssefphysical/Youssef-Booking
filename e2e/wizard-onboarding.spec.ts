@@ -708,6 +708,102 @@ test.describe("Wizard Onboarding", () => {
     await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
   });
 
+  test("stays on /wizard and shows an error when Other Location Finish is clicked with blank address", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("blank-other");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: pick "Outdoor / Custom Workout" ───────────────────────────────
+    const otherBranchBtn = page.getByTestId("button-branch-other_location");
+    await otherBranchBtn.waitFor({ timeout: 8_000 });
+    await otherBranchBtn.click();
+
+    // ── Step 2: fill Maps link and name, but leave address blank ─────────────
+    const otherForm = page.getByTestId("form-other-location");
+    await otherForm.waitFor({ timeout: 8_000 });
+
+    // Fill the Maps link and location name so those guards pass.
+    await page.fill(
+      '[data-testid="input-other-location-maps-link"]',
+      "https://maps.google.com/?q=Kite+Beach+Dubai",
+    );
+    await page.fill(
+      '[data-testid="input-other-location-name"]',
+      "Kite Beach",
+    );
+
+    // Confirm the address input exists and is indeed empty.
+    const addressInput = page.getByTestId("input-other-location-address");
+    await expect(addressInput).toBeVisible();
+    await expect(addressInput).toHaveValue("");
+
+    // ── Click Finish with address blank ───────────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — no navigation should have occurred ─────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── Inline error must appear under the submit button ──────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
+  test("stays on /wizard and shows an error when Online Coaching Finish is clicked with blank platform", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("blank-online");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: pick "Online Coaching" (requires a platform in step 2) ────────
+    const onlineBranchBtn = page.getByTestId("button-branch-online_coaching");
+    await onlineBranchBtn.waitFor({ timeout: 8_000 });
+    await onlineBranchBtn.click();
+
+    // ── Step 2: form visible but leave platform field blank ───────────────────
+    const onlineForm = page.getByTestId("form-online-coaching");
+    await onlineForm.waitFor({ timeout: 8_000 });
+
+    // Confirm the platform input exists and is indeed empty.
+    const platformInput = page.getByTestId("input-online-coaching-platform");
+    await expect(platformInput).toBeVisible();
+    await expect(platformInput).toHaveValue("");
+
+    // ── Click Finish with no platform filled ──────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — no navigation should have occurred ─────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── Inline error must appear under the submit button ──────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
   test("fitness-zone card completes the wizard in one click and reaches /book", async ({
     page,
   }) => {

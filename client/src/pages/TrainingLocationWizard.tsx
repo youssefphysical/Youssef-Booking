@@ -79,6 +79,9 @@ export default function TrainingLocationWizard() {
   const [gymGuest, setGymGuest] = useState("");
   const [gymNotes, setGymNotes] = useState("");
 
+  // Online Coaching form
+  const [onlineCoachingPlatform, setOnlineCoachingPlatform] = useState("");
+
   // FZ activation request form — receipt upload and purchase date were
   // removed per product requirement (Nov 2026). Admin verifies payment
   // manually outside the platform and approves via the queue.
@@ -719,9 +722,13 @@ export default function TrainingLocationWizard() {
     }
 
     if (branch === "online_coaching") {
+      if (!onlineCoachingPlatform.trim()) {
+        showError(t("wizard.online.needPlatform", "Please enter your preferred coaching platform (e.g. Zoom, WhatsApp Video)."));
+        return;
+      }
       const url = whatsappUrl(
         null,
-        "Hi Youssef, I'm interested in online coaching. I'd like to know more about the available plans, nutrition support, supplement guidance, and how we can start.",
+        `Hi Youssef, I'm interested in online coaching via ${onlineCoachingPlatform.trim()}. I'd like to know more about the available plans, nutrition support, supplement guidance, and how we can start.`,
       );
       window.open(url, "_blank", "noopener,noreferrer");
       wizardDraft.clear();
@@ -730,18 +737,25 @@ export default function TrainingLocationWizard() {
 
     if (branch === "other_location") {
       if (!mapsLink.trim()) {
+        showError(t("wizard.otherLocation.needMaps", "Google Maps link is required."));
         toast({ title: t("wizard.otherLocation.needMaps", "Google Maps link is required."), variant: "destructive" });
         return;
       }
       if (!gymName.trim()) {
+        showError(t("wizard.otherLocation.needName", "Location name is required."));
         toast({ title: t("wizard.otherLocation.needName", "Location name is required."), variant: "destructive" });
+        return;
+      }
+      if (!gymAddress.trim()) {
+        showError(t("wizard.otherLocation.needAddress", "Area / Location is required."));
+        toast({ title: t("wizard.otherLocation.needAddress", "Area / Location is required."), variant: "destructive" });
         return;
       }
       const payload = {
         kind: "other_location" as const,
         label: gymName,
         gymName,
-        address: gymAddress || undefined,
+        address: gymAddress,
         accessNotes: gymNotes || undefined,
         mapsLink: mapsLink || undefined,
         isDefault: locations.length === 0,
@@ -969,6 +983,16 @@ export default function TrainingLocationWizard() {
             <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed">
               {t("wizard.online.info", "You will receive a video call link via WhatsApp before each online session. Make sure you have a stable internet connection and enough space to train.")}
             </div>
+            <Field
+              label={t("wizard.online.platform", "Preferred Coaching Platform")}
+              value={onlineCoachingPlatform}
+              onChange={setOnlineCoachingPlatform}
+              testId="input-online-coaching-platform"
+              required
+              placeholder={t("wizard.online.platformPh", "e.g. Zoom, WhatsApp Video, Google Meet")}
+              icon={<MapPin size={11} />}
+              hint={t("wizard.online.platformHint", "This will be shared with Youssef so he can schedule your sessions.")}
+            />
           </div>
         )}
 
@@ -998,6 +1022,7 @@ export default function TrainingLocationWizard() {
               value={gymAddress}
               onChange={setGymAddress}
               testId="input-other-location-address"
+              required
               placeholder={t("wizard.other.addressPh", "Example: Dubai Marina, JVC, Downtown")}
               icon={<Navigation size={11} />}
             />
