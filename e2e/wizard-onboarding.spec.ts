@@ -301,6 +301,51 @@ test.describe("Wizard Onboarding", () => {
     });
   });
 
+  test("Back button on step 2 returns to the branch picker (step 1)", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("back");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker should be visible ───────────────────────────────
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Click "Building Gym" to advance to step 2.
+    const buildingBranchBtn = page.getByTestId("button-branch-building");
+    await buildingBranchBtn.waitFor({ timeout: 8_000 });
+    await buildingBranchBtn.click();
+
+    // ── Step 2: building-location form should now be visible ──────────────────
+    const buildingForm = page.getByTestId("form-building-location");
+    await buildingForm.waitFor({ timeout: 8_000 });
+
+    // Branch picker grid must be gone at this point.
+    await expect(page.getByTestId("grid-wizard-branches")).not.toBeVisible();
+
+    // ── Click the Back button ─────────────────────────────────────────────────
+    const backBtn = page.getByTestId("button-wizard-back");
+    await expect(backBtn).toBeVisible();
+    await backBtn.click();
+
+    // ── Verify we are back on step 1 ─────────────────────────────────────────
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // Step 2 form must no longer be visible.
+    await expect(page.getByTestId("form-building-location")).not.toBeVisible();
+
+    // URL should still be /wizard — no navigation away.
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+  });
+
   test("fitness-zone card completes the wizard in one click and reaches /book", async ({
     page,
   }) => {
