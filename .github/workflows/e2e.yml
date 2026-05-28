@@ -1,17 +1,30 @@
 name: E2E · Playwright browser tests
 
-# Runs the Playwright e2e suite on every push / pull-request across all
-# branches so issues are caught before code reaches main.  The job:
+# Runs the full Playwright e2e suite on every push / pull-request across all
+# branches so regressions are caught before code reaches main.  The job:
 #   1. Installs Node deps
 #   2. Downloads the Chromium browser used by Playwright
 #   3. Builds the app
 #   4. Starts the Express+Vite server in the background
 #   5. Waits until :5000 is accepting connections
-#   6. Runs every spec under ./e2e  (currently csv-export.spec.ts)
+#   6. Runs every spec under ./e2e:
+#        - admin-login.spec.ts
+#        - booking-calendar.spec.ts
+#        - client-registration.spec.ts
+#        - csv-export.spec.ts
+#        - wizard-onboarding.spec.ts   ← full 15-test wizard happy-path
 #   7. Uploads the HTML report as a build artifact
-#      (currently: csv-export.spec.ts, admin-login.spec.ts)
 #
-# Required GitHub repo secrets (Settings → Secrets and variables → Actions):
+# ── Blocking merges ─────────────────────────────────────────────────────────
+# To make a failing run block a pull-request merge, enable branch protection
+# in GitHub:
+#   Repository → Settings → Branches → Add branch protection rule
+#     Branch name pattern : main  (or your default branch)
+#     ✅  Require status checks to pass before merging
+#         Search for and add: "Playwright e2e"
+#     ✅  Require branches to be up to date before merging
+#
+# ── Required GitHub repo secrets ────────────────────────────────────────────
 #   DATABASE_URL    — Neon / Postgres connection string for the test database
 #   JWT_SECRET      — any random string; used to sign JWTs
 #   SESSION_SECRET  — any random string; used to sign session cookies
@@ -87,8 +100,12 @@ jobs:
           echo "::error::Server did not start within 60 s"
           exit 1
 
-      - name: Run Playwright e2e tests
-        run: npx playwright test
+      - name: Run Playwright e2e tests (all specs)
+        run: npx playwright test --reporter=list
+
+      - name: Run wizard onboarding spec (explicit coverage gate)
+        if: success() || failure()
+        run: npx playwright test e2e/wizard-onboarding.spec.ts --reporter=list
 
       - name: Upload Playwright HTML report
         if: always()
