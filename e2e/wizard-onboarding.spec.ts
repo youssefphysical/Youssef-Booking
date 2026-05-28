@@ -301,6 +301,92 @@ test.describe("Wizard Onboarding", () => {
     });
   });
 
+  test("stays on /wizard and shows an error when Hotel Finish is clicked with blank Maps link", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("blank-hotel");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: pick "Hotel Training" (requires a Maps link in step 2) ────────
+    const hotelBranchBtn = page.getByTestId("button-branch-hotel");
+    await hotelBranchBtn.waitFor({ timeout: 8_000 });
+    await hotelBranchBtn.click();
+
+    // ── Step 2: form visible but leave Maps link blank ────────────────────────
+    const hotelForm = page.getByTestId("form-hotel-location");
+    await hotelForm.waitFor({ timeout: 8_000 });
+
+    // Confirm the Maps link input exists and is indeed empty.
+    const mapsInput = page.getByTestId("input-hotel-maps-link");
+    await expect(mapsInput).toBeVisible();
+    await expect(mapsInput).toHaveValue("");
+
+    // ── Click Finish with no Maps link filled ─────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — no navigation should have occurred ─────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── Inline error must appear under the submit button ──────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
+  test("stays on /wizard and shows an error when Home Finish is clicked with blank Address", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("blank-home");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: pick "Home" (requires an address in step 2) ───────────────────
+    const homeBranchBtn = page.getByTestId("button-branch-home");
+    await homeBranchBtn.waitFor({ timeout: 8_000 });
+    await homeBranchBtn.click();
+
+    // ── Step 2: form visible but leave Address blank ──────────────────────────
+    const homeForm = page.getByTestId("form-home-location");
+    await homeForm.waitFor({ timeout: 8_000 });
+
+    // Confirm the address input exists and is indeed empty.
+    const addressInput = page.getByTestId("input-home-address");
+    await expect(addressInput).toBeVisible();
+    await expect(addressInput).toHaveValue("");
+
+    // ── Click Finish with no address filled ───────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — no navigation should have occurred ─────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── Inline error must appear under the submit button ──────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).toBeVisible({
+      timeout: 5_000,
+    });
+  });
+
   test("Back button on step 2 returns to the branch picker (step 1)", async ({
     page,
   }) => {

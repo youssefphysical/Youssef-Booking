@@ -605,7 +605,9 @@ export default function TrainingLocationWizard() {
 
     if (branch === "home") {
       if (!homeAddress.trim()) {
-        toast({ title: t("wizard.home.needAddress", "Address is required."), variant: "destructive" });
+        const msg = t("wizard.home.needAddress", "Address is required.");
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       const payload = {
@@ -661,7 +663,9 @@ export default function TrainingLocationWizard() {
 
     if (branch === "hotel") {
       if (!mapsLink.trim()) {
-        toast({ title: t("wizard.hotel.needMaps", "Google Maps link is required."), variant: "destructive" });
+        const msg = t("wizard.hotel.needMaps", "Google Maps link is required.");
+        showError(msg);
+        toast({ title: msg, variant: "destructive" });
         return;
       }
       const payload = {
