@@ -820,14 +820,6 @@ export default function TrainingLocationWizard() {
                 key={c.key}
                 type="button"
                 onClick={() => {
-                  if (c.key === "online_coaching") {
-                    const url = whatsappUrl(
-                      null,
-                      "Hi Youssef, I'm interested in online coaching. I'd like to know more about the available plans, nutrition support, supplement guidance, and how we can start.",
-                    );
-                    window.open(url, "_blank", "noopener,noreferrer");
-                    return;
-                  }
                   if (c.key === "fitness_zone") {
                     const locationPayload = {
                       kind: "fitness_zone" as const,

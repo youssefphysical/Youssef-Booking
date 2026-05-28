@@ -436,6 +436,51 @@ test.describe("Wizard Onboarding", () => {
     expect(new URL(page.url()).pathname).toBe("/wizard");
   });
 
+  test("Back button on step 2 (Online Coaching) returns to the branch picker", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("back-online");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker should be visible ───────────────────────────────
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Click "Online Coaching" to advance to step 2.
+    const onlineBranchBtn = page.getByTestId("button-branch-online_coaching");
+    await onlineBranchBtn.waitFor({ timeout: 8_000 });
+    await onlineBranchBtn.click();
+
+    // ── Step 2: online-coaching form should now be visible ────────────────────
+    const onlineForm = page.getByTestId("form-online-coaching");
+    await onlineForm.waitFor({ timeout: 8_000 });
+
+    // Branch picker grid must be gone at this point.
+    await expect(page.getByTestId("grid-wizard-branches")).not.toBeVisible();
+
+    // ── Click the Back button ─────────────────────────────────────────────────
+    const backBtn = page.getByTestId("button-wizard-back");
+    await expect(backBtn).toBeVisible();
+    await backBtn.click();
+
+    // ── Verify we are back on step 1 ─────────────────────────────────────────
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // Step 2 form must no longer be visible.
+    await expect(page.getByTestId("form-online-coaching")).not.toBeVisible();
+
+    // URL should still be /wizard — no navigation away.
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+  });
+
   test("Back button on step 2 (Home) returns to the branch picker", async ({
     page,
   }) => {
