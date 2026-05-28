@@ -526,6 +526,102 @@ test.describe("Wizard Onboarding", () => {
     expect(new URL(page.url()).pathname).toBe("/wizard");
   });
 
+  test("completes the hotel wizard path (step 1 + step 2) and reaches /book", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("hotel");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker ─────────────────────────────────────────────────
+    await expect(page.getByTestId("text-wizard-title")).toBeVisible();
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Select "Hotel Training" — advances to step 2.
+    const hotelBranchBtn = page.getByTestId("button-branch-hotel");
+    await hotelBranchBtn.waitFor({ timeout: 8_000 });
+    await hotelBranchBtn.click();
+
+    // ── Step 2: hotel-location form ───────────────────────────────────────────
+    const hotelForm = page.getByTestId("form-hotel-location");
+    await hotelForm.waitFor({ timeout: 8_000 });
+
+    // Google Maps link is the only required field for hotel training.
+    await page.fill(
+      '[data-testid="input-hotel-maps-link"]',
+      "https://maps.google.com/?q=Marriott+Dubai+Marina",
+    );
+
+    // ── Finish ────────────────────────────────────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── Verify redirect to /book ──────────────────────────────────────────────
+    await page.waitForURL((url) => url.pathname.startsWith("/book"), {
+      timeout: 20_000,
+    });
+    expect(new URL(page.url()).pathname).toBe("/book");
+
+    // No inline submission error should have appeared.
+    await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
+  });
+
+  test("completes the home wizard path (step 1 + step 2) and reaches /book", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("home");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker ─────────────────────────────────────────────────
+    await expect(page.getByTestId("text-wizard-title")).toBeVisible();
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Select "Home" — advances to step 2.
+    const homeBranchBtn = page.getByTestId("button-branch-home");
+    await homeBranchBtn.waitFor({ timeout: 8_000 });
+    await homeBranchBtn.click();
+
+    // ── Step 2: home-location form ────────────────────────────────────────────
+    const homeForm = page.getByTestId("form-home-location");
+    await homeForm.waitFor({ timeout: 8_000 });
+
+    // Address is the only required field for home training.
+    await page.fill(
+      '[data-testid="input-home-address"]',
+      "Villa 12, Palm Jumeirah, Dubai",
+    );
+
+    // ── Finish ────────────────────────────────────────────────────────────────
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── Verify redirect to /book ──────────────────────────────────────────────
+    await page.waitForURL((url) => url.pathname.startsWith("/book"), {
+      timeout: 20_000,
+    });
+    expect(new URL(page.url()).pathname).toBe("/book");
+
+    // No inline submission error should have appeared.
+    await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
+  });
+
   test("fitness-zone card completes the wizard in one click and reaches /book", async ({
     page,
   }) => {
