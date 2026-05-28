@@ -720,7 +720,7 @@ export default function BookingPage() {
         <div className="flex justify-center">
           <CoachAvailabilityChip />
         </div>
-        <div className="bg-card border border-white/5 rounded-3xl p-3 shadow-xl flex justify-center">
+        <div data-testid="calendar-booking" className="bg-card border border-white/5 rounded-3xl p-3 shadow-xl flex justify-center">
           <DayPicker
             mode="single"
             selected={date}
