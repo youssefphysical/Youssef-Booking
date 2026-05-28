@@ -1114,6 +1114,10 @@ async function run(): Promise<void> {
       CREATE INDEX IF NOT EXISTS payments_user_idx ON payments (user_id);
       CREATE INDEX IF NOT EXISTS payments_status_idx ON payments (status);
       CREATE INDEX IF NOT EXISTS payments_created_idx ON payments (created_at DESC);
+
+      -- Task #114 — Email template settings (subject/preheader overrides per template key)
+      ALTER TABLE IF EXISTS settings
+        ADD COLUMN IF NOT EXISTS email_settings jsonb;
     `);
 
     console.log("[ensureSchema] OK");

@@ -13,6 +13,7 @@ import {
 import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
 import { buildStripoWelcomeEmail } from "./email/builders/stripoWelcome";
 import { buildPaymentConfirmedEmail } from "./email/builders/paymentConfirmed";
+import { resolveEmailOverride, applyEmailOverride } from "./email/overrides";
 
 const TRAINER_WHATSAPP = "https://wa.me/971505394754";
 
@@ -79,14 +80,16 @@ export async function sendWelcomeNotifications({
         });
       }
     }
+    const override = await resolveEmailOverride("welcome");
+    const finalBuilt = applyEmailOverride(built, override);
     console.info(
-      `[notifications/welcome] dispatching subject=${JSON.stringify(built.subject)} to=${email} from-trainer=${trainerEmail()}`,
+      `[notifications/welcome] dispatching subject=${JSON.stringify(finalBuilt.subject)} to=${email} from-trainer=${trainerEmail()}`,
     );
     const result = await sendEmail({
       to: email,
-      subject: built.subject,
-      text: built.text,
-      html: built.html,
+      subject: finalBuilt.subject,
+      text: finalBuilt.text,
+      html: finalBuilt.html,
       replyTo: trainerEmail(),
     });
     if (result.sent) {
@@ -198,11 +201,13 @@ export async function sendPaymentConfirmedNotification({
       whatsappUrl: TRAINER_WHATSAPP,
       supportEmail: trainerEmail(),
     });
+    const paymentOverride = await resolveEmailOverride("payment_confirmed");
+    const finalPayment = applyEmailOverride(built, paymentOverride);
     await sendEmail({
       to: email,
-      subject: built.subject,
-      text: built.text,
-      html: built.html,
+      subject: finalPayment.subject,
+      text: finalPayment.text,
+      html: finalPayment.html,
       replyTo: trainerEmail(),
     });
   } catch (e) {
@@ -229,11 +234,13 @@ export async function sendPasswordResetNotification({
       lang: lang || "en",
       websiteUrl: publicWebsiteUrl(),
     });
+    const resetOverride = await resolveEmailOverride("password_reset");
+    const finalReset = applyEmailOverride(built, resetOverride);
     await sendEmail({
       to: email,
-      subject: built.subject,
-      text: built.text,
-      html: built.html,
+      subject: finalReset.subject,
+      text: finalReset.text,
+      html: finalReset.html,
     });
   } catch (e) {
     console.warn("[notifications] password reset email failed:", e);

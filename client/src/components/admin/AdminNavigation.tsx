@@ -14,6 +14,7 @@ import {
   Settings as SettingsIcon,
   FileText,
   Palette,
+  Mail,
   Plus,
   MoreHorizontal,
   ChevronDown,
@@ -161,6 +162,12 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.theme", "Theme"),
           icon: <Palette size={18} />,
           isActive: (loc) => loc.startsWith("/admin/theme"),
+        },
+        {
+          href: "/admin/emails",
+          label: t("nav.emails", "Emails"),
+          icon: <Mail size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/emails"),
         },
         {
           href: "/admin/settings",

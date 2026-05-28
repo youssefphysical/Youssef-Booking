@@ -110,6 +110,11 @@ import { buildBookingConfirmationEmail } from "./email/builders/bookingConfirmat
 import { buildAdminNewBookingEmail } from "./email/builders/adminNewBooking";
 import { buildSessionReminderEmail as buildSessionReminderEmailPremium } from "./email/builders/sessionReminder";
 import { buildWelcomeEmail as buildWelcomeEmailPremium } from "./email/builders/welcome";
+import { buildPaymentConfirmedEmail } from "./email/builders/paymentConfirmed";
+import { buildPackageExpiring3dEmail } from "./email/builders/packageExpiring3d";
+import { buildPackageCompletedEmail } from "./email/builders/packageCompleted";
+import { buildPasswordResetEmail as buildPasswordResetEmailBuilder } from "./email/builders/passwordReset";
+import { resolveEmailOverride, applyEmailOverride } from "./email/overrides";
 import {
   buildClientBookingConfirmationEmail,
   buildAdminBookingEmail,
@@ -733,11 +738,13 @@ async function dispatchBookingNotifications(args: {
           lang,
         });
       }
+      const bookingOverride = await resolveEmailOverride("booking_confirmed");
+      const finalClientMsg = applyEmailOverride(clientMsg, bookingOverride);
       await sendEmail({
         to: user.email,
-        subject: clientMsg.subject,
-        text: clientMsg.text,
-        html: clientMsg.html,
+        subject: finalClientMsg.subject,
+        text: finalClientMsg.text,
+        html: finalClientMsg.html,
         replyTo: trainerEmail(),
       });
     } catch (e) {
@@ -770,11 +777,13 @@ async function dispatchBookingNotifications(args: {
           lang,
           packageName,
         });
+        const finishedOverride = await resolveEmailOverride("final_sessions_warning");
+        const finalFinished = applyEmailOverride(built, finishedOverride);
         await sendEmail({
           to: user.email,
-          subject: built.subject,
-          text: built.text,
-          html: built.html,
+          subject: finalFinished.subject,
+          text: finalFinished.text,
+          html: finalFinished.html,
           replyTo: trainerEmail(),
         });
         try { await storage.updatePackage(pkg.id, { finishedNotifiedAt: new Date() } as any); } catch {}
@@ -800,11 +809,13 @@ async function dispatchBookingNotifications(args: {
           daysUntilExpiry: daysToExpiry,
           packageName,
         });
+        const expiringOverride = await resolveEmailOverride("package_expiry_warning");
+        const finalExpiring = applyEmailOverride(built, expiringOverride);
         await sendEmail({
           to: user.email,
-          subject: built.subject,
-          text: built.text,
-          html: built.html,
+          subject: finalExpiring.subject,
+          text: finalExpiring.text,
+          html: finalExpiring.html,
           replyTo: trainerEmail(),
         });
         try { await storage.updatePackage(pkg.id, { expiringNotifiedAt: new Date() } as any); } catch {}
@@ -6536,11 +6547,14 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
             { link: "/dashboard", meta: { bookingId: b.id, kind, recipient } },
           );
           if (!recipientUser.email) return;
+          const reminderKey = kind === "24h" ? "session_reminder_24h" : "session_reminder_1h";
+          const reminderOverride = await resolveEmailOverride(reminderKey);
+          const finalReminder = applyEmailOverride(built, reminderOverride);
           const result = await sendEmail({
             to: recipientUser.email,
-            subject: built.subject,
-            text: built.text,
-            html: built.html,
+            subject: finalReminder.subject,
+            text: finalReminder.text,
+            html: finalReminder.html,
             replyTo: trainerEmail(),
           });
           if (result.sent) sent.push({ id: b.id, kind });
@@ -8464,6 +8478,383 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       if (!existing) return res.status(404).json({ message: "Payment not found" });
       await (storage as any).deletePayment(id);
       res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ============== ADMIN EMAIL MANAGEMENT (Task #114) ==============
+
+  // Template registry: key → metadata + sample-data factory for preview/test
+  const EMAIL_TEMPLATES: Array<{
+    key: string;
+    name: string;
+    description: string;
+    defaultSubject: string;
+    defaultPreheader: string;
+    icon: string;
+    previewFile?: string; // static file under client/public/_email_preview/
+    buildPreview?: () => string; // returns full HTML
+  }> = [
+    {
+      key: "welcome",
+      name: "Welcome",
+      description: "Sent when a new client registers",
+      defaultSubject: "Welcome to Elite Coaching, {name}",
+      defaultPreheader: "You've taken the first step. Let's start the transformation.",
+      icon: "star",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildWelcomeEmailPremium({
+          lang: "en", recipientName: "Alex Johnson", bookingUrl: `${baseUrl}/book`,
+          whatsappUrl: "https://wa.me/971505394754", supportEmail: "support@youssefelite.com",
+          dashboardUrl: `${baseUrl}/dashboard`,
+        });
+        return html;
+      },
+    },
+    {
+      key: "password_reset",
+      name: "Password Reset",
+      description: "Sent when a client requests a password reset",
+      defaultSubject: "Reset your password",
+      defaultPreheader: "Use the link to set a new password. Expires in 30 minutes.",
+      icon: "lock",
+      buildPreview: () => {
+        const { html } = buildPasswordResetEmailBuilder({
+          lang: "en", recipientName: "Alex Johnson",
+          resetUrl: "https://example.com/reset-password?token=sample-token",
+          expiresInMinutes: 30, supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "booking_confirmed",
+      name: "Booking Confirmed",
+      description: "Sent when a session is booked",
+      defaultSubject: "Session confirmed — {date} at {time}",
+      defaultPreheader: "Your session with Coach Youssef is locked in.",
+      icon: "calendar",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildBookingConfirmationEmail({
+          lang: "en", recipientName: "Alex Johnson",
+          date: "Mon 2 Jun 2026", time12: "10:00 AM", sessionFocus: "Strength & conditioning",
+          trainingGoal: "Fat loss", location: "Fitness Zone — Dubai Marina",
+          bookingUrl: `${baseUrl}/dashboard`, rescheduleUrl: `${baseUrl}/dashboard`,
+          supportEmail: "support@youssefelite.com", trainerName: "Youssef Elite",
+          packageName: "Standard 10-session", remainingSessions: 8, totalSessions: 10,
+          sessionType: "1-on-1 personal training",
+        });
+        return html;
+      },
+    },
+    {
+      key: "session_reminder_24h",
+      name: "Session Reminder (24h)",
+      description: "Sent 24 hours before a session",
+      defaultSubject: "Session tomorrow — {date} at {time}",
+      defaultPreheader: "Quick heads-up — your session with Coach Youssef is tomorrow.",
+      icon: "clock",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildSessionReminderEmailPremium({
+          lang: "en", kind: "24h", recipientName: "Alex Johnson",
+          date: "Mon 2 Jun 2026", time12: "10:00 AM", sessionFocus: "Strength & conditioning",
+          location: "Fitness Zone — Dubai Marina",
+          bookingUrl: `${baseUrl}/dashboard`, rescheduleUrl: `${baseUrl}/dashboard`,
+          supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "session_reminder_1h",
+      name: "Session Reminder (1h)",
+      description: "Sent 1 hour before a session",
+      defaultSubject: "Session in 1 hour — {time}",
+      defaultPreheader: "See you at {time}. Hydrate, warm up, show up.",
+      icon: "bell",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildSessionReminderEmailPremium({
+          lang: "en", kind: "1h", recipientName: "Alex Johnson",
+          date: "Mon 2 Jun 2026", time12: "10:00 AM", sessionFocus: "Strength & conditioning",
+          location: "Fitness Zone — Dubai Marina",
+          bookingUrl: `${baseUrl}/dashboard`, rescheduleUrl: `${baseUrl}/dashboard`,
+          supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "payment_confirmed",
+      name: "Payment Confirmed",
+      description: "Sent when a payment is marked as received",
+      defaultSubject: "Payment confirmed — {package}",
+      defaultPreheader: "Your investment is locked in. Let's start the transformation.",
+      icon: "credit-card",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildPaymentConfirmedEmail({
+          lang: "en", recipientName: "Alex Johnson", amount: "AED 2,500",
+          paymentMethod: "Bank Transfer", paymentReference: "REF-2026-001",
+          paymentDate: "2 Jun 2026", packageName: "Standard 10-session",
+          totalSessions: 10, validityLabel: "8 weeks", startDate: "3 Jun 2026",
+          packageUrl: `${baseUrl}/dashboard`, bookUrl: `${baseUrl}/book`,
+          supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "package_expiry_warning",
+      name: "Package Expiry Warning",
+      description: "Sent when a package is expiring soon",
+      defaultSubject: "{package} expires in 3 days",
+      defaultPreheader: "Sessions remaining. Renew to keep your momentum.",
+      icon: "alert-triangle",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildPackageExpiring3dEmail({
+          lang: "en", recipientName: "Alex Johnson", packageName: "Standard 10-session",
+          sessionsRemaining: 3, expiryDate: "5 Jun 2026",
+          renewUrl: `${baseUrl}/dashboard`, whatsappUrl: "https://wa.me/971505394754",
+          supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "final_sessions_warning",
+      name: "Final Sessions Warning",
+      description: "Sent when a package is nearly used up",
+      defaultSubject: "{package} complete — well done",
+      defaultPreheader: "Sessions completed. Here's your package wrap-up.",
+      icon: "trophy",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildPackageCompletedEmail({
+          lang: "en", recipientName: "Alex Johnson", packageName: "Standard 10-session",
+          sessionsCompleted: 10, weeksActive: 8, attendanceRate: 95, streakWeeks: 6,
+          renewUrl: `${baseUrl}/dashboard`, historyUrl: `${baseUrl}/dashboard`,
+          supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "email_verification",
+      name: "Email Verification",
+      description: "Sent when a client needs to verify their email address",
+      defaultSubject: "Verify your email — Youssef Elite",
+      defaultPreheader: "Click the link to confirm your email and activate your account.",
+      icon: "mail",
+      buildPreview: () => {
+        const baseUrl = process.env.PUBLIC_APP_URL || "http://localhost:5000";
+        const { html } = buildPasswordResetEmailBuilder({
+          lang: "en", recipientName: "Alex Johnson",
+          resetUrl: `${baseUrl}/verify-email?token=sample-verification-token`,
+          expiresInMinutes: 60, supportEmail: "support@youssefelite.com",
+        });
+        return html;
+      },
+    },
+    {
+      key: "session_cancelled",
+      name: "Session Cancelled",
+      description: "Sent when a session is cancelled",
+      defaultSubject: "Session cancelled — {date} at {time}",
+      defaultPreheader: "Your session has been cancelled. Tap to rebook.",
+      icon: "x-circle",
+      previewFile: "02_booking_confirmation.html",
+    },
+    {
+      key: "session_rescheduled",
+      name: "Session Rescheduled",
+      description: "Sent when a session is rescheduled",
+      defaultSubject: "Session rescheduled — new time: {time}",
+      defaultPreheader: "Your session has been moved. Check the new details.",
+      icon: "refresh-cw",
+      previewFile: "02_booking_confirmation.html",
+    },
+    {
+      key: "missed_session",
+      name: "Missed Session",
+      description: "Sent when a client misses a session",
+      defaultSubject: "We missed you — {date}",
+      defaultPreheader: "Let's get back on track. Book your next session.",
+      icon: "alert-circle",
+      previewFile: "07_session_reminder_24h.html",
+    },
+    {
+      key: "emergency_cancel_used",
+      name: "Emergency Cancel Used",
+      description: "Sent when an emergency cancellation is applied",
+      defaultSubject: "Emergency cancellation applied — {date}",
+      defaultPreheader: "Your emergency cancel has been applied for this month.",
+      icon: "zap",
+      previewFile: "01_password_reset.html",
+    },
+  ];
+
+  // In-memory rate limiter for test email sends: 1 per admin per minute
+  const emailTestRateLimits = new Map<number, number>();
+
+  // GET /api/admin/emails — list all templates with metadata
+  app.get("/api/admin/emails", requireAdmin, async (_req, res) => {
+    try {
+      const settings = await storage.getSettings();
+      const emailSettings = (settings as any).emailSettings as Record<string, { subject?: string; preheader?: string }> | null | undefined ?? {};
+      const recentSends = getRecentEmailSends(200);
+
+      const result = EMAIL_TEMPLATES.map((tmpl) => {
+        const overrides = emailSettings[tmpl.key] ?? {};
+        // Find last send that matches this template key (heuristic: subject contains template name)
+        const lastSend = recentSends.find((s) =>
+          s.subject?.toLowerCase().includes(tmpl.name.toLowerCase().split(" ")[0].toLowerCase())
+        );
+        return {
+          key: tmpl.key,
+          name: tmpl.name,
+          description: tmpl.description,
+          icon: tmpl.icon,
+          defaultSubject: tmpl.defaultSubject,
+          defaultPreheader: tmpl.defaultPreheader,
+          subject: overrides.subject ?? null,
+          preheader: overrides.preheader ?? null,
+          lastSentAt: lastSend?.ts ?? null,
+          hasBuilder: !!tmpl.buildPreview,
+        };
+      });
+
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // GET /api/admin/emails/:key/preview — returns rendered HTML for iframe
+  app.get("/api/admin/emails/:key/preview", requireAdmin, async (req, res) => {
+    const key = req.params.key;
+    const tmpl = EMAIL_TEMPLATES.find((t) => t.key === key);
+    if (!tmpl) return res.status(404).json({ message: "Template not found" });
+
+    try {
+      if (tmpl.buildPreview) {
+        const html = tmpl.buildPreview();
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("X-Frame-Options", "SAMEORIGIN");
+        return res.send(html);
+      }
+
+      // Fall back to static preview file
+      if (tmpl.previewFile) {
+        const staticPath = path.join(process.cwd(), "client/public/_email_preview", tmpl.previewFile);
+        if (fs.existsSync(staticPath)) {
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.setHeader("X-Frame-Options", "SAMEORIGIN");
+          return res.sendFile(staticPath);
+        }
+      }
+
+      // Fallback: generic "no preview" page
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      return res.send(`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;background:#111;color:#999"><p>No preview available for this template.</p></body></html>`);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // POST /api/admin/emails/:key/test — render + send to admin's email
+  app.post("/api/admin/emails/:key/test", requireAdmin, async (req, res) => {
+    const key = String(req.params.key);
+    const admin = req.user as User;
+    const tmpl = EMAIL_TEMPLATES.find((t) => t.key === key);
+    if (!tmpl) return res.status(404).json({ message: "Template not found" });
+
+    if (!admin.email) {
+      return res.status(400).json({ message: "Your admin account has no email address set. Add an email to your profile first." });
+    }
+
+    // Rate limit: 1 per admin per minute
+    const now = Date.now();
+    const lastSent = emailTestRateLimits.get(admin.id) ?? 0;
+    const cooldownMs = 60_000;
+    if (now - lastSent < cooldownMs) {
+      const retryAfter = Math.ceil((cooldownMs - (now - lastSent)) / 1000);
+      return res.status(429).json({ message: `Rate limited — please wait ${retryAfter}s before sending another test email.` });
+    }
+    emailTestRateLimits.set(admin.id, now);
+
+    try {
+      const settings = await storage.getSettings();
+      const emailSettings = (settings as any).emailSettings as Record<string, { subject?: string; preheader?: string }> | null | undefined ?? {};
+      const overrides = emailSettings[key] ?? {};
+
+      let subject = overrides.subject ?? tmpl.defaultSubject.replace(/\{[^}]+\}/g, "Sample");
+      const preheader = overrides.preheader ?? tmpl.defaultPreheader.replace(/\{[^}]+\}/g, "Sample");
+
+      // Build HTML: prefer live builder, fall back to static preview file, final
+      // fallback to a minimal placeholder so the send always has something useful.
+      let html: string;
+      if (tmpl.buildPreview) {
+        try {
+          const built = tmpl.buildPreview();
+          const withOverride = applyEmailOverride({ subject, html: built, text: "" }, overrides);
+          html = withOverride.html;
+          subject = withOverride.subject;
+        } catch {
+          html = `<p style="font-family:sans-serif">Preview failed to render for template <strong>${tmpl.name}</strong>.</p>`;
+        }
+      } else if (tmpl.previewFile) {
+        try {
+          const staticPath = path.join(process.cwd(), "client/public/_email_preview", tmpl.previewFile);
+          html = await fs.promises.readFile(staticPath, "utf-8");
+        } catch {
+          html = `<p style="font-family:sans-serif">Static preview file not found for template <strong>${tmpl.name}</strong>.</p>`;
+        }
+      } else {
+        html = `<p style="font-family:sans-serif">No preview available for template <strong>${tmpl.name}</strong>.</p>`;
+      }
+
+      const result = await sendEmail({
+        to: admin.email,
+        subject: `[TEST] ${subject}`,
+        text: `Test email for "${tmpl.name}" template. Preheader: ${preheader}`,
+        html,
+      });
+
+      if (result.sent) {
+        res.json({ ok: true, message: `Test email sent to ${admin.email}` });
+      } else {
+        res.status(502).json({ ok: false, message: result.error || "Email send failed — check RESEND_API_KEY configuration." });
+      }
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // PATCH /api/admin/emails/:key — save subject + preheader overrides
+  app.patch("/api/admin/emails/:key", requireAdmin, async (req, res) => {
+    const key = String(req.params.key);
+    const tmpl = EMAIL_TEMPLATES.find((t) => t.key === key);
+    if (!tmpl) return res.status(404).json({ message: "Template not found" });
+
+    const parsed = z.object({
+      subject: z.string().max(300).optional(),
+      preheader: z.string().max(500).optional(),
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+
+    try {
+      const settings = await storage.getSettings();
+      const existing = ((settings as any).emailSettings ?? {}) as Record<string, { subject?: string; preheader?: string }>;
+      const merged: Record<string, { subject?: string; preheader?: string }> = { ...existing, [key]: { ...existing[key], ...parsed.data } };
+      await storage.updateSettings({ emailSettings: merged } as any);
+      res.json({ ok: true, key, ...merged[key] });
     } catch (e: any) {
       res.status(500).json({ message: e.message });
     }

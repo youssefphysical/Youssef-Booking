@@ -783,6 +783,7 @@ export const settings = pgTable("settings", {
   //       trialEyebrow, trialTitle, trialBody, footerTagline.
   // Public components fall back to hardcoded/i18n defaults when fields are null/absent.
   contentSettings: jsonb("content_settings").$type<Record<string, string>>(),
+  emailSettings: jsonb("email_settings").$type<Record<string, { subject?: string; preheader?: string }>>(),
 });
 
 // =============================
@@ -1635,6 +1636,7 @@ export const updateSettingsSchema = z.object({
   supplementMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
   brandSettings: z.record(z.union([z.number(), z.string()])).optional(),
   contentSettings: z.record(z.string()).optional(),
+  emailSettings: z.record(z.object({ subject: z.string().optional(), preheader: z.string().optional() })).optional(),
 });
 
 export const PACKAGE_TYPES = [
