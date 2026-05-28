@@ -1,7 +1,7 @@
 name: E2E · Playwright browser tests
 
-# Runs the Playwright e2e suite on every push to main / pull-request against
-# main.  The job:
+# Runs the Playwright e2e suite on every push / pull-request across all
+# branches so issues are caught before code reaches main.  The job:
 #   1. Installs Node deps
 #   2. Downloads the Chromium browser used by Playwright
 #   3. Builds the app
@@ -9,6 +9,7 @@ name: E2E · Playwright browser tests
 #   5. Waits until :5000 is accepting connections
 #   6. Runs every spec under ./e2e  (currently csv-export.spec.ts)
 #   7. Uploads the HTML report as a build artifact
+#      (currently: csv-export.spec.ts, admin-login.spec.ts)
 #
 # Required GitHub repo secrets (Settings → Secrets and variables → Actions):
 #   DATABASE_URL    — Neon / Postgres connection string for the test database
@@ -22,9 +23,9 @@ name: E2E · Playwright browser tests
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
-    branches: [main]
+    branches: ["**"]
   workflow_dispatch: {}
 
 permissions:
