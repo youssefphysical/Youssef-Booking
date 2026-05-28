@@ -804,6 +804,57 @@ test.describe("Wizard Onboarding", () => {
     });
   });
 
+  test("completes the online-coaching wizard path (filled platform → WhatsApp opens, stays on /wizard)", async ({
+    page,
+  }) => {
+    const creds = makeCredentials("online-happy");
+    createdEmails.push(creds.email);
+
+    await registerClient(page, creds);
+
+    await page.goto(`${BASE}/wizard`);
+    await page.waitForSelector('[data-testid="wizard-training-location"]', {
+      timeout: 15_000,
+    });
+
+    // ── Step 1: branch picker ─────────────────────────────────────────────────
+    await expect(page.getByTestId("text-wizard-title")).toBeVisible();
+    await expect(page.getByTestId("grid-wizard-branches")).toBeVisible();
+
+    // Select "Online Coaching" — advances to step 2.
+    const onlineBranchBtn = page.getByTestId("button-branch-online_coaching");
+    await onlineBranchBtn.waitFor({ timeout: 8_000 });
+    await onlineBranchBtn.click();
+
+    // ── Step 2: online-coaching form ──────────────────────────────────────────
+    const onlineForm = page.getByTestId("form-online-coaching");
+    await onlineForm.waitFor({ timeout: 8_000 });
+
+    // Fill the required platform field.
+    const platformInput = page.getByTestId("input-online-coaching-platform");
+    await expect(platformInput).toBeVisible();
+    await platformInput.fill("Zoom");
+
+    // ── Finish ────────────────────────────────────────────────────────────────
+    // The online-coaching branch opens WhatsApp in a new tab and stays on
+    // /wizard (no same-page navigation). Block the popup so the test doesn't
+    // hang waiting for an external window.
+    await page.context().route("**wa.me**", (route) => route.abort());
+    await page.context().route("**whatsapp.com**", (route) => route.abort());
+
+    const finishBtn = page.getByTestId("button-wizard-finish");
+    await expect(finishBtn).toBeVisible();
+    await expect(finishBtn).toBeEnabled();
+    await finishBtn.click();
+
+    // ── URL must still be /wizard — WhatsApp opens in a new tab ──────────────
+    await page.waitForTimeout(1_500);
+    expect(new URL(page.url()).pathname).toBe("/wizard");
+
+    // ── No inline error should have appeared ──────────────────────────────────
+    await expect(page.getByTestId("text-wizard-inline-error")).not.toBeVisible();
+  });
+
   test("fitness-zone card completes the wizard in one click and reaches /book", async ({
     page,
   }) => {
