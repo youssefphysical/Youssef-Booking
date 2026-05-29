@@ -1118,6 +1118,20 @@ async function run(): Promise<void> {
       -- Task #114 — Email template settings (subject/preheader overrides per template key)
       ALTER TABLE IF EXISTS settings
         ADD COLUMN IF NOT EXISTS email_settings jsonb;
+
+      -- connect-pg-simple session store (createTableIfMissing reads table.sql
+      -- from the package dir, which breaks post-esbuild bundle; create it here
+      -- instead so the session store can start without filesystem access).
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid"    varchar NOT NULL COLLATE "default",
+        "sess"   json    NOT NULL,
+        "expire" timestamp(6) NOT NULL
+      );
+      DO $$ BEGIN
+        ALTER TABLE "session" ADD CONSTRAINT "session_pkey"
+          PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+      EXCEPTION WHEN others THEN NULL; END $$;
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
     `);
 
     console.log("[ensureSchema] OK");
