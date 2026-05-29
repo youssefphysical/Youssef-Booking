@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import type { Settings } from "@shared/schema";
+import { useSettings } from "@/hooks/use-settings";
 
 /**
  * Non-blocking page loader.
@@ -15,13 +14,13 @@ import type { Settings } from "@shared/schema";
  * Respects:
  *  - settings.logoIconUrl        — custom logo upload (falls back to /ye-logo.png)
  *  - settings.brandSettings.logoShowLoading — visibility toggle from Logo Manager
+ *
+ * Uses the shared useSettings() cache so logo changes after an admin upload
+ * propagate immediately (no independent staleTime).
  */
 export function PremiumPageLoader() {
   const [visible, setVisible] = useState(false);
-  const { data: settings } = useQuery<Settings>({
-    queryKey: ["/api/settings"],
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: settings } = useSettings();
 
   const bs          = (settings?.brandSettings ?? {}) as Record<string, number>;
   const logoSrc     = settings?.logoIconUrl || "/ye-logo.png";
@@ -66,7 +65,7 @@ export function PremiumPageLoader() {
             }}
             transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
             className="relative object-contain"
-            style={{ width: "clamp(90px, 22vw, 120px)" }}
+            style={{ width: "var(--brand-splash-w-desktop, clamp(90px, 22vw, 120px))" }}
           />
         </div>
       )}

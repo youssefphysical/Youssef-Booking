@@ -1137,6 +1137,13 @@ async function run(): Promise<void> {
       CREATE INDEX IF NOT EXISTS users_role_idx ON users (role);
       CREATE INDEX IF NOT EXISTS users_client_status_idx ON users (client_status);
       CREATE INDEX IF NOT EXISTS packages_status_sessions_idx ON packages (user_id, used_sessions, total_sessions);
+
+      -- Branding architecture fix: file-based hero image storage.
+      -- image_url / mobile_url store /uploads/heroes/*.webp paths so the
+      -- public hero-images endpoint never ships multi-MB base64 blobs.
+      ALTER TABLE IF EXISTS hero_images
+        ADD COLUMN IF NOT EXISTS image_url text,
+        ADD COLUMN IF NOT EXISTS mobile_url text;
     `);
 
     console.log("[ensureSchema] OK");

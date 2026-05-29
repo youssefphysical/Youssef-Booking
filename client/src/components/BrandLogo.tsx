@@ -1,46 +1,43 @@
 /**
  * BrandLogo — Youssef Elite unified brand identity component.
  *
- * Brand hierarchy:
- *  "navbar"  — YE icon only. Height driven by CSS vars set by applyBrandCSSVars.
- *  "sidebar" — YE icon only, 32 px.
- *  "footer"  — YE icon only, 22 px.
- *  "icon"    — YE icon only, 36 px.
+ * Brand hierarchy (all read from settings, fall back to static assets):
+ *  "navbar"  — uses logoNavbarUrl (horizontal logo). Falls back to logoIconUrl → /ye-logo.png.
+ *              Height driven by CSS vars --brand-navbar-h-desktop / --brand-navbar-h-mobile.
+ *  "sidebar" — uses logoIconUrl. Size from --brand-sidebar-h-desktop (default 32px).
+ *  "footer"  — uses logoIconUrl. Size from --brand-footer-h-desktop (default 22px).
+ *  "icon"    — uses logoIconUrl. Size from --brand-icon-h-desktop (default 36px).
  *
- * Custom logo: settings.logoIconUrl takes precedence over /ye-logo.png.
- * Visibility: settings.brandSettings.logoShowNavbar / logoShowFooter control rendering.
- * Padding:    settings.brandSettings.logoDesktopPadding / logoMobilePadding applied inline.
+ * Cache: shares the /api/settings TanStack Query cache with useSettings() — invalidating
+ * that cache (after logo upload) propagates immediately without any staleTime delay.
  */
 
-import { useQuery } from "@tanstack/react-query";
-import type { Settings } from "@shared/schema";
+import { useSettings } from "@/hooks/use-settings";
 
 interface BrandLogoProps {
   variant?: "navbar" | "sidebar" | "footer" | "icon";
   className?: string;
 }
 
-const ICON_SIZES: Record<Exclude<NonNullable<BrandLogoProps["variant"]>, "navbar">, number> = {
+const GLOW      = "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-logo-glow,0.35)))";
+const GLOW_ICON = "drop-shadow(0 0 7px rgba(0,212,255,var(--brand-logo-glow,0.35)))";
+
+const DEFAULT_SIZES: Record<Exclude<NonNullable<BrandLogoProps["variant"]>, "navbar">, number> = {
   sidebar: 32,
   footer:  22,
   icon:    36,
 };
 
-const GLOW      = "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-logo-glow,0.35)))";
-const GLOW_ICON = "drop-shadow(0 0 7px rgba(0,212,255,var(--brand-logo-glow,0.35)))";
-
 export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps) {
-  const { data: settings } = useQuery<Settings>({
-    queryKey: ["/api/settings"],
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: settings } = useSettings();
 
-  const bs = (settings?.brandSettings ?? {}) as Record<string, number>;
-  const iconSrc       = settings?.logoIconUrl || "/ye-logo.png";
-  const showNavbar    = (bs.logoShowNavbar  ?? 1) !== 0;
-  const showFooter    = (bs.logoShowFooter  ?? 1) !== 0;
-  const desktopPad    = `${bs.logoDesktopPadding ?? 5}px`;
-  const mobilePad     = `${bs.logoMobilePadding  ?? 4}px`;
+  const bs         = (settings?.brandSettings ?? {}) as Record<string, number>;
+  const iconSrc    = settings?.logoIconUrl    || "/ye-logo.png";
+  const navbarSrc  = settings?.logoNavbarUrl  || settings?.logoIconUrl || "/ye-logo.png";
+  const showNavbar = (bs.logoShowNavbar ?? 1) !== 0;
+  const showFooter = (bs.logoShowFooter ?? 1) !== 0;
+  const desktopPad = `${bs.logoDesktopPadding ?? 5}px`;
+  const mobilePad  = `${bs.logoMobilePadding  ?? 4}px`;
 
   if (variant === "navbar") {
     if (!showNavbar) return null;
@@ -50,7 +47,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         aria-label="Youssef Elite"
         style={{ overflow: "visible" }}
       >
-        {/* Mobile */}
+        {/* Mobile — icon only */}
         <img
           src={iconSrc}
           alt=""
@@ -64,9 +61,9 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             transform: "translateY(var(--brand-logo-voffset,0px))",
           }}
         />
-        {/* Desktop */}
+        {/* Desktop — horizontal logo (logoNavbarUrl) or icon fallback */}
         <img
-          src={iconSrc}
+          src={navbarSrc}
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] hidden md:block"
@@ -84,7 +81,9 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
 
   if (variant === "footer" && !showFooter) return null;
 
-  const size = ICON_SIZES[variant];
+  const fallbackSize = DEFAULT_SIZES[variant];
+  const cssVar = `var(--brand-${variant}-h-desktop, ${fallbackSize}px)`;
+
   return (
     <span
       className={`inline-flex items-center justify-center ${className}`}
@@ -94,10 +93,12 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         src={iconSrc}
         alt=""
         aria-hidden="true"
-        width={size}
-        height={size}
         className="object-contain shrink-0"
-        style={{ filter: GLOW_ICON, width: size, height: size }}
+        style={{
+          height: cssVar,
+          width:  cssVar,
+          filter: GLOW_ICON,
+        }}
       />
     </span>
   );

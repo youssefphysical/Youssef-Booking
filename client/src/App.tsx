@@ -138,6 +138,18 @@ function Router() {
   useEffect(() => {
     applyBrandCSSVars(settings?.brandSettings as Record<string, number | string> | undefined);
   }, [settings?.brandSettings]);
+  // Dynamic favicon — update <link rel="icon"> whenever the admin uploads a
+  // new logo. Falls back to the static /ye-logo.png baked into the HTML.
+  useEffect(() => {
+    if (!settings) return;
+    const faviconHref = settings.logoIconUrl || "/ye-logo.png";
+    const setLink = (sel: string, href: string) => {
+      const el = document.querySelector<HTMLLinkElement>(sel);
+      if (el) el.href = href;
+    };
+    setLink("link[rel='icon']", faviconHref);
+    setLink("link[rel='apple-touch-icon']", faviconHref);
+  }, [settings?.logoIconUrl]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
   const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
   const showMaintenance = maintenance && !allowBypass;

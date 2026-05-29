@@ -12,6 +12,8 @@ export function useSettings() {
       if (!res.ok) throw new Error("Failed to fetch settings");
       return res.json();
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
   });
 }
 

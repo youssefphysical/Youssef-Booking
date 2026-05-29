@@ -194,7 +194,11 @@ const HeroSlideLayer = memo(function HeroSlideLayer({
       aria-hidden="true"
     >
       <img
-        src={slide.imageDataUrl}
+        src={
+          isMobile
+            ? (slide.mobileUrl || slide.imageUrl || slide.imageDataUrl)
+            : (slide.imageUrl  || slide.imageDataUrl)
+        }
         alt=""
         loading="eager"
         // @ts-expect-error fetchpriority is a valid HTML attribute, lowercase in React 18
@@ -237,25 +241,13 @@ export function HeroSlider() {
     return () => window.clearInterval(id);
   }, [reduced, isMobile, slides.length]);
 
-  // HARD MOBILE PERFORMANCE MODE (May-2026, pass 3):
-  // On mobile we skip mounting HeroSlideLayer ENTIRELY. The static
-  // <img src="/hero-initial.webp"> rendered above (80KB, preloaded
-  // with fetchpriority=high in client/index.html, baked from the
-  // current active hero on every Vercel deploy by
-  // scripts/inject-hero.mjs) is the sole hero image on phones.
-  // This eliminates:
-  //   - decoding the slide's full-resolution base64 data URL into a
-  //     bitmap (often several MB in GPU memory),
-  //   - the second image layer's compositor pass during scroll,
-  //   - any per-slide inline filter/transform paint cost.
-  // Trade-off: between an admin uploading a new hero and the next
-  // Vercel deploy rebaking /hero-initial.webp, mobile users see the
-  // previous hero photo. Copy (badge / headline / subhead) is still
-  // admin-controlled because slide metadata still loads via
-  // useHeroImages — only the IMAGE layer is skipped on mobile.
-  // Tablet+ (≥768px) keeps the full cinematic stack unchanged.
+  // Mobile hero fix: serve the first slide's actual image (file URL preferred,
+  // base64 fallback) instead of the static /hero-initial.webp artifact.
+  // The static img below still acts as a first-paint flash-kill layer; the
+  // React slide image replaces it once API data arrives.
+  // Desktop keeps the full cinematic stack (all slides, 8s rotation).
   const renderedSlides = useMemo(
-    () => (isMobile ? [] : slides),
+    () => (isMobile ? slides.slice(0, 1) : slides),
     [isMobile, slides],
   );
 

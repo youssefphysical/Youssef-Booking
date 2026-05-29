@@ -841,6 +841,12 @@ export const heroImages = pgTable("hero_images", {
   originalDataUrl: text("original_data_url"),
   mobileDataUrl: text("mobile_data_url"),
   thumbnailDataUrl: text("thumbnail_data_url"),
+  // Branding architecture fix: file-based storage URLs replace base64 blobs.
+  // Populated on new uploads and by the boot migration in server/routes.ts.
+  // The public GET /api/hero-images endpoint serves these URLs; the base64
+  // columns stay in DB as a fallback but are NOT sent over the wire.
+  imageUrl: text("image_url"),
+  mobileUrl: text("mobile_url"),
   // Independent mobile display settings stored as JSONB so adding
   // new keys never requires another ALTER TABLE. Defaults to {}
   // (renders with sensible CSS defaults on the homepage).

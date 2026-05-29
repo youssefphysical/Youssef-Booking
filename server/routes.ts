@@ -457,7 +457,7 @@ async function recomputeVipTier(userId: number): Promise<string> {
 // MULTER SETUP
 // =============================
 const UPLOAD_ROOT = path.resolve(process.cwd(), "uploads");
-for (const sub of ["photos"]) {
+for (const sub of ["photos", "brand", "heroes"]) {
   const full = path.join(UPLOAD_ROOT, sub);
   if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
 }
@@ -1291,6 +1291,67 @@ function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
   return rest;
 }
 
+// ─── Boot migration: base64 brand assets → disk files ────────────────────────
+// Runs once at server start (non-blocking). Converts any existing base64
+// logo/hero data URLs stored in the DB to static files under uploads/brand/
+// and uploads/heroes/, then stores the file URL. Safe to run repeatedly —
+// skips rows that already have a file URL or where the file already exists.
+async function runBrandFileMigration(): Promise<void> {
+  try {
+    // ── Logos (settings row) ──
+    const brandDir = path.join(UPLOAD_ROOT, "brand");
+    const settings = await storage.getSettings();
+    const LOGO_MAP = [
+      { urlKey: "logoIconUrl",   prefix: "logo-icon"   },
+      { urlKey: "logoNavbarUrl", prefix: "logo-navbar"  },
+      { urlKey: "logoAuthUrl",   prefix: "logo-auth"   },
+    ] as const;
+    for (const { urlKey, prefix } of LOGO_MAP) {
+      const val = (settings as any)[urlKey] as string | null | undefined;
+      if (!val?.startsWith("data:")) continue;                // already a URL or null
+      const m = val.match(/^data:(image\/[^;]+);base64,(.+)$/);
+      if (!m) continue;
+      const ext      = m[1] === "image/svg+xml" ? "svg" : "webp";
+      const filename = `${prefix}-migrated.${ext}`;
+      const filePath = path.join(brandDir, filename);
+      if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, Buffer.from(m[2], "base64"));
+      await storage.updateSettings({ [urlKey]: `/uploads/brand/${filename}` } as any);
+      console.log(`[brand-migration] ${urlKey} → /uploads/brand/${filename}`);
+    }
+
+    // ── Hero images ──
+    const heroDir = path.join(UPLOAD_ROOT, "heroes");
+    const heroes  = await storage.getHeroImages();
+    for (const hero of heroes) {
+      const updates: Record<string, string> = {};
+      if (!hero.imageUrl && hero.imageDataUrl?.startsWith("data:")) {
+        const m = hero.imageDataUrl.match(/^data:[^;]+;base64,(.+)$/);
+        if (m) {
+          const f = `hero-desktop-${hero.id}-migrated.webp`;
+          const fp = path.join(heroDir, f);
+          if (!fs.existsSync(fp)) fs.writeFileSync(fp, Buffer.from(m[1], "base64"));
+          updates.imageUrl = `/uploads/heroes/${f}`;
+        }
+      }
+      if (!hero.mobileUrl && hero.mobileDataUrl?.startsWith("data:")) {
+        const m = hero.mobileDataUrl.match(/^data:[^;]+;base64,(.+)$/);
+        if (m) {
+          const f = `hero-mobile-${hero.id}-migrated.webp`;
+          const fp = path.join(heroDir, f);
+          if (!fs.existsSync(fp)) fs.writeFileSync(fp, Buffer.from(m[1], "base64"));
+          updates.mobileUrl = `/uploads/heroes/${f}`;
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        await storage.updateHeroImage(hero.id, updates as any);
+        console.log(`[brand-migration] hero ${hero.id} → disk (${Object.keys(updates).join(", ")})`);
+      }
+    }
+  } catch (e) {
+    console.warn("[brand-migration] non-fatal error during boot migration:", (e as Error).message);
+  }
+}
+
 // ─── Short-lived in-memory cache for expensive admin stats ───────────────────
 // /api/admin/analytics and /api/dashboard/stats both scan the same tables.
 // A 60s TTL dramatically reduces Neon transfer on repeated dashboard loads
@@ -1313,6 +1374,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Serve uploaded files
   app.use("/uploads", express.static(UPLOAD_ROOT));
+
+  // ── Boot migration: base64 assets → disk files (non-blocking) ──
+  setImmediate(() => runBrandFileMigration().catch((e) =>
+    console.warn("[brand-migration] boot migration failed:", (e as Error).message)
+  ));
+
+  // ── Dev-only: warn when any API response exceeds 200 KB ──
+  // Catches runaway blobs before they hit production Neon transfer quotas.
+  if (process.env.NODE_ENV !== "production") {
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      const origJson = res.json.bind(res);
+      (res as any).json = (body: unknown) => {
+        try {
+          const size = JSON.stringify(body).length;
+          if (size > 200_000) {
+            console.warn(
+              `[dev-size-warn] ${req.method} ${req.path} → ${(size / 1024).toFixed(1)} KB`
+            );
+          }
+        } catch {}
+        return origJson(body);
+      };
+      next();
+    });
+  }
 
   // Phase 5 review fix — centralised rate limit applied to *every*
   // admin API. Generous ceiling (300 req / min / IP) so normal usage
@@ -4262,7 +4348,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Public read — used by HomePage. Returns slides ordered by sortOrder.
   app.get("/api/hero-images", async (_req, res) => {
     const list = await storage.getHeroImages();
-    res.json(list);
+    // Lean response: resolve imageUrl/mobileUrl from base64 when file URLs not yet set.
+    // Strips raw base64 blobs for slides that already have file URLs to reduce payload.
+    const lean = list.map((h) => {
+      const imgUrl    = h.imageUrl  || h.imageDataUrl;
+      const mobUrl    = h.mobileUrl || h.mobileDataUrl || h.imageUrl || h.imageDataUrl;
+      const hasFiles  = Boolean(h.imageUrl);
+      const { imageDataUrl, mobileDataUrl, originalDataUrl, thumbnailDataUrl, ...rest } = h;
+      return {
+        ...rest,
+        imageUrl:  imgUrl,
+        mobileUrl: mobUrl,
+        // Include base64 only for slides still pending file migration (for slider fallback)
+        ...(hasFiles ? {} : { imageDataUrl, mobileDataUrl }),
+      };
+    });
+    res.json(lean);
   });
 
   // Shared sharp pipeline for admin-supplied data-URL images. Returns a
@@ -4622,11 +4723,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
     if (!result.ok) return res.status(result.status).json({ success: false, error: result.message });
     const nextOrder = existing.length ? Math.max(...existing.map((h) => h.sortOrder)) + 1 : 0;
+    // Write desktop + mobile images to disk; store file URLs in DB
+    const heroTs = Date.now();
+    const desktopBuf  = Buffer.from(result.desktop.split(",")[1], "base64");
+    const mobileBuf   = Buffer.from(result.mobile.split(",")[1],  "base64");
+    const desktopFile = `hero-desktop-${heroTs}.webp`;
+    const mobileFile  = `hero-mobile-${heroTs}.webp`;
+    fs.writeFileSync(path.join(UPLOAD_ROOT, "heroes", desktopFile), desktopBuf);
+    fs.writeFileSync(path.join(UPLOAD_ROOT, "heroes", mobileFile),  mobileBuf);
+
     const created = await storage.createHeroImage({
-      imageDataUrl: result.desktop,
-      originalDataUrl: result.original,
-      mobileDataUrl: result.mobile,
+      imageDataUrl:     result.desktop,
+      originalDataUrl:  result.original,
+      mobileDataUrl:    result.mobile,
       thumbnailDataUrl: result.thumbnail,
+      imageUrl:  `/uploads/heroes/${desktopFile}`,
+      mobileUrl: `/uploads/heroes/${mobileFile}`,
       sortOrder: nextOrder,
       title: parsed.data.title ?? null,
       subtitle: parsed.data.subtitle ?? null,
@@ -4889,14 +5001,13 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     };
     const { w: maxW, h: maxH } = MAX_DIM[slot];
 
-    let outputDataUrl = imageDataUrl;
+    let outputBuffer: Buffer = raw;
     if (_sharp && mime !== "image/svg+xml") {
       try {
-        const processed = await _sharp(raw, { failOn: "none" })
+        outputBuffer = await _sharp(raw, { failOn: "none" })
           .resize({ width: maxW, height: maxH, fit: "inside", withoutEnlargement: true })
           .webp({ quality: 92, effort: 4 })
           .toBuffer();
-        outputDataUrl = `data:image/webp;base64,${processed.toString("base64")}`;
       } catch (e) {
         console.warn("[logo-upload] sharp processing failed, using original:", (e as Error).message);
       }
@@ -4907,8 +5018,20 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       navbar: "logoNavbarUrl",
       auth:   "logoAuthUrl",
     };
-    await storage.updateSettings({ [SLOT_KEY[slot]]: outputDataUrl } as any);
-    return res.json({ success: true, url: outputDataUrl });
+
+    // Permanent architecture: write to disk, store file URL — no base64 blobs in DB
+    const ext = mime === "image/svg+xml" ? "svg" : "webp";
+    const filename = `logo-${slot}-${Date.now()}.${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_ROOT, "brand", filename), outputBuffer);
+    // Remove previous file if one was stored
+    const prevSettings = await storage.getSettings();
+    const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;
+    if (prevUrl?.startsWith("/uploads/brand/")) {
+      try { fs.unlinkSync(path.join(UPLOAD_ROOT, "brand", path.basename(prevUrl))); } catch {}
+    }
+    const fileUrl = `/uploads/brand/${filename}`;
+    await storage.updateSettings({ [SLOT_KEY[slot]]: fileUrl } as any);
+    return res.json({ success: true, url: fileUrl });
   });
 
   // DELETE /api/admin/media/logo/:slot — remove custom logo, revert to static file.
@@ -4919,6 +5042,12 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       return res.status(400).json({ success: false, error: "Invalid slot." });
     }
     const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl" };
+    // Clean up disk file if present
+    const prevSettings = await storage.getSettings();
+    const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;
+    if (prevUrl?.startsWith("/uploads/brand/")) {
+      try { fs.unlinkSync(path.join(UPLOAD_ROOT, "brand", path.basename(prevUrl))); } catch {}
+    }
     await storage.updateSettings({ [SLOT_KEY[slot]]: null } as any);
     return res.json({ success: true });
   });

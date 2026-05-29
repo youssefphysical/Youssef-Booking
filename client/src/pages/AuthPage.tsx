@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import logoSrc from "@assets/file_000000005578724685bd3e5a7e0d443a_1779796154291.png";
+import { useSettings } from "@/hooks/use-settings";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,15 +105,8 @@ export default function AuthPage({
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (user) {
-      // Admins go to the admin panel. Clients land on the homepage per
-      // user directive (May 2026): they should see the public site after
-      // sign-in, not be dropped straight into their dashboard.
-      setLocation(user.role === "admin" ? "/admin" : "/");
-    }
-  }, [user, setLocation]);
+  const { data: authSettings } = useSettings();
+  const logoSrc = authSettings?.logoAuthUrl || authSettings?.logoIconUrl || "/ye-logo-primary.png";
 
   if (user) return null;
 
