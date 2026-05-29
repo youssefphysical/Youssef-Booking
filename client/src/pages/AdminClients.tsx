@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -160,7 +160,15 @@ export default function AdminClients() {
     setVerifiedFilter("all");
     setPackageFilter("all");
     setStatusFilter("all");
+    setVisible(PAGE_SIZE);
   };
+
+  const PAGE_SIZE = 20;
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const visibleRows = filtered.slice(0, visible);
+  const hasMore = visible < filtered.length;
+
+  useEffect(() => { setVisible(PAGE_SIZE); }, [q, verifiedFilter, packageFilter, statusFilter, sortBy, sortDir]);
 
   return (
     <div className="admin-shell">
@@ -338,7 +346,7 @@ export default function AdminClients() {
                 <div className="text-end">{t("admin.clients.colStatus")}</div>
               </div>
               <AnimatePresence initial={false}>
-                {filtered.map((r, i) => (
+                {visibleRows.map((r, i) => (
                   <ClientRow key={r.client.id} row={r} index={i} />
                 ))}
               </AnimatePresence>
@@ -346,10 +354,23 @@ export default function AdminClients() {
 
             {/* MOBILE CARDS */}
             <div className="md:hidden space-y-2">
-              {filtered.map((r) => (
+              {visibleRows.map((r) => (
                 <MobileCard key={r.client.id} row={r} />
               ))}
             </div>
+
+            {hasMore && (
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                  data-testid="button-load-more-clients"
+                  className="h-9 px-6 rounded-xl text-sm font-semibold border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t("admin.clients.loadMore", "Load more")} ({filtered.length - visible} {t("admin.clients.remaining", "remaining")})
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

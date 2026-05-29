@@ -24,6 +24,7 @@ export function StreakStrip() {
   const { data, isLoading } = useQuery<StreakMetrics>({
     queryKey: ["/api/me/streaks"],
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading || !data) {

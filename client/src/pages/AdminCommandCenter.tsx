@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { RefreshCw } from "lucide-react";
 import {
   Calendar,
   ShieldCheck,
@@ -78,26 +79,59 @@ const WIDGETS: Widget[] = [
 ];
 
 export default function AdminCommandCenter() {
-  const { data, isLoading, error } = useQuery<CommandCenterPayload>({
+  const [location] = useLocation();
+  const isActive = location === "/admin/command-center" || location === "/admin";
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<CommandCenterPayload>({
     queryKey: ["/api/admin/command-center"],
     staleTime: 60_000,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: isActive ? 5 * 60_000 : false,
   });
+
+  const updatedLabel = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   return (
     <div className="admin-shell">
     <div className="admin-container space-y-5">
-      <AdminPageHeader
-        eyebrow="Command Center"
-        title="What needs your attention"
-        subtitle="One pane for every queue, deadline, and warning. Counts refresh every 30 seconds."
-      />
+      <div className="flex items-start justify-between gap-3">
+        <AdminPageHeader
+          eyebrow="Command Center"
+          title="What needs your attention"
+          subtitle="One pane for every queue, deadline, and warning."
+        />
+        <div className="flex items-center gap-2 shrink-0 pt-1">
+          {updatedLabel && (
+            <span className="text-[11px] text-muted-foreground hidden sm:block" data-testid="text-command-center-updated-at">
+              Updated {updatedLabel}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh-command-center"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={isFetching ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+      </div>
 
       {error ? (
         <AdminCard>
-          <p className="text-sm text-red-300" data-testid="text-command-center-error">
+          <p className="text-sm text-red-300 mb-3" data-testid="text-command-center-error">
             Failed to load command center.
           </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="text-sm text-primary hover:underline"
+            data-testid="button-retry-command-center"
+          >
+            Retry
+          </button>
         </AdminCard>
       ) : null}
 

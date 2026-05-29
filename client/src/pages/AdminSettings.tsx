@@ -78,18 +78,9 @@ export default function AdminSettings() {
 
         <div className="admin-stack">
           <FeatureFlagsSection />
-          <MediaRedirectCard
-            testId="section-brand-settings"
-            title="Brand settings"
-            description="Adjust logo sizes, glow, zoom, position, and spacing. Managed in the Media → Branding section with live preview."
-            section="branding"
-          />
           <GeneralSettingsSection />
           <BankDetailsSection />
-          <ProfileContentSection />
-          <ServiceCardImagesSection />
-          <HeroImagesSection />
-          <TransformationsSection />
+          <MediaCenterCard />
           <BlockedSlotsSection />
         </div>
       </div>
@@ -709,8 +700,34 @@ function ServiceCardImagesSection() {
 }
 
 // =====================================================================
-// SHARED REDIRECT CARD — used by image sections that now live in the
-// Media Center. Shows a description and a direct link to /admin/media.
+// MEDIA CENTER — single card replacing 5 individual media redirect cards
+// =====================================================================
+function MediaCenterCard() {
+  return (
+    <section className="admin-card" data-testid="section-media-center">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="p-2 rounded-xl bg-primary/15 text-primary shrink-0">
+          <ExternalLink size={18} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-display font-bold text-lg mb-1">Media Center</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage logos, hero slides, service images, transformations gallery, coach profile, and branding — all in one place with live preview.
+          </p>
+        </div>
+      </div>
+      <a href="/admin/media" data-testid="link-open-media-center">
+        <Button type="button" className="rounded-xl gap-2">
+          <ExternalLink size={14} />
+          Open Media Center
+        </Button>
+      </a>
+    </section>
+  );
+}
+
+// =====================================================================
+// SHARED REDIRECT CARD — kept for any remaining internal references
 // =====================================================================
 function MediaRedirectCard({
   testId,

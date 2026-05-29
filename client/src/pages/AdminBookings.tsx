@@ -28,7 +28,14 @@ import {
   Link2,
   Link2Off,
   Check,
+  MoreHorizontal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -948,39 +955,7 @@ function BookingRow({
             {b.sessionType === "duo" && b.partnerFullName && (
               <LinkPartnerButton booking={b} />
             )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8"
-                  data-testid={`button-delete-${b.id}`}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-card border-white/10">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("admin.bookings.deleteTitle")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t(
-                      "admin.bookings.deleteDesc",
-                      "This permanently removes the booking. Use cancel/late cancel statuses if you want to keep a record.",
-                    )}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("admin.bookings.keepIt")}</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => deleteMutation.mutate(b.id)}
-                    className="bg-red-500 hover:bg-red-600"
-                    data-testid={`button-confirm-delete-${b.id}`}
-                  >
-                    {t("admin.bookings.deleteBtn")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ActionsMenu booking={b} deleteMutation={deleteMutation} t={t} />
           </div>
         </div>
       </AdminCard>
@@ -992,6 +967,67 @@ const workoutLogSchema = z.object({
   workoutCategory: z.string().optional(),
   adminNotes: z.string().optional(),
 });
+
+function ActionsMenu({
+  booking,
+  deleteMutation,
+  t,
+}: {
+  booking: BookingWithUser;
+  deleteMutation: ReturnType<typeof useDeleteBooking>;
+  t: (k: string, fb?: string) => string;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            data-testid={`button-actions-${booking.id}`}
+          >
+            <MoreHorizontal size={15} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem
+            className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+            onSelect={() => setConfirmOpen(true)}
+            data-testid={`button-delete-${booking.id}`}
+          >
+            <Trash2 size={13} className="mr-2" />
+            {t("admin.bookings.deleteBtn", "Delete booking")}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="bg-card border-white/10">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.bookings.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "admin.bookings.deleteDesc",
+                "This permanently removes the booking. Use cancel/late cancel statuses if you want to keep a record.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("admin.bookings.keepIt")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate(booking.id)}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid={`button-confirm-delete-${booking.id}`}
+            >
+              {t("admin.bookings.deleteBtn")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
 
 function WorkoutLogButton({ booking }: { booking: BookingWithUser }) {
   const { t } = useTranslation();

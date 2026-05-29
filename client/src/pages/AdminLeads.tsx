@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
+import { Filter, X as XIcon } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +49,7 @@ export default function AdminLeads() {
   const [leadStatus, setLeadStatus] = useState<string>("all");
   const [leadSource, setLeadSource] = useState<string>("all");
   const [q, setQ] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const params = new URLSearchParams();
   if (leadStatus !== "all") params.set("leadStatus", leadStatus);
@@ -97,6 +99,9 @@ export default function AdminLeads() {
     },
   });
 
+  const hasActiveFilters = leadStatus !== "all" || leadSource !== "all";
+  const clearFilters = () => { setLeadStatus("all"); setLeadSource("all"); };
+
   return (
     <div className="admin-shell">
     <div className="admin-container space-y-5">
@@ -107,14 +112,44 @@ export default function AdminLeads() {
       />
 
       <AdminCard>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Search always visible */}
+        <div className="flex items-center gap-2 mb-3">
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Name, email, phone"
+            data-testid="input-lead-search"
+            className="flex-1"
+          />
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((o) => !o)}
+            data-testid="button-toggle-filters"
+            className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[12px] font-semibold transition-colors sm:hidden ${
+              filtersOpen || hasActiveFilters
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "bg-white/5 border-white/10 text-muted-foreground"
+            }`}
+          >
+            <Filter size={13} />
+            Filters
+            {hasActiveFilters && (
+              <span className="ml-1 w-4 h-4 rounded-full bg-primary/30 text-primary text-[9px] flex items-center justify-center font-bold">
+                {(leadStatus !== "all" ? 1 : 0) + (leadSource !== "all" ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Filter row — always visible on ≥sm, toggle on mobile */}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${filtersOpen ? "block" : "hidden sm:grid"}`}>
           <div>
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">
-              Lead status
+              Lifecycle status
             </label>
             <Select value={leadStatus} onValueChange={setLeadStatus}>
               <SelectTrigger data-testid="select-lead-status-filter">
-                <SelectValue />
+                <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All statuses</SelectItem>
@@ -132,7 +167,7 @@ export default function AdminLeads() {
             </label>
             <Select value={leadSource} onValueChange={setLeadSource}>
               <SelectTrigger data-testid="select-lead-source-filter">
-                <SelectValue />
+                <SelectValue placeholder="All sources" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All sources</SelectItem>
@@ -144,29 +179,32 @@ export default function AdminLeads() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1 block">
-              Search
-            </label>
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Name, email, phone"
-              data-testid="input-lead-search"
-            />
-          </div>
         </div>
       </AdminCard>
 
       {isLoading ? (
         <AdminSkeletonStack count={6} />
       ) : filtered.length === 0 ? (
-        <AdminEmptyState
-          icon={<Users size={28} />}
-          title="No leads match"
-          body="Try a different filter combination."
-          testId="empty-leads"
-        />
+        <div>
+          <AdminEmptyState
+            icon={<Users size={28} />}
+            title="No leads match"
+            body="Try a different filter combination."
+            testId="empty-leads"
+          />
+          {hasActiveFilters && (
+            <div className="flex justify-center mt-3">
+              <button
+                type="button"
+                onClick={clearFilters}
+                data-testid="button-clear-lead-filters"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <XIcon size={13} /> Clear filters
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         <AdminCard padded={false}>
           <div className="divide-y divide-white/5">

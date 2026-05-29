@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users,
@@ -41,6 +41,21 @@ import { TrialFunnel } from "@/components/admin/TrialFunnel";
 import { CapacityHeatmap } from "@/components/admin/CapacityHeatmap";
 
 const ANALYTICS_PATH = "/api/admin/analytics";
+const RANGES = [
+  { key: "30d", label: "30d", months: 1 },
+  { key: "90d", label: "90d", months: 3 },
+  { key: "12m", label: "12m", months: 12 },
+] as const;
+type RangeKey = (typeof RANGES)[number]["key"];
+
+function filterMonths<T extends { month: string }>(data: T[], months: number): T[] {
+  if (months >= 12) return data;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  const cutoffYM = cutoff.toISOString().slice(0, 7);
+  return data.filter((r) => r.month >= cutoffYM);
+}
+
 const FMT_INT = new Intl.NumberFormat("en-US");
 const FMT_AED = new Intl.NumberFormat("en-US", { style: "currency", currency: "AED", maximumFractionDigits: 0 });
 const DOW_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -82,30 +97,35 @@ const CHART_TOOLTIP_STYLE: CSSProperties = {
 
 export default function AdminAnalytics() {
   const { t } = useTranslation();
-  const { data, isLoading, error } = useQuery<AdminAnalytics>({
-    queryKey: [ANALYTICS_PATH],
-    // Analytics endpoint is heavy (snapshot + 12-month trends). 60s stale time
-    // matches AdminDashboard's revenue30d query so they share cache and we
-    // don't refetch on every tab switch.
+  const [range, setRange] = useState<RangeKey>("12m");
+  const rangeMonths = RANGES.find((r) => r.key === range)?.months ?? 12;
+
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<AdminAnalytics>({
+    queryKey: [ANALYTICS_PATH, range],
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
-      const res = await fetch(ANALYTICS_PATH, { credentials: "include" });
+      const res = await fetch(`${ANALYTICS_PATH}?range=${range}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
     },
   });
 
+  const updatedLabel = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+
   const revenueData = useMemo(
-    () => (data?.trends.revenueByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
-    [data],
+    () => filterMonths(data?.trends.revenueByMonth ?? [], rangeMonths).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data, rangeMonths],
   );
   const completedData = useMemo(
-    () => (data?.trends.completedByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
-    [data],
+    () => filterMonths(data?.trends.completedByMonth ?? [], rangeMonths).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data, rangeMonths],
   );
   const signupsData = useMemo(
-    () => (data?.trends.signupsByMonth ?? []).map((r) => ({ ...r, label: shortMonth(r.month) })),
-    [data],
+    () => filterMonths(data?.trends.signupsByMonth ?? [], rangeMonths).map((r) => ({ ...r, label: shortMonth(r.month) })),
+    [data, rangeMonths],
   );
   const dowData = useMemo(
     () => (data?.trends.bookingsByDow ?? []).map((r) => ({ ...r, label: DOW_LABEL[r.dow] ?? "" })),
@@ -124,12 +144,49 @@ export default function AdminAnalytics() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-        <AdminPageHeader
-          eyebrow={t("admin.tabs.analytics", "Analytics")}
-          title={t("admin.analytics.title", "Business Analytics")}
-          subtitle={t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
-          testId="text-analytics-title"
-        />
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+          <AdminPageHeader
+            eyebrow={t("admin.tabs.analytics", "Analytics")}
+            title={t("admin.analytics.title", "Business Analytics")}
+            subtitle={t("admin.analytics.subtitle", "Revenue, retention, attendance and momentum at a glance.")}
+            testId="text-analytics-title"
+          />
+          <div className="flex items-center gap-2 shrink-0 pt-1 flex-wrap">
+            {/* Date range selector */}
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.02] p-1" data-testid="range-selector">
+              {RANGES.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  onClick={() => setRange(r.key)}
+                  data-testid={`range-${r.key}`}
+                  className={`h-7 px-3 rounded-lg text-[11px] font-semibold transition-colors ${
+                    range === r.key
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            {updatedLabel && (
+              <span className="text-[11px] text-muted-foreground hidden sm:block" data-testid="text-analytics-updated-at">
+                {updatedLabel}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              data-testid="button-refresh-analytics"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={isFetching ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </div>
+        </div>
 
         {error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-300" data-testid="analytics-error">

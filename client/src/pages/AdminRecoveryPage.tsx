@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { CalendarClock, CheckCircle2, Archive, Loader2 } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { useFeatureFlag } from "@/lib/featureFlags";
@@ -8,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AdminEmptyState } from "@/components/admin/primitives";
 import NotFound from "@/pages/not-found";
 
 type RecoveryRow = {
@@ -30,9 +32,12 @@ export default function AdminRecoveryPage() {
   const [scheduling, setScheduling] = useState<RecoveryRow | null>(null);
   const [scheduledFor, setScheduledFor] = useState<string>("");
 
+  const [location] = useLocation();
+  const isActive = location === "/admin/recovery";
   const { data: rows, isLoading } = useQuery<RecoveryRow[]>({
     queryKey: ["/api/recovery-requests"],
     enabled,
+    refetchInterval: isActive ? 60_000 : false,
   });
   const { data: users } = useQuery<ClientUser[]>({ queryKey: ["/api/users"] });
   const nameById = (id: number) => users?.find((u) => u.id === id)?.fullName ?? `#${id}`;
@@ -76,9 +81,12 @@ export default function AdminRecoveryPage() {
       {isLoading ? (
         <div className="admin-shimmer h-24 rounded-2xl" />
       ) : sorted.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.06] bg-card/60 p-8 text-center text-foreground/60">
-          {t("admin.recovery.empty", "No recovery requests yet.")}
-        </div>
+        <AdminEmptyState
+          icon={<CalendarClock size={26} />}
+          title={t("admin.recovery.empty", "No recovery requests yet.")}
+          body={t("admin.recovery.emptyHint", "New requests from clients will appear here.")}
+          testId="empty-recovery"
+        />
       ) : (
         <ul className="space-y-3">
           {sorted.map((r) => (

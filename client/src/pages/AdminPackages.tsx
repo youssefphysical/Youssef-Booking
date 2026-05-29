@@ -370,12 +370,11 @@ function VerificationQueue() {
         <div className="h-16 rounded-xl border border-white/[0.05] bg-card/40 admin-shimmer" data-testid="skeleton-verification-queue" />
       )}
       {!isLoading && !items.length && (
-        <p
-          className="text-xs text-muted-foreground py-2"
-          data-testid="text-verification-empty"
-        >
-          {t("admin.verifications.empty", "No pending package activation requests.")}
-        </p>
+        <AdminEmptyState
+          icon={<ShieldCheck size={22} />}
+          title={t("admin.verifications.empty", "No pending package activation requests.")}
+          testId="text-verification-empty"
+        />
       )}
       <div className="grid grid-cols-1 gap-3" data-testid="grid-verification-queue">
         {items.map((row: any) => {

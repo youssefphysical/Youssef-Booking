@@ -6,7 +6,7 @@ import {
   AdminEmptyState,
   AdminSkeletonStack,
 } from "@/components/admin/primitives";
-import { AlertTriangle, ShieldCheck, ChevronRight, Info, AlertOctagon } from "lucide-react";
+import { AlertTriangle, ShieldCheck, ChevronRight, Info, AlertOctagon, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Warning = {
@@ -26,19 +26,42 @@ const SEVERITY_STYLES: Record<Warning["severity"], { bg: string; text: string; i
 };
 
 export default function AdminIntegrity() {
-  const { data, isLoading, error } = useQuery<Payload>({
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<Payload>({
     queryKey: ["/api/admin/integrity"],
     staleTime: 60_000,
   });
 
+  const updatedLabel = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+
   return (
     <div className="admin-shell">
     <div className="admin-container space-y-5">
-      <AdminPageHeader
-        eyebrow="Data integrity"
-        title="Integrity checker"
-        subtitle="Read-only audit of cross-table inconsistencies. Click any row to investigate."
-      />
+      <div className="flex items-start justify-between gap-3">
+        <AdminPageHeader
+          eyebrow="Data integrity"
+          title="Integrity checker"
+          subtitle="Read-only audit of cross-table inconsistencies. Click any row to investigate."
+        />
+        <div className="flex items-center gap-2 shrink-0 pt-1">
+          {updatedLabel && (
+            <span className="text-[11px] text-muted-foreground hidden sm:block" data-testid="text-integrity-updated-at">
+              Checked {updatedLabel}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh-integrity"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={isFetching ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+      </div>
 
       {error ? (
         <AdminCard>
