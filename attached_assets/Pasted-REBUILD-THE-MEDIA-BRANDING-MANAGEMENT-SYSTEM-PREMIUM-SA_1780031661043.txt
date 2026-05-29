@@ -1,0 +1,465 @@
+REBUILD THE MEDIA & BRANDING MANAGEMENT SYSTEM (PREMIUM SAAS LEVEL)
+
+IMPORTANT:
+Do NOT make small edits.
+Do NOT patch the existing UI.
+Refactor and redesign the entire Media + Branding management experience into a premium, scalable, production-ready system that feels like a native application rather than a web page.
+
+The goal is:
+
+- Perfect mobile responsiveness.
+- Professional SaaS dashboard quality.
+- Consistent Tron Legacy design language.
+- Full control over every branding asset without touching code.
+
+====================================================
+
+1. SAFE AREA SYSTEM (HIGH PRIORITY)
+   ====================================================
+
+The current Media and Settings sections feel cramped.
+
+Implement a global Safe Area system across the entire Control Panel.
+
+Top Safe Area:
+
+- Mobile: 24px
+- Tablet: 32px
+- Desktop: 40px
+
+Side Safe Area:
+
+- Mobile: 16px
+- Tablet: 24px
+- Desktop: 32px
+
+Bottom Safe Area:
+
+- Minimum 120px
+- Must prevent overlap with:
+  - Bottom Navigation
+  - Floating Action Button
+  - Mobile browser UI
+
+Every page must feel breathable and properly spaced.
+
+====================================================
+2. MOVE BRAND SETTINGS OUT OF SETTINGS
+
+Brand Settings should NOT be inside Settings & Availability.
+
+Branding is not a platform setting.
+
+Move ALL branding-related controls into:
+
+Media Manager
+→ Branding
+
+New Media Structure:
+
+Media
+├── Hero Slides
+├── Services
+├── Branding
+
+Inside Branding:
+
+- Navbar Logo
+- Mobile Logo
+- Footer Logo
+- Dashboard Logo
+- Login Logo
+- Auth Hero Logo
+- Favicon
+- App Icon
+- Splash Screen
+- Email Branding Assets
+- Future Brand Assets
+
+====================================================
+3. COMPLETE BRANDING CONTROL SYSTEM
+
+Every branding asset must have advanced controls.
+
+Not only logos.
+
+ALL branding images must support:
+
+---
+
+SIZE CONTROLS
+
+Desktop Width
+
+Desktop Height
+
+Mobile Width
+
+Mobile Height
+
+Tablet Width
+
+Tablet Height
+
+---
+
+ASPECT RATIO
+
+Lock Aspect Ratio Toggle
+
+ON:
+Maintain proportions automatically
+
+OFF:
+Free resize
+
+---
+
+ZOOM CONTROLS
+
+Desktop Zoom
+
+Tablet Zoom
+
+Mobile Zoom
+
+Range:
+0% → 300%
+
+---
+
+POSITION CONTROLS
+
+Horizontal Offset
+
+Vertical Offset
+
+Desktop Offset
+
+Tablet Offset
+
+Mobile Offset
+
+---
+
+SPACING CONTROLS
+
+Top Padding
+
+Bottom Padding
+
+Left Padding
+
+Right Padding
+
+---
+
+VISUAL EFFECTS
+
+Glow Intensity
+
+Glow Color
+
+Shadow Strength
+
+Border Radius
+
+Overlay Opacity
+
+Blur Amount
+
+Brightness
+
+Contrast
+
+Saturation
+
+====================================================
+4. HERO IMAGE CONTROL SYSTEM
+
+Every Hero Slide image must support:
+
+Desktop Width
+
+Desktop Height
+
+Tablet Width
+
+Tablet Height
+
+Mobile Width
+
+Mobile Height
+
+Desktop Zoom
+
+Tablet Zoom
+
+Mobile Zoom
+
+Desktop Position
+
+Tablet Position
+
+Mobile Position
+
+Overlay Strength
+
+Image Focus Position
+
+Border Radius
+
+This allows perfect image framing on all devices.
+
+====================================================
+5. SERVICES IMAGE CONTROL SYSTEM
+
+Each Service Image must have:
+
+Desktop Width
+
+Desktop Height
+
+Mobile Width
+
+Mobile Height
+
+Zoom
+
+Position
+
+Glow
+
+Overlay
+
+Border Radius
+
+Padding
+
+Preview
+
+No hardcoded image sizing.
+
+Everything configurable.
+
+====================================================
+6. REBUILD BRAND PREVIEW SYSTEM
+
+The current preview is too small.
+
+Replace it with a professional Live Preview Studio.
+
+Preview Tabs:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Inside preview:
+
+Navbar
+
+Hero Section
+
+Services
+
+Footer
+
+Authentication Screens
+
+Dashboard Logo Preview
+
+Changes must update live instantly.
+
+No save required for preview.
+
+====================================================
+7. REBUILD TOP MEDIA NAVIGATION
+
+Current tabs:
+
+Hero Slider
+Services
+Branding
+
+Look disconnected and outdated.
+
+Redesign them into a modern Segmented Control.
+
+Requirements:
+
+Height:
+56px
+
+Border Radius:
+20px
+
+Internal Padding:
+6px
+
+Active State:
+
+- Tron Glow
+- Cyan Border
+- Animated Transition
+
+Inactive State:
+
+- Minimal
+- Clean
+
+Animation:
+300ms
+
+Must feel like a native app.
+
+====================================================
+8. STANDARDIZE ALL CARDS
+
+Currently multiple card styles exist.
+
+Create one design system.
+
+All cards:
+
+Border Radius:
+24px
+
+Padding:
+24px
+
+Consistent Border
+
+Consistent Shadow
+
+Consistent Background
+
+Consistent Hover State
+
+Consistent Mobile Layout
+
+No visual inconsistency anywhere.
+
+====================================================
+9. HERO SLIDES MANAGEMENT REDESIGN
+
+Current cards are oversized and controls feel crowded.
+
+New Layout:
+
+Image
+
+↓
+
+Title
+
+↓
+
+Subtitle
+
+↓
+
+Actions Row
+
+Actions:
+
+Edit
+
+Arrange
+
+Duplicate
+
+Visibility
+
+Delete
+
+Perfect spacing.
+
+No overlapping controls.
+
+====================================================
+10. FLOATING ACTION BUTTON FIX
+
+Current FAB overlaps content.
+
+Implement Dynamic Bottom Spacing.
+
+Automatically calculate:
+
+FAB Height
++
+Bottom Navigation Height
++
+Safe Area
+
+No content should ever be hidden.
+
+====================================================
+11. MOBILE-FIRST EXPERIENCE
+
+Every control panel section must be tested for:
+
+Android
+
+iPhone
+
+Tablet
+
+Small Screens
+
+Large Screens
+
+No horizontal scrolling.
+
+No clipped sliders.
+
+No overlapping buttons.
+
+No hidden actions.
+
+====================================================
+12. FUTURE-PROOF BRANDING SYSTEM
+
+Build the architecture so future assets can be added without code changes.
+
+Admin should be able to create and manage:
+
+New Logo Types
+
+New Branding Images
+
+New Marketing Assets
+
+New Email Assets
+
+New Splash Screens
+
+Without modifying layout structure.
+
+====================================================
+FINAL GOAL
+
+The Media Manager and Branding system must feel like:
+
+- Canva
+- Figma
+- Stripe Dashboard
+- Linear
+- Notion
+
+while keeping the existing Tron Legacy identity.
+
+Everything must be:
+
+- Responsive
+- Elegant
+- Consistent
+- Premium
+- Scalable
+- Easy to manage
+
+No shortcuts.
+No temporary fixes.
+Rebuild it properly as a production-grade administration experience.
