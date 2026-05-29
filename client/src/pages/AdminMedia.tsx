@@ -767,6 +767,9 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
     radius:    Number(rawMobileSettings.radius    ?? 0),
   });
 
+  const [isCardDirty, setIsCardDirty] = useState(false);
+  const { guard: cardUnsavedGuard } = useUnsavedChanges(isCardDirty);
+
   // ── settingsMutation defined FIRST so uploadMutation.onSuccess can reference it ──
   const settingsMutation = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
@@ -776,6 +779,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
     },
     onSuccess: () => {
       invalidateMedia();
+      setIsCardDirty(false);
       toast({ title: "Settings saved", description: "Display settings updated." });
     },
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
@@ -844,6 +848,8 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
   const activeZoom = activeTab === "desktop" ? desktop.zoom : mob.zoom;
 
   return (
+    <>
+    {cardUnsavedGuard}
     <div
       className="rounded-2xl border border-white/[0.08] bg-card/60 overflow-hidden backdrop-blur-sm"
       data-testid={`service-card-${cardKey}`}
@@ -865,6 +871,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
             } else {
               setMob(p => ({ ...p, positionX: posX, positionY: posY }));
             }
+            setIsCardDirty(true);
           }}
           className="w-full"
         />
@@ -1072,7 +1079,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
 
                 {activeTab === "desktop" && (
                   <div className="space-y-4">
-                    <FitSelect value={desktop.fit} onChange={(v) => setDesktop(p => ({ ...p, fit: v }))} />
+                    <FitSelect value={desktop.fit} onChange={(v) => { setDesktop(p => ({ ...p, fit: v })); setIsCardDirty(true); }} />
                     {SERVICE_CARD_SLIDER_FIELDS.map(({ schemaKey, label, min, max, step, unit }) => (
                       <SliderRow
                         key={schemaKey}
@@ -1080,7 +1087,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
                         testId={`slider-row-desktop-${label.toLowerCase().replace(/\s+/g, "-")}`}
                         value={((desktop as unknown) as Record<string, number>)[schemaKey] ?? 0}
                         min={min} max={max} step={step} unit={unit}
-                        onChange={(v) => setDesktop(p => ({ ...p, [schemaKey]: v }))}
+                        onChange={(v) => { setDesktop(p => ({ ...p, [schemaKey]: v })); setIsCardDirty(true); }}
                       />
                     ))}
                     {/* Smart clipping validation — warn when focal point is very near the edge */}
@@ -1103,7 +1110,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
                     <p className="text-[11px] text-primary/70 bg-primary/5 border border-primary/15 rounded-xl px-3 py-2.5">
                       Mobile settings are independent from desktop. Drag the preview above to set the focal point.
                     </p>
-                    <FitSelect value={mob.fit} onChange={(v) => setMob(p => ({ ...p, fit: v }))} />
+                    <FitSelect value={mob.fit} onChange={(v) => { setMob(p => ({ ...p, fit: v })); setIsCardDirty(true); }} />
                     {SERVICE_CARD_SLIDER_FIELDS.map(({ schemaKey, label, min, max, step, unit }) => (
                       <SliderRow
                         key={schemaKey}
@@ -1111,7 +1118,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
                         testId={`slider-row-mobile-${label.toLowerCase().replace(/\s+/g, "-")}`}
                         value={((mob as unknown) as Record<string, number>)[schemaKey] ?? 0}
                         min={min} max={max} step={step} unit={unit}
-                        onChange={(v) => setMob(p => ({ ...p, [schemaKey]: v }))}
+                        onChange={(v) => { setMob(p => ({ ...p, [schemaKey]: v })); setIsCardDirty(true); }}
                       />
                     ))}
                     {/* Smart clipping validation for mobile */}
@@ -1162,6 +1169,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
         }}
       />
     </div>
+    </>
   );
 }
 
@@ -1989,6 +1997,7 @@ function BrandingSection() {
   // ── Logo config state ─────────────────────────────────────────────────────
   const [cfg, setCfg]                       = useState<LogoConfig>(DEFAULT_LOGO_CONFIG);
   const [isDirty, setIsDirty]               = useState(false);
+  const { guard: brandingUnsavedGuard }     = useUnsavedChanges(isDirty);
   const [activeTab, setActiveTab]           = useState<"uploads"|"preview"|"settings"|"export">("uploads");
   const [exportingPreset, setExportingPreset] = useState<string | null>(null);
 
@@ -2029,6 +2038,8 @@ function BrandingSection() {
   };
 
   return (
+    <>
+    {brandingUnsavedGuard}
     <div className="space-y-5">
       {/* Header */}
       <div>
@@ -2324,6 +2335,7 @@ function BrandingSection() {
       {/* ── Logo Controls (7 independent slots, 9 sliders each) ─────────── */}
       <LogoControlsPanel />
     </div>
+    </>
   );
 }
 
@@ -2339,6 +2351,8 @@ function ProfileSection({ settings }: { settings: Settings }) {
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const [imgErrored, setImgErrored] = useState(false);
   const [bio, setBio] = useState(settings?.profileBio ?? "");
+  const [isProfileBioDirty, setIsProfileBioDirty] = useState(false);
+  const { guard: profileUnsavedGuard } = useUnsavedChanges(isProfileBioDirty);
 
   const savedPhoto = settings?.profilePhotoUrl?.trim() || "";
   const displayPhoto = pendingPreview || (savedPhoto && !imgErrored ? savedPhoto : "");
@@ -2349,6 +2363,7 @@ function ProfileSection({ settings }: { settings: Settings }) {
 
   useEffect(() => {
     setBio(settings?.profileBio ?? "");
+    setIsProfileBioDirty(false);
   }, [settings?.profileBio]);
 
   const uploadMutation = useMutation({
@@ -2417,11 +2432,14 @@ function ProfileSection({ settings }: { settings: Settings }) {
     updateSettings.mutate({ profileBio: bio.trim() || null } as any, {
       onSuccess: () => {
         invalidateMedia();
+        setIsProfileBioDirty(false);
       },
     });
   }
 
   return (
+    <>
+    {profileUnsavedGuard}
     <div className="space-y-6" data-testid="section-profile-media">
       <div>
         <h3 className="font-display font-bold text-lg">Profile Photo & Bio</h3>
@@ -2522,7 +2540,7 @@ function ProfileSection({ settings }: { settings: Settings }) {
 
         <Textarea
           value={bio}
-          onChange={(e) => setBio(e.target.value)}
+          onChange={(e) => { setBio(e.target.value); setIsProfileBioDirty(true); }}
           rows={6}
           placeholder="Write a short bio for the homepage about section…"
           className="bg-white/5 border-white/10 resize-none"
@@ -2544,6 +2562,7 @@ function ProfileSection({ settings }: { settings: Settings }) {
         </button>
       </div>
     </div>
+    </>
   );
 }
 
