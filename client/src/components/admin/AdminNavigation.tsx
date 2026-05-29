@@ -22,6 +22,10 @@ import {
   Search,
   Home,
   LogOut,
+  Camera,
+  Gauge,
+  HeartPulse,
+  Merge,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
@@ -68,18 +72,6 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           icon: <LayoutDashboard size={18} />,
           isActive: (loc) => loc === "/admin",
         },
-        {
-          href: "/admin/analytics",
-          label: t("nav.analytics", "Analytics"),
-          icon: <BarChart3 size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/analytics"),
-        },
-        {
-          href: "/admin/management-analysis",
-          label: t("nav.managementAnalysis", "Management & Analysis"),
-          icon: <BarChart3 size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/management-analysis"),
-        },
       ],
     },
     {
@@ -120,14 +112,38 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
       ],
     },
     {
-      id: "financial",
-      label: t("nav.section.financial", "Financial"),
+      id: "media",
+      label: t("nav.section.media", "Media"),
       items: [
+        {
+          href: "/admin/media",
+          label: t("nav.media", "Media"),
+          icon: <Camera size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/media"),
+        },
+      ],
+    },
+    {
+      id: "business",
+      label: t("nav.section.business", "Business"),
+      items: [
+        {
+          href: "/admin/analytics",
+          label: t("nav.analytics", "Analytics"),
+          icon: <BarChart3 size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/analytics"),
+        },
+        {
+          href: "/admin/leads",
+          label: t("nav.leads", "Leads"),
+          icon: <Users size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/leads"),
+        },
         {
           href: "/admin/packages",
           label: t("nav.packages"),
           icon: <PackageIcon size={18} />,
-          isActive: (loc) => loc === "/admin/packages",
+          isActive: (loc) => loc.startsWith("/admin/packages"),
         },
         {
           href: "/admin/package-builder",
@@ -141,6 +157,30 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           icon: <CreditCard size={18} />,
           isActive: (loc) => loc.startsWith("/admin/payments"),
         },
+        {
+          href: "/admin/management-analysis",
+          label: t("nav.managementAnalysis", "Management & Analysis"),
+          icon: <BarChart3 size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/management-analysis"),
+        },
+      ],
+    },
+    {
+      id: "operations",
+      label: t("nav.section.operations", "Operations"),
+      items: [
+        {
+          href: "/admin/command-center",
+          label: t("nav.commandCenter", "Command Center"),
+          icon: <Gauge size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/command-center"),
+        },
+        {
+          href: "/admin/recovery",
+          label: t("nav.recovery", "Recovery Center"),
+          icon: <HeartPulse size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/recovery"),
+        },
       ],
     },
     {
@@ -148,11 +188,22 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
       label: t("nav.section.system"),
       items: [
         {
-          href: "/admin/staff",
-          label: t("nav.staff"),
-          icon: <ShieldCheck size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/staff"),
-          superAdminOnly: true,
+          href: "/admin/settings",
+          label: t("nav.settings"),
+          icon: <SettingsIcon size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/settings"),
+        },
+        {
+          href: "/admin/audit-log",
+          label: t("nav.auditLog", "Audit Log"),
+          icon: <FileText size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/audit-log"),
+        },
+        {
+          href: "/admin/integrity",
+          label: t("nav.integrity", "Integrity Checker"),
+          icon: <Shield size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/integrity"),
         },
         {
           href: "/admin/content",
@@ -173,10 +224,23 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           isActive: (loc) => loc.startsWith("/admin/emails"),
         },
         {
-          href: "/admin/settings",
-          label: t("nav.settings"),
-          icon: <SettingsIcon size={18} />,
-          isActive: (loc) => loc.startsWith("/admin/settings"),
+          href: "/admin/staff",
+          label: t("nav.staff"),
+          icon: <ShieldCheck size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/staff"),
+          superAdminOnly: true,
+        },
+      ],
+    },
+    {
+      id: "advanced",
+      label: t("nav.section.advanced", "Advanced"),
+      items: [
+        {
+          href: "/admin/merge-clients",
+          label: t("nav.mergeClients", "Merge Clients"),
+          icon: <Merge size={18} />,
+          isActive: (loc) => loc.startsWith("/admin/merge-clients"),
         },
       ],
     },

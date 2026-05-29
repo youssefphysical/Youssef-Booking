@@ -5,20 +5,11 @@ import {
   Users,
   LayoutDashboard,
   Calendar,
-  Package as PackageIcon,
-  Activity,
   Camera,
-  Settings as SettingsIcon,
-  BarChart3,
-  HeartPulse,
-  Gauge,
-  UserPlus,
-  ShieldAlert,
-  Merge,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
-import { useFeatureFlag } from "@/lib/featureFlags";
 
 /**
  * AdminTabs — global top navigation strip for the entire /admin/*
@@ -53,46 +44,28 @@ type TabSpec = {
   fallback: string;
   icon: React.ReactNode;
   matches: (path: string) => boolean;
-  hintKey?: string;
-  hintFallback?: string;
 };
 
+// 6-tab strip: Home | Dashboard | Clients | Bookings | Media | More
+// All secondary tools (Analytics, Leads, Settings, etc.) live behind
+// the More hub at /admin/more — see AdminMore.tsx.
 const ADMIN_TABS: TabSpec[] = [
-  // Home — back to the public site, session preserved.
   { href: "/", labelKey: "admin.tabs.home", fallback: "Home", icon: <Home size={15} />, matches: () => false },
-  { href: "/admin", labelKey: "admin.tabs.overview", fallback: "Overview", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
-  { href: "/admin/command-center", labelKey: "admin.tabs.commandCenter", fallback: "Command", icon: <Gauge size={15} />, matches: (p) => p.startsWith("/admin/command-center") },
+  { href: "/admin", labelKey: "admin.tabs.overview", fallback: "Dashboard", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
   { href: "/admin/clients", labelKey: "admin.tabs.clients", fallback: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
-  { href: "/admin/leads", labelKey: "admin.tabs.leads", fallback: "Leads", icon: <UserPlus size={15} />, matches: (p) => p.startsWith("/admin/leads") },
   { href: "/admin/bookings", labelKey: "admin.tabs.bookings", fallback: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
-  { href: "/admin/packages", labelKey: "admin.tabs.sessions", fallback: "Sessions", icon: <PackageIcon size={15} />, matches: (p) => p.startsWith("/admin/packages") },
-  { href: "/admin/analytics", labelKey: "admin.tabs.analytics", fallback: "Analytics", icon: <BarChart3 size={15} />, matches: (p) => p.startsWith("/admin/analytics") },
-  { href: "/admin/recovery", labelKey: "admin.tabs.recovery", fallback: "Recovery", icon: <HeartPulse size={15} />, matches: (p) => p.startsWith("/admin/recovery") },
-  { href: "/admin/integrity", labelKey: "admin.tabs.integrity", fallback: "Integrity", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/integrity") },
-  { href: "/admin/audit-log", labelKey: "admin.tabs.auditLog", fallback: "Audit log", icon: <ShieldAlert size={15} />, matches: (p) => p.startsWith("/admin/audit-log") },
-  { href: "/admin/merge-clients", labelKey: "admin.tabs.merge", fallback: "Merge", icon: <Merge size={15} />, matches: (p) => p.startsWith("/admin/merge-clients") },
   { href: "/admin/media", labelKey: "admin.tabs.media", fallback: "Media", icon: <Camera size={15} />, matches: (p) => p.startsWith("/admin/media") },
-  { href: "/admin/settings", labelKey: "admin.tabs.settings", fallback: "Settings", icon: <SettingsIcon size={15} />, matches: (p) => p.startsWith("/admin/settings") },
+  { href: "/admin/more", labelKey: "admin.tabs.more", fallback: "More", icon: <MoreHorizontal size={15} />, matches: (p) => p.startsWith("/admin/more") },
 ];
 
-// Map of href → lazy preload thunk. Calling the thunk on hover/focus
-// kicks off the chunk download before the user actually clicks, so
-// the route is hot by the time they arrive. Safe to call multiple
-// times — `lazy()` caches the promise internally.
+// Preload map — thunk fires on hover/focus, making the chunk hot before
+// the user clicks. Safe to call multiple times; lazy() caches internally.
 const ADMIN_PRELOAD: Record<string, () => Promise<unknown>> = {
   "/admin": () => import("@/pages/AdminDashboard"),
-  "/admin/command-center": () => import("@/pages/AdminCommandCenter"),
   "/admin/clients": () => import("@/pages/AdminClients"),
-  "/admin/leads": () => import("@/pages/AdminLeads"),
   "/admin/bookings": () => import("@/pages/AdminBookings"),
-  "/admin/packages": () => import("@/pages/AdminPackages"),
-  "/admin/analytics": () => import("@/pages/AdminAnalytics"),
-  "/admin/recovery": () => import("@/pages/AdminRecoveryPage"),
-  "/admin/integrity": () => import("@/pages/AdminIntegrity"),
-  "/admin/audit-log": () => import("@/pages/AdminAuditLog"),
-  "/admin/merge-clients": () => import("@/pages/AdminMergeClients"),
-  "/admin/settings": () => import("@/pages/AdminSettings"),
-  "/admin/media":    () => import("@/pages/AdminMedia"),
+  "/admin/media": () => import("@/pages/AdminMedia"),
+  "/admin/more": () => import("@/pages/AdminMore"),
 };
 
 function preloadAdminRoute(href: string) {
@@ -107,28 +80,17 @@ function preloadAdminRoute(href: string) {
 export function AdminTabs() {
   const [location] = useLocation();
   const { t } = useTranslation();
-  const recoveryEnabled = useFeatureFlag("recovery_enabled", true);
-  const visibleTabs = ADMIN_TABS.filter(
-    (tab) => recoveryEnabled || tab.href !== "/admin/recovery",
-  );
 
-  // Auto-scroll the active tab into view when the route changes.
-  // `inline: "center"` on mobile keeps it visually centered when it
-  // overflows; `block: "nearest"` prevents any vertical scroll jump.
-  // Guarded by `prefers-reduced-motion` (CSS already sets
-  // `scroll-behavior: auto` on .admin-tabs-scroll for that case).
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const activeRef = useRef<HTMLAnchorElement | null>(null);
   useEffect(() => {
     const el = activeRef.current;
     if (!el) return;
-    // Defer one frame so layout is committed before scrolling.
     const id = requestAnimationFrame(() => {
       try {
         el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
       } catch {
-        // Older Samsung Internet builds throw on the options object —
-        // fall back silently. The tab is still reachable via swipe.
+        // Older Samsung Internet builds throw on the options object — silent fallback.
       }
     });
     return () => cancelAnimationFrame(id);
@@ -138,15 +100,11 @@ export function AdminTabs() {
     <div
       ref={scrollerRef}
       className="admin-tabs-sticky rounded-2xl border border-white/[0.06] bg-card/80 p-1 mb-3 sm:mb-5 overflow-x-auto admin-tabs-scroll [-webkit-overflow-scrolling:touch]"
-      // touch-action: pan-x lets the OS know horizontal swipes are
-      // ours (no vertical-scroll handoff battle). overscroll-behavior:
-      // contain stops the swipe from triggering browser back-gesture
-      // or chaining to the parent scroll.
       style={{ touchAction: "pan-x", overscrollBehaviorX: "contain" }}
       data-testid="admin-tabs"
     >
       <div className="flex gap-0.5 min-w-max">
-        {visibleTabs.map((tab) => {
+        {ADMIN_TABS.map((tab) => {
           const active = tab.matches(location);
           const label = t(tab.labelKey, tab.fallback);
           return (
@@ -155,18 +113,11 @@ export function AdminTabs() {
               href={tab.href}
               ref={active ? activeRef : undefined}
               data-testid={`admintab-${tab.fallback.toLowerCase()}`}
-              title={tab.hintKey ? t(tab.hintKey, tab.hintFallback) : undefined}
               aria-current={active ? "page" : undefined}
               onMouseEnter={() => preloadAdminRoute(tab.href)}
               onFocus={() => preloadAdminRoute(tab.href)}
               onTouchStart={() => preloadAdminRoute(tab.href)}
               className={cn(
-                // Layout-stable: every tab keeps the same padding +
-                // height + font-weight. Active state only swaps
-                // colors / ring (box-shadow) / glow — none of which
-                // change layout. transition-[background-color,color,box-shadow]
-                // is more specific than transition-colors so the
-                // glow eases in alongside the color, no flicker.
                 "inline-flex items-center gap-1.5 h-9 justify-center px-3.5 rounded-xl text-[12px] sm:text-[12.5px] font-semibold whitespace-nowrap",
                 "transition-[background-color,color,box-shadow] duration-150 ease-out",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0",

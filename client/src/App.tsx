@@ -76,6 +76,7 @@ const DirectPaymentPage = lazy(() => import("@/pages/DirectPaymentPage"));
 const TrainingLocationWizard = lazy(() => import("@/pages/TrainingLocationWizard"));
 const RecoveryPage = lazy(() => import("@/pages/RecoveryPage"));
 const AdminRecoveryPage = lazy(() => import("@/pages/AdminRecoveryPage"));
+const AdminMore = lazy(() => import("@/pages/AdminMore"));
 const AgreementsPage = lazy(() => import("@/pages/AgreementsPage"));
 const FaqPage = lazy(() => import("@/pages/FaqPage"));
 
@@ -309,6 +310,9 @@ function Router() {
           </Route>
           <Route path="/admin/emails">
             <ProtectedRoute component={AdminEmails} adminOnly />
+          </Route>
+          <Route path="/admin/more">
+            <ProtectedRoute component={AdminMore} adminOnly />
           </Route>
 
           <Route component={NotFound} />
