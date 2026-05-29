@@ -30,7 +30,13 @@ import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
 import { MobileImageEditor } from "@/components/MobileImageEditor";
 import { useUpdateSettings } from "@/hooks/use-settings";
-import { BRAND_DEFAULTS, applyBrandCSSVars, type BrandSettings } from "@/lib/brandSettings";
+import {
+  applyLogoSlotCSSVars,
+  type LogoBrandControls,
+  type LogoSlot as BrandLogoSlot,
+  LOGO_SLOTS as BRAND_LOGO_SLOTS,
+  LOGO_BRAND_SLOT_DEFAULTS,
+} from "@/lib/brandSettings";
 import {
   useAdminTransformations,
   useCreateTransformation,
@@ -1593,41 +1599,82 @@ function LogoLivePreview({ logoSrc, config }: { logoSrc: string; config: LogoCon
   );
 }
 
-// ─── Brand Controls panel (moved from Settings) ───────────────────────────────
-function BrandControlsPanel() {
+// ─── Per-logo slot metadata ────────────────────────────────────────────────
+interface LogoSlotMeta { label: string; desc: string; fallback: string; }
+const LOGO_SLOT_META: Record<BrandLogoSlot, LogoSlotMeta> = {
+  navbar:    { label: "Navbar Logo",    desc: "Horizontal bar · desktop & tablet",    fallback: "/ye-logo-horizontal.png" },
+  mobile:    { label: "Mobile Logo",    desc: "Navbar icon on phones",                fallback: "/ye-logo.png"            },
+  login:     { label: "Login Logo",     desc: "Auth page hero image",                 fallback: "/ye-logo-primary.png"    },
+  dashboard: { label: "Dashboard Logo", desc: "Client home · top-header logo",        fallback: "/ye-logo.png"            },
+  footer:    { label: "Footer Logo",    desc: "Page footer icon stamp",               fallback: "/ye-logo.png"            },
+  favicon:   { label: "Favicon",        desc: "Browser tab & bookmark icon",          fallback: "/ye-logo.png"            },
+  splash:    { label: "Splash Screen",  desc: "Full-screen loader at app boot",       fallback: "/ye-logo.png"            },
+};
+
+function getLogoSrcForSlot(settings: Settings | undefined, slot: BrandLogoSlot): string {
+  const s = settings as any;
+  if (slot === "navbar") return s?.logoNavbarUrl || "/ye-logo-horizontal.png";
+  if (slot === "login")  return s?.logoAuthUrl   || "/ye-logo-primary.png";
+  return s?.logoIconUrl || "/ye-logo.png";
+}
+
+// ─── Logo controls panel (7 independent slots, 9 sliders each) ─────────────
+function LogoControlsPanel() {
   const { toast } = useToast();
   const { data, isLoading } = useMediaData();
   const updateSettings = useUpdateSettings();
+  const settings = data?.settings;
 
-  const stored = (data?.settings?.brandSettings ?? {}) as Partial<BrandSettings>;
-  const [vals, setVals] = useState<BrandSettings>({ ...BRAND_DEFAULTS, ...stored });
-  const [dirty, setDirty] = useState(false);
+  type StoredLogos = Partial<Record<BrandLogoSlot, Partial<LogoBrandControls>>>;
+
+  function buildLogos(stored?: StoredLogos): Record<BrandLogoSlot, LogoBrandControls> {
+    return Object.fromEntries(
+      BRAND_LOGO_SLOTS.map(slot => [slot, { ...LOGO_BRAND_SLOT_DEFAULTS[slot], ...(stored?.[slot] ?? {}) }])
+    ) as Record<BrandLogoSlot, LogoBrandControls>;
+  }
+
+  const storedLogos = ((data?.settings?.brandSettings ?? {}) as any).logos as StoredLogos | undefined;
+
+  const [logos, setLogos]           = useState<Record<BrandLogoSlot, LogoBrandControls>>(() => buildLogos(storedLogos));
+  const [activeSlot, setActiveSlot] = useState<BrandLogoSlot | null>("navbar");
+  const [dirty, setDirty]           = useState(false);
   const [initialised, setInitialised] = useState(false);
 
   useEffect(() => {
     if (!isLoading && data?.settings && !initialised) {
-      setVals({ ...BRAND_DEFAULTS, ...((data.settings.brandSettings ?? {}) as Partial<BrandSettings>) });
+      const sl = ((data.settings.brandSettings ?? {}) as any).logos as StoredLogos | undefined;
+      setLogos(buildLogos(sl));
       setInitialised(true);
     }
   }, [isLoading, data, initialised]);
 
-  function set<K extends keyof BrandSettings>(key: K, v: number) {
-    const next = { ...vals, [key]: v };
-    setVals(next);
+  function setSlotVal(slot: BrandLogoSlot, key: keyof LogoBrandControls, v: number) {
+    setLogos(prev => {
+      const next = { ...prev, [slot]: { ...prev[slot], [key]: v } };
+      applyLogoSlotCSSVars(slot, next[slot]);
+      return next;
+    });
     setDirty(true);
-    applyBrandCSSVars(next as unknown as Record<string, number | string>);
   }
 
-  function handleReset() {
-    setVals(BRAND_DEFAULTS);
+  function resetSlot(slot: BrandLogoSlot) {
+    const def = { ...LOGO_BRAND_SLOT_DEFAULTS[slot] };
+    setLogos(prev => ({ ...prev, [slot]: def }));
+    applyLogoSlotCSSVars(slot, def);
     setDirty(true);
-    applyBrandCSSVars(BRAND_DEFAULTS as unknown as Record<string, number | string>);
+  }
+
+  function handleResetAll() {
+    const defaults = buildLogos();
+    setLogos(defaults);
+    BRAND_LOGO_SLOTS.forEach(slot => applyLogoSlotCSSVars(slot, defaults[slot]));
+    setDirty(true);
   }
 
   function handleSave() {
     const existing = (data?.settings?.brandSettings ?? {}) as Record<string, unknown>;
     updateSettings.mutate(
-      { brandSettings: { ...existing, ...vals } as unknown as Record<string, number> },
+      { brandSettings: { ...existing, logos } as unknown as Record<string, number> },
       {
         onSuccess: () => {
           invalidateMedia();
@@ -1644,80 +1691,164 @@ function BrandControlsPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-6">
+    <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h4 className="font-display font-bold text-base">Brand Controls</h4>
+          <h4 className="font-display font-bold text-base">Logo Controls</h4>
           <p className="text-[12px] text-muted-foreground mt-0.5">
-            Adjust logo sizes, glow, zoom, and position. Changes preview live — save to persist.
+            Independent sizing, zoom, offset, padding and glow for each logo placement. Sliders preview live — save to persist.
           </p>
         </div>
         {dirty && <span className="text-[11px] text-amber-400/80 shrink-0 pt-1">Unsaved changes</span>}
       </div>
 
-      {/* Live preview strip */}
-      <div className="rounded-xl border border-primary/15 bg-black/30 px-4 py-3 flex items-center gap-4">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 shrink-0">Preview</span>
-        <img
-          src="/ye-logo-horizontal.png"
-          alt="Youssef Elite"
-          className="object-contain transition-all duration-200"
-          style={{
-            height: vals.navbarLogoDesktop,
-            width: "auto",
-            maxWidth: 300,
-            filter: `drop-shadow(0 0 10px rgba(0,212,255,${vals.logoGlow / 100}))`,
-            transform: `scale(${vals.navbarLogoZoom / 100}) translateX(${vals.navbarLogoHPos}px)`,
-            transformOrigin: "left center",
-          }}
-        />
+      {/* ── Accordion: one card per slot ───────────────────────────────────── */}
+      <div className="space-y-2">
+        {BRAND_LOGO_SLOTS.map(slot => {
+          const meta   = LOGO_SLOT_META[slot];
+          const c      = logos[slot];
+          const imgSrc = getLogoSrcForSlot(settings, slot);
+          const isOpen = activeSlot === slot;
+
+          return (
+            <div key={slot} className="rounded-xl border border-white/[0.07] overflow-hidden">
+
+              {/* Slot header */}
+              <button
+                type="button"
+                onClick={() => setActiveSlot(isOpen ? null : slot)}
+                data-testid={`button-brand-slot-${slot}`}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-left"
+              >
+                {/* Thumbnail */}
+                <div className="w-14 h-9 rounded-lg bg-black/60 flex items-center justify-center shrink-0 border border-white/[0.06] overflow-hidden">
+                  <img
+                    src={imgSrc}
+                    alt=""
+                    style={{
+                      maxWidth: 50,
+                      maxHeight: 30,
+                      objectFit: "contain",
+                      filter: `drop-shadow(0 0 4px rgba(0,212,255,${c.glow / 100}))`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold leading-none">{meta.label}</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{meta.desc}</p>
+                </div>
+
+                {/* Quick stats */}
+                <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-muted-foreground/45 shrink-0">
+                  <span>{c.hDesktop > 0 ? `h${c.hDesktop}` : c.wDesktop > 0 ? `w${c.wDesktop}` : "auto"}</span>
+                  <span className="text-muted-foreground/25">·</span>
+                  <span>{c.zoom}%</span>
+                  <span className="text-muted-foreground/25">·</span>
+                  <span>glow {c.glow}%</span>
+                </div>
+
+                <ChevronDown
+                  size={14}
+                  className={`shrink-0 text-muted-foreground/40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Slot body */}
+              {isOpen && (
+                <div className="border-t border-white/[0.06] bg-black/20 px-4 pb-5 pt-4 space-y-5">
+
+                  {/* Live preview */}
+                  <div
+                    className="rounded-xl border border-primary/15 bg-black/60 flex items-center justify-center overflow-hidden"
+                    style={{ minHeight: 180 }}
+                  >
+                    <div style={{ padding: c.padding }}>
+                      <img
+                        src={imgSrc}
+                        alt={meta.label}
+                        style={{
+                          display: "block",
+                          width:  c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto",
+                          height: c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto",
+                          maxWidth: "100%",
+                          maxHeight: 140,
+                          objectFit: "contain",
+                          transform: `scale(${c.zoom / 100}) translate(${c.hOffset}px, ${c.vOffset}px)`,
+                          transformOrigin: "center center",
+                          filter: `drop-shadow(0 0 18px rgba(0,212,255,${c.glow / 100}))`,
+                          transition: "all 0.12s ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 9 sliders */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-5">
+                    <SliderRow
+                      label="Desktop Width"  value={c.wDesktop}  min={0}   max={800} step={10} unit="px"
+                      onChange={v => setSlotVal(slot, "wDesktop",  v)} testId={`slider-${slot}-w-desktop`}
+                    />
+                    <SliderRow
+                      label="Desktop Height" value={c.hDesktop}  min={0}   max={400} step={2}  unit="px"
+                      onChange={v => setSlotVal(slot, "hDesktop",  v)} testId={`slider-${slot}-h-desktop`}
+                    />
+                    <SliderRow
+                      label="Mobile Width"   value={c.wMobile}   min={0}   max={600} step={10} unit="px"
+                      onChange={v => setSlotVal(slot, "wMobile",   v)} testId={`slider-${slot}-w-mobile`}
+                    />
+                    <SliderRow
+                      label="Mobile Height"  value={c.hMobile}   min={0}   max={300} step={2}  unit="px"
+                      onChange={v => setSlotVal(slot, "hMobile",   v)} testId={`slider-${slot}-h-mobile`}
+                    />
+                    <SliderRow
+                      label="Zoom"           value={c.zoom}      min={50}  max={200} step={5}  unit="%"
+                      onChange={v => setSlotVal(slot, "zoom",      v)} testId={`slider-${slot}-zoom`}
+                    />
+                    <SliderRow
+                      label="H-Offset"       value={c.hOffset}   min={-80} max={80}  step={1}  unit="px"
+                      onChange={v => setSlotVal(slot, "hOffset",   v)} testId={`slider-${slot}-hoffset`}
+                    />
+                    <SliderRow
+                      label="V-Offset"       value={c.vOffset}   min={-80} max={80}  step={1}  unit="px"
+                      onChange={v => setSlotVal(slot, "vOffset",   v)} testId={`slider-${slot}-voffset`}
+                    />
+                    <SliderRow
+                      label="Padding"        value={c.padding}   min={0}   max={32}  step={1}  unit="px"
+                      onChange={v => setSlotVal(slot, "padding",   v)} testId={`slider-${slot}-padding`}
+                    />
+                    <SliderRow
+                      label="Glow Intensity" value={c.glow}      min={0}   max={100} step={5}  unit="%"
+                      onChange={v => setSlotVal(slot, "glow",      v)} testId={`slider-${slot}-glow`}
+                    />
+                  </div>
+
+                  {/* Per-slot reset */}
+                  <button
+                    type="button"
+                    onClick={() => resetSlot(slot)}
+                    data-testid={`button-brand-slot-reset-${slot}`}
+                    className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+                  >
+                    ↺ Reset {meta.label} to defaults
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* ── Navbar logo ───────────────────────────────────── */}
-      <div className="space-y-4">
-        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Navbar logo</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <SliderRow label="Desktop height" value={vals.navbarLogoDesktop} min={32} max={80}   step={2}  unit="px" onChange={v => set("navbarLogoDesktop", v)} testId="slider-brand-navbar-desktop" />
-          <SliderRow label="Mobile height"  value={vals.navbarLogoMobile}  min={28} max={64}   step={2}  unit="px" onChange={v => set("navbarLogoMobile",  v)} testId="slider-brand-navbar-mobile" />
-          <SliderRow label="Logo gap"        value={vals.navbarLogoGap}    min={0}  max={24}   step={2}  unit="px" onChange={v => set("navbarLogoGap",       v)} testId="slider-brand-navbar-gap" />
-          <SliderRow label="Zoom"            value={vals.navbarLogoZoom}   min={50} max={150}  step={5}  unit="%" onChange={v => set("navbarLogoZoom",      v)} testId="slider-brand-navbar-zoom" />
-          <SliderRow label="Horizontal position" value={vals.navbarLogoHPos} min={-24} max={24} step={1} unit="px" onChange={v => set("navbarLogoHPos",     v)} testId="slider-brand-navbar-hpos" />
-        </div>
-      </div>
-
-      {/* ── Auth hero logo ────────────────────────────────── */}
-      <div className="space-y-4 pt-2 border-t border-white/[0.06]">
-        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Auth hero logo</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <SliderRow label="Desktop width"   value={vals.authLogoDesktop}       min={160} max={600} step={10} unit="px" onChange={v => set("authLogoDesktop",       v)} testId="slider-brand-auth-desktop" />
-          <SliderRow label="Desktop height"  value={vals.authLogoHeight}        min={0}   max={400} step={10} unit="px" onChange={v => set("authLogoHeight",        v)} testId="slider-brand-auth-h-desktop" />
-          <SliderRow label="Mobile width"    value={vals.authLogoMobile}        min={120} max={400} step={10} unit="px" onChange={v => set("authLogoMobile",        v)} testId="slider-brand-auth-mobile" />
-          <SliderRow label="Mobile height"   value={vals.authLogoMobileHeight}  min={0}   max={300} step={10} unit="px" onChange={v => set("authLogoMobileHeight",  v)} testId="slider-brand-auth-h-mobile" />
-          <SliderRow label="Zoom"            value={vals.authLogoZoom}          min={50}  max={150} step={5}  unit="%" onChange={v => set("authLogoZoom",          v)} testId="slider-brand-auth-zoom" />
-          <SliderRow label="Vertical position" value={vals.authLogoVPos}        min={-40} max={40}  step={2}  unit="px" onChange={v => set("authLogoVPos",         v)} testId="slider-brand-auth-vpos" />
-        </div>
-      </div>
-
-      {/* ── Glow & position ───────────────────────────────── */}
-      <div className="space-y-4 pt-2 border-t border-white/[0.06]">
-        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Glow & position</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <SliderRow label="Glow intensity"  value={vals.logoGlow}            min={0}   max={80}  step={5}  unit="%" onChange={v => set("logoGlow",           v)} testId="slider-brand-glow" />
-          <SliderRow label="Vertical offset" value={vals.logoVerticalOffset}  min={-12} max={12}  step={1}  unit="px" onChange={v => set("logoVerticalOffset", v)} testId="slider-brand-voffset" />
-          <SliderRow label="Padding"         value={vals.logoPadding}         min={0}   max={16}  step={1}  unit="px" onChange={v => set("logoPadding",        v)} testId="slider-brand-padding" />
-        </div>
-      </div>
-
-      {/* Actions */}
+      {/* Global actions */}
       <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
         <button
           type="button"
-          onClick={handleReset}
+          onClick={handleResetAll}
           data-testid="button-brand-reset"
-          className="px-4 h-9 rounded-xl text-[12px] font-semibold border border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground hover:bg-white/8 transition-all duration-150"
+          className="px-4 h-9 rounded-xl text-[12px] font-semibold border border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-all duration-150"
         >
-          Reset defaults
+          Reset all
         </button>
         <button
           type="button"
@@ -1728,7 +1859,7 @@ function BrandControlsPanel() {
         >
           {updateSettings.isPending
             ? <><RefreshCw size={12} className="animate-spin" /> Saving…</>
-            : <><CheckCircle2 size={12} /> Save settings</>
+            : <><CheckCircle2 size={12} /> Save all</>
           }
         </button>
       </div>
@@ -2134,8 +2265,8 @@ function BrandingSection() {
         </div>
       )}
 
-      {/* ── Brand Controls (size, glow, zoom, position) ───────────────────── */}
-      <BrandControlsPanel />
+      {/* ── Logo Controls (7 independent slots, 9 sliders each) ─────────── */}
+      <LogoControlsPanel />
     </div>
   );
 }
