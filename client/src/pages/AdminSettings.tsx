@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Trash2, Plus, CreditCard, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { AdminBadge } from "@/components/admin/primitives";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useFeatureFlags } from "@/lib/featureFlags";
@@ -61,11 +62,6 @@ const BLOCK_TYPE_LABELS: Record<string, string> = {
   "fully-booked": "Fully Booked",
 };
 
-const BLOCK_TYPE_COLORS: Record<string, string> = {
-  "off-day": "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
-  emergency: "bg-red-500/10 text-red-300 border-red-500/20",
-  "fully-booked": "bg-blue-500/10 text-blue-300 border-blue-500/20",
-};
 
 export default function AdminSettings() {
   const { t } = useTranslation();
@@ -668,11 +664,16 @@ function BlockedSlotsSection() {
                 <span className="font-semibold">{formatWeekdayShortDate(b.date)}</span>
                 <span className="text-muted-foreground">{b.timeSlot ? formatTimeDual(b.timeSlot) : t("admin.settingsPage.wholeDayLabel")}</span>
                 {!b.timeSlot && b.blockType && (
-                  <span
-                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${BLOCK_TYPE_COLORS[b.blockType] || "bg-white/5 border-white/10"}`}
+                  <AdminBadge
+                    variant={
+                      b.blockType === "emergency" ? "danger"
+                      : b.blockType === "fully-booked" ? "info"
+                      : "cyan"
+                    }
+                    testId={`badge-block-type-${b.id}`}
                   >
                     {BLOCK_TYPE_LABELS[b.blockType] || b.blockType}
-                  </span>
+                  </AdminBadge>
                 )}
                 {b.reason && <span className="text-xs text-muted-foreground italic">"{b.reason}"</span>}
               </div>

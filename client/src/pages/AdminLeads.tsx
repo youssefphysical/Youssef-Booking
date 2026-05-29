@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { AdminBadge } from "@/components/admin/primitives";
 import { Users, ExternalLink, Lock } from "lucide-react";
 import {
   LEAD_STATUSES,
@@ -184,9 +184,9 @@ export default function AdminLeads() {
                 </div>
                 <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                   {r.leadSource ? (
-                    <Badge variant="outline" className="text-[10.5px]">
+                    <AdminBadge variant="muted">
                       {SOURCE_LABELS[r.leadSource as LeadSource] ?? r.leadSource}
-                    </Badge>
+                    </AdminBadge>
                   ) : (
                     <span className="text-muted-foreground/60">—</span>
                   )}

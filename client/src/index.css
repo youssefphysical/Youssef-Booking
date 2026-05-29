@@ -2095,6 +2095,7 @@ html[dir="rtl"] .hero-eyebrow-rule {
   scrollbar-width: none;             /* Firefox */
   -ms-overflow-style: none;          /* IE/old Edge */
   scroll-behavior: smooth;
+  overscroll-behavior-x: contain;    /* prevent swipe-back gesture inside scroll */
 }
 .admin-tabs-scroll::-webkit-scrollbar {
   display: none;                     /* WebKit / Chromium / Safari */

@@ -50,7 +50,7 @@ export default function AdminIntegrity() {
 
       {isLoading ? (
         <AdminSkeletonStack count={5} height="h-24" />
-      ) : !data?.warnings?.length ? (
+      ) : !error && !data?.warnings?.length ? (
         <AdminEmptyState
           icon={<ShieldCheck size={28} />}
           title="All clean"
@@ -59,7 +59,7 @@ export default function AdminIntegrity() {
         />
       ) : (
         <div className="space-y-4">
-          {data.warnings.map((w) => {
+          {(data?.warnings ?? []).map((w) => {
             const s = SEVERITY_STYLES[w.severity];
             return (
               <AdminCard key={w.category} testId={`section-${w.category.toLowerCase().replace(/\s+/g, "-")}`}>

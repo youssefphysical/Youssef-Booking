@@ -387,6 +387,53 @@ export function AdminSkeletonStack({
 }
 
 // =====================================================
+// Badge — shared status/label chip across all admin pages
+// =====================================================
+export type AdminBadgeVariant =
+  | "default"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "cyan"
+  | "muted";
+
+const ADMIN_BADGE_CLASSES: Record<AdminBadgeVariant, string> = {
+  default: "bg-primary/15 text-primary border-primary/20",
+  success: "bg-emerald-500/15 text-emerald-300 border-emerald-500/20",
+  warning: "bg-amber-500/15 text-amber-300 border-amber-500/20",
+  danger:  "bg-red-500/15 text-red-300 border-red-500/20",
+  info:    "bg-sky-500/15 text-sky-300 border-sky-500/20",
+  cyan:    "bg-cyan-500/15 text-cyan-300 border-cyan-500/20",
+  muted:   "bg-white/[0.06] text-muted-foreground/80 border-white/8",
+};
+
+export function AdminBadge({
+  children,
+  variant = "default",
+  className,
+  testId,
+}: {
+  children: ReactNode;
+  variant?: AdminBadgeVariant;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-semibold border",
+        ADMIN_BADGE_CLASSES[variant],
+        className,
+      )}
+      data-testid={testId}
+    >
+      {children}
+    </span>
+  );
+}
+
+// =====================================================
 // EmptyState — premium empty placeholder
 // =====================================================
 export function AdminEmptyState({
