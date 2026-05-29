@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
+import { useAuth } from "@/hooks/use-auth";
+import { isEffectiveSuperAdmin } from "@shared/schema";
 
 /**
  * AdminTabs — global top navigation strip for the entire /admin/*
@@ -44,6 +46,8 @@ type TabSpec = {
   fallback: string;
   icon: React.ReactNode;
   matches: (path: string) => boolean;
+  /** When true the tab is hidden for non-super-admin sessions */
+  superAdminOnly?: boolean;
 };
 
 // 6-tab strip: Home | Dashboard | Clients | Bookings | Media | More
@@ -80,6 +84,8 @@ function preloadAdminRoute(href: string) {
 export function AdminTabs() {
   const [location] = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isSuperAdmin = isEffectiveSuperAdmin(user as any);
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const activeRef = useRef<HTMLAnchorElement | null>(null);
@@ -104,7 +110,7 @@ export function AdminTabs() {
       data-testid="admin-tabs"
     >
       <div className="flex gap-0.5 min-w-max">
-        {ADMIN_TABS.map((tab) => {
+        {ADMIN_TABS.filter((tab) => !tab.superAdminOnly || isSuperAdmin).map((tab) => {
           const active = tab.matches(location);
           const label = t(tab.labelKey, tab.fallback);
           return (

@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Wrench } from "lucide-react";
+import { DangerConfirmDialog } from "@/components/admin/DangerConfirmDialog";
 
 export function RepairExpiredSessions() {
   const { toast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const status = useQuery<{
     lastRun: { at: number; source: string; result: { completed: number; deducted: number; scanned: number } } | null;
@@ -33,9 +36,11 @@ export function RepairExpiredSessions() {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/auto-complete-status"] });
+      setConfirmOpen(false);
     },
     onError: (e: any) => {
       toast({ title: "Repair failed", description: e?.message || "Unknown error", variant: "destructive" });
+      setConfirmOpen(false);
     },
   });
 
@@ -56,6 +61,8 @@ export function RepairExpiredSessions() {
     return null;
   })();
 
+  const pendingCount = status.data?.pendingExpired ?? 0;
+
   return (
     <div className="space-y-3">
       <Button
@@ -63,13 +70,32 @@ export function RepairExpiredSessions() {
         variant="outline"
         size="sm"
         className="w-full h-9 text-xs gap-2"
-        onClick={() => m.mutate()}
+        onClick={() => setConfirmOpen(true)}
         disabled={m.isPending}
         data-testid="button-repair-expired-sessions"
       >
         <Wrench size={13} />
         {m.isPending ? "Repairing…" : "Repair expired sessions now"}
       </Button>
+
+      <DangerConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Repair expired sessions"
+        description={
+          <span>
+            Force-completes <strong>{pendingCount > 0 ? `${pendingCount} expired` : "all past"}</strong>{" "}
+            sessions still showing as Upcoming and deducts one package credit per session. This
+            cannot be undone — only run if you are sure the cron has fallen behind.
+          </span>
+        }
+        confirmKeyword="REPAIR"
+        confirmLabel="Repair now"
+        onConfirm={() => m.mutate()}
+        isPending={m.isPending}
+        testId="dialog-repair-confirm"
+      />
+
       <p className="text-[10.5px] text-muted-foreground leading-relaxed">
         Force-completes any past sessions still showing as Upcoming and deducts the package credit once.
       </p>

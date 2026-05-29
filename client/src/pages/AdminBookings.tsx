@@ -78,17 +78,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { DangerConfirmDialog } from "@/components/admin/DangerConfirmDialog";
 import {
   Form,
   FormControl,
@@ -1002,29 +992,19 @@ function ActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent className="bg-card border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("admin.bookings.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                "admin.bookings.deleteDesc",
-                "This permanently removes the booking. Use cancel/late cancel statuses if you want to keep a record.",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("admin.bookings.keepIt")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate(booking.id)}
-              className="bg-red-500 hover:bg-red-600"
-              data-testid={`button-confirm-delete-${booking.id}`}
-            >
-              {t("admin.bookings.deleteBtn")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DangerConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={t("admin.bookings.deleteTitle", "Delete booking")}
+        description={t(
+          "admin.bookings.deleteDesc",
+          "This permanently removes the booking. Use cancel/late cancel statuses if you want to keep a record.",
+        )}
+        onConfirm={() => deleteMutation.mutate(booking.id)}
+        isPending={deleteMutation.isPending}
+        confirmLabel={t("admin.bookings.deleteBtn", "Delete booking")}
+        testId={`dialog-delete-booking-${booking.id}`}
+      />
     </>
   );
 }

@@ -98,9 +98,7 @@ function ProtectedRoute({
     if (isLoading) return;
     if (!user) {
       navigate("/auth");
-    } else if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) {
-      navigate("/admin");
-    } else if (adminOnly && user.role !== "admin") {
+    } else if (adminOnly && !superAdminOnly && user.role !== "admin") {
       navigate("/");
     } else if (clientOnly && user.role !== "client") {
       navigate("/admin");
@@ -109,9 +107,23 @@ function ProtectedRoute({
 
   if (isLoading) return <PremiumPageLoader />;
   if (!user) return null;
-  if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) return null;
-  if (adminOnly && user.role !== "admin") return null;
+  if (adminOnly && !superAdminOnly && user.role !== "admin") return null;
   if (clientOnly && user.role !== "client") return null;
+
+  if (superAdminOnly && !isEffectiveSuperAdmin(user as any)) {
+    return (
+      <div className="admin-shell">
+        <div className="admin-container flex flex-col items-center justify-center min-h-[40vh] text-center gap-4">
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-4xl">🔒</div>
+          <h1 className="text-2xl font-display font-bold">Super-admin access required</h1>
+          <p className="text-muted-foreground text-sm max-w-xs">
+            This area is restricted to the account owner. Contact Youssef if you need access.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return <Component />;
 }
 
@@ -297,7 +309,7 @@ function Router() {
             <ProtectedRoute component={AdminAuditLog} adminOnly />
           </Route>
           <Route path="/admin/merge-clients">
-            <ProtectedRoute component={AdminMergeClients} adminOnly />
+            <ProtectedRoute component={AdminMergeClients} superAdminOnly />
           </Route>
           <Route path="/admin/payments">
             <ProtectedRoute component={AdminPayments} adminOnly />

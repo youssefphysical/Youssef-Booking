@@ -40,6 +40,7 @@ import {
 import { ALL_TIME_SLOTS } from "@/lib/booking-utils";
 import { formatTime12, formatTimeDual } from "@/lib/time-format";
 import { useTranslation } from "@/i18n";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 
 const generalSchema = z.object({
   cancellationCutoffHours: z.coerce.number().int().min(0).max(168),
@@ -275,8 +276,11 @@ function GeneralSettingsSection() {
     }
   }, [settings]);
 
+  const { guard } = useUnsavedChanges(form.formState.isDirty);
+
   return (
     <section className="admin-card">
+      {guard}
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.bookingRules")}</h2>
       <p className="text-sm text-muted-foreground mb-5">{t("admin.settingsPage.bookingRulesDesc")}</p>
 
@@ -379,9 +383,11 @@ function BankDetailsSection() {
   }, [settings]);
 
   const isPublic = form.watch("showBankDetailsPublicly");
+  const { guard } = useUnsavedChanges(form.formState.isDirty);
 
   return (
     <section className="admin-card">
+      {guard}
       <div className="flex items-start gap-3 mb-5">
         <div className="p-2 rounded-xl bg-primary/15 text-primary">
           <CreditCard size={18} />

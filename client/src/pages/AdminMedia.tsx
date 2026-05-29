@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import {
   DndContext,
   closestCenter,
@@ -330,9 +331,11 @@ function HeroSection({ images }: { images: HeroImage[] }) {
       if (!res.ok) throw new Error("Save failed");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       invalidateMedia();
       toast({ title: "Settings saved", description: "Hero slide updated successfully." });
+      setLocalDesktop((prev) => { const next = { ...prev }; delete next[id]; return next; });
+      setLocalMobile((prev) => { const next = { ...prev }; delete next[id]; return next; });
     },
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
@@ -370,6 +373,9 @@ function HeroSection({ images }: { images: HeroImage[] }) {
   const [localDesktop, setLocalDesktop] = useState<Record<number, Record<string, number>>>({});
   const [localMobile, setLocalMobile] = useState<Record<number, Record<string, number | string>>>({});
 
+  const isDirty = Object.keys(localDesktop).length > 0 || Object.keys(localMobile).length > 0;
+  const { guard: unsavedGuard } = useUnsavedChanges(isDirty);
+
   function getDesktop(img: HeroImage) {
     return {
       focalX:         localDesktop[img.id]?.focalX        ?? img.focalX        ?? 0,
@@ -405,6 +411,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
 
   return (
     <div className="space-y-5">
+      {unsavedGuard}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-display font-bold text-lg">Hero Slides</h3>
