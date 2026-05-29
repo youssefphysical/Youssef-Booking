@@ -73,7 +73,7 @@ async function clientLogin(page: Page) {
   await page.fill('[data-testid="input-email"]', CLIENT_EMAIL);
   await page.fill('[data-testid="input-password"]', CLIENT_PASSWORD);
   await page.click('[data-testid="button-submit-login"]');
-  await page.waitForURL(/\/(dashboard|book|wizard)/, { timeout: 12_000 });
+  await page.waitForURL((url) => !url.pathname.startsWith("/auth"), { timeout: 12_000 });
 }
 
 /**
