@@ -334,7 +334,7 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: app.get("env") === "production",
+      secure: app.get("env") === "production" && process.env.CI !== "true",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   };
