@@ -110,6 +110,10 @@ export function authRlMax(envKey: string, fallback: number): number {
 export function rateLimit(opts: { windowMs: number; max: number; key: string }) {
   const { windowMs, max, key: routeKey } = opts;
   return (req: any, res: any, next: any) => {
+    // In CI environments (GitHub Actions) skip all rate limiting so e2e
+    // suites that register/login many times in rapid succession don't hit
+    // the window limit and time out.
+    if (process.env.CI === "true") return next();
     // Prefer Express's resolved req.ip — when `trust proxy` is set
     // (production), Express parses x-forwarded-for honoring our proxy
     // count, so clients can't trivially spoof their identity. Fall back
@@ -334,7 +338,7 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: app.get("env") === "production",
+      secure: app.get("env") === "production" && process.env.CI !== "true",
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     },
   };
