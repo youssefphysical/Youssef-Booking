@@ -7836,8 +7836,8 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   // "pending" path before the :id param.)
   app.get("/api/admin/clients/pending", requireAdmin, async (_req, res) => {
     try {
-      const all = await storage.getAllClients();
-      const pending = all.filter((u: User) => u.clientStatus === "pending");
+      const all = await storage.getAllClientsLight();
+      const pending = all.filter((u) => (u as any).clientStatus === "pending");
       const enriched = await Promise.all(
         pending.map(async (u) => {
           const pkgs = await storage.getPackages({ userId: u.id });
@@ -7848,7 +7848,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
               const bt = b.purchasedAt ? new Date(b.purchasedAt).getTime() : 0;
               return bt - at;
             })[0];
-          return { client: sanitizeUserAdminView(u), pendingPackage: newest ?? null };
+          return { client: sanitizeUserAdminView(u as any), pendingPackage: newest ?? null };
         }),
       );
       res.json(enriched);
