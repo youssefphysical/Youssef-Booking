@@ -572,6 +572,15 @@ function AdminLoginForm() {
           {loginMutation.isPending && <Loader2 className="animate-spin mr-2" size={16} />}
           {t("auth.adminSignIn")}
         </Button>
+        {loginMutation.isError && (
+          <p
+            role="alert"
+            className="text-xs text-destructive text-center"
+            data-testid="error-admin-login"
+          >
+            {(loginMutation.error as Error)?.message || "Invalid credentials. Please try again."}
+          </p>
+        )}
       </form>
     </Form>
   );
