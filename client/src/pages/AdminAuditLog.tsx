@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { AdminCard, AdminPageHeader, AdminSectionTitle } from "@/components/admin/primitives";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, ShieldCheck, Filter, RefreshCw } from "lucide-react";
+import { Loader2, ShieldCheck, Filter, RefreshCw, Wrench, GitMerge, Activity } from "lucide-react";
 import { Link } from "wouter";
 
 type AuditEntry = {
@@ -20,7 +20,19 @@ type AuditEntry = {
   actor: { id: number; fullName: string | null; email: string | null } | null;
 };
 
-const ENTITY_OPTIONS = ["all", "user", "package", "booking"] as const;
+const ENTITY_OPTIONS = ["all", "user", "package", "booking", "system"] as const;
+
+function ActionIcon({ action }: { action: string }) {
+  if (action === "admin_repair_sessions") return <Wrench size={13} className="text-amber-400 shrink-0 mt-0.5" />;
+  if (action === "client.merge") return <GitMerge size={13} className="text-violet-400 shrink-0 mt-0.5" />;
+  return <Activity size={13} className="text-primary/60 shrink-0 mt-0.5" />;
+}
+
+function actionLabel(action: string) {
+  if (action === "admin_repair_sessions") return "Repair sessions";
+  if (action === "client.merge") return "Client merge";
+  return action;
+}
 const PAGE_SIZE = 20;
 
 export default function AdminAuditLog() {
@@ -188,6 +200,10 @@ export default function AdminAuditLog() {
           <ul className="divide-y divide-white/[0.06]">
             {visibleRows.map((r) => {
               const ts = new Date(r.createdAt);
+              const isMerge = r.action === "client.merge";
+              const isRepair = r.action === "admin_repair_sessions";
+              const mergeWinnerId = isMerge ? r.newValue?.winnerId : null;
+              const mergeLoserId = isMerge ? (r.previousValue?.loserId ?? r.entityId) : null;
               return (
                 <li key={r.id} data-testid={`audit-row-${r.id}`}>
                   <button
@@ -195,18 +211,48 @@ export default function AdminAuditLog() {
                     onClick={() => setDetailEntry(r)}
                     className="w-full text-left py-2.5 flex items-start gap-3 hover:bg-white/[0.02] px-1 rounded-md"
                   >
+                    <ActionIcon action={r.action} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12.5px] font-semibold truncate">
-                        <span className="text-primary">{r.action}</span>
-                        <span className="text-muted-foreground"> · {r.entityType}</span>
-                        {r.entityId != null && (
-                          <span className="text-muted-foreground"> #{r.entityId}</span>
+                      <p className="text-[12.5px] font-semibold truncate flex items-center gap-1.5 flex-wrap">
+                        <span className={isMerge ? "text-violet-400" : isRepair ? "text-amber-400" : "text-primary"}>
+                          {actionLabel(r.action)}
+                        </span>
+                        <span className="text-muted-foreground font-normal">· {r.entityType}</span>
+                        {r.entityId != null && !isMerge && (
+                          <span className="text-muted-foreground font-normal">#{r.entityId}</span>
+                        )}
+                        {isMerge && mergeLoserId != null && mergeWinnerId != null && (
+                          <span className="text-muted-foreground font-normal text-[11px]">
+                            loser{" "}
+                            <Link
+                              href={`/admin/clients/${mergeLoserId}`}
+                              className="text-violet-400 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`link-merge-loser-${mergeLoserId}`}
+                            >
+                              #{mergeLoserId}
+                            </Link>
+                            {" → winner "}
+                            <Link
+                              href={`/admin/clients/${mergeWinnerId}`}
+                              className="text-violet-400 hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`link-merge-winner-${mergeWinnerId}`}
+                            >
+                              #{mergeWinnerId}
+                            </Link>
+                          </span>
+                        )}
+                        {isRepair && r.newValue && (
+                          <span className="text-muted-foreground font-normal text-[11px]">
+                            {r.newValue.completed ?? 0} completed · {r.newValue.deducted ?? 0} deducted
+                          </span>
                         )}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
                         {format(ts, "MMM d, yyyy HH:mm")} ·{" "}
                         {r.actor?.fullName || r.actor?.email || (r.performedByUserId ? `User #${r.performedByUserId}` : "system")}
-                        {r.entityType === "user" && r.entityId && (
+                        {r.entityType === "user" && r.entityId && !isMerge && (
                           <Link
                             href={`/admin/clients/${r.entityId}`}
                             className="ms-2 text-primary hover:underline"
@@ -248,9 +294,16 @@ export default function AdminAuditLog() {
         <Dialog open={!!detailEntry} onOpenChange={(o) => !o && setDetailEntry(null)}>
           <DialogContent className="bg-card border-white/10 max-w-lg sm:rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-base">
-                <span className="text-primary">{detailEntry?.action}</span>
-                <span className="text-muted-foreground font-normal text-sm ml-2">
+              <DialogTitle className="text-base flex items-center gap-2">
+                {detailEntry && <ActionIcon action={detailEntry.action} />}
+                <span className={
+                  detailEntry?.action === "client.merge" ? "text-violet-400" :
+                  detailEntry?.action === "admin_repair_sessions" ? "text-amber-400" :
+                  "text-primary"
+                }>
+                  {detailEntry ? actionLabel(detailEntry.action) : ""}
+                </span>
+                <span className="text-muted-foreground font-normal text-sm">
                   · {detailEntry?.entityType}{detailEntry?.entityId != null ? ` #${detailEntry.entityId}` : ""}
                 </span>
               </DialogTitle>
@@ -262,6 +315,40 @@ export default function AdminAuditLog() {
                   {" · "}
                   {detailEntry.actor?.fullName || detailEntry.actor?.email || (detailEntry.performedByUserId ? `User #${detailEntry.performedByUserId}` : "system")}
                 </p>
+                {/* Merge: surface winner/loser IDs prominently */}
+                {detailEntry.action === "client.merge" && (
+                  <div className="flex items-center gap-3 rounded-lg border border-violet-400/20 bg-violet-400/5 px-3 py-2 text-[12.5px]">
+                    <GitMerge size={14} className="text-violet-400 shrink-0" />
+                    <span className="text-muted-foreground">
+                      Loser{" "}
+                      <Link
+                        href={`/admin/clients/${detailEntry.previousValue?.loserId ?? detailEntry.entityId}`}
+                        className="text-violet-400 hover:underline font-semibold"
+                        data-testid={`link-detail-loser-${detailEntry.previousValue?.loserId ?? detailEntry.entityId}`}
+                      >
+                        #{detailEntry.previousValue?.loserId ?? detailEntry.entityId}
+                      </Link>
+                      {" merged into winner "}
+                      <Link
+                        href={`/admin/clients/${detailEntry.newValue?.winnerId}`}
+                        className="text-violet-400 hover:underline font-semibold"
+                        data-testid={`link-detail-winner-${detailEntry.newValue?.winnerId}`}
+                      >
+                        #{detailEntry.newValue?.winnerId}
+                      </Link>
+                    </span>
+                  </div>
+                )}
+                {/* Repair: surface completed/deducted counts prominently */}
+                {detailEntry.action === "admin_repair_sessions" && (
+                  <div className="flex items-center gap-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-[12.5px]">
+                    <Wrench size={14} className="text-amber-400 shrink-0" />
+                    <span className="text-muted-foreground">
+                      <span className="text-foreground font-semibold">{detailEntry.newValue?.completed ?? 0}</span> sessions completed ·{" "}
+                      <span className="text-foreground font-semibold">{detailEntry.newValue?.deducted ?? 0}</span> credits deducted
+                    </span>
+                  </div>
+                )}
                 {detailEntry.reason && (
                   <p className="text-sm text-foreground/80 italic">"{detailEntry.reason}"</p>
                 )}

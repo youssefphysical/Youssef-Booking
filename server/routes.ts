@@ -6778,9 +6778,14 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   // needing to know CRON_SECRET. Authenticated via session (requireAdmin),
   // not the cron bearer-token pattern. Returns the same summary so the
   // UI can show "X sessions completed, Y package credits deducted".
-  app.post("/api/admin/bookings/auto-complete-now", requireAdmin, async (_req, res) => {
+  app.post("/api/admin/bookings/auto-complete-now", requireAdmin, async (req, res) => {
     try {
       const summary = await runAutoCompleteBookings("admin-manual");
+      await audit(req, "admin_repair_sessions", "system", null, null, {
+        completed: summary.completed,
+        deducted: summary.deducted,
+        source: "admin-manual",
+      });
       res.json({ ok: true, ...summary });
     } catch (e: any) {
       console.error("[auto-complete:admin-manual] failed", e);
