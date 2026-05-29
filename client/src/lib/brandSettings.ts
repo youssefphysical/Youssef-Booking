@@ -7,6 +7,12 @@ export interface BrandSettings {
   logoVerticalOffset: number;
   logoPadding: number;
   navbarLogoGap: number;
+  navbarLogoZoom: number;
+  navbarLogoHPos: number;
+  authLogoHeight: number;
+  authLogoMobileHeight: number;
+  authLogoZoom: number;
+  authLogoVPos: number;
 }
 
 export interface ThemeTokens {
@@ -26,6 +32,12 @@ export const BRAND_DEFAULTS: BrandSettings = {
   logoVerticalOffset: 0,
   logoPadding: 5,
   navbarLogoGap: 0,
+  navbarLogoZoom: 100,
+  navbarLogoHPos: 0,
+  authLogoHeight: 0,
+  authLogoMobileHeight: 0,
+  authLogoZoom: 100,
+  authLogoVPos: 0,
 };
 
 export const THEME_DEFAULTS: ThemeTokens = {
@@ -81,6 +93,12 @@ export function applyBrandCSSVars(raw?: Record<string, number | string> | null) 
   root.style.setProperty("--brand-logo-voffset", `${s.logoVerticalOffset}px`);
   root.style.setProperty("--brand-logo-padding", `${s.logoPadding}px`);
   root.style.setProperty("--brand-navbar-gap", `${s.navbarLogoGap}px`);
+  root.style.setProperty("--brand-navbar-zoom", `${s.navbarLogoZoom / 100}`);
+  root.style.setProperty("--brand-navbar-hpos", `${s.navbarLogoHPos}px`);
+  root.style.setProperty("--brand-auth-h-desktop", s.authLogoHeight > 0 ? `${s.authLogoHeight}px` : "auto");
+  root.style.setProperty("--brand-auth-h-mobile", s.authLogoMobileHeight > 0 ? `${s.authLogoMobileHeight}px` : "auto");
+  root.style.setProperty("--brand-auth-zoom", `${s.authLogoZoom / 100}`);
+  root.style.setProperty("--brand-auth-vpos", `${s.authLogoVPos}px`);
 
   if (t.colorPrimary) {
     const hsl = hexToHslTriplet(t.colorPrimary);

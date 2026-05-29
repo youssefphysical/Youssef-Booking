@@ -38,6 +38,9 @@ const TS = Date.now();
 const CLIENT_EMAIL = `e2e-booking-${TS}@test.invalid`;
 const CLIENT_PASSWORD = "E2eBooking!2026";
 const CLIENT_FULLNAME = "E2E Booking Client";
+// Phone must be unique per run so that if beforeAll is re-run on test retry
+// the registration doesn't collide with the previous attempt's phone number.
+const CLIENT_PHONE = `+971500${String(TS).slice(-6)}`;
 
 // ── Shared state (set in beforeAll) ──────────────────────────────────────────
 let clientId = -1;
@@ -73,7 +76,7 @@ async function clientLogin(page: Page) {
   await page.fill('[data-testid="input-email"]', CLIENT_EMAIL);
   await page.fill('[data-testid="input-password"]', CLIENT_PASSWORD);
   await page.click('[data-testid="button-submit-login"]');
-  await page.waitForURL(/\/(dashboard|book|wizard)/, { timeout: 12_000 });
+  await page.waitForURL((url) => !url.pathname.startsWith("/auth"), { timeout: 12_000 });
 }
 
 /**
@@ -92,7 +95,7 @@ async function registerTestClient(
       email: CLIENT_EMAIL,
       password: CLIENT_PASSWORD,
       fullName: CLIENT_FULLNAME,
-      phone: "+971 50 000 0001",
+      phone: CLIENT_PHONE,
       area: "Dubai Marina",
       primaryGoal: "fat_loss",
       weeklyFrequency: 3,
@@ -306,11 +309,16 @@ test.describe("Booking Calendar", () => {
     await unauthCtx.close();
 
     // ── Step 2: Admin context — look up client + create package ───────────────
+    // Use direct API login (not browser-based) so the session cookie is carried
+    // by the APIRequestContext on subsequent admin API calls.
     const adminCtx = await browser.newContext();
-    const adminPage = await adminCtx.newPage();
-    await adminLogin(adminPage);
-
-    const adminRequest = adminPage.context().request;
+    const adminRequest = adminCtx.request;
+    const adminLoginRes = await adminRequest.post(`${BASE}/api/auth/login`, {
+      data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+    });
+    if (!adminLoginRes.ok()) {
+      console.warn("[booking-calendar] admin API login failed:", await adminLoginRes.text());
+    }
 
     // If register returned -1 (rate-limited or duplicate), try to find by email
     if (clientId < 0) {
@@ -324,25 +332,29 @@ test.describe("Booking Calendar", () => {
     await adminCtx.close();
 
     // ── Step 3: Client context — add a training location ──────────────────────
+    // Use direct API login so the session cookie is carried on API calls.
     if (clientId > 0) {
       const clientCtx = await browser.newContext();
-      const clientPage = await clientCtx.newPage();
-      await clientLogin(clientPage);
-      await createTrainingLocation(clientPage.context().request);
+      const clientRequest = clientCtx.request;
+      // LocalStrategy tries by username first, then by email — sending the
+      // email as the username field works because it falls through to email lookup.
+      await clientRequest.post(`${BASE}/api/auth/login`, {
+        data: { username: CLIENT_EMAIL, password: CLIENT_PASSWORD },
+      });
+      await createTrainingLocation(clientRequest);
       await clientCtx.close();
     }
   });
 
   test.afterAll(async ({ browser }: { browser: Browser }) => {
     const adminCtx = await browser.newContext();
-    const adminPage = await adminCtx.newPage();
-    await adminLogin(adminPage);
-
-    const adminReq = adminPage.context().request;
+    const adminReq = adminCtx.request;
+    await adminReq.post(`${BASE}/api/auth/login`, {
+      data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+    });
     await deleteBooking(adminReq, createdBookingId);
     await deletePackage(adminReq, packageId);
     await deleteClient(adminReq, clientId);
-
     await adminCtx.close();
   });
 

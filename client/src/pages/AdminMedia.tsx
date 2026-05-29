@@ -30,6 +30,7 @@ import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
 import { MobileImageEditor } from "@/components/MobileImageEditor";
 import { useUpdateSettings } from "@/hooks/use-settings";
+import { BRAND_DEFAULTS, applyBrandCSSVars, type BrandSettings } from "@/lib/brandSettings";
 import {
   useAdminTransformations,
   useCreateTransformation,
@@ -1592,6 +1593,149 @@ function LogoLivePreview({ logoSrc, config }: { logoSrc: string; config: LogoCon
   );
 }
 
+// ─── Brand Controls panel (moved from Settings) ───────────────────────────────
+function BrandControlsPanel() {
+  const { toast } = useToast();
+  const { data, isLoading } = useMediaData();
+  const updateSettings = useUpdateSettings();
+
+  const stored = (data?.settings?.brandSettings ?? {}) as Partial<BrandSettings>;
+  const [vals, setVals] = useState<BrandSettings>({ ...BRAND_DEFAULTS, ...stored });
+  const [dirty, setDirty] = useState(false);
+  const [initialised, setInitialised] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && data?.settings && !initialised) {
+      setVals({ ...BRAND_DEFAULTS, ...((data.settings.brandSettings ?? {}) as Partial<BrandSettings>) });
+      setInitialised(true);
+    }
+  }, [isLoading, data, initialised]);
+
+  function set<K extends keyof BrandSettings>(key: K, v: number) {
+    const next = { ...vals, [key]: v };
+    setVals(next);
+    setDirty(true);
+    applyBrandCSSVars(next as unknown as Record<string, number | string>);
+  }
+
+  function handleReset() {
+    setVals(BRAND_DEFAULTS);
+    setDirty(true);
+    applyBrandCSSVars(BRAND_DEFAULTS as unknown as Record<string, number | string>);
+  }
+
+  function handleSave() {
+    const existing = (data?.settings?.brandSettings ?? {}) as Record<string, unknown>;
+    updateSettings.mutate(
+      { brandSettings: { ...existing, ...vals } as unknown as Record<string, number> },
+      {
+        onSuccess: () => {
+          invalidateMedia();
+          toast({ title: "Brand settings saved" });
+          setDirty(false);
+        },
+        onError: () => toast({ title: "Save failed", variant: "destructive" }),
+      },
+    );
+  }
+
+  if (isLoading) {
+    return <div className="rounded-2xl border border-white/[0.08] bg-card/60 h-48 admin-shimmer" />;
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h4 className="font-display font-bold text-base">Brand Controls</h4>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
+            Adjust logo sizes, glow, zoom, and position. Changes preview live — save to persist.
+          </p>
+        </div>
+        {dirty && <span className="text-[11px] text-amber-400/80 shrink-0 pt-1">Unsaved changes</span>}
+      </div>
+
+      {/* Live preview strip */}
+      <div className="rounded-xl border border-primary/15 bg-black/30 px-4 py-3 flex items-center gap-4">
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 shrink-0">Preview</span>
+        <img
+          src="/ye-logo-horizontal.png"
+          alt="Youssef Elite"
+          className="object-contain transition-all duration-200"
+          style={{
+            height: vals.navbarLogoDesktop,
+            width: "auto",
+            maxWidth: 300,
+            filter: `drop-shadow(0 0 10px rgba(0,212,255,${vals.logoGlow / 100}))`,
+            transform: `scale(${vals.navbarLogoZoom / 100}) translateX(${vals.navbarLogoHPos}px)`,
+            transformOrigin: "left center",
+          }}
+        />
+      </div>
+
+      {/* ── Navbar logo ───────────────────────────────────── */}
+      <div className="space-y-4">
+        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Navbar logo</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <SliderRow label="Desktop height" value={vals.navbarLogoDesktop} min={32} max={80}   step={2}  unit="px" onChange={v => set("navbarLogoDesktop", v)} testId="slider-brand-navbar-desktop" />
+          <SliderRow label="Mobile height"  value={vals.navbarLogoMobile}  min={28} max={64}   step={2}  unit="px" onChange={v => set("navbarLogoMobile",  v)} testId="slider-brand-navbar-mobile" />
+          <SliderRow label="Logo gap"        value={vals.navbarLogoGap}    min={0}  max={24}   step={2}  unit="px" onChange={v => set("navbarLogoGap",       v)} testId="slider-brand-navbar-gap" />
+          <SliderRow label="Zoom"            value={vals.navbarLogoZoom}   min={50} max={150}  step={5}  unit="%" onChange={v => set("navbarLogoZoom",      v)} testId="slider-brand-navbar-zoom" />
+          <SliderRow label="Horizontal position" value={vals.navbarLogoHPos} min={-24} max={24} step={1} unit="px" onChange={v => set("navbarLogoHPos",     v)} testId="slider-brand-navbar-hpos" />
+        </div>
+      </div>
+
+      {/* ── Auth hero logo ────────────────────────────────── */}
+      <div className="space-y-4 pt-2 border-t border-white/[0.06]">
+        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Auth hero logo</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <SliderRow label="Desktop width"   value={vals.authLogoDesktop}       min={160} max={600} step={10} unit="px" onChange={v => set("authLogoDesktop",       v)} testId="slider-brand-auth-desktop" />
+          <SliderRow label="Desktop height"  value={vals.authLogoHeight}        min={0}   max={400} step={10} unit="px" onChange={v => set("authLogoHeight",        v)} testId="slider-brand-auth-h-desktop" />
+          <SliderRow label="Mobile width"    value={vals.authLogoMobile}        min={120} max={400} step={10} unit="px" onChange={v => set("authLogoMobile",        v)} testId="slider-brand-auth-mobile" />
+          <SliderRow label="Mobile height"   value={vals.authLogoMobileHeight}  min={0}   max={300} step={10} unit="px" onChange={v => set("authLogoMobileHeight",  v)} testId="slider-brand-auth-h-mobile" />
+          <SliderRow label="Zoom"            value={vals.authLogoZoom}          min={50}  max={150} step={5}  unit="%" onChange={v => set("authLogoZoom",          v)} testId="slider-brand-auth-zoom" />
+          <SliderRow label="Vertical position" value={vals.authLogoVPos}        min={-40} max={40}  step={2}  unit="px" onChange={v => set("authLogoVPos",         v)} testId="slider-brand-auth-vpos" />
+        </div>
+      </div>
+
+      {/* ── Glow & position ───────────────────────────────── */}
+      <div className="space-y-4 pt-2 border-t border-white/[0.06]">
+        <p className="text-[11px] uppercase tracking-wider text-primary/70 font-semibold">Glow & position</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <SliderRow label="Glow intensity"  value={vals.logoGlow}            min={0}   max={80}  step={5}  unit="%" onChange={v => set("logoGlow",           v)} testId="slider-brand-glow" />
+          <SliderRow label="Vertical offset" value={vals.logoVerticalOffset}  min={-12} max={12}  step={1}  unit="px" onChange={v => set("logoVerticalOffset", v)} testId="slider-brand-voffset" />
+          <SliderRow label="Padding"         value={vals.logoPadding}         min={0}   max={16}  step={1}  unit="px" onChange={v => set("logoPadding",        v)} testId="slider-brand-padding" />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
+        <button
+          type="button"
+          onClick={handleReset}
+          data-testid="button-brand-reset"
+          className="px-4 h-9 rounded-xl text-[12px] font-semibold border border-white/10 bg-white/[0.04] text-muted-foreground hover:text-foreground hover:bg-white/8 transition-all duration-150"
+        >
+          Reset defaults
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || updateSettings.isPending}
+          data-testid="button-brand-save"
+          className="ml-auto inline-flex items-center gap-2 px-5 h-9 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/25 hover:border-primary/40 text-primary text-[12px] font-semibold transition-all duration-200 disabled:opacity-40"
+        >
+          {updateSettings.isPending
+            ? <><RefreshCw size={12} className="animate-spin" /> Saving…</>
+            : <><CheckCircle2 size={12} /> Save settings</>
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Branding section ──────────────────────────────────────────────────────────
 function BrandingSection() {
   const { toast } = useToast();
@@ -1989,6 +2133,9 @@ function BrandingSection() {
           </div>
         </div>
       )}
+
+      {/* ── Brand Controls (size, glow, zoom, position) ───────────────────── */}
+      <BrandControlsPanel />
     </div>
   );
 }
@@ -2706,8 +2853,8 @@ export default function AdminMedia() {
   }
 
   return (
-    <div className="space-y-6" data-testid="page-admin-media">
-      <div>
+    <div className="space-y-5 pb-28" data-testid="page-admin-media">
+      <div className="pt-1">
         <h1 className="font-display font-bold text-2xl tracking-tight">Media Manager</h1>
         <p className="text-sm text-muted-foreground mt-1.5">
           WYSIWYG: every preview uses the exact same rendering engine as the live site. What you see here is what clients see.
@@ -2727,7 +2874,7 @@ export default function AdminMedia() {
       <div className="flex flex-col md:flex-row gap-6">
 
         {/* Mobile: horizontally scrollable pill row */}
-        <div className="md:hidden overflow-x-auto -mx-4 px-4 pb-0.5">
+        <div className="md:hidden overflow-x-auto -mx-4 px-4 pb-1 pt-0.5">
           <div className="flex gap-2 w-max">
             {SECTIONS.map(({ key, label, icon }) => (
               <button
@@ -2735,7 +2882,7 @@ export default function AdminMedia() {
                 type="button"
                 onClick={() => navigate(key)}
                 data-testid={`tab-section-${key}`}
-                className={`flex items-center gap-1.5 px-4 h-9 rounded-2xl text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-4 h-10 rounded-2xl text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
                   activeSection === key
                     ? "bg-primary/15 text-primary border-primary/35 shadow-[0_0_18px_-6px_hsl(183_100%_60%/0.4)]"
                     : "bg-white/[0.03] text-muted-foreground border-white/8 hover:bg-white/6 hover:border-white/15 hover:text-foreground"
@@ -2749,7 +2896,7 @@ export default function AdminMedia() {
         </div>
 
         {/* Desktop: sidebar nav */}
-        <nav className="hidden md:flex flex-col gap-0.5 w-44 shrink-0 pt-0.5">
+        <nav className="hidden md:flex flex-col gap-1 w-44 shrink-0 pt-0.5">
           {SECTIONS.map(({ key, label, icon }) => (
             <button
               key={key}

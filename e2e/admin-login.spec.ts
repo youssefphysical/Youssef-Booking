@@ -172,6 +172,16 @@ test.describe("Admin Login", () => {
       await page.goto(`${BASE}/auth/logout`, { waitUntil: "load" }).catch(() => {});
     }
 
+    // The logout button may open a confirmation dialog — click the confirm
+    // button if it appears (e.g. data-testid="button-logout-confirm").
+    if (clicked) {
+      await page.waitForTimeout(400);
+      const confirmBtn = page.getByTestId("button-logout-confirm");
+      if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await confirmBtn.click();
+      }
+    }
+
     await page.waitForTimeout(1_000);
 
     // Step 3 — verify session is gone: /admin should redirect away from admin
