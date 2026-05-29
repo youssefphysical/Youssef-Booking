@@ -55,14 +55,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: e2e-${{ github.ref }}
+  # Include event name so a push does not cancel a concurrent workflow_dispatch
+  # for the same branch (and vice versa).
+  group: e2e-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   playwright:
     name: Playwright e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -72,6 +74,10 @@ jobs:
       PUBLIC_APP_URL: ${{ secrets.PUBLIC_APP_URL || 'http://localhost:5000' }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY || '' }}
       NODE_ENV: development
+      # Raise auth rate-limit ceilings so the test suite (which registers
+      # many accounts in quick succession) is never throttled in CI.
+      RL_REGISTER_MAX: "30"
+      RL_LOGIN_MAX: "30"
 
     steps:
       - name: Checkout

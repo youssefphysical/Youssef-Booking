@@ -655,7 +655,10 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     this.sessionStore = new PostgresSessionStore({
       pool,
-      createTableIfMissing: true,
+      // createTableIfMissing reads table.sql from the package dir, which
+      // breaks when the server is bundled with esbuild (dist/index.cjs).
+      // ensureSchema.ts creates the "session" table via raw DDL instead.
+      createTableIfMissing: false,
     });
   }
 
