@@ -1,0 +1,200 @@
+CRITICAL CLEANUP + PERFORMANCE OPTIMIZATION TASK
+
+IMPORTANT:
+This is a cleanup and optimization task only.
+Do NOT redesign the UI.
+Do NOT change business logic.
+Do NOT modify booking rules.
+Do NOT modify payment logic.
+Do NOT remove any live functionality.
+Do NOT break existing production behavior.
+
+====================================================
+IMAGE QUALITY PROTECTION (VERY IMPORTANT)
+====================================================
+
+Do NOT reduce image quality.
+Do NOT compress existing images in a way that lowers visual quality.
+Do NOT downscale hero images, branding images, logos, profile photos, marketing assets, transformation photos, nutrition images, or any customer-facing image.
+
+Optimization must NEVER come from reducing quality.
+
+Instead optimize by:
+- moving images out of Neon database storage
+- storing URLs instead of base64 blobs
+- lazy loading
+- proper caching
+- thumbnail generation for admin previews only
+- removing duplicate transfers
+- removing duplicate requests
+- removing unused assets
+
+Original uploaded images must remain preserved in full quality.
+
+If thumbnails are created:
+- They are ONLY for admin panel previews and lists.
+- The public website must always display the original high-quality image.
+
+====================================================
+PHASE 1 — FULL AUDIT
+====================================================
+
+Perform a complete audit and report:
+
+1. Unused React components
+2. Unused pages
+3. Unused admin controls
+4. Unused branding controls
+5. Unused settings fields
+6. Unused API routes
+7. Unused database columns
+8. Unused image files
+9. Old base64/blob fields that are no longer needed
+10. Duplicate hooks
+11. Duplicate queries
+12. Duplicate polling systems
+13. Static fallback assets no longer used
+14. Dead translation keys
+15. Dead CSS classes
+16. Dead utility functions
+17. Unused uploads
+18. Unused hero image mechanisms
+19. Legacy branding systems
+20. Legacy favicon systems
+
+====================================================
+PHASE 2 — CLASSIFICATION
+====================================================
+
+Create a report table:
+
+Item
+Type
+Used By
+Safe Action
+Risk Level
+
+Safe Action values:
+- DELETE
+- HIDE
+- KEEP
+- MIGRATE THEN DELETE
+- KEEP AS FALLBACK
+
+Risk Levels:
+- LOW
+- MEDIUM
+- HIGH
+
+====================================================
+PHASE 3 — SAFE CLEANUP ONLY
+====================================================
+
+Remove ONLY items classified as:
+
+LOW RISK
+SAFE TO DELETE
+
+Focus especially on:
+
+- old base64 branding fields
+- old base64 hero fields after migration
+- unused branding controls
+- duplicate branding systems
+- unused fallback images
+- unused static logo assets
+- unused hero-initial generation paths
+- dead admin settings
+- dead feature flags
+- unused analytics routes
+- duplicate statistics endpoints
+- unused polling systems
+- unused test/debug routes
+- unused temporary migration code
+- dead imports
+- dead exports
+
+Before deleting anything verify:
+
+- no import references
+- no route references
+- no DB references
+- no runtime references
+- no production usage
+
+====================================================
+PHASE 4 — PERFORMANCE HARDENING
+====================================================
+
+Optimize without reducing quality:
+
+1. Lazy load heavy admin sections
+2. Lazy load media-heavy components
+3. Use thumbnails only inside admin lists
+4. Use original image quality on public pages
+5. Remove image blobs from API responses
+6. Disable polling on hidden pages
+7. Remove duplicate requests
+8. Remove duplicate cache invalidations
+9. Add response-size warnings for APIs above 200 KB
+10. Ensure no base64 image payloads are sent unnecessarily
+11. Prevent repeated settings downloads
+12. Prevent repeated branding downloads
+13. Prevent repeated hero image downloads
+
+====================================================
+PHASE 5 — DATABASE & STORAGE REVIEW
+====================================================
+
+Review Neon usage and remove waste:
+
+- identify largest tables
+- identify largest columns
+- identify duplicated storage
+- identify unnecessary transfers
+- identify unnecessary reads
+- identify unnecessary writes
+
+Goal:
+Reduce Neon transfer usage significantly without changing functionality.
+
+====================================================
+PHASE 6 — FINAL REPORT
+====================================================
+
+Provide:
+
+1. Everything removed
+2. Everything hidden
+3. Everything migrated
+4. Everything kept
+5. Estimated Neon transfer reduction
+6. Estimated server load reduction
+7. Estimated bandwidth reduction
+8. Estimated page-load improvement
+9. Remaining recommendations
+
+IMPORTANT:
+Do not remove anything used by:
+
+- Navbar Logo
+- Mobile Logo
+- Login Logo
+- Dashboard Logo
+- Footer Logo
+- Favicon
+- Splash Screen
+- Hero Images
+- Authentication
+- Bookings
+- Packages
+- Payments
+- Client Profiles
+- Nutrition Plans
+- Progress Photos
+- Admin Controls
+
+Quality and functionality must remain identical or better.
+
+Goal:
+Maximum cleanup, lower hosting load, lower Neon usage, cleaner architecture, same visual quality.

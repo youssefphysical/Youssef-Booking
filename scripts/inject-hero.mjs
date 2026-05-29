@@ -42,7 +42,7 @@
  * Never breaks the deploy.
  */
 
-import { writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import pg from "pg";
 
@@ -62,7 +62,7 @@ async function fetchActiveFirstHero() {
   await client.connect();
   try {
     const { rows } = await client.query(`
-      SELECT id, image_data_url
+      SELECT id, image_url, image_data_url
         FROM hero_images
        WHERE is_active = true
        ORDER BY sort_order ASC, id ASC
@@ -84,6 +84,27 @@ async function fetchActiveFirstHero() {
       console.log("[inject-hero] No active hero in DB — keeping committed dev placeholder.");
       return;
     }
+    // ── Prefer file-based URL (post-migration heroes) ──────────────────────
+    // After the branding architecture migration, heroes are stored as
+    // /uploads/heroes/*.webp file paths rather than base64 data URLs.
+    // Check image_url first; fall back to image_data_url for legacy rows.
+    const fileUrl = row.image_url || "";
+    if (fileUrl.startsWith("/uploads/")) {
+      const filePath = resolve(fileUrl.substring(1)); // strip leading /
+      if (existsSync(filePath)) {
+        const buf = readFileSync(filePath);
+        if (buf.length >= 1024) {
+          writeFileSync(OUT_PATH, buf);
+          console.log(
+            `[inject-hero] Refreshed ${OUT_PATH} from active hero id=${row.id} ` +
+              `(file: ${fileUrl}, ${buf.length} bytes).`,
+          );
+          return;
+        }
+      }
+    }
+
+    // ── Legacy path: base64 data URL ───────────────────────────────────────
     const dataUrl = row.image_data_url || "";
     const m = dataUrl.match(/^data:(image\/[a-z+]+);base64,(.+)$/);
     if (!m) {
@@ -106,9 +127,6 @@ async function fetchActiveFirstHero() {
     }
     const buf = Buffer.from(m[2], "base64");
     // ROBUSTNESS GUARD #2 — sanity size floor.
-    // A real 1920×1080 hero WebP is 30-200 KB. Anything under 1 KB
-    // is empty/truncated/corrupt and should not overwrite the
-    // committed placeholder.
     if (buf.length < 1024) {
       console.log(
         `[inject-hero] Active hero buffer is suspiciously small (${buf.length}b) — keeping committed dev placeholder.`,

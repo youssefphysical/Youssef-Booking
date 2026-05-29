@@ -460,7 +460,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                 {/* WYSIWYG thumbnail — uses exact production rendering formula */}
                 <div className="relative">
                   <HeroImageFrame
-                    src={img.imageDataUrl}
+                    src={img.imageUrl || img.imageDataUrl}
                     focalX={desktop.focalX}
                     focalY={desktop.focalY}
                     zoom={desktop.zoom}
@@ -481,7 +481,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                     </span>
                   </div>
                   {/* Mobile badge */}
-                  {img.mobileDataUrl && (
+                  {(img.mobileUrl || img.mobileDataUrl) && (
                     <div className="absolute top-2.5 right-2.5">
                       <span className="text-[9px] bg-primary/20 backdrop-blur-sm text-primary px-2 py-0.5 rounded-full border border-primary/30 flex items-center gap-1">
                         <Smartphone size={8} />Mobile ✓
@@ -551,7 +551,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                             </button>
                           </div>
                           <HeroImageFrame
-                            src={img.imageDataUrl}
+                            src={img.imageUrl || img.imageDataUrl}
                             focalX={desktop.focalX}
                             focalY={desktop.focalY}
                             zoom={desktop.zoom}
@@ -674,7 +674,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
             saving={settingsMutation.isPending}
             config={{
               type: "hero",
-              imageUrl: fsImg.imageDataUrl,
+              imageUrl: fsImg.imageUrl || fsImg.imageDataUrl,
               label: fsImg.title || `Slide ${sorted.findIndex((x) => x.id === fullscreenId) + 1}`,
               initialDesktop: fsDesktop,
               initialMobile: { positionX: fsMobile.positionX, positionY: fsMobile.positionY, zoom: fsMobile.zoom },

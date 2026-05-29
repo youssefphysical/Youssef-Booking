@@ -51,20 +51,35 @@ async function fetchActiveHeroBuffer() {
     try {
       await client.connect();
       const { rows } = await client.query(`
-        SELECT id, image_data_url
+        SELECT id, image_url, image_data_url
           FROM hero_images
          WHERE is_active = true
          ORDER BY sort_order ASC, id ASC
          LIMIT 1
       `);
       const row = rows[0];
-      if (row?.image_data_url) {
-        const m = row.image_data_url.match(/^data:image\/[a-z+]+;base64,(.+)$/);
-        if (m) {
-          const buf = Buffer.from(m[1], "base64");
-          if (buf.length >= 1024) {
-            console.log(`[og-hero] Using active hero id=${row.id} from Neon (${buf.length}b).`);
-            return buf;
+      if (row) {
+        // Prefer file URL (post-migration heroes stored as /uploads/heroes/*.webp)
+        const fileUrl = row.image_url || "";
+        if (fileUrl.startsWith("/uploads/")) {
+          const filePath = resolve(fileUrl.substring(1));
+          if (existsSync(filePath)) {
+            const buf = readFileSync(filePath);
+            if (buf.length >= 1024) {
+              console.log(`[og-hero] Using active hero id=${row.id} from file (${fileUrl}, ${buf.length}b).`);
+              return buf;
+            }
+          }
+        }
+        // Fall back to base64 data URL for legacy heroes
+        if (row.image_data_url) {
+          const m = row.image_data_url.match(/^data:image\/[a-z+]+;base64,(.+)$/);
+          if (m) {
+            const buf = Buffer.from(m[1], "base64");
+            if (buf.length >= 1024) {
+              console.log(`[og-hero] Using active hero id=${row.id} from Neon base64 (${buf.length}b).`);
+              return buf;
+            }
           }
         }
       }

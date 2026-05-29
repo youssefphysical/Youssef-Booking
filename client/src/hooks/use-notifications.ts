@@ -37,7 +37,8 @@ export function useNotifications(params: ListParams = {}) {
 export function useUnreadNotificationCount() {
   return useQuery<{ count: number }>({
     queryKey: COUNT_KEY,
-    refetchInterval: 60_000,
+    refetchInterval: 2 * 60_000,
+    staleTime: 60_000,
   });
 }
 
