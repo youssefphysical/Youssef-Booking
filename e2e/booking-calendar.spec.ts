@@ -38,6 +38,9 @@ const TS = Date.now();
 const CLIENT_EMAIL = `e2e-booking-${TS}@test.invalid`;
 const CLIENT_PASSWORD = "E2eBooking!2026";
 const CLIENT_FULLNAME = "E2E Booking Client";
+// Phone must be unique per run so that if beforeAll is re-run on test retry
+// the registration doesn't collide with the previous attempt's phone number.
+const CLIENT_PHONE = `+971500${String(TS).slice(-6)}`;
 
 // ── Shared state (set in beforeAll) ──────────────────────────────────────────
 let clientId = -1;
@@ -92,7 +95,7 @@ async function registerTestClient(
       email: CLIENT_EMAIL,
       password: CLIENT_PASSWORD,
       fullName: CLIENT_FULLNAME,
-      phone: "+971 50 000 0001",
+      phone: CLIENT_PHONE,
       area: "Dubai Marina",
       primaryGoal: "fat_loss",
       weeklyFrequency: 3,
