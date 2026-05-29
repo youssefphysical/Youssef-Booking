@@ -1,0 +1,924 @@
+ADMIN CONTROL PANEL FINAL REORGANIZATION + DESIGN SYSTEM + MOBILE UX + PERFORMANCE HARDENING
+
+IMPORTANT EXECUTION RULES:
+
+This is NOT a full redesign.
+This is NOT a new feature task.
+This is NOT a business-logic change.
+
+Implement this plan incrementally in small phases.
+After each phase, verify that the app still runs and report a short checkpoint.
+Do not continue blindly if a risky issue appears.
+
+Do NOT:
+- change booking rules
+- change package/session logic
+- change payment logic
+- change authentication rules
+- delete user/client data
+- reduce image quality
+- compress public images in a way that lowers quality
+- remove existing functionality
+- add new features beyond this plan
+- add unnecessary animations or visual clutter
+- increase Neon/database transfer
+- reintroduce base64 image payloads
+
+Goal:
+Make the Admin Control Panel cleaner, easier to manage on mobile, safer, more consistent, lighter on hosting/Neon, and more professional while preserving all existing functionality.
+
+====================================================
+PHASE 1 — ADMIN NAVIGATION RESTRUCTURE
+====================================================
+
+Simplify the primary admin navigation to only daily-use tools.
+
+Primary navigation should contain:
+
+1. Dashboard
+2. Clients
+3. Bookings
+4. Media
+5. More
+
+Move non-daily tools into More.
+
+The More page should be grouped clearly:
+
+Business:
+- Analytics
+- Leads
+- Sessions & Packages
+
+Operations:
+- Command Center
+- Recovery Center
+
+System:
+- Settings
+- Audit Log
+- Integrity Checker
+- System Health
+
+Advanced Tools:
+- Merge Duplicate Clients
+- Maintenance Tools
+- Repair Expired Sessions
+- Developer/System Utilities
+
+Rules:
+- Do not delete any tool.
+- Only move and organize.
+- Advanced/dangerous tools must not appear in the primary daily navigation.
+- The More page must not become a messy long list.
+- Each More item should be a compact row/card with:
+  - icon
+  - title
+  - short description
+  - optional badge if attention is needed
+
+====================================================
+PHASE 2 — ADMIN DESIGN SYSTEM STANDARDIZATION
+====================================================
+
+Apply one consistent visual system across the entire Admin Control Panel.
+
+Keep the existing Tron Legacy / premium dark theme.
+Do not redesign the visual identity.
+Just standardize the layout and UI behavior.
+
+PAGE STRUCTURE STANDARD:
+
+Every admin page should follow this structure:
+
+- Small uppercase section label
+- Clear page title
+- Short description, maximum 1–2 lines
+- Main content cards
+
+Long explanations must be collapsed behind:
+- Info button
+- Details toggle
+- Help tooltip
+
+Do not allow long descriptions to consume large vertical space on mobile.
+
+GLOBAL SPACING SYSTEM:
+
+Mobile:
+- Page horizontal padding: 20px
+- Card padding: 20px
+- Section gap: 20px
+- Card gap: 16px
+- Bottom spacer: at least 120px
+
+Tablet:
+- Page horizontal padding: 24px
+- Card padding: 22px
+
+Desktop:
+- Page horizontal padding: 32px
+- Card padding: 24px
+- Max content width: 1200px
+
+Rules:
+- No page title should be clipped from the left or right.
+- No content should touch screen edges.
+- Spacing should feel like a native mobile app.
+
+CARD SYSTEM:
+
+Standardize all admin cards:
+
+- Border radius: 24px
+- Consistent dark background
+- Subtle border
+- Subtle Tron cyan glow only for active/selected states
+- No heavy glow on normal cards
+- Consistent internal spacing
+- Consistent header/title/body/action layout
+
+Card structure:
+- Header
+- Optional description
+- Content
+- Actions
+
+Do not mix unrelated card styles.
+
+BUTTON SYSTEM:
+
+Use only these button types:
+
+Primary:
+- Save
+- Add
+- Confirm main action
+
+Secondary:
+- Edit
+- Open profile
+- Reschedule
+- View details
+
+Ghost:
+- Back
+- Cancel
+- More
+- Expand
+
+Danger:
+- Delete
+- Merge final
+- Reset all
+- Repair system actions
+
+Rules:
+- Dangerous actions must not use the same cyan style as safe actions.
+- Dangerous actions must require confirmation.
+- On mobile, crowded action rows should collapse into an Actions menu.
+
+BADGE / STATUS SYSTEM:
+
+Standardize all status badges:
+
+Green:
+- Active
+- Paid
+- Completed
+
+Yellow:
+- Pending
+- Needs review
+- Awaiting action
+
+Red:
+- Failed
+- Expired
+- Dangerous
+- Delete
+
+Cyan:
+- New
+- Live
+- Selected
+
+Gray:
+- Draft
+- Inactive
+- Archived
+
+Use the same status colors everywhere.
+
+FORM FIELD SYSTEM:
+
+Standardize inputs, selects, textareas, and filters:
+
+- Height: 52px on mobile
+- Border radius: 16px
+- Label above the field
+- Helper text below when needed
+- Clear error state
+- Consistent disabled state
+- Consistent focus glow
+
+Apply to:
+- Leads filters
+- Booking filters
+- Package filters
+- Settings fields
+- Client search
+- Merge client selector
+
+MOBILE DROPDOWN RULE:
+
+On mobile, any dropdown with more than 6 options should open as a bottom sheet.
+
+Bottom sheet requirements:
+- Search if options are many
+- Clear selected option
+- Cancel button
+- Large touch targets
+- Smooth close
+- Does not overflow screen
+- Does not hide behind browser UI or bottom nav
+
+EMPTY STATE SYSTEM:
+
+Standardize empty states.
+
+Compact empty states for:
+- No recovery requests
+- No leads match
+- No upcoming sessions
+- No alerts
+- No package verification requests
+- No audit results
+
+Empty states should include:
+- Small icon
+- Short title
+- One short helper sentence
+- Optional action button
+
+Do not use oversized empty cards unless it is the main page content.
+
+TABLE / LIST RESPONSIVENESS:
+
+Tables should become cards on mobile.
+
+Apply to:
+- Audit Log
+- Integrity results
+- Analytics details
+- Package lists
+- Client lists if needed
+
+Mobile cards should show:
+- Main label
+- Key metadata
+- Status badge
+- View details action
+
+====================================================
+PHASE 3 — GLOBAL MOBILE LAYOUT FIX
+====================================================
+
+Create or repair a consistent admin layout container.
+
+Requirements:
+- No page title should be cut from the left.
+- No content should touch screen edges.
+- Consistent side padding.
+- Consistent top safe area.
+- Consistent bottom safe area.
+- Bottom spacer must protect against FAB + bottom nav overlap.
+- Horizontal tab bars must scroll smoothly without clipping.
+- Long descriptions collapse on mobile.
+- Empty states should be compact.
+- Dropdowns with many options must become bottom sheets on mobile.
+- FAB must never cover important controls.
+- Icon-only buttons must have accessible labels or tooltips.
+- Touch targets must be at least 44px high.
+
+Apply this globally to all admin pages.
+
+====================================================
+PHASE 4 — TOP TAB BAR STANDARD
+====================================================
+
+Standardize all horizontal tab bars.
+
+Requirements:
+- Smooth horizontal scroll.
+- No clipped tabs.
+- Equal height.
+- Equal padding.
+- Clear active state.
+- Subtle cyan glow for active tab only.
+- Proper left/right safe padding.
+- No tab should appear half-cut without scroll affordance.
+
+Apply to:
+- Media tabs
+- Settings sub-tabs
+- Bookings tabs
+- Client-related tabs
+- Any admin top tab system
+
+====================================================
+PHASE 5 — DASHBOARD CLEANUP
+====================================================
+
+Dashboard should be a daily overview only.
+
+Keep:
+- Today summary
+- Smart alerts
+- Total clients
+- Upcoming sessions
+- Main quick actions
+
+Quick Actions should show only:
+- View & edit clients
+- Manage bookings
+- Sessions & packages
+- View analytics
+
+Move these out of Dashboard:
+- Repair expired sessions now
+- Maintenance actions
+- Developer repair tools
+- Dangerous/system operations
+
+Move them to:
+More → Advanced Tools → Maintenance
+
+If Smart Alerts has no active alerts:
+- make the empty state compact
+- do not show a large empty card
+
+Do not change dashboard business logic.
+
+====================================================
+PHASE 6 — CLIENTS PAGE OPTIMIZATION
+====================================================
+
+Clients remains a primary daily tool.
+
+Improve mobile UX and performance:
+
+- Load first 20 clients only.
+- Add Load More or pagination.
+- Keep search and filters.
+- Make client cards compact by default.
+- Allow expanding cards for more details.
+- Keep WhatsApp shortcut.
+- Keep Open Profile.
+- Use lightweight avatar URLs only.
+- Do not load base64 images.
+- Do not load heavy client detail data in the bulk list.
+
+Client detail data should load only when opening a client profile.
+
+Do not change client business logic.
+
+====================================================
+PHASE 7 — LEADS PAGE REORGANIZATION
+====================================================
+
+Move Leads under:
+
+More → Business → Leads
+
+or:
+
+Clients → Leads
+
+Do not keep Leads as a primary top-level tab unless the main navigation has space.
+
+Mobile improvements:
+- Convert long dropdown menus into bottom sheets.
+- Keep search visible.
+- Make filters collapsible.
+- Add Clear Filters button when no leads match.
+
+Separate lifecycle status from tags.
+
+Lifecycle statuses:
+- Lead
+- Registered
+- Trial Requested
+- Trial Booked
+- Trial Completed
+- Active
+- Inactive
+- Archived
+
+Tags:
+- VIP
+- Nutrition Active
+- Recovery Active
+- Package Verification Pending
+
+Do not mix lifecycle statuses and tags in the same dropdown.
+
+====================================================
+PHASE 8 — BOOKINGS PAGE IMPROVEMENT
+====================================================
+
+Bookings remains a primary daily tool.
+
+Keep:
+- Summary cards
+- Weekly calendar strip
+- Search
+- Filters
+- Booking cards
+- Log session
+- Reschedule
+
+Improve booking card actions:
+- Keep Log visible.
+- Keep Reschedule visible.
+- Move Delete into an Actions menu only.
+- Require confirmation before delete.
+- Add warning if duplicate booking exists for same client, same date, same time.
+
+Do not change booking business rules.
+
+====================================================
+PHASE 9 — SESSIONS & PACKAGES
+====================================================
+
+Move Sessions & Packages to:
+
+More → Business → Sessions & Packages
+
+or:
+
+Bookings → Sessions & Packages
+
+Keep package functionality unchanged.
+
+Improve:
+- Compact empty Package Verification Queue.
+- Show Open Client button.
+- Show Add Sessions button.
+- Show Adjust Package button.
+- Hide closed packages by default behind a filter.
+- Keep active packages visible.
+
+Do not change package/session logic.
+
+====================================================
+PHASE 10 — ANALYTICS OPTIMIZATION
+====================================================
+
+Move Analytics to:
+
+More → Business → Analytics
+
+or make it accessible from Dashboard.
+
+Analytics should not be a primary daily tab.
+
+Improve performance:
+- Lazy load charts.
+- Add date range selector:
+  - 7 days
+  - 30 days
+  - 90 days
+  - 12 months
+- Collapse chart sections:
+  - Revenue
+  - Clients
+  - Sessions
+  - Packages
+  - Churn
+- Avoid frequent auto refresh.
+- Manual refresh is acceptable.
+- If chart has no data, show compact empty state instead of large blank chart.
+- Add Last Updated timestamp.
+- Add manual Refresh button.
+
+Do not change analytics calculations.
+
+====================================================
+PHASE 11 — MEDIA MANAGER CLEANUP
+====================================================
+
+Media remains a primary tool.
+
+Media Manager should contain:
+- Hero Slider
+- Services
+- Branding
+- Advanced Media Settings
+
+Rules:
+- Do NOT reduce image quality.
+- Do NOT compress public images in a way that lowers quality.
+- Do NOT downscale customer-facing images.
+- Use thumbnails only for admin previews.
+- Public website must use original high-quality images.
+- No base64 image payloads should be sent through APIs.
+
+Mobile improvements:
+- Make WYSIWYG/server validation info collapsible by default.
+- Fix internal tabs so no tab is clipped.
+- Use smooth horizontal scroll.
+- Equal tab height and padding.
+- Clear active state.
+- Add enough bottom spacer so FAB never covers controls.
+- Keep Add Slide accessible and aligned.
+
+====================================================
+PHASE 12 — SETTINGS CLEANUP
+====================================================
+
+Settings should contain only real settings:
+
+- Platform controls
+- Booking Rules
+- Direct Payment / Bank Details
+- Availability / Blocked Time Slots
+- Maintenance Mode
+- System Preferences
+
+Remove or hide duplicated media-related cards from Settings:
+- Brand Settings
+- Profile Photo & Bio
+- Service Card Images
+- Hero Slider
+- Transformations Gallery
+
+Replace them with one compact card only:
+
+Title:
+Media Center
+
+Description:
+Manage logos, hero slides, service images, gallery, and branding assets.
+
+Button:
+Open Media Center
+
+Do not duplicate Media controls inside Settings.
+
+====================================================
+PHASE 13 — MERGE DUPLICATE CLIENTS SAFETY
+====================================================
+
+Move Merge Duplicate Clients to:
+
+More → Advanced Tools → Merge Clients
+
+Improve safety:
+- Do not load all clients by default.
+- Use search-only selection.
+- Require manual Survivor selection.
+- Require manual Duplicate selection.
+- Show merge preview before action:
+  - bookings moved
+  - packages moved
+  - body metrics moved
+  - photos moved
+  - check-ins moved
+  - notes moved
+  - notifications moved
+  - loser soft-deleted
+- Require typing MERGE before final action.
+- Keep full audit logging.
+
+Do not change merge business logic.
+
+====================================================
+PHASE 14 — AUDIT LOG
+====================================================
+
+Move Audit Log to:
+
+More → System → Audit Log
+
+Improve:
+- Show last 20 items by default.
+- Add Load More or pagination.
+- Add date filter.
+- Keep entity filters.
+- Group repeated actions if possible.
+- Open event details in drawer/modal.
+- Do not poll unless the Audit Log page is open.
+- Add Last Updated timestamp.
+- Add manual Refresh button.
+
+====================================================
+PHASE 15 — INTEGRITY CHECKER
+====================================================
+
+Move Integrity Checker to:
+
+More → System Health → Integrity Checker
+
+Fix contradictory UI states.
+
+If integrity report fails to load:
+Show only:
+“Unable to load integrity report”
+with Retry button.
+
+If no warnings:
+Show only:
+“All clean”
+
+Never show both:
+“Failed to load integrity report”
+and
+“All clean”
+at the same time.
+
+Do not run expensive integrity checks automatically on every admin load.
+
+Add:
+- Last Updated timestamp
+- Manual Refresh button
+
+====================================================
+PHASE 16 — RECOVERY REQUESTS
+====================================================
+
+Move Recovery Requests to:
+
+More → System → Recovery Center
+
+If there are zero requests:
+- show compact empty state
+- do not show it prominently
+
+If there are pending requests:
+- show badge in More
+- show alert on Dashboard
+
+Do not poll unless the page is open or a lightweight badge count is needed.
+
+====================================================
+PHASE 17 — COMMAND CENTER
+====================================================
+
+Move Command Center to:
+
+More → Operations → Command Center
+
+If it fails to load:
+- show compact error
+- show Retry button
+- do not keep polling in the background
+
+Command Center should not appear in daily primary navigation.
+
+Add:
+- Last Updated timestamp
+- Manual Refresh button
+
+====================================================
+PHASE 18 — SUPER ADMIN PROTECTION
+====================================================
+
+Dangerous tools must be Super Admin only:
+
+- Merge Clients
+- Maintenance Tools
+- Repair Expired Sessions
+- Integrity fixes
+- Delete/destructive admin operations
+- Developer/System Utilities
+
+If the current user is not Super Admin:
+- hide these tools from navigation
+- block direct route access
+- return unauthorized response from API
+
+Keep the existing super admin identity/role system.
+
+Do not weaken security.
+
+====================================================
+PHASE 19 — UNIFIED DANGER CONFIRMATION
+====================================================
+
+Create a consistent confirmation pattern for dangerous actions.
+
+Danger confirmation should include:
+- clear warning title
+- short summary of what will happen
+- affected records count if available
+- typed confirmation keyword when needed:
+  - MERGE
+  - DELETE
+  - REPAIR
+  - RESET
+- audit log entry
+
+Apply this to:
+- Merge Clients
+- Delete Booking
+- Reset Settings
+- Repair Expired Sessions
+- Delete Media
+- Any destructive system action
+
+Dangerous actions must not be easy to tap accidentally on mobile.
+
+====================================================
+PHASE 20 — GLOBAL SAVE FEEDBACK
+====================================================
+
+All admin saves must use consistent feedback:
+
+- Saving…
+- Saved successfully
+- Save failed with reason
+- Retry option when possible
+
+No silent failures.
+
+Apply to:
+- Settings
+- Media
+- Branding
+- Booking Rules
+- Payment Details
+- Blocked Times
+- Client edits
+- Package edits
+
+====================================================
+PHASE 21 — UNSAVED CHANGES PROTECTION
+====================================================
+
+For editable admin pages, warn before leaving if there are unsaved changes.
+
+Apply to:
+- Branding controls
+- Settings
+- Media edits
+- Booking Rules
+- Payment Details
+- Client profile edits
+- Package edits
+
+Warning:
+“You have unsaved changes. Leave anyway?”
+
+Do not block normal navigation if no changes exist.
+
+====================================================
+PHASE 22 — STANDARD PAGE STATES
+====================================================
+
+Every admin page must support exactly these states:
+
+- Loading
+- Empty
+- Error
+- Success
+
+Never show contradictory states together.
+
+Examples:
+- Do not show “Failed to load integrity report” and “All clean” at the same time.
+- Do not show a huge empty chart if there is no data.
+- Do not show a large empty recovery page if there are zero requests.
+
+====================================================
+PHASE 23 — PERFORMANCE AND NEON PROTECTION
+====================================================
+
+Do not increase Neon transfer.
+
+Rules:
+- No image blobs in API responses.
+- No base64 image payloads.
+- No polling on hidden/inactive pages.
+- No unnecessary refetchOnWindowFocus.
+- Lazy load heavy admin sections.
+- Paginate growing lists:
+  - Clients
+  - Leads
+  - Bookings
+  - Audit Log
+  - Packages
+  - Merge client search
+- Keep response payloads small.
+- Add development warning for API responses over 200 KB.
+- Keep public image quality unchanged.
+- Use thumbnails only inside admin previews/lists.
+- Public website must always use original high-quality images.
+
+Heavy sections should use:
+- Last updated timestamp
+- Manual refresh button
+- No frequent auto-refresh
+
+====================================================
+PHASE 24 — ACTION HIERARCHY
+====================================================
+
+Daily safe actions should be easy to reach.
+
+Rare/dangerous/system actions should be hidden under:
+- More
+- Advanced
+- System Tools
+- Actions menu
+
+Examples:
+- Delete booking
+- Merge clients
+- Repair expired sessions
+- Integrity checker
+- Command center
+- Maintenance tools
+
+These must not appear as prominent daily actions.
+
+====================================================
+PHASE 25 — FINAL VALIDATION
+====================================================
+
+Before finalizing, verify:
+
+Navigation:
+- Dashboard opens
+- Clients opens
+- Bookings opens
+- Media opens
+- More opens
+- More grouping works
+- Settings is accessible from More/System
+- Advanced tools are accessible only for Super Admin
+
+Functional checks:
+- Client profiles still open
+- Booking flow still works
+- Booking actions still work
+- Media save works
+- Branding save works
+- Settings save works
+- Package actions still work
+- Leads page still works
+- Analytics still loads
+- Audit Log still loads
+- Recovery Center still loads
+- Command Center does not poll in background
+- Integrity Checker no longer shows contradictory states
+
+Mobile checks:
+- No page title is clipped
+- No tab is clipped
+- No content touches screen edges
+- No FAB overlap
+- Bottom nav does not cover controls
+- Long dropdowns open as bottom sheets
+- Dangerous actions are not easy to tap accidentally
+- Touch targets are at least 44px high
+
+Performance checks:
+- No base64 image payloads returned from APIs
+- No image blobs in API responses
+- No heavy polling on hidden pages
+- Growing lists use pagination/search/load more
+- Heavy charts lazy load
+- API responses above 200 KB are warned in development only
+
+Safety checks:
+- No business logic changed
+- No user/client data deleted
+- No image quality reduced
+- No auth/security weakened
+- No booking/package/payment rules changed
+
+====================================================
+PHASE 26 — FINAL REPORT
+====================================================
+
+After implementation, provide a final report:
+
+1. What moved to More
+2. What stayed in primary navigation
+3. What was hidden
+4. What was simplified
+5. What advanced/dangerous tools were moved
+6. What mobile layout issues were fixed
+7. What design system standards were applied
+8. What performance protections were added
+9. What Super Admin protections were added
+10. Confirmation that no business logic changed
+11. Confirmation that no data was deleted
+12. Confirmation that no image quality was reduced
+13. Remaining optional improvements, if any
+
+Reminder:
+This task is cleanup, organization, mobile UX, safety hardening, and performance protection only.
+Do not add new product features.
+Do not create unnecessary UI clutter.
