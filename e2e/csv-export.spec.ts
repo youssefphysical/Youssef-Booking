@@ -212,9 +212,23 @@ function todayPattern() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+// Shared admin session cookies — set once in beforeAll, restored in beforeEach
+// to avoid exhausting the 10/min login rate limit across 6 tests.
+let adminCookies: any[] = [];
+
 test.describe("Admin Payments — Export CSV", () => {
-  test.beforeEach(async ({ page }) => {
-    await adminLogin(page);
+  test.beforeAll(async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const pg = await ctx.newPage();
+    await adminLogin(pg);
+    adminCookies = await ctx.cookies();
+    await ctx.close();
+  });
+
+  test.beforeEach(async ({ context }) => {
+    if (adminCookies.length > 0) {
+      await context.addCookies(adminCookies);
+    }
   });
 
   test("Export CSV button is visible and enabled when payments exist", async ({
