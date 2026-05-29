@@ -770,7 +770,7 @@ export const settings = pgTable("settings", {
   personalTrainingMobileSettings: jsonb("personal_training_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   nutritionMobileSettings: jsonb("nutrition_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
   supplementMobileSettings: jsonb("supplement_mobile_settings").$type<Record<string, number | string>>().notNull().default({}),
-  brandSettings: jsonb("brand_settings").$type<Record<string, number | string>>().notNull().default({}),
+  brandSettings: jsonb("brand_settings").$type<Record<string, unknown>>().notNull().default({}),
   // ====== Global Logo Manager — uploadable brand logo variants ======
   // When set, these override the static /ye-logo*.png files in the UI.
   // Stored as base64 WebP data URLs (same pattern as hero/service images).
@@ -1634,7 +1634,7 @@ export const updateSettingsSchema = z.object({
   supplementMobileUrl: z.string().nullable().optional(),
   supplementThumbnailUrl: z.string().nullable().optional(),
   supplementMobileSettings: z.record(z.union([z.number(), z.string()])).optional(),
-  brandSettings: z.record(z.union([z.number(), z.string()])).optional(),
+  brandSettings: z.record(z.unknown()).optional(),
   contentSettings: z.record(z.string()).optional(),
   emailSettings: z.record(z.object({ subject: z.string().optional(), preheader: z.string().optional() })).optional(),
 });

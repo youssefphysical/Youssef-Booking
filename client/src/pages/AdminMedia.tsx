@@ -75,6 +75,8 @@ import {
   Check,
   Loader2,
   GripVertical,
+  Lock,
+  LockOpen,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -105,14 +107,14 @@ const SERVICE_ASPECTS: AspectPreset[] = [
 
 // ─── Slider row ───────────────────────────────────────────────────────────────
 function SliderRow({
-  label, value, min, max, step = 0.01, unit = "", onChange, testId,
+  label, value, min, max, step = 0.01, unit = "", onChange, testId, disabled,
 }: {
   label: string; value: number; min: number; max: number;
-  step?: number; unit?: string; onChange: (v: number) => void; testId?: string;
+  step?: number; unit?: string; onChange: (v: number) => void; testId?: string; disabled?: boolean;
 }) {
   const derivedTestId = testId ?? `slider-row-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <div className="space-y-1.5" data-testid={derivedTestId}>
+    <div className={`space-y-1.5 transition-opacity duration-200 ${disabled ? "opacity-35 pointer-events-none select-none" : ""}`} data-testid={derivedTestId}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-muted-foreground tracking-wide uppercase">{label}</span>
         <span className="text-[11px] tabular-nums font-mono text-primary/80 bg-primary/8 px-2 py-0.5 rounded-md border border-primary/15">
@@ -123,6 +125,7 @@ function SliderRow({
         value={[value]}
         min={min} max={max} step={step}
         onValueChange={(v) => onChange(v[0] ?? value)}
+        disabled={disabled}
         className="w-full"
       />
     </div>
@@ -1636,8 +1639,9 @@ function LogoControlsPanel() {
   const storedLogos = ((data?.settings?.brandSettings ?? {}) as any).logos as StoredLogos | undefined;
 
   const [logos, setLogos]           = useState<Record<BrandLogoSlot, LogoBrandControls>>(() => buildLogos(storedLogos));
-  const [activeSlot, setActiveSlot] = useState<BrandLogoSlot | null>("navbar");
-  const [dirty, setDirty]           = useState(false);
+  const [activeSlot, setActiveSlot]   = useState<BrandLogoSlot | null>("navbar");
+  const [unlockedSlot, setUnlockedSlot] = useState<BrandLogoSlot | null>(null);
+  const [dirty, setDirty]             = useState(false);
   const [initialised, setInitialised] = useState(false);
 
   useEffect(() => {
@@ -1664,6 +1668,12 @@ function LogoControlsPanel() {
     setDirty(true);
   }
 
+  function toggleLock(slot: BrandLogoSlot, e: React.MouseEvent) {
+    e.stopPropagation();
+    setUnlockedSlot(prev => (prev === slot ? null : slot));
+    if (unlockedSlot !== slot) setActiveSlot(slot);
+  }
+
   function handleResetAll() {
     const defaults = buildLogos();
     setLogos(defaults);
@@ -1674,7 +1684,7 @@ function LogoControlsPanel() {
   function handleSave() {
     const existing = (data?.settings?.brandSettings ?? {}) as Record<string, unknown>;
     updateSettings.mutate(
-      { brandSettings: { ...existing, logos } as unknown as Record<string, number> },
+      { brandSettings: { ...existing, logos } },
       {
         onSuccess: () => {
           invalidateMedia();
@@ -1711,8 +1721,17 @@ function LogoControlsPanel() {
           const imgSrc = getLogoSrcForSlot(settings, slot);
           const isOpen = activeSlot === slot;
 
+          const isUnlocked = unlockedSlot === slot;
+
           return (
-            <div key={slot} className="rounded-xl border border-white/[0.07] overflow-hidden">
+            <div
+              key={slot}
+              className={`rounded-xl border overflow-hidden transition-colors duration-200 ${
+                isUnlocked
+                  ? "border-primary/30 shadow-[0_0_12px_-4px_hsl(183_100%_60%/0.25)]"
+                  : "border-white/[0.07]"
+              }`}
+            >
 
               {/* Slot header */}
               <button
@@ -1749,6 +1768,24 @@ function LogoControlsPanel() {
                   <span>glow {c.glow}%</span>
                 </div>
 
+                {/* Lock / Unlock button */}
+                <button
+                  type="button"
+                  onClick={(e) => toggleLock(slot, e)}
+                  data-testid={`button-brand-slot-lock-${slot}`}
+                  title={isUnlocked ? "Lock section" : "Unlock to edit"}
+                  className={`shrink-0 flex items-center gap-1 px-2.5 h-7 rounded-lg text-[10px] font-semibold border transition-all duration-200 ${
+                    isUnlocked
+                      ? "bg-primary/15 border-primary/35 text-primary shadow-[0_0_8px_-2px_hsl(183_100%_60%/0.4)]"
+                      : "bg-white/[0.04] border-white/[0.10] text-muted-foreground/50 hover:text-muted-foreground hover:bg-white/[0.08]"
+                  }`}
+                >
+                  {isUnlocked
+                    ? <><LockOpen size={11} /> <span className="hidden xs:inline">Editing</span></>
+                    : <><Lock size={11} /> <span className="hidden xs:inline">Locked</span></>
+                  }
+                </button>
+
                 <ChevronDown
                   size={14}
                   className={`shrink-0 text-muted-foreground/40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -1759,7 +1796,17 @@ function LogoControlsPanel() {
               {isOpen && (
                 <div className="border-t border-white/[0.06] bg-black/20 px-4 pb-5 pt-4 space-y-5">
 
-                  {/* Live preview */}
+                  {/* Lock notice banner */}
+                  {!isUnlocked && (
+                    <div className="flex items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5">
+                      <Lock size={13} className="text-muted-foreground/40 shrink-0" />
+                      <p className="text-[11px] text-muted-foreground/50 leading-snug">
+                        Section is locked. Tap <span className="text-muted-foreground/80 font-semibold">Locked</span> in the header to enable editing.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Live preview — always visible */}
                   <div
                     className="rounded-xl border border-primary/15 bg-black/60 flex items-center justify-center overflow-hidden"
                     style={{ minHeight: 180 }}
@@ -1784,55 +1831,57 @@ function LogoControlsPanel() {
                     </div>
                   </div>
 
-                  {/* 9 sliders */}
+                  {/* 9 sliders — disabled when locked */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-5">
                     <SliderRow
-                      label="Desktop Width"  value={c.wDesktop}  min={0}   max={800} step={10} unit="px"
+                      label="Desktop Width"  value={c.wDesktop}  min={0}   max={800} step={10} unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "wDesktop",  v)} testId={`slider-${slot}-w-desktop`}
                     />
                     <SliderRow
-                      label="Desktop Height" value={c.hDesktop}  min={0}   max={400} step={2}  unit="px"
+                      label="Desktop Height" value={c.hDesktop}  min={0}   max={400} step={2}  unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "hDesktop",  v)} testId={`slider-${slot}-h-desktop`}
                     />
                     <SliderRow
-                      label="Mobile Width"   value={c.wMobile}   min={0}   max={600} step={10} unit="px"
+                      label="Mobile Width"   value={c.wMobile}   min={0}   max={600} step={10} unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "wMobile",   v)} testId={`slider-${slot}-w-mobile`}
                     />
                     <SliderRow
-                      label="Mobile Height"  value={c.hMobile}   min={0}   max={300} step={2}  unit="px"
+                      label="Mobile Height"  value={c.hMobile}   min={0}   max={300} step={2}  unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "hMobile",   v)} testId={`slider-${slot}-h-mobile`}
                     />
                     <SliderRow
-                      label="Zoom"           value={c.zoom}      min={50}  max={200} step={5}  unit="%"
+                      label="Zoom"           value={c.zoom}      min={50}  max={200} step={5}  unit="%" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "zoom",      v)} testId={`slider-${slot}-zoom`}
                     />
                     <SliderRow
-                      label="H-Offset"       value={c.hOffset}   min={-80} max={80}  step={1}  unit="px"
+                      label="H-Offset"       value={c.hOffset}   min={-80} max={80}  step={1}  unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "hOffset",   v)} testId={`slider-${slot}-hoffset`}
                     />
                     <SliderRow
-                      label="V-Offset"       value={c.vOffset}   min={-80} max={80}  step={1}  unit="px"
+                      label="V-Offset"       value={c.vOffset}   min={-80} max={80}  step={1}  unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "vOffset",   v)} testId={`slider-${slot}-voffset`}
                     />
                     <SliderRow
-                      label="Padding"        value={c.padding}   min={0}   max={32}  step={1}  unit="px"
+                      label="Padding"        value={c.padding}   min={0}   max={32}  step={1}  unit="px" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "padding",   v)} testId={`slider-${slot}-padding`}
                     />
                     <SliderRow
-                      label="Glow Intensity" value={c.glow}      min={0}   max={100} step={5}  unit="%"
+                      label="Glow Intensity" value={c.glow}      min={0}   max={100} step={5}  unit="%" disabled={!isUnlocked}
                       onChange={v => setSlotVal(slot, "glow",      v)} testId={`slider-${slot}-glow`}
                     />
                   </div>
 
-                  {/* Per-slot reset */}
-                  <button
-                    type="button"
-                    onClick={() => resetSlot(slot)}
-                    data-testid={`button-brand-slot-reset-${slot}`}
-                    className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
-                  >
-                    ↺ Reset {meta.label} to defaults
-                  </button>
+                  {/* Per-slot reset — only when unlocked */}
+                  {isUnlocked && (
+                    <button
+                      type="button"
+                      onClick={() => resetSlot(slot)}
+                      data-testid={`button-brand-slot-reset-${slot}`}
+                      className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+                    >
+                      ↺ Reset {meta.label} to defaults
+                    </button>
+                  )}
                 </div>
               )}
             </div>
