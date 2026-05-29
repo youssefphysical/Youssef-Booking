@@ -108,6 +108,12 @@ export async function createApp(httpServer?: Server): Promise<Express> {
         if (capturedJsonResponse) {
           // Avoid dumping huge base64 blobs (profile pictures) into the logs
           const safe = JSON.stringify(capturedJsonResponse);
+          // Dev-only: warn on large API responses that may inflate DB transfer
+          if (process.env.NODE_ENV !== "production" && safe.length > 200_000) {
+            console.warn(
+              `[perf] LARGE response ${req.method} ${path} — ${(safe.length / 1024).toFixed(0)} KB. Check for base64 blobs in bulk payloads.`,
+            );
+          }
           logLine += ` :: ${safe.length > 400 ? safe.slice(0, 400) + "…" : safe}`;
         }
         log(logLine);

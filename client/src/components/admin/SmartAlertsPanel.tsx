@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AlertTriangle, AlertCircle, Info, Check, Inbox } from "lucide-react";
@@ -32,7 +33,12 @@ const SEV_BORDER: Record<Severity, string> = {
   info: "border-sky-500/25 bg-sky-500/[0.04]",
 };
 
+const ALERT_POLL_PATHS = ["/admin", "/admin/business-health", "/admin/analytics"];
+
 export function SmartAlertsPanel() {
+  const [location] = useLocation();
+  const shouldPoll = ALERT_POLL_PATHS.some((p) => location === p || location.startsWith(p + "/"));
+
   const { data: alerts = [], isLoading } = useQuery<AlertRow[]>({
     queryKey: ["/api/admin/alerts"],
     queryFn: async () => {
@@ -40,7 +46,7 @@ export function SmartAlertsPanel() {
       if (!r.ok) throw new Error("Failed to load alerts");
       return r.json();
     },
-    refetchInterval: 60_000,
+    refetchInterval: shouldPoll ? 60_000 : false,
   });
 
   const resolve = useMutation({

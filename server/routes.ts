@@ -361,7 +361,7 @@ async function runMissedCheckinNotifications(): Promise<void> {
   const now = new Date();
   if (now.getUTCDay() < 2 && now.getUTCDay() !== 0) return; // skip Mon (day=1)
   const weekStart = mondayOfUtc(now);
-  const clients = await storage.getAllClients();
+  const clients = await storage.getAllClientsLight();
   for (const u of clients) {
     if ((u as any).clientStatus !== "active") continue;
     try {
@@ -1291,6 +1291,23 @@ function sanitizeBookingForUser<T extends { privateCoachNotes?: unknown }>(
   return rest;
 }
 
+// ─── Short-lived in-memory cache for expensive admin stats ───────────────────
+// /api/admin/analytics and /api/dashboard/stats both scan the same tables.
+// A 60s TTL dramatically reduces Neon transfer on repeated dashboard loads
+// or page navigations within the same admin session.
+const _statsCache = new Map<string, { data: unknown; expiresAt: number }>();
+function _getCached<T>(key: string): T | null {
+  const e = _statsCache.get(key);
+  if (!e || Date.now() > e.expiresAt) return null;
+  return e.data as T;
+}
+function _setCached(key: string, data: unknown, ttlMs = 60_000): void {
+  _statsCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+export function invalidateStatsCache(): void {
+  _statsCache.clear();
+}
+
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   setupAuth(app);
 
@@ -1363,12 +1380,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.json({ delivered: 1 });
       }
       const audience = String(req.body?.audience ?? "all_active");
-      const clients = await storage.getAllClients();
+      const clients = await storage.getAllClientsLight();
       const ids = clients
-        .filter((u: User) =>
+        .filter((u) =>
           audience === "all" ? true : (u as any).clientStatus === "active",
         )
-        .map((u: User) => u.id);
+        .map((u) => u.id);
       await notifyUsers(ids, "admin_message", title, body, { link });
       return res.json({ delivered: ids.length });
     } catch (e: any) {
@@ -6846,6 +6863,9 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
   // ============== DASHBOARD ==============
   app.get("/api/dashboard/stats", requireAdmin, async (_req, res) => {
+    const STATS_CACHE_KEY = "dashboard-stats";
+    const cachedStats = _getCached(STATS_CACHE_KEY);
+    if (cachedStats) return res.json(cachedStats);
     const todayStr = dubaiTodayYMD();
     const monthStart = nowDubai();
     monthStart.setUTCDate(1);
@@ -6853,7 +6873,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
     const [clients, allBookings, allPackages, pendingRenewalsList, pendingExtensionsList] =
       await Promise.all([
-        storage.getAllClients(),
+        storage.getAllClientsLight(),
         storage.getBookings(),
         storage.getPackages({ activeOnly: true }),
         storage.getRenewalRequests({ status: "pending", limit: 500 }).catch(() => []),
@@ -6883,7 +6903,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       }
     }
 
-    res.json({
+    const statsPayload = {
       totalClients: clients.length,
       upcomingBookings,
       bookingsToday,
@@ -6894,7 +6914,9 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       pendingRenewals: pendingRenewalsList.length,
       pendingExtensions: pendingExtensionsList.length,
       lowSessionClients: lowSessionUserIds.size,
-    });
+    };
+    _setCached(STATS_CACHE_KEY, statsPayload);
+    res.json(statsPayload);
   });
 
   // ============================================================
@@ -6905,19 +6927,22 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   // All computation is in-memory over already-fetched lists; no extra
   // SQL beyond what /api/dashboard/stats already does. Admin-gated.
   app.get("/api/admin/analytics", requireAdmin, async (_req, res) => {
+    const ANALYTICS_CACHE_KEY = "admin-analytics";
+    const cachedAnalytics = _getCached(ANALYTICS_CACHE_KEY);
+    if (cachedAnalytics) return res.json(cachedAnalytics);
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     const ms = (days: number) => days * 86_400_000;
     const isoMonth = (d: Date) => d.toISOString().slice(0, 7); // YYYY-MM
 
-    const [clients, allBookings, allPackagesActive, allPackagesAll, renewals30] =
+    const [clients, allBookings, allPackagesAll, renewals30] =
       await Promise.all([
-        storage.getAllClients(),
+        storage.getAllClientsLight(),
         storage.getBookings(),
-        storage.getPackages({ activeOnly: true }),
         storage.getPackages(),
         storage.getRenewalRequests({ limit: 5000 }).catch(() => []),
       ]);
+    const allPackagesActive = allPackagesAll.filter((p: any) => p.isActive);
 
     // ----- CLIENTS -----
     const clientsTotal = clients.length;
@@ -7162,6 +7187,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       funnel,
       capacityHeatmap: { hours, cells },
     };
+    _setCached(ANALYTICS_CACHE_KEY, payload);
     res.json(payload);
   });
 
@@ -7183,7 +7209,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
         await Promise.all([
           storage.getBookings({ from: dateStr }),
           storage.getPackages({ activeOnly: true }),
-          storage.getAllClients(),
+          storage.getAllClientsLight(),
           storage.getRenewalRequests({ status: "pending", limit: 500 }).catch(() => []),
           storage.getExtensionRequests({ status: "pending", limit: 500 }).catch(() => []),
           listOpenAlerts(),

@@ -452,8 +452,8 @@ function RepairExpiredSessions() {
     env: { cronSecretSet: boolean; publicAppUrlSet: boolean; nodeEnv: string | null };
   }>({
     queryKey: ["/api/admin/auto-complete-status"],
-    refetchInterval: 30_000,
-    staleTime: 15_000,
+    refetchInterval: 2 * 60_000,
+    staleTime: 60_000,
   });
 
   const m = useMutation({

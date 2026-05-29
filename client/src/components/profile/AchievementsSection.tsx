@@ -76,7 +76,6 @@ export function AchievementsSection() {
   const { data: badges = [], isLoading } = useQuery<UserBadge[]>({
     queryKey: ["/api/me/badges"],
     staleTime: 30_000,
-    refetchOnWindowFocus: true,
   });
 
   const earnedKeys = useMemo(() => new Set(badges.map((b) => b.badgeKey)), [badges]);

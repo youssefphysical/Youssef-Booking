@@ -61,13 +61,13 @@ export function useBookings(opts?: { userId?: number; includeUser?: boolean; fro
     // got taken or just slipped into the past. Opting in here only
     // affects the booking list and dashboard upcoming-list — not a
     // sweeping default flip.
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
     // Re-fetch every 60s while the tab is visible so a user sitting
     // on the booking page for several minutes sees other clients'
     // bookings appear without manual refresh. TanStack Query auto-
     // pauses this when the tab is backgrounded.
-    refetchInterval: 60_000,
+    refetchInterval: 3 * 60_000,
     staleTime: 30_000,
   });
 }

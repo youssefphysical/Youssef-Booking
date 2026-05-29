@@ -1,0 +1,300 @@
+CRITICAL TASK: Fix Neon network transfer overuse from the root cause.
+
+Do NOT add new features.
+
+Do NOT redesign the UI.
+
+Do NOT modify unrelated business logic.
+
+Goal:
+Reduce Neon database network transfer dramatically by removing wasteful queries, removing image/blob transfer from PostgreSQL, reducing polling, and preventing duplicated API calls.
+
+Current problem:
+Neon Free monthly 5 GB transfer was exceeded. Audit shows the main causes are:
+
+1. getAllClients() bulk query with profile pictures/blobs
+2. /api/admin/analytics full scans
+3. /api/admin/media sending hero images/settings blobs
+4. /api/dashboard/stats duplicated scans
+5. /api/settings sending logo/base64 blobs
+6. excessive polling on bookings, feature flags, packages, alerts, command center, notifications
+
+Implement the following fixes in this exact priority order.
+
+==================================================
+PRIORITY 1 — REMOVE IMAGES/BLOBS FROM DATABASE RESPONSES
+
+PostgreSQL must NOT return heavy image blobs or base64 data in normal API responses.
+
+Fix all APIs that return:
+
+- profilePictureUrl blobs
+- logo base64
+- hero image base64
+- splash image base64
+- branding image blobs
+- media blobs
+- large JSON media payloads
+
+Rules:
+
+- Store only lightweight URLs, keys, IDs, metadata, dimensions, and timestamps in PostgreSQL.
+- Do not include base64 image data in list endpoints.
+- Do not send image blobs inside /api/settings, /api/admin/media, /api/admin/clients, /api/admin/analytics, or dashboard endpoints.
+- Image files should be loaded by the browser from object storage/CDN/static file URL, not through Neon query payloads.
+
+If object storage integration already exists, use it.
+If not, create a clean abstraction layer:
+mediaStorage.getUrl(key)
+mediaStorage.save(file)
+mediaStorage.delete(key)
+
+Do not hardcode provider-specific logic inside UI components.
+
+==================================================
+PRIORITY 2 — FIX getAllClients()
+
+getAllClients() is the biggest transfer consumer.
+
+Change it immediately:
+
+- Bulk client list must return summary fields only.
+- Do NOT return profile pictures or heavy nested blobs.
+- Do NOT return large notes/history/package/session data unless needed.
+- Add pagination.
+- Add search/filter parameters.
+- Add sorting.
+- Add a separate endpoint for single-client detail.
+
+Example:
+
+GET /api/admin/clients?page=1&pageSize=25&search=&sort=
+
+Returns:
+
+- id
+- fullName
+- phone
+- email
+- status
+- activePackageSummary
+- nextBookingAt
+- lastActivityAt
+- profilePictureThumbUrl only if it is a lightweight URL
+
+Do NOT return full profile image blobs.
+
+Create:
+
+GET /api/admin/clients/:id
+
+for full client detail only when opening a client profile.
+
+==================================================
+PRIORITY 3 — FIX ADMIN MEDIA ENDPOINT
+
+/api/admin/media must not return image blobs.
+
+Return only:
+
+- media id
+- type
+- title
+- alt
+- imageUrl
+- thumbnailUrl
+- storageKey
+- width
+- height
+- updatedAt
+- active status
+- ordering
+
+Hero images, logos, branding images, splash screens must all use URLs instead of base64 blobs.
+
+Add thumbnails where possible.
+
+The Media Manager should show thumbnails via URLs, not database blobs.
+
+==================================================
+PRIORITY 4 — FIX SETTINGS ENDPOINT
+
+/api/settings currently appears to send logo/base64 or heavy branding blobs.
+
+Split settings into lightweight endpoints:
+
+GET /api/settings/public
+For client-facing website:
+
+- theme colors
+- active language
+- public feature flags
+- logo URLs only
+- branding config values only
+
+GET /api/admin/settings
+For admin-only configuration:
+
+- full editable settings metadata
+- but still no base64 blobs
+
+GET /api/admin/branding
+For branding controls:
+
+- control values
+- image URLs
+- storage keys
+- dimensions
+- updatedAt
+
+Never send raw base64 image data in settings responses.
+
+==================================================
+PRIORITY 5 — MERGE DUPLICATED ANALYTICS/STATS QUERIES
+
+/api/admin/analytics and /api/dashboard/stats are doing overlapping full scans.
+
+Create one shared optimized server-side stats service.
+
+Rules:
+
+- Calculate stats once.
+- Reuse the same aggregated result.
+- Avoid duplicate full scans.
+- Cache expensive stats for a short time.
+- Use SQL aggregation instead of fetching full rows then calculating in JS.
+- Do not include client pictures or media blobs in analytics responses.
+
+Suggested cache:
+
+- 60 seconds for admin stats
+- 5 minutes for slow-changing metrics
+
+==================================================
+PRIORITY 6 — REDUCE POLLING
+
+Reduce unnecessary polling and refetching.
+
+Fix:
+
+- useBookings polling every 60s
+- useFeatureFlags polling every 30s with staleTime 0
+- adminPackages polling every 30s with windowFocus refetch
+- SmartAlertsPanel polling on all admin pages
+- AdminCommandCenter polling every 60s
+- unread notification count polling
+
+New rules:
+
+1. Poll only where needed.
+2. Do not poll hidden/inactive tabs.
+3. Do not poll all admin pages globally.
+4. Disable refetchOnWindowFocus unless critical.
+5. Use staleTime properly.
+6. Use cacheTime/gcTime properly.
+7. Increase intervals:
+   - Feature flags: 5 minutes
+   - Packages: 5 minutes or manual refresh
+   - Command center: 5 minutes
+   - Alerts: only dashboard/business health page
+   - Bookings: 2–5 minutes unless active calendar is open
+   - Notifications: acceptable but keep lightweight
+
+==================================================
+PRIORITY 7 — CLIENT DASHBOARD OPTIMIZATION
+
+Client dashboard should not fetch large admin-level datasets.
+
+Ensure client dashboard only fetches:
+
+- current user summary
+- upcoming bookings
+- active package summary
+- lightweight notifications
+- lightweight stats
+
+No admin analytics.
+No full clients list.
+No media blobs.
+No unnecessary package scans.
+
+==================================================
+PRIORITY 8 — ADD REQUEST/TRANSFER GUARDS
+
+Add development logging to detect over-fetching.
+
+In development only, log:
+
+- API route
+- response payload size
+- request frequency
+- slow queries
+- repeated duplicate calls
+
+Add warnings when:
+
+- response payload > 200 KB
+- same endpoint is called more than 5 times within 60 seconds from the same page
+- endpoint returns image/base64 data unexpectedly
+
+Do not expose sensitive data in logs.
+
+==================================================
+PRIORITY 9 — DATABASE QUERY OPTIMIZATION
+
+Review database queries and add indexes where needed.
+
+Prioritize:
+
+- bookings by clientId/date/status
+- sessions by clientId/packageId
+- packages by clientId/status
+- notifications by userId/read status
+- clients by createdAt/status/search fields
+- media by type/active/order
+
+Use SELECT specific columns instead of SELECT *.
+
+Never fetch heavy columns unless explicitly needed.
+
+==================================================
+PRIORITY 10 — FINAL REPORT
+
+After implementation, provide a report:
+
+1. Files changed
+2. APIs optimized
+3. Removed blob/base64 fields
+4. Polling reduced
+5. New estimated monthly Neon transfer
+6. Before vs after table
+7. Any remaining risks
+8. What still requires object storage/provider setup
+
+Do not run unrelated Playwright tests.
+
+Do not touch:
+
+- booking business rules
+- client package logic
+- admin permissions
+- authentication rules
+- visual design
+- unrelated UI pages
+
+Focus only on:
+
+- reducing Neon transfer
+- removing database blobs
+- reducing API payload size
+- reducing polling
+- preventing duplicated queries
+
+Success criteria:
+
+- Normal page loads must not fetch image blobs from Neon.
+- Logo/branding/media images must load from URL/storage, not database blob payloads.
+- getAllClients bulk query must be lightweight and paginated.
+- Admin analytics and dashboard stats must not duplicate full scans.
+- Polling must be reduced and scoped.
+- Estimated Neon transfer should drop dramatically before upgrading Neon.

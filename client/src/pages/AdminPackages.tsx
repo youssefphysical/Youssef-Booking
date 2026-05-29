@@ -300,10 +300,10 @@ function VerificationQueue() {
     // Always show the freshest queue. The fetch is cheap (one indexed
     // SELECT + per-user lookups) and getting this wrong leaves admin
     // staring at an empty card while a real request sits in the DB.
-    staleTime: 0,
+    staleTime: 30_000,
     refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchInterval: 30_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 5 * 60_000,
   });
   const decide = useMutation({
     mutationFn: async ({ id, body }: { id: number; body: any }) => {

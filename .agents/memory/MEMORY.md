@@ -2,3 +2,4 @@
 - [Media Manager v2 architecture](media-manager-v2.md) — desktop/mobile independence via jsonb mobileSettings; multi-res via one sharp pipeline; magic bytes + in-memory rate limiting.
 - [TypeScript regex dotAll](ts-regex-flags.md) — /s dotAll flag requires tsconfig target ≥ es2018; use [\s\S]+ as a safe cross-target substitute.
 - [Logo Manager schema columns](logo-manager-schema.md) — logoIconUrl/logoNavbarUrl/logoAuthUrl in settings; BrandLogo+PremiumPageLoader use them with static-file fallback.
+- [Neon transfer reduction](neon-transfer-reduction.md) — getAllClientsLight strips blobs; 60s stats cache in routes.ts; polling floors set; key DB indexes added.

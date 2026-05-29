@@ -1132,6 +1132,11 @@ async function run(): Promise<void> {
           PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
       EXCEPTION WHEN others THEN NULL; END $$;
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+
+      -- High-value missing indexes for bulk admin queries
+      CREATE INDEX IF NOT EXISTS users_role_idx ON users (role);
+      CREATE INDEX IF NOT EXISTS users_client_status_idx ON users (client_status);
+      CREATE INDEX IF NOT EXISTS packages_status_sessions_idx ON packages (user_id, used_sessions, total_sessions);
     `);
 
     console.log("[ensureSchema] OK");

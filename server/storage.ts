@@ -144,7 +144,7 @@ import {
   type Payment,
   type InsertPayment,
 } from "@shared/schema";
-import { eq, and, or, gte, lte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql } from "drizzle-orm";
+import { eq, and, or, gte, lte, gt, desc, asc, isNull, inArray, notInArray, ilike, sql, getTableColumns } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -164,6 +164,7 @@ export interface IStorage {
   updateUser(id: number, updates: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<void>;
   getAllClients(): Promise<User[]>;
+  getAllClientsLight(): Promise<Omit<User, 'profilePictureUrl' | 'password' | 'passwordResetToken' | 'passwordResetExpires'>[]>;
   /**
    * Client Data Center dataset — one denormalised row per client with
    * latest active package, default training location, nutrition flag,
@@ -1090,6 +1091,15 @@ export class DatabaseStorage implements IStorage {
   async getAllClients() {
     return db
       .select()
+      .from(users)
+      .where(eq(users.role, "client"))
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getAllClientsLight() {
+    const { profilePictureUrl: _pic, password: _pw, passwordResetToken: _tok, passwordResetExpires: _exp, ...lightCols } = getTableColumns(users);
+    return db
+      .select(lightCols)
       .from(users)
       .where(eq(users.role, "client"))
       .orderBy(desc(users.createdAt));

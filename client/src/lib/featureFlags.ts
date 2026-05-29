@@ -12,10 +12,10 @@ export function useFeatureFlags() {
     // override the global default here only for this query, keep
     // staleTime low so the next focus/route change refetches, and poll
     // in the background so even backgrounded tabs eventually catch up.
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60_000,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    staleTime: 0,
+    staleTime: 60_000,
   });
 }
 

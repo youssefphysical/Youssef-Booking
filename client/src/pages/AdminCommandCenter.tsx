@@ -80,8 +80,8 @@ const WIDGETS: Widget[] = [
 export default function AdminCommandCenter() {
   const { data, isLoading, error } = useQuery<CommandCenterPayload>({
     queryKey: ["/api/admin/command-center"],
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
   });
 
   return (
