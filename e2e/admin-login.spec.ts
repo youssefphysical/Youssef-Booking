@@ -128,6 +128,16 @@ test.describe("Admin Login", () => {
     await fillAndSubmit(page, ADMIN_USERNAME, ADMIN_PASSWORD);
     await page.waitForURL(/\/admin(?!-access)/, { timeout: 10_000 });
 
+    // DailyBriefModal auto-opens on fresh sessions (no localStorage dismissed key).
+    // Press Escape to close it before interacting with the nav; wait for the
+    // dialog overlay to fully disappear so it can't intercept pointer events.
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(500);
+    await page
+      .locator('[data-testid="dialog-daily-brief"]')
+      .waitFor({ state: "hidden", timeout: 2_000 })
+      .catch(() => {});
+
     // Step 2 — find and click a logout trigger
     // Common patterns: a button/link with text "logout" / "sign out", or a
     // data-testid containing "logout".
