@@ -24,7 +24,7 @@ const ENTITY_OPTIONS = ["all", "user", "package", "booking", "system"] as const;
 
 function ActionIcon({ action }: { action: string }) {
   if (action === "admin_repair_sessions") return <Wrench size={13} className="text-amber-400 shrink-0 mt-0.5" />;
-  if (action === "client.merge") return <GitMerge size={13} className="text-violet-400 shrink-0 mt-0.5" />;
+  if (action === "client.merge") return <GitMerge size={13} className="text-amber-400 shrink-0 mt-0.5" />;
   return <Activity size={13} className="text-primary/60 shrink-0 mt-0.5" />;
 }
 
@@ -214,7 +214,7 @@ export default function AdminAuditLog() {
                     <ActionIcon action={r.action} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[12.5px] font-semibold truncate flex items-center gap-1.5 flex-wrap">
-                        <span className={isMerge ? "text-violet-400" : isRepair ? "text-amber-400" : "text-primary"}>
+                        <span className={isMerge ? "text-amber-400" : isRepair ? "text-amber-400" : "text-primary"}>
                           {actionLabel(r.action)}
                         </span>
                         <span className="text-muted-foreground font-normal">· {r.entityType}</span>
@@ -226,7 +226,7 @@ export default function AdminAuditLog() {
                             loser{" "}
                             <Link
                               href={`/admin/clients/${mergeLoserId}`}
-                              className="text-violet-400 hover:underline"
+                              className="text-amber-400 hover:underline"
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`link-merge-loser-${mergeLoserId}`}
                             >
@@ -235,7 +235,7 @@ export default function AdminAuditLog() {
                             {" → winner "}
                             <Link
                               href={`/admin/clients/${mergeWinnerId}`}
-                              className="text-violet-400 hover:underline"
+                              className="text-amber-400 hover:underline"
                               onClick={(e) => e.stopPropagation()}
                               data-testid={`link-merge-winner-${mergeWinnerId}`}
                             >
@@ -297,7 +297,7 @@ export default function AdminAuditLog() {
               <DialogTitle className="text-base flex items-center gap-2">
                 {detailEntry && <ActionIcon action={detailEntry.action} />}
                 <span className={
-                  detailEntry?.action === "client.merge" ? "text-violet-400" :
+                  detailEntry?.action === "client.merge" ? "text-amber-400" :
                   detailEntry?.action === "admin_repair_sessions" ? "text-amber-400" :
                   "text-primary"
                 }>
@@ -317,13 +317,13 @@ export default function AdminAuditLog() {
                 </p>
                 {/* Merge: surface winner/loser IDs prominently */}
                 {detailEntry.action === "client.merge" && (
-                  <div className="flex items-center gap-3 rounded-lg border border-violet-400/20 bg-violet-400/5 px-3 py-2 text-[12.5px]">
-                    <GitMerge size={14} className="text-violet-400 shrink-0" />
+                  <div className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[12.5px]">
+                    <GitMerge size={14} className="text-amber-400 shrink-0" />
                     <span className="text-muted-foreground">
                       Loser{" "}
                       <Link
                         href={`/admin/clients/${detailEntry.previousValue?.loserId ?? detailEntry.entityId}`}
-                        className="text-violet-400 hover:underline font-semibold"
+                        className="text-amber-400 hover:underline font-semibold"
                         data-testid={`link-detail-loser-${detailEntry.previousValue?.loserId ?? detailEntry.entityId}`}
                       >
                         #{detailEntry.previousValue?.loserId ?? detailEntry.entityId}
@@ -331,7 +331,7 @@ export default function AdminAuditLog() {
                       {" merged into winner "}
                       <Link
                         href={`/admin/clients/${detailEntry.newValue?.winnerId}`}
-                        className="text-violet-400 hover:underline font-semibold"
+                        className="text-amber-400 hover:underline font-semibold"
                         data-testid={`link-detail-winner-${detailEntry.newValue?.winnerId}`}
                       >
                         #{detailEntry.newValue?.winnerId}

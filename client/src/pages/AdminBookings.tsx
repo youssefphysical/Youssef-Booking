@@ -836,7 +836,7 @@ function BookingRow({
                 </span>
                 {b.workoutCategory && (
                   <span
-                    className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-violet-500/20 bg-violet-500/10 text-violet-300"
+                    className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-primary/20 bg-primary/10 text-primary"
                     data-testid={`workout-badge-${b.id}`}
                   >
                     {WORKOUT_CATEGORY_LABELS[

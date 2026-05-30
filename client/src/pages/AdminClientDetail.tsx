@@ -1843,7 +1843,7 @@ function BookingsList({ userId }: { userId: number }) {
                   {PAYMENT_STATUS_LABELS[(b.paymentStatus || "unpaid") as keyof typeof PAYMENT_STATUS_LABELS] || b.paymentStatus || "Unpaid"}
                 </span>
                 {b.workoutCategory && (
-                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                  <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-md border border-primary/20 bg-primary/10 text-primary">
                     {WORKOUT_CATEGORY_LABELS[b.workoutCategory as keyof typeof WORKOUT_CATEGORY_LABELS] || b.workoutCategory}
                   </span>
                 )}
@@ -1856,7 +1856,7 @@ function BookingsList({ userId }: { userId: number }) {
                 )}
                 {b.clientNotes && (
                   <p className="text-[11px]">
-                    <span className="text-blue-300/80 font-semibold">Client: </span>
+                    <span className="text-foreground/50 font-semibold">Client: </span>
                     <span className="text-foreground/80">{b.clientNotes}</span>
                   </p>
                 )}
@@ -1877,17 +1877,17 @@ function BookingsList({ userId }: { userId: number }) {
                     </span>
                   )}
                   {b.sessionPerformance != null && (
-                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-300">
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-foreground/70">
                       Perf {b.sessionPerformance}/10
                     </span>
                   )}
                   {b.sessionSleep != null && (
-                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-indigo-500/20 bg-indigo-500/10 text-indigo-300">
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-foreground/70">
                       Sleep {b.sessionSleep}/10
                     </span>
                   )}
                   {b.sessionAdherence != null && (
-                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-foreground/70">
                       Adherence {b.sessionAdherence}/10
                     </span>
                   )}
@@ -1910,7 +1910,7 @@ function BookingsList({ userId }: { userId: number }) {
                 )}
                 {b.clientVisibleCoachNotes && (
                   <p className="text-[11px]">
-                    <span className="text-blue-300/80 font-semibold">For client: </span>
+                    <span className="text-primary/70 font-semibold">For client: </span>
                     <span className="text-foreground/80">{b.clientVisibleCoachNotes}</span>
                   </p>
                 )}
@@ -1920,7 +1920,7 @@ function BookingsList({ userId }: { userId: number }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-[11px] text-blue-300 hover:bg-blue-500/10"
+                className="h-7 text-[11px] text-primary hover:bg-primary/10"
                 onClick={() => setCoachOpen(b)}
                 data-testid={`button-log-session-${b.id}`}
               >
@@ -2566,7 +2566,7 @@ function PackageAdminControls({ pkg }: { pkg: Package }) {
         }
         if (isTrial) {
           return (
-            <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-2 text-[11px] text-violet-200 flex items-center justify-between gap-2">
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.05] px-3 py-2 text-[11px] text-primary/80 flex items-center justify-between gap-2">
               <span>
                 <Sparkles size={11} className="inline mr-1 -mt-0.5" />
                 Trial / zero-price snapshot — convert to paid package to set price &amp; expiry.

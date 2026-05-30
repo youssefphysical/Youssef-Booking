@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Loader2, Palette, RotateCcw, Save } from "lucide-react";
+import { AdminPageHeader } from "@/components/admin/primitives";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
@@ -119,16 +120,11 @@ export default function AdminTheme() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">System</p>
-          <h1 className="text-3xl font-display font-bold flex items-center gap-3" data-testid="text-theme-title">
-            <Palette size={28} className="text-primary shrink-0" />
-            Theme & Brand Colors
-          </h1>
-          <p className="text-muted-foreground text-sm leading-relaxed mt-1">
-            Adjust the key color tokens. Changes preview live — save to persist across all sessions.
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow="System"
+          title="Theme & Brand Colors"
+          subtitle="Adjust the key color tokens. Changes preview live — save to persist across all sessions."
+        />
 
         {isLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground p-8">

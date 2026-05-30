@@ -43,7 +43,7 @@ function tierColor(tier: string): string {
     case "starter":
       return "bg-sky-500/10 border-sky-400/30 text-sky-200";
     default:
-      return "bg-blue-500/10 border-blue-400/30 text-blue-200";
+      return "bg-white/5 border-white/10 text-foreground/70";
   }
 }
 

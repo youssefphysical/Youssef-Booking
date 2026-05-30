@@ -49,8 +49,8 @@ export function QuickActionsGrid({ onJump }: { onJump: (tab: string) => void }) 
       label: t("dashboard.quick.progress", "View Progress"),
       sub: t("dashboard.quick.progressSub", "Photos, body, trends"),
       onClick: () => onJump("progress"),
-      glow: "from-violet-500/25 via-violet-500/[0.06] to-transparent",
-      ringGlow: "group-hover:ring-violet-400/45 group-hover:text-violet-300",
+      glow: "from-emerald-500/25 via-emerald-500/[0.06] to-transparent",
+      ringGlow: "group-hover:ring-emerald-400/45 group-hover:text-emerald-300",
     },
     {
       testId: "quick-action-coach",

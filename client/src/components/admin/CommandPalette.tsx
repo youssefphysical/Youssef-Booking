@@ -217,7 +217,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                   onSelect={() => go(`/admin/clients/${c.id}`)}
                   data-testid={`palette-client-${c.id}`}
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Users size={16} />
                   </span>
                   <span className="flex flex-col min-w-0">

@@ -31,21 +31,21 @@ const ICONS: Record<NotificationKind, typeof Bell> = {
 };
 
 const ACCENT: Record<NotificationKind, string> = {
-  session_reminder: "text-blue-300",
-  package_expiring: "text-cyan-300",
-  missed_checkin: "text-cyan-300",
+  session_reminder: "text-primary",
+  package_expiring: "text-amber-300",
+  missed_checkin: "text-amber-300",
   nutrition_update: "text-emerald-300",
-  supplement_reminder: "text-purple-300",
-  coach_message: "text-blue-300",
+  supplement_reminder: "text-amber-300",
+  coach_message: "text-primary",
   payment_reminder: "text-rose-300",
-  milestone: "text-cyan-300",
-  waitlist_open: "text-cyan-300",
-  milestone_achieved: "text-cyan-300",
-  waitlist_slot_available: "text-cyan-300",
+  milestone: "text-primary",
+  waitlist_open: "text-primary",
+  milestone_achieved: "text-emerald-300",
+  waitlist_slot_available: "text-primary",
   package_activated: "text-emerald-300",
-  package_activation_requested: "text-cyan-300",
-  admin_message: "text-cyan-300",
-  badge_earned: "text-cyan-300",
+  package_activation_requested: "text-primary",
+  admin_message: "text-primary",
+  badge_earned: "text-primary",
   system: "text-white/70",
 };
 
@@ -93,7 +93,7 @@ function NotificationRow({
             {notif.title}
           </p>
           {unread && (
-            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" aria-label="unread" />
+            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" aria-label="unread" />
           )}
         </div>
         {notif.body && (
@@ -174,7 +174,7 @@ export function NotificationsBell({ className }: { className?: string }) {
             <Bell size={14} className="text-white/70" />
             <h3 className="text-sm font-semibold text-white">Notifications</h3>
             {count > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-medium">
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
                 {count} new
               </span>
             )}
@@ -185,7 +185,7 @@ export function NotificationsBell({ className }: { className?: string }) {
               data-testid="button-notifications-mark-all-read"
               onClick={() => markAll.mutate()}
               disabled={markAll.isPending}
-              className="text-[11px] text-blue-300 hover:text-blue-200 inline-flex items-center gap-1 disabled:opacity-50"
+              className="text-[11px] text-primary hover:text-primary/80 inline-flex items-center gap-1 disabled:opacity-50"
             >
               <CheckCheck size={12} /> Mark all read
             </button>

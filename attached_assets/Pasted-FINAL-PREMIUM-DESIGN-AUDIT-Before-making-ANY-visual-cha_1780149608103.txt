@@ -1,0 +1,255 @@
+FINAL PREMIUM DESIGN AUDIT
+
+Before making ANY visual changes, perform a full platform-wide design audit.
+
+DO NOT modify business logic.
+DO NOT modify database.
+DO NOT modify booking rules.
+DO NOT modify authentication.
+DO NOT modify payments.
+
+This task is ONLY visual/UX/design-system review.
+
+====================================================
+PHASE 1 — VISUAL CONSISTENCY AUDIT
+====================================================
+
+Review EVERY admin page and EVERY client-facing page.
+
+Check:
+
+- spacing consistency
+- card spacing
+- card heights
+- border radius consistency
+- icon sizing consistency
+- button sizing consistency
+- typography hierarchy
+- section spacing
+- empty states
+- loading states
+- status badges
+- tab navigation
+- sticky headers
+- mobile navigation
+- desktop navigation
+
+Find any page that visually feels different from the rest of the platform.
+
+Create a list of inconsistencies before changing anything.
+
+====================================================
+PHASE 2 — SAFE AREA & RESPONSIVE AUDIT
+====================================================
+
+Audit layouts on:
+
+- Android phones
+- iPhone devices
+- iPad
+- Tablet landscape
+- Laptop 1366px
+- Desktop 1920px
+- Large iMac screens
+
+Verify:
+
+- no text touching screen edges
+- no cards touching screen edges
+- no horizontal overflow
+- no clipped buttons
+- no hidden actions
+- no overlapping components
+- no cut-off dropdowns
+- no cut-off dialogs
+- no scroll conflicts
+
+Use proper safe areas.
+
+Every page must feel balanced on all screen sizes.
+
+====================================================
+PHASE 3 — PREMIUM SAAS FEEL AUDIT
+====================================================
+
+Evaluate every page as if this platform were:
+
+- Stripe Dashboard
+- HubSpot
+- Notion
+- Linear
+- Trainerize
+
+Ask:
+
+Does this page feel premium?
+
+Does this page feel trustworthy?
+
+Does this page feel expensive?
+
+Does this page feel polished?
+
+If not:
+
+identify exactly why.
+
+Do not redesign.
+Improve only where necessary.
+
+====================================================
+PHASE 4 — TRON LEGACY DESIGN SYSTEM REVIEW
+====================================================
+
+Preserve the existing Tron Legacy identity.
+
+Rules:
+
+Primary Brand Color:
+Cyan / Electric Blue
+
+Background:
+Deep black / dark navy
+
+Do NOT introduce random colors.
+
+Use semantic colors only:
+
+SUCCESS
+Green
+
+WARNING
+Amber
+
+ERROR
+Red
+
+INFO
+Brand Cyan
+
+NEUTRAL
+Gray
+
+Verify every badge, alert, status, card and action follows these rules.
+
+No color should fight with the Tron identity.
+
+====================================================
+PHASE 5 — DESIGN LANGUAGE AUDIT
+====================================================
+
+Review:
+
+- cards
+- tables
+- forms
+- filters
+- dropdowns
+- modals
+- drawers
+- empty states
+- analytics widgets
+- dashboard widgets
+
+Ensure:
+
+same radius family
+
+same shadow family
+
+same border system
+
+same spacing system
+
+same interaction system
+
+same hover system
+
+same focus system
+
+same active system
+
+same disabled system
+
+If duplicates exist, standardize them.
+
+====================================================
+PHASE 6 — ADMIN PANEL REVIEW
+====================================================
+
+Audit:
+
+Dashboard
+Clients
+Leads
+Bookings
+Packages
+Analytics
+Settings
+Media
+Recovery
+Command Center
+Integrity Checker
+System Health
+Audit Logs
+
+Check:
+
+- hierarchy
+- readability
+- information density
+- scan speed
+- mobile usability
+- desktop usability
+
+Ensure no page feels unfinished.
+
+====================================================
+PHASE 7 — CLIENT EXPERIENCE REVIEW
+====================================================
+
+Audit client-facing pages.
+
+Check:
+
+- onboarding
+- booking flow
+- package views
+- nutrition area
+- profile area
+- session history
+- notifications
+- forms
+
+Goal:
+
+Client must feel:
+
+"this is a premium coaching platform"
+
+not
+
+"this is a custom hobby project"
+
+====================================================
+PHASE 8 — FINAL REPORT
+====================================================
+
+After auditing everything:
+
+Provide a report with:
+
+1. Critical issues found
+2. Medium issues found
+3. Minor polish issues found
+4. Changes made
+5. Screens affected
+6. Screens already perfect
+7. Production readiness score out of 100
+
+Do not stop after code inspection.
+
+Actually inspect the rendered UI components and layouts before concluding.
+
+Goal:
+Achieve a production-grade premium coaching platform with consistent Tron Legacy design language across all devices.

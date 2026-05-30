@@ -22,7 +22,7 @@ function daysUntil(d?: string | Date | null): number | null {
 function tierBadgeFor(type: string): { label: string; cls: string } {
   const t = type.toLowerCase();
   if (t.includes("platinum"))
-    return { label: "Platinum Package", cls: "border-violet-400/40 text-violet-300 bg-violet-400/[0.06]" };
+    return { label: "Platinum Package", cls: "border-slate-300/40 text-slate-300 bg-slate-300/[0.06]" };
   if (t.includes("gold"))
     return { label: "Gold Package", cls: "border-amber-400/40 text-amber-300 bg-amber-400/[0.06]" };
   if (t.includes("silver"))

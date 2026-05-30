@@ -71,11 +71,11 @@ export default function AdminRecoveryPage() {
   return (
     <div className="admin-shell">
       <div className="admin-container space-y-5" data-testid="page-admin-recovery">
-      <AdminPageHeader
-        eyebrow="Recovery"
-        title={t("admin.recovery.title", "Recovery requests")}
-        subtitle={t("admin.recovery.subtitle", "Schedule and complete client recovery / mobility requests.")}
-      />
+        <AdminPageHeader
+          eyebrow="Recovery"
+          title={t("admin.recovery.title", "Recovery requests")}
+          subtitle={t("admin.recovery.subtitle", "Schedule and complete client recovery / mobility requests.")}
+        />
 
       {isLoading ? (
         <div className="admin-shimmer h-24 rounded-2xl" />
@@ -202,7 +202,7 @@ export default function AdminRecoveryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
       </div>
+    </div>
   );
 }

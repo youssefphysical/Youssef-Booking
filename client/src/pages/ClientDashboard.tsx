@@ -597,10 +597,10 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           </p>
         </div>
         <div
-          className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-3"
+          className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3"
           data-testid="block-sameday-remaining"
         >
-          <p className="text-[10px] uppercase tracking-wider text-blue-200/80 inline-flex items-center gap-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-amber-300/80 inline-flex items-center gap-1.5">
             <Clock size={11} /> {t("dashboard.sameDayAdjustments")}
           </p>
           <p className="text-lg font-display font-bold mt-1">
@@ -860,7 +860,7 @@ function BookingCard({
             </span>
             {booking.workoutCategory && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-blue-500/30 bg-blue-500/10 text-blue-300"
+                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-primary/30 bg-primary/10 text-primary"
                 data-testid={`workout-chip-${booking.id}`}
               >
                 <Dumbbell size={10} />
@@ -874,7 +874,7 @@ function BookingCard({
             )}
             {booking.rescheduledFrom && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300"
+                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300"
                 title={`Originally ${booking.rescheduledFrom}`}
               >
                 <Clock size={10} /> {t("dashboard.chipAdjusted")}
@@ -898,8 +898,8 @@ function BookingCard({
       </div>
 
       {(booking as any).clientVisibleCoachNotes && (
-        <div className="basis-full mt-1 px-3 py-2 rounded-lg border border-blue-500/20 bg-blue-500/10">
-          <div className="text-[10px] uppercase tracking-wider text-blue-300/80 font-semibold mb-1">
+        <div className="basis-full mt-1 px-3 py-2 rounded-lg border border-primary/20 bg-primary/[0.07]">
+          <div className="text-[10px] uppercase tracking-wider text-primary/70 font-semibold mb-1">
             Coach notes
           </div>
           <p className="text-xs text-foreground/90 whitespace-pre-wrap">
@@ -952,7 +952,7 @@ function BookingCard({
             <Button
               variant="ghost"
               size="sm"
-              className="text-blue-300 hover:text-blue-200 hover:bg-blue-500/10 text-xs"
+              className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 text-xs"
               onClick={() => setAdjustOpen(true)}
               data-testid={`button-same-day-adjust-${booking.id}`}
             >
@@ -1116,7 +1116,7 @@ function SameDayAdjustDialog({
       <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="text-blue-300" size={18} />
+            <Clock className="text-primary" size={18} />
             {t("dashboard.adjustTitle")}
           </DialogTitle>
           <DialogDescription>
@@ -1156,7 +1156,7 @@ function SameDayAdjustDialog({
           <Button
             disabled={!slot || submitting}
             onClick={() => slot && onSubmit(slot)}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-primary hover:bg-primary/90 text-black"
             data-testid="button-adjust-confirm"
           >
             {submitting && <Loader2 size={14} className="mr-1.5 animate-spin" />}

@@ -150,7 +150,7 @@ function CompareSlider({
           <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/65 text-white text-[11px] font-medium tracking-wider uppercase pointer-events-none">
             Before · {beforeDate}
           </div>
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-blue-500/85 text-white text-[11px] font-medium tracking-wider uppercase pointer-events-none">
+          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md bg-primary/80 text-black text-[11px] font-medium tracking-wider uppercase pointer-events-none">
             After · {afterDate}
           </div>
         </div>

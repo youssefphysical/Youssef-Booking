@@ -939,7 +939,7 @@ export function ServiceCardEditor({ cardKey, label, desc, settings }: {
               title="Toggle mobile crop zone"
               className={`inline-flex items-center gap-1.5 px-2 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-200 ${
                 showMobileZone
-                  ? "bg-orange-500/20 text-orange-400 border-orange-500/35"
+                  ? "bg-amber-500/20 text-amber-400 border-amber-500/35"
                   : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
               }`}
             >

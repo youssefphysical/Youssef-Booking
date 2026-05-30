@@ -762,7 +762,7 @@ export default function AdminDataCenter() {
                               statusLabel === "active"
                                 ? "border-[hsl(183,100%,74%)]/40 text-[hsl(183,100%,74%)]"
                                 : statusLabel === "Frozen"
-                                  ? "border-blue-400/40 text-blue-300"
+                                  ? "border-white/20 text-foreground/50"
                                   : statusLabel === "Expired"
                                     ? "border-red-400/40 text-red-300"
                                     : "border-white/10 text-white/60"

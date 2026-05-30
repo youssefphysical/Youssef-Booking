@@ -216,7 +216,7 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <Label className="text-xs flex items-center gap-1.5 text-blue-300/90">
+              <Label className="text-xs flex items-center gap-1.5 text-primary/80">
                 <Eye size={12} /> Share with client
               </Label>
               <Switch
@@ -237,7 +237,7 @@ export default function CoachNotesDialog({ open, onOpenChange, booking }: CoachN
                   ? "Encouragement, takeaways, focus for next session — surfaces on the client's booking card."
                   : "Toggle on to share encouragement or focus points with the client."
               }
-              className="bg-white/5 border-blue-500/20 disabled:opacity-50"
+              className="bg-white/5 border-primary/20 disabled:opacity-50"
               disabled={!form.shareWithClient}
               data-testid="textarea-client-visible-notes"
             />

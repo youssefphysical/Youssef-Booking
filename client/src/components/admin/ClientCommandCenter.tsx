@@ -80,7 +80,7 @@ const CHANGE_META: Record<RecentChangeKind, { icon: React.ReactNode; tone: strin
   checkin: { icon: <ClipboardList size={12} />, tone: "text-sky-300" },
   body_metric: { icon: <Scale size={12} />, tone: "text-cyan-300" },
   package: { icon: <Sparkles size={12} />, tone: "text-cyan-300" },
-  coach_note: { icon: <Activity size={12} />, tone: "text-violet-300" },
+  coach_note: { icon: <Activity size={12} />, tone: "text-primary" },
   renewal: { icon: <Sparkles size={12} />, tone: "text-cyan-300" },
 };
 
