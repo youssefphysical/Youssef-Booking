@@ -459,7 +459,17 @@ async function recomputeVipTier(userId: number): Promise<string> {
 const UPLOAD_ROOT = path.resolve(process.cwd(), "uploads");
 for (const sub of ["photos", "brand", "heroes"]) {
   const full = path.join(UPLOAD_ROOT, sub);
-  if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
+  try {
+    if (!fs.existsSync(full)) fs.mkdirSync(full, { recursive: true });
+  } catch (e) {
+    // Serverless / read-only filesystem (e.g. Vercel /var/task) — local upload
+    // dirs are not available. All production assets are served from stored URLs;
+    // the /uploads static route will simply return 404 for any local-path request.
+    console.warn(
+      `[uploads] cannot create ${full} — read-only fs, continuing:`,
+      (e as Error).message,
+    );
+  }
 }
 
 // Strict MIME allowlists. (lab
