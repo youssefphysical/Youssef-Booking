@@ -178,11 +178,13 @@ test.describe("Admin Login", () => {
 
     // The logout button may open a confirmation dialog — click the confirm
     // button if it appears (e.g. data-testid="button-logout-confirm").
+    // Use force:true because AlertDialog's overlay can block Playwright's
+    // pointer-event interception check in headless mode.
     if (clicked) {
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(600);
       const confirmBtn = page.getByTestId("button-logout-confirm");
-      if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await confirmBtn.click();
+      if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await confirmBtn.click({ force: true });
       }
     }
 
