@@ -1248,7 +1248,7 @@ function CreateBookingButton() {
           <Plus size={16} className="mr-1.5" /> {t("admin.bookings.add")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-white/10 sm:rounded-3xl">
+      <DialogContent className="bg-card border-white/10 sm:rounded-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("admin.bookings.addTitle")}</DialogTitle>
         </DialogHeader>
@@ -1459,7 +1459,7 @@ function LinkPartnerButton({ booking }: { booking: BookingWithUser }) {
           {isLinked ? <Link2 size={14} /> : <UserPlus size={14} />}
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-card border-white/10 max-w-lg">
+      <DialogContent className="bg-card border-white/10 max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isLinked

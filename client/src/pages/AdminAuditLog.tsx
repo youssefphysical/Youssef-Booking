@@ -292,7 +292,7 @@ export default function AdminAuditLog() {
 
         {/* Detail drawer */}
         <Dialog open={!!detailEntry} onOpenChange={(o) => !o && setDetailEntry(null)}>
-          <DialogContent className="bg-card border-white/10 max-w-lg sm:rounded-2xl">
+          <DialogContent className="bg-card border-white/10 max-w-lg sm:rounded-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-base flex items-center gap-2">
                 {detailEntry && <ActionIcon action={detailEntry.action} />}

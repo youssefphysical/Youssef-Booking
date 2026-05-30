@@ -14,6 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 import { useTransformations } from "@/hooks/use-transformations";
+import { PremiumEmptyState } from "@/components/dashboard/PremiumEmptyState";
 import { useTranslation } from "@/i18n";
 import { cn } from "@/lib/utils";
 import type { Transformation } from "@shared/schema";
@@ -483,15 +484,12 @@ export default function TransformationsGallery() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] py-20 px-6 text-center">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-muted-foreground/70 mb-4">
-              <Sparkles size={26} />
-            </div>
-            <h3 className="font-display font-bold text-lg">{t("gallery.emptyTitle", "No transformations match this filter")}</h3>
-            <p className="text-muted-foreground text-sm mt-1.5 max-w-md mx-auto">
-              {t("gallery.emptyBody", "Try a different goal — or come back soon, more wins coming.")}
-            </p>
-          </div>
+          <PremiumEmptyState
+            icon={<Sparkles size={26} />}
+            title={t("gallery.emptyTitle", "No transformations match this filter")}
+            body={t("gallery.emptyBody", "Try a different goal — or come back soon, more wins coming.")}
+            className="rounded-3xl border border-white/8 bg-white/[0.03] py-20"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((row, i) => (
