@@ -416,7 +416,7 @@ export default function AdminManagementAnalysis() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-5 sm:space-y-7">
+      <div className="admin-container space-y-5">
       <AdminPageHeader
         eyebrow="Insights"
         title="Management & Analysis"

@@ -1,0 +1,175 @@
+FINAL VISUAL RHYTHM + PREMIUM POLISH AUDIT
+
+IMPORTANT:
+
+Do NOT touch:
+
+- business logic
+- database
+- authentication
+- payments
+- booking rules
+- package rules
+- APIs
+
+This audit is ONLY for final visual polish and cross-device verification.
+
+====================================================
+PHASE 1 — IPHONE & IOS AUDIT
+====================================================
+
+Verify visually on:
+
+- iPhone 15
+- iPhone 15 Pro
+- iPhone 15 Pro Max
+- iPhone with Dynamic Island
+
+Check:
+
+- top safe area
+- dynamic island spacing
+- sticky headers
+- tab navigation
+- modals
+- dropdowns
+- bottom navigation
+- floating buttons
+
+Confirm no content touches device cutouts.
+
+====================================================
+PHASE 2 — LARGE SCREEN AUDIT
+====================================================
+
+Audit:
+
+- 1920px desktop
+- 2560px desktop
+- 4K displays
+- ultra-wide monitors
+
+Verify:
+
+- cards do not become excessively wide
+- content remains readable
+- sections maintain proper max-width
+- analytics widgets remain balanced
+- empty spaces do not feel awkward
+- dashboard remains premium
+
+Apply max-width constraints only where needed.
+
+====================================================
+PHASE 3 — VISUAL RHYTHM AUDIT
+====================================================
+
+Review every page.
+
+Verify:
+
+- section spacing consistency
+- card spacing consistency
+- header spacing consistency
+- grid alignment consistency
+- widget alignment consistency
+- vertical rhythm consistency
+
+Questions:
+
+Does every page follow the same spacing language?
+
+Do sections feel evenly distributed?
+
+Do cards align on the same visual grid?
+
+Fix any inconsistencies.
+
+====================================================
+PHASE 4 — EMPTY STATE SYSTEM AUDIT
+====================================================
+
+Review all empty states.
+
+Examples:
+
+- No Leads
+- No Clients
+- No Bookings
+- No Sessions
+- No Packages
+- No Notifications
+- No Nutrition Plans
+- No Analytics Data
+- No Search Results
+
+Verify:
+
+- same icon language
+- same spacing
+- same typography
+- same action button style
+- same Tron Legacy appearance
+
+Standardize if inconsistent.
+
+====================================================
+PHASE 5 — PREMIUM SAAS FEEL
+====================================================
+
+Evaluate every admin page.
+
+Ask:
+
+Would this screen look natural inside:
+
+- Stripe
+- Linear
+- Notion
+- HubSpot
+- Trainerize
+
+If any screen feels unfinished:
+
+identify exactly why.
+
+Improve only the visual polish.
+
+Do NOT redesign.
+
+====================================================
+PHASE 6 — MICRO POLISH
+====================================================
+
+Review:
+
+- button alignment
+- icon alignment
+- badge alignment
+- dropdown spacing
+- modal spacing
+- table spacing
+- filter spacing
+- card title spacing
+
+Remove any visual rough edges.
+
+====================================================
+PHASE 7 — FINAL REPORT
+====================================================
+
+Return:
+
+1. Critical issues found
+2. Medium issues found
+3. Minor polish issues found
+4. Changes made
+5. Pages reviewed
+6. Pages already perfect
+7. Final production readiness score
+
+Do not claim completion until all audited pages have been visually reviewed.
+
+Goal:
+
+Final production-grade premium coaching platform with consistent Tron Legacy design language across all devices and screen sizes.

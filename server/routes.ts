@@ -2216,6 +2216,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.warn("[booking] consent log failed:", e);
     }
 
+    invalidateStatsCache();
     res.status(201).json(sanitizeBookingForUser(me, booking));
   });
 
@@ -3632,6 +3633,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         { userId: booking.userId, status: newStatus, cancelledAt: new Date().toISOString() });
     }
 
+    invalidateStatsCache();
     res.json(sanitizeBookingForUser(me, updated));
   });
 
@@ -5251,6 +5253,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       } as any);
     } catch {/* ignore */}
     void dispatchAdminPackageActivatedEmail({ pkg: created, source: "new" });
+    invalidateStatsCache();
     res.status(201).json(created);
   });
 
@@ -5261,6 +5264,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid update" });
     }
     const updated = await storage.updatePackage(id, parsed.data as any);
+    invalidateStatsCache();
     res.json(updated);
   });
 
@@ -5280,6 +5284,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
         } as any);
       } catch {/* best-effort audit */}
     }
+    invalidateStatsCache();
     res.sendStatus(204);
   });
 
@@ -7622,6 +7627,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       decidedByUserId: me.id,
       decidedAt: new Date(),
     });
+    invalidateStatsCache();
     res.json(updated);
   });
 
@@ -7718,6 +7724,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       decidedByUserId: me.id,
       decidedAt: new Date(),
     });
+    invalidateStatsCache();
     res.json(updated);
   });
 
@@ -7833,6 +7840,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       }
     }
 
+    invalidateStatsCache();
     res.json(updated);
   });
 
