@@ -69,7 +69,7 @@ const SEVERITY_META: Record<
   { dot: string; ring: string; tone: string }
 > = {
   critical: { dot: "bg-rose-400", ring: "ring-rose-400/30", tone: "text-rose-200" },
-  warning: { dot: "bg-cyan-400", ring: "ring-cyan-400/30", tone: "text-cyan-200" },
+  warning: { dot: "bg-amber-400", ring: "ring-amber-400/30", tone: "text-amber-200" },
   watch: { dot: "bg-sky-400", ring: "ring-sky-400/30", tone: "text-sky-200" },
   info: { dot: "bg-zinc-400", ring: "ring-zinc-400/30", tone: "text-zinc-200" },
 };

@@ -82,9 +82,9 @@ export function paymentColor(payment: string): string {
     case "paid":
       return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
     case "unpaid":
-      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "pending":
-      return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "direct_payment_requested":
       return "bg-violet-500/15 text-violet-300 border-violet-500/30";
     case "free":

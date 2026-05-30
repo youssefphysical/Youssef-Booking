@@ -800,12 +800,12 @@ export default function BookingPage() {
                         </span>
                       )}
                       {state === "tooSoon" && (
-                        <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-cyan-400/70">
+                        <span className="absolute top-1 right-1 text-[9px] uppercase tracking-wider text-amber-400/70">
                           {t("booking.slotTooSoon")}
                         </span>
                       )}
                       {state === "blocked" && (
-                        <Lock size={10} className="absolute top-1 right-1 text-cyan-400/80" />
+                        <Lock size={10} className="absolute top-1 right-1 text-muted-foreground/50" />
                       )}
                     </button>
                     {/* Task #55: Waitlist join/leave pill rendered as a

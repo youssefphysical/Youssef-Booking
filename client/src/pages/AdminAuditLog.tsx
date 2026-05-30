@@ -61,7 +61,7 @@ export default function AdminAuditLog() {
       if (!res.ok) throw new Error("Failed to load");
       return res.json();
     },
-    refetchInterval: isActive ? false : false,
+    refetchInterval: false,
   });
 
   const rows = useMemo(() => {

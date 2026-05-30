@@ -1,0 +1,268 @@
+FINAL PROMPT — Professional Design Polish + Full QA Review
+
+Act as a senior software engineer and product designer.
+Your task is to professionally review, polish, test, and fix the entire platform with extreme attention to detail.
+
+IMPORTANT RULES:
+
+- Do NOT add unnecessary new features.
+- Do NOT make the system more complicated.
+- Do NOT change business logic unless there is a real bug.
+- Do NOT delete any important tool or data.
+- Do NOT reduce image quality.
+- Do NOT reintroduce base64 image payloads.
+- Keep the Tron Legacy premium style, but clean, professional, and not over-designed.
+
+Main goal:
+Make the platform feel fully ready for real clients and daily admin use.
+
+==================================================
+
+1. GLOBAL DESIGN POLISH
+   ==================================================
+
+Review every admin and client-facing page.
+
+Fix:
+
+- inconsistent spacing
+- clipped titles
+- clipped tabs
+- crowded cards
+- oversized empty areas
+- buttons hidden under bottom navigation
+- FAB covering controls
+- inconsistent card padding
+- inconsistent badge colors
+- inconsistent button styles
+- weak mobile readability
+
+Keep the design:
+
+- premium
+- clean
+- mobile-first
+- Tron Legacy inspired
+- professional fitness SaaS, not gaming
+
+Color meaning:
+
+- Cyan = brand / active / selected / primary action
+- Green = success / paid / completed / active
+- Amber = pending / warning / needs attention
+- Red = danger / failed / delete / expired
+- Grey = inactive / archived / disabled
+- Purple only for VIP / elite if already used
+
+Do not use colors randomly.
+
+==================================================
+2. ADMIN PANEL QA
+
+Test and polish:
+
+Dashboard:
+
+- daily brief
+- smart alerts
+- quick actions
+- upcoming sessions
+- cards and stats
+
+Clients:
+
+- search
+- filters
+- client cards
+- open profile
+- WhatsApp button
+- badges
+- active package info
+
+Bookings:
+
+- booking list
+- status change
+- payment status
+- log
+- reschedule
+- delete confirmation
+- mobile action layout
+
+Sessions & Packages:
+
+- package cards
+- verification queue
+- remaining sessions
+- bonus sessions
+- pending activation display
+
+Media:
+
+- hero slider
+- service images
+- branding/logos
+- profile/bio
+- save states
+- unsaved-change protection
+- edit locks
+- image preview quality
+
+More Hub:
+
+- groups are clear
+- no clutter
+- tools are easy to find
+- advanced tools are protected
+
+Settings:
+
+- only real settings remain
+- no duplicate media controls
+- booking rules and payment info still work
+
+Audit Log:
+
+- readable entries
+- filters work
+- merge and repair actions visible
+- no raw confusing technical UI unless necessary
+
+Integrity Checker:
+
+- never show failed and all-clean at the same time
+
+Command Center:
+
+- if unavailable, show clean unavailable state, not broken raw error
+
+Leads:
+
+- filters are compact
+- empty state looks intentional
+- clear filters action exists
+
+==================================================
+3. CLIENT EXPERIENCE QA
+
+Review the client-facing experience like a real paying client.
+
+Test:
+
+- landing page
+- login
+- register
+- booking flow
+- package display
+- remaining sessions
+- bonus sessions
+- session history
+- nutrition/supplement areas
+- WhatsApp/contact buttons
+- emails if applicable
+- mobile layout
+
+Client must feel:
+
+- premium
+- clear
+- confident
+- not confused
+- not inside an unfinished system
+
+Fix anything that feels cheap, confusing, broken, clipped, or unfinished.
+
+==================================================
+4. MOBILE-FIRST REQUIREMENTS
+
+Mobile is priority.
+
+Verify on mobile width:
+
+- no horizontal overflow
+- no clipped nav items
+- no clipped headings
+- no buttons under bottom nav
+- no FAB overlap
+- every touch target at least 44px
+- dropdowns with many options use bottom sheet
+- long text collapses where needed
+- empty states are compact
+
+==================================================
+5. SAFETY / DATA / SECURITY CHECK
+
+Verify:
+
+- admin routes are protected
+- advanced tools are protected
+- client cannot access other clients’ data
+- merge/delete/repair actions require confirmation
+- dangerous actions are audit-logged
+- unsaved changes warning works
+- no accidental data mutation during navigation
+- no real client/session/package/payment data is changed during this polish unless fixing a confirmed bug
+
+==================================================
+6. PERFORMANCE / NEON PROTECTION
+
+Verify:
+
+- no image blobs in normal API responses
+- no base64 images in public API payloads
+- APIs use image URLs
+- lists use pagination/search/load more where needed
+- no polling on hidden pages
+- no unnecessary refetch loops
+- analytics and heavy pages lazy-load
+- API response warning remains active in development
+- image quality remains high
+
+==================================================
+7. FINAL REAL-WORLD TEST SCENARIOS
+
+Run or manually verify these flows:
+
+Admin:
+
+1. Login as admin
+2. Open Dashboard
+3. Open Clients
+4. Search client
+5. Open client profile
+6. Add/edit package if available
+7. Add bonus sessions if available
+8. Book a session
+9. Reschedule a session
+10. Cancel/delete with confirmation
+11. Change payment/status
+12. Open Media and save a small edit
+13. Navigate away with unsaved edits and confirm warning
+14. Open More Hub tools
+15. Confirm Audit Log shows important actions
+
+Client:
+
+1. Register/login
+2. Book a session
+3. View package/session balance
+4. Contact via WhatsApp
+5. Navigate on mobile without confusion
+
+==================================================
+8. FINAL REPORT REQUIRED
+
+After finishing, provide a professional report with:
+
+1. Pages reviewed.
+2. UI/UX fixes applied.
+3. Mobile issues fixed.
+4. Bugs found and fixed.
+5. Bugs found but intentionally not changed.
+6. Confirmation no business logic changed unless explicitly listed.
+7. Confirmation no data was deleted.
+8. Confirmation image quality was not reduced.
+9. Confirmation no base64/blob payloads were reintroduced.
+10. Confirmation the platform is ready for real admin/client testing.
+
+If anything is risky or unclear, stop and explain before changing it.

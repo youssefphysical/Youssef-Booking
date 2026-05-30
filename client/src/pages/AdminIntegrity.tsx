@@ -21,7 +21,7 @@ type Payload = { warnings: Warning[]; generatedAt: string };
 
 const SEVERITY_STYLES: Record<Warning["severity"], { bg: string; text: string; icon: React.ReactNode; label: string }> = {
   info: { bg: "bg-sky-500/15", text: "text-sky-300", icon: <Info size={16} />, label: "Info" },
-  warning: { bg: "bg-cyan-500/15", text: "text-cyan-300", icon: <AlertTriangle size={16} />, label: "Warning" },
+  warning: { bg: "bg-amber-500/15", text: "text-amber-300", icon: <AlertTriangle size={16} />, label: "Warning" },
   critical: { bg: "bg-red-500/15", text: "text-red-300", icon: <AlertOctagon size={16} />, label: "Critical" },
 };
 
@@ -63,17 +63,35 @@ export default function AdminIntegrity() {
         </div>
       </div>
 
-      {error ? (
-        <AdminCard>
-          <p className="text-sm text-red-300" data-testid="text-integrity-error">
-            Failed to load integrity report.
-          </p>
-        </AdminCard>
-      ) : null}
-
       {isLoading ? (
         <AdminSkeletonStack count={5} height="h-24" />
-      ) : !error && !data?.warnings?.length ? (
+      ) : error ? (
+        <AdminCard testId="card-integrity-error">
+          <div className="flex items-start gap-4 py-1">
+            <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400">
+              <RefreshCw size={18} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" data-testid="text-integrity-error">
+                Could not load integrity report
+              </p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">
+                This is usually transient. Refresh to try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                data-testid="button-retry-integrity"
+                className="inline-flex items-center gap-1.5 h-8 px-3 mt-3 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={isFetching ? "animate-spin" : ""} />
+                Try again
+              </button>
+            </div>
+          </div>
+        </AdminCard>
+      ) : !data?.warnings?.length ? (
         <AdminEmptyState
           icon={<ShieldCheck size={28} />}
           title="All clean"

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Trash2, Plus, CreditCard, Eye, EyeOff, ExternalLink } from "lucide-react";
-import { AdminBadge } from "@/components/admin/primitives";
+import { AdminBadge, AdminPageHeader } from "@/components/admin/primitives";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useFeatureFlags } from "@/lib/featureFlags";
@@ -69,13 +69,12 @@ export default function AdminSettings() {
   return (
     <div className="admin-shell">
       <div className="admin-container">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.25em] text-primary mb-2">{t("admin.settingsPage.kicker")}</p>
-          <h1 className="text-3xl font-display font-bold" data-testid="text-settings-title">
-            {t("admin.settingsPage.title")}
-          </h1>
-          <p className="text-muted-foreground text-sm leading-relaxed">{t("admin.settingsPage.subtitle")}</p>
-        </div>
+        <AdminPageHeader
+          eyebrow={t("admin.settingsPage.kicker")}
+          title={t("admin.settingsPage.title")}
+          subtitle={t("admin.settingsPage.subtitle")}
+          testId="text-settings-title"
+        />
 
         <div className="admin-stack">
           <FeatureFlagsSection />
