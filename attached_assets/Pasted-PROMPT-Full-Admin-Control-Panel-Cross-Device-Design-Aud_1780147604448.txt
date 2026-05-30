@@ -1,0 +1,342 @@
+PROMPT — Full Admin / Control Panel Cross-Device Design Audit
+
+Act as a senior front-end engineer, product designer, and QA reviewer.
+
+Before starting any client-side audit, perform a full professional design and layout audit of the entire Admin / Control Panel across:
+
+- Android mobile
+- iPhone / iOS mobile
+- iPad / tablet if applicable
+- Desktop laptop
+- Large desktop / iMac screens
+
+IMPORTANT:
+Do NOT add new features.
+Do NOT change business logic.
+Do NOT change booking, package, payment, auth, client, or admin data logic.
+Do NOT delete tools.
+Do NOT reduce image quality.
+This task is UI/UX consistency, responsive layout, spacing, safety areas, and professional polish only.
+
+MAIN GOAL:
+Make the Admin / Control Panel feel fully professional, premium, clean, consistent, and safe to use on every device and operating system.
+
+==================================================
+
+1. REVIEW EVERY ADMIN PAGE
+   ==================================================
+
+Review and fix layout/design consistency for:
+
+- Admin Dashboard
+- Daily Brief modal
+- Clients
+- Client Profile / Client Details
+- Bookings
+- Sessions & Packages
+- Leads
+- Media Manager
+- Branding / Logo controls
+- Hero Slider controls
+- Service image controls
+- Settings
+- More Hub
+- Analytics
+- Command Center
+- Recovery Center
+- Integrity Checker
+- Audit Log
+- Merge Clients
+- Repair Expired Sessions
+- Any admin modal, drawer, sheet, dropdown, confirmation dialog, and empty state
+
+==================================================
+2. SAFE AREA + SCREEN EDGES
+
+Mobile and tablet safe-area rules:
+
+- No text should be too close to the left or right screen edge.
+- No card should touch the screen edge.
+- No button should be hidden behind the bottom navigation.
+- No floating action button should cover important controls.
+- No modal content should touch browser UI areas.
+- Add proper safe-area padding using env(safe-area-inset-*).
+- On mobile, use at least 20px horizontal page padding.
+- On small screens, maintain comfortable breathing room around all content.
+- Headers must not be clipped.
+- Long titles must wrap cleanly or truncate intentionally with tooltip/details if needed.
+
+Desktop and iMac rules:
+
+- Content must not become too wide.
+- Use max-width containers where needed.
+- Avoid stretched cards across huge screens.
+- Large screens should use balanced grids, not oversized empty panels.
+- Keep visual hierarchy clear.
+
+==================================================
+3. CARD CONSISTENCY
+
+Audit all cards.
+
+Fix:
+
+- inconsistent border radius
+- inconsistent card padding
+- inconsistent card spacing
+- inconsistent border colors
+- inconsistent shadows/glows
+- inconsistent icon sizing
+- inconsistent title/subtitle alignment
+- cards that look too crowded
+- cards that look too empty
+- cards that stretch badly on desktop
+
+Card system should be:
+
+Primary cards:
+Important daily information.
+
+Secondary cards:
+Supportive metrics/details.
+
+Utility cards:
+Actions/tools/settings.
+
+Rules:
+
+- Same card type = same visual style everywhere.
+- Use Tron cyan subtly for active/selected/primary.
+- Do not add heavy neon glow everywhere.
+- Keep premium dark Tron Legacy style.
+
+==================================================
+4. COLOR CONSISTENCY
+
+Review all colors across Admin Panel.
+
+Color meaning must be consistent:
+
+- Cyan = brand, active, selected, primary actions
+- Green = paid, completed, success, active, healthy
+- Amber/Yellow = pending, warning, needs attention
+- Red = danger, failed, delete, expired, urgent
+- Grey = disabled, inactive, archived, empty
+- Purple = VIP / Elite only if already used
+
+Fix any status color that gives the wrong meaning.
+
+Examples:
+
+- “Soon” should not look like brand cyan if it is not active.
+- “Blocked” should not look positive.
+- “Failed” must not be cyan.
+- “Completed” should not be amber.
+- “Paid” should be green.
+- “Pending” should be amber.
+
+Do not use random colors.
+Every color must communicate meaning.
+
+==================================================
+5. SPACING SYSTEM
+
+Standardize spacing across all pages.
+
+Check and fix:
+
+- Page top spacing
+- Header spacing
+- Section spacing
+- Card spacing
+- Grid gaps
+- Form gaps
+- Button gaps
+- Modal padding
+- Drawer padding
+- Bottom spacing above navigation
+- Empty-state spacing
+
+Mobile:
+
+- Page padding: minimum 20px
+- Card padding: 18–22px
+- Section gap: 24–32px
+- Bottom safe spacer: enough so bottom nav/FAB never covers controls
+
+Desktop:
+
+- Use consistent max width
+- Use grid layouts where appropriate
+- Do not allow content to look randomly scattered
+
+==================================================
+6. NAVIGATION + SCROLL BEHAVIOR
+
+Review all scroll behavior.
+
+Fix:
+
+- scrollbars appearing in awkward places
+- nested scroll areas that feel broken
+- horizontal scroll without clear purpose
+- tab strips clipping labels
+- active tab not visible
+- sticky elements covering content
+- bottom navigation covering final buttons
+- modals that scroll incorrectly
+- drawers/sheets that trap content badly
+
+Recommended:
+
+- Main page scroll should be natural.
+- Inner scroll should only be used when necessary.
+- Tab strips may scroll horizontally, but active tab must stay visible.
+- Bottom sheets must respect safe areas.
+- Add bottom padding to all long admin pages.
+
+==================================================
+7. MOBILE CONTROLS
+
+On Android and iOS:
+
+- All buttons must be easy to tap.
+- Minimum touch target: 44px.
+- Dropdowns with many options should use mobile bottom sheets.
+- Long action rows should collapse into an Actions menu.
+- Filters should not consume the whole screen unnecessarily.
+- Forms must not feel cramped.
+- Input fields should not be too close to edges.
+- Keyboard opening should not hide Save buttons if avoidable.
+
+Apply this especially to:
+
+- Leads filters
+- Booking filters
+- Client filters
+- Package filters
+- Merge client selectors
+- Media controls
+- Settings forms
+- Confirmation dialogs
+
+==================================================
+8. MODALS / DRAWERS / CONFIRMATIONS
+
+Review all modals and dialogs.
+
+Fix:
+
+- modal too close to screen edge
+- buttons too low / hidden
+- content too tall without scroll
+- unclear close button
+- inconsistent title spacing
+- danger dialogs not visually dangerous
+- confirmation dialogs not readable
+
+Danger actions:
+
+- Use red only where appropriate.
+- Keep typed confirmation for dangerous actions.
+- Ensure buttons are clearly separated:
+  - Cancel = neutral
+  - Confirm dangerous action = red
+
+==================================================
+9. MEDIA / LOGO CONTROL LAYOUT
+
+Review Media Manager and logo controls.
+
+Fix:
+
+- logo controls too cramped
+- sliders too close together
+- labels not clear
+- image preview clipping badly
+- edit controls hidden under FAB/bottom nav
+- service/hero cards inconsistent
+
+Do NOT reduce image quality.
+Do NOT change image storage pipeline.
+Do NOT change upload logic unless fixing a UI bug.
+
+Logo placement should feel intentional:
+
+- Navbar logo balanced
+- Mobile logo readable
+- Login logo premium
+- Dashboard logo not oversized
+- Footer logo subtle
+- Favicon icon-only
+- Splash logo dramatic but clean
+
+==================================================
+10. ADMIN PROFESSIONAL FEEL
+
+The final Admin Panel should feel like:
+
+- premium SaaS control panel
+- clean fitness business management system
+- easy daily tool
+- not a developer debug console
+- not cluttered
+- not unfinished
+- not random Replit template
+
+Remove visual confusion, not functionality.
+
+If something is technical and not needed daily:
+
+- keep it in More / Advanced
+- keep it visually quieter
+- do not expose it prominently
+
+==================================================
+11. CROSS-DEVICE TESTING REQUIRED
+
+Test responsive layout at these widths:
+
+- 360px mobile
+- 390px iPhone
+- 414px large mobile
+- 768px tablet
+- 1024px small desktop/tablet landscape
+- 1366px laptop
+- 1440px desktop
+- 1920px iMac / large desktop
+
+For each width, check:
+
+- no horizontal overflow
+- no clipped text
+- no hidden buttons
+- no broken cards
+- no unsafe edge spacing
+- no awkward scrollbars
+- no bottom nav overlap
+- no modal overflow
+- no tab clipping issue
+
+==================================================
+12. FINAL REPORT REQUIRED
+
+After finishing, provide a clear professional report:
+
+1. Pages reviewed.
+2. Devices / breakpoints reviewed.
+3. Layout issues found.
+4. Spacing issues fixed.
+5. Card consistency fixes.
+6. Color consistency fixes.
+7. Mobile safe-area fixes.
+8. Scroll behavior fixes.
+9. Modal/drawer fixes.
+10. Media/logo layout fixes.
+11. Any issue intentionally not changed and why.
+12. Confirmation no business logic changed.
+13. Confirmation no data was changed or deleted.
+14. Confirmation image quality was not reduced.
+15. Confirmation the Admin / Control Panel is ready for professional daily use on Android, iOS, desktop, and large screens.
+
+If any change is risky or might affect logic/data, stop and ask before applying it.

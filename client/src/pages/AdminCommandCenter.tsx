@@ -93,7 +93,7 @@ export default function AdminCommandCenter() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-5">
+      <div className="admin-container space-y-5">
       <div className="flex items-start justify-between gap-3">
         <AdminPageHeader
           eyebrow="Command Center"
@@ -209,6 +209,6 @@ export default function AdminCommandCenter() {
         </p>
       ) : null}
     </div>
-    </div>
+      </div>
   );
 }

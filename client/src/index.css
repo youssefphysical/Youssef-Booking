@@ -2052,8 +2052,12 @@ html[dir="rtl"] .hero-eyebrow-rule {
 
 .admin-shell {
   min-height: 100dvh;        /* dynamic viewport: avoids iOS URL-bar jank */
-  /* TOP — clear top bar AND notch / dynamic island */
-  padding-top: calc(var(--admin-top-h) + env(safe-area-inset-top) + 0.25rem);
+  /* TOP — AdminTabs is now in normal document flow (rendered by App.tsx
+     above every admin page component), so it pushes admin-shell down
+     automatically. admin-shell only needs safe-area clearance + a small
+     breath of padding before the first AdminCard. There is no fixed top
+     bar on admin routes (Navigation renders sidebar + bottom dock). */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
   /* BOTTOM — guarantees dock + iOS home indicator never overlap content,
      plus 1.25rem breathing room. This replaces the old AdminMobileBottomSpacer
      pattern: every admin page is automatically safe. */

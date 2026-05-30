@@ -37,7 +37,7 @@ export default function AdminIntegrity() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-5">
+      <div className="admin-container space-y-5">
       <div className="flex items-start justify-between gap-3">
         <AdminPageHeader
           eyebrow="Data integrity"
@@ -169,6 +169,6 @@ export default function AdminIntegrity() {
         </p>
       ) : null}
     </div>
-    </div>
+      </div>
   );
 }

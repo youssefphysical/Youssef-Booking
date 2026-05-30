@@ -160,7 +160,7 @@ export default function AdminAnalytics() {
                   type="button"
                   onClick={() => setRange(r.key)}
                   data-testid={`range-${r.key}`}
-                  className={`h-7 px-3 rounded-lg text-[11px] font-semibold transition-colors ${
+                  className={`h-8 px-3 rounded-lg text-[11px] font-semibold transition-colors ${
                     range === r.key
                       ? "bg-primary/20 text-primary border border-primary/30"
                       : "text-muted-foreground hover:text-foreground"

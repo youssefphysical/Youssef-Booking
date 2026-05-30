@@ -201,11 +201,15 @@ function Router() {
       {!isPrintRoute && <InstallPrompt />}
       {isAdminRoute && (
         <div
-          className="admin-container"
+          className="admin-container md:ml-64"
           // Match the mobile sticky offset (.admin-tabs-sticky uses
           // top: safe-area + 0.5rem). Aligning the initial padding
           // with the sticky offset means there's no visible jump
           // when the user scrolls past the tabs and they "stick".
+          // md:ml-64 offsets the sidebar (w-64 = 16rem) on desktop
+          // so AdminTabs aligns with the main content area, not the
+          // full viewport — without this the sidebar would cover the
+          // first 1–2 tabs at 1024–1440px viewport widths.
           style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.5rem)" }}
         >
           <AdminTabs />

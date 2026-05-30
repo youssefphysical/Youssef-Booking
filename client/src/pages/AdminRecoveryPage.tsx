@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AdminEmptyState } from "@/components/admin/primitives";
+import { AdminEmptyState, AdminPageHeader } from "@/components/admin/primitives";
 import NotFound from "@/pages/not-found";
 
 type RecoveryRow = {
@@ -70,13 +70,12 @@ export default function AdminRecoveryPage() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-5 pt-3" data-testid="page-admin-recovery">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-display font-bold">{t("admin.recovery.title", "Recovery requests")}</h1>
-        <p className="text-sm text-foreground/60">
-          {t("admin.recovery.subtitle", "Schedule and complete client recovery / mobility requests.")}
-        </p>
-      </header>
+      <div className="admin-container space-y-5" data-testid="page-admin-recovery">
+      <AdminPageHeader
+        eyebrow="Recovery"
+        title={t("admin.recovery.title", "Recovery requests")}
+        subtitle={t("admin.recovery.subtitle", "Schedule and complete client recovery / mobility requests.")}
+      />
 
       {isLoading ? (
         <div className="admin-shimmer h-24 rounded-2xl" />
@@ -204,6 +203,6 @@ export default function AdminRecoveryPage() {
         </DialogContent>
       </Dialog>
     </div>
-    </div>
+      </div>
   );
 }

@@ -104,7 +104,7 @@ export default function AdminLeads() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-4">
+      <div className="admin-container space-y-4">
       <AdminPageHeader
         eyebrow="Pipeline"
         title="Leads"
@@ -274,6 +274,6 @@ export default function AdminLeads() {
         </AdminCard>
       )}
     </div>
-    </div>
+      </div>
   );
 }
