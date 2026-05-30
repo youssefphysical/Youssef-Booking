@@ -5,44 +5,50 @@ name: E2E · Playwright browser tests
 #   1. Installs Node deps
 #   2. Downloads the Chromium browser used by Playwright
 #   3. Builds the app
-#   4. Starts the Express+Vite server in the background
-#   5. Waits until :5000 is accepting connections
-#   6. Runs every spec under ./e2e:
+#   4. Pushes the Drizzle schema onto the CI Postgres service
+#   5. Starts the Express+Vite server in the background
+#   6. Waits until :5000 is accepting connections
+#   7. Runs every spec under ./e2e:
 #        - admin-login.spec.ts
 #        - booking-calendar.spec.ts
 #        - client-registration.spec.ts
 #        - csv-export.spec.ts
-#        - wizard-onboarding.spec.ts   ← full 15-test wizard happy-path
-#   7. Uploads the HTML report as a build artifact
+#        - wizard-onboarding.spec.ts   <- full 15-test wizard happy-path
+#   8. Uploads the HTML report as a build artifact
 #
-# ── Blocking merges ─────────────────────────────────────────────────────────
+# -- Why a Postgres service? -------------------------------------------------
+# DATABASE_URL in the GitHub secret is the Replit-internal Postgres host
+# ("helium") which is unreachable from GitHub Actions runners.  Rather than
+# pointing CI at the production Neon DB (polluting data + external latency),
+# we spin up a local Postgres 16 service container and override DATABASE_URL
+# to it.  `npx drizzle-kit push` creates all tables before the server starts.
+#
+# Root cause of "Server did not start within 60 s" (run #43):
+#   Error: getaddrinfo EAI_AGAIN helium
+#   The server crashed at ensureSchema() boot — port 5000 never bound.
+#
+# -- Blocking merges ---------------------------------------------------------
 # Branch protection on `main` is ACTIVE and blocks ALL merges (including repo
 # admins / Youssef) when this check is red.  Current settings (set via API):
 #   required_status_checks        : strict=true, context="Playwright e2e"
-#   enforce_admins                : true   ← admins cannot bypass a failing check
+#   enforce_admins                : true   <- admins cannot bypass a failing check
 #   required_pull_request_reviews : 1 approving review, dismiss_stale=true
-#   required_conversation_resolution : true  ← all PR comments must be resolved
+#   required_conversation_resolution : true  <- all PR comments must be resolved
 #
-# The status check context "Playwright e2e" matches the job `name:` on line 58
-# of this file exactly — a mismatch would make the required check unfulfillable.
+# The status check context "Playwright e2e" matches the job `name:` below
+# exactly -- a mismatch would make the required check unfulfillable.
 #
-# To change these settings:
-#   Repository → Settings → Branches → Edit branch protection rule for `main`
-#     ✅  Require status checks to pass before merging
-#         Required check: "Playwright e2e"
-#     ✅  Require branches to be up to date before merging
-#     ✅  Require conversation resolution before merging
-#     ✅  Do not allow bypassing the above settings  (enforce_admins=true)
+# -- Required GitHub repo secrets --------------------------------------------
+#   JWT_SECRET      -- any random string; used to sign JWTs
+#   SESSION_SECRET  -- any random string; used to sign session cookies
+#   CRON_SECRET     -- any random string; guards /api/cron/* routes
+#   PUBLIC_APP_URL  -- e.g. http://localhost:5000 (for email link generation)
 #
-# ── Required GitHub repo secrets ────────────────────────────────────────────
-#   DATABASE_URL    — Neon / Postgres connection string for the test database
-#   JWT_SECRET      — any random string; used to sign JWTs
-#   SESSION_SECRET  — any random string; used to sign session cookies
-#   CRON_SECRET     — any random string; guards /api/cron/* routes
-#   PUBLIC_APP_URL  — e.g. http://localhost:5000 (for email link generation)
+# DATABASE_URL is intentionally NOT read from secrets -- CI always uses the
+# local Postgres service defined below (see env.DATABASE_URL).
 #
 # Optional:
-#   RESEND_API_KEY  — leave blank to suppress transactional email in tests
+#   RESEND_API_KEY  -- leave blank to suppress transactional email in tests
 
 on:
   push:
@@ -66,8 +72,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: youssef_test
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: cipass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Override the repo secret -- CI always uses the local service container.
+      # The Replit-internal host ("helium") is unreachable from GitHub runners.
+      DATABASE_URL: postgres://ci:cipass@localhost:5432/youssef_test
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -97,6 +120,11 @@ jobs:
 
       - name: Build app
         run: npm run build
+
+      - name: Push DB schema
+        run: npx drizzle-kit push --force
+        env:
+          DATABASE_URL: postgres://ci:cipass@localhost:5432/youssef_test
 
       - name: Start server
         run: |
