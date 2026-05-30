@@ -108,6 +108,15 @@ export default function AuthPage({
   const { data: authSettings } = useSettings();
   const logoSrc = authSettings?.logoAuthUrl || authSettings?.logoIconUrl || "/ye-logo-primary.png";
 
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "admin") {
+      setLocation("/admin");
+    } else {
+      setLocation(user.isVerified ? "/dashboard" : "/wizard");
+    }
+  }, [user, setLocation]);
+
   if (user) return null;
 
   return (
