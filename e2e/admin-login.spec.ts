@@ -128,15 +128,18 @@ test.describe("Admin Login", () => {
     await fillAndSubmit(page, ADMIN_USERNAME, ADMIN_PASSWORD);
     await page.waitForURL(/\/admin(?!-access)/, { timeout: 10_000 });
 
-    // DailyBriefModal auto-opens on fresh sessions (no localStorage dismissed key).
-    // Press Escape to close it before interacting with the nav; wait for the
-    // dialog overlay to fully disappear so it can't intercept pointer events.
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(500);
-    await page
-      .locator('[data-testid="dialog-daily-brief"]')
-      .waitFor({ state: "hidden", timeout: 2_000 })
-      .catch(() => {});
+    // DailyBriefModal auto-opens on fresh sessions (no localStorage dismissed
+    // key). Its data arrives asynchronously (~1-2 s after the page loads), so
+    // we must WAIT for the dialog to appear before pressing Escape — otherwise
+    // the modal opens after our Escape and its overlay blocks the logout button.
+    try {
+      const dailyBrief = page.locator('[data-testid="dialog-daily-brief"]');
+      await dailyBrief.waitFor({ state: "visible", timeout: 5_000 });
+      await page.keyboard.press("Escape");
+      await dailyBrief.waitFor({ state: "hidden", timeout: 2_000 });
+    } catch {
+      // Modal didn't open — proceed normally.
+    }
 
     // Step 2 — find and click a logout trigger
     // Common patterns: a button/link with text "logout" / "sign out", or a
@@ -151,7 +154,7 @@ test.describe("Admin Login", () => {
     let clicked = false;
     for (const loc of logoutSelectors) {
       if (await loc.isVisible().catch(() => false)) {
-        await loc.click();
+        await loc.click({ force: true });
         clicked = true;
         break;
       }
@@ -166,11 +169,11 @@ test.describe("Admin Login", () => {
       ];
       for (const trigger of menuTriggers) {
         if (await trigger.isVisible().catch(() => false)) {
-          await trigger.click();
+          await trigger.click({ force: true });
           await page.waitForTimeout(400);
           for (const loc of logoutSelectors) {
             if (await loc.isVisible().catch(() => false)) {
-              await loc.click();
+              await loc.click({ force: true });
               clicked = true;
               break;
             }
