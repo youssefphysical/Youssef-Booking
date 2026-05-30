@@ -265,9 +265,15 @@ async function selectCalendarDate(page: Page, dateStr: string): Promise<void> {
   const targetMonthName = MONTHS[month - 1];
   const targetLabel = `${targetMonthName} ${year}`;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    // react-day-picker v8 renders the month label as:
+    //   <div class="rdp-caption_label" role="status" aria-live="polite">June 2026</div>
+    // Fall back to other common patterns for future rdp versions.
     const headerText = await calendarEl
-      .locator('[role="presentation"] h2, [class*="caption"] span, [class*="month"] span, h2')
+      .locator(
+        '.rdp-caption_label, [aria-live="polite"][role="status"], ' +
+        '[role="presentation"] h2, [class*="caption"] span, [class*="month"] span, h2'
+      )
       .first()
       .textContent()
       .catch(() => "");
@@ -276,12 +282,15 @@ async function selectCalendarDate(page: Page, dateStr: string): Promise<void> {
 
     // Try clicking the "next month" navigation button
     const nextBtn = calendarEl
-      .locator('button[name="next-month"], button[aria-label*="next" i], button[aria-label*="Next" i]')
+      .locator(
+        'button[name="next-month"], .rdp-nav_button_next, ' +
+        'button[aria-label*="next" i], button[aria-label*="Next" i]'
+      )
       .first();
 
     if (await nextBtn.isVisible().catch(() => false)) {
       await nextBtn.click();
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(400);
     } else {
       break;
     }
