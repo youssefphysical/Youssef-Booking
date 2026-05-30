@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Home,
   Users,
   LayoutDashboard,
   Calendar,
@@ -19,6 +18,11 @@ import { isEffectiveSuperAdmin } from "@shared/schema";
  * visible across every admin section without each page having to
  * mount it.
  *
+ * 5-tab strip: Dashboard | Clients | Bookings | Media | More
+ * The public homepage is reachable via the logo in the sidebar;
+ * removing the Home tab frees one slot on small phones so no tab
+ * label ever clips on 320-375px viewports.
+ *
  * UX guarantees (May 2026 polish pass):
  *   • Layout-stable active state — the cyan pill uses `ring`
  *     (box-shadow under the hood) + same paddings as inactive, so
@@ -35,9 +39,6 @@ import { isEffectiveSuperAdmin } from "@shared/schema";
  *   • `overscroll-behavior-x: contain` so swiping past the start
  *     of the strip doesn't trigger the browser's "back" gesture.
  *   • `aria-current="page"` on the active tab.
- *   • "Home" tab navigates back to the public homepage. The admin
- *     session is server-side (cookie), so re-entering /admin lands
- *     the user straight back into the dashboard with no re-auth.
  */
 
 type TabSpec = {
@@ -50,16 +51,45 @@ type TabSpec = {
   superAdminOnly?: boolean;
 };
 
-// 6-tab strip: Home | Dashboard | Clients | Bookings | Media | More
+// 5-tab strip: Dashboard | Clients | Bookings | Media | More
 // All secondary tools (Analytics, Leads, Settings, etc.) live behind
 // the More hub at /admin/more — see AdminMore.tsx.
 const ADMIN_TABS: TabSpec[] = [
-  { href: "/", labelKey: "admin.tabs.home", fallback: "Home", icon: <Home size={15} />, matches: () => false },
-  { href: "/admin", labelKey: "admin.tabs.overview", fallback: "Dashboard", icon: <LayoutDashboard size={15} />, matches: (p) => p === "/admin" },
-  { href: "/admin/clients", labelKey: "admin.tabs.clients", fallback: "Clients", icon: <Users size={15} />, matches: (p) => p.startsWith("/admin/clients") },
-  { href: "/admin/bookings", labelKey: "admin.tabs.bookings", fallback: "Bookings", icon: <Calendar size={15} />, matches: (p) => p.startsWith("/admin/bookings") },
-  { href: "/admin/media", labelKey: "admin.tabs.media", fallback: "Media", icon: <Camera size={15} />, matches: (p) => p.startsWith("/admin/media") },
-  { href: "/admin/more", labelKey: "admin.tabs.more", fallback: "More", icon: <MoreHorizontal size={15} />, matches: (p) => p.startsWith("/admin/more") },
+  {
+    href: "/admin",
+    labelKey: "admin.tabs.overview",
+    fallback: "Dashboard",
+    icon: <LayoutDashboard size={15} />,
+    matches: (p) => p === "/admin",
+  },
+  {
+    href: "/admin/clients",
+    labelKey: "admin.tabs.clients",
+    fallback: "Clients",
+    icon: <Users size={15} />,
+    matches: (p) => p.startsWith("/admin/clients"),
+  },
+  {
+    href: "/admin/bookings",
+    labelKey: "admin.tabs.bookings",
+    fallback: "Bookings",
+    icon: <Calendar size={15} />,
+    matches: (p) => p.startsWith("/admin/bookings"),
+  },
+  {
+    href: "/admin/media",
+    labelKey: "admin.tabs.media",
+    fallback: "Media",
+    icon: <Camera size={15} />,
+    matches: (p) => p.startsWith("/admin/media"),
+  },
+  {
+    href: "/admin/more",
+    labelKey: "admin.tabs.more",
+    fallback: "More",
+    icon: <MoreHorizontal size={15} />,
+    matches: (p) => p.startsWith("/admin/more"),
+  },
 ];
 
 // Preload map — thunk fires on hover/focus, making the chunk hot before

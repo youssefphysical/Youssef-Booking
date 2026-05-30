@@ -120,18 +120,30 @@ export default function AdminCommandCenter() {
       </div>
 
       {error ? (
-        <AdminCard>
-          <p className="text-sm text-red-300 mb-3" data-testid="text-command-center-error">
-            Failed to load command center.
-          </p>
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="text-sm text-primary hover:underline"
-            data-testid="button-retry-command-center"
-          >
-            Retry
-          </button>
+        <AdminCard data-testid="card-command-center-unavailable">
+          <div className="flex items-start gap-4 py-2">
+            <span className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 mt-0.5">
+              <RefreshCw size={20} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground" data-testid="text-command-center-error">
+                Command Center temporarily unavailable
+              </p>
+              <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
+                The live dashboard could not be loaded. This is usually a transient issue.
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                data-testid="button-retry-command-center"
+                className="inline-flex items-center gap-1.5 h-8 px-3 mt-3 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] text-[12px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={12} className={isFetching ? "animate-spin" : ""} />
+                Try again
+              </button>
+            </div>
+          </div>
         </AdminCard>
       ) : null}
 

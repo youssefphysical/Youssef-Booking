@@ -104,16 +104,16 @@ export default function AdminLeads() {
 
   return (
     <div className="admin-shell">
-    <div className="admin-container space-y-5">
+    <div className="admin-container space-y-4">
       <AdminPageHeader
         eyebrow="Pipeline"
         title="Leads"
-        subtitle="Filter by lifecycle status and source. Inline edits write to the audit log."
+        subtitle="Filter by status and source. Inline edits are audit-logged."
       />
 
       <AdminCard>
         {/* Search always visible */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-2.5">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}

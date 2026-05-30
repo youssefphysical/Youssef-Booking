@@ -1,0 +1,83 @@
+PROMPT 2 — ADMIN NAVIGATION + MORE HUB
+
+Reorganize the Admin Panel navigation to reduce clutter and make the admin experience easier to use on mobile.
+
+IMPORTANT:
+Do NOT delete any tool.
+Do NOT remove functionality.
+Do NOT change business logic.
+Do NOT change database schema unless absolutely necessary.
+Do NOT change booking, package, payment, authentication, or client logic.
+This is navigation organization only.
+
+GOAL:
+Primary admin navigation should contain only daily-use tools:
+
+- Dashboard
+- Clients
+- Bookings
+- Media
+- More
+
+Move everything else into a dedicated More Hub page.
+
+More Hub groups:
+
+Business:
+- Analytics
+- Leads
+- Sessions & Packages
+
+System:
+- Settings
+- Audit Log
+- Integrity Checker
+- System Health
+
+Operations:
+- Command Center
+- Recovery Center
+- Availability / Blocked Times if needed
+
+Advanced Tools:
+- Merge Clients
+- Repair Expired Sessions
+- Maintenance Tools
+- Developer/System Utilities
+
+Rules:
+- More Hub must not be a messy long list.
+- Use compact grouped cards or rows.
+- Each item should have icon, title, short description, and optional badge if attention is needed.
+- Advanced/dangerous tools must not appear in daily navigation.
+- Keep Super Admin protection if it already exists.
+- If Command Center is broken, show compact unavailable state or hide it until working.
+- Do not show broken tools prominently.
+- On mobile, no clipped tabs, no horizontal overflow, no crowded navigation.
+
+After implementation, verify:
+1. Dashboard opens.
+2. Clients opens.
+3. Bookings opens.
+4. Media opens.
+5. More opens.
+6. Analytics still accessible.
+7. Leads still accessible.
+8. Sessions & Packages still accessible.
+9. Settings still accessible.
+10. Audit Log still accessible.
+11. Integrity Checker still accessible.
+12. Command Center still accessible or intentionally hidden/unavailable.
+13. Recovery Center still accessible.
+14. Merge Clients still accessible for Super Admin.
+15. No tool deleted.
+16. No business logic changed.
+17. No database data changed.
+
+Final report must include:
+- What stayed in primary navigation.
+- What moved to More.
+- What groups were created inside More.
+- Any routes updated.
+- Confirmation no tool was deleted.
+- Confirmation no business logic changed.
