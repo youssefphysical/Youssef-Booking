@@ -1,0 +1,416 @@
+PROMPT 1 — GLOBAL DESIGN SYSTEM / توحيد الستايل العام
+
+Apply a global design-system polish across the entire Admin Panel and client-facing website.
+
+IMPORTANT:
+Do NOT add new features.
+Do NOT change business logic.
+Do NOT change booking, package, payment, authentication, client, or admin logic.
+Do NOT delete data.
+Do NOT reduce image quality.
+Do NOT redesign the brand identity.
+Do NOT make the website look like a gaming website.
+Keep the current Tron Legacy direction, but make it cleaner, more premium, more consistent, and more professional.
+
+GOAL:
+Make the whole platform feel like one premium fitness application inspired by Tron Legacy.
+
+The final feeling should be:
+
+- Premium
+- Clean
+- Futuristic
+- Professional
+- Mobile-first
+- Easy to understand
+- Not cluttered
+- Not overly neon
+
+====================================================
+
+1. CORE STYLE DIRECTION
+   ====================================================
+
+The design should be:
+
+Premium Fitness SaaS inspired by Tron Legacy.
+
+NOT:
+
+- Gaming UI
+- Random neon everywhere
+- Too many glowing elements
+- Too many colors
+- Over-designed dashboard
+- Hacker/cyberpunk chaos
+
+Use Tron Legacy as an accent system, not as visual noise.
+
+Arabic explanation:
+الستايل الأساسي لازم يفضل Tron Legacy، لكن بشكل Premium وراقي.
+مش عايز كل حاجة تنور.
+النور والـ glow يظهروا فقط لما يكون في معنى: active, selected, important action.
+
+====================================================
+2. COLOR SYSTEM
+
+Create or enforce a consistent color token system.
+
+Primary Brand / Tron Cyan:
+Use cyan only for:
+
+- Primary actions
+- Active states
+- Selected tabs
+- Main highlights
+- Important navigation
+- Live/active UI indicators
+
+Suggested values:
+
+- Primary cyan: #00E5FF
+- Soft cyan: #66F7FF
+- Muted cyan background: rgba(0, 229, 255, 0.10–0.16)
+- Cyan border: rgba(0, 229, 255, 0.18–0.28)
+
+Dark backgrounds:
+
+- Main app background: #05070D
+- Page background: #070B14
+- Card background: #0B1220
+- Elevated card background: #101827
+
+Text:
+
+- Primary text: #FFFFFF
+- Secondary text: #B8C1CC
+- Muted text: #7D8794
+
+Status colors:
+
+- Green = success, paid, completed, active, safe
+- Yellow/Amber = pending, warning, needs attention
+- Red = danger, failed, delete, expired, urgent
+- Grey = inactive, archived, disabled, empty
+- Cyan = brand, selected, active, primary system highlight
+
+Rules:
+
+- Do not use random colors.
+- Every color must communicate meaning.
+- Do not use red unless something is dangerous, failed, expired, or destructive.
+- Do not use green unless something is completed, paid, successful, or active.
+- Do not use yellow unless something is pending or needs attention.
+- Do not make normal cards glow heavily.
+- Glow is allowed only for selected, active, hover, or important CTA.
+
+====================================================
+3. CARD SYSTEM
+
+Standardize all cards across Admin and client-facing areas.
+
+Every card should follow the same family:
+
+- Border radius: 22px–26px
+- Dark premium background
+- Subtle border
+- Subtle glow only when active/selected
+- Consistent padding
+- Consistent title spacing
+- Consistent button area
+- No random card styles
+
+Normal card:
+
+- Dark background
+- Light border
+- No strong glow
+
+Active/selected card:
+
+- Cyan border
+- Subtle cyan glow
+
+Warning card:
+
+- Amber border or badge
+
+Danger card:
+
+- Red border or danger badge only when necessary
+
+Success card:
+
+- Green badge or subtle success indicator
+
+Arabic:
+كل الكروت لازم تحس إنها من نفس النظام.
+مش صفحة فيها كروت بشكل وصفحة تانية بشكل مختلف.
+الـ glow مش لكل حاجة، فقط للحاجة المختارة أو المهمة.
+
+====================================================
+4. BUTTON SYSTEM
+
+Standardize all buttons.
+
+Primary Button:
+Use for:
+
+- Save
+- Add
+- Book
+- Confirm
+- Apply
+
+Style:
+
+- Cyan filled or strong cyan border
+- Clear text
+- Strong enough to be recognized as main action
+
+Secondary Button:
+Use for:
+
+- Edit
+- Open profile
+- Reschedule
+- View details
+- Manage
+
+Style:
+
+- Dark background
+- Subtle border
+- Less visual weight than primary
+
+Ghost Button:
+Use for:
+
+- Cancel
+- Back
+- More
+- Expand
+- View less important details
+
+Danger Button:
+Use for:
+
+- Delete
+- Merge final
+- Reset
+- Repair destructive action
+
+Style:
+
+- Red
+- Must not look like a safe cyan action
+- Must require confirmation if destructive
+
+Rules:
+
+- Buttons must not wrap awkwardly.
+- Buttons must be easy to tap on mobile.
+- Minimum touch target: 44px.
+- Crowded actions on mobile should collapse into an Actions menu.
+
+====================================================
+5. BADGES / STATUS SYSTEM
+
+Standardize all badges.
+
+Green:
+
+- Active
+- Paid
+- Completed
+- Verified
+- Healthy
+- Success
+
+Yellow/Amber:
+
+- Pending
+- Needs review
+- Watch
+- Trial pending
+- Verification pending
+- Attention needed
+
+Red:
+
+- Failed
+- Expired
+- Danger
+- Delete
+- Unpaid risk
+- Error
+
+Cyan:
+
+- New
+- Live
+- Selected
+- VIP / Elite if appropriate
+
+Grey:
+
+- Draft
+- Inactive
+- Archived
+- Disabled
+- Empty
+
+Rules:
+
+- Same status must have same color everywhere.
+- Do not use different colors for the same meaning on different pages.
+
+====================================================
+6. TYPOGRAPHY
+
+Use clear hierarchy.
+
+Each page should have:
+
+- Small uppercase section label
+- Clear page title
+- Short description, max 1–2 lines
+- Cards below
+
+Examples:
+ADMIN
+Dashboard
+Your daily overview, alerts, and quick actions.
+
+MEDIA
+Media Manager
+Manage hero slides, services, logos, and branding assets.
+
+Rules:
+
+- Long descriptions must be collapsed behind Info / Details / Help.
+- Do not allow long paragraphs to consume mobile screen space.
+- Numbers should be readable and clear.
+- Important numbers can be larger.
+- Secondary text should be readable, not too faded.
+
+====================================================
+7. FORM FIELD SYSTEM
+
+Standardize:
+
+- Inputs
+- Selects
+- Textareas
+- Filters
+- Search fields
+
+Rules:
+
+- Mobile height: 52px
+- Border radius: 16px
+- Label above field
+- Helper text below only when needed
+- Clear error state
+- Clear disabled state
+- Consistent focus glow
+- Long dropdowns with more than 6 options should become bottom sheets on mobile
+
+Apply to:
+
+- Client search
+- Leads filters
+- Booking filters
+- Package filters
+- Settings fields
+- Media controls
+- Merge client selector
+
+====================================================
+8. EMPTY / ERROR / LOADING STATES
+
+Every page must have clean states:
+
+- Loading
+- Empty
+- Error
+- Success
+
+Never show contradictory states together.
+
+Examples:
+Do not show:
+“Failed to load”
+and
+“All clean”
+at the same time.
+
+Empty states should be compact and premium:
+
+- Small icon
+- Short title
+- One helpful sentence
+- Optional action button
+
+Examples:
+No leads match your filters.
+Button: Clear filters
+
+No recovery requests.
+No action needed.
+
+All clean.
+No integrity issues found.
+
+====================================================
+9. MOBILE RULES
+
+Mobile is the priority.
+
+Apply globally:
+
+- Page horizontal padding: 20px
+- Card padding: 18–22px
+- Section gap: 24–28px
+- Card gap: 16px
+- Bottom spacer: at least 120px
+- No title clipped from left or right
+- No tab clipped without scroll
+- No content touching screen edges
+- No buttons hidden under bottom navigation
+- No FAB covering important controls
+- Minimum touch target: 44px
+
+Arabic:
+الموبايل أهم حاجة.
+ماينفعش عنوان يتقص.
+ماينفعش زر يتغطى تحت.
+ماينفعش tab يتقص.
+ماينفعش dropdown يغطي الشاشة بشكل سيء.
+
+====================================================
+10. FINAL VALIDATION
+
+After finishing, verify:
+
+- Dashboard looks consistent
+- Clients page looks consistent
+- Bookings page looks consistent
+- Media page looks consistent
+- Settings page looks consistent
+- More page looks consistent
+- Buttons follow the correct hierarchy
+- Badges use correct meaning-based colors
+- Cards follow one style system
+- No excessive neon
+- No image quality reduced
+- No business logic changed
+
+REPORT:
+Provide a final report with:
+
+1. Design tokens standardized.
+2. Pages touched.
+3. Components standardized.
+4. Confirmation no business logic changed.
+5. Confirmation no image quality was reduced.
