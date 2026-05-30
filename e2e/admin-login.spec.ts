@@ -109,6 +109,10 @@ test.describe("Admin Login", () => {
     // Navigate directly without logging in — a fresh browser context has no session.
     const response = await page.goto(`${BASE}/admin`, { waitUntil: "load" });
 
+    // The redirect is client-side (React ProtectedRoute), so wait up to 5s
+    // for the URL to leave /admin before checking where it landed.
+    await page.waitForURL(/\/auth|\/admin-access/, { timeout: 5_000 }).catch(() => {});
+
     const redirectedToLogin =
       page.url().includes("/admin-access") || page.url().includes("/auth");
 
