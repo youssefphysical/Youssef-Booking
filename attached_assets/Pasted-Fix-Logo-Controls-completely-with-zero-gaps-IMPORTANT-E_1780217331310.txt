@@ -1,0 +1,194 @@
+Fix Logo Controls completely with zero gaps.
+
+IMPORTANT:
+Everything else is working correctly. Do NOT touch bookings, auth logic, payments, clients, database schema, Neon plan, Vercel config, GitHub workflow, uploads/remove logic, colors/theme, public layout, or unrelated admin pages.
+
+Problem:
+Admin → Media → Branding → Logo Controls still has gaps:
+1. Desktop controls and mobile controls appear mixed together on mobile, which is confusing.
+2. Mobile Width / Mobile Height changes do not visibly update the preview image immediately.
+3. Preview is not a real accurate representation of the live logo output.
+4. Public homepage navbar logo loads small/default first, then after about 1 second jumps to the saved Media Control values.
+5. This may affect all logo placements, not only navbar.
+
+Goal:
+Every logo placement must have accurate controls, accurate preview, saved persistence, reload persistence, and no first-load flicker.
+
+Logo placements to audit and fix:
+1. Public desktop navbar logo
+2. Public mobile navbar logo
+3. Admin sidebar/top logo
+4. Auth/login logo
+5. Splash/loading logo
+6. Footer logo
+7. Favicon/PWA only if currently controlled
+8. Every Admin Media preview card
+
+Control fields to audit:
+- visibility
+- image URL/source
+- desktop width
+- desktop height
+- mobile width
+- mobile height
+- zoom
+- horizontal offset
+- vertical offset
+- padding
+- glow intensity
+- object-fit
+- object-position
+- max-width
+- safe area
+- reset defaults
+- lock/unlock state
+- Save All state
+- dirty/unsaved changes state
+
+Part 1 — UI clarity:
+1. Do not show desktop and mobile sliders as one confusing mixed list.
+2. For each logo placement, separate controls into clear groups:
+   - Desktop controls
+   - Mobile controls
+3. If space is tight on mobile, use an internal Desktop/Mobile toggle or accordion.
+4. Labels must clearly say which live placement they affect.
+5. Do not remove any controls.
+6. Do not change the visual theme.
+
+Part 2 — Preview accuracy:
+1. The preview must use the exact same component/mapping/CSS variables as the live logo whenever possible.
+2. The preview must update instantly while dragging sliders.
+3. Mobile Width/Height must change the mobile preview immediately.
+4. Desktop Width/Height must change the desktop preview immediately.
+5. Zoom, H-offset, V-offset, padding, and glow must all visually update immediately.
+6. If a placement has both desktop and mobile values, show both previews or provide a clear preview mode toggle.
+7. The preview must not use hardcoded defaults if local unsaved slider values exist.
+8. The preview must match the live output after Save All + reload.
+
+Part 3 — Save and reload:
+1. Confirm Save All payload includes every logo control value.
+2. Confirm PATCH persists every value.
+3. Confirm GET settings/config returns every saved value.
+4. Confirm Admin Media reload hydrates sliders from saved values, not defaults.
+5. Confirm cache invalidates/refetches after save.
+6. Confirm no value is lost when changing one placement while others are locked.
+7. Confirm locked sections cannot accidentally submit stale/default values over saved values.
+
+Part 4 — First-load flicker fix:
+1. Public logo components must not render small/default first and then jump after settings load.
+2. Apply saved logo CSS variables before first visible paint if possible.
+3. If settings load is async, reserve the final expected logo box size to prevent layout shift.
+4. Do not show the logo with wrong dimensions while settings are unknown.
+5. Use stable fallback values that match saved defaults.
+6. Fix this for:
+   - public desktop navbar
+   - public mobile navbar
+   - auth/login logo
+   - splash/loading logo
+   - footer logo
+   - admin logo
+7. Add protection against CLS/layout shift caused by logo resizing.
+
+Part 5 — Mapping audit:
+For every placement, produce a mapping table:
+- Admin control field
+- CSS variable set
+- CSS variable/component read
+- live component file
+- preview component file
+- status fixed/verified
+
+Check for:
+- wrong variable names
+- global logo vars used instead of placement-specific vars
+- desktop vars used for mobile
+- mobile vars ignored
+- hardcoded sizes
+- fallback overriding saved values
+- preview-only fields not used live
+- live-only fields not shown in preview
+
+Part 6 — Regression protection:
+Do not break:
+1. Admin Media mobile overflow fix.
+2. Save All.
+3. Upload / Replace / Remove logo.
+4. Reset to defaults.
+5. Lock/unlock behavior.
+6. Current public homepage layout.
+7. Current admin layout.
+8. Current responsive behavior.
+
+Required tests:
+Add or update tests for:
+
+A. Control UI tests
+- Desktop and mobile controls are clearly separated.
+- Mobile screen does not mix controls without labels.
+- Lock/unlock prevents accidental changes.
+
+B. Preview tests
+- Mobile width changes mobile preview immediately.
+- Mobile height changes mobile preview immediately.
+- Desktop width changes desktop preview immediately.
+- Desktop height changes desktop preview immediately.
+- Zoom changes preview immediately.
+- H-offset changes preview immediately.
+- V-offset changes preview immediately.
+- Padding changes preview immediately.
+- Glow changes preview immediately.
+
+C. Save payload tests
+- Save All sends all logo placement fields.
+- Locked sections do not overwrite saved values with defaults.
+- Partial edits do not erase untouched placement settings.
+
+D. Persistence tests
+- PATCH saves values.
+- GET returns values.
+- Reload Admin Media shows saved slider values.
+- Reset defaults persists correctly.
+
+E. Live component tests
+- Public mobile navbar uses mobile vars.
+- Public desktop navbar uses desktop vars.
+- Auth logo uses auth vars.
+- Splash logo uses splash vars.
+- Footer logo uses footer vars.
+- Admin logo uses admin/sidebar vars.
+
+F. Flicker/no-jump tests
+- Mock delayed settings load.
+- Assert navbar logo does not render tiny/default then jump.
+- Assert reserved/final dimensions stay stable.
+- Assert no visible layout shift caused by logo settings hydration.
+
+G. Responsive tests
+- Admin Media has no horizontal overflow on:
+  360px, 375px, 390px, 412px, 430px.
+- Logo previews fit inside their cards.
+- Bottom nav stays fixed.
+
+Run:
+- TypeScript check
+- build
+- all new logo tests
+- relevant existing media tests
+- relevant Playwright/mobile tests if available
+
+Final report must include:
+1. Root cause of desktop/mobile controls confusion.
+2. Root cause of mobile width/height preview not changing.
+3. Root cause of public logo first-load jump.
+4. Every file changed.
+5. Every logo placement checked.
+6. Every mapping fixed.
+7. Tests added/updated.
+8. Test results.
+9. Confirmation that:
+   - preview matches live output
+   - Save All works
+   - reload keeps values
+   - public logo no longer jumps after refresh
+   - all logo placements use correct saved controls
+   - no unrelated pages/features changed

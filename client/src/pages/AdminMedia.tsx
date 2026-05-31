@@ -1675,6 +1675,7 @@ function LogoControlsPanel() {
   const [unlockedSlot, setUnlockedSlot] = useState<BrandLogoSlot | null>(null);
   const [dirty, setDirty]             = useState(false);
   const [initialised, setInitialised] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
 
   useEffect(() => {
     if (!isLoading && data?.settings && !initialised) {
@@ -1838,69 +1839,136 @@ function LogoControlsPanel() {
                     </div>
                   )}
 
-                  {/* Live preview — always visible */}
-                  <div
-                    className="rounded-xl border border-primary/15 bg-black/60 flex items-center justify-center overflow-hidden"
-                    style={{ minHeight: 180 }}
-                  >
-                    <div style={{ padding: c.padding }}>
-                      <img
-                        src={imgSrc}
-                        alt={meta.label}
-                        style={{
-                          display: "block",
-                          width:  c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto",
-                          height: c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto",
-                          maxWidth: "100%",
-                          maxHeight: 140,
-                          objectFit: "contain",
-                          transform: `scale(${c.zoom / 100}) translate(${c.hOffset}px, ${c.vOffset}px)`,
-                          transformOrigin: "center center",
-                          filter: `drop-shadow(0 0 18px rgba(0,212,255,${c.glow / 100}))`,
-                          transition: "all 0.12s ease",
-                        }}
+                  {/* Live preview — Desktop / Mobile toggle */}
+                  <div className="space-y-2">
+                    {/* Preview mode toggle */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        data-testid={`button-preview-mode-desktop-${slot}`}
+                        onClick={() => setPreviewMode("desktop")}
+                        className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-150 ${
+                          previewMode === "desktop"
+                            ? "bg-primary/15 border-primary/30 text-primary"
+                            : "bg-white/[0.03] border-white/[0.08] text-muted-foreground/50 hover:text-muted-foreground hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <Monitor size={11} /> Desktop
+                      </button>
+                      <button
+                        type="button"
+                        data-testid={`button-preview-mode-mobile-${slot}`}
+                        onClick={() => setPreviewMode("mobile")}
+                        className={`flex items-center gap-1.5 px-3 h-7 rounded-lg text-[11px] font-semibold border transition-all duration-150 ${
+                          previewMode === "mobile"
+                            ? "bg-primary/15 border-primary/30 text-primary"
+                            : "bg-white/[0.03] border-white/[0.08] text-muted-foreground/50 hover:text-muted-foreground hover:bg-white/[0.06]"
+                        }`}
+                      >
+                        <Smartphone size={11} /> Mobile
+                      </button>
+                      <span className="text-[10px] text-muted-foreground/35 ml-auto">Live preview</span>
+                    </div>
+
+                    {/* Preview canvas */}
+                    <div
+                      data-testid={`preview-canvas-${slot}`}
+                      className="rounded-xl border border-primary/15 bg-black/60 flex items-center justify-center overflow-hidden"
+                      style={{ minHeight: 160 }}
+                    >
+                      <div style={{ padding: c.padding }}>
+                        <img
+                          src={imgSrc}
+                          alt={meta.label}
+                          data-testid={`preview-img-${slot}`}
+                          style={{
+                            display: "block",
+                            width:  previewMode === "mobile"
+                              ? (c.wMobile  > 0 ? Math.min(c.wMobile,  300) : "auto")
+                              : (c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto"),
+                            height: previewMode === "mobile"
+                              ? (c.hMobile  > 0 ? Math.min(c.hMobile,  110) : "auto")
+                              : (c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto"),
+                            maxWidth:  previewMode === "mobile" ? 300 : "100%",
+                            maxHeight: previewMode === "mobile" ? 110 : 140,
+                            objectFit: "contain",
+                            transform: `scale(${c.zoom / 100}) translate(${c.hOffset}px, ${c.vOffset}px)`,
+                            transformOrigin: "center center",
+                            filter: `drop-shadow(0 0 18px rgba(0,212,255,${c.glow / 100}))`,
+                            transition: "all 0.12s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Desktop controls ──────────────────────────────────────── */}
+                  <div className="space-y-3">
+                    <p
+                      data-testid={`text-desktop-controls-${slot}`}
+                      className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2"
+                    >
+                      <Monitor size={11} /> Desktop
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                      <SliderRow
+                        label="Width"  value={c.wDesktop} min={0} max={800} step={10} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "wDesktop", v)} testId={`slider-${slot}-w-desktop`}
+                      />
+                      <SliderRow
+                        label="Height" value={c.hDesktop} min={0} max={400} step={2}  unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "hDesktop", v)} testId={`slider-${slot}-h-desktop`}
                       />
                     </div>
                   </div>
 
-                  {/* 9 sliders — disabled when locked */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-5">
-                    <SliderRow
-                      label="Desktop Width"  value={c.wDesktop}  min={0}   max={800} step={10} unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "wDesktop",  v)} testId={`slider-${slot}-w-desktop`}
-                    />
-                    <SliderRow
-                      label="Desktop Height" value={c.hDesktop}  min={0}   max={400} step={2}  unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "hDesktop",  v)} testId={`slider-${slot}-h-desktop`}
-                    />
-                    <SliderRow
-                      label="Mobile Width"   value={c.wMobile}   min={0}   max={600} step={10} unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "wMobile",   v)} testId={`slider-${slot}-w-mobile`}
-                    />
-                    <SliderRow
-                      label="Mobile Height"  value={c.hMobile}   min={0}   max={300} step={2}  unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "hMobile",   v)} testId={`slider-${slot}-h-mobile`}
-                    />
-                    <SliderRow
-                      label="Zoom"           value={c.zoom}      min={50}  max={200} step={5}  unit="%" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "zoom",      v)} testId={`slider-${slot}-zoom`}
-                    />
-                    <SliderRow
-                      label="H-Offset"       value={c.hOffset}   min={-80} max={80}  step={1}  unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "hOffset",   v)} testId={`slider-${slot}-hoffset`}
-                    />
-                    <SliderRow
-                      label="V-Offset"       value={c.vOffset}   min={-80} max={80}  step={1}  unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "vOffset",   v)} testId={`slider-${slot}-voffset`}
-                    />
-                    <SliderRow
-                      label="Padding"        value={c.padding}   min={0}   max={32}  step={1}  unit="px" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "padding",   v)} testId={`slider-${slot}-padding`}
-                    />
-                    <SliderRow
-                      label="Glow Intensity" value={c.glow}      min={0}   max={100} step={5}  unit="%" disabled={!isUnlocked}
-                      onChange={v => setSlotVal(slot, "glow",      v)} testId={`slider-${slot}-glow`}
-                    />
+                  {/* ── Mobile controls ───────────────────────────────────────── */}
+                  <div className="space-y-3">
+                    <p
+                      data-testid={`text-mobile-controls-${slot}`}
+                      className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2"
+                    >
+                      <Smartphone size={11} /> Mobile
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                      <SliderRow
+                        label="Width"  value={c.wMobile} min={0} max={600} step={10} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "wMobile", v)} testId={`slider-${slot}-w-mobile`}
+                      />
+                      <SliderRow
+                        label="Height" value={c.hMobile} min={0} max={300} step={2}  unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "hMobile", v)} testId={`slider-${slot}-h-mobile`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Transform & Style ─────────────────────────────────────── */}
+                  <div className="space-y-3">
+                    <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
+                      <Settings2 size={11} /> Transform &amp; Style
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-4">
+                      <SliderRow
+                        label="Zoom"          value={c.zoom}    min={50}  max={200} step={5} unit="%" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "zoom",    v)} testId={`slider-${slot}-zoom`}
+                      />
+                      <SliderRow
+                        label="H-Offset"      value={c.hOffset} min={-80} max={80}  step={1} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "hOffset", v)} testId={`slider-${slot}-hoffset`}
+                      />
+                      <SliderRow
+                        label="V-Offset"      value={c.vOffset} min={-80} max={80}  step={1} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "vOffset", v)} testId={`slider-${slot}-voffset`}
+                      />
+                      <SliderRow
+                        label="Padding"       value={c.padding} min={0}   max={32}  step={1} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "padding", v)} testId={`slider-${slot}-padding`}
+                      />
+                      <SliderRow
+                        label="Glow Intensity" value={c.glow}   min={0}   max={100} step={5} unit="%" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "glow",   v)} testId={`slider-${slot}-glow`}
+                      />
+                    </div>
                   </div>
 
                   {/* Per-slot reset — only when unlocked */}

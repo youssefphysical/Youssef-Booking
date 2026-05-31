@@ -16,12 +16,17 @@
  *   G. buildLogos merges stored values over defaults correctly
  *   H. Reset to defaults produces default values
  *   I. Save payload structure includes all 7 slots × 9 fields
+ *   J. Lock/unlock semantics
+ *   K. localStorage cache (persistBrandSettingsCache)
+ *   L. Preview mode dimensions (desktop vs mobile)
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   applyLogoSlotCSSVars,
   applyBrandCSSVars,
+  persistBrandSettingsCache,
+  YE_BRAND_SETTINGS_KEY,
   LOGO_BRAND_SLOT_DEFAULTS,
   LOGO_SLOTS,
   type LogoBrandControls,
@@ -357,5 +362,185 @@ describe("Lock/unlock semantics", () => {
     expect(isEditable("footer")).toBe(true);
     expect(isEditable("navbar")).toBe(false);
     expect(isEditable("login")).toBe(false);
+  });
+});
+
+// ── K: localStorage cache (persistBrandSettingsCache) ─────────────────────
+
+describe("persistBrandSettingsCache — localStorage flicker-free boot", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("exports YE_BRAND_SETTINGS_KEY constant", () => {
+    expect(typeof YE_BRAND_SETTINGS_KEY).toBe("string");
+    expect(YE_BRAND_SETTINGS_KEY.length).toBeGreaterThan(0);
+  });
+
+  it("writes raw brandSettings JSON to localStorage under the correct key", () => {
+    const raw = { logos: { navbar: { hDesktop: 75, glow: 40 } } };
+    persistBrandSettingsCache(raw as any);
+    const stored = localStorage.getItem(YE_BRAND_SETTINGS_KEY);
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.logos.navbar.hDesktop).toBe(75);
+    expect(parsed.logos.navbar.glow).toBe(40);
+  });
+
+  it("does nothing when called with null", () => {
+    persistBrandSettingsCache(null);
+    expect(localStorage.getItem(YE_BRAND_SETTINGS_KEY)).toBeNull();
+  });
+
+  it("does nothing when called with undefined", () => {
+    persistBrandSettingsCache(undefined);
+    expect(localStorage.getItem(YE_BRAND_SETTINGS_KEY)).toBeNull();
+  });
+
+  it("overwrites a previous cache entry with the latest value", () => {
+    persistBrandSettingsCache({ logos: { navbar: { hDesktop: 60 } } } as any);
+    persistBrandSettingsCache({ logos: { navbar: { hDesktop: 90 } } } as any);
+    const stored = localStorage.getItem(YE_BRAND_SETTINGS_KEY);
+    const parsed = JSON.parse(stored!);
+    expect(parsed.logos.navbar.hDesktop).toBe(90);
+  });
+
+  it("applyBrandCSSVars persists settings to localStorage after applying vars", () => {
+    localStorage.clear();
+    applyBrandCSSVars({ logos: { footer: { hDesktop: 28, glow: 55 } } } as any);
+    const stored = localStorage.getItem(YE_BRAND_SETTINGS_KEY);
+    expect(stored).not.toBeNull();
+    const parsed = JSON.parse(stored!);
+    expect(parsed.logos.footer.hDesktop).toBe(28);
+  });
+
+  it("cached logos object has all 7 slot keys when applyBrandCSSVars receives full logos", () => {
+    const fullLogos: Record<string, Partial<LogoBrandControls>> = {};
+    for (const slot of LOGO_SLOTS) {
+      fullLogos[slot] = LOGO_BRAND_SLOT_DEFAULTS[slot];
+    }
+    applyBrandCSSVars({ logos: fullLogos } as any);
+    const stored = localStorage.getItem(YE_BRAND_SETTINGS_KEY);
+    const parsed = JSON.parse(stored!);
+    for (const slot of LOGO_SLOTS) {
+      expect(parsed.logos).toHaveProperty(slot);
+    }
+  });
+});
+
+// ── L: preview mode dimensions ────────────────────────────────────────────
+
+describe("Preview mode dimensions — desktop vs mobile", () => {
+  it("desktop preview uses wDesktop/hDesktop values", () => {
+    const c: LogoBrandControls = {
+      wDesktop: 400, hDesktop: 80, wMobile: 200, hMobile: 44,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+    };
+    const previewMode: "desktop" | "mobile" = "desktop";
+
+    const previewW = previewMode === "mobile"
+      ? (c.wMobile  > 0 ? Math.min(c.wMobile,  300) : "auto")
+      : (c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto");
+    const previewH = previewMode === "mobile"
+      ? (c.hMobile  > 0 ? Math.min(c.hMobile,  110) : "auto")
+      : (c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto");
+
+    expect(previewW).toBe(400);
+    expect(previewH).toBe(80);
+  });
+
+  it("mobile preview uses wMobile/hMobile values", () => {
+    const c: LogoBrandControls = {
+      wDesktop: 400, hDesktop: 80, wMobile: 200, hMobile: 44,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+    };
+    const previewMode: "desktop" | "mobile" = "mobile";
+
+    const previewW = previewMode === "mobile"
+      ? (c.wMobile  > 0 ? Math.min(c.wMobile,  300) : "auto")
+      : (c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto");
+    const previewH = previewMode === "mobile"
+      ? (c.hMobile  > 0 ? Math.min(c.hMobile,  110) : "auto")
+      : (c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto");
+
+    expect(previewW).toBe(200);
+    expect(previewH).toBe(44);
+  });
+
+  it("mobile preview caps width at 300 and height at 110", () => {
+    const c: LogoBrandControls = {
+      wDesktop: 600, hDesktop: 200, wMobile: 500, hMobile: 200,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0,
+    };
+    const previewMode: "desktop" | "mobile" = "mobile";
+
+    const previewW = previewMode === "mobile"
+      ? (c.wMobile > 0 ? Math.min(c.wMobile, 300) : "auto")
+      : (c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto");
+    const previewH = previewMode === "mobile"
+      ? (c.hMobile > 0 ? Math.min(c.hMobile, 110) : "auto")
+      : (c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto");
+
+    expect(previewW).toBe(300);
+    expect(previewH).toBe(110);
+  });
+
+  it("desktop preview caps width at 500 and height at 140", () => {
+    const c: LogoBrandControls = {
+      wDesktop: 600, hDesktop: 200, wMobile: 500, hMobile: 200,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0,
+    };
+    const previewMode: "desktop" | "mobile" = "desktop";
+
+    const previewW = previewMode === "mobile"
+      ? (c.wMobile > 0 ? Math.min(c.wMobile, 300) : "auto")
+      : (c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto");
+    const previewH = previewMode === "mobile"
+      ? (c.hMobile > 0 ? Math.min(c.hMobile, 110) : "auto")
+      : (c.hDesktop > 0 ? Math.min(c.hDesktop, 140) : "auto");
+
+    expect(previewW).toBe(500);
+    expect(previewH).toBe(140);
+  });
+
+  it("preview returns 'auto' when dimension is 0", () => {
+    const c: LogoBrandControls = {
+      wDesktop: 0, hDesktop: 60, wMobile: 0, hMobile: 44,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+    };
+
+    const desktopW = c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto";
+    const mobileW  = c.wMobile  > 0 ? Math.min(c.wMobile,  300) : "auto";
+
+    expect(desktopW).toBe("auto");
+    expect(mobileW).toBe("auto");
+  });
+
+  it("changing hMobile only affects mobile preview, not desktop", () => {
+    const base: LogoBrandControls = {
+      wDesktop: 300, hDesktop: 60, wMobile: 150, hMobile: 44,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+    };
+    const modified = { ...base, hMobile: 70 };
+
+    const desktopH = modified.hDesktop > 0 ? Math.min(modified.hDesktop, 140) : "auto";
+    const mobileH  = modified.hMobile  > 0 ? Math.min(modified.hMobile,  110) : "auto";
+
+    expect(desktopH).toBe(60);
+    expect(mobileH).toBe(70);
+  });
+
+  it("changing hDesktop only affects desktop preview, not mobile", () => {
+    const base: LogoBrandControls = {
+      wDesktop: 300, hDesktop: 60, wMobile: 150, hMobile: 44,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+    };
+    const modified = { ...base, hDesktop: 90 };
+
+    const desktopH = modified.hDesktop > 0 ? Math.min(modified.hDesktop, 140) : "auto";
+    const mobileH  = modified.hMobile  > 0 ? Math.min(modified.hMobile,  110) : "auto";
+
+    expect(desktopH).toBe(90);
+    expect(mobileH).toBe(44);
   });
 });

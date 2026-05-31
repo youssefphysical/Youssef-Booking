@@ -108,6 +108,17 @@ function hexToHslTriplet(hex: string): string | null {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+// ─── localStorage key for flicker-free boot ────────────────────────────────
+export const YE_BRAND_SETTINGS_KEY = "ye_brand_settings";
+
+/** Persist the raw brandSettings JSON so index.html can apply CSS vars before React mounts. */
+export function persistBrandSettingsCache(raw: Record<string, unknown> | null | undefined) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (raw) localStorage.setItem(YE_BRAND_SETTINGS_KEY, JSON.stringify(raw));
+  } catch (_) {}
+}
+
 // ─── Emit one slot's CSS vars (also called live from the admin panel) ───────
 //
 // CSS var naming: --brand-{slot}-{property}
@@ -217,4 +228,7 @@ export function applyBrandCSSVars(raw?: Record<string, number | string> | null) 
     const hsl = hexToHslTriplet(t.colorMutedText);
     if (hsl) root.style.setProperty("--muted-foreground", hsl);
   }
+
+  // Persist so the index.html boot script can re-apply before React mounts (flicker fix)
+  persistBrandSettingsCache(raw as Record<string, unknown>);
 }

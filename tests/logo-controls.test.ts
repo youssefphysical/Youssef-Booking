@@ -261,8 +261,61 @@ check("splash logo reads --brand-splash-w-desktop", () => {
   );
 });
 
-// ── 5. AdminMedia.tsx: LogoControlsPanel saves to brandSettings.logos ─────
-console.log("\n[5] AdminMedia.tsx — LogoControlsPanel save payload structure");
+// ── 5. AdminMedia.tsx: LogoControlsPanel UI structure ─────────────────────
+console.log("\n[5] AdminMedia.tsx — LogoControlsPanel UI structure + save payload");
+
+check("LogoControlsPanel has Desktop section labels (text-desktop-controls-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("text-desktop-controls-"),
+    'LogoControlsPanel must render a desktop controls section with data-testid="text-desktop-controls-{slot}" ' +
+    'so desktop and mobile sliders are clearly separated.',
+  );
+});
+
+check("LogoControlsPanel has Mobile section labels (text-mobile-controls-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("text-mobile-controls-"),
+    'LogoControlsPanel must render a mobile controls section with data-testid="text-mobile-controls-{slot}" ' +
+    'so mobile sliders are visually distinct from desktop sliders.',
+  );
+});
+
+check("LogoControlsPanel has Desktop preview mode button (button-preview-mode-desktop-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("button-preview-mode-desktop-"),
+    'LogoControlsPanel must have a Desktop preview toggle button with data-testid="button-preview-mode-desktop-{slot}".',
+  );
+});
+
+check("LogoControlsPanel has Mobile preview mode button (button-preview-mode-mobile-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("button-preview-mode-mobile-"),
+    'LogoControlsPanel must have a Mobile preview toggle button with data-testid="button-preview-mode-mobile-{slot}".',
+  );
+});
+
+check("LogoControlsPanel preview canvas has testid (preview-canvas-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("preview-canvas-"),
+    'LogoControlsPanel preview div must have data-testid="preview-canvas-{slot}" for test targeting.',
+  );
+});
+
+check("LogoControlsPanel preview img has testid (preview-img-{slot})", () => {
+  assert(
+    adminMediaSrc.includes("preview-img-"),
+    'LogoControlsPanel preview <img> must have data-testid="preview-img-{slot}" for test targeting.',
+  );
+});
+
+check("Mobile preview uses wMobile/hMobile (not wDesktop/hDesktop)", () => {
+  assert(
+    adminMediaSrc.includes("c.wMobile") && adminMediaSrc.includes("c.hMobile"),
+    'LogoControlsPanel preview must conditionally use c.wMobile / c.hMobile when previewMode === "mobile".',
+  );
+});
+
+console.log("\n[5b] AdminMedia.tsx — LogoControlsPanel save payload structure");
 
 check("LogoControlsPanel saves to brandSettings.logos", () => {
   assert(
@@ -307,8 +360,64 @@ check("AdminMedia has admin-container wrapper (provides padding-inline)", () => 
   );
 });
 
-// ── 6. brandSettings.ts: applyBrandCSSVars handles logos object ───────────
-console.log("\n[6] brandSettings.ts — applyBrandCSSVars handles per-slot logos object");
+// ── 6. brandSettings.ts: localStorage cache for flicker-free boot ─────────
+console.log("\n[6] brandSettings.ts — localStorage cache (flicker-free boot)");
+
+check("persistBrandSettingsCache function is exported from brandSettings.ts", () => {
+  assert(
+    brandSettingsSrc.includes("export function persistBrandSettingsCache"),
+    'brandSettings.ts must export persistBrandSettingsCache() to allow App.tsx to ' +
+    'persist brand settings to localStorage after each successful settings load.',
+  );
+});
+
+check("YE_BRAND_SETTINGS_KEY constant is exported from brandSettings.ts", () => {
+  assert(
+    brandSettingsSrc.includes("export const YE_BRAND_SETTINGS_KEY"),
+    'brandSettings.ts must export YE_BRAND_SETTINGS_KEY so tests and App.tsx use ' +
+    'the same localStorage key without magic strings.',
+  );
+});
+
+check("applyBrandCSSVars calls persistBrandSettingsCache at the end", () => {
+  assert(
+    brandSettingsSrc.includes("persistBrandSettingsCache(raw"),
+    'applyBrandCSSVars must call persistBrandSettingsCache(raw) at the end so every ' +
+    'successful settings load is cached for the next cold-start boot.',
+  );
+});
+
+const indexHtmlPath = join(__dirname, "../client/index.html");
+const indexHtmlSrc = readFileSync(indexHtmlPath, "utf-8");
+
+check("index.html boot script reads ye_brand_settings from localStorage", () => {
+  assert(
+    indexHtmlSrc.includes("ye_brand_settings"),
+    'client/index.html must contain a synchronous <script> that reads the ' +
+    '"ye_brand_settings" localStorage key at boot to apply CSS vars before React mounts.',
+  );
+});
+
+check("index.html boot script applies --brand-{slot}-h-desktop vars", () => {
+  assert(
+    indexHtmlSrc.includes("h-desktop"),
+    'client/index.html boot script must set --brand-*-h-desktop CSS vars from the ' +
+    'cached settings so logo heights paint correctly on the very first frame.',
+  );
+});
+
+check("index.html boot script handles all 7 logo slots", () => {
+  const slots = ["navbar", "mobile", "login", "dashboard", "footer", "favicon", "splash"];
+  for (const slot of slots) {
+    assert(
+      indexHtmlSrc.includes(`'${slot}'`),
+      `index.html boot script must include the "${slot}" slot in its processing loop.`,
+    );
+  }
+});
+
+// ── 7. brandSettings.ts: applyBrandCSSVars handles logos object ───────────
+console.log("\n[7] brandSettings.ts — applyBrandCSSVars handles per-slot logos object");
 
 check("applyBrandCSSVars reads (raw as any)?.logos", () => {
   assert(
