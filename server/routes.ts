@@ -3109,6 +3109,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // and supplement stacks. Read-only, admin-only. Returns at most
   // `perCategory` rows per group (cap 20). Empty query returns empty groups
   // (the palette uses recent/featured fallbacks instead).
+  // Client Search Center — focused client-only search with package enrichment
+  app.get("/api/admin/clients/search", requireAdmin, async (req, res) => {
+    const q = String(req.query.q ?? "").slice(0, 200);
+    const limitRaw = Number(req.query.limit ?? 8);
+    const limit = Number.isFinite(limitRaw)
+      ? Math.min(Math.max(limitRaw, 1), 20)
+      : 8;
+    const clients = await storage.searchClients(q, limit);
+    res.json({ query: q, clients });
+  });
+
   app.get("/api/admin/search", requireAdmin, async (req, res) => {
     const q = String(req.query.q ?? "").slice(0, 200);
     const perCatRaw = Number(req.query.limit ?? 5);

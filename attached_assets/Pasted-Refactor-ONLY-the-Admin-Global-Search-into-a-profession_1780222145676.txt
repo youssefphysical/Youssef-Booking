@@ -1,0 +1,164 @@
+Refactor ONLY the Admin Global Search into a professional Client Search Center.
+
+IMPORTANT:
+Everything else is working. Do NOT touch bookings logic, clients logic, packages logic, auth, payments, database schema, Neon, Vercel, GitHub, Media, Logo Controls, uploads, colors, theme, or unrelated pages.
+
+Goal:
+The current search is too generic. It should NOT be a command palette for the whole admin. Convert it into a focused Client Search Center only.
+
+Main concept:
+Search = find/manage clients.
+Plus button = create actions.
+Navigation = page movement.
+
+Remove from search:
+
+- Dashboard
+- Bookings page shortcut
+- Packages page shortcut
+- Media shortcut
+- Settings shortcut
+- New client
+- New booking
+- New package template
+- Any general command/action not directly related to a matched client
+
+Search should only search clients by:
+
+- client name
+- phone number
+- email
+- package name
+- client status
+- VIP/active/healthy/package labels if already available
+
+Client result card requirements:
+Each result should show:
+
+- Client full name
+- Email
+- Phone
+- Current package name if available
+- Sessions remaining if available
+- Client status/package badge if available
+- Optional last session date if already available without heavy extra query
+
+Client result actions:
+Main row click/tap opens client profile.
+Add compact actions only if already supported safely:
+
+- Open Profile
+- Book Session
+- Add Package
+- Add Bonus Sessions
+
+Do not create new backend logic unless needed. Prefer existing routes and existing client data.
+
+Empty state:
+Before typing, show a clean professional empty state:
+Title: Search Clients
+Text: Search by name, phone, email, or package.
+Do not show dashboard/navigation/create actions here.
+
+No results state:
+Title: No clients found
+Text: Try another name, phone, email, or package.
+Optional: show “Create client” only if it uses the existing safe create-client flow.
+
+Ranking:
+
+- Exact name match first
+- Prefix name match second
+- Phone/email exact or contains match high priority
+- Package match below name/phone/email
+- Active/VIP/current clients before inactive clients if available
+- Do not show unrelated clutter after typing a specific client name
+
+Mobile design:
+
+- Must look premium and consistent with the existing Tron Legacy admin design.
+- Must fit 360px, 375px, 390px, 412px, and 430px widths.
+- No horizontal overflow.
+- Search input placeholder on mobile:
+  “Search clients…”
+- Desktop placeholder:
+  “Search clients by name, phone, email, or package…”
+- X clear button must not overlap placeholder/text.
+- Footer helper text should be minimal or hidden on mobile.
+- No technical shortcut symbols on mobile if they crowd the UI.
+- Cards should be compact, readable, and touch-friendly.
+
+Desktop/tablet:
+
+- Keep it clean and centered.
+- Max width should be controlled and not too wide.
+- Keyboard navigation can remain if already implemented.
+- Enter opens highlighted client.
+- Esc closes.
+- X clears query.
+
+Design rules:
+
+- Keep current admin theme, colors, glow, borders, radius, typography style.
+- Do not redesign the full control panel.
+- Do not add heavy animations.
+- Avoid huge empty spaces.
+- Highlight matched query text subtly in cyan if easy and safe.
+- Keep performance lightweight.
+
+Performance:
+
+- Debounce search if needed.
+- Avoid heavy full data pulls.
+- Use existing light client search endpoint/data if available.
+- Do not increase Neon transfer significantly.
+- Do not reintroduce old heavy getAllClients behavior if it was optimized before.
+
+Plus button:
+Do NOT move create actions into search.
+The floating plus button should remain responsible for:
+
+- New Client
+- New Booking
+- New Package
+- Add Bonus Sessions
+  Only adjust plus menu if absolutely needed and only if already existing.
+
+Tests required:
+Add/update tests for:
+
+1. Empty search shows only Client Search empty state, no dashboard/navigation/create clutter.
+2. Typing “Nikolas” returns Nikolas client first.
+3. Client exact/prefix match ranks above package/status matches.
+4. Search by phone works.
+5. Search by email works.
+6. Search by package name works.
+7. No unrelated admin navigation results appear.
+8. No create actions appear in search results unless no-results optional create-client is intentionally shown.
+9. Client row opens profile.
+10. X clears query.
+11. Esc closes modal.
+12. Enter opens highlighted client if keyboard navigation exists.
+13. Mobile widths 360/375/390/412/430 have no horizontal overflow.
+14. Placeholder does not clip or overlap the X button.
+15. Existing admin pages are not affected.
+
+Verification:
+Run:
+
+- TypeScript check
+- build
+- relevant admin search tests
+- relevant mobile layout tests
+- existing critical admin tests if available
+
+Final report must include:
+
+1. Which search/command palette files changed.
+2. What was removed from search.
+3. What client fields are searchable.
+4. How ranking works.
+5. How mobile layout was protected.
+6. Tests added/updated and results.
+7. Confirmation that no unrelated pages/features were changed.
+8. Confirmation that search is now Client Search Center only.

@@ -191,6 +191,24 @@ export interface IStorage {
     packages: Package[];
   }>;
   /**
+   * Client-focused search used by the Client Search Center.
+   * Returns up to `limit` clients matching name/phone/email/username
+   * OR whose package name matches, each enriched with their latest
+   * package summary. Name matches rank before package matches.
+   */
+  searchClients(q: string, limit?: number): Promise<Array<{
+    id: number;
+    fullName: string;
+    email: string | null;
+    phone: string | null;
+    clientStatus: string | null;
+    vipTier: string | null;
+    pkgName: string | null;
+    pkgTotal: number | null;
+    pkgUsed: number | null;
+    pkgStatus: string | null;
+  }>>;
+  /**
    * Batched lookup for the verified-badge flag. Returns a Map keyed by userId
    * so callers can enrich a list of users without N+1 queries.
    */
@@ -1605,6 +1623,81 @@ export class DatabaseStorage implements IStorage {
       bookings: bookingsR,
       packages: packagesR,
     };
+  }
+
+  async searchClients(q: string, limit = 8) {
+    const trimmed = (q ?? "").trim();
+    if (!trimmed) return [];
+    const pat = `%${trimmed.replace(/[%_]/g, (m) => `\\${m}`)}%`;
+    const cap = Math.min(Math.max(limit, 1), 20);
+
+    const result = await pool.query<{
+      id: number;
+      full_name: string;
+      email: string | null;
+      phone: string | null;
+      client_status: string | null;
+      vip_tier: string | null;
+      pkg_name: string | null;
+      pkg_total: number | null;
+      pkg_used: number | null;
+      pkg_status: string | null;
+    }>(`
+      WITH matched AS (
+        SELECT u.id, 0 AS boost
+        FROM users u
+        WHERE u.role = 'client'
+          AND (
+            u.full_name ILIKE $1
+            OR u.email    ILIKE $1
+            OR u.phone    ILIKE $1
+            OR u.username ILIKE $1
+          )
+        UNION
+        SELECT DISTINCT p.user_id AS id, 3 AS boost
+        FROM packages p
+        JOIN users u2 ON u2.id = p.user_id AND u2.role = 'client'
+        WHERE p.name ILIKE $1
+      ),
+      deduped AS (
+        SELECT id, MIN(boost) AS boost FROM matched GROUP BY id
+      )
+      SELECT
+        u.id,
+        u.full_name,
+        u.email,
+        u.phone,
+        u.client_status,
+        u.vip_tier,
+        pkg.name            AS pkg_name,
+        pkg.total_sessions  AS pkg_total,
+        pkg.used_sessions   AS pkg_used,
+        pkg.status          AS pkg_status
+      FROM users u
+      JOIN deduped d ON d.id = u.id
+      LEFT JOIN LATERAL (
+        SELECT name, total_sessions, used_sessions, status
+        FROM packages
+        WHERE user_id = u.id
+        ORDER BY purchased_at DESC NULLS LAST
+        LIMIT 1
+      ) pkg ON true
+      ORDER BY d.boost ASC, u.full_name ASC
+      LIMIT $2
+    `, [pat, cap]);
+
+    return result.rows.map((r) => ({
+      id: r.id,
+      fullName: r.full_name,
+      email: r.email,
+      phone: r.phone,
+      clientStatus: r.client_status,
+      vipTier: r.vip_tier,
+      pkgName: r.pkg_name,
+      pkgTotal: r.pkg_total != null ? Number(r.pkg_total) : null,
+      pkgUsed: r.pkg_used != null ? Number(r.pkg_used) : null,
+      pkgStatus: r.pkg_status,
+    }));
   }
 
   async getAllAdmins() {
