@@ -1,43 +1,102 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- ── Homepage ───────────────────────────────────────────────────────── -->
   <url>
-    <loc>https://youssef-booking.vercel.app/</loc>
+    <loc>https://youssefelite.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="ar"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="ur"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="fa"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="es"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="de"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="it"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="ru"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="zh"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="hi"        href="https://youssefelite.com/"/>
+    <xhtml:link rel="alternate" hreflang="tr"        href="https://youssefelite.com/"/>
   </url>
+
+  <!-- ── How it Works ───────────────────────────────────────────────────── -->
   <url>
-    <loc>https://youssef-booking.vercel.app/how-it-works</loc>
+    <loc>https://youssefelite.com/how-it-works</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ar"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ur"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="fa"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="fr"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="es"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="de"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="it"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="ru"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="zh"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="hi"        href="https://youssefelite.com/how-it-works"/>
+    <xhtml:link rel="alternate" hreflang="tr"        href="https://youssefelite.com/how-it-works"/>
   </url>
+
+  <!-- ── Auth (register / sign in) ──────────────────────────────────────── -->
   <url>
-    <loc>https://youssef-booking.vercel.app/auth</loc>
+    <loc>https://youssefelite.com/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="ar"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="ur"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="fa"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="fr"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="es"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="de"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="it"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="ru"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="zh"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="hi"        href="https://youssefelite.com/auth"/>
+    <xhtml:link rel="alternate" hreflang="tr"        href="https://youssefelite.com/auth"/>
   </url>
+
+  <!-- ── Legal pages ────────────────────────────────────────────────────── -->
   <url>
-    <loc>https://youssef-booking.vercel.app/policy</loc>
+    <loc>https://youssefelite.com/policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/policy"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/policy"/>
   </url>
   <url>
-    <loc>https://youssef-booking.vercel.app/privacy</loc>
+    <loc>https://youssefelite.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/privacy"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/privacy"/>
   </url>
   <url>
-    <loc>https://youssef-booking.vercel.app/terms</loc>
+    <loc>https://youssefelite.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/terms"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/terms"/>
   </url>
   <url>
-    <loc>https://youssef-booking.vercel.app/medical-disclaimer</loc>
+    <loc>https://youssefelite.com/medical-disclaimer</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/medical-disclaimer"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/medical-disclaimer"/>
   </url>
   <url>
-    <loc>https://youssef-booking.vercel.app/cookies</loc>
+    <loc>https://youssefelite.com/cookies</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://youssefelite.com/cookies"/>
+    <xhtml:link rel="alternate" hreflang="en"        href="https://youssefelite.com/cookies"/>
   </url>
+
 </urlset>

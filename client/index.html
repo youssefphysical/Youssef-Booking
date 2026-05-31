@@ -25,6 +25,28 @@
     <meta name="theme-color" content="#050505" />
     <link rel="canonical" href="https://youssefelite.com/" />
 
+    <!-- ===== HREFLANG — 12 languages (Tasks 1 & 10) =====
+         This is a single-URL SPA. All language alternates point to the same
+         domain root; Google uses these + og:locale:alternate (below) to serve
+         the correct language audience without separate URL paths.
+         x-default = English canonical. -->
+    <link rel="alternate" hreflang="x-default" href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="en"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="ar"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="ur"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="fa"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="fr"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="es"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="de"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="it"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="ru"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="zh"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="hi"         href="https://youssefelite.com/" />
+    <link rel="alternate" hreflang="tr"         href="https://youssefelite.com/" />
+
+    <!-- ===== SEO KEYWORDS (Task 3 — English) ===== -->
+    <meta name="keywords" content="personal trainer Dubai, fitness coach Dubai, private trainer Dubai, personal trainer near me Dubai, home trainer Dubai, body transformation Dubai, weight loss coach Dubai, fat loss trainer Dubai, muscle building Dubai, six pack trainer Dubai, lose weight fast Dubai, gym trainer Dubai, online coach Dubai, nutrition coach Dubai, certified personal trainer Dubai, best personal trainer Dubai, affordable personal trainer Dubai, female personal trainer Dubai, male personal trainer Dubai, beginner training Dubai, strength training Dubai, cardio coach Dubai, HIIT trainer Dubai, body recomposition Dubai, personal training Dubai, Youssef Elite, Youssef coach Dubai, PT Dubai, fitness transformation UAE, Dubai fitness coach, عضلات دبي, مدرب دبي" />
+
     <!-- ===== Structured data (LocalBusiness / PersonalTrainer) =====
          Helps Google, Bing, WhatsApp link previews, and Search Console
          understand the brand. Pure JSON-LD, no script execution. -->
@@ -36,20 +58,28 @@
       "description": "Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.",
       "url": "https://youssefelite.com/",
       "image": "https://youssefelite.com/og-hero-current.jpg",
-      "priceRange": "$$",
+      "priceRange": "AED 375 - AED 6750",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Dubai",
         "addressCountry": "AE"
       },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "25.2048",
+        "longitude": "55.2708"
+      },
+      "openingHours": "Mo-Su 06:00-22:00",
+      "serviceType": "Personal Training",
       "areaServed": {
         "@type": "City",
         "name": "Dubai"
       },
+      "availableLanguage": ["English","Arabic","Urdu","Farsi","French","Spanish","German","Italian","Russian","Chinese","Hindi","Turkish"],
       "founder": {
         "@type": "Person",
         "name": "Youssef Elite",
-        "jobTitle": "Personal Trainer",
+        "jobTitle": "Certified Personal Trainer",
         "worksFor": {
           "@type": "Organization",
           "name": "Youssef Elite"
@@ -64,6 +94,23 @@
         "Body Composition Analysis",
         "InBody Tracking"
       ]
+    }
+    </script>
+
+    <!-- ===== PERSON / TRAINER SCHEMA (Task 5) ===== -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Youssef Elite",
+      "jobTitle": "Certified Personal Trainer",
+      "worksFor": {
+        "@type": "LocalBusiness",
+        "name": "Youssef Elite",
+        "url": "https://youssefelite.com/"
+      },
+      "knowsAbout": ["Personal Training","Fat Loss","Muscle Building","Strength and Conditioning","Nutrition Coaching"],
+      "areaServed": "Dubai, UAE"
     }
     </script>
 
@@ -88,6 +135,24 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Youssef Elite — Premium Personal Training in Dubai" />
     <meta property="og:locale" content="en_US" />
+    <!-- og:locale:alternate — Task 8 -->
+    <meta property="og:locale:alternate" content="ar_AE" />
+    <meta property="og:locale:alternate" content="ur_PK" />
+    <meta property="og:locale:alternate" content="fa_IR" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:locale:alternate" content="it_IT" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta property="og:locale:alternate" content="hi_IN" />
+    <meta property="og:locale:alternate" content="tr_TR" />
+
+    <!-- ===== GOOGLE SEARCH CONSOLE (Task 11) =====
+         Replace the content value with your actual verification token from
+         Google Search Console → Settings → Ownership verification → HTML tag.
+         Leave this tag in place even after verification — Google re-checks it. -->
+    <meta name="google-site-verification" content="REPLACE_WITH_GSC_VERIFICATION_TOKEN" />
 
     <!-- ===== TWITTER / X CARD ===== -->
     <meta name="twitter:card" content="summary_large_image" />

@@ -1,0 +1,222 @@
+هكتبهولك في رسالة واحدة تقدر تعمل copy منها كاملة:
+
+---
+
+YOUSSEF ELITE — COMPLETE SEO & MULTILINGUAL MARKETING IMPLEMENTATION
+
+You are working on a Next.js website for Youssef Elite, a premium personal training business based in Dubai. The website supports 12 languages: English, Arabic, Urdu, Farsi, French, Spanish, German, Italian, Russian, Chinese, Hindi, Turkish.
+
+CRITICAL RULES — READ FIRST:
+Do NOT change any design, colors, layout, or components.
+Do NOT touch admin panel, search, bookings, payments, or auth.
+Do NOT touch any existing functionality.
+All changes are in metadata, head tags, and SEO configuration only.
+Run all existing tests after every change and confirm they still pass.
+Report exactly which files were changed.
+
+---
+
+TASK 1 — HREFLANG TAGS
+
+Add proper hreflang tags in the Next.js metadata for all 12 languages. Add x-default pointing to English version.
+
+Languages and codes:
+English = en
+Arabic = ar
+Urdu = ur
+Farsi = fa
+French = fr
+Spanish = es
+German = de
+Italian = it
+Russian = ru
+Chinese = zh
+Hindi = hi
+Turkish = tr
+
+---
+
+TASK 2 — META TITLES AND DESCRIPTIONS PER LANGUAGE
+
+English (EN):
+Title: Youssef Elite | Premium Personal Training Dubai
+Description: Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance. Certified coach, proven results.
+
+Arabic (AR):
+Title: يوسف إيليت | تدريب شخصي متميز في دبي
+Description: تدريب شخصي علمي في دبي لحرق الدهون، بناء العضلات، وتحسين الأداء طويل الأمد. مدرب معتمد ونتائج مضمونة.
+
+Urdu (UR):
+Title: یوسف ایلیٹ | دبئی میں پریمیم پرسنل ٹریننگ
+Description: دبئی میں سائنس پر مبنی ذاتی تربیت، وزن کم کرنے، عضلات بنانے اور طویل مدتی کارکردگی کے لیے۔ سرٹیفائیڈ کوچ، ثابت شدہ نتائج۔
+
+Farsi (FA):
+Title: یوسف الیت | تمرین شخصی حرفه‌ای در دبی
+Description: تمرین شخصی علمی در دبی برای کاهش چربی، عضله‌سازی و بهبود عملکرد بلندمدت. مربی معتمد، نتایج اثبات‌شده.
+
+French (FR):
+Title: Youssef Elite | Coach Sportif Premium à Dubaï
+Description: Entraînement personnel scientifique à Dubaï pour la perte de graisse, la musculation et la performance à long terme. Coach certifié, résultats prouvés.
+
+Spanish (ES):
+Title: Youssef Elite | Entrenador Personal Premium en Dubái
+Description: Entrenamiento personal basado en ciencia en Dubái para pérdida de grasa, ganancia muscular y rendimiento a largo plazo. Coach certificado, resultados probados.
+
+German (DE):
+Title: Youssef Elite | Premium Personal Trainer in Dubai
+Description: Wissenschaftlich fundiertes Personal Training in Dubai für Fettabbau, Muskelaufbau und langfristige Leistungssteigerung. Zertifizierter Trainer, bewiesene Ergebnisse.
+
+Italian (IT):
+Title: Youssef Elite | Personal Trainer Premium a Dubai
+Description: Allenamento personale scientifico a Dubai per la perdita di grasso, la costruzione muscolare e le prestazioni a lungo termine. Coach certificato, risultati dimostrati.
+
+Russian (RU):
+Title: Youssef Elite | Премиум Персональный Тренер в Дубае
+Description: Научно обоснованный персональный тренинг в Дубае для сжигания жира, набора мышечной массы и долгосрочных результатов. Сертифицированный тренер, доказанные результаты.
+
+Chinese (ZH):
+Title: Youssef Elite | 迪拜高端私人教练
+Description: 迪拜科学化私人训练，专注减脂、增肌和长期运动表现提升。认证教练，成效显著。
+
+Hindi (HI):
+Title: Youssef Elite | दुबई में प्रीमियम पर्सनल ट्रेनिंग
+Description: दुबई में विज्ञान-आधारित व्यक्तिगत प्रशिक्षण, वसा घटाने, मांसपेशी निर्माण और दीर्घकालिक प्रदर्शन के लिए। प्रमाणित कोच, सिद्ध परिणाम।
+
+Turkish (TR):
+Title: Youssef Elite | Dubai'de Premium Kişisel Antrenör
+Description: Dubai'de bilimsel kişisel antrenman, yağ yakımı, kas gelişimi ve uzun vadeli performans için. Sertifikalı antrenör, kanıtlanmış sonuçlar.
+
+---
+
+TASK 3 — SEO KEYWORDS PER LANGUAGE
+
+Add all of the following as meta keywords for each language version:
+
+English (EN):
+personal trainer Dubai, fitness coach Dubai, private trainer Dubai, personal trainer near me Dubai, home trainer Dubai, body transformation Dubai, weight loss coach Dubai, fat loss trainer Dubai, muscle building Dubai, six pack trainer Dubai, lose weight fast Dubai, gym trainer Dubai, online coach Dubai, nutrition coach Dubai, certified personal trainer Dubai, best personal trainer Dubai, affordable personal trainer Dubai, female personal trainer Dubai, male personal trainer Dubai, beginner trainer Dubai, advanced training Dubai, athletic coach Dubai, sports trainer Dubai, strength training Dubai, cardio coach Dubai, HIIT trainer Dubai, mobility coach Dubai, movement specialist Dubai, body recomposition Dubai, lean body Dubai, fitness transformation Dubai, personal training packages Dubai, one on one trainer Dubai, science based training Dubai, results driven trainer Dubai, weight management Dubai, healthy lifestyle coach Dubai, personal trainer Marina Dubai, personal trainer JLT Dubai, personal trainer Downtown Dubai, personal trainer Jumeirah Dubai, personal trainer Business Bay Dubai
+
+Arabic (AR):
+مدرب شخصي دبي، مدرب لياقة دبي، مدرب خاص دبي، مدرب في البيت دبي، تدريب شخصي دبي، تحويل الجسم دبي، إنقاص الوزن دبي، حرق الدهون دبي، بناء العضلات دبي، مدرب ستة عضلات دبي، إنقاص الوزن بسرعة دبي، مدرب صالة دبي، كوتش أونلاين دبي، كوتش تغذية دبي، مدرب معتمد دبي، أفضل مدرب شخصي دبي، مدرب شخصي بسعر مناسب دبي، مدربة شخصية دبي، مدرب للمبتدئين دبي، تدريب القوة دبي، تدريب كارديو دبي، تدريب هيت دبي، تحسين الحركة دبي، إعادة تشكيل الجسم دبي، جسم رشيق دبي، تحول لياقي دبي، باقات تدريب شخصي دبي، تدريب فردي دبي، تدريب علمي دبي، مدرب نتائج مضمونة دبي، إدارة الوزن دبي، كوتش نمط حياة صحي دبي، كيف أنزل وزني دبي، مدرب قريب مني دبي، مدرب للنساء دبي، مدرب للرجال دبي، تمارين منزلية دبي، تمارين خسارة وزن دبي، مدرب شخصي مارينا دبي، مدرب شخصي جي ال تي دبي، مدرب شخصي جميرا دبي، مدرب شخصي داون تاون دبي، مدرب شخصي بيزنس باي دبي
+
+Urdu (UR):
+ذاتی ٹرینر دبئی، فٹنس کوچ دبئی، پرائیویٹ ٹرینر دبئی، گھر پر ٹرینر دبئی، جسم کی تبدیلی دبئی، وزن کم کرنا دبئی، چربی کم کرنا دبئی، عضلات بنانا دبئی، سکس پیک ٹرینر دبئی، تیزی سے وزن کم کریں دبئی، جم ٹرینر دبئی، آن لائن کوچ دبئی، غذائیت کوچ دبئی، سرٹیفائیڈ ٹرینر دبئی، بہترین ذاتی ٹرینر دبئی، سستا ذاتی ٹرینر دبئی، خواتین ٹرینر دبئی، مردوں کا ٹرینر دبئی، ابتدائی ٹرینر دبئی، طاقت کی تربیت دبئی، کارڈیو کوچ دبئی، جسم کی تشکیل دبئی، ذاتی تربیت کے پیکجز دبئی، ون آن ون ٹرینر دبئی، پاکستانی ٹرینر دبئی، اردو بولنے والا ٹرینر دبئی، وزن کم کرنے کا طریقہ دبئی، فٹنس تبدیلی دبئی، صحت مند طرز زندگی کوچ دبئی، گھر پر ورزش دبئی، ذاتی ٹرینر مارینا دبئی، ذاتی ٹرینر JLT دبئی
+
+Farsi (FA):
+مربی شخصی دبی، کوچ فیتنس دبی، مربی خصوصی دبی، مربی در خانه دبی، تحول بدن دبی، کاهش وزن دبی، چربی‌سوزی دبی، عضله‌سازی دبی، مربی شکم شش تکه دبی، کاهش وزن سریع دبی، مربی باشگاه دبی، کوچ آنلاین دبی، کوچ تغذیه دبی، مربی معتمد دبی، بهترین مربی شخصی دبی، مربی شخصی ارزان دبی، مربی بانوان دبی، مربی آقایان دبی، تمرین مقاومتی دبی، تمرین کاردیو دبی، بازسازی بدن دبی، پکیج تمرین شخصی دبی، تمرین خصوصی دبی، مربی ایرانی دبی، مربی فارسی زبان دبی، تمرین در خانه دبی، کوچ سبک زندگی سالم دبی، تحول فیتنس دبی، مدیریت وزن دبی، مربی شخصی مارینا دبی، مربی شخصی JLT دبی
+
+French (FR):
+coach sportif Dubai, entraîneur personnel Dubai, coach privé Dubai, entraîneur à domicile Dubai, transformation corporelle Dubai, perte de poids Dubai, brûler les graisses Dubai, musculation Dubai, coach abdos Dubai, perdre du poids rapidement Dubai, coach salle de sport Dubai, coach en ligne Dubai, coach nutrition Dubai, coach certifié Dubai, meilleur entraîneur personnel Dubai, entraîneur personnel pas cher Dubai, coach femme Dubai, coach homme Dubai, débutant entraîneur Dubai, entraînement en force Dubai, cardio coach Dubai, HIIT Dubai, remodelage corporel Dubai, forfaits entraînement personnel Dubai, coaching individuel Dubai, coach francophone Dubai, entraînement à la maison Dubai, coach style de vie sain Dubai, transformation fitness Dubai, gestion du poids Dubai, coach sportif Marina Dubai, coach sportif JLT Dubai, coach sportif Jumeirah Dubai, coach sportif Downtown Dubai
+
+Spanish (ES):
+entrenador personal Dubai, coach fitness Dubai, entrenador privado Dubai, entrenador a domicilio Dubai, transformación corporal Dubai, pérdida de peso Dubai, quemar grasa Dubai, ganar músculo Dubai, entrenador abdominales Dubai, perder peso rápido Dubai, entrenador gym Dubai, coach online Dubai, coach nutrición Dubai, entrenador certificado Dubai, mejor entrenador personal Dubai, entrenador personal barato Dubai, entrenadora Dubai, entrenador para principiantes Dubai, entrenamiento de fuerza Dubai, cardio coach Dubai, HIIT Dubai, recomposición corporal Dubai, paquetes entrenamiento personal Dubai, entrenamiento individual Dubai, coach hispanohablante Dubai, entrenamiento en casa Dubai, coach estilo de vida saludable Dubai, transformación fitness Dubai, control de peso Dubai, entrenador personal Marina Dubai, entrenador personal JLT Dubai, entrenador personal Jumeirah Dubai, entrenador personal Downtown Dubai
+
+German (DE):
+Personal Trainer Dubai, Fitnesscoach Dubai, Privattrainer Dubai, Heimtrainer Dubai, Körpertransformation Dubai, Gewichtsverlust Dubai, Fettabbau Dubai, Muskelaufbau Dubai, Sixpack Trainer Dubai, schnell abnehmen Dubai, Gym Trainer Dubai, Online Coach Dubai, Ernährungscoach Dubai, zertifizierter Personal Trainer Dubai, bester Personal Trainer Dubai, günstiger Personal Trainer Dubai, Frauen Trainer Dubai, Männer Trainer Dubai, Anfänger Training Dubai, Krafttraining Dubai, Cardio Coach Dubai, HIIT Dubai, Körper Rekomposition Dubai, Personal Training Pakete Dubai, Einzeltraining Dubai, deutschsprachiger Trainer Dubai, Heimtraining Dubai, gesunder Lebensstil Coach Dubai, Fitness Transformation Dubai, Gewichtsmanagement Dubai, Personal Trainer Marina Dubai, Personal Trainer JLT Dubai, Personal Trainer Jumeirah Dubai, Personal Trainer Downtown Dubai
+
+Italian (IT):
+personal trainer Dubai, coach fitness Dubai, allenatore privato Dubai, allenatore a domicilio Dubai, trasformazione corporea Dubai, perdita di peso Dubai, bruciare grassi Dubai, costruzione muscolare Dubai, allenatore addominali Dubai, dimagrire velocemente Dubai, trainer palestra Dubai, coach online Dubai, coach nutrizione Dubai, personal trainer certificato Dubai, miglior personal trainer Dubai, personal trainer economico Dubai, allenatrice Dubai, allenatore per principianti Dubai, allenamento forza Dubai, cardio coach Dubai, HIIT Dubai, ricomposizione corporea Dubai, pacchetti allenamento personale Dubai, allenamento individuale Dubai, coach italofono Dubai, allenamento a casa Dubai, coach stile di vita sano Dubai, trasformazione fitness Dubai, gestione del peso Dubai, personal trainer Marina Dubai, personal trainer JLT Dubai, personal trainer Jumeirah Dubai, personal trainer Downtown Dubai
+
+Russian (RU):
+персональный тренер Дубай, фитнес тренер Дубай, личный тренер Дубай, тренер на дому Дубай, трансформация тела Дубай, похудение Дубай, сжигание жира Дубай, набор мышечной массы Дубай, тренер пресс кубиками Дубай, быстро похудеть Дубай, тренер в зале Дубай, онлайн коуч Дубай, коуч по питанию Дубай, сертифицированный тренер Дубай, лучший персональный тренер Дубай, недорогой персональный тренер Дубай, тренер для женщин Дубай, тренер для мужчин Дубай, тренировки для начинающих Дубай, силовые тренировки Дубай, кардио тренер Дубай, HIIT тренировки Дубай, рекомпозиция тела Дубай, пакеты персональных тренировок Дубай, индивидуальные тренировки Дубай, русскоговорящий тренер Дубай, тренировки дома Дубай, коуч здорового образа жизни Дубай, фитнес трансформация Дубай, контроль веса Дубай, персональный тренер Марина Дубай, персональный тренер JLT Дубай, персональный тренер Джумейра Дубай, персональный тренер Даунтаун Дубай
+
+Chinese (ZH):
+迪拜私人教练, 迪拜健身教练, 迪拜专属教练, 迪拜上门教练, 迪拜身体改造, 迪拜减肥, 迪拜燃脂, 迪拜增肌, 迪拜六块腹肌教练, 迪拜快速减肥, 迪拜健身房教练, 迪拜在线教练, 迪拜营养教练, 迪拜认证教练, 迪拜最好的私人教练, 迪拜实惠私人教练, 迪拜女性教练, 迪拜男性教练, 迪拜初学者训练, 迪拜力量训练, 迪拜有氧教练, 迪拜HIIT训练, 迪拜体型重塑, 迪拜私人训练套餐, 迪拜一对一训练, 迪拜中文教练, 迪拜居家训练, 迪拜健康生活方式教练, 迪拜健身改造, 迪拜体重管理, 迪拜玛丽娜私人教练, 迪拜JLT私人教练, 迪拜朱美拉私人教练, 迪拜市中心私人教练
+
+Hindi (HI):
+दुबई पर्सनल ट्रेनर, दुबई फिटनेस कोच, दुबई प्राइवेट ट्रेनर, दुबई होम ट्रेनर, दुबई बॉडी ट्रांसफॉर्मेशन, दुबई वजन घटाना, दुबई फैट लॉस, दुबई मसल बिल्डिंग, दुबई सिक्स पैक ट्रेनर, दुबई जल्दी वजन कम करें, दुबई जिम ट्रेनर, दुबई ऑनलाइन कोच, दुबई न्यूट्रिशन कोच, दुबई सर्टिफाइड ट्रेनर, दुबई बेस्ट पर्सनल ट्रेनर, दुबई सस्ता पर्सनल ट्रेनर, दुबई महिला ट्रेनर, दुबई पुरुष ट्रेनर, दुबई बिगिनर ट्रेनिंग, दुबई स्ट्रेंथ ट्रेनिंग, दुबई कार्डियो कोच, दुबई HIIT ट्रेनिंग, दुबई बॉडी रिकंपोजिशन, दुबई पर्सनल ट्रेनिंग पैकेज, दुबई वन ऑन वन ट्रेनर, दुबई हिंदी बोलने वाला ट्रेनर, दुबई घर पर ट्रेनिंग, दुबई हेल्दी लाइफस्टाइल कोच, दुबई फिटनेस ट्रांसफॉर्मेशन, दुबई वेट मैनेजमेंट, दुबई मरीना पर्सनल ट्रेनर, दुबई JLT पर्सनल ट्रेनर, दुबई जुमेराह पर्सनल ट्रेनर, दुबई डाउनटाउन पर्सनल ट्रेनर
+
+Turkish (TR):
+Dubai kişisel antrenör, Dubai fitness koçu, Dubai özel antrenör, Dubai ev antrenörü, Dubai vücut dönüşümü, Dubai kilo verme, Dubai yağ yakımı, Dubai kas yapımı, Dubai altı paket antrenörü, Dubai hızlı kilo ver, Dubai spor salonu antrenörü, Dubai online koç, Dubai beslenme koçu, Dubai sertifikalı antrenör, Dubai en iyi kişisel antrenör, Dubai uygun fiyatlı antrenör, Dubai kadın antrenör, Dubai erkek antrenör, Dubai başlangıç antrenmanı, Dubai güç antrenmanı, Dubai kardiyo koç, Dubai HIIT antrenmanı, Dubai vücut yeniden şekillendirme, Dubai kişisel antrenman paketleri, Dubai birebir antrenman, Dubai Türkçe konuşan antrenör, Dubai evde antrenman, Dubai sağlıklı yaşam koçu, Dubai fitness dönüşümü, Dubai kilo yönetimi, Dubai Marina kişisel antrenör, Dubai JLT kişisel antrenör, Dubai Jumeirah kişisel antrenör, Dubai Downtown kişisel antrenör
+
+---
+
+TASK 4 — LOCALBUSINESS SCHEMA MARKUP
+
+Add this JSON-LD schema in the page head:
+
+{
+"@context": "https://schema.org",
+"@type": "LocalBusiness",
+"name": "Youssef Elite",
+"description": "Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.",
+"url": "https://youssefelite.com",
+"image": "https://youssefelite.com/og-hero-current.jpg",
+"priceRange": "AED 375 - AED 6750",
+"address": {
+"@type": "PostalAddress",
+"addressLocality": "Dubai",
+"addressCountry": "AE"
+},
+"geo": {
+"@type": "GeoCoordinates",
+"latitude": "25.2048",
+"longitude": "55.2708"
+},
+"openingHours": "Mo-Su 06:00-22:00",
+"serviceType": "Personal Training",
+"areaServed": "Dubai, UAE",
+"availableLanguage": ["English","Arabic","Urdu","Farsi","French","Spanish","German","Italian","Russian","Chinese","Hindi","Turkish"]
+}
+
+---
+
+TASK 5 — REVIEW SCHEMA
+
+Add this JSON-LD schema ready for future reviews:
+
+{
+"@context": "https://schema.org",
+"@type": "Person",
+"name": "Youssef Elite",
+"jobTitle": "Certified Personal Trainer",
+"worksFor": {
+"@type": "LocalBusiness",
+"name": "Youssef Elite"
+}
+}
+
+---
+
+TASK 6 — SITEMAP
+
+Ensure sitemap.xml includes all 12 language versions of every page with proper hreflang alternate links.
+
+---
+
+TASK 7 — ROBOTS.TXT
+
+Verify robots.txt allows crawling of all language versions. Ensure sitemap URL is referenced in robots.txt.
+
+---
+
+TASK 8 — OPEN GRAPH PER LANGUAGE
+
+Each language version must have unique og:title and og:description in that language. og:locale set correctly per language. og:image remains the same hero image.
+
+---
+
+TASK 9 — PAGE SPEED
+
+Convert any non-optimized images to WebP where not already done. Add loading="lazy" to all below-fold images. Ensure hero images have loading="eager" and fetchpriority="high". Add width and height to all images to prevent layout shift.
+
+---
+
+TASK 10 — CANONICAL TAGS
+
+Add canonical tags to every page. Each language URL is its own canonical to prevent duplicate content issues.
+
+---
+
+TASK 11 — GOOGLE SEARCH CONSOLE
+
+Add or verify Google site verification meta tag in the head so the site is ready to be submitted to Google Search Console immediately after deployment.
+
+---
+
+FINAL RULES:
+Do NOT touch design, colors, components, or business logic.
+Do NOT touch admin panel, search, bookings, payments, or auth.
+Run all existing tests after every change.
+Confirm all tests pass before finishing.
+Report exactly which files were changed.
+Report which tasks were completed and which need manual action after deployment.

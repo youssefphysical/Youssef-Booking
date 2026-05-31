@@ -10,4 +10,4 @@ Disallow: /book
 Disallow: /reset-password
 Disallow: /direct-payment
 
-Sitemap: https://youssef-booking.vercel.app/sitemap.xml
+Sitemap: https://youssefelite.com/sitemap.xml

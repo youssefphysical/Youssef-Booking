@@ -1,0 +1,102 @@
+---
+
+**YOUSSEF ELITE — COMPLETE SEO KEYWORDS IMPLEMENTATION — ALL 12 LANGUAGES**
+
+Do NOT change any design, colors, layout, components, or existing functionality.
+Do NOT touch admin panel, search, bookings, payments, or auth.
+All changes are in metadata and SEO configuration only.
+Run all existing tests after changes and confirm they still pass.
+Report exactly which files were changed.
+
+---
+
+**TASK — Add the following keywords to meta keywords and sprinkle naturally into meta descriptions for each language version:**
+
+---
+
+**English (EN)**
+
+personal trainer Dubai, fitness coach Dubai, private trainer Dubai, personal trainer near me Dubai, home trainer Dubai, body transformation Dubai, weight loss coach Dubai, fat loss trainer Dubai, muscle building Dubai, six pack trainer Dubai, lose weight fast Dubai, gym trainer Dubai, online coach Dubai, nutrition coach Dubai, certified personal trainer Dubai, best personal trainer Dubai, affordable personal trainer Dubai, female personal trainer Dubai, male personal trainer Dubai, beginner trainer Dubai, advanced training Dubai, athletic coach Dubai, sports trainer Dubai, strength training Dubai, cardio coach Dubai, HIIT trainer Dubai, mobility coach Dubai, movement specialist Dubai, body recomposition Dubai, lean body Dubai, fitness transformation Dubai, personal training packages Dubai, personal training sessions Dubai, one on one trainer Dubai, private gym trainer Dubai, fitness coach JLT Dubai, personal trainer Marina Dubai, personal trainer Downtown Dubai, personal trainer Jumeirah Dubai, personal trainer Business Bay Dubai, science based training Dubai, results driven trainer Dubai, transformation coach Dubai, weight management Dubai, healthy lifestyle coach Dubai, fitness accountability coach Dubai
+
+---
+
+**Arabic (AR)**
+
+مدرب شخصي دبي، مدرب لياقة دبي، مدرب خاص دبي، مدرب في البيت دبي، تدريب شخصي دبي، تحويل الجسم دبي، إنقاص الوزن دبي، حرق الدهون دبي، بناء العضلات دبي، مدرب ستة عضلات دبي، إنقاص الوزن بسرعة دبي، مدرب صالة دبي، كوتش أونلاين دبي، كوتش تغذية دبي، مدرب معتمد دبي، أفضل مدرب شخصي دبي، مدرب شخصي بسعر مناسب دبي، مدربة شخصية دبي، مدرب للمبتدئين دبي، تدريب متقدم دبي، مدرب رياضي دبي، تدريب القوة دبي، تدريب كارديو دبي، تدريب هيت دبي، تحسين الحركة دبي، إعادة تشكيل الجسم دبي، جسم رشيق دبي، تحول لياقي دبي، باقات تدريب شخصي دبي، جلسات تدريب شخصي دبي، تدريب فردي دبي، مدرب خاص جي ال تي دبي، مدرب شخصي مارينا دبي، مدرب شخصي داون تاون دبي، مدرب شخصي جميرا دبي، مدرب شخصي بيزنس باي دبي، تدريب علمي دبي، مدرب نتائج مضمونة دبي، كوتش تحول دبي، إدارة الوزن دبي، كوتش نمط حياة صحي دبي، مدرب متابعة لياقة دبي، كيف أنزل وزني دبي، مدرب قريب مني دبي، مدرب للنساء دبي، مدرب للرجال دبي، تمارين منزلية دبي، تمارين خسارة وزن دبي
+
+---
+
+**Urdu (UR)**
+
+ذاتی ٹرینر دبئی، فٹنس کوچ دبئی، پرائیویٹ ٹرینر دبئی، گھر پر ٹرینر دبئی، جسم کی تبدیلی دبئی، وزن کم کرنا دبئی، چربی کم کرنا دبئی، عضلات بنانا دبئی، سکس پیک ٹرینر دبئی، تیزی سے وزن کم کریں دبئی، جم ٹرینر دبئی، آن لائن کوچ دبئی، غذائیت کوچ دبئی، سرٹیفائیڈ ٹرینر دبئی، بہترین ذاتی ٹرینر دبئی، سستا ذاتی ٹرینر دبئی، خواتین ٹرینر دبئی، مردوں کا ٹرینر دبئی، ابتدائی ٹرینر دبئی، طاقت کی تربیت دبئی، کارڈیو کوچ دبئی، جسم کی تشکیل دبئی، ذاتی تربیت کے پیکجز دبئی، ون آن ون ٹرینر دبئی، پاکستانی ٹرینر دبئی، اردو بولنے والا ٹرینر دبئی، وزن کم کرنے کا طریقہ دبئی، فٹنس تبدیلی دبئی، صحت مند طرز زندگی کوچ دبئی، گھر پر ورزش دبئی
+
+---
+
+**Farsi (FA)**
+
+مربی شخصی دبی، کوچ فیتنس دبی، مربی خصوصی دبی، مربی در خانه دبی، تحول بدن دبی، کاهش وزن دبی، چربی‌سوزی دبی، عضله‌سازی دبی، مربی شکم شش تکه دبی، کاهش وزن سریع دبی، مربی باشگاه دبی، کوچ آنلاین دبی، کوچ تغذیه دبی، مربی معتمد دبی، بهترین مربی شخصی دبی، مربی شخصی ارزان دبی، مربی بانوان دبی، مربی آقایان دبی، تمرین مقاومتی دبی، تمرین کاردیو دبی، بازسازی بدن دبی، پکیج تمرین شخصی دبی، تمرین خصوصی دبی، مربی ایرانی دبی، مربی فارسی زبان دبی، تمرین در خانه دبی، کوچ سبک زندگی سالم دبی، تحول فیتنس دبی، مدیریت وزن دبی
+
+---
+
+**French (FR)**
+
+coach sportif Dubai, entraîneur personnel Dubai, coach privé Dubai, entraîneur à domicile Dubai, transformation corporelle Dubai, perte de poids Dubai, brûler les graisses Dubai, musculation Dubai, coach abdos Dubai, perdre du poids rapidement Dubai, coach salle de sport Dubai, coach en ligne Dubai, coach nutrition Dubai, coach certifié Dubai, meilleur entraîneur personnel Dubai, entraîneur personnel pas cher Dubai, coach femme Dubai, coach homme Dubai, débutant entraîneur Dubai, entraînement en force Dubai, cardio coach Dubai, HIIT Dubai, remodelage corporel Dubai, forfaits entraînement personnel Dubai, coaching individuel Dubai, coach francophone Dubai, entraînement à la maison Dubai, coach style de vie sain Dubai, transformation fitness Dubai, gestion du poids Dubai, coach sportif Marina Dubai, coach sportif JLT Dubai, coach sportif Jumeirah Dubai
+
+---
+
+**Spanish (ES)**
+
+entrenador personal Dubai, coach fitness Dubai, entrenador privado Dubai, entrenador a domicilio Dubai, transformación corporal Dubai, pérdida de peso Dubai, quemar grasa Dubai, ganar músculo Dubai, entrenador abdominales Dubai, perder peso rápido Dubai, entrenador gym Dubai, coach online Dubai, coach nutrición Dubai, entrenador certificado Dubai, mejor entrenador personal Dubai, entrenador personal barato Dubai, entrenadora Dubai, entrenador para principiantes Dubai, entrenamiento de fuerza Dubai, cardio coach Dubai, HIIT Dubai, recomposición corporal Dubai, paquetes entrenamiento personal Dubai, entrenamiento individual Dubai, coach hispanohablante Dubai, entrenamiento en casa Dubai, coach estilo de vida saludable Dubai, transformación fitness Dubai, control de peso Dubai, entrenador personal Marina Dubai, entrenador personal JLT Dubai
+
+---
+
+**German (DE)**
+
+Personal Trainer Dubai, Fitnesscoach Dubai, Privattrainer Dubai, Heimtrainer Dubai, Körpertransformation Dubai, Gewichtsverlust Dubai, Fettabbau Dubai, Muskelaufbau Dubai, Sixpack Trainer Dubai, schnell abnehmen Dubai, Gym Trainer Dubai, Online Coach Dubai, Ernährungscoach Dubai, zertifizierter Personal Trainer Dubai, bester Personal Trainer Dubai, günstiger Personal Trainer Dubai, Frauen Trainer Dubai, Männer Trainer Dubai, Anfänger Training Dubai, Krafttraining Dubai, Cardio Coach Dubai, HIIT Dubai, Körper Rekomposition Dubai, Personal Training Pakete Dubai, Einzeltraining Dubai, deutschsprachiger Trainer Dubai, Heimtraining Dubai, gesunder Lebensstil Coach Dubai, Fitness Transformation Dubai, Gewichtsmanagement Dubai, Personal Trainer Marina Dubai, Personal Trainer JLT Dubai
+
+---
+
+**Italian (IT)**
+
+personal trainer Dubai, coach fitness Dubai, allenatore privato Dubai, allenatore a domicilio Dubai, trasformazione corporea Dubai, perdita di peso Dubai, bruciare grassi Dubai, costruzione muscolare Dubai, allenatore addominali Dubai, dimagrire velocemente Dubai, trainer palestra Dubai, coach online Dubai, coach nutrizione Dubai, personal trainer certificato Dubai, miglior personal trainer Dubai, personal trainer economico Dubai, allenatrice Dubai, allenatore per principianti Dubai, allenamento forza Dubai, cardio coach Dubai, HIIT Dubai, ricomposizione corporea Dubai, pacchetti allenamento personale Dubai, allenamento individuale Dubai, coach italofono Dubai, allenamento a casa Dubai, coach stile di vita sano Dubai, trasformazione fitness Dubai, gestione del peso Dubai, personal trainer Marina Dubai, personal trainer JLT Dubai
+
+---
+
+**Russian (RU)**
+
+персональный тренер Дубай, фитнес тренер Дубай, личный тренер Дубай, тренер на дому Дубай, трансформация тела Дубай, похудение Дубай, сжигание жира Дубай, набор мышечной массы Дубай, тренер пресс кубиками Дубай, быстро похудеть Дубай, тренер в зале Дубай, онлайн коуч Дубай, коуч по питанию Дубай, сертифицированный тренер Дубай, лучший персональный тренер Дубай, недорогой персональный тренер Дубай, тренер для женщин Дубай, тренер для мужчин Дубай, тренировки для начинающих Дубай, силовые тренировки Дубай, кардио тренер Дубай, HIIT тренировки Дубай, рекомпозиция тела Дубай, пакеты персональных тренировок Дубай, индивидуальные тренировки Дубай, русскоговорящий тренер Дубай, тренировки дома Дубай, коуч здорового образа жизни Дубай, фитнес трансформация Дубай, контроль веса Дубай, персональный тренер Марина Дубай, персональный тренер JLT Дубай
+
+---
+
+**Chinese (ZH)**
+
+迪拜私人教练, 迪拜健身教练, 迪拜专属教练, 迪拜上门教练, 迪拜身体改造, 迪拜减肥, 迪拜燃脂, 迪拜增肌, 迪拜六块腹肌教练, 迪拜快速减肥, 迪拜健身房教练, 迪拜在线教练, 迪拜营养教练, 迪拜认证教练, 迪拜最好的私人教练, 迪拜实惠私人教练, 迪拜女性教练, 迪拜男性教练, 迪拜初学者训练, 迪拜力量训练, 迪拜有氧教练, 迪拜HIIT训练, 迪拜体型重塑, 迪拜私人训练套餐, 迪拜一对一训练, 迪拜中文教练, 迪拜居家训练, 迪拜健康生活方式教练, 迪拜健身改造, 迪拜体重管理, 迪拜玛丽娜私人教练, 迪拜JLT私人教练
+
+---
+
+**Hindi (HI)**
+
+दुबई पर्सनल ट्रेनर, दुबई फिटनेस कोच, दुबई प्राइवेट ट्रेनर, दुबई होम ट्रेनर, दुबई बॉडी ट्रांसफॉर्मेशन, दुबई वजन घटाना, दुबई फैट लॉस, दुबई मसल बिल्डिंग, दुबई सिक्स पैक ट्रेनर, दुबई जल्दी वजन कम करें, दुबई जिम ट्रेनर, दुबई ऑनलाइन कोच, दुबई न्यूट्रिशन कोच, दुबई सर्टिफाइड ट्रेनर, दुबई बेस्ट पर्सनल ट्रेनर, दुबई सस्ता पर्सनल ट्रेनर, दुबई महिला ट्रेनर, दुबई पुरुष ट्रेनर, दुबई बिगिनर ट्रेनिंग, दुबई स्ट्रेंथ ट्रेनिंग, दुबई कार्डियो कोच, दुबई HIIT ट्रेनिंग, दुबई बॉडी रिकंपोजिशन, दुबई पर्सनल ट्रेनिंग पैकेज, दुबई वन ऑन वन ट्रेनर, दुबई हिंदी बोलने वाला ट्रेनर, दुबई घर पर ट्रेनिंग, दुबई हेल्दी लाइफस्टाइल कोच, दुबई फिटनेस ट्रांसफॉर्मेशन, दुबई वेट मैनेजमेंट, दुबई मरीना पर्सनल ट्रेनर, दुबई JLT पर्सनल ट्रेनर
+
+---
+
+**Turkish (TR)**
+
+Dubai kişisel antrenör, Dubai fitness koçu, Dubai özel antrenör, Dubai ev antrenörü, Dubai vücut dönüşümü, Dubai kilo verme, Dubai yağ yakımı, Dubai kas yapımı, Dubai altı paket antrenörü, Dubai hızlı kilo ver, Dubai spor salonu antrenörü, Dubai online koç, Dubai beslenme koçu, Dubai sertifikalı antrenör, Dubai en iyi kişisel antrenör, Dubai uygun fiyatlı antrenör, Dubai kadın antrenör, Dubai erkek antrenör, Dubai başlangıç antrenmanı, Dubai güç antrenmanı, Dubai kardiyo koç, Dubai HIIT antrenmanı, Dubai vücut yeniden şekillendirme, Dubai kişisel antrenman paketleri, Dubai birebir antrenman, Dubai Türkçe konuşan antrenör, Dubai evde antrenman, Dubai sağlıklı yaşam koçu, Dubai fitness dönüşümü, Dubai kilo yönetimi, Dubai Marina kişisel antrenör, Dubai JLT kişisel antrenör
+
+---
+
+**IMPLEMENTATION RULES:**
+
+- Add all keywords to meta keywords tag for each language version
+- Weave the most important keywords naturally into each language meta description
+- Do NOT stuff keywords unnaturally
+- Do NOT change any design, colors, or components
+- Do NOT touch admin, bookings, payments, or auth
+- Run all existing tests after changes
+- Confirm all tests pass
+- Report exactly which files were changed
+
+---
+
+ده أكبر وأقوى keyword list ممكن لشغلك — ابعته لـ Replit مرة واحدة.
