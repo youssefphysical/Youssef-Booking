@@ -21,7 +21,7 @@ function useClientSearch(q: string) {
       if (q.trim().length < 1) return [];
       const r = await apiRequest("GET", `/api/admin/search?q=${encodeURIComponent(q.trim())}`);
       const data = await r.json();
-      return (Array.isArray(data) ? data : data.results ?? []) as ClientRow[];
+      return (Array.isArray(data) ? data : (data.clients ?? data.results ?? [])) as ClientRow[];
     },
     enabled: q.trim().length > 0,
     staleTime: 30_000,
