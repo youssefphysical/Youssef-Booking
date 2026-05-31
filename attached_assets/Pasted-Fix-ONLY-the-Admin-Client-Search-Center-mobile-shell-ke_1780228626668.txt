@@ -1,0 +1,139 @@
+Fix ONLY the Admin Client Search Center mobile shell, keyboard alignment, input frame, and duplicate clear icon.
+
+CRITICAL:
+Do NOT change search ranking, search API, client results, client cards data, bookings, packages, auth, database, Media, Logo Controls, theme, or unrelated pages.
+The search results are fast and correct. Only fix the professional mobile layout/visual shell.
+
+Current problems from screenshots:
+1. Clear X icon still appears duplicated as “xx”.
+2. Search input frame is clipped/cut and looks rectangular, not premium.
+3. The input border is too sharp/boxy and does not match the rounded Tron admin design.
+4. When search opens on mobile, the modal is not positioned professionally with the keyboard.
+5. Empty state/search shell feels too large and not smooth.
+6. The search box should open immediately in a stable position above the keyboard with professional spacing.
+7. The search frame should not jump, clip, or look disconnected from the modal.
+
+Required behavior:
+- On mobile, when opening search, autofocus input immediately.
+- Keyboard opens and the search panel positions itself cleanly above the keyboard.
+- Search header stays fixed at the top of the panel.
+- Results/empty state scroll internally below it.
+- No awkward blank space.
+- No layout jump when keyboard opens.
+- No horizontal overflow.
+- No clipped border.
+- No duplicate X icon.
+
+1. Duplicate X fix:
+- Ensure ONLY ONE clear/close icon renders.
+- Remove duplicate icon source, pseudo-element, overlay, or nested button.
+- Inspect if both X and close icon are rendered from two components.
+- Final result: one clean X only.
+- X button size: 40–44px.
+- Vertically centered.
+- Same color/opacity as admin icons.
+- Never overlaps the input.
+
+2. Search input frame:
+- Replace current harsh rectangular focus frame with rounded premium input container.
+- Border radius must match admin cards/buttons.
+- Use subtle 1px cyan border.
+- Focus glow soft only, not strong.
+- No border clipping from top/right/left.
+- Add proper padding inside modal header so border has breathing room.
+- Input should feel integrated inside the modal, not like a separate pasted rectangle.
+
+3. Mobile keyboard positioning:
+- Use dynamic viewport units where safe: 100dvh / visual viewport handling.
+- Search modal should sit in the visible area above keyboard.
+- With keyboard open:
+  - modal top should remain visible
+  - input remains fully visible
+  - results area adjusts height
+  - bottom does not hide behind keyboard
+- Avoid fixed heights that ignore mobile keyboard.
+- Use max-height based on available visual viewport.
+- Add safe-area support for iPhone.
+
+4. Modal sizing:
+- Mobile width: calc(100vw - 24px).
+- Modal radius consistent with admin design.
+- Header compact.
+- Empty state should not make modal feel huge.
+- Results list max-height should adapt:
+  - keyboard closed: max 62vh
+  - keyboard open: fit available space above keyboard
+- The modal should not jump when switching empty state → results.
+
+5. Empty state:
+- On first open, show:
+  Search Clients
+  Type a name, phone, email, or package.
+- Center it softly but not with excessive vertical spacing.
+- Empty state must be visually balanced between input and keyboard.
+- No oversized empty block.
+
+6. Results layout stability:
+- Search header fixed.
+- Results area scrolls internally.
+- Result rows keep stable height.
+- Long names/packages/emails truncate with ellipsis.
+- No card movement that shifts the whole shell.
+- Only the list scrolls.
+
+7. Visual style:
+- Keep Tron Legacy admin style:
+  dark glass,
+  soft cyan,
+  rounded premium corners,
+  subtle shadows,
+  consistent spacing.
+- Do NOT use harsh rectangular outline.
+- Do NOT increase glow intensity.
+- Make it feel like Raycast / Apple Spotlight mobile, adapted to Tron theme.
+
+8. Device verification:
+Test with keyboard open and closed on:
+- Android Chrome 360/412
+- Samsung Internet 360/412
+- iPhone Safari 375/390/430
+- iPad/tablet 768
+- laptop 1366
+- desktop 1440
+
+Must confirm:
+- one X only
+- no clipped input border
+- no horizontal overflow
+- keyboard alignment professional
+- input visible immediately
+- modal does not jump
+- empty state balanced
+- results scroll internally
+- existing instant search still works
+
+Tests required:
+1. Only one clear/close X exists.
+2. X button is aligned and not duplicated.
+3. Input frame is rounded and not clipped.
+4. Input border remains inside modal bounds.
+5. Autofocus opens input correctly.
+6. Mobile keyboard layout does not hide input.
+7. Modal adapts height with keyboard open.
+8. Empty state appears balanced on first open.
+9. Results replace empty state without shell jump.
+10. Results list scrolls internally.
+11. Mobile 360/375/390/412/430 no overflow.
+12. Tablet 768 no overflow.
+13. Desktop 1366/1440 no overflow.
+14. Existing search ranking/speed tests still pass.
+15. Existing admin tests still pass.
+
+Final report:
+- Explain exactly why the duplicate X happened.
+- Explain exactly why the frame was clipped.
+- Explain how mobile keyboard alignment was fixed.
+- Explain how modal jumping was prevented.
+- Confirm search logic/ranking was not changed.
+- Confirm no unrelated features were touched.
+- List files changed and all test results.
