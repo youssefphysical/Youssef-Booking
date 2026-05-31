@@ -42,21 +42,29 @@ function FlagImg({
   size?: number;
   className?: string;
 }) {
+  const w = size;
+  const h = Math.round(size * 0.75);
   return (
-    <img
-      src={FLAG_SRC[code]}
-      alt={`${name} flag`}
-      width={size}
-      height={Math.round(size * 0.75)}
-      loading="lazy"
-      decoding="async"
-      draggable={false}
+    // Wrapper clips the img to the rounded border — required so
+    // object-fit:cover fills the frame without visible corners.
+    <span
       className={cn(
-        "inline-block shrink-0 rounded-sm object-contain ring-1 ring-white/10",
+        "inline-block shrink-0 overflow-hidden rounded ring-1 ring-white/10",
         className,
       )}
-      style={{ width: size, height: Math.round(size * 0.75) }}
-    />
+      style={{ width: w, height: h, minWidth: w }}
+    >
+      <img
+        src={FLAG_SRC[code]}
+        alt={`${name} flag`}
+        width={w}
+        height={h}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+    </span>
   );
 }
 
