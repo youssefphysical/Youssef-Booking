@@ -3057,11 +3057,13 @@ export default function AdminMedia() {
 
   if (isLoading) {
     return (
-      <div className="space-y-5">
-        <div className="admin-shimmer h-10 rounded-2xl w-72" />
-        <div className="admin-shimmer h-32 rounded-2xl" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {[0,1,2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
+      <div className="admin-shell">
+        <div className="admin-container space-y-5">
+          <div className="admin-shimmer h-10 rounded-2xl w-72" />
+          <div className="admin-shimmer h-32 rounded-2xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {[0,1,2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
+          </div>
         </div>
       </div>
     );
@@ -3069,14 +3071,19 @@ export default function AdminMedia() {
 
   if (error || !data) {
     return (
-      <div className="rounded-2xl border border-white/8 bg-card/60 text-center py-16">
-        <p className="text-muted-foreground text-sm">Failed to load media. Please refresh.</p>
+      <div className="admin-shell">
+        <div className="admin-container">
+          <div className="rounded-2xl border border-white/8 bg-card/60 text-center py-16">
+            <p className="text-muted-foreground text-sm">Failed to load media. Please refresh.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5 pb-28" data-testid="page-admin-media">
+    <div className="admin-shell">
+    <div className="admin-container space-y-5" data-testid="page-admin-media">
       <div className="pt-1">
         <h1 className="font-display font-bold text-2xl tracking-tight">Media Manager</h1>
         <p className="text-sm text-muted-foreground mt-1.5">
@@ -3158,6 +3165,7 @@ export default function AdminMedia() {
         </div>
 
       </div>
+    </div>
     </div>
   );
 }
