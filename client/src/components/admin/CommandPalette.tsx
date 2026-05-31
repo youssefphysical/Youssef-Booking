@@ -365,7 +365,12 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             Sits inside a padded zone so its border is never clipped by the modal.
             Layout: [search icon] [input flex-1] [clear X]  — all vertically centered.
           */}
-          <div className="px-4 pt-4 pb-2.5">
+          <form
+            role="search"
+            action="."
+            onSubmit={(e) => e.preventDefault()}
+            className="px-4 pt-4 pb-2.5"
+          >
             <div
               className={cn(
                 "flex items-center gap-2 rounded-full border bg-white/[0.03] px-4",
@@ -423,7 +428,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 </button>
               )}
             </div>
-          </div>
+          </form>
 
           {/* ── ZONE 2: FILTER GRID ─────────────────────────────────────────────
             Chips wrap into a structured grid — NOT a horizontal scroll strip.
