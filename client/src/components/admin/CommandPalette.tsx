@@ -387,6 +387,12 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 value={query}
                 onValueChange={setQuery}
                 placeholder={placeholder}
+                type="search"
+                inputMode="search"
+                autoComplete="off"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 className={cn(
                   "flex-1 h-full bg-transparent text-[13px] sm:text-sm",
                   "outline-none ring-0 focus:outline-none focus:ring-0",
