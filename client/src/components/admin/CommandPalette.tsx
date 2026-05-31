@@ -370,8 +370,8 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               className={cn(
                 "flex items-center gap-2 rounded-full border bg-white/[0.03] px-4",
                 "border-border/50 transition-all duration-200",
-                "focus-within:border-primary/40 focus-within:bg-white/[0.05]",
-                "focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.07)]",
+                "focus-within:border-primary/50 focus-within:bg-white/[0.05]",
+                "focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.18)]",
               )}
               style={{ height: capsuleH }}
               data-testid="client-search-input-wrapper"
@@ -388,11 +388,13 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 onValueChange={setQuery}
                 placeholder={placeholder}
                 className={cn(
-                  "flex-1 h-full bg-transparent text-[13px] sm:text-sm outline-none",
+                  "flex-1 h-full bg-transparent text-[13px] sm:text-sm",
+                  "outline-none ring-0 focus:outline-none focus:ring-0",
                   "placeholder:text-muted-foreground/50",
                   "[&::-webkit-search-cancel-button]:hidden [&::-ms-clear]:hidden",
                   "pr-1",
                 )}
+                style={{ outline: "none", boxShadow: "none" }}
                 data-testid="input-client-search"
               />
 
