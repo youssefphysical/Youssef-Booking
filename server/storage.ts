@@ -207,6 +207,7 @@ export interface IStorage {
     pkgTotal: number | null;
     pkgUsed: number | null;
     pkgStatus: string | null;
+    profilePictureUrl: string | null;
     matchRank: number;
   }>>;
   /**
@@ -1644,6 +1645,7 @@ export class DatabaseStorage implements IStorage {
       pkg_total: number | null;
       pkg_used: number | null;
       pkg_status: string | null;
+      profile_picture_url: string | null;
       match_rank: number;
     }>(`
       WITH pkg_latest AS (
@@ -1664,23 +1666,23 @@ export class DatabaseStorage implements IStorage {
           u.phone,
           u.client_status,
           u.vip_tier,
+          u.profile_picture_url,
           pl.pkg_name,
           pl.pkg_total,
           pl.pkg_used,
           pl.pkg_status,
           CASE
-            WHEN lower(u.full_name) = lower($1)                           THEN 0
-            WHEN u.full_name ILIKE $1 || ' %'
-              OR u.full_name ILIKE '% ' || $1 || ' %'
-              OR u.full_name ILIKE '% ' || $1                             THEN 1
-            WHEN u.full_name ILIKE $1 || '%'                              THEN 2
-            WHEN u.email    ILIKE $1 || '%'                               THEN 3
-            WHEN u.phone    ILIKE '%' || $1 || '%'                        THEN 4
-            WHEN u.full_name ILIKE '%' || $1 || '%'                       THEN 5
-            WHEN u.email    ILIKE '%' || $1 || '%'                        THEN 6
-            WHEN pl.pkg_name ILIKE $1 || '%'                              THEN 7
-            WHEN pl.pkg_name ILIKE '%' || $1 || '%'                       THEN 8
-            WHEN u.client_status ILIKE '%' || $1 || '%'                   THEN 9
+            WHEN lower(u.full_name) = lower($1)          THEN 0
+            WHEN u.full_name ILIKE $1 || ' %'             THEN 1
+            WHEN u.full_name ILIKE '% ' || $1             THEN 2
+            WHEN u.full_name ILIKE $1 || '%'              THEN 3
+            WHEN u.email    ILIKE $1 || '%'               THEN 4
+            WHEN u.phone    ILIKE '%' || $1 || '%'        THEN 5
+            WHEN pl.pkg_name ILIKE $1 || '%'              THEN 6
+            WHEN u.full_name ILIKE '%' || $1 || '%'       THEN 7
+            WHEN u.email    ILIKE '%' || $1 || '%'        THEN 8
+            WHEN pl.pkg_name ILIKE '%' || $1 || '%'       THEN 9
+            WHEN u.client_status ILIKE '%' || $1 || '%'   THEN 10
             ELSE 99
           END AS match_rank
         FROM users u
@@ -1712,6 +1714,7 @@ export class DatabaseStorage implements IStorage {
       pkgTotal: r.pkg_total != null ? Number(r.pkg_total) : null,
       pkgUsed: r.pkg_used != null ? Number(r.pkg_used) : null,
       pkgStatus: r.pkg_status,
+      profilePictureUrl: r.profile_picture_url,
       matchRank: Number(r.match_rank),
     }));
   }

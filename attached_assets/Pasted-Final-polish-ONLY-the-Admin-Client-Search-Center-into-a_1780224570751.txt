@@ -1,0 +1,226 @@
+Final polish ONLY the Admin Client Search Center into a premium instant CRM search with client profile photos.
+
+CRITICAL:
+Do NOT touch bookings logic, clients logic, packages logic, auth, payments, database schema, Neon, Vercel, GitHub, Media, Logo Controls, uploads, colors/theme, or unrelated pages.
+
+Goal:
+Make the Client Search Center feel premium, instant, compact, and fully consistent with the existing Tron Legacy admin design across:
+
+- iPhone Safari/Chrome
+- Android Chrome/Samsung Internet
+- iPad/tablet
+- laptop/desktop
+
+Current problems:
+
+1. Search modal looks too large and not visually balanced.
+2. Search input is too wide/tall and visually heavy.
+3. Cyan border/glow is too strong compared with the rest of the admin.
+4. Results are not visually consistent.
+5. Client profile photo is not shown in search results.
+6. Popup height is not dynamic enough.
+7. Badge hierarchy is weak.
+8. Search must feel instant with no visible “Searching...” delay for small client lists.
+9. Overall design should feel like Raycast / Apple Spotlight / premium CRM, not a basic modal.
+
+Scope:
+Only update the Admin Client Search Center / CommandPalette component, light client search result data if needed, and its tests.
+
+Client profile photo requirement:
+
+- If a client has a profile photo/avatar/profilePictureUrl/profilePhotoUrl already stored, show it in the search result row.
+- The photo must appear on the left side where the current generic client icon/avatar appears.
+- Use a circular avatar, consistent size:
+  - mobile: 42–46px
+  - desktop: 44–48px
+- Image must be object-cover, centered, and clipped cleanly.
+- Add subtle cyan border/glow only on hover/active, not too strong.
+- If no photo exists, show the existing fallback avatar/icon/initials.
+- Do not distort the image.
+- Do not stretch.
+- Do not load huge original images if thumbnail/light URL exists.
+- Use the smallest safe existing profile image URL available.
+- Do NOT reintroduce heavy getAllClients payload.
+- If the optimized search endpoint currently strips profile photos, add only a safe lightweight photo field, preferably thumbnail/profilePhotoUrl, without password/reset token/private data.
+- Do not expose sensitive data.
+
+Performance requirements:
+
+- Search must be instant from the first character.
+- For the current client volume, do local in-memory filtering immediately.
+- Do not show “Searching...” if local client data exists.
+- If backend fallback is needed, keep it silent/subtle and do not block local results.
+- Use 0–50ms perceived delay max.
+- Keep debounce minimal or remove it for local search.
+- Profile photos must not slow down typing or cause layout shift.
+- Use fixed avatar dimensions to prevent jumping.
+- Lazy-load images if helpful, but do not delay text results.
+- Do NOT increase Neon transfer significantly.
+
+Design requirements:
+
+1. Modal
+
+- Use compact premium modal.
+- Width:
+  - mobile: calc(100vw - 24px)
+  - tablet: max 560px
+  - desktop: max 620px
+- Height:
+  - auto based on results
+  - max-height mobile: 60–65vh
+  - max-height desktop: 70vh
+- No huge empty spaces.
+- Results should sit directly under input.
+
+2. Search input
+
+- Height: 48–54px mobile, 52–56px desktop.
+- Icon size smaller and aligned.
+- X clear button perfectly aligned.
+- Text never overlaps X.
+- Mobile placeholder: “Search clients…”
+- Desktop placeholder: “Search clients by name, phone, email, or package…”
+- Border: subtle cyan 1px.
+- Glow: very soft, not strong.
+- Must match existing admin cards, not look like a separate design system.
+
+3. Results layout
+
+- Every client result row must have consistent height.
+- Use compact CRM card style:
+  - client photo/avatar left
+  - full name first line
+  - package badge + status badge beside/under name
+  - email/phone second line
+  - sessions remaining third line only if available
+- Remove oversized row differences.
+- Remove action icons from row.
+- Entire row opens client profile.
+- No “Tap to open”.
+- Use consistent padding, radius, border, hover/active state.
+- Highlight matched text subtly in cyan.
+- If image fails to load, fallback gracefully to initials/icon without layout shift.
+
+4. Badge hierarchy
+
+- Package badge = main badge.
+- Status badge = smaller/secondary.
+- Sessions remaining = muted text, not visually competing with package/status.
+- Convert labels like DIAMOND_ELITE to readable format if safe:
+  “Diamond Elite”
+  “Active”
+  “Pending”
+
+5. Sections
+
+- Empty state:
+  Title: “Search Clients”
+  Text: “Type a name, phone, email, or package.”
+- With results:
+  “Best Matches”
+  “More Suggestions” only if relevant.
+- Section labels small, letter-spaced, muted.
+- Do not show irrelevant clutter.
+
+6. Ranking refinement
+
+- One-letter query must rank names starting with that letter first.
+- Two-letter query narrows instantly.
+- Ranking order:
+  1. Exact full name
+  2. First name starts with query
+  3. Last name starts with query
+  4. Full name starts with query
+  5. Email starts with query
+  6. Phone contains query
+  7. Package starts with query
+  8. Name contains query
+  9. Email contains query
+  10. Package contains query
+  11. Status contains query
+- For query “Y”, show Youssef/Yaser/Younes before clients who merely contain y elsewhere.
+- For query “Yo”, show Youssef/Youssef Darwish/Younes first if they exist.
+- Do not show unrelated clients.
+
+7. Device testing
+   Test and visually protect:
+
+- iPhone SE width 375
+- iPhone 14/15 width 390/393
+- iPhone Pro Max width 430
+- Android 360/412
+- iPad/tablet 768
+- Laptop 1366
+- Desktop 1440+
+
+Required:
+
+- No horizontal overflow.
+- Keyboard open state on mobile must not break layout.
+- Modal must not hide badly behind browser keyboard.
+- Safe-area insets respected on iPhone.
+- Touch targets comfortable.
+- Avatar/photo remains aligned on all screen sizes.
+
+8. Do not break:
+
+- Client row opens profile.
+- X clears search.
+- Esc closes modal.
+- Enter opens highlighted client.
+- Arrow navigation if already supported.
+- Admin pages.
+- Plus button.
+- Existing routes.
+- Existing optimized backend search.
+
+Tests required:
+Add/update tests for:
+
+1. Search appears compact on mobile.
+2. Input height is within required range.
+3. Placeholder does not clip.
+4. X button does not overlap input text.
+5. “Searching...” does not appear when local client data is available.
+6. Typing one letter shows instant local results.
+7. Typing “Y” ranks names starting with Y first.
+8. Typing “Yo” narrows results correctly.
+9. Typing “Nik” ranks Nikolas first.
+10. Result rows have consistent height/classes.
+11. Client profile photo appears when profile photo URL exists.
+12. Fallback avatar/icon appears when no photo exists.
+13. Broken photo URL falls back without layout shift.
+14. Avatar/photo is circular and fixed-size on mobile/desktop.
+15. No action icons appear.
+16. No Tap to Open appears.
+17. Package badge is primary, status badge secondary.
+18. Labels are human-readable if formatting is implemented.
+19. Best Matches appears correctly.
+20. More Suggestions appears only when relevant.
+21. No unrelated clients appear.
+22. Mobile widths 360/375/390/412/430 have no overflow.
+23. Tablet width 768 works.
+24. Desktop widths 1366/1440 work.
+25. Mobile keyboard open state does not cause layout overflow if testable.
+26. Existing 87 pre-existing tests still pass.
+
+Verification:
+Run:
+
+- TypeScript check
+- build
+- client search tests
+- responsive/mobile layout tests
+- existing critical admin tests
+
+Final report must include:
+
+1. Exact visual changes.
+2. Exact profile photo/avatar behavior.
+3. Exact speed/performance changes.
+4. Confirmation local instant search works with no visible Searching delay.
+5. Device widths tested.
+6. Files changed.
+7. Tests added/updated and results.
+8. Confirmation no unrelated features were changed.
