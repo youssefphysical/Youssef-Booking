@@ -94,11 +94,11 @@ export function LanguageSelector({
           <ChevronDown size={12} className="text-muted-foreground/70 shrink-0" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[200px]">
-        <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+      <DropdownMenuContent align="end" sideOffset={10} className="min-w-[200px]">
+        <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground pt-5 pb-2">
           {t("nav.language")}
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="mb-2" />
         {LANGUAGES.map((l) => {
           const active = l.code === lang;
           return (

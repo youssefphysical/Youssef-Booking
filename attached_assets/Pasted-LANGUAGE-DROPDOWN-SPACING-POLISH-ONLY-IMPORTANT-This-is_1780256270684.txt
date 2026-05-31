@@ -1,0 +1,145 @@
+LANGUAGE DROPDOWN SPACING POLISH ONLY
+
+IMPORTANT:
+This is a micro UI polish task only.
+
+DO NOT redesign the language dropdown.
+DO NOT change translations.
+DO NOT change language logic.
+DO NOT change flags.
+DO NOT change Tron Legacy styling.
+DO NOT change colors.
+DO NOT change width.
+DO NOT change animations.
+DO NOT change header layout.
+DO NOT change mobile menu.
+
+The ONLY goal is to improve visual breathing room and spacing.
+
+CURRENT ISSUE
+
+The language trigger button, the dropdown header ("LANGUAGE"), and the first language row are visually too close together.
+
+Everything feels stacked and cramped.
+
+The dropdown currently looks like:
+
+[ Language Button ]
+LANGUAGE
+English
+
+instead of:
+
+[ Language Button ]
+
+LANGUAGE
+
+English
+
+TARGET
+
+Create proper visual separation between:
+
+1. The language trigger button and the dropdown panel.
+2. The top of the dropdown and the "LANGUAGE" title.
+3. The "LANGUAGE" title and the first language row.
+
+REQUIRED CHANGES
+
+1. Dropdown Position
+
+Move the dropdown slightly lower from the trigger button.
+
+Target:
+8–12px visual gap between trigger and dropdown.
+
+The dropdown must feel attached to the trigger while still having breathing room.
+
+2. Header Padding
+
+Increase top padding inside the dropdown.
+
+Current feeling:
+Too compressed.
+
+Target:
+18–24px top padding before the LANGUAGE title.
+
+3. LANGUAGE Title Spacing
+
+Add more spacing below:
+
+LANGUAGE
+
+Target:
+12–16px space between title and first language row.
+
+4. Maintain Alignment
+
+Do NOT move:
+
+- language rows
+- flags
+- checkmarks
+- language codes
+
+Only improve spacing.
+
+5. Maintain Tron Legacy Identity
+
+Keep:
+
+- glass panel
+- neon cyan accents
+- border radius
+- shadows
+- blur
+- dropdown style
+
+No redesign.
+
+VISUAL GOAL
+
+The dropdown should feel:
+
+- premium
+- breathable
+- elegant
+- intentionally spaced
+
+instead of:
+
+- cramped
+- stacked
+- compressed
+
+RESPONSIVE TESTING REQUIRED
+
+Verify on:
+
+- Android Chrome
+- Samsung Internet
+- iPhone Safari
+- iPad
+- Desktop Chrome
+- Desktop Safari
+
+Check:
+
+- trigger → dropdown spacing
+- top padding
+- LANGUAGE title spacing
+- no clipping
+- no overlap
+- no layout shifts
+
+FINAL REPORT
+
+Provide:
+
+1. Exact spacing values used.
+2. Before vs after comparison.
+3. Screenshots/verification.
+4. Files modified.
+5. Confirmation that only spacing was changed.
+6. Confirmation that language logic and styling remain untouched.
