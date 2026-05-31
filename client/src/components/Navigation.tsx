@@ -259,7 +259,7 @@ export function Navigation() {
             never be obscured. This is belt-and-braces: the header is
             already z-[100] and the hero overlay layers all sit at the
             default z=0 inside their own .hero-isolate stacking context. */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0 relative z-[110]">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 relative z-[110]">
           {isConfirmedUser && user?.role === "client" && <NotificationsBell />}
           <LanguageSelector />
           {/* DESKTOP AUTH AREA — STRICT mutually-exclusive conditional.
