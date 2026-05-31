@@ -478,24 +478,28 @@ describe("S28. X button is a flex sibling of the input (no overlap)", () => {
   });
 });
 
-// ── S29: input wrapper has single border (no double border) ───────────────────
-describe("S29. Input wrapper has single border-b (no double border)", () => {
-  it("input wrapper has border-b class exactly once at the wrapper level", () => {
+// ── S29: input wrapper is a capsule (rounded-full) — no double border ─────────
+describe("S29. Input wrapper is a rounded-full capsule with single border", () => {
+  it("no cmdk-input-wrapper child — single border source", () => {
     mockFetch([]);
     makeSut();
     const wrapper = screen.getByTestId("client-search-input-wrapper");
-    // The wrapper itself has the border. It must NOT also contain a child div
-    // with border-b (which the CommandInput UI wrapper would create).
-    const innerBorderDivs = wrapper.querySelectorAll("[cmdk-input-wrapper]");
-    // If we're using CmdkPrimitive.Input directly, no cmdk-input-wrapper child exists
-    expect(innerBorderDivs.length).toBe(0);
+    // Using CmdkRoot.Input directly means no inner cmdk-input-wrapper div
+    expect(wrapper.querySelectorAll("[cmdk-input-wrapper]").length).toBe(0);
   });
 
-  it("wrapper div has border-b class", () => {
+  it("wrapper has rounded-full class (true capsule — not rectangle)", () => {
     mockFetch([]);
     makeSut();
     const wrapper = screen.getByTestId("client-search-input-wrapper");
-    expect(wrapper.className).toContain("border-b");
+    expect(wrapper.className).toContain("rounded-full");
+  });
+
+  it("wrapper has a border class (subtle, not thick outline)", () => {
+    mockFetch([]);
+    makeSut();
+    const wrapper = screen.getByTestId("client-search-input-wrapper");
+    expect(wrapper.className).toMatch(/\bborder\b/);
   });
 });
 
@@ -670,4 +674,137 @@ describe("S40. No horizontal overflow at any tested device width", () => {
       if (list) expect(list.className).toContain("overflow-x-hidden");
     },
   );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHIP GRID LAYOUT — S41-S46
+// Verifies the filter chips use a structured grid (NOT a horizontal scroll strip)
+// and that the capsule search bar is correctly shaped.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── S41: chip zone uses grid (not overflow-x-auto strip) ──────────────────────
+describe("S41. Filter chips are in a grid — NOT a horizontal scroll strip", () => {
+  it("quick-filter-chips container has grid class", () => {
+    mockFetch([]);
+    makeSut();
+    const chips = screen.getByTestId("quick-filter-chips");
+    expect(chips.className).toContain("grid");
+  });
+
+  it("quick-filter-chips container does NOT have overflow-x-auto", () => {
+    mockFetch([]);
+    makeSut();
+    const chips = screen.getByTestId("quick-filter-chips");
+    expect(chips.className).not.toContain("overflow-x-auto");
+  });
+});
+
+// ── S42: grid has correct column count for mobile and larger ──────────────────
+describe("S42. Chip grid defines responsive column counts", () => {
+  it("has grid-cols-2 for mobile (≤640px)", () => {
+    mockFetch([]);
+    makeSut();
+    const chips = screen.getByTestId("quick-filter-chips");
+    expect(chips.className).toContain("grid-cols-2");
+  });
+
+  it("has sm:grid-cols-3 for medium screens", () => {
+    mockFetch([]);
+    makeSut();
+    const chips = screen.getByTestId("quick-filter-chips");
+    expect(chips.className).toContain("sm:grid-cols-3");
+  });
+
+  it("has lg:grid-cols-4 for large screens", () => {
+    mockFetch([]);
+    makeSut();
+    const chips = screen.getByTestId("quick-filter-chips");
+    expect(chips.className).toContain("lg:grid-cols-4");
+  });
+});
+
+// ── S43: all 7 filter chips render in the DOM ─────────────────────────────────
+describe("S43. All filter chips are rendered (none hidden in overflow)", () => {
+  it("renders all 7 filter chip buttons", () => {
+    mockFetch([]);
+    makeSut();
+    const chipIds = ["active", "pending", "expiring", "low_sessions", "has_pkg", "no_pkg", "vip"];
+    chipIds.forEach((id) => {
+      const chip = screen.queryByTestId(`chip-filter-${id}`);
+      expect(chip).not.toBeNull();
+    });
+  });
+
+  it("chips are direct children of the grid container", () => {
+    mockFetch([]);
+    makeSut();
+    const grid = screen.getByTestId("quick-filter-chips");
+    const directChips = Array.from(grid.children).filter(
+      (el) => el.tagName === "BUTTON",
+    );
+    expect(directChips.length).toBe(7);
+  });
+});
+
+// ── S44: chip grid has consistent height per chip ────────────────────────────
+describe("S44. Chips have consistent height (h-9 = 36px)", () => {
+  it("each chip button has h-9 class", () => {
+    mockFetch([]);
+    makeSut();
+    const chipIds = ["active", "pending", "expiring"];
+    chipIds.forEach((id) => {
+      const chip = screen.getByTestId(`chip-filter-${id}`);
+      expect(chip.className).toContain("h-9");
+    });
+  });
+});
+
+// ── S45: selected chip gets cyan styling, unselected tap clears it ────────────
+describe("S45. Selected chip gets active styling and tap toggles it", () => {
+  it("tapping chip sets data-active=true then toggling clears it", async () => {
+    mockFetch([]);
+    makeSut();
+    const chip = screen.getByTestId("chip-filter-active");
+    expect(chip.getAttribute("data-active")).toBe("false");
+    await act(async () => { fireEvent.click(chip); });
+    expect(chip.getAttribute("data-active")).toBe("true");
+    expect(chip.className).toContain("text-primary");
+    await act(async () => { fireEvent.click(chip); });
+    expect(chip.getAttribute("data-active")).toBe("false");
+  });
+
+  it("clear-filters button appears when a chip is selected", async () => {
+    mockFetch([]);
+    makeSut();
+    expect(screen.queryByTestId("chip-clear-filters")).toBeNull();
+    await act(async () => { fireEvent.click(screen.getByTestId("chip-filter-vip")); });
+    expect(screen.queryByTestId("chip-clear-filters")).not.toBeNull();
+  });
+
+  it("clear-filters button removes all selections", async () => {
+    mockFetch([]);
+    makeSut();
+    await act(async () => { fireEvent.click(screen.getByTestId("chip-filter-active")); });
+    await act(async () => { fireEvent.click(screen.getByTestId("chip-filter-vip")); });
+    fireEvent.click(screen.getByTestId("chip-clear-filters"));
+    expect(screen.queryByTestId("chip-clear-filters")).toBeNull();
+    expect(screen.getByTestId("chip-filter-active").getAttribute("data-active")).toBe("false");
+    expect(screen.getByTestId("chip-filter-vip").getAttribute("data-active")).toBe("false");
+  });
+});
+
+// ── S46: filter zone wrapper is present ───────────────────────────────────────
+describe("S46. Filter zone wrapper exists and has a bottom separator", () => {
+  it("filter-zone testid is in the DOM", () => {
+    mockFetch([]);
+    makeSut();
+    expect(screen.getByTestId("filter-zone")).toBeDefined();
+  });
+
+  it("filter-zone has border-b class (zone separator)", () => {
+    mockFetch([]);
+    makeSut();
+    const zone = screen.getByTestId("filter-zone");
+    expect(zone.className).toContain("border-b");
+  });
 });

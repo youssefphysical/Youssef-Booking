@@ -1,0 +1,270 @@
+STOP.
+
+Do NOT add any new search features.
+
+The current problem is NOT functionality.
+
+The problem is the entire UI architecture, spacing, responsiveness, hierarchy and mobile layout.
+
+The current search modal looks broken and crowded.
+
+==================================================
+REDESIGN THE SEARCH LAYOUT FROM SCRATCH
+==================================================
+
+Keep all existing search logic.
+
+Keep:
+- instant search
+- ranking
+- profile photos
+- client cards
+- filters functionality
+
+Change ONLY layout, sizing, spacing and responsive design.
+
+==================================================
+SEARCH LAYOUT
+==================================================
+
+Structure must be:
+
+Header
+Search Bar
+Quick Filters
+Results
+
+Nothing else.
+
+==================================================
+SEARCH BAR
+==================================================
+
+Current search bar is too large and visually broken.
+
+Requirements:
+
+- Height: 52-56px
+- Fully rounded capsule
+- Perfect vertical alignment
+- Input text centered vertically
+- Cursor centered vertically
+- No clipping
+- No oversized borders
+- No textarea appearance
+- No giant cyan rectangle
+
+Search bar should feel like WhatsApp, Telegram, Linear or Notion.
+
+==================================================
+QUICK FILTERS LAYOUT
+==================================================
+
+CRITICAL:
+
+Current filters are wrong.
+
+DO NOT place all chips in a single horizontal crowded row.
+
+Instead:
+
+Use responsive wrapping layout.
+
+Example mobile:
+
+Active       Pending
+
+VIP          Today
+
+Expiring     Low Sessions
+
+Package      Nutrition
+
+No Package
+
+Each chip must keep:
+
+- same height
+- same padding
+- same spacing
+
+No chip may touch another chip.
+
+Spacing must remain balanced.
+
+==================================================
+RESPONSIVE FILTER GRID
+==================================================
+
+Phones:
+
+2 chips per row when possible.
+
+Small phones:
+
+Automatic wrapping.
+
+Tablets:
+
+3-4 chips per row.
+
+Desktop:
+
+Natural multi-row layout.
+
+Never force one endless horizontal scroll row.
+
+==================================================
+MODAL WIDTH
+==================================================
+
+Current modal proportions are poor.
+
+Requirements:
+
+Mobile:
+92-94vw
+
+Tablet:
+80-85vw
+
+Desktop:
+700-900px max
+
+Never edge-to-edge.
+
+Never clipped.
+
+==================================================
+RESULTS SECTION
+==================================================
+
+Results should start immediately below filters.
+
+Reduce wasted space.
+
+No giant empty gaps.
+
+No oversized empty state.
+
+==================================================
+EMPTY STATE
+==================================================
+
+Compact.
+
+Centered.
+
+Small icon.
+
+Small title.
+
+Small description.
+
+No huge vertical blocks.
+
+==================================================
+CLIENT CARDS
+==================================================
+
+Every result card must use the exact same structure.
+
+Avatar always same position.
+
+Name always same position.
+
+Badges always same position.
+
+Package always same position.
+
+Email always same position.
+
+No jumping.
+
+No shifting.
+
+No variable heights.
+
+==================================================
+VISUAL STYLE
+==================================================
+
+Match the existing Tron Legacy admin design.
+
+Premium.
+
+Minimal.
+
+Clean.
+
+Professional.
+
+No clutter.
+
+No giant borders.
+
+No aggressive glow.
+
+No prototype feeling.
+
+==================================================
+MOBILE FIRST
+==================================================
+
+Test on:
+
+360
+375
+390
+412
+430
+
+Samsung Internet
+Chrome Android
+Safari iPhone
+
+The search must feel like a real mobile app.
+
+==================================================
+DO NOT
+==================================================
+
+Do not add new features.
+
+Do not change search logic.
+
+Do not change ranking.
+
+Do not change API.
+
+Do not touch database.
+
+Do not touch bookings.
+
+Do not touch packages.
+
+Do not touch auth.
+
+Only redesign the visual architecture.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Show screenshots for:
+
+360px
+390px
+430px
+768px
+1366px
+
+Confirm:
+
+- chips wrap correctly
+- search bar aligned correctly
+- no clipping
+- no overflow
+- no layout jumps
+- same structure on all devices
+- all existing tests still pass

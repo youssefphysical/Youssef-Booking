@@ -1,0 +1,271 @@
+بعتلك الـ prompt كامل محسّن:
+
+---
+
+ADMIN CLIENT SEARCH CENTER — LOCKED FINAL REDESIGN
+
+REFERENCE IMAGES PROVIDED:
+- Image 1 (184972.jpg): Shows the CURRENT BROKEN STATE of the search. This is what needs to be FIXED.
+- Image 2 (184920.jpg): Shows the WhatsApp TARGET STRUCTURE to match for layout, spacing, chip grid, and search bar shape.
+
+Do NOT copy WhatsApp branding, colors, or exact UI.
+Copy ONLY: structure, chip grid arrangement, search bar capsule shape, spacing logic, and mobile-native behavior.
+Everything must remain inside the Elite Coaching / Tron Legacy Admin design system.
+
+The current CommandPalette component is located at [YOUR FILE PATH HERE].
+Edit it directly. Do NOT create a new file.
+
+==================================================
+WHAT IS WRONG NOW — SEE IMAGE 1
+==================================================
+
+Look at Image 1 to understand the current broken state:
+
+1. Search bar looks like a broken rectangle with thick cyan border — not a capsule.
+2. Filter chips are in ONE horizontal scrolling strip — not a grid.
+3. Input text and cursor are not vertically centered.
+4. Modal corners are too sharp.
+5. Chip spacing is inconsistent and crowded.
+6. Overall layout does not match the WhatsApp reference structure in Image 2.
+
+==================================================
+TARGET STRUCTURE — SEE IMAGE 2
+==================================================
+
+Look at Image 2 (WhatsApp) to understand the target layout logic:
+
+- Search bar is a soft rounded capsule at the top.
+- Filter chips are arranged in a structured GRID — multiple rows, NOT one horizontal scroll.
+- Each row has 2–4 chips depending on screen width.
+- Chips wrap naturally, same size, consistent spacing.
+- Results list begins directly after the chip grid.
+- Clean separation between zones.
+
+Build the search as 3 clear zones:
+
+┌──────────────────────────────┐
+│ ZONE 1 — Search Bar          │
+├──────────────────────────────┤
+│ ZONE 2 — Filter Grid         │
+│ Active       Pending         │
+│ VIP          Today           │
+│ Expiring     Low Sessions    │
+│ Package      Nutrition       │
+├──────────────────────────────┤
+│ ZONE 3 — Results List        │
+│ Client Row                   │
+│ Client Row                   │
+└──────────────────────────────┘
+
+==================================================
+ABSOLUTE CRITICAL RULES
+==================================================
+
+This task is ONLY for:
+- Admin Client Search Center
+- CommandPalette / search modal UI
+- Related search UI tests
+
+DO NOT touch:
+- Search API logic
+- Ranking logic
+- Database schema
+- Bookings / packages / payments / auth
+- Media Manager / Logo Controls / uploads
+- Public website
+- Global theme/colors
+
+Existing instant search, ranking, client photos, avatars, profile opening, and filters must remain working.
+
+If you need to change anything outside CommandPalette/search UI, STOP and explain why first.
+
+==================================================
+ZONE 1 — SEARCH HEADER
+==================================================
+
+Search bar must look like Image 2 — a premium rounded capsule.
+
+Requirements:
+- Height: 48–52px mobile, 52–56px tablet/desktop.
+- Border radius: 999px — full capsule like WhatsApp reference.
+- Background: dark glass, slightly lighter than modal.
+- Border: subtle, NOT a thick cyan rectangle like in Image 1.
+- Focus glow: soft cyan only.
+- Text, cursor, placeholder, search icon, close X — all vertically centered.
+- Only ONE close X icon. Tap target 40–44px.
+- Input text must not overlap X.
+
+Mobile placeholder: "Search clients…"
+Desktop placeholder: "Search clients by name, phone, email, or package…"
+
+Padding:
+- 16px top, 14–16px left/right mobile, 10–12px bottom.
+- 18–24px left/right desktop.
+
+Search bar must never touch the modal edge.
+
+==================================================
+ZONE 2 — FILTER GRID
+==================================================
+
+CRITICAL — Look at Image 2:
+The WhatsApp chips are arranged in a structured grid, NOT one horizontal scroll strip like in Image 1.
+
+Use a responsive adaptive filter grid exactly like Image 2 structure:
+
+Mobile: 2 chips per row, wrap naturally.
+Large phones: 2–3 chips per row.
+Tablet: 3–4 chips per row.
+Desktop: natural adaptive wrapping.
+
+Filter chips: Active, Pending, Expiring Soon, Low Sessions, Has Package, No Package, VIP, Nutrition, Today.
+
+Chip design:
+- Height: 34–38px.
+- Pill radius: 999px.
+- Font: 12–13px mobile, 13–14px desktop.
+- Padding: 12–14px horizontal.
+- Gap between chips: 8–10px. Row gap: 10–12px.
+- Dark glass background, subtle border.
+- Selected: soft cyan fill/border/glow.
+- Unselected: muted glass.
+
+Filter zone padding: 0 16px 14px mobile, 0 20px 16px desktop.
+
+==================================================
+ZONE 3 — RESULTS LIST
+==================================================
+
+Results begin directly after filters — no large gaps.
+
+Results area:
+- Scrolls internally.
+- Modal shell stays stable — header and filters don't move.
+- No horizontal overflow, no double scrollbars.
+
+Client rows:
+- Avatar/photo column fixed. Text column fixed. Badges aligned.
+- Email/phone single-line ellipsis. Long names ellipsis.
+- Entire row opens client profile.
+- Do not show action icons inside rows.
+
+Profile photos:
+- Real photo if exists, else initials avatar.
+- Size: 42–46px mobile, 44–48px desktop. Circle. Object-cover.
+
+Sections: "BEST MATCHES" / "MORE SUGGESTIONS" only when useful.
+
+==================================================
+EMPTY STATE
+==================================================
+
+Compact empty state below filters when no query/filter:
+- Small icon.
+- Title: "Search Clients"
+- Text: "Type a name, phone, email, or package."
+- No huge vertical spacing.
+
+==================================================
+KEYBOARD BEHAVIOR
+==================================================
+
+On mobile:
+- Autofocus input immediately.
+- Search layer stays above keyboard.
+- Search bar stays fully visible.
+- Results area adapts to remaining visual viewport.
+- No jump when keyboard opens.
+
+Use: 100dvh, safe-area-inset, visualViewport handling.
+Do not rely on fixed 100vh only.
+
+==================================================
+MODAL SIZE
+==================================================
+
+Mobile: 92–94vw, max-height 72dvh, border radius 22–26px.
+Tablet: 80–85vw, max-width 760px.
+Desktop: 700–900px max, centered, max-height 70vh.
+
+Never edge-to-edge. Never clipped. Never oversized.
+
+==================================================
+VISUAL DIRECTION
+==================================================
+
+Target:
+WhatsApp search structure (Image 2)
++ Linear precision
++ Notion consistency
++ Elite Coaching Tron Legacy identity
+
+- Dark premium glass.
+- Soft cyan neon accents.
+- Subtle borders and shadows.
+- Rounded modern corners.
+- NO harsh cyan rectangle like Image 1.
+- NO crowded chips like Image 1.
+- NO horizontal chip scroll like Image 1.
+
+==================================================
+RESPONSIVE TESTING REQUIRED
+==================================================
+
+Mobile: 360x740, 375x812, 390x844, 412x915, 430x932.
+Tablet: 768x1024, 834x1194, 1024x1366.
+Desktop: 1366x768, 1440x900, 1728x1117.
+
+Test keyboard-open state on all mobile widths.
+
+==================================================
+FUNCTIONAL REQUIREMENTS TO PRESERVE
+==================================================
+
+Keep working:
+- Instant search from first character.
+- Ranking. Profile photo/avatar. Filters.
+- Row click opens client.
+- X clears/closes correctly. Esc closes.
+- No heavy backend queries.
+
+==================================================
+TESTS REQUIRED
+==================================================
+
+1. Search renders as 3 zones: header, filter grid, results.
+2. Search bar is capsule style — NOT textarea or rectangle.
+3. Input text/cursor vertically centered.
+4. Only one close X exists and is aligned.
+5. Filter chips are NOT one horizontal strip.
+6. Mobile filter grid wraps into multiple rows like Image 2.
+7. Chips have consistent size and spacing.
+8. Selected chip styling works. Tapping clears it.
+9. Results begin directly after filters.
+10. Empty state is compact.
+11. Results list scrolls internally — modal shell stable.
+12. No horizontal overflow on 360/375/390/412/430.
+13. Keyboard-open keeps input and modal visible.
+14. Tablet 768/834/1024 layouts work.
+15. Desktop 1366/1440/1728 layouts work.
+16. Existing search ranking tests still pass.
+17. Existing profile photo/avatar tests still pass.
+18. Existing admin tests still pass.
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+1. What was wrong — reference Image 1.
+2. How new layout matches Image 2 structure.
+3. Confirmation of 3-zone architecture.
+4. Confirmation chips use grid like Image 2, not strip like Image 1.
+5. Confirmation mobile keyboard layout works.
+6. Confirmation no duplicate X, no clipped border.
+7. Confirmation results scroll internally.
+8. Viewport verification: 360, 390, 430, 768, 1366, 1440.
+9. Files changed. Tests added. All tests passed.
+10. Confirmation no unrelated logic was touched.
+
+---
+
+**ملاحظة:** استبدل `[YOUR FILE PATH HERE]` بالمسار الفعلي للـ component عندك، مثلاً `components/admin/CommandPalette.jsx`

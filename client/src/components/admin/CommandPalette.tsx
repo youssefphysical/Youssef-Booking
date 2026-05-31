@@ -257,8 +257,8 @@ export function CommandPalette({ open, onOpenChange }: Props) {
 
     const recalc = () => {
       const available = vv.height;
-      // header padding + capsule + chips row + footer + spacing
-      const reserved = isMobile ? 180 : 200;
+      // header + capsule + chip grid (4 rows on mobile) + footer + breathing room
+      const reserved = isMobile ? 320 : 220;
       const px = Math.max(160, available - reserved);
       setListMaxH(`${px}px`);
     };
@@ -360,18 +360,18 @@ export function CommandPalette({ open, onOpenChange }: Props) {
           data-testid="client-search-command"
         >
 
-          {/* ── HEADER: capsule search bar with breathing room ───────────────────
-            Capsule (rounded-[20px]) sits inside a padded header so its border is
-            never clipped by the modal edge. Soft cyan glow on focus-within only.
-            Layout: [search icon] [input] [clear X]  — all vertically centered.
+          {/* ── ZONE 1: SEARCH BAR — full capsule, breathing room ────────────────
+            rounded-full (999px) gives a true capsule shape — never a rectangle.
+            Sits inside a padded zone so its border is never clipped by the modal.
+            Layout: [search icon] [input flex-1] [clear X]  — all vertically centered.
           */}
-          <div className="px-3 pt-3 pb-2">
+          <div className="px-4 pt-4 pb-2.5">
             <div
               className={cn(
-                "flex items-center gap-2 rounded-[20px] border bg-white/[0.03] px-3.5",
-                "border-border/60 transition-all duration-200",
-                "focus-within:border-primary/45 focus-within:bg-white/[0.05]",
-                "focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]",
+                "flex items-center gap-2 rounded-full border bg-white/[0.03] px-4",
+                "border-border/50 transition-all duration-200",
+                "focus-within:border-primary/40 focus-within:bg-white/[0.05]",
+                "focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.07)]",
               )}
               style={{ height: capsuleH }}
               data-testid="client-search-input-wrapper"
@@ -417,13 +417,14 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             </div>
           </div>
 
-          {/* ── QUICK FILTER CHIPS ───────────────────────────────────────────────
-            Always visible while open (incl. empty query). Horizontal scroll keeps
-            them compact — never wraps or breaks layout. Tap toggles instantly.
+          {/* ── ZONE 2: FILTER GRID ─────────────────────────────────────────────
+            Chips wrap into a structured grid — NOT a horizontal scroll strip.
+            Mobile: 2 per row · sm: 3 per row · lg: 4 per row.
+            Matches the structured WhatsApp chip-grid reference layout.
           */}
-          <div className="border-b border-border/40 px-3 pb-2">
+          <div className="border-b border-border/40 px-4 pb-3 pt-1" data-testid="filter-zone">
             <div
-              className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-2"
               data-testid="quick-filter-chips"
             >
               {FILTERS.map((f) => {
@@ -437,7 +438,8 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                     data-active={on ? "true" : "false"}
                     aria-pressed={on}
                     className={cn(
-                      "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium whitespace-nowrap",
+                      "rounded-full border h-9 px-3 text-[12px] sm:text-[13px] font-medium",
+                      "flex items-center justify-center whitespace-nowrap",
                       "transition-colors touch-manipulation",
                       on
                         ? "bg-primary/15 border-primary/40 text-primary"
@@ -448,19 +450,19 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                   </button>
                 );
               })}
-
-              {activeFilters.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setActiveFilters([])}
-                  data-testid="chip-clear-filters"
-                  className="shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors touch-manipulation"
-                >
-                  <X size={11} />
-                  Clear
-                </button>
-              )}
             </div>
+
+            {activeFilters.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveFilters([])}
+                data-testid="chip-clear-filters"
+                className="mt-2 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-muted-foreground/55 hover:text-foreground transition-colors touch-manipulation"
+              >
+                <X size={10} />
+                Clear filters
+              </button>
+            )}
           </div>
 
           {/* ── RESULTS LIST ─────────────────────────────────────────────────────
@@ -484,7 +486,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 </span>
                 <p className="text-sm font-medium">Search Clients</p>
                 <p className="text-[12px] text-muted-foreground/60 leading-relaxed max-w-[210px]">
-                  Type a name, phone, email or package.
+                  Type a name, phone, email, or package.
                 </p>
               </div>
             )}
