@@ -2438,6 +2438,7 @@ function ProfileSection({ settings }: { settings: Settings }) {
   const [bio, setBio] = useState(settings?.profileBio ?? "");
   const [isProfileBioDirty, setIsProfileBioDirty] = useState(false);
   const { guard: profileUnsavedGuard } = useUnsavedChanges(isProfileBioDirty);
+  const [deletePhotoDialogOpen, setDeletePhotoDialogOpen] = useState(false);
 
   const savedPhoto = settings?.profilePhotoUrl?.trim() || "";
   const displayPhoto = pendingPreview || (savedPhoto && !imgErrored ? savedPhoto : "");
@@ -2593,11 +2594,7 @@ function ProfileSection({ settings }: { settings: Settings }) {
               {savedPhoto && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm("Remove the profile photo? The homepage will show a placeholder until you upload a new one.")) {
-                      deletePhotoMutation.mutate();
-                    }
-                  }}
+                  onClick={() => setDeletePhotoDialogOpen(true)}
                   disabled={uploadMutation.isPending || deletePhotoMutation.isPending}
                   data-testid="button-delete-profile-photo"
                   className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/50 text-sm font-semibold transition-all duration-200 disabled:opacity-40"
@@ -2616,6 +2613,16 @@ function ProfileSection({ settings }: { settings: Settings }) {
           </div>
         </div>
       </div>
+
+      <DangerConfirmDialog
+        open={deletePhotoDialogOpen}
+        onOpenChange={setDeletePhotoDialogOpen}
+        title="Remove profile photo?"
+        description="The homepage will show a placeholder until you upload a new one."
+        confirmLabel="Remove Photo"
+        onConfirm={() => { setDeletePhotoDialogOpen(false); deletePhotoMutation.mutate(); }}
+        data-testid="dialog-delete-profile-photo"
+      />
 
       {/* Bio editor */}
       <div className="rounded-2xl border border-white/[0.08] bg-card/60 backdrop-blur-sm p-5 space-y-4">
@@ -2693,6 +2700,7 @@ function TransformationCard(props: TransformationCardProps) {
   const [beforeCropOpen, setBeforeCropOpen] = useState(false);
   const [afterCropOpen, setAfterCropOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const id = initial?.id ?? null;
   const saving =
@@ -2873,7 +2881,7 @@ function TransformationCard(props: TransformationCardProps) {
               type="button"
               variant="outline"
               className="text-red-300 border-red-500/30 hover:bg-red-500/10 hover:text-red-200"
-              onClick={() => { if (confirm("Delete this transformation?")) deleteMutation.mutate(id); }}
+              onClick={() => setDeleteDialogOpen(true)}
               disabled={deleteMutation.isPending}
               data-testid={`button-delete-transformation-${id}`}
             >
@@ -2912,6 +2920,16 @@ function TransformationCard(props: TransformationCardProps) {
         outputLongEdgePx={1600}
         title="Upload After Photo"
         description="Use the same orientation as the before photo for the best gallery appearance."
+      />
+
+      <DangerConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete this transformation?"
+        description="This will permanently remove the before/after photos and all metadata from the gallery."
+        confirmLabel="Delete"
+        onConfirm={() => { setDeleteDialogOpen(false); if (id !== null) deleteMutation.mutate(id); }}
+        data-testid={`dialog-delete-transformation-${id}`}
       />
     </div>
   );
