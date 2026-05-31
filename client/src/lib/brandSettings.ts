@@ -45,11 +45,12 @@ export const LOGO_SLOTS: LogoSlot[] = [
 export const LOGO_BRAND_SLOT_DEFAULTS: Record<LogoSlot, LogoBrandControls> = {
   navbar:    { wDesktop:   0, hDesktop:  60, wMobile:   0, hMobile:  52, zoom: 100, hOffset: 0, vOffset: 0, padding: 5,  glow: 35 },
   mobile:    { wDesktop:   0, hDesktop:  52, wMobile:   0, hMobile:  44, zoom: 100, hOffset: 0, vOffset: 0, padding: 4,  glow: 25 },
-  login:     { wDesktop: 480, hDesktop:   0, wMobile: 360, hMobile:   0, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 40 },
+  // zoom: 108 matches the existing AuthPage scale(1.08) so saved default = visual default
+  login:     { wDesktop: 480, hDesktop:   0, wMobile: 360, hMobile:   0, zoom: 108, hOffset: 0, vOffset: 0, padding: 0,  glow: 40 },
   dashboard: { wDesktop:   0, hDesktop:  48, wMobile:   0, hMobile:  40, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 20 },
   footer:    { wDesktop:   0, hDesktop:  22, wMobile:   0, hMobile:  20, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 25 },
   favicon:   { wDesktop:  32, hDesktop:  32, wMobile:  16, hMobile:  16, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow:  0 },
-  splash:    { wDesktop:   0, hDesktop:  80, wMobile:   0, hMobile:  64, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 50 },
+  splash:    { wDesktop:   0, hDesktop:   0, wMobile:   0, hMobile:   0, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 50 },
 };
 
 // ─── Theme token overrides ──────────────────────────────────────────────────
@@ -108,6 +109,12 @@ function hexToHslTriplet(hex: string): string | null {
 }
 
 // ─── Emit one slot's CSS vars (also called live from the admin panel) ───────
+//
+// CSS var naming: --brand-{slot}-{property}
+// e.g. --brand-navbar-h-desktop, --brand-login-zoom, --brand-footer-glow
+//
+// Special alias: "dashboard" slot also drives --brand-sidebar-* because
+// BrandLogo variant="sidebar" (AdminNavigation) reads --brand-sidebar-h-desktop.
 export function applyLogoSlotCSSVars(slot: LogoSlot, c: LogoBrandControls) {
   const root = document.documentElement;
   const p = `--brand-${slot}`;
@@ -120,6 +127,12 @@ export function applyLogoSlotCSSVars(slot: LogoSlot, c: LogoBrandControls) {
   root.style.setProperty(`${p}-vpos`,    `${c.vOffset}px`);
   root.style.setProperty(`${p}-padding`, `${c.padding}px`);
   root.style.setProperty(`${p}-glow`,    String(c.glow / 100));
+
+  // "dashboard" slot drives the admin sidebar (BrandLogo variant="sidebar" reads --brand-sidebar-*)
+  if (slot === "dashboard") {
+    root.style.setProperty("--brand-sidebar-h-desktop", c.hDesktop > 0 ? `${c.hDesktop}px` : "auto");
+    root.style.setProperty("--brand-sidebar-glow",      String(c.glow / 100));
+  }
 }
 
 // ─── Full brand CSS var application (called at boot + on settings load) ─────
@@ -140,7 +153,7 @@ export function applyBrandCSSVars(raw?: Record<string, number | string> | null) 
 
   const root = document.documentElement;
 
-  // Legacy flat vars (consumed by BrandLogo.tsx, AuthPage.tsx, etc.)
+  // Legacy flat vars (fallback layer — per-slot vars below take precedence)
   root.style.setProperty("--brand-navbar-h-desktop", `${s.navbarLogoDesktop}px`);
   root.style.setProperty("--brand-navbar-h-mobile",  `${s.navbarLogoMobile}px`);
   root.style.setProperty("--brand-auth-w-desktop",   `${s.authLogoDesktop}px`);
@@ -156,7 +169,7 @@ export function applyBrandCSSVars(raw?: Record<string, number | string> | null) 
   root.style.setProperty("--brand-auth-zoom",        `${s.authLogoZoom / 100}`);
   root.style.setProperty("--brand-auth-vpos",        `${s.authLogoVPos}px`);
 
-  // Per-logo slot vars (new structure stored under raw.logos)
+  // Per-logo slot vars (new structure stored under raw.logos) — these WIN over legacy vars
   const logos = (raw as any)?.logos as
     Partial<Record<LogoSlot, Partial<LogoBrandControls>>> | undefined;
 
@@ -167,7 +180,7 @@ export function applyBrandCSSVars(raw?: Record<string, number | string> | null) 
       applyLogoSlotCSSVars(slot, c);
     }
   } else {
-    // Emit defaults so CSS vars are always defined
+    // Emit defaults so CSS vars are always defined even before first save
     for (const slot of LOGO_SLOTS) {
       applyLogoSlotCSSVars(slot, LOGO_BRAND_SLOT_DEFAULTS[slot]);
     }

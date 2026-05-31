@@ -61,6 +61,14 @@ args = "csv-export-e2e"
 task = "workflow.run"
 args = "wizard-happy-path"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "logo-controls-spec"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "logo-controls-static"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -157,6 +165,22 @@ isValidation = true
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npx playwright test e2e/wizard-onboarding.spec.ts --reporter=list"
+
+[[workflows.workflow]]
+name = "logo-controls-spec"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx vitest run tests/logo-controls.spec.tsx"
+
+[[workflows.workflow]]
+name = "logo-controls-static"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tsx tests/logo-controls.test.ts"
 
 [agent]
 integrations = ["javascript_openai_ai_integrations:2.0.0", "github:1.0.0"]

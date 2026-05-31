@@ -1,0 +1,128 @@
+Full audit + fix + tests for ALL logo controls.
+
+Important:
+Everything else is working. Do NOT touch auth, booking, payments, Neon plan, Vercel config, GitHub workflow, database schema, business logic, colors, theme, or page design.
+
+Problem:
+Admin → Media → Branding → Logo Controls preview changes, but saved controls may not apply correctly to the real live logo placements. This may affect navbar, mobile navbar, auth/login logo, splash/loading logo, footer, admin logo, and any other logo usage.
+
+Goal:
+Every logo control in Admin Media must persist, reload, and apply to the correct live placement.
+
+Audit all logo placements:
+1. Public desktop navbar logo
+2. Public mobile navbar logo
+3. Admin top/sidebar logo
+4. Login/auth logo
+5. Splash/loading logo
+6. Footer logo
+7. Favicon/PWA icons if controlled
+8. Any logo preview card in Admin Media
+
+Audit all logo control types:
+- image URL/source
+- visibility
+- desktop width
+- desktop height
+- mobile width
+- mobile height
+- zoom
+- horizontal offset
+- vertical offset
+- padding
+- glow intensity
+- object fit/object position
+- safe area / max width
+- reset to defaults
+- lock/unlock behavior
+- Save All behavior
+
+Tasks:
+1. Find every file/component that renders a logo.
+2. Find every field used by LogoControlsPanel/AdminMedia.
+3. Compare Admin preview fields with live component fields.
+4. Fix any mismatch where preview uses one field but live component reads another.
+5. Ensure Save All sends all logo control fields.
+6. Ensure backend PATCH persists all fields.
+7. Ensure frontend settings cache invalidates/refetches after save.
+8. Ensure live public site uses saved values after reload.
+9. Keep each logo placement independent unless intentionally shared.
+10. Keep safe default values only when saved values are missing.
+11. Do not change schema unless absolutely required; prefer existing fields/mapping.
+12. Do not change layout except what is necessary for logo control application.
+
+Required tests:
+Create or update tests to verify:
+
+A. Save payload test
+- Change desktop/mobile width, height, zoom, X/Y offset, padding, glow for each logo placement.
+- Click Save All.
+- Assert request payload includes all changed fields.
+
+B. Persistence test
+- Mock/verify PATCH /api/settings or media logo config endpoint.
+- Assert values are saved and returned by GET settings/config.
+
+C. Reload test
+- Save logo controls.
+- Reload Admin Media.
+- Assert sliders/inputs show saved values, not defaults.
+
+D. Live public navbar test
+- Save mobile navbar logo height/offset/zoom.
+- Load public homepage at mobile width 390px.
+- Assert rendered logo style/size/position reflects saved values.
+- Repeat for desktop width 1440px.
+
+E. Auth/login logo test
+- Save auth logo desktop/mobile dimensions and zoom.
+- Load /auth.
+- Assert auth logo reflects saved values.
+
+F. Splash/loading logo test
+- Save splash/loading logo controls.
+- Trigger or load splash/loading state if available.
+- Assert logo reflects saved values.
+
+G. Footer logo test
+- Save footer logo controls if supported.
+- Load public footer.
+- Assert logo reflects saved values.
+
+H. Admin logo test
+- Save admin logo controls if supported.
+- Load admin dashboard/media.
+- Assert admin logo reflects saved values.
+
+I. Reset/defaults test
+- Change controls.
+- Reset placement to defaults.
+- Save.
+- Reload.
+- Assert defaults persist correctly.
+
+J. Lock/unlock test
+- Locked section must not allow accidental editing.
+- Unlock → edit → save must persist.
+
+K. No regression test
+- Admin Media must not horizontally overflow on mobile 360/375/390/412/430px.
+- Save All still works.
+- Upload/replace/remove logo still works.
+- Existing colors/theme remain unchanged.
+
+Verification:
+Run:
+- TypeScript check
+- build
+- relevant unit tests
+- relevant Playwright tests if available
+
+Final report must include:
+1. Every logo placement found.
+2. Every control field found.
+3. Which fields were mismatched/ignored.
+4. Exact files changed.
+5. Tests added/updated.
+6. Test results.
+7. Confirmation that live public/mobile/admin/auth/footer/splash logo controls now apply after Save All and reload.

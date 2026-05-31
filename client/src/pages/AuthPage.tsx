@@ -199,8 +199,19 @@ export default function AuthPage({
                 filter: "blur(28px)",
               }}
             />
-            {/* Floating + pulse logo — fills hero card width; scale(1.08) wrapper for extra zoom */}
-            <div className="relative sm:hidden" style={{ width: "96%", maxWidth: "460px", transform: "scale(1.08)", transformOrigin: "center center", overflow: "visible" }}>
+            {/* Floating + pulse logo — fills hero card width.
+                Scale + maxWidth driven by "login" logo slot CSS vars (Admin → Media → Branding → Logo Controls).
+                Defaults: zoom=1.08, wMobile=460px, wDesktop=520px, vpos=0px. */}
+            <div
+              className="relative sm:hidden"
+              style={{
+                width: "96%",
+                maxWidth: "var(--brand-login-w-mobile, 460px)",
+                transform: "scale(var(--brand-login-zoom, 1.08)) translateY(var(--brand-login-vpos, 0px))",
+                transformOrigin: "center center",
+                overflow: "visible",
+              }}
+            >
               <motion.img
                 src={logoSrc}
                 alt="Youssef Elite"
@@ -217,7 +228,16 @@ export default function AuthPage({
                 style={{ objectFit: "contain", width: "100%", display: "block" }}
               />
             </div>
-            <div className="relative hidden sm:block" style={{ width: "94%", maxWidth: "520px", transform: "scale(1.08)", transformOrigin: "center center", overflow: "visible" }}>
+            <div
+              className="relative hidden sm:block"
+              style={{
+                width: "94%",
+                maxWidth: "var(--brand-login-w-desktop, 520px)",
+                transform: "scale(var(--brand-login-zoom, 1.08)) translateY(var(--brand-login-vpos, 0px))",
+                transformOrigin: "center center",
+                overflow: "visible",
+              }}
+            >
               <motion.img
                 src={logoSrc}
                 alt="Youssef Elite"
