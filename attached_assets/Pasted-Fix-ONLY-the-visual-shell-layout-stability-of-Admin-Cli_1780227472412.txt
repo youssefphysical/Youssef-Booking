@@ -1,0 +1,112 @@
+Fix ONLY the visual shell/layout stability of Admin Client Search Center.
+
+CRITICAL:
+Do NOT change search ranking, search API, client logic, bookings, packages, auth, database, Media, Logo Controls, theme, or unrelated pages.
+The search results are now correct and fast. Only fix the UI structure, frame, alignment, duplicated X icon, and layout movement.
+
+Current problems:
+1. The clear X icon appears duplicated / visually overlapping.
+2. The search input border/frame looks clipped at the top and does not sit cleanly inside the modal.
+3. The search modal is still too large visually.
+4. When typing and results appear, the cards/modal shift up/down depending on the client/result content.
+5. Result rows/cards do not feel locked into a stable layout.
+6. The search shell should feel smooth, fixed, premium, and consistent with the admin design.
+
+Required fixes:
+
+1. Clear X button
+- Ensure there is ONLY ONE clear X button.
+- Remove any duplicate icon, pseudo-element, overlay, or keyboard shortcut visual that overlaps it.
+- X must be vertically centered inside the search header.
+- X must have fixed width/height tap target 40–44px.
+- X must not overlap the input text.
+- X must not move when typing.
+
+2. Search input/frame
+- Put the input fully inside a clean fixed-height header.
+- No clipped border.
+- No border crossing outside modal boundaries.
+- Input height: 48–52px on mobile, 52–56px desktop.
+- Border 1px cyan with subtle glow only on focus.
+- Remove excessive glow.
+- Keep enough top padding so the focused border is never clipped.
+
+3. Modal shell size
+- Mobile modal width: calc(100vw - 24px).
+- Modal should not feel huge.
+- Header/search area fixed.
+- Results area below should scroll internally.
+- Modal max-height mobile: 62vh.
+- Modal max-height desktop: 70vh.
+- Do not allow the entire modal to jump height aggressively while typing.
+
+4. Layout stability
+- The search header must stay fixed in place.
+- Results should appear below without pushing the input up/down.
+- Each result row must have a consistent min-height.
+- Avatar/photo column must have fixed width.
+- Name/badges/email column must have stable spacing.
+- Package/status/session badges should wrap gracefully without changing row alignment too much.
+- If text is long, truncate with ellipsis instead of expanding the row heavily.
+- Email/phone should be single-line ellipsis.
+- Package text should not break the layout.
+
+5. Results scrolling
+- The modal body should have a fixed max-height and overflow-y: auto.
+- Only results list scrolls, not the whole modal jumping.
+- Keep the footer label “CLIENT SEARCH” fixed or remove it if it causes visual heaviness.
+- If kept, footer must be compact and aligned.
+
+6. First tap / empty state
+- On first open/tap, show a clean empty state immediately.
+- Do not show a blank awkward space.
+- Empty state:
+  Title: Search Clients
+  Text: Type a name, phone, email, or package.
+- When typing begins, replace empty state with results instantly.
+- No layout jump.
+
+7. Visual consistency
+- Match the existing Tron Legacy admin style:
+  dark glass background,
+  soft cyan accent,
+  subtle border,
+  premium spacing,
+  same radius as admin cards.
+- Make it look like Apple Spotlight / Raycast style, not a large form.
+
+8. Mobile keyboard safety
+Test with keyboard open:
+- Android Chrome/Samsung Internet 360/412
+- iPhone Safari 375/390/430
+- iPad/tablet 768
+- Laptop 1366
+- Desktop 1440
+No horizontal overflow.
+No clipped search border.
+No duplicated X.
+No modal jumping.
+
+Tests required:
+1. Only one clear X button exists.
+2. X button is fixed/aligned and does not overlap input.
+3. Search input border is not clipped.
+4. Modal header height remains stable before/after typing.
+5. Results area scrolls internally.
+6. Modal does not jump when result count changes.
+7. Long email/package names truncate with ellipsis.
+8. Result rows have consistent layout.
+9. Empty state appears cleanly on first open.
+10. Typing first letter replaces empty state instantly.
+11. Mobile 360/375/390/412/430 no overflow.
+12. Tablet 768 no overflow.
+13. Desktop 1366/1440 no overflow.
+14. Existing search behavior/ranking tests still pass.
+
+Final report:
+- Explain exactly why the duplicated X happened.
+- Explain how the modal/frame clipping was fixed.
+- Explain how layout jumping was prevented.
+- Confirm search speed/ranking was not changed.
+- Confirm no unrelated features were touched.
+- List files changed and tests passed.

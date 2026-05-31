@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Command, CommandInput, CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
+// Use cmdk primitives directly to avoid double-border/double-X from the UI wrapper
+import { Command as CmdkPrimitive } from "cmdk";
+import { Command, CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Search, X, Users, Package as PackageIcon, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,8 +32,8 @@ type SearchResponse = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Ranks 0-5: identity matches (name/email/phone). Ranks 6-10: weaker matches.
 const BEST_RANK_MAX = 5;
+const AVATAR_PX = 44; // fixed size, prevents layout shift on all devices
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,30 +46,26 @@ function useDebounced<T>(value: T, delay = 20): T {
   return v;
 }
 
-/** Convert snake_case / SCREAMING_SNAKE to "Title Case". */
 function toTitle(s: string | null): string {
   if (!s) return "";
-  return s
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function remainingLabel(total: number | null, used: number | null): string | null {
   if (total == null || used == null) return null;
-  const rem = Math.max(0, total - used);
-  return `${rem} left`;
+  return `${Math.max(0, total - used)} left`;
 }
 
 function statusBadgeClass(status: string | null): string {
   switch (status) {
-    case "active":       return "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
-    case "expiring_soon":return "bg-amber-500/15 text-amber-400 border-amber-500/25";
-    case "frozen":       return "bg-sky-500/15 text-sky-400 border-sky-500/25";
-    default:             return "bg-white/5 text-muted-foreground/70 border-white/10";
+    case "active":        return "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
+    case "expiring_soon": return "bg-amber-500/15 text-amber-400 border-amber-500/25";
+    case "frozen":        return "bg-sky-500/15 text-sky-400 border-sky-500/25";
+    default:              return "bg-white/5 text-muted-foreground/60 border-white/10";
   }
 }
 
-/** Highlight the first occurrence of `q` in `text` with Tron-cyan. */
+/** Highlight the first occurrence of `q` in Tron-cyan. */
 function Highlight({ text, q }: { text: string; q: string }) {
   if (!q || !text) return <>{text}</>;
   const idx = text.toLowerCase().indexOf(q.toLowerCase());
@@ -85,41 +83,28 @@ function Highlight({ text, q }: { text: string; q: string }) {
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
-const AVATAR_SIZE = 44; // px — fixed to prevent layout shift on all devices
-
 function ClientAvatar({ photoUrl, name }: { photoUrl: string | null; name: string }) {
   const [failed, setFailed] = useState(false);
   const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+    .split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-  const base = `shrink-0 rounded-full overflow-hidden flex items-center justify-center`;
-  const sz = { width: AVATAR_SIZE, height: AVATAR_SIZE, minWidth: AVATAR_SIZE };
+  const sz = { width: AVATAR_PX, height: AVATAR_PX, minWidth: AVATAR_PX };
+  const base = "shrink-0 rounded-full overflow-hidden flex items-center justify-center";
 
   if (photoUrl && !failed) {
     return (
-      <span
-        className={cn(base, "bg-primary/10")}
-        style={sz}
-        data-testid="client-avatar-photo"
-      >
+      <span className={cn(base, "bg-primary/10")} style={sz} data-testid="client-avatar-photo">
         <img
           src={photoUrl}
           alt={name}
           loading="lazy"
           onError={() => setFailed(true)}
           className="w-full h-full object-cover object-center"
-          style={sz}
           data-testid="client-avatar-img"
         />
       </span>
     );
   }
-
   return (
     <span
       className={cn(base, "bg-primary/10 text-primary font-semibold text-[13px]")}
@@ -131,21 +116,22 @@ function ClientAvatar({ photoUrl, name }: { photoUrl: string | null; name: strin
   );
 }
 
-// ─── Client result card ───────────────────────────────────────────────────────
+// ─── Client card ──────────────────────────────────────────────────────────────
 
 function ClientCard({ c, q }: { c: ClientResult; q: string }) {
   const rem = remainingLabel(c.pkgTotal, c.pkgUsed);
   const contact = c.email || c.phone;
 
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-3">
-      {/* Avatar — fixed size prevents layout shift */}
+    <span className="flex min-w-0 w-full items-center gap-3">
+      {/* Fixed-width avatar — no layout shift */}
       <ClientAvatar photoUrl={c.profilePictureUrl} name={c.fullName} />
 
-      {/* Text column */}
-      <span className="flex min-w-0 flex-col gap-[3px] flex-1">
-        {/* Row 1: name + VIP badge */}
-        <span className="flex flex-wrap items-center gap-1.5 min-w-0">
+      {/* Text column — min-w-0 required for truncate to work */}
+      <span className="flex min-w-0 flex-col gap-0.5 flex-1 overflow-hidden">
+
+        {/* Row 1: Name + VIP */}
+        <span className="flex items-center gap-1.5 min-w-0 overflow-hidden">
           <span
             className="text-[13px] font-medium leading-tight truncate"
             data-testid={`client-name-${c.id}`}
@@ -153,17 +139,17 @@ function ClientCard({ c, q }: { c: ClientResult; q: string }) {
             <Highlight text={c.fullName} q={q} />
           </span>
           {c.vipTier && c.vipTier !== "foundation" && (
-            <span className="shrink-0 rounded-full bg-amber-500/15 border border-amber-500/25 px-1.5 text-[9px] uppercase tracking-wider text-amber-400 leading-[15px]">
+            <span className="shrink-0 rounded-full bg-amber-500/15 border border-amber-500/25 px-1.5 text-[9px] uppercase tracking-wider text-amber-400 leading-[14px]">
               {toTitle(c.vipTier)}
             </span>
           )}
         </span>
 
-        {/* Row 2: package (primary badge) + status (secondary badge) */}
-        <span className="flex flex-wrap items-center gap-1.5 min-w-0">
+        {/* Row 2: Package badge (primary) + status badge (secondary) + sessions */}
+        <span className="flex items-center gap-1 min-w-0 overflow-hidden flex-wrap">
           {c.pkgName && (
             <span
-              className="shrink-0 rounded-full border border-primary/25 bg-primary/8 px-1.5 text-[9px] text-primary leading-[15px] font-medium truncate max-w-[130px]"
+              className="shrink-0 rounded-full border border-primary/25 bg-primary/8 px-1.5 text-[9px] text-primary leading-[14px] font-medium max-w-[110px] truncate"
               data-testid={`client-pkg-badge-${c.id}`}
             >
               <Highlight text={c.pkgName} q={q} />
@@ -172,7 +158,7 @@ function ClientCard({ c, q }: { c: ClientResult; q: string }) {
           {c.clientStatus && (
             <span
               className={cn(
-                "shrink-0 rounded-full border px-1.5 text-[9px] uppercase tracking-wider leading-[15px]",
+                "shrink-0 rounded-full border px-1.5 text-[9px] uppercase tracking-wider leading-[14px]",
                 statusBadgeClass(c.clientStatus),
               )}
               data-testid={`client-status-${c.id}`}
@@ -181,15 +167,13 @@ function ClientCard({ c, q }: { c: ClientResult; q: string }) {
             </span>
           )}
           {rem && (
-            <span className="text-[9px] text-muted-foreground/50 leading-[15px]">
-              {rem}
-            </span>
+            <span className="text-[9px] text-muted-foreground/45 leading-[14px] shrink-0">{rem}</span>
           )}
         </span>
 
-        {/* Row 3: contact (email or phone) */}
+        {/* Row 3: Email / phone — single line, ellipsis */}
         {contact && (
-          <span className="text-[11px] text-muted-foreground/70 truncate leading-tight">
+          <span className="text-[11px] text-muted-foreground/60 truncate leading-tight w-full overflow-hidden">
             <Highlight text={contact} q={q} />
           </span>
         )}
@@ -197,6 +181,11 @@ function ClientCard({ c, q }: { c: ClientResult; q: string }) {
     </span>
   );
 }
+
+// ─── Section heading ──────────────────────────────────────────────────────────
+
+const GROUP_CLS =
+  "[&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-widest [&_[cmdk-group-heading]]:text-muted-foreground/45 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:select-none";
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -220,7 +209,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // Clear query after dialog closes
   useEffect(() => {
     if (!open) {
       const id = setTimeout(() => setQuery(""), 200);
@@ -243,7 +231,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     },
     enabled: open,
     staleTime: 30_000,
-    // Keep previous results visible while loading — no "Searching..." flicker
+    // Show stale results while re-fetching → zero "Searching…" flicker
     placeholderData: (prev) => prev,
   });
 
@@ -256,8 +244,6 @@ export function CommandPalette({ open, onOpenChange }: Props) {
   const all = data?.clients ?? [];
   const bestMatches = all.filter((c) => c.matchRank <= BEST_RANK_MAX);
   const suggestions = all.filter((c) => c.matchRank > BEST_RANK_MAX);
-
-  // If only weak matches exist, promote them into the "Best matches" section
   const showBest = bestMatches.length > 0 ? bestMatches : suggestions;
   const showSugg = bestMatches.length > 0 ? suggestions : [];
   const hasResults = all.length > 0;
@@ -271,88 +257,127 @@ export function CommandPalette({ open, onOpenChange }: Props) {
       <DialogContent
         data-testid="client-search-dialog"
         className={cn(
-          // Width: fills mobile, capped at 560/620 on larger screens
+          // Width — fills mobile edge-to-edge (minus 12px each side)
           "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] sm:max-w-[560px] lg:max-w-[620px]",
-          // Layout
+          // Layout — no default gap/padding, no close button
           "gap-0 p-0 overflow-hidden",
           // Shape
           "rounded-xl sm:rounded-2xl",
-          // Border: 1px cyan-tinted, very subtle
+          // Border — 1px subtle, no harsh glow
           "border border-border/50",
-          // Shadow: no harsh cyan glow, premium depth
-          "shadow-[0_0_0_1px_hsl(var(--primary)/0.06),0_24px_80px_rgba(0,0,0,0.72)]",
-          // Hide the default Radix close button — we use X on the input
+          // Shadow — premium dark depth, very faint cyan outline
+          "shadow-[0_0_0_1px_hsl(var(--primary)/0.05),0_20px_70px_rgba(0,0,0,0.72)]",
+          // Hide the auto-generated Radix close button
           "[&>button[aria-label='Close']]:hidden",
         )}
       >
+        {/*
+          Use Command as the cmdk root (shouldFilter=false = server filters).
+          No overflow-hidden / rounded here — the DialogContent clips everything.
+        */}
         <Command
           shouldFilter={false}
-          className="flex flex-col overflow-hidden rounded-xl sm:rounded-2xl bg-background"
+          className="flex flex-col w-full bg-background"
           data-testid="client-search-command"
         >
-          {/* ── Input row ──────────────────────────────────────────────── */}
+
+          {/* ── INPUT ROW ──────────────────────────────────────────────────
+            Build this ourselves with CmdkPrimitive.Input to ensure:
+            - Single border-b (CommandInput UI wrapper would add its own)
+            - Single X button (no native browser clear + our custom)
+            - Exact height control
+            - Correct icon spacing
+          */}
           <div
-            className="relative flex items-center border-b border-border/50"
+            className="flex items-center gap-0 border-b border-border/50 px-4"
+            style={{ height: isMobile ? 50 : 54 }}
             data-testid="client-search-input-wrapper"
           >
-            <CommandInput
-              ref={inputRef as any}
+            <Search
+              size={15}
+              className="shrink-0 text-muted-foreground/50 mr-3 pointer-events-none"
+              aria-hidden
+            />
+
+            {/* Raw cmdk input — suppresses native browser clear button */}
+            <CmdkPrimitive.Input
+              ref={inputRef}
               value={query}
               onValueChange={setQuery}
               placeholder={placeholder}
-              // h-[52px] mobile, h-[54px] desktop (via responsive class)
-              className="h-[52px] sm:h-[54px] pr-9 text-[13px] sm:text-sm"
+              className={cn(
+                "flex-1 h-full bg-transparent text-[13px] sm:text-sm outline-none",
+                "placeholder:text-muted-foreground/50",
+                // Suppress native clear buttons (Safari, IE, Chrome on some inputs)
+                "[&::-webkit-search-cancel-button]:hidden [&::-ms-clear]:hidden",
+                // Right space so text never touches the X button area
+                "pr-2",
+              )}
               data-testid="input-client-search"
             />
+
+            {/* Custom X — only ours, no duplicates, fixed 40px tap target */}
             {query.length > 0 && (
               <button
                 type="button"
                 aria-label="Clear search"
                 data-testid="button-clear-search"
-                onClick={() => {
-                  setQuery("");
-                  inputRef.current?.focus();
-                }}
-                className="absolute right-3 flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
+                onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                className={cn(
+                  "shrink-0 flex items-center justify-center",
+                  "h-10 w-10 -mr-1",   // 40px tap target, negative margin to align with edge
+                  "rounded-lg text-muted-foreground/60 hover:text-foreground",
+                  "hover:bg-white/5 active:bg-white/8 transition-colors touch-manipulation",
+                )}
               >
-                <X size={13} />
+                <X size={14} />
               </button>
             )}
           </div>
 
-          {/* ── Results list ───────────────────────────────────────────── */}
+          {/* ── RESULTS LIST ───────────────────────────────────────────────
+            min-h prevents the modal from collapsing on empty state vs results.
+            max-h forces internal scroll instead of page jump.
+          */}
           <CommandList
-            className="max-h-[60vh] md:max-h-[65vh] lg:max-h-[70vh] overflow-y-auto overflow-x-hidden"
+            className={cn(
+              "overflow-y-auto overflow-x-hidden",
+              // min-h keeps modal height stable regardless of result count
+              "min-h-[200px]",
+              // max-h with internal scroll — never grows the page
+              "max-h-[62vh] md:max-h-[65vh] lg:max-h-[70vh]",
+            )}
             data-testid="client-search-results"
           >
-            {/* Empty state — no query yet */}
+
+            {/* Empty state */}
             {!hasQuery && (
               <div
-                className="flex flex-col items-center justify-center gap-2 py-9 px-4 text-center"
+                className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center"
                 data-testid="client-search-empty-state"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Search size={18} />
                 </span>
                 <p className="text-sm font-medium">Search Clients</p>
-                <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[230px]">
+                <p className="text-[12px] text-muted-foreground/70 leading-relaxed max-w-[220px]">
                   Type a name, phone, email, or package.
                 </p>
               </div>
             )}
 
-            {/* No results — query returned nothing */}
+            {/* No results */}
             {hasQuery && !hasResults && (
               <div
-                className="flex flex-col items-center justify-center gap-2 py-9 px-4 text-center"
+                className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center"
                 data-testid="client-search-no-results"
               >
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
                   <Users size={18} />
                 </span>
                 <p className="text-sm font-medium">No clients found</p>
-                <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[230px]">
-                  Try another name, phone, email, or package.
+                <p className="text-[12px] text-muted-foreground/70 leading-relaxed max-w-[220px]">
+                  Try a different name, phone, or package.
                 </p>
                 <button
                   type="button"
@@ -366,11 +391,11 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               </div>
             )}
 
-            {/* Best matches */}
+            {/* Best Matches */}
             {hasQuery && showBest.length > 0 && (
               <CommandGroup
                 heading="Best Matches"
-                className="[&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-widest [&_[cmdk-group-heading]]:text-muted-foreground/50 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5"
+                className={GROUP_CLS}
                 data-testid="section-best-matches"
               >
                 {showBest.map((c) => (
@@ -379,7 +404,11 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                     value={`${c.fullName} ${c.email ?? ""} ${c.phone ?? ""} ${c.pkgName ?? ""}`}
                     onSelect={() => go(`/admin/clients/${c.id}`)}
                     data-testid={`client-result-${c.id}`}
-                    className="flex items-center gap-0 py-2 px-3 rounded-lg cursor-pointer min-h-[58px] hover:bg-accent/60 active:bg-accent/80"
+                    className={cn(
+                      "flex items-center px-3 py-2 rounded-lg cursor-pointer",
+                      "min-h-[58px]",
+                      "hover:bg-accent/60 active:bg-accent/80",
+                    )}
                   >
                     <ClientCard c={c} q={debounced} />
                   </CommandItem>
@@ -387,11 +416,11 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               </CommandGroup>
             )}
 
-            {/* More suggestions — only when best matches also exist */}
+            {/* More Suggestions — only when best also exist */}
             {hasQuery && showSugg.length > 0 && (
               <CommandGroup
                 heading="More Suggestions"
-                className="[&_[cmdk-group-heading]]:text-[9px] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-widest [&_[cmdk-group-heading]]:text-muted-foreground/50 [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5"
+                className={GROUP_CLS}
                 data-testid="section-more-suggestions"
               >
                 {showSugg.map((c) => (
@@ -400,27 +429,35 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                     value={`${c.fullName} ${c.email ?? ""} ${c.phone ?? ""} ${c.pkgName ?? ""}`}
                     onSelect={() => go(`/admin/clients/${c.id}`)}
                     data-testid={`client-result-${c.id}`}
-                    className="flex items-center gap-0 py-2 px-3 rounded-lg cursor-pointer min-h-[58px] hover:bg-accent/60 active:bg-accent/80"
+                    className={cn(
+                      "flex items-center px-3 py-2 rounded-lg cursor-pointer",
+                      "min-h-[58px]",
+                      "hover:bg-accent/60 active:bg-accent/80",
+                    )}
                   >
                     <ClientCard c={c} q={debounced} />
                   </CommandItem>
                 ))}
               </CommandGroup>
             )}
+
           </CommandList>
 
-          {/* ── Footer ─────────────────────────────────────────────────── */}
+          {/* ── FOOTER ─────────────────────────────────────────────────── */}
           <div
-            className="flex items-center justify-between gap-2 border-t border-border/50 px-3 py-[7px] text-[9px] uppercase tracking-widest text-muted-foreground/50"
+            className="flex items-center justify-between gap-2 border-t border-border/50 px-4 py-[6px]"
             data-testid="client-search-footer"
           >
-            <span className="hidden sm:flex items-center gap-1.5">
-              <Search size={9} />
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40 hidden sm:flex items-center gap-1.5">
+              <Search size={9} aria-hidden />
               Enter to open · Esc to close
             </span>
-            <span className="sm:hidden">Client search</span>
-            <span className="font-mono hidden md:inline">⌘K</span>
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40 sm:hidden">
+              Client search
+            </span>
+            <span className="text-[9px] font-mono text-muted-foreground/35 hidden md:inline">⌘K</span>
           </div>
+
         </Command>
       </DialogContent>
     </Dialog>
