@@ -78,7 +78,16 @@ export function LanguageSelector({
           data-testid="button-language-selector"
           aria-label={t("nav.language")}
           className={cn(
-            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-sm whitespace-nowrap shrink-0 btn-soft focus-visible:shadow-none focus-visible:outline-none",
+            // Base — same dark glass as logout/menu buttons
+            "inline-flex items-center gap-1.5 h-9 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-sm whitespace-nowrap shrink-0 btn-soft",
+            // Pressed state — temporary cyan tint during tap/click
+            "active:bg-primary/10 active:border-primary/30 active:[box-shadow:0_0_0_1px_hsl(var(--primary)/0.25),0_4px_14px_-4px_hsl(var(--primary)/0.30)]",
+            // Open state — soft cyan indicator while dropdown is showing;
+            // Radix sets data-state="open" on the trigger automatically and
+            // removes it on close, so this is never permanent.
+            "data-[state=open]:bg-primary/[0.07] data-[state=open]:border-primary/30 data-[state=open]:[box-shadow:0_0_0_1px_hsl(var(--primary)/0.20),0_4px_14px_-4px_hsl(var(--primary)/0.22)]",
+            // Focus-visible — softer ring for keyboard nav only (not touch)
+            "focus-visible:outline-none focus-visible:[box-shadow:0_0_0_2px_hsl(var(--background)),0_0_0_3px_hsl(var(--primary)/0.35)]",
             variant === "compact" ? "px-2 sm:px-2.5" : "px-3",
             className,
           )}
