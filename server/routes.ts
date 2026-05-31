@@ -6609,7 +6609,10 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     // query itself fails (DB down, schema mismatch), let it throw so the
     // runner classifies the phase as DB_FAILURE / QUERY_FAILURE rather
     // than reporting a silent zero-sent success.
-    const all = await storage.getBookings({});
+    // Fetch only today + tomorrow — the reminder windows are 22-26h and
+    // 30-90 min ahead, so earlier dates are never eligible. This avoids
+    // a full-table scan on every 15-min cron tick.
+    const all = await storage.getBookings({ from: todayIso });
     const now = Date.now();
     const cap = cronGuards.maxEmailsPerTick;
     let attempts = 0;
@@ -6848,7 +6851,12 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     // into a SQL view with the same end-time math.
     let pendingExpired = 0;
     try {
-      const all = await storage.getBookings({});
+      // Only look at bookings from the last 30 days — anything older that
+      // is still "upcoming" indicates a deeper issue and would have been
+      // visible in previous diagnostics. Avoids a full-table scan on every
+      // 2-minute admin poll.
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      const all = await storage.getBookings({ from: thirtyDaysAgo });
       const cutoff = Date.now();
       for (const b of all) {
         if (!["upcoming", "confirmed"].includes(b.status)) continue;
@@ -7038,10 +7046,13 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     monthStart.setUTCDate(1);
     const monthStartStr = formatYMDInDubai(monthStart);
 
+    // Limit booking scan to the current month (covers completedThisMonth,
+    // bookingsToday, and all upcoming sessions). Historical rows are never
+    // needed by any stat this endpoint computes.
     const [clients, allBookings, allPackages, pendingRenewalsList, pendingExtensionsList] =
       await Promise.all([
         storage.getAllClientsLight(),
-        storage.getBookings(),
+        storage.getBookings({ from: monthStartStr }),
         storage.getPackages({ activeOnly: true }),
         storage.getRenewalRequests({ status: "pending", limit: 500 }).catch(() => []),
         storage.getExtensionRequests({ status: "pending", limit: 500 }).catch(() => []),
@@ -7102,10 +7113,14 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     const ms = (days: number) => days * 86_400_000;
     const isoMonth = (d: Date) => d.toISOString().slice(0, 7); // YYYY-MM
 
+    // Limit booking history to 180 days — covers the deepest churn window
+    // (churn90d) plus buffer. Fetching all-time history on every analytics
+    // load was the second-largest Neon transfer source.
+    const cutoff180Str = new Date(now.getTime() - ms(180)).toISOString().slice(0, 10);
     const [clients, allBookings, allPackagesAll, renewals30] =
       await Promise.all([
         storage.getAllClientsLight(),
-        storage.getBookings(),
+        storage.getBookings({ from: cutoff180Str }),
         storage.getPackages(),
         storage.getRenewalRequests({ limit: 5000 }).catch(() => []),
       ]);
