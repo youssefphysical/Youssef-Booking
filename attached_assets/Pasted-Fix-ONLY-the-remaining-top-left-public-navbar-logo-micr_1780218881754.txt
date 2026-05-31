@@ -1,0 +1,74 @@
+Fix ONLY the remaining top-left public navbar logo micro-jump/flicker on page load.
+
+Important:
+Everything else is working. Do NOT touch bookings, auth logic, payments, database schema, Neon, Vercel, GitHub, uploads, colors, theme, or unrelated layout.
+
+Problem:
+After the recent logo controls fix, the public top-left navbar logo is much better, but it still performs a small size/position jump after page load on mobile. The logo appears once with an initial size/position, then after React/settings hydration it slightly changes and settles.
+
+Scope:
+Only fix the first-load flicker/micro-jump for the public navbar logo, and apply the same protection to all logo placements only if they share the same hydration path.
+
+Investigate:
+1. BrandLogo component.
+2. Public Navbar/mobile navbar logo rendering.
+3. applyBrandCSSVars / applyLogoSlotCSSVars.
+4. persistBrandSettingsCache.
+5. index.html inline bootstrap script.
+6. Any useEffect/query/settings hook that reapplies logo CSS variables after React mounts.
+7. Any fallback CSS/default values used before settings are loaded.
+
+Goal:
+The first visible frame must already use the exact final saved logo values.
+No second resize/reposition should happen after React mounts.
+
+Required fix:
+1. Ensure the inline pre-React bootstrap script applies the exact same CSS variables that React later applies.
+2. Ensure CSS variable names match 100% between:
+   - bootstrap script
+   - applyLogoSlotCSSVars
+   - BrandLogo component
+   - Navbar component
+3. Ensure mobile navbar uses the mobile slot values from the very first paint:
+   - width
+   - height
+   - zoom
+   - h-offset
+   - v-offset
+   - padding
+   - glow
+4. Remove any hardcoded initial navbar logo size that conflicts with saved CSS variables.
+5. If settings are not available yet, reserve the final logo box size using stable fallback values that match the saved/default admin values.
+6. Avoid rendering logo with tiny/default dimensions before brand cache is applied.
+7. Do not delay the whole page unnecessarily; only prevent the logo from painting with wrong dimensions.
+
+Testing:
+Add/update tests for:
+
+A. Bootstrap variable parity test
+- Given saved logo settings in localStorage, the inline bootstrap script must produce the same CSS variables as React applyLogoSlotCSSVars.
+
+B. First-paint navbar logo test
+- Mock delayed settings/API load.
+- Render public mobile navbar.
+- Assert the logo width/height/transform are already final on initial render.
+- Assert they do not change after hydration/refetch.
+
+C. Mobile navbar slot test
+- Confirm mobile navbar reads mobile slot variables only, not desktop/global fallback.
+
+D. Desktop navbar slot test
+- Confirm desktop navbar reads desktop/navbar slot variables only.
+
+E. No regression:
+- Admin Logo Controls preview still updates immediately.
+- Save All still works.
+- Admin Media still has no mobile horizontal overflow.
+
+Final report:
+Tell me:
+1. Exact root cause of the remaining micro-jump.
+2. Which value was different between first paint and hydrated state.
+3. Exact files changed.
+4. Tests added/updated.
+5. Confirmation that the top-left navbar logo no longer changes size/position after page load.

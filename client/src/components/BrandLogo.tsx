@@ -54,7 +54,10 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] block md:hidden"
           style={{
-            height:    "var(--brand-mobile-h-mobile, var(--brand-navbar-h-mobile, 52px))",
+            // 44px fallback matches LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile so
+            // first paint matches post-hydration — bootstrap always sets this var
+            // before React mounts (see index.html inline script).
+            height:    "var(--brand-mobile-h-mobile, 44px)",
             width:     "auto",
             filter:    "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-mobile-glow, var(--brand-logo-glow, 0.35))))",
             padding:   "var(--brand-mobile-padding, var(--brand-logo-padding, 4px))",

@@ -434,6 +434,103 @@ check("applyBrandCSSVars emits defaults when logos is undefined", () => {
   );
 });
 
+// ── 8. index.html bootstrap — no early exit, always applies defaults ───────
+console.log("\n[8] index.html bootstrap — no early-exit on empty cache");
+
+check("Bootstrap does NOT early-return when localStorage is empty (no 'if (!raw) return')", () => {
+  // The old code was: if (!raw) return;
+  // This caused BrandLogo to render at CSS fallback (52px) on first visit, then jump to 44px.
+  // The fix always applies defaults regardless of cache presence.
+  assert(
+    !indexHtmlSrc.includes("if (!raw) return"),
+    "index.html bootstrap must NOT early-return when localStorage is empty. " +
+    "It must always apply defaults (+ cached values when available) so BrandLogo " +
+    "never paints at the wrong CSS fallback value.",
+  );
+});
+
+check("Bootstrap uses logos = null pattern (always runs the slot loop)", () => {
+  assert(
+    indexHtmlSrc.includes("logos = null"),
+    "index.html bootstrap must initialise logos = null and then conditionally " +
+    "populate it from the localStorage cache, so the slot loop always runs.",
+  );
+});
+
+check("Bootstrap default mobile.hMobile is 44 (matches LOGO_BRAND_SLOT_DEFAULTS)", () => {
+  assert(
+    indexHtmlSrc.includes("hMobile:44"),
+    "index.html bootstrap defs.mobile.hMobile must be 44 to match " +
+    "LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile — the two values must be identical " +
+    "so the CSS var is the same before and after React hydrates.",
+  );
+});
+
+check("Bootstrap default navbar.hDesktop is 60 (matches LOGO_BRAND_SLOT_DEFAULTS)", () => {
+  assert(
+    indexHtmlSrc.includes("hDesktop:60"),
+    "index.html bootstrap defs.navbar.hDesktop must be 60 to match " +
+    "LOGO_BRAND_SLOT_DEFAULTS.navbar.hDesktop.",
+  );
+});
+
+// ── 9. App.tsx — hydration guard (no undefined clobber) ────────────────────
+console.log("\n[9] App.tsx — applyBrandCSSVars guarded against undefined settings");
+
+const appTsxPath = join(__dirname, "../client/src/App.tsx");
+const appTsxSrc  = readFileSync(appTsxPath, "utf-8");
+
+check("App.tsx guards applyBrandCSSVars — skips when settings === undefined", () => {
+  assert(
+    appTsxSrc.includes("settings === undefined"),
+    "App.tsx useEffect must guard with 'if (settings === undefined) return' so it " +
+    "does not call applyBrandCSSVars before the /api/settings response arrives. " +
+    "Without this guard, applyBrandCSSVars(undefined) resets all CSS vars to defaults, " +
+    "clobbering any non-default values the bootstrap applied from the localStorage cache.",
+  );
+});
+
+check("App.tsx applyBrandCSSVars useEffect depends on [settings] (not [settings?.brandSettings])", () => {
+  // The dep must be [settings] so the effect fires exactly once — when settings loads.
+  // A dep of [settings?.brandSettings] would fire on mount with undefined AND again
+  // when settings loads, causing a double-apply race.
+  assert(
+    appTsxSrc.includes("}, [settings])"),
+    "App.tsx applyBrandCSSVars useEffect dependency must be [settings] (not " +
+    "[settings?.brandSettings]) so it fires exactly once when settings loads.",
+  );
+});
+
+// ── 10. BrandLogo.tsx — mobile CSS fallback matches default ────────────────
+console.log("\n[10] BrandLogo.tsx — mobile logo CSS fallback matches LOGO_BRAND_SLOT_DEFAULTS");
+// brandLogoSrc is already declared at the top of this file (BRAND_LOGO_PATH)
+
+check("BrandLogo mobile height CSS fallback is 44px (matches mobile slot default)", () => {
+  assert(
+    brandLogoSrc.includes("var(--brand-mobile-h-mobile, 44px)"),
+    "BrandLogo mobile img height must be 'var(--brand-mobile-h-mobile, 44px)'. " +
+    "The fallback 44px matches LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile so even " +
+    "if the CSS var system fails, the logo renders at the correct default size.",
+  );
+});
+
+check("BrandLogo mobile height does NOT use the old 52px CSS fallback", () => {
+  assert(
+    !brandLogoSrc.includes("var(--brand-navbar-h-mobile, 52px)"),
+    "BrandLogo must NOT contain 'var(--brand-navbar-h-mobile, 52px)' as the " +
+    "mobile logo fallback. 52px was the legacy navbarLogoMobile default — not " +
+    "the mobile slot default (44px). Using 52px caused an 8px jump on first paint.",
+  );
+});
+
+check("BrandLogo desktop height CSS fallback is 60px (matches navbar slot default)", () => {
+  assert(
+    brandLogoSrc.includes("var(--brand-navbar-h-desktop, 60px)"),
+    "BrandLogo desktop img height must be 'var(--brand-navbar-h-desktop, 60px)'. " +
+    "The fallback 60px matches LOGO_BRAND_SLOT_DEFAULTS.navbar.hDesktop.",
+  );
+});
+
 // ── Summary ───────────────────────────────────────────────────────────────
 console.log("\n" + "─".repeat(60));
 if (failed > 0) {

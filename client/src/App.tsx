@@ -147,10 +147,18 @@ function Router() {
 
   // Inject brand CSS variables as soon as settings load so BrandLogo
   // and AuthPage pick up admin-configured sizes without a page reload.
+  //
+  // Guard: skip the effect while settings === undefined (i.e. the
+  // /api/settings fetch is still in flight). The inline boot script in
+  // index.html has already applied the cached/default vars synchronously, so
+  // running applyBrandCSSVars with undefined would overwrite any
+  // admin-saved non-default values with the hardcoded defaults — causing a
+  // visible micro-jump before the real API response arrives.
   const { data: settings } = useSettings();
   useEffect(() => {
-    applyBrandCSSVars(settings?.brandSettings as Record<string, number | string> | undefined);
-  }, [settings?.brandSettings]);
+    if (settings === undefined) return;
+    applyBrandCSSVars(settings.brandSettings as Record<string, number | string> | null);
+  }, [settings]);
   // Dynamic favicon — update <link rel="icon"> whenever the admin uploads a
   // new logo. Falls back to the static /ye-logo.png baked into the HTML.
   useEffect(() => {

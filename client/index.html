@@ -108,10 +108,13 @@
     <script>
       (function () {
         try {
+          // Always apply defaults (+ cached values when available).
+          // Do NOT early-return on empty cache — that leaves BrandLogo
+          // painting at the hardcoded CSS fallbacks (wrong size) until
+          // React's first useEffect fires, causing the micro-jump.
           var raw = localStorage.getItem('ye_brand_settings');
-          if (!raw) return;
-          var settings = JSON.parse(raw);
-          var logos = settings && settings.logos;
+          var logos = null;
+          try { var _s = raw ? JSON.parse(raw) : null; logos = _s && _s.logos; } catch(e) {}
           var root = document.documentElement;
           var slots = ['navbar','mobile','login','dashboard','footer','favicon','splash'];
           var defs = {

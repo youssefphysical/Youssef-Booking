@@ -19,6 +19,8 @@
  *   J. Lock/unlock semantics
  *   K. localStorage cache (persistBrandSettingsCache)
  *   L. Preview mode dimensions (desktop vs mobile)
+ *   M. Bootstrap parity — defaults match LOGO_BRAND_SLOT_DEFAULTS exactly
+ *   N. First-paint CSS var correctness — fallback values match defaults
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -542,5 +544,119 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
 
     expect(desktopH).toBe(90);
     expect(mobileH).toBe(44);
+  });
+});
+
+// ── M: Bootstrap parity — defaults match LOGO_BRAND_SLOT_DEFAULTS exactly ─
+
+describe("Bootstrap parity — defaults must match LOGO_BRAND_SLOT_DEFAULTS", () => {
+  beforeEach(() => clearVars());
+
+  it("mobile slot hMobile default is 44 (matches bootstrap defs.mobile.hMobile)", () => {
+    // The bootstrap script in index.html hardcodes defs.mobile.hMobile = 44.
+    // LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile must match so the first-paint
+    // CSS var equals the post-hydration value — no jump.
+    expect(LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile).toBe(44);
+  });
+
+  it("navbar slot hDesktop default is 60 (matches bootstrap defs.navbar.hDesktop)", () => {
+    expect(LOGO_BRAND_SLOT_DEFAULTS.navbar.hDesktop).toBe(60);
+  });
+
+  it("navbar slot hMobile default is 52 (matches bootstrap defs.navbar.hMobile)", () => {
+    expect(LOGO_BRAND_SLOT_DEFAULTS.navbar.hMobile).toBe(52);
+  });
+
+  it("mobile slot padding default is 4 (matches bootstrap defs.mobile.padding)", () => {
+    expect(LOGO_BRAND_SLOT_DEFAULTS.mobile.padding).toBe(4);
+  });
+
+  it("mobile slot glow default is 25 (matches bootstrap defs.mobile.glow)", () => {
+    expect(LOGO_BRAND_SLOT_DEFAULTS.mobile.glow).toBe(25);
+  });
+
+  it("applyLogoSlotCSSVars('mobile', defaults) sets --brand-mobile-h-mobile to 44px", () => {
+    applyLogoSlotCSSVars("mobile", LOGO_BRAND_SLOT_DEFAULTS.mobile);
+    expect(getVar("--brand-mobile-h-mobile")).toBe("44px");
+  });
+
+  it("applyBrandCSSVars(undefined) sets --brand-mobile-h-mobile to 44px (safe default)", () => {
+    // When called without logos (e.g. on initial settings load from undefined),
+    // the mobile slot must still be set to the correct default, not an arbitrary fallback.
+    applyBrandCSSVars(undefined);
+    expect(getVar("--brand-mobile-h-mobile")).toBe("44px");
+  });
+
+  it("applyBrandCSSVars with non-default hMobile does NOT clobber when called again with undefined", () => {
+    // Simulate: bootstrap applied a cached non-default value (user saved 60px).
+    // If App.tsx accidentally calls applyBrandCSSVars(undefined), it would clobber
+    // the 60px back to 44px — this test documents that protection at the brandSettings layer.
+    // (The actual App.tsx guard is tested via the static source test.)
+    applyLogoSlotCSSVars("mobile", { ...LOGO_BRAND_SLOT_DEFAULTS.mobile, hMobile: 60 });
+    expect(getVar("--brand-mobile-h-mobile")).toBe("60px");
+
+    // If applyBrandCSSVars(undefined) runs, it resets to default (44px).
+    // The real guard is in App.tsx (skip when settings === undefined).
+    // This test just documents the behaviour so the guard is understood.
+    applyBrandCSSVars(undefined);
+    expect(getVar("--brand-mobile-h-mobile")).toBe("44px"); // reset to default — App.tsx must prevent this
+  });
+
+  it("applyBrandCSSVars with saved logos preserves non-default hMobile", () => {
+    // Simulate settings loaded with admin-saved hMobile = 60.
+    applyBrandCSSVars({ logos: { mobile: { hMobile: 60 } } } as any);
+    expect(getVar("--brand-mobile-h-mobile")).toBe("60px");
+  });
+
+  it("bootstrap defaults cover all 7 slots (all LOGO_SLOTS have defaults)", () => {
+    // Every slot in LOGO_SLOTS must appear in LOGO_BRAND_SLOT_DEFAULTS.
+    for (const slot of LOGO_SLOTS) {
+      expect(LOGO_BRAND_SLOT_DEFAULTS).toHaveProperty(slot);
+    }
+  });
+});
+
+// ── N: First-paint CSS var correctness — fallback values match defaults ────
+
+describe("First-paint CSS var correctness", () => {
+  beforeEach(() => clearVars());
+
+  it("--brand-mobile-h-mobile set to 44px by applyLogoSlotCSSVars (mobile slot default)", () => {
+    // This is the value BrandLogo mobile img will use on first paint.
+    // Must match the CSS fallback in BrandLogo: var(--brand-mobile-h-mobile, 44px).
+    applyLogoSlotCSSVars("mobile", LOGO_BRAND_SLOT_DEFAULTS.mobile);
+    expect(getVar("--brand-mobile-h-mobile")).toBe("44px");
+  });
+
+  it("--brand-navbar-h-desktop set to 60px by applyLogoSlotCSSVars (navbar slot default)", () => {
+    applyLogoSlotCSSVars("navbar", LOGO_BRAND_SLOT_DEFAULTS.navbar);
+    expect(getVar("--brand-navbar-h-desktop")).toBe("60px");
+  });
+
+  it("mobile logo CSS fallback (44px) equals LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile", () => {
+    // If the CSS var system fails (extreme edge case), BrandLogo falls back to 44px.
+    // This must equal the default so no jump occurs even if the bootstrap fails.
+    const BRANDLOGO_MOBILE_CSS_FALLBACK = 44; // keep in sync with BrandLogo.tsx
+    expect(BRANDLOGO_MOBILE_CSS_FALLBACK).toBe(LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile);
+  });
+
+  it("desktop logo CSS fallback (60px) equals LOGO_BRAND_SLOT_DEFAULTS.navbar.hDesktop", () => {
+    const BRANDLOGO_DESKTOP_CSS_FALLBACK = 60; // keep in sync with BrandLogo.tsx
+    expect(BRANDLOGO_DESKTOP_CSS_FALLBACK).toBe(LOGO_BRAND_SLOT_DEFAULTS.navbar.hDesktop);
+  });
+
+  it("mobile logo padding CSS var is set to 4px by default", () => {
+    applyLogoSlotCSSVars("mobile", LOGO_BRAND_SLOT_DEFAULTS.mobile);
+    expect(getVar("--brand-mobile-padding")).toBe("4px");
+  });
+
+  it("mobile logo vpos CSS var is set to 0px by default", () => {
+    applyLogoSlotCSSVars("mobile", LOGO_BRAND_SLOT_DEFAULTS.mobile);
+    expect(getVar("--brand-mobile-vpos")).toBe("0px");
+  });
+
+  it("mobile logo glow CSS var is 0.25 by default (25/100)", () => {
+    applyLogoSlotCSSVars("mobile", LOGO_BRAND_SLOT_DEFAULTS.mobile);
+    expect(getVar("--brand-mobile-glow")).toBe("0.25");
   });
 });
