@@ -207,6 +207,7 @@ export interface IStorage {
     pkgTotal: number | null;
     pkgUsed: number | null;
     pkgStatus: string | null;
+    matchRank: number;
   }>>;
   /**
    * Batched lookup for the verified-badge flag. Returns a Map keyed by userId
@@ -1625,10 +1626,11 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async searchClients(q: string, limit = 8) {
+  async searchClients(q: string, limit = 12) {
     const trimmed = (q ?? "").trim();
     if (!trimmed) return [];
-    const pat = `%${trimmed.replace(/[%_]/g, (m) => `\\${m}`)}%`;
+    // Escape ILIKE special chars; SQL builds prefix/contains patterns around $1.
+    const esc = trimmed.replace(/[%_\\]/g, (m) => `\\${m}`);
     const cap = Math.min(Math.max(limit, 1), 20);
 
     const result = await pool.query<{
@@ -1642,49 +1644,62 @@ export class DatabaseStorage implements IStorage {
       pkg_total: number | null;
       pkg_used: number | null;
       pkg_status: string | null;
+      match_rank: number;
     }>(`
-      WITH matched AS (
-        SELECT u.id, 0 AS boost
+      WITH pkg_latest AS (
+        SELECT DISTINCT ON (user_id)
+          user_id,
+          name           AS pkg_name,
+          total_sessions AS pkg_total,
+          used_sessions  AS pkg_used,
+          status         AS pkg_status
+        FROM packages
+        ORDER BY user_id, purchased_at DESC NULLS LAST
+      ),
+      candidates AS (
+        SELECT
+          u.id,
+          u.full_name,
+          u.email,
+          u.phone,
+          u.client_status,
+          u.vip_tier,
+          pl.pkg_name,
+          pl.pkg_total,
+          pl.pkg_used,
+          pl.pkg_status,
+          CASE
+            WHEN lower(u.full_name) = lower($1)                           THEN 0
+            WHEN u.full_name ILIKE $1 || ' %'
+              OR u.full_name ILIKE '% ' || $1 || ' %'
+              OR u.full_name ILIKE '% ' || $1                             THEN 1
+            WHEN u.full_name ILIKE $1 || '%'                              THEN 2
+            WHEN u.email    ILIKE $1 || '%'                               THEN 3
+            WHEN u.phone    ILIKE '%' || $1 || '%'                        THEN 4
+            WHEN u.full_name ILIKE '%' || $1 || '%'                       THEN 5
+            WHEN u.email    ILIKE '%' || $1 || '%'                        THEN 6
+            WHEN pl.pkg_name ILIKE $1 || '%'                              THEN 7
+            WHEN pl.pkg_name ILIKE '%' || $1 || '%'                       THEN 8
+            WHEN u.client_status ILIKE '%' || $1 || '%'                   THEN 9
+            ELSE 99
+          END AS match_rank
         FROM users u
+        LEFT JOIN pkg_latest pl ON pl.user_id = u.id
         WHERE u.role = 'client'
           AND (
-            u.full_name ILIKE $1
-            OR u.email    ILIKE $1
-            OR u.phone    ILIKE $1
-            OR u.username ILIKE $1
+            u.full_name    ILIKE '%' || $1 || '%'
+            OR u.email     ILIKE '%' || $1 || '%'
+            OR u.phone     ILIKE '%' || $1 || '%'
+            OR u.username  ILIKE '%' || $1 || '%'
+            OR pl.pkg_name ILIKE '%' || $1 || '%'
+            OR u.client_status ILIKE '%' || $1 || '%'
           )
-        UNION
-        SELECT DISTINCT p.user_id AS id, 3 AS boost
-        FROM packages p
-        JOIN users u2 ON u2.id = p.user_id AND u2.role = 'client'
-        WHERE p.name ILIKE $1
-      ),
-      deduped AS (
-        SELECT id, MIN(boost) AS boost FROM matched GROUP BY id
       )
-      SELECT
-        u.id,
-        u.full_name,
-        u.email,
-        u.phone,
-        u.client_status,
-        u.vip_tier,
-        pkg.name            AS pkg_name,
-        pkg.total_sessions  AS pkg_total,
-        pkg.used_sessions   AS pkg_used,
-        pkg.status          AS pkg_status
-      FROM users u
-      JOIN deduped d ON d.id = u.id
-      LEFT JOIN LATERAL (
-        SELECT name, total_sessions, used_sessions, status
-        FROM packages
-        WHERE user_id = u.id
-        ORDER BY purchased_at DESC NULLS LAST
-        LIMIT 1
-      ) pkg ON true
-      ORDER BY d.boost ASC, u.full_name ASC
+      SELECT * FROM candidates
+      WHERE match_rank < 99
+      ORDER BY match_rank ASC, full_name ASC
       LIMIT $2
-    `, [pat, cap]);
+    `, [esc, cap]);
 
     return result.rows.map((r) => ({
       id: r.id,
@@ -1697,6 +1712,7 @@ export class DatabaseStorage implements IStorage {
       pkgTotal: r.pkg_total != null ? Number(r.pkg_total) : null,
       pkgUsed: r.pkg_used != null ? Number(r.pkg_used) : null,
       pkgStatus: r.pkg_status,
+      matchRank: Number(r.match_rank),
     }));
   }
 

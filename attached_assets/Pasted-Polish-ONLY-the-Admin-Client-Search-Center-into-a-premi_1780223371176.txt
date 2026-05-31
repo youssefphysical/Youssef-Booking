@@ -1,0 +1,152 @@
+Polish ONLY the Admin Client Search Center into a premium, instant, professional CRM search.
+
+CRITICAL:
+Do NOT touch bookings logic, clients logic, package logic, auth, payments, database schema, Neon, Vercel, GitHub, Media, Logo Controls, uploads, colors/theme, or unrelated admin/public pages.
+
+Goal:
+Make the search feel like a premium CRM client finder:
+
+- client-only
+- instant from first character
+- compact
+- clean
+- fully mobile responsive
+- no clutter
+- no horizontal overflow
+- matching results/suggestions professionally organized
+
+Search behavior:
+
+- Search clients only.
+- Search by name, email, phone, package name, status/badge.
+- Typing 1 letter must instantly show matching clients.
+- Typing 2+ letters must narrow results instantly.
+- No navigation results.
+- No create actions.
+- No random unrelated clients.
+
+Ranking:
+
+1. Exact full name match
+2. First/last name starts with query
+3. Full name starts with query
+4. Email starts with query
+5. Phone contains query
+6. Package starts with query
+7. Name contains query
+8. Email contains query
+9. Package contains query
+10. Status/badge contains query
+
+Sections:
+
+- Show “Best matches” for strongest results.
+- Show “More suggestions” only for weaker but relevant matches.
+- Do not show “More suggestions” if there are no relevant weaker matches.
+- Limit results cleanly:
+  - mobile: max 6–8 results
+  - desktop: max 10–12 results
+
+UI/Design:
+
+- Keep the existing Tron Legacy admin theme.
+- Make the modal premium, compact, and calm.
+- Search input height around 52–58px.
+- Mobile placeholder: “Search clients…”
+- Desktop placeholder: “Search clients by name, phone, email, or package…”
+- X clear button must be perfectly aligned and never overlap text.
+- Remove bulky result layout.
+- Remove calendar/package/gift action icons from results.
+- Remove “Tap to open” footer.
+- Entire client row opens profile.
+- Result card should show:
+  - avatar/icon
+  - client full name
+  - package badge
+  - status badge
+  - email or phone
+  - sessions remaining if already available
+- Use compact spacing, proper alignment, consistent border radius, subtle cyan highlight, readable typography.
+- Highlight matched text subtly in cyan if safe.
+- Make section headers small, clean, and professional.
+- Hide technical keyboard shortcut symbols on mobile.
+- No huge empty spaces.
+- No horizontal overflow on 360/375/390/412/430px.
+- Must look good on laptop, tablet, and mobile.
+
+Empty state:
+When no query:
+Title: Search Clients
+Text: Type a name, phone, email, or package.
+No nav links.
+No create actions.
+No random clutter.
+
+No results:
+Title: No clients found
+Text: Try another name, phone, email, or package.
+Optional Create Client only if existing safe create flow already exists.
+
+Performance:
+
+- Search must feel instant.
+- Prefer local/light client data already available.
+- If API is used, debounce lightly.
+- Do NOT reintroduce heavy getAllClients payload.
+- Do NOT increase Neon transfer.
+- Keep existing optimized light endpoint.
+
+Accessibility/interaction:
+
+- X clears query.
+- Esc closes modal.
+- Enter opens highlighted client.
+- Arrow keys navigate results if existing.
+- Touch targets must be comfortable on mobile.
+- Background dim should stay readable and premium.
+
+Tests required:
+
+1. Empty query shows only Search Clients empty state.
+2. Typing “n” instantly shows matching clients.
+3. Typing “ni” narrows results.
+4. “Nikolas” ranks Nikolas first.
+5. Exact/prefix name matches rank above contains/package/status matches.
+6. Search by phone works.
+7. Search by email works.
+8. Search by package works.
+9. Best matches section appears correctly.
+10. More suggestions appears only when relevant.
+11. No unrelated clients appear.
+12. No navigation results appear.
+13. No create actions appear.
+14. No calendar/package/gift action icons appear in result rows.
+15. No “Tap to open” footer appears.
+16. Entire client row opens profile.
+17. X clears query.
+18. Esc closes modal.
+19. Enter opens highlighted client.
+20. Mobile widths 360/375/390/412/430 have no overflow.
+21. Placeholder does not clip or overlap X.
+22. Search input height is compact.
+23. Existing admin pages unaffected.
+
+Verification:
+Run:
+
+- TypeScript check
+- build
+- client search tests
+- mobile layout tests
+- relevant existing admin tests
+
+Final report must include:
+
+1. Exact UI changes.
+2. Exact ranking logic.
+3. How 1-letter instant search works.
+4. How Best matches / More suggestions are decided.
+5. Files changed.
+6. Tests added/updated and results.
+7. Confirmation no unrelated pages/features changed.
+8. Confirmation it is now a professional Client Search Center only.
