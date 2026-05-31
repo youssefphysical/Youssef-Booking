@@ -3,7 +3,21 @@ name: Neon transfer reduction
 description: Techniques applied to cut Neon DB network transfer; what was done and why, so future work stays consistent.
 ---
 
-## Rule
+## getBookings() filter discipline (highest-impact rule)
+Never call `storage.getBookings({})` or `storage.getBookings()` without a `from` filter in any route that is called frequently (cron, admin polling). Always scope to the minimum date window needed.
+
+**Why:** `getBookings()` with no filter does a full table scan. A gym with 12 months of history has 3,000-6,000 rows at ~1.5KB each = 4.5-9MB per call. The cron runs every 15 min (96 calls/day) — that alone was the single largest Neon transfer source (~1.5-3 GB/month).
+
+**Approved filter windows (as of May 2026):**
+- **`/api/cron/reminders`** → `{ from: todayIso }` — reminder windows are 22-26h and 30-90min; today+tomorrow only (~10-30 rows)
+- **`/api/admin/analytics`** → `{ from: cutoff180d }` — covers deepest churn window (churn90d) with buffer
+- **`/api/admin/dashboard-stats`** → `{ from: monthStartStr }` — all stats are within-month calculations
+- **`/api/admin/auto-complete-status`** → `{ from: thirtyDaysAgo }` — pendingExpired can't be older than 30d in practice
+- **Client bookings** → always has `{ userId }` filter already
+
+**Rule for new endpoints:** pick the narrowest `from` date that satisfies the endpoint's queries. Document the window in a comment next to the call.
+
+## getAllClientsLight() rule
 getAllClientsLight() must be used for every bulk admin route that does NOT need to render profile pictures or auth fields.
 
 **Why:** The `users.profilePictureUrl` column holds base64-encoded JPEG/WebP (up to ~900KB each). When `/api/admin/analytics`, `/api/dashboard/stats`, `/api/admin/daily-brief`, `/api/admin/broadcast`, and similar routes called `getAllClients()`, every client's photo was transferred from Neon on every request — easily 5-50MB per page load for a real user base.
