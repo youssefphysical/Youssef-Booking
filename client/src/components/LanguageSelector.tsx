@@ -52,7 +52,7 @@ function FlagImg({
       decoding="async"
       draggable={false}
       className={cn(
-        "inline-block shrink-0 rounded-sm object-cover ring-1 ring-white/10",
+        "inline-block shrink-0 rounded-sm object-contain ring-1 ring-white/10",
         className,
       )}
       style={{ width: size, height: Math.round(size * 0.75) }}
@@ -103,7 +103,17 @@ export function LanguageSelector({
           <ChevronDown size={12} className="text-muted-foreground/70 shrink-0" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="min-w-[200px]">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="min-w-[200px]"
+        onCloseAutoFocus={(e) => {
+          // Prevent Radix from returning focus to the trigger on close.
+          // Without this, the trigger receives :focus-visible after every
+          // selection or dismiss, keeping the cyan ring visible permanently.
+          e.preventDefault();
+        }}
+      >
         <DropdownMenuLabel className="text-xs uppercase tracking-wider text-muted-foreground pt-5 pb-2">
           {t("nav.language")}
         </DropdownMenuLabel>
