@@ -4293,7 +4293,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.get("/api/settings", async (_req, res) => {
     const s = await storage.getSettings();
-    res.json(s);
+    // Strip processing-only image columns that are never rendered by the
+    // front-end (only written by the media pipeline). nutritionOriginalUrl
+    // in particular can be 1-2 MB of uncompressed base64 — serving it on
+    // every settings call would inflate Neon transfer on every page load.
+    // nutritionMobileUrl / nutritionThumbnailUrl are pipeline intermediates.
+    const { nutritionOriginalUrl: _no, nutritionMobileUrl: _nm, nutritionThumbnailUrl: _nt, ...lean } = s as any;
+    res.json(lean);
   });
 
   app.patch("/api/settings", requireAdmin, async (req, res) => {
