@@ -268,7 +268,7 @@ function Router() {
             <ProtectedRoute component={AdminLeads} adminOnly />
           </Route>
           <Route path="/admin/integrity">
-            <ProtectedRoute component={AdminIntegrity} adminOnly />
+            <ProtectedRoute component={AdminIntegrity} superAdminOnly />
           </Route>
           <Route path="/admin/analytics">
             <ProtectedRoute component={AdminAnalytics} adminOnly />
@@ -283,7 +283,7 @@ function Router() {
             <ProtectedRoute component={AdminClients} adminOnly />
           </Route>
           <Route path="/admin/data-center">
-            <ProtectedRoute component={AdminDataCenter} adminOnly />
+            <ProtectedRoute component={AdminDataCenter} superAdminOnly />
           </Route>
           <Route path="/admin/control-panel">
             <ProtectedRoute component={AdminControlPanel} adminOnly />

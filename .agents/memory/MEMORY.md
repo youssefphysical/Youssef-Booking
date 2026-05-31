@@ -4,3 +4,4 @@
 - [Logo Manager schema columns](logo-manager-schema.md) — logoIconUrl/logoNavbarUrl/logoAuthUrl in settings; BrandLogo+PremiumPageLoader use them with static-file fallback.
 - [Neon transfer reduction](neon-transfer-reduction.md) — getAllClientsLight strips blobs; 60s stats cache in routes.ts; polling floors set; key DB indexes added.
 - [Brand file storage architecture](brand-file-storage.md) — logos+heroes stored as /uploads/brand/ and /uploads/heroes/ file URLs; boot migration converts existing base64; GET /api/hero-images returns lean response preferring file URLs.
+- [E2E CI Playwright gotchas](e2e-ci-playwright-gotchas.md) — DailyBriefModal, rdp v8 selectors, AlertDialog overlay, force:true pattern for headless CI.

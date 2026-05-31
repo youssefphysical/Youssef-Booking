@@ -4297,12 +4297,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.patch("/api/settings", requireAdmin, async (req, res) => {
+    console.log("[PATCH /api/settings] reached, keys:", Object.keys(req.body ?? {}).join(","));
     const parsed = updateSettingsSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid settings" });
+      const errMsg = parsed.error.errors[0]?.message || "Invalid settings";
+      console.error("[PATCH /api/settings] Zod validation failed:", JSON.stringify(parsed.error.errors));
+      return res.status(400).json({ message: errMsg });
     }
-    const updated = await storage.updateSettings(parsed.data);
-    res.json(updated);
+    try {
+      const updated = await storage.updateSettings(parsed.data);
+      res.json(updated);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[PATCH /api/settings] storage.updateSettings failed:", msg);
+      return res.status(500).json({ message: `Storage error: ${msg}` });
+    }
   });
 
   // ============== HERO IMAGES (homepage slider) ==============
@@ -5079,14 +5088,23 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       logoMobilePadding:  z.number().min(0).max(64).optional(),
       logoAiProtection:   z.number().int().min(0).max(1).optional(),
     });
+    console.log("[PATCH /api/admin/media/logo/config] reached, keys:", Object.keys(req.body ?? {}).join(","));
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ success: false, error: parsed.error.errors[0]?.message });
+      const errMsg = parsed.error.errors[0]?.message ?? "Invalid config";
+      console.error("[PATCH /api/admin/media/logo/config] Zod validation failed:", JSON.stringify(parsed.error.errors));
+      return res.status(400).json({ success: false, error: errMsg });
     }
-    const current = await storage.getSettings();
-    const merged  = { ...(current.brandSettings as Record<string, number> ?? {}), ...parsed.data };
-    await storage.updateSettings({ brandSettings: merged } as any);
-    return res.json({ success: true, brandSettings: merged });
+    try {
+      const current = await storage.getSettings();
+      const merged  = { ...(current.brandSettings as Record<string, number> ?? {}), ...parsed.data };
+      await storage.updateSettings({ brandSettings: merged } as any);
+      return res.json({ success: true, brandSettings: merged });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[PATCH /api/admin/media/logo/config] storage failed:", msg);
+      return res.status(500).json({ success: false, error: `Storage error: ${msg}` });
+    }
   });
 
   // ============== TRANSFORMATIONS (before/after gallery) ==============

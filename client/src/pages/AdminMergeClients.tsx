@@ -131,7 +131,7 @@ export default function AdminMergeClients() {
             isLoading={winnerResults.isFetching}
             selectedId={winnerId}
             excludeId={loserId}
-            onSelect={setWinnerId}
+            onSelect={(id) => setWinnerId(id)}
             testIdPrefix="winner"
           />
           <ClientSearch
@@ -147,7 +147,7 @@ export default function AdminMergeClients() {
             isLoading={loserResults.isFetching}
             selectedId={loserId}
             excludeId={winnerId}
-            onSelect={setLoserId}
+            onSelect={(id) => setLoserId(id)}
             testIdPrefix="loser"
           />
         </div>
@@ -272,7 +272,7 @@ function ClientSearch({
   isLoading: boolean;
   selectedId: number | null;
   excludeId: number | null;
-  onSelect: (id: number) => void;
+  onSelect: (id: number | null) => void;
   testIdPrefix: string;
 }) {
   const border = accent === "primary" ? "border-primary/30" : "border-red-500/30";
@@ -300,7 +300,7 @@ function ClientSearch({
           </div>
           <button
             type="button"
-            onClick={() => onSelect(selectedId!)}
+            onClick={() => onSelect(null)}
             className="text-xs opacity-60 hover:opacity-100 ml-2 shrink-0"
             data-testid={`button-deselect-${testIdPrefix}`}
           >

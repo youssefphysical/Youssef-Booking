@@ -18,6 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import { AdminPageHeader } from "@/components/admin/primitives";
 import { RepairExpiredSessions } from "@/components/admin/RepairExpiredSessions";
+import { useAuth } from "@/hooks/use-auth";
+import { isEffectiveSuperAdmin } from "@shared/schema";
 
 // Minimal shape — only the badge-relevant fields from /api/admin/command-center.
 // The full type lives in AdminCommandCenter.tsx; we only need counts here.
@@ -36,6 +38,8 @@ interface HubItem {
   badge?: number | string | null;
   /** Colour of the badge dot. Defaults to amber (attention). */
   badgeTone?: "amber" | "red" | "cyan" | "muted";
+  /** If true, item is hidden for non-super-admins. */
+  superAdminOnly?: boolean;
 }
 
 interface HubGroup {
@@ -124,6 +128,7 @@ function buildGroups(cc: CcBadgeData | undefined, ccError: boolean): HubGroup[] 
           testId: "more-integrity",
           badge: cc?.integrityWarnings || null,
           badgeTone: "red",
+          superAdminOnly: true,
         },
         {
           href: "/admin/business-health",
@@ -144,6 +149,7 @@ function buildGroups(cc: CcBadgeData | undefined, ccError: boolean): HubGroup[] 
           title: "Merge Duplicate Clients",
           description: "Combine two client accounts into one, preserving all data.",
           testId: "more-merge-clients",
+          superAdminOnly: true,
         },
       ],
     },
@@ -158,6 +164,9 @@ const BADGE_TONE_CLASSES: Record<NonNullable<HubItem["badgeTone"]>, string> = {
 };
 
 export default function AdminMore() {
+  const { user } = useAuth();
+  const isSuperAdmin = isEffectiveSuperAdmin(user as any);
+
   // Fetch command-center data once on mount (server caches for 60s, no extra polling).
   // Used only for badge counts — reads are cheap.
   const { data: ccData, isError: ccError } = useQuery<CcBadgeData>({
@@ -186,7 +195,7 @@ export default function AdminMore() {
 
             {/* Group card */}
             <div className="rounded-2xl border border-white/[0.07] bg-card/60 overflow-hidden divide-y divide-white/[0.05]">
-              {group.items?.map((item) => {
+              {group.items?.filter((item) => !item.superAdminOnly || isSuperAdmin).map((item) => {
                 const hasBadge = item.badge !== null && item.badge !== undefined;
                 const badgeClasses = BADGE_TONE_CLASSES[item.badgeTone ?? "amber"];
                 return (
@@ -236,8 +245,8 @@ export default function AdminMore() {
                 );
               })}
 
-              {/* Advanced: inline Repair tool */}
-              {group.id === "advanced" && (
+              {/* Advanced: inline Repair tool — super-admin only */}
+              {group.id === "advanced" && isSuperAdmin && (
                 <div className="px-4 py-4" data-testid="more-repair-expired-sessions">
                   <div className="flex items-start gap-4 mb-3">
                     <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 text-primary mt-0.5">

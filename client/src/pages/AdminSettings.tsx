@@ -508,7 +508,6 @@ function BlockedSlotsSection() {
   const { data: blocks = [] } = useBlockedSlots();
   const createMutation = useCreateBlockedSlot();
   const deleteMutation = useDeleteBlockedSlot();
-
   const form = useForm<z.infer<typeof blockSchema>>({
     resolver: zodResolver(blockSchema),
     defaultValues: {
@@ -521,8 +520,11 @@ function BlockedSlotsSection() {
   });
   const scope = form.watch("scope");
 
+  const { guard } = useUnsavedChanges(form.formState.isDirty);
+
   return (
     <section className="admin-card">
+      {guard}
       <h2 className="font-display font-bold text-lg mb-1">{t("admin.settingsPage.blockedTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-5">
         {t("admin.settingsPage.blockedDesc")}

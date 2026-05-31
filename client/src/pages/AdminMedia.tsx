@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageCropper, type AspectPreset } from "@/components/ImageCropper";
 import { HeroImageFrame, ServiceImageFrame } from "@/components/ImageRenderer";
 import { MobileImageEditor } from "@/components/MobileImageEditor";
+import { DangerConfirmDialog } from "@/components/admin/DangerConfirmDialog";
 import { useUpdateSettings } from "@/hooks/use-settings";
 import {
   applyLogoSlotCSSVars,
@@ -307,6 +308,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
   const [activeTab, setActiveTab] = useState<Record<number, "desktop" | "mobile">>({});
   const [showGuide, setShowGuide] = useState<Record<number, boolean>>({});
   const [fullscreenId, setFullscreenId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { imageDataUrl: string }) => {
@@ -522,7 +524,7 @@ function HeroSection({ images }: { images: HeroImage[] }) {
                       active={isExpanded}
                       testId={`button-hero-expand-${img.id}`}
                     />
-                    <IconBtn icon={<Trash2 size={13} />} onClick={() => deleteMutation.mutate(img.id)} danger testId={`button-hero-delete-${img.id}`} />
+                    <IconBtn icon={<Trash2 size={13} />} onClick={() => setConfirmDeleteId(img.id)} danger testId={`button-hero-delete-${img.id}`} />
                   </div>
                 </div>
 
@@ -702,6 +704,21 @@ function HeroSection({ images }: { images: HeroImage[] }) {
           />
         );
       })()}
+
+      <DangerConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}
+        title="Delete slide"
+        description="This will permanently remove the hero slide. This action cannot be undone."
+        confirmLabel="Delete"
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (confirmDeleteId !== null) {
+            deleteMutation.mutate(confirmDeleteId, { onSettled: () => setConfirmDeleteId(null) });
+          }
+        }}
+        testId="dialog-hero-delete-confirm"
+      />
     </div>
   );
 }
@@ -1706,7 +1723,7 @@ function LogoControlsPanel() {
           toast({ title: "Brand settings saved" });
           setDirty(false);
         },
-        onError: () => toast({ title: "Save failed", variant: "destructive" }),
+        onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
       },
     );
   }

@@ -528,3 +528,4 @@ test.describe("Booking Calendar", () => {
     await expect(bookingCard).toBeVisible({ timeout: 12_000 });
   });
 });
+

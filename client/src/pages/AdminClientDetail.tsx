@@ -54,6 +54,7 @@ import {
 } from "@/hooks/use-progress";
 import { useClients } from "@/hooks/use-clients";
 import { useSettings } from "@/hooks/use-settings";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { Button } from "@/components/ui/button";
@@ -2099,9 +2100,11 @@ function PackagesPanel({ client }: { client: UserResponse }) {
 
   const otherClients = clients.filter((c) => c.id !== client.id && c.role === "client");
   const isDuoSelected = watchedType === "duo" || watchedType === "duo30";
+  const { guard: pkgGuard } = useUnsavedChanges(open && form.formState.isDirty);
 
   return (
     <div className="space-y-4">
+      {pkgGuard}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">{t("admin.clientDetail.sessionPackages", "Session Packages")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -3536,18 +3539,26 @@ function HealthGoalsPanel({ client }: { client: UserResponse }) {
 function NotesPanel({ client }: { client: UserResponse }) {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [form, setForm] = useState({
+  const initialValues = useRef({
     coachNotes: (client as any).coachNotes ?? "",
     goalNotes: (client as any).goalNotes ?? "",
     communicationNotes: (client as any).communicationNotes ?? "",
     adminNotes: (client as any).adminNotes ?? "",
   });
+  const [form, setForm] = useState(initialValues.current);
+  const isNotesDirty =
+    form.coachNotes !== initialValues.current.coachNotes ||
+    form.goalNotes !== initialValues.current.goalNotes ||
+    form.communicationNotes !== initialValues.current.communicationNotes ||
+    form.adminNotes !== initialValues.current.adminNotes;
+  const { guard: notesGuard } = useUnsavedChanges(isNotesDirty);
   const m = useMutation({
     mutationFn: async (body: Record<string, unknown>) => {
       const r = await apiRequest("PATCH", `/api/users/${client.id}`, body);
       return r.json();
     },
     onSuccess: () => {
+      initialValues.current = { ...form };
       qc.invalidateQueries({ queryKey: ["/api/users"] });
       qc.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({ title: "Notes saved" });
@@ -3564,6 +3575,7 @@ function NotesPanel({ client }: { client: UserResponse }) {
 
   return (
     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+      {notesGuard}
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1.5">
         <FileText size={13} /> Internal notes (never shared with the client)
       </p>

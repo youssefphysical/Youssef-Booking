@@ -1,0 +1,59 @@
+Please perform a full production delivery check and deployment sync.
+
+Current production issue:
+Vercel logs showed:
+BOOTSTRAP FAILED: Error: ENOENT: no such file or directory, mkdir '/var/task/uploads/brand'
+
+You already fixed the local upload folder bootstrap guard, but I need you to confirm the fix is fully delivered to production.
+
+Required actions:
+
+1. Git / GitHub
+- Check current branch and remote.
+- Confirm all latest fixes are committed.
+- Push the latest commit to GitHub main.
+- Confirm the latest commit hash and message.
+- Confirm GitHub received the commit.
+
+2. Vercel
+- Confirm Vercel is connected to the same GitHub repo and main branch.
+- Trigger or verify a new Production deployment from the latest commit.
+- Confirm deployment status is Ready.
+- Confirm the Production deployment age is new, not the old 4-hour deployment.
+- Check Runtime Logs after deployment.
+
+3. Neon / Database
+- Verify DATABASE_URL exists in the production environment.
+- Do not print secrets.
+- Test database connectivity safely.
+- Confirm no schema migration is needed.
+- Do not mutate or delete real data.
+
+4. Production API verification
+After deployment, verify these endpoints no longer return 500:
+- /api/auth/me
+- /api/settings
+- /api/hero-images
+- /api/package-templates
+- /api/feature-flags
+
+Expected:
+- /api/auth/me may return 401 if unauthenticated, but not 500.
+- Public/config endpoints should return 200 or a valid controlled response, not server crash.
+
+5. Safety rules
+- Do not change booking/client/package/payment/auth business logic.
+- Do not change database schema unless absolutely required and approved first.
+- Do not reduce image quality.
+- Do not remove any recent design/admin improvements.
+- If you find errors, fix only the minimum required production-blocking issue.
+
+Final report required:
+- Latest Git commit hash
+- Whether it was pushed to GitHub
+- Vercel deployment URL
+- Vercel deployment status
+- Runtime log result after deployment
+- API endpoint status results
+- Confirmation that Neon/database is connected
+- Any remaining errors, if any

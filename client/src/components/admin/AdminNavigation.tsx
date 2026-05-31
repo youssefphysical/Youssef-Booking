@@ -90,6 +90,7 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.dataCenter", "Client Data Center"),
           icon: <Database size={18} />,
           isActive: (loc) => loc.startsWith("/admin/data-center"),
+          superAdminOnly: true,
         },
         {
           href: "/admin/control-panel",
@@ -204,6 +205,7 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.integrity", "Integrity Checker"),
           icon: <Shield size={18} />,
           isActive: (loc) => loc.startsWith("/admin/integrity"),
+          superAdminOnly: true,
         },
         {
           href: "/admin/content",
@@ -241,6 +243,7 @@ export function buildAdminNavGroups(t: (key: string, fallback?: string) => strin
           label: t("nav.mergeClients", "Merge Clients"),
           icon: <Merge size={18} />,
           isActive: (loc) => loc.startsWith("/admin/merge-clients"),
+          superAdminOnly: true,
         },
       ],
     },
