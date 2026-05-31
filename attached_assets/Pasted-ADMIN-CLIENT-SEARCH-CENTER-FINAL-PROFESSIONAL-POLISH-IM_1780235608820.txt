@@ -1,0 +1,353 @@
+ADMIN CLIENT SEARCH CENTER - FINAL PROFESSIONAL POLISH
+
+IMPORTANT:
+
+This task is ONLY for the Admin Client Search Center / CommandPalette.
+
+DO NOT touch:
+
+- Authentication
+- Payments
+- Bookings logic
+- Packages logic
+- Database schema
+- Media Manager
+- Logo Controls
+- Upload system
+- Colors system
+- Global theme
+- Public website pages
+- Client portal
+- Nutrition system
+- Existing search ranking logic unless explicitly required
+
+Preserve all existing functionality.
+
+Current instant search, ranking, avatars, profile photos, tests, and client opening behavior must continue working.
+
+==================================================
+PRIMARY GOAL
+==================================================
+
+Transform the Admin Search Center into a premium mobile-first CRM search experience.
+
+Target feeling:
+
+WhatsApp Search UX
++
+Linear Design Precision
++
+Notion Consistency
++
+Elite Coaching Tron Legacy Identity
+
+The search should feel native, smooth, premium, stable, and extremely fast.
+
+==================================================
+PART 1 - SEARCH MODAL STRUCTURE
+==================================================
+
+Current issues to fix:
+
+1. Search frame appears clipped.
+2. Search bar shape feels rectangular.
+3. Search modal feels oversized.
+4. Duplicate close icons appear.
+5. Search header lacks visual balance.
+6. Modal feels disconnected from keyboard.
+7. Empty state consumes too much space.
+8. Visual hierarchy is weak.
+
+Required:
+
+- One close icon only.
+- No duplicate X icons.
+- Rounded modal corners.
+- Stable modal dimensions.
+- No layout jumping.
+- No clipping.
+- No broken borders.
+
+Search Header Layout:
+
+[ Search Icon ] [ Search Input ] [ Close ]
+
+Everything vertically centered.
+
+Search bar:
+
+- Capsule shape.
+- Rounded radius 18-22px.
+- Same design language as dashboard controls.
+- No oversized cyan border.
+- Soft focus glow only.
+- Height balanced with mobile keyboard usage.
+
+==================================================
+PART 2 - KEYBOARD EXPERIENCE
+==================================================
+
+The search must feel like a professional mobile application.
+
+When search opens:
+
+- Focus input automatically.
+- Keyboard opens automatically.
+- Search remains visible.
+- Search remains aligned above keyboard.
+- No sudden jumps.
+- No resizing glitches.
+- No movement of input.
+
+Test on:
+
+- Samsung Internet
+- Chrome Android
+- Safari iPhone
+
+Search should feel native.
+
+==================================================
+PART 3 - QUICK FILTER CHIPS
+==================================================
+
+Add professional WhatsApp-inspired filter chips.
+
+Location:
+
+Search Bar
+↓
+Quick Filters
+↓
+Results
+
+Quick Filters:
+
+- Active
+- Pending
+- Expiring Soon
+- Low Sessions
+- Has Package
+- No Package
+- VIP
+- Nutrition
+- Today
+
+Behavior:
+
+- Show immediately when search opens.
+- If query empty → chips visible.
+- If query entered → chips remain compact.
+- No layout jumping.
+- Tap to filter instantly.
+- Tap again to clear.
+- Add "Clear Filters" only when needed.
+
+If safe data does not exist:
+
+Hide unsupported filter.
+
+Never add heavy backend queries.
+
+==================================================
+PART 4 - RESULTS DESIGN
+==================================================
+
+Current problem:
+
+Rows change size depending on content.
+
+This creates visual instability.
+
+Required:
+
+Every result row must follow identical structure.
+
+Structure:
+
+[ Client Photo ]
+
+Name
+Status
+Package
+Sessions Remaining
+Email
+
+Everything aligned to a fixed grid.
+
+No shifting.
+
+No jumping.
+
+No different heights.
+
+No visual chaos.
+
+==================================================
+PART 5 - PROFILE PHOTOS
+==================================================
+
+If profile photo exists:
+
+Show real profile photo.
+
+If profile photo does not exist:
+
+Show initials avatar.
+
+Requirements:
+
+- Perfect circle.
+- Fixed size.
+- Same position for every client.
+- No stretching.
+- No shifting.
+
+==================================================
+PART 6 - SEARCH RESULTS LOGIC
+==================================================
+
+Keep existing instant search.
+
+Search must feel instant.
+
+Typing:
+
+N
+→ immediate results
+
+Ni
+→ refined results
+
+Nik
+→ refined results
+
+No visible delay.
+
+No "Searching..." state.
+
+Keep ranking system.
+
+Best Matches
+More Suggestions
+
+Only when useful.
+
+==================================================
+PART 7 - EMPTY STATE
+==================================================
+
+Current empty state is oversized.
+
+Replace with compact premium version.
+
+Show:
+
+Search Icon
+
+Search Clients
+
+Type a name, phone, email or package.
+
+Centered.
+
+Balanced.
+
+No wasted vertical space.
+
+==================================================
+PART 8 - TRON LEGACY DESIGN LANGUAGE
+==================================================
+
+CRITICAL:
+
+Do NOT create generic SaaS styling.
+
+Keep Elite Coaching identity.
+
+Visual Language:
+
+- Dark premium glass
+- Soft cyan neon accents
+- Subtle glow
+- Premium dashboard feel
+- No aggressive effects
+- No heavy borders
+- No visual clutter
+
+==================================================
+PART 9 - RESPONSIVE REQUIREMENTS
+==================================================
+
+Test widths:
+
+360
+375
+390
+412
+430
+768
+1024
+1366
+1440
+
+Requirements:
+
+- No clipping
+- No overflow
+- No broken chips
+- No broken avatars
+- No modal jumping
+- No keyboard overlap
+- No double scrollbars
+
+==================================================
+PART 10 - PERFORMANCE
+==================================================
+
+Search must remain extremely fast.
+
+Do NOT:
+
+- Add heavy queries
+- Add polling
+- Add expensive filtering
+- Add unnecessary rerenders
+
+Keep search instant.
+
+==================================================
+PART 11 - FINAL QUALITY TARGET
+==================================================
+
+When finished, the search should feel comparable to:
+
+- WhatsApp Search
+- Telegram Search
+- Notion Search
+- Linear Command Menu
+
+but fully adapted to the Elite Coaching Tron Legacy design system.
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+Provide:
+
+1. Files changed
+2. Exact UI improvements completed
+3. Exact UX improvements completed
+4. Filters implemented
+5. Unsupported filters hidden
+6. Mobile devices tested
+7. Desktop sizes tested
+8. Performance confirmation
+9. Confirmation:
+   - No bookings logic touched
+   - No packages logic touched
+   - No auth touched
+   - No payments touched
+   - No media touched
+   - No logo controls touched
+10. All tests passing

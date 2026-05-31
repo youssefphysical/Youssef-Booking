@@ -315,6 +315,16 @@ check("Mobile preview uses wMobile/hMobile (not wDesktop/hDesktop)", () => {
   );
 });
 
+check("LogoControlsPanel resets previewMode to desktop when the open slot changes", () => {
+  // A useEffect keyed on activeSlot must call setPreviewMode("desktop") so each
+  // slot opens at its desktop dimensions instead of inheriting a stale Mobile view.
+  const resetEffect = /useEffect\(\(\)\s*=>\s*\{\s*setPreviewMode\(["']desktop["']\);?\s*\},\s*\[activeSlot\]\)/;
+  assert(
+    resetEffect.test(adminMediaSrc),
+    'LogoControlsPanel must reset previewMode to "desktop" in a useEffect keyed on [activeSlot].',
+  );
+});
+
 console.log("\n[5b] AdminMedia.tsx — LogoControlsPanel save payload structure");
 
 check("LogoControlsPanel saves to brandSettings.logos", () => {

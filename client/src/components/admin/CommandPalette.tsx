@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 // Use cmdk root primitive directly — avoids "[&_[cmdk-input]]:h-12" override on the UI Command wrapper
 import { Command as CmdkRoot } from "cmdk";
-// These UI wrappers are fine — they don't force h-12 on inputs, just group/item styling
 import { CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Search, X, Users, UserPlus } from "lucide-react";
@@ -35,6 +34,43 @@ type SearchResponse = {
 
 const BEST_RANK_MAX = 5;
 const AVATAR_PX = 44;
+const LOW_SESSION_THRESHOLD = 3;
+
+// ─── Quick filter chips ───────────────────────────────────────────────────────
+//
+// ALL filters below run CLIENT-SIDE on results already returned by the search API.
+// They add ZERO backend cost (no extra queries, no polling).
+//
+// Each chip's predicate uses ONLY fields present in the ClientResult payload:
+//   clientStatus, vipTier, pkgName, pkgTotal, pkgUsed, pkgStatus
+//
+// INTENTIONALLY OMITTED (per "hide unsupported filter" + "never add heavy backend
+// queries"):
+//   • "Nutrition" — the search payload has no nutrition-program field; CLIENT_STATUSES
+//     has no nutrition value (that lives in LEAD_STATUSES, not returned here).
+//   • "Today"     — the search payload has no today's-booking data; computing it would
+//     require a heavy per-result bookings query.
+
+type FilterId =
+  | "active" | "pending" | "expiring" | "low_sessions"
+  | "has_pkg" | "no_pkg" | "vip";
+
+const FILTERS: { id: FilterId; label: string; predicate: (c: ClientResult) => boolean }[] = [
+  { id: "active",       label: "Active",        predicate: (c) => c.clientStatus === "active" },
+  { id: "pending",      label: "Pending",       predicate: (c) => c.clientStatus === "pending" },
+  { id: "expiring",     label: "Expiring Soon", predicate: (c) => c.pkgStatus === "expiring_soon" },
+  {
+    id: "low_sessions", label: "Low Sessions",
+    predicate: (c) => {
+      if (c.pkgTotal == null || c.pkgUsed == null) return false;
+      const rem = c.pkgTotal - c.pkgUsed;
+      return rem >= 0 && rem <= LOW_SESSION_THRESHOLD;
+    },
+  },
+  { id: "has_pkg",      label: "Has Package",   predicate: (c) => !!c.pkgName },
+  { id: "no_pkg",       label: "No Package",    predicate: (c) => !c.pkgName },
+  { id: "vip",          label: "VIP",           predicate: (c) => !!c.vipTier && c.vipTier !== "foundation" },
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +97,7 @@ function statusBadgeClass(status: string | null): string {
   switch (status) {
     case "active":        return "bg-emerald-500/15 text-emerald-400 border-emerald-500/25";
     case "expiring_soon": return "bg-amber-500/15 text-amber-400 border-amber-500/25";
+    case "pending":       return "bg-amber-500/15 text-amber-400 border-amber-500/25";
     case "frozen":        return "bg-sky-500/15 text-sky-400 border-sky-500/25";
     default:              return "bg-white/5 text-muted-foreground/60 border-white/10";
   }
@@ -117,6 +154,8 @@ function ClientAvatar({ photoUrl, name }: { photoUrl: string | null; name: strin
 }
 
 // ─── Client card ──────────────────────────────────────────────────────────────
+// Fixed-grid layout: avatar (fixed col) + text column. Identical structure for
+// every row → consistent height, no shifting.
 
 function ClientCard({ c, q }: { c: ClientResult; q: string }) {
   const rem = remainingLabel(c.pkgTotal, c.pkgUsed);
@@ -195,12 +234,12 @@ interface Props {
 export function CommandPalette({ open, onOpenChange }: Props) {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<FilterId[]>([]);
   const debounced = useDebounced(query.trim(), 20);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [isMobile, setIsMobile] = useState(false);
-  // Track visual viewport height so the results list shrinks when keyboard opens
-  const [listMaxH, setListMaxH] = useState<string>("62vh");
+  const [listMaxH, setListMaxH] = useState<string>("58vh");
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -210,16 +249,16 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // Visual viewport listener — keeps list height within available space when keyboard opens
+  // Visual viewport listener — shrinks results list when mobile keyboard opens
   useEffect(() => {
     if (!open) return;
     const vv = window.visualViewport;
     if (!vv) return;
 
     const recalc = () => {
-      // Available height above keyboard (minus modal top offset + footer + input)
       const available = vv.height;
-      const reserved = isMobile ? 120 : 140; // header + footer + padding
+      // header padding + capsule + chips row + footer + spacing
+      const reserved = isMobile ? 180 : 200;
       const px = Math.max(160, available - reserved);
       setListMaxH(`${px}px`);
     };
@@ -233,10 +272,10 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     };
   }, [open, isMobile]);
 
-  // Reset query when dialog closes
+  // Reset query + filters when dialog closes
   useEffect(() => {
     if (!open) {
-      const id = setTimeout(() => setQuery(""), 200);
+      const id = setTimeout(() => { setQuery(""); setActiveFilters([]); }, 200);
       return () => clearTimeout(id);
     }
   }, [open]);
@@ -264,137 +303,169 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     setTimeout(() => navigate(path), 50);
   };
 
+  const toggleFilter = (id: FilterId) =>
+    setActiveFilters((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
+    );
+
   const hasQuery = debounced.length > 0;
-  const all = data?.clients ?? [];
+  const raw = data?.clients ?? [];
+
+  // ── Client-side filter (AND across active chips) ──────────────────────────────
+  const activeDefs = FILTERS.filter((f) => activeFilters.includes(f.id));
+  const all = activeDefs.length
+    ? raw.filter((c) => activeDefs.every((f) => f.predicate(c)))
+    : raw;
+
   const bestMatches = all.filter((c) => c.matchRank <= BEST_RANK_MAX);
   const suggestions = all.filter((c) => c.matchRank > BEST_RANK_MAX);
   const showBest = bestMatches.length > 0 ? bestMatches : suggestions;
   const showSugg = bestMatches.length > 0 ? suggestions : [];
   const hasResults = all.length > 0;
+  // Distinguish "API returned nothing" from "filters removed everything"
+  const filteredOut = hasQuery && raw.length > 0 && all.length === 0;
 
   const placeholder = isMobile
     ? "Search clients…"
     : "Search clients by name, phone, email, or package…";
 
-  const headerH = isMobile ? 50 : 54;
+  const capsuleH = isMobile ? 48 : 52;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="client-search-dialog"
-        /*
-         * AUTO-FOCUS FIX: Focus the input immediately when the dialog opens.
-         * We prevent Radix's default focus-trap from stealing focus from our input.
-         */
         onOpenAutoFocus={(e) => {
           e.preventDefault();
-          // Short delay allows the dialog open animation to start first
           setTimeout(() => inputRef.current?.focus(), 60);
         }}
         onCloseAutoFocus={(e) => e.preventDefault()}
         className={cn(
-          // ── Width ────────────────────────────────────────────────────────
           "w-[calc(100vw-24px)] max-w-[calc(100vw-24px)] sm:max-w-[560px] lg:max-w-[620px]",
-          // ── Layout ───────────────────────────────────────────────────────
           "gap-0 p-0 overflow-hidden",
-          // ── Shape ────────────────────────────────────────────────────────
-          "rounded-xl sm:rounded-2xl",
-          // ── Border: 1px subtle, no harsh rectangular outline ─────────────
+          "rounded-2xl",
           "border border-border/50",
-          // ── Shadow: premium depth with very faint cyan outline ────────────
           "shadow-[0_0_0_1px_hsl(var(--primary)/0.04),0_24px_80px_rgba(0,0,0,0.75)]",
-          // ── SPOTLIGHT POSITION: top-anchored (not centered) ───────────────
-          // Overrides Radix's default top-[50%] translate-y-[-50%] which
-          // puts the dialog center-screen — bad for a command palette.
-          // !important is required to beat the base DialogContent classes.
+          // Spotlight position — top-anchored, not centered
           "!top-3 sm:!top-[8%] !translate-y-0",
-          // ── Mobile keyboard safety: dvh shrinks when keyboard opens ───────
+          // Mobile keyboard safety — dvh shrinks when keyboard opens
           "!max-h-[calc(100dvh-24px)]",
-          // ── CRITICAL: hide Radix auto-close button ────────────────────────
-          // dialog.tsx renders <DialogPrimitive.Close> with an <X> icon.
-          // That button has NO aria-label attribute (only sr-only span text),
-          // so [&>button[aria-label='Close']]:hidden silently fails.
-          // [&>button]:hidden targets the ONLY direct <button> child of the
-          // DialogPrimitive.Content root — the Radix close button — and hides it.
-          // Our custom X is inside CmdkRoot, not a direct child, so it is safe.
+          // Hide Radix auto-close button (no aria-label, only sr-only span)
           "[&>button]:hidden",
         )}
       >
-        {/*
-         * Use CmdkRoot (raw cmdk Command primitive) instead of the UI Command wrapper.
-         *
-         * Why: The UI Command wraps with "[&_[cmdk-input]]:h-12" which forces any
-         * element with the [cmdk-input] attribute (our CmdkRoot.Input) to 48px height.
-         * This fights our h-full and produces a visually clipped input frame.
-         *
-         * CmdkRoot has no such override — we get full height control.
-         * CommandList / CommandGroup / CommandItem from UI lib are safe to nest here
-         * because they use the same cmdk React context provided by CmdkRoot.
-         */}
         <CmdkRoot
           shouldFilter={false}
           className="flex flex-col w-full bg-background"
           data-testid="client-search-command"
         >
 
-          {/* ── INPUT ROW ─────────────────────────────────────────────────────
-            Single flat div — NO nesting CommandInput (which adds its own border-b).
-            Border-b is applied ONCE here only.
-            Input has [cmdk-input] attribute set by cmdk automatically.
-            X is a flex sibling — never overlaps the input text.
+          {/* ── HEADER: capsule search bar with breathing room ───────────────────
+            Capsule (rounded-[20px]) sits inside a padded header so its border is
+            never clipped by the modal edge. Soft cyan glow on focus-within only.
+            Layout: [search icon] [input] [clear X]  — all vertically centered.
           */}
-          <div
-            className="flex items-center gap-0 border-b border-border/50 px-4"
-            style={{ height: headerH }}
-            data-testid="client-search-input-wrapper"
-          >
-            <Search
-              size={15}
-              className="shrink-0 text-muted-foreground/50 mr-3 pointer-events-none"
-              aria-hidden
-            />
-
-            <CmdkRoot.Input
-              ref={inputRef}
-              value={query}
-              onValueChange={setQuery}
-              placeholder={placeholder}
+          <div className="px-3 pt-3 pb-2">
+            <div
               className={cn(
-                "flex-1 h-full bg-transparent text-[13px] sm:text-sm outline-none",
-                "placeholder:text-muted-foreground/50",
-                // Suppress native browser clear buttons (Chrome, Safari, IE)
-                "[&::-webkit-search-cancel-button]:hidden [&::-ms-clear]:hidden",
-                // Space so input text never reaches the X button area
-                "pr-2",
+                "flex items-center gap-2 rounded-[20px] border bg-white/[0.03] px-3.5",
+                "border-border/60 transition-all duration-200",
+                "focus-within:border-primary/45 focus-within:bg-white/[0.05]",
+                "focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.08)]",
               )}
-              data-testid="input-client-search"
-            />
+              style={{ height: capsuleH }}
+              data-testid="client-search-input-wrapper"
+            >
+              <Search
+                size={16}
+                className="shrink-0 text-muted-foreground/50 pointer-events-none"
+                aria-hidden
+              />
 
-            {/* Custom X — single, fixed 40×40px tap target, flex sibling (no overlap) */}
-            {query.length > 0 && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                data-testid="button-clear-search"
-                onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+              <CmdkRoot.Input
+                ref={inputRef}
+                value={query}
+                onValueChange={setQuery}
+                placeholder={placeholder}
                 className={cn(
-                  "shrink-0 flex items-center justify-center",
-                  "h-10 w-10 -mr-1",
-                  "rounded-lg text-muted-foreground/60",
-                  "hover:text-foreground hover:bg-white/5",
-                  "active:bg-white/8 transition-colors touch-manipulation",
+                  "flex-1 h-full bg-transparent text-[13px] sm:text-sm outline-none",
+                  "placeholder:text-muted-foreground/50",
+                  "[&::-webkit-search-cancel-button]:hidden [&::-ms-clear]:hidden",
+                  "pr-1",
                 )}
-              >
-                <X size={14} />
-              </button>
-            )}
+                data-testid="input-client-search"
+              />
+
+              {/* Single X — clears text. 40×40 tap target, flex sibling, no overlap */}
+              {query.length > 0 && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  data-testid="button-clear-search"
+                  onClick={() => { setQuery(""); inputRef.current?.focus(); }}
+                  className={cn(
+                    "shrink-0 flex items-center justify-center",
+                    "h-9 w-9 -mr-1.5",
+                    "rounded-full text-muted-foreground/60",
+                    "hover:text-foreground hover:bg-white/8",
+                    "active:bg-white/10 transition-colors touch-manipulation",
+                  )}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* ── RESULTS LIST ──────────────────────────────────────────────────
-            max-h is driven by visual viewport JS (listMaxH) so it shrinks when
-            keyboard opens on mobile — no content hidden behind keyboard.
-            min-h-[180px] prevents modal from collapsing to near-zero height
-            when switching between empty state and results (eliminates the jump).
+          {/* ── QUICK FILTER CHIPS ───────────────────────────────────────────────
+            Always visible while open (incl. empty query). Horizontal scroll keeps
+            them compact — never wraps or breaks layout. Tap toggles instantly.
+          */}
+          <div className="border-b border-border/40 px-3 pb-2">
+            <div
+              className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              data-testid="quick-filter-chips"
+            >
+              {FILTERS.map((f) => {
+                const on = activeFilters.includes(f.id);
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggleFilter(f.id)}
+                    data-testid={`chip-filter-${f.id}`}
+                    data-active={on ? "true" : "false"}
+                    aria-pressed={on}
+                    className={cn(
+                      "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium whitespace-nowrap",
+                      "transition-colors touch-manipulation",
+                      on
+                        ? "bg-primary/15 border-primary/40 text-primary"
+                        : "bg-white/[0.03] border-border/50 text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.06]",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+
+              {activeFilters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters([])}
+                  data-testid="chip-clear-filters"
+                  className="shrink-0 flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors touch-manipulation"
+                >
+                  <X size={11} />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── RESULTS LIST ─────────────────────────────────────────────────────
+            min-h prevents modal collapse between states. max-h (viewport-driven)
+            forces internal scroll — content never hides behind keyboard.
           */}
           <CommandList
             style={{ maxHeight: listMaxH }}
@@ -402,10 +473,10 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             data-testid="client-search-results"
           >
 
-            {/* Empty state — first open */}
+            {/* Empty state — first open (compact, balanced) */}
             {!hasQuery && (
               <div
-                className="flex flex-col items-center justify-center gap-2 py-9 px-4 text-center"
+                className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-center"
                 data-testid="client-search-empty-state"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -413,15 +484,36 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 </span>
                 <p className="text-sm font-medium">Search Clients</p>
                 <p className="text-[12px] text-muted-foreground/60 leading-relaxed max-w-[210px]">
-                  Type a name, phone, email, or package.
+                  Type a name, phone, email or package.
                 </p>
               </div>
             )}
 
-            {/* No results */}
-            {hasQuery && !hasResults && (
+            {/* Filters removed all matches */}
+            {filteredOut && (
               <div
-                className="flex flex-col items-center justify-center gap-2 py-9 px-4 text-center"
+                className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-center"
+                data-testid="client-search-no-filter-matches"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
+                  <Users size={16} />
+                </span>
+                <p className="text-sm font-medium">No clients match these filters</p>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters([])}
+                  data-testid="button-clear-filters-empty"
+                  className="mt-0.5 text-[12px] font-medium text-primary hover:underline"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+
+            {/* No results from API */}
+            {hasQuery && raw.length === 0 && (
+              <div
+                className="flex flex-col items-center justify-center gap-2 py-8 px-4 text-center"
                 data-testid="client-search-no-results"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-muted-foreground">
@@ -487,7 +579,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
 
           </CommandList>
 
-          {/* ── FOOTER ─────────────────────────────────────────────────────── */}
+          {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
           <div
             className="flex items-center justify-between gap-2 border-t border-border/50 px-4 py-[6px]"
             data-testid="client-search-footer"

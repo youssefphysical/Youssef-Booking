@@ -1685,6 +1685,13 @@ function LogoControlsPanel() {
     }
   }, [isLoading, data, initialised]);
 
+  // Reset the preview toggle to Desktop whenever the open slot changes, so each
+  // slot is first seen at its desktop dimensions (avoids carrying a stale Mobile
+  // view from a previously-edited slot).
+  useEffect(() => {
+    setPreviewMode("desktop");
+  }, [activeSlot]);
+
   function setSlotVal(slot: BrandLogoSlot, key: keyof LogoBrandControls, v: number) {
     setLogos(prev => {
       const next = { ...prev, [slot]: { ...prev[slot], [key]: v } };
