@@ -17,6 +17,19 @@ Never call `storage.getBookings({})` or `storage.getBookings()` without a `from`
 
 **Rule for new endpoints:** pick the narrowest `from` date that satisfies the endpoint's queries. Document the window in a comment next to the call.
 
+## GET /api/settings blob strip
+Three columns are stripped from the GET /api/settings response in the route handler: `nutritionOriginalUrl`, `nutritionMobileUrl`, `nutritionThumbnailUrl`. They are pipeline intermediates written by the media processor but never rendered anywhere in the front-end. In production these can total 1.75 MB per call.
+
+**Why:** The settings row is fetched by 20+ components. nutritionOriginalUrl alone was 1.65 MB of uncompressed base64. Stripping just these three columns drops the response from ~2.7 MB to ~957 KB without breaking any rendered UI.
+
+**How to apply:** If a new media pipeline column is added to the settings table and is never rendered in the front-end, add it to the destructure-strip list in the GET /api/settings handler in routes.ts. Do NOT strip columns that are rendered by the homepage (profilePhotoUrl, personalTrainingImageUrl, nutritionImageUrl, supplementImageUrl, logoIconUrl).
+
+## Production-safe response size alert
+`server/app.ts` fires `console.warn([perf-alert])` for any API response ≥ 1 MB in any environment (path + size only, no content). Dev threshold is still 200 KB.
+
+## GET /api/settings is still ~957 KB
+Remaining base64 blobs: profilePhotoUrl (316 KB), nutritionImageUrl (199 KB), supplementImageUrl (187 KB), personalTrainingImageUrl (144 KB), logoIconUrl (108 KB). These ARE rendered by the homepage and cannot be stripped without breaking those images. The long-term fix is to run the brand migration and store them as file URLs — but Vercel serverless has a read-only filesystem so `runBrandFileMigration()` via `setImmediate` never completes. Until images are moved to external storage (S3/Cloudinary), the ~957 KB per cold-start settings fetch is unavoidable.
+
 ## getAllClientsLight() rule
 getAllClientsLight() must be used for every bulk admin route that does NOT need to render profile pictures or auth fields.
 

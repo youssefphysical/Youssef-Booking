@@ -1,0 +1,82 @@
+Finalize the Neon recovery + production stability work.
+
+Context:
+Neon has now been upgraded from Free to Launch. The previous production blocker was Neon network transfer limit reached, not a code/build failure. Transfer-reduction fixes were already implemented and deployed, but I need you to complete the final verification and cleanup professionally.
+
+Tasks:
+
+1. Verify Neon is unblocked
+- Confirm production API can connect to Neon successfully.
+- Check that server boot no longer returns:
+  {"error":"ServerUnavailable","message":"Server failed to start"}
+- Verify no Neon quota/connection error remains in Vercel runtime logs.
+
+2. Redeploy / verify production
+- Confirm latest GitHub main commit is deployed to Vercel Production.
+- If needed, trigger a fresh production redeploy.
+- Confirm deployment is READY.
+- Confirm the production domain is using the latest build, not an older cached build.
+
+3. Test critical production endpoints
+Test these on production, not only locally:
+- GET /api/settings
+- PATCH /api/settings
+- GET /api/auth/me
+- Login admin flow
+- Admin dashboard stats
+- Admin clients list
+- Bookings endpoints
+- Media / Branding save endpoints:
+  - PATCH /api/settings
+  - PATCH /api/admin/media/logo/config if used
+
+4. Verify Branding “Save all”
+Go to Admin → Media → Branding.
+Change a small slider value.
+Press Save all.
+Confirm:
+- No “Save failed” toast.
+- Values save successfully.
+- Refresh the page.
+- Values persist after refresh.
+- Vercel logs show no 400/401/500 for the save request.
+
+5. Confirm transfer reduction is active
+Verify the optimized code is deployed:
+- Cron reminders must NOT call getBookings({}) for all bookings.
+- Cron must only fetch upcoming/unreminded bookings.
+- Analytics must use bounded date windows, not all historical bookings.
+- Dashboard stats must only fetch the current month or needed date range.
+- Auto-complete status must use a 30-day bounded window.
+- Settings hook must use staleTime 5 minutes and refetchOnWindowFocus false.
+
+6. Add protection against future Neon overuse
+Add lightweight server logging or warning if any API response is unusually large.
+Keep the existing 200KB dev warning if present.
+If possible, add a production-safe warning for repeated large responses without exposing sensitive data.
+
+7. Do not change business logic
+Do not change:
+- Booking rules
+- Payment logic
+- Client package/session logic
+- Admin permissions
+- Auth logic
+- Database schema unless absolutely necessary
+
+8. Final report required
+Give me a clean final report with:
+- Latest GitHub commit hash
+- Vercel Production deployment status
+- Confirmation Neon connection works
+- Confirmation Login works
+- Confirmation Branding Save all works
+- Confirmation values persist after refresh
+- Confirmation no production 500 errors remain
+- Estimated new monthly Neon transfer after fixes
+- Any remaining risks, if any
+
+Important:
+Do not work on unrelated design tasks.
+Do not start new features.
+Focus only on Neon recovery, production API stability, Branding Save all, and transfer reduction verification.
