@@ -1047,15 +1047,19 @@ export const SESSION_FOCUS_OPTIONS = [
   "core",
   "full_body",
   "crossfit",
+  // Recovery
+  "rehabilitation",
+  "stretching_recovery",
 ] as const;
 
 export const SESSION_FOCUS_GROUPS: Record<
-  "upper" | "lower" | "conditioning",
+  "upper" | "lower" | "conditioning" | "recovery",
   ReadonlyArray<(typeof SESSION_FOCUS_OPTIONS)[number]>
 > = {
   upper: ["chest", "back", "shoulders", "arms", "front_upper", "back_upper", "push", "pull"],
   lower: ["legs", "front_lower", "back_lower"],
   conditioning: ["core", "full_body", "crossfit"],
+  recovery: ["rehabilitation", "stretching_recovery"],
 };
 
 // =============================
@@ -1064,10 +1068,14 @@ export const SESSION_FOCUS_GROUPS: Record<
 // =============================
 export const BOOKING_TRAINING_GOALS = [
   "hypertrophy",
+  "muscle_gain",
   "strength",
   "endurance",
   "fat_loss",
   "conditioning",
+  "body_recomposition",
+  "rehabilitation",
+  "mobility_recovery",
 ] as const;
 
 // English fallback labels — used by trainer-facing notifications and as

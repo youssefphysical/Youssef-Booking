@@ -1,0 +1,461 @@
+CLIENT DASHBOARD + BOOKING OPTIONS — MINIMAL PREMIUM REFINEMENT
+
+IMPORTANT:
+Do NOT redesign the whole website.
+Do NOT rebuild the dashboard.
+Do NOT change database schema unless absolutely necessary.
+Do NOT change authentication, payments, admin logic, package calculations, session balance logic, or booking rules.
+Do NOT add clutter.
+Do NOT add long text.
+Do NOT add unnecessary cards.
+
+Goal:
+Refine the Client Dashboard and Booking Page to be more professional, useful, minimal, and premium while preserving the current Tron Legacy / Elite Coaching design.
+
+Main principle:
+Show only what the client needs daily.
+
+No clutter.
+No repeated sections.
+No long explanations.
+No oversized cards.
+
+==================================================
+PART 1 — CLIENT DASHBOARD PRIORITY
+
+The client dashboard must answer these questions within 3 seconds:
+
+1. Who am I?
+2. What is my current program?
+3. How many sessions do I have left?
+4. When is my next session?
+5. What should I do next?
+
+Keep the dashboard short, clean, and easy to scan.
+
+==================================================
+PART 2 — CLIENT PROFILE CARD
+
+Keep the Client Profile Card at the very top.
+
+It should show only:
+
+- Client photo
+- Client name
+- Current package/tier
+- Active status
+- Sessions remaining
+- Expiry date if available
+
+Do not add long descriptions.
+
+The card must feel premium and be the visual anchor of the page.
+
+==================================================
+PART 3 — ACTIVE PROGRAM CARD
+
+Add or convert a small compact card called:
+
+Current Program
+
+Possible program labels:
+
+- Fat Loss
+- Muscle Gain
+- Body Recomposition
+- Strength
+- Conditioning
+- Endurance
+- Rehabilitation
+- Mobility & Recovery
+
+This card must be compact.
+
+Do not make it a large section.
+
+Suggested display:
+
+Current Program
+Body Recomposition
+
+or:
+
+Current Program
+Rehabilitation
+
+Short subtitle only if needed:
+Personalized coaching path
+
+No long paragraph.
+
+==================================================
+PART 4 — NEXT SESSION COUNTDOWN
+
+Upgrade the Upcoming Session area into a clearer compact card.
+
+If a next session exists, show:
+
+Next Session
+Tomorrow
+07:00 PM
+18 Hours Remaining
+
+If no next session exists, show:
+
+No upcoming sessions
+Book your next session.
+
+Keep it compact.
+
+Do not use large empty illustrations.
+
+Do not duplicate Upcoming Session elsewhere on Home.
+
+==================================================
+PART 5 — LAST SESSION TYPE
+
+Add a small piece of useful history without clutter.
+
+Show:
+
+Last Session
+Upper Body
+26 May 2026
+
+or:
+
+Last Session
+Stretching & Recovery
+26 May 2026
+
+or:
+
+Last Session
+Rehabilitation
+26 May 2026
+
+This can live inside Today Snapshot or a compact summary area.
+
+Do NOT create a large new card unless necessary.
+
+==================================================
+PART 6 — QUICK ACTIONS
+
+Keep only four actions:
+
+- Book Session
+- Message Coach
+- Weekly Check-In
+- View Progress
+
+Recommended order:
+
+Book Session
+Message Coach
+Weekly Check-In
+View Progress
+
+2x2 layout on mobile.
+
+Same size.
+Same spacing.
+Same icon style.
+No extra glow.
+
+==================================================
+PART 7 — PACKAGE SUMMARY
+
+Package card must be short.
+
+Keep only:
+
+- Current Package
+- Sessions Left
+- Expiry
+- Status
+- One action if needed
+
+Remove long paragraphs.
+
+Maximum 2–3 short lines.
+
+If no package exists:
+
+No Active Package
+Choose a package to continue your coaching plan.
+[View Packages]
+
+Keep it clean.
+
+==================================================
+PART 8 — COLLAPSE SECONDARY DETAILS
+
+Move or collapse secondary details:
+
+- Past Sessions
+- Full Training History
+- Package Details
+- Cancellation Rules
+- Emergency Adjustment Rules
+- Long Recovery Details
+- Long Progress Details
+
+These should not dominate Home.
+
+If needed, put them under:
+
+- My Training
+- Progress
+- More
+
+Home should stay a premium summary.
+
+==================================================
+PART 9 — BOOKING PAGE: SESSION FOCUS
+
+Add these options to Session Focus if not already present:
+
+- Rehabilitation
+- Stretching & Recovery
+
+Professional labels:
+
+Rehabilitation
+Movement Recovery & Corrective Exercise
+
+Stretching & Recovery
+Mobility • Flexibility • Recovery
+
+Keep labels concise.
+
+Do not add long descriptions.
+
+==================================================
+PART 10 — BOOKING PAGE: TRAINING GOAL
+
+Training Goal should include:
+
+- Muscle Gain
+- Fat Loss
+- Body Recomposition
+- Strength
+- Conditioning
+- Endurance
+- Rehabilitation
+- Mobility & Recovery
+
+Use professional naming.
+
+No overly technical language.
+
+No BMI.
+
+No medical claims.
+
+==================================================
+PART 11 — BOOKING PAGE: SESSION TYPE
+
+Session Type should be clean and not duplicated.
+
+Only show each type once.
+
+Recommended list:
+
+1. Free Trial Session
+2. Single Session
+3. Package Session
+4. Duo Package Session
+5. Stretching & Recovery
+6. Rehabilitation Session
+
+Optional only if already supported:
+
+- Online Coaching
+- Home Training
+
+Do NOT duplicate:
+Free Trial Session
+Duo Package Session
+or any other type.
+
+==================================================
+PART 12 — FREE TRIAL WORDING
+
+Free Trial Session must not mention BMI.
+
+Use:
+
+Free Trial Session
+Movement & Fitness Assessment
+Goal Review • Movement Screening • Training Recommendations
+
+Add a small premium FREE badge.
+
+Badge style:
+
+- small
+- elegant
+- cyan
+- not flashy
+- premium sticker feel
+
+==================================================
+PART 13 — SESSION TYPE BADGES
+
+Add small badges only where helpful.
+
+Examples:
+
+FREE
+for Free Trial
+
+PACKAGE
+for Package Session
+
+DUO
+for Duo Package
+
+RECOVERY
+for Stretching & Recovery
+
+REHAB
+for Rehabilitation
+
+Badge rules:
+
+- small
+- premium
+- subtle
+- no aggressive colors
+- no large labels
+- no visual clutter
+
+==================================================
+PART 14 — BOOKING INFO CARDS
+
+If booking page has long info cards, compress them.
+
+Instead of two large cards, use one compact Booking Policy card:
+
+Booking Policy
+• Book 3+ hours in advance
+• Sessions last 60 minutes
+
+Keep it short.
+
+==================================================
+PART 15 — STEP PROGRESS
+
+Add a minimal step indicator only if it does not clutter.
+
+Example:
+
+Date → Time → Preferences → Session → Confirm
+
+or small progress dots.
+
+Must be compact.
+
+Must not make the page taller unnecessarily.
+
+==================================================
+PART 16 — RESPONSIVE REQUIREMENTS
+
+Must work on:
+
+- Android Chrome
+- Samsung Internet
+- iPhone Safari
+- iPhone Chrome
+- iPad
+- Android tablet
+- MacBook Safari
+- MacBook Chrome
+- Windows laptop Chrome/Edge
+- Desktop
+
+Test widths:
+
+320px
+360px
+375px
+390px
+412px
+430px
+768px
+1024px
+1366px
+1440px
+
+No:
+
+- text overflow
+- card overflow
+- cropped text
+- overlapping badges
+- duplicated cards
+- horizontal scrolling
+- broken bottom navigation
+- chat bubble covering content
+- CTA collision
+
+==================================================
+PART 17 — DESIGN RULES
+
+Keep the current Elite Coaching / Tron Legacy theme.
+
+Do not introduce a new design system.
+
+Use:
+
+- Cyan for primary actions
+- Gold for elite/package tier
+- Green for active/success
+- Red only for warnings
+
+Reduce visual noise.
+
+Use subtle glow only on:
+
+- selected state
+- primary CTA
+- active status
+- important badge
+
+Do not make every card glow.
+
+Luxury means:
+clean
+focused
+controlled
+minimal
+
+Not more colors.
+Not more cards.
+Not more text.
+
+==================================================
+PART 18 — FINAL ACCEPTANCE
+
+Final result must be:
+
+- Shorter
+- Cleaner
+- Easier to scan
+- More premium
+- More useful for the client
+- Less cluttered
+- Fully responsive
+
+Final report must include:
+
+1. Dashboard sections changed.
+2. Booking options added.
+3. Duplicate session types removed.
+4. Free Trial wording updated.
+5. Rehabilitation added where appropriate.
+6. Stretching & Recovery added where appropriate.
+7. Responsive checks completed.
+8. Confirmation no business logic was changed.
+9. Confirmation no database schema was changed unless approved.
+10. Confirmation no unrelated pages were changed.
