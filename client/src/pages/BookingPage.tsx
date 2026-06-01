@@ -65,6 +65,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
 import { ShieldCheck, ChevronDown } from "lucide-react";
+import { setPageCtaHeight } from "@/lib/fab-offset";
 import {
   Accordion,
   AccordionContent,
@@ -197,6 +198,16 @@ export default function BookingPage() {
       alive = false;
     };
   }, []);
+
+  // Lift the HelpFab above the sticky booking CTA when a slot is selected.
+  // Booking CTA: pt-3(12) + h-14(56) + pb-5(20) = 88px + 8px margin = 96px.
+  // setPageCtaHeight is a zero-dep pub-sub; HelpFab subscribes via usePageCtaHeight.
+  const ctaVisible = !!(selectedSlot && date);
+  useEffect(() => {
+    setPageCtaHeight(ctaVisible ? 96 : 0);
+    return () => setPageCtaHeight(0);
+  }, [ctaVisible]);
+
   const { toast: showToast } = useToast();
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
   const [sessionFocus, setSessionFocus] = useState<SessionFocus | null>(null);

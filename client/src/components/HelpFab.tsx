@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "@/i18n";
 import { useAuth } from "@/hooks/use-auth";
 import { whatsappUrl, DEFAULT_WHATSAPP_NUMBER } from "@/lib/whatsapp";
+import { usePageCtaHeight } from "@/lib/fab-offset";
 
 const HIDDEN_PREFIXES = [
-  "/book",
   "/admin",
   "/admin-access",
   "/auth",
@@ -23,6 +23,7 @@ export function HelpFab() {
   const [pathname] = useLocation();
   const [isScrolling, setIsScrolling] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const ctaHeight = usePageCtaHeight();
 
   useEffect(() => {
     const onScroll = () => {
@@ -61,8 +62,11 @@ export function HelpFab() {
           rel="noopener noreferrer"
           aria-label={label}
           data-testid="fab-help-coach"
-          className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/40 bg-black/70 text-cyan-200 shadow-[0_0_24px_rgba(94,231,255,0.45)] backdrop-blur-md hover:border-cyan-300/80 hover:text-cyan-100 hover:shadow-[0_0_32px_rgba(94,231,255,0.7)] active:scale-95"
+          className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/40 bg-black/70 text-cyan-200 shadow-[0_0_24px_rgba(94,231,255,0.45)] backdrop-blur-md hover:border-cyan-300/80 hover:text-cyan-100 hover:shadow-[0_0_32px_rgba(94,231,255,0.7)]"
           style={{
+            /* On mobile the bottom nav is ~60 px tall.
+               90 px clearance = FAB bottom edge well above nav.
+               md+ nav is hidden so we drop back to 1 rem. */
             bottom: "var(--fab-bottom, calc(env(safe-area-inset-bottom, 0px) + 90px))",
             ...(isRtl
               ? { left: "calc(env(safe-area-inset-left, 0px) + 1rem)" }
@@ -73,6 +77,10 @@ export function HelpFab() {
             scale: 1,
             opacity: isScrolling ? 0.45 : 1,
             x: isScrolling ? scrollEdgeShift : 0,
+            /* Lift the bubble above any sticky page CTA (e.g. booking
+               confirm bar). ctaHeight is 0 on all pages except when a
+               bottom CTA is visible — set via setPageCtaHeight(). */
+            y: -ctaHeight,
           }}
           exit={{ scale: 0, opacity: 0 }}
           whileHover={{ scale: 1.08 }}
@@ -81,6 +89,7 @@ export function HelpFab() {
             scale: { type: "spring", stiffness: 380, damping: 28 },
             opacity: { type: "spring", stiffness: 260, damping: 32 },
             x: { type: "spring", stiffness: 260, damping: 32 },
+            y: { type: "spring", stiffness: 280, damping: 30 },
           }}
         >
           <MessageCircle size={22} aria-hidden />
