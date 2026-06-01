@@ -1,0 +1,207 @@
+BOOKING PAGE — FINAL BOTTOM LAYOUT FIX (CRITICAL)
+
+IMPORTANT
+
+Do NOT redesign the page.
+Do NOT modify booking logic.
+Do NOT change Tron Legacy styling.
+Do NOT change colors.
+Do NOT change CTA functionality.
+Do NOT change Bottom Navigation functionality.
+
+Only fix layout, spacing, safe areas, and visual hierarchy.
+
+====================================================
+
+CURRENT ISSUE
+
+The Booking page has a visual collision between:
+
+1. Sticky Bottom CTA
+   "Complete required fields to continue"
+
+2. Center Floating "+" Button
+
+3. Bottom Navigation
+
+4. Floating Chat Bubble
+
+The CTA is too close to the Bottom Navigation.
+
+The center "+" appears visually embedded inside the CTA.
+
+The overall layout feels compressed instead of premium.
+
+====================================================
+
+GOAL
+
+Make the bottom section feel clean, intentional, premium, and luxury.
+
+Every element must have breathing room.
+
+Nothing should visually touch anything else.
+
+====================================================
+
+CTA FIX
+
+The sticky CTA must NOT sit directly above the Bottom Navigation.
+
+Add proper spacing.
+
+Required visual hierarchy:
+
+Page Content
+
+↓
+
+Sticky CTA
+
+↓
+
+24–32px visual breathing space
+
+↓
+
+Bottom Navigation
+
+↓
+
+System Safe Area
+
+The CTA should feel independent from navigation.
+
+====================================================
+
+CENTER "+" BUTTON FIX
+
+Keep:
+
+- Same size
+- Same icon
+- Same design
+- Same functionality
+
+DO NOT redesign.
+
+The "+" must visually float above navigation.
+
+It must NEVER appear attached to:
+
+- CTA
+- Bottom bar
+- Chat bubble
+
+The "+" should feel intentionally elevated.
+
+====================================================
+
+CHAT BUBBLE FIX
+
+Current position is still too low.
+
+Chat bubble must become context-aware.
+
+Rules:
+
+- Stay above CTA
+- Stay above Bottom Navigation
+- Never cover CTA text
+- Never cover any button
+- Never cover the center "+"
+
+When CTA is visible:
+Move chat bubble upward automatically.
+
+When CTA disappears:
+Return smoothly to normal position.
+
+Use smooth Messenger-style transitions.
+
+====================================================
+
+BOOKING PAGE SAFE AREA
+
+Add dedicated bottom safe spacing.
+
+Mobile:
+padding-bottom: 160px
+
+iPhone:
+padding-bottom: 170px
+
+Tablet:
+padding-bottom: 140px
+
+Desktop:
+responsive equivalent
+
+This spacing exists ONLY to protect:
+
+- CTA
+- Chat Bubble
+- Bottom Navigation
+- Center "+"
+
+====================================================
+
+RESPONSIVE TESTING
+
+Verify on:
+
+320px
+360px
+375px
+390px
+414px
+430px
+768px
+1024px
+1280px
+
+Android Chrome
+
+Samsung Internet
+
+iPhone Safari
+
+iPhone Chrome
+
+Desktop Chrome
+
+Desktop Edge
+
+====================================================
+
+VALIDATION CHECKLIST
+
+PASS ONLY IF:
+
+✓ CTA does not touch Bottom Navigation
+
+✓ "+" does not visually sit inside CTA
+
+✓ Chat bubble does not cover CTA
+
+✓ Chat bubble does not cover navigation
+
+✓ Safe-area works correctly
+
+✓ No overlap on any device
+
+✓ No clipping
+
+✓ No horizontal scrolling
+
+✓ Premium spacing achieved
+
+====================================================
+
+FINAL RESULT
+
+The bottom area must look like a premium native app.
+
+CTA, Chat Bubble, Bottom Navigation, and Center "+" must all appear as four separate layers with clear visual hierarchy and breathing room.
+
+Do not stop until every overlap is removed.

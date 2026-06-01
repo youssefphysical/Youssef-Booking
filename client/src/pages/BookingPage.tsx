@@ -204,7 +204,7 @@ export default function BookingPage() {
   // setPageCtaHeight is a zero-dep pub-sub; HelpFab subscribes via usePageCtaHeight.
   const ctaVisible = !!(selectedSlot && date);
   useEffect(() => {
-    setPageCtaHeight(ctaVisible ? 96 : 0);
+    setPageCtaHeight(ctaVisible ? 120 : 0);
     return () => setPageCtaHeight(0);
   }, [ctaVisible]);
 
@@ -719,7 +719,10 @@ export default function BookingPage() {
   const eligibility = isAdmin ? { ok: true as const } : evaluateBookingEligibility(user as any, activePackage ?? null);
 
   return (
-    <div className="max-w-3xl mx-auto px-5 pt-24 pb-32">
+    <div
+      className="max-w-3xl mx-auto px-5 pt-24"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 160px)" }}
+    >
       <div className="flex items-center gap-4 mb-8">
         <div className="p-3 bg-primary/15 rounded-2xl text-primary">
           <CalendarIcon size={22} />
@@ -1265,7 +1268,8 @@ export default function BookingPage() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 px-5 pb-5 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent z-40"
+            className="fixed left-0 right-0 px-5 pb-5 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent z-40"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 104px)" }}
           >
             <div className="max-w-3xl mx-auto">
               <Button
