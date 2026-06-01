@@ -1,0 +1,286 @@
+FINAL CLIENT DASHBOARD REFINEMENT
+
+IMPORTANT:
+
+Do NOT redesign the page.
+
+Do NOT rebuild the dashboard.
+
+Do NOT create new sections.
+
+Do NOT add extra marketing blocks.
+
+Do NOT add more cards.
+
+Do NOT change existing functionality.
+
+Do NOT touch database, APIs, authentication, sessions, packages, bookings, translations, calculations, business logic, notifications, or permissions.
+
+This task is ONLY a visual hierarchy, spacing, UX, and layout refinement.
+
+Goal:
+Transform the current Client Dashboard into a cleaner, more premium, easier-to-scan experience while preserving the current Tron Legacy identity.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #1
+CLIENT PROFILE CARD
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Move the client profile card to the very top of the dashboard.
+
+This must become the first thing the client sees.
+
+Current card should include:
+
+• Profile photo
+• Client name
+• Package tier badge
+• Session balance
+• Active status
+• Expiry date
+
+Keep all existing data.
+
+Do not add more information.
+
+Increase visual importance.
+
+Add slightly larger spacing around the card.
+
+This card becomes the visual anchor of the entire page.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #2
+TODAY SNAPSHOT
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep only the most important information.
+
+Display as a clean 2x2 grid:
+
+• Next Session
+• Sessions Left
+• Weekly Target
+• Streak
+
+All four cards must have:
+
+• Equal height
+• Equal width
+• Same border radius
+• Same spacing
+
+No oversized cards.
+
+No different card heights.
+
+No visual jumping.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #3
+QUICK ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep only:
+
+• Book Session
+• Message Coach
+• Weekly Check-In
+• View Progress
+
+Display in one clean row.
+
+All buttons same size.
+
+Same spacing.
+
+Same visual weight.
+
+No oversized icons.
+
+No extra glow.
+
+Keep clean and premium.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #4
+UPCOMING SESSION
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep current functionality.
+
+If no session exists:
+
+Show simple message:
+
+"No upcoming sessions"
+
+Nothing more.
+
+Avoid large empty states.
+
+Avoid oversized illustrations.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #5
+RECOVERY CHECK-IN
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep only:
+
+Title
+
+Short description
+
+Single CTA button
+
+Remove unnecessary explanatory text.
+
+Make this section compact.
+
+Premium.
+
+Easy to scan.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #6
+TRAINING LEVEL
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep:
+
+• Package Tier
+• Protected Cancellations
+• Emergency Adjustments
+
+Remove unnecessary visual noise.
+
+Keep information concise.
+
+No large descriptions.
+
+No long paragraphs.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+PRIORITY #7
+ACTIVITY FEED
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Activity feed must be collapsed by default.
+
+User expands only if needed.
+
+Reason:
+
+Activity is useful.
+
+But not primary content.
+
+Reduce visual clutter.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+REMOVE VISUAL NOISE
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Reduce dashboard scrolling.
+
+Reduce repetitive cards.
+
+Reduce oversized empty states.
+
+Reduce long explanations.
+
+Reduce duplicate information.
+
+Reduce visual clutter.
+
+The goal is:
+
+Faster scanning.
+
+Cleaner hierarchy.
+
+Luxury experience.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+TRON LEGACY STYLE RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep existing Tron Legacy identity.
+
+Do NOT redesign colors.
+
+Do NOT introduce new color systems.
+
+Use:
+
+• Cyan = actions
+• Gold = package tier
+• Green = active status
+• Red = warnings only
+
+Reduce glow intensity by 20%.
+
+Increase spacing consistency.
+
+Use the same border radius everywhere.
+
+Keep premium cyber aesthetic.
+
+Avoid visual overload.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+RESPONSIVE RULES
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Must work perfectly on:
+
+• Android
+• iPhone
+• Tablets
+• Desktop
+• Chrome
+• Safari
+• Samsung Internet
+• Edge
+
+Test widths:
+
+320px
+360px
+390px
+412px
+430px
+768px
+1024px
+
+No overflow.
+
+No cut text.
+
+No overlapping cards.
+
+No horizontal scrolling.
+
+No cropped content.
+
+━━━━━━━━━━━━━━━━━━━━━━━
+FINAL SUCCESS CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━
+
+The final dashboard must feel:
+
+• Cleaner
+• Faster
+• More premium
+• Less crowded
+• Easier to understand
+• Easier to use
+
+WITHOUT changing functionality.
+
+WITHOUT adding complexity.
+
+WITHOUT rebuilding the page.
+
+Refine hierarchy, spacing, card order, and visual balance only.
