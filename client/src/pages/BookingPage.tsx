@@ -204,7 +204,7 @@ export default function BookingPage() {
   // setPageCtaHeight is a zero-dep pub-sub; HelpFab subscribes via usePageCtaHeight.
   const ctaVisible = !!(selectedSlot && date);
   useEffect(() => {
-    setPageCtaHeight(ctaVisible ? 120 : 0);
+    setPageCtaHeight(ctaVisible ? 130 : 0);
     return () => setPageCtaHeight(0);
   }, [ctaVisible]);
 
@@ -216,11 +216,12 @@ export default function BookingPage() {
   // suffered from. Defaults to "upper" but auto-syncs to whichever group
   // contains the currently-selected chip so a deep-link / restored selection
   // never lands the user on the wrong tab.
-  type FocusCategory = "upper" | "lower" | "conditioning";
+  type FocusCategory = "upper" | "lower" | "conditioning" | "recovery";
   const focusCategoryOf = (f: SessionFocus | null): FocusCategory => {
     if (!f) return "upper";
     if ((SESSION_FOCUS_GROUPS.upper as readonly string[]).includes(f)) return "upper";
     if ((SESSION_FOCUS_GROUPS.lower as readonly string[]).includes(f)) return "lower";
+    if ((SESSION_FOCUS_GROUPS.recovery as readonly string[]).includes(f)) return "recovery";
     return "conditioning";
   };
   const [activeFocusCategory, setActiveFocusCategory] = useState<FocusCategory>(() =>
@@ -721,7 +722,7 @@ export default function BookingPage() {
   return (
     <div
       className="max-w-3xl mx-auto px-5 pt-24"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 160px)" }}
+      style={{ paddingBottom: ctaVisible ? "calc(env(safe-area-inset-bottom, 0px) + 220px)" : "calc(env(safe-area-inset-bottom, 0px) + 160px)" }}
     >
       <div className="flex items-center gap-4 mb-8">
         <div className="p-3 bg-primary/15 rounded-2xl text-primary">
@@ -945,9 +946,9 @@ export default function BookingPage() {
                   <div
                     role="tablist"
                     aria-label={t("booking.sessionFocusLabel")}
-                    className="relative grid grid-cols-3 gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/10"
+                    className="relative grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/10"
                   >
-                    {(["upper", "lower", "conditioning"] as const).map((groupKey) => {
+                    {(["upper", "lower", "conditioning", "recovery"] as const).map((groupKey) => {
                       const active = activeFocusCategory === groupKey;
                       return (
                         <button
@@ -1269,7 +1270,7 @@ export default function BookingPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className="fixed left-0 right-0 px-5 pb-5 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent z-40"
-            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 104px)" }}
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 68px)" }}
           >
             <div className="max-w-3xl mx-auto">
               <Button
