@@ -1,0 +1,557 @@
+CLIENT DASHBOARD REFINEMENT — FINAL PRODUCTION IMPLEMENTATION
+
+IMPORTANT:
+
+This is a refinement task.
+
+DO NOT redesign the dashboard.
+
+DO NOT change any business logic.
+
+DO NOT change packages, bookings, sessions, permissions, calculations, notifications, APIs, database calls, translations, authentication, roles, or existing functionality.
+
+DO NOT create a new dashboard.
+
+ONLY improve hierarchy, spacing, card order, visual balance, responsiveness, and usability.
+
+The final result must feel:
+
+• Cleaner
+• Faster
+• More premium
+• Less crowded
+• More professional
+• Easier to scan
+• Easier to use
+
+while keeping the existing Tron Legacy identity.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1
+CLIENT PROFILE CARD
+TOP PRIORITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The Client Profile Card must become the first major card visible after the page header.
+
+Current profile card containing:
+
+• Profile image
+• Client name
+• Package tier
+• Active status
+• Session balance
+• Expiry date
+
+must be moved to the top of the page.
+
+Reason:
+
+The client should immediately recognize:
+
+Who am I?
+What package do I have?
+How many sessions do I have left?
+
+before seeing statistics.
+
+Requirements:
+
+• Larger visual importance
+• Larger vertical spacing
+• Premium presentation
+• Consistent padding
+• No text clipping
+• No overflow
+• No card compression
+
+Card must remain responsive on:
+
+320px
+360px
+390px
+412px
+430px
+768px
+1024px+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2
+TOP SNAPSHOT AREA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current top statistics section is too large.
+
+Keep only the most important information.
+
+Required layout:
+
+2x2 responsive grid
+
+Cards:
+
+1. Next Session
+2. Sessions Left
+3. Weekly Goal
+4. Streak
+
+Rules:
+
+• Equal card height
+• Equal card width
+• Equal padding
+• Equal icon size
+• Equal text hierarchy
+
+No oversized cards.
+
+No uneven spacing.
+
+No text wrapping.
+
+No cropped labels.
+
+All values must remain visible.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3
+PACKAGE STATUS CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current package status card is visually too tall.
+
+Reduce height.
+
+Remove unnecessary text density.
+
+Keep only:
+
+Title
+
+Current package status
+
+Brief explanation
+
+Primary CTA
+
+Maximum:
+
+3 short lines
+
+No long paragraphs.
+
+No dense information blocks.
+
+No visual wall of text.
+
+Goal:
+
+Understandable in under 3 seconds.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4
+PRIMARY GOAL CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current goal section occupies too much space.
+
+Reduce vertical footprint.
+
+Keep:
+
+Goal %
+
+Goal title
+
+Short progress summary
+
+Rules:
+
+• Reduce empty space
+• Reduce card height
+• Keep readability
+• Maintain visual quality
+
+Goal card should no longer dominate the page.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5
+QUICK ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Move Quick Actions higher.
+
+Place before promotional cards.
+
+Required actions:
+
+• Book Session
+• Message Coach
+• Weekly Check-In
+• View Progress
+
+Layout:
+
+2x2 grid
+
+Equal sizing
+
+Equal spacing
+
+Same icon dimensions
+
+Same card height
+
+Same card width
+
+No oversized shadows.
+
+No inconsistent spacing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6
+UPCOMING SESSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep functionality.
+
+Improve spacing.
+
+If empty:
+
+Display simple message:
+
+"No upcoming sessions"
+
+Avoid:
+
+Large empty illustrations
+
+Large empty areas
+
+Oversized placeholders
+
+Keep compact.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7
+RECOVERY CHECK-IN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep:
+
+Title
+
+One-line description
+
+One CTA button
+
+Remove excessive explanation.
+
+Reduce height.
+
+Keep premium appearance.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8
+TRAINING LEVEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep:
+
+Package level
+
+Protected cancellations
+
+Emergency adjustments
+
+Rules:
+
+No large descriptions
+
+No unnecessary paragraphs
+
+No visual clutter
+
+Everything must fit comfortably inside card boundaries.
+
+No text collisions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9
+ACTIVITY FEED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Activity Feed must be collapsed by default.
+
+Reason:
+
+Activity is secondary information.
+
+User expands only when needed.
+
+Benefits:
+
+Less clutter
+
+Cleaner page
+
+Faster scanning
+
+More premium appearance
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10
+BOTTOM NAVIGATION
+NEW CLIENT NAVIGATION BAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a dedicated client bottom navigation.
+
+Must remain fixed.
+
+Must remain visible while scrolling.
+
+Items:
+
+1. Home
+2. My Training
+3. Book Session
+4. Progress
+5. More
+
+Structure:
+
+Home
+
+My Training
+
+Book Session (center primary button)
+
+Progress
+
+More
+
+Requirements:
+
+• Same visual quality as Admin Navigation
+• Same responsiveness
+• Same stability
+• Same spacing
+• Same animation quality
+
+Book Session:
+
+Must be center button.
+
+Must be primary CTA.
+
+Slightly larger than surrounding buttons.
+
+Premium Tron glow.
+
+NOT oversized.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11
+MORE MENU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Move secondary pages into More.
+
+Examples:
+
+• My Package
+• History
+• Nutrition Plan
+• Supplement Protocol
+• Recovery
+• Language
+• Settings
+• Logout
+
+These items must NOT occupy bottom navigation space.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12
+TRON LEGACY VISUAL RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve current theme.
+
+Do NOT redesign colors.
+
+Use:
+
+Cyan = Actions
+
+Gold = Package tier
+
+Green = Active status
+
+Red = Warnings
+
+Reduce excessive glow.
+
+Keep premium luxury feel.
+
+Avoid visual overload.
+
+Avoid neon spam.
+
+Maintain high-end cyber aesthetic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 13
+GLOBAL SPACING SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apply consistent spacing everywhere.
+
+Rules:
+
+Card to card spacing:
+16–20px
+
+Internal card padding:
+16–24px
+
+Section spacing:
+24–32px
+
+No overlapping elements.
+
+No touching cards.
+
+No cramped layouts.
+
+No excessive empty space.
+
+Balance required.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 14
+TEXT SAFETY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRITICAL
+
+No text may:
+
+• Overflow card boundaries
+• Touch card edges
+• Wrap incorrectly
+• Overlap icons
+• Overlap buttons
+• Overlap badges
+• Become unreadable
+
+Every card must support:
+
+English
+
+Arabic
+
+German
+
+French
+
+Russian
+
+Spanish
+
+Italian
+
+Turkish
+
+Hindi
+
+Urdu
+
+Persian
+
+Chinese
+
+without layout breaks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 15
+RESPONSIVE TESTING
+MANDATORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Validate on:
+
+Android Chrome
+
+Samsung Internet
+
+iPhone Safari
+
+iPhone Chrome
+
+iPad
+
+Desktop Chrome
+
+Desktop Edge
+
+Desktop Safari
+
+Desktop Firefox
+
+Test widths:
+
+320px
+360px
+390px
+412px
+430px
+768px
+1024px
+1440px
+
+Requirements:
+
+No overflow
+
+No clipping
+
+No horizontal scrolling
+
+No broken cards
+
+No hidden buttons
+
+No broken navigation
+
+No layout shifts
+
+No jumping elements
+
+No cropped text
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL ACCEPTANCE CRITERIA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The page should feel:
+
+• Luxury
+• Premium
+• Professional
+• Fast
+• Clean
+• Organized
+• Easy to scan
+• Easy to use
+
+while preserving the existing Youssef Elite Tron Legacy identity.
+
+No functionality changes.
+
+No redesign.
+
+No business logic changes.
+
+Only hierarchy, layout, spacing, responsiveness, navigation, and visual refinement.

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { I18nProvider } from "@/i18n";
 import { Navigation } from "@/components/Navigation";
+import { ClientBottomNav } from "@/components/ClientBottomNav";
 import { PremiumPageLoader } from "@/components/PremiumPageLoader";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { isEffectiveSuperAdmin } from "@shared/schema";
@@ -345,6 +346,11 @@ function Router() {
       {/* Task #76 — Global one-tap support FAB. Hides itself on
           booking/admin/auth routes via internal pathname check. */}
       {!isPrintRoute && <HelpFab />}
+      {!isPrintRoute && <ClientBottomNav />}
+      {/* Spacer keeps content above the client bottom nav on mobile */}
+      {!isPrintRoute && user?.role === "client" && (
+        <div className="md:hidden h-20 shrink-0" aria-hidden />
+      )}
     </div>
   );
 }

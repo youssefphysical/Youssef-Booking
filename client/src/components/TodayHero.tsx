@@ -1,20 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { CyanHairline } from "@/components/ui/CyanHairline";
-import { format } from "date-fns";
 import {
-  formatShortDateDubai,
-  formatTime12,
   formatTimeDual,
-  formatTimestampDubai,
-  formatWeekdayDubai,
   isTodayDubai,
   isTomorrowDubai,
+  formatWeekdayDubai,
 } from "@shared/dates";
 import {
   CalendarClock,
-  Droplets,
   Flame,
-  Pill,
+  Layers,
+  Repeat2,
   Target,
   Trophy,
 } from "lucide-react";
@@ -67,8 +63,6 @@ function Stat({
   label: string;
   value: string;
   sub?: string | null;
-  /** Restricted to two cool tones so the snapshot reads as one
-   *  unified HUD instead of a rainbow of pastels. */
   tone?: "text-foreground" | "text-primary";
   testId: string;
 }) {
@@ -94,7 +88,13 @@ function Stat({
   );
 }
 
-export function TodayHero({ name }: { name?: string | null }) {
+interface TodayHeroProps {
+  name?: string | null;
+  sessionsLeft?: number | null;
+  weeklyTarget?: number | null;
+}
+
+export function TodayHero({ name, sessionsLeft, weeklyTarget }: TodayHeroProps) {
   const { data, isLoading } = useQuery<TodaySummary>({ queryKey: ["/api/me/today"] });
 
   if (isLoading || !data) {
@@ -122,26 +122,24 @@ export function TodayHero({ name }: { name?: string | null }) {
         ? `${data.goal.weightLatestKg.toFixed(1)} kg latest`
         : null;
 
-  const waterValue = data.waterTargetMl ? `${(data.waterTargetMl / 1000).toFixed(1)} L` : "—";
-  const waterSub = data.waterTargetMl ? "Daily target" : "No plan yet";
-
   const streakValue = data.streakWeeks > 0 ? `${data.streakWeeks} wk` : "—";
   const streakSub = data.streakWeeks > 0 ? "Consecutive active weeks" : "Start a streak this week";
 
   const sessionValue = data.nextSession ? formatNextSession(data.nextSession.date, null) : "Nothing booked";
   const sessionSub = data.nextSession?.sessionType ?? "Book your next session";
 
-  const suppValue = `${data.supplementsToday}`;
-  const suppSub = data.supplementsToday === 0 ? "No active supplements" : "Active today";
+  const sessLeftValue = sessionsLeft != null ? `${sessionsLeft}` : "—";
+  const sessLeftSub = sessionsLeft == null ? "No active package" : sessionsLeft === 1 ? "Session remaining" : "Sessions remaining";
+
+  const weeklyGoalValue = weeklyTarget ? `${weeklyTarget}×/wk` : "—";
+  const weeklyGoalSub = weeklyTarget ? "Weekly target" : "Not set";
 
   return (
     <section
       className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-card/40 p-5 sm:p-6"
       data-testid="today-hero"
     >
-      {/* Cyan top hairline — consistent HUD signature across the app */}
       <CyanHairline intensity="strong" inset="inset-x-6" />
-      {/* Soft cyan corner halo — restrained, AMOLED-friendly */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-40"
@@ -159,7 +157,6 @@ export function TodayHero({ name }: { name?: string | null }) {
             <span className="text-muted-foreground">here's your snapshot</span>
           </h2>
         </div>
-        {/* Streak chip stays amber — semantic (achievement / heat metaphor) */}
         {data.streakWeeks >= 4 ? (
           <span
             className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-200"
@@ -180,18 +177,19 @@ export function TodayHero({ name }: { name?: string | null }) {
           testId="stat-next-session"
         />
         <Stat
-          icon={Pill}
-          label="Supplements"
-          value={suppValue}
-          sub={suppSub}
-          testId="stat-supplements-today"
+          icon={Layers}
+          label="Sessions left"
+          value={sessLeftValue}
+          sub={sessLeftSub}
+          tone={sessionsLeft != null && sessionsLeft <= 3 ? "text-primary" : "text-foreground"}
+          testId="stat-sessions-left"
         />
         <Stat
-          icon={Droplets}
-          label="Water target"
-          value={waterValue}
-          sub={waterSub}
-          testId="stat-water-target"
+          icon={Repeat2}
+          label="Weekly goal"
+          value={weeklyGoalValue}
+          sub={weeklyGoalSub}
+          testId="stat-weekly-goal"
         />
         <Stat
           icon={Trophy}

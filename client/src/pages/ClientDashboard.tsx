@@ -224,6 +224,13 @@ export default function ClientDashboard() {
   const dashHasActive = (dashPackages as any[]).some(
     (p) => p.isActive && p.usedSessions < p.totalSessions,
   );
+  const dashActivePackage = (dashPackages as any[]).find(
+    (p) => p.isActive && p.usedSessions < p.totalSessions,
+  );
+  const dashSessionsLeft = dashActivePackage
+    ? (dashActivePackage.totalSessions - dashActivePackage.usedSessions)
+    : null;
+  const dashWeeklyTarget = user?.weeklyFrequency ?? null;
   const dashNeedsWizard =
     !!user &&
     user.role === "client" &&
@@ -273,63 +280,62 @@ export default function ClientDashboard() {
 
   return (
     <div className="dashboard-shell min-h-screen">
-      <div className="max-w-5xl mx-auto px-5 pt-24 pb-20">
+      <div className="max-w-5xl mx-auto px-5 pt-24 pb-6">
       {/* =========================================================
-          Task #78 — Dashboard hierarchy.
-          Above-the-fold render order (capped at exactly 6 priority cards
-          per the UX spec — Welcome/ProfileHero is intentionally moved
-          into the secondary stack so the hierarchy is not diluted):
-            (1) Status banner — sticky, only when active
-            (2) Today's session / Book session (TodayHero + SessionPrepCard)
-            (3) Package confidence (PackageStatusHero)
-            (4) Streaks (StreakStrip)
-            (5) What's Next (CoachAvailabilityChip + WhatsNext)
-            (6) Progress ring (GoalProgressRing)
-          Every other module (welcome, recovery, transformation timeline,
-          recovery readiness, secondary insights, motivation line, quick
-          actions, session timeline, progress snapshot, membership, duo
-          partners, full tab navigation) lives behind a single "Show more"
-          toggle persisted per-user in localStorage
-          (`yedt:dashboard:showMore:<userId>`). Default collapsed. The
-          status banner is rendered FIRST (and sticky) so clients in
-          waiting states always see their next step on scroll.
+          Dashboard hierarchy (refined UX spec):
+            (1) Status banner — sticky eligibility alert
+            (2) Profile identity — who am I, what package, sessions left
+            (3) Snapshot grid — Next Session / Sessions Left / Weekly Goal / Streak
+            (4) Quick Actions — Book / Message / Check-In / Progress (above promotional cards)
+            (5) Package confidence + Streaks
+            (6) Guidance banners + What's Next
+            (7) Progress ring (compact)
+          Secondary content (behind "Show more"):
+            MotivationLine, RecoveryDashboardTile, SessionTimeline,
+            RecoveryReadinessCard, SecondaryInsights, MembershipBlock,
+            DuoPartnersBlock, Tabs
           ========================================================= */}
       {/* (1) Status banner */}
       <BookingEligibilityBanner userId={user.id} user={user} />
 
-      {/* (2) Today + booking surface */}
-      <TodayHero name={user.fullName} />
-      <SessionPrepCard userId={user.id} />
+      {/* (2) Profile identity card — top of page */}
+      <ProfileHero user={user} />
 
-      {/* (3) Package confidence */}
+      {/* (3) Today snapshot grid */}
+      <div className="mb-6">
+        <TodayHero
+          name={user.fullName}
+          sessionsLeft={dashSessionsLeft}
+          weeklyTarget={dashWeeklyTarget}
+        />
+        <SessionPrepCard userId={user.id} />
+      </div>
+
+      {/* (4) Quick Actions — before promotional cards */}
+      <QuickActionsGrid onJump={jumpToTab} />
+
+      {/* (5) Package confidence + Streaks */}
       <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
-
-      {/* (4) Streaks */}
       <StreakStrip />
 
-      {/* Task #70 — Package status guidance: surfaces expiring (≤3
-          sessions or ≤7 days) and expired/completed packages with a
-          WhatsApp-driven renewal CTA. Sits directly under the streak
-          strip so urgency lands before the next-action surface. */}
+      {/* Package guidance banner */}
       <PackageGuidedBanner userId={user.id} />
 
-      {/* (5) What's Next + coach availability chip */}
+      {/* (6) What's Next + coach availability chip */}
       <div className="mb-4 flex justify-center">
         <CoachAvailabilityChip />
       </div>
       <WhatsNext />
 
-      {/* (6) Progress ring */}
+      {/* (7) Progress ring (compact) */}
       <div className="mb-6">
         <GoalProgressRing user={user} />
       </div>
 
       {/* ===== Secondary content — gated behind "Show more" ===== */}
       <DashboardShowMore userId={user.id}>
-        <ProfileHero user={user} />
         <MotivationLine />
         <RecoveryDashboardTile />
-        <QuickActionsGrid onJump={jumpToTab} />
         <SessionTimeline userId={user.id} onJump={jumpToTab} />
         <div className="mb-6">
           <RecoveryReadinessCard />
@@ -567,9 +573,6 @@ function MembershipBlock({ user }: { user: { vipTier: string | null; weeklyFrequ
           </p>
           <p className="text-xs text-primary/80 mt-1.5 italic" data-testid="text-membership-tagline">
             {VIP_TIER_TAGLINES[tier] ?? ""}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-            {VIP_TIER_DESCRIPTIONS[tier]}
           </p>
         </div>
         <Link href="/how-it-works" className="text-xs text-primary hover:opacity-80 self-start">

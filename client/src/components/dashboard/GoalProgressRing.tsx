@@ -17,7 +17,6 @@ const GOAL_ICON: Record<(typeof GOAL_KEYS)[number], typeof Target> = {
 export interface GoalProgressResult {
   pct: number;
   goalKey: (typeof GOAL_KEYS)[number];
-  // Sub-line is provided as a template key + params so callers can localize.
   sub:
     | { kind: "empty" }
     | { kind: "muscle"; delta: string }
@@ -75,9 +74,6 @@ export function computeGoalProgress(opts: {
   return { pct, goalKey, sub: { kind: "consistency", done: completed, target } };
 }
 
-// Respect OS-level reduced-motion preference (also satisfies replit.md's
-// "no continuous animations on mobile" rule by short-circuiting the SVG
-// stroke transition to 0ms).
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -139,24 +135,25 @@ export function GoalProgressRing({ user }: Props) {
                 .replace("{done}", String(sub.done))
                 .replace("{target}", String(sub.target));
 
-  const size = 160;
-  const stroke = 12;
+  /* Compact ring — 108px keeps vertical footprint small */
+  const size = 108;
+  const stroke = 9;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - (pct / 100) * c;
 
   return (
     <div
-      className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6"
+      className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3.5 sm:px-5 sm:py-4"
       data-testid="card-goal-ring"
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Target size={16} className="text-cyan-300" />
-        <h3 className="text-sm font-semibold tracking-wide text-white/80 uppercase">
+      <div className="flex items-center gap-2 mb-3">
+        <Target size={14} className="text-cyan-300" />
+        <h3 className="text-xs font-semibold tracking-wide text-white/70 uppercase">
           {t("dashboard.goalRing.title", "Primary goal")}
         </h3>
       </div>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         <div className="relative shrink-0" style={{ width: size, height: size }}>
           <svg width={size} height={size} className="-rotate-90">
             <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} fill="none" />
@@ -183,8 +180,8 @@ export function GoalProgressRing({ user }: Props) {
           </svg>
           <div className="absolute inset-0 grid place-items-center">
             <div className="text-center">
-              <div className="text-3xl font-bold text-white tabular-nums" data-testid="text-goal-pct">{pct}%</div>
-              <div className="text-[10px] uppercase tracking-wider text-white/40 mt-0.5">
+              <div className="text-2xl font-bold text-white tabular-nums" data-testid="text-goal-pct">{pct}%</div>
+              <div className="text-[9px] uppercase tracking-wider text-white/40 mt-0.5">
                 {t("dashboard.goalRing.progressLabel", "progress")}
               </div>
             </div>
@@ -192,10 +189,10 @@ export function GoalProgressRing({ user }: Props) {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-white">
-            <Icon size={16} className="text-cyan-300" />
-            <div className="text-base font-semibold" data-testid="text-goal-label">{label}</div>
+            <Icon size={14} className="text-cyan-300 shrink-0" />
+            <div className="text-sm font-semibold" data-testid="text-goal-label">{label}</div>
           </div>
-          <p className="text-sm text-white/60 mt-1.5 leading-relaxed" data-testid="text-goal-sub">{subLine}</p>
+          <p className="text-xs text-white/60 mt-1.5 leading-relaxed" data-testid="text-goal-sub">{subLine}</p>
         </div>
       </div>
     </div>
