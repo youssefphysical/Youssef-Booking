@@ -1,0 +1,80 @@
+FLOATING CHAT BUBBLE FIX — CLIENT + BOOKING PAGES
+
+IMPORTANT:
+Do NOT change chat functionality.
+Do NOT change bottom navigation functionality.
+Do NOT change booking logic.
+Do NOT redesign the page.
+
+Only improve the floating chat/message bubble behavior and spacing.
+
+ISSUE:
+The floating message/chat icon at the bottom-right is too low and visually collides with the bottom navigation / More button / Booking CTA area.
+
+REQUIRED BEHAVIOR:
+Make the floating chat button behave like a professional Messenger-style floating bubble.
+
+1. Position:
+- It must float above the bottom navigation.
+- Minimum gap from bottom navigation: 88–100px.
+- On Booking page, it must also stay above the sticky CTA.
+- It must never cover the More button.
+- It must never cover the center + button.
+- It must never cover any CTA button.
+
+2. Movement:
+- Add smooth movement/transition when layout changes.
+- If bottom CTA appears, chat bubble should animate upward.
+- If CTA disappears, it can animate back down.
+- Animation should feel like Messenger/Facebook bubble:
+  soft, smooth, not jumpy.
+
+3. Scroll behavior:
+- While scrolling down, bubble may slightly fade or move to edge.
+- When scrolling stops, return smoothly.
+- Do not fully hide unless necessary.
+
+4. Mobile safe area:
+Support:
+- Android Chrome
+- Samsung Internet
+- iPhone Safari
+- iPhone Chrome
+
+Respect:
+- safe-area-inset-bottom
+- keyboard open state
+- bottom navigation height
+- sticky CTA height
+
+5. Z-index:
+- Chat bubble must be above page content.
+- But it must NOT visually overlap important navigation or CTA controls.
+- Do not let it block clicks on More, Book, Progress, or CTA buttons.
+
+6. Style:
+- Keep existing Tron Legacy style.
+- Keep same icon.
+- Keep same color system.
+- Add only subtle motion, not excessive animation.
+
+7. Testing:
+Verify on:
+320px
+360px
+375px
+390px
+414px
+430px
+768px
+
+Test pages:
+- Client Dashboard
+- Booking Page
+- Progress Page
+- My Training Page
+- More Page
+
+FINAL RESULT:
+The floating message icon should feel intentionally placed like a Messenger chat bubble:
+smooth, elevated, non-blocking, and never covering bottom navigation or booking CTA.
