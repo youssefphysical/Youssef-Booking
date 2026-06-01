@@ -29,6 +29,11 @@ function getApp(): Promise<Express> {
   return appPromise;
 }
 
+/** ms to wait before a single retry when the first bootstrap attempt fails.
+ *  Neon serverless databases can take 2–5 s to wake from compute suspension;
+ *  a short pause lets the DB come up before we give up and return a 503. */
+const RETRY_DELAY_MS = 3_000;
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   console.log("[api/index] HANDLER", (req as any).method, (req as any).url);
 
@@ -53,24 +58,42 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // First attempt — resolves immediately when the app is already warm.
+  try {
+    const app = await getApp();
+    return (app as unknown as (req: IncomingMessage, res: ServerResponse) => void)(req, res);
+  } catch (firstErr) {
+    console.warn(
+      "[api/index] first bootstrap attempt failed, retrying in",
+      RETRY_DELAY_MS,
+      "ms —",
+      (firstErr as any)?.message ?? firstErr,
+    );
+  }
+
+  // One retry after a short delay.  Covers the common case where Neon was
+  // in compute-suspension mode and needed a moment to accept connections.
+  // The Vercel function maxDuration is 30 s, so we still have ~25 s left.
+  await new Promise<void>((r) => setTimeout(r, RETRY_DELAY_MS));
+
   try {
     const app = await getApp();
     return (app as unknown as (req: IncomingMessage, res: ServerResponse) => void)(req, res);
   } catch (err) {
-    console.error("[api] handler bootstrap failed:", err);
+    console.error("[api/index] bootstrap failed after retry:", err);
     if (!res.headersSent) {
-      res.statusCode = 500;
+      res.statusCode = 503;
       res.setHeader("Content-Type", "application/json");
+      res.setHeader("Retry-After", "5");
       // Server-side log retains the full stack; the client only sees a generic
       // message so we don't leak internals (database column names, paths, etc.)
       // in production.
       res.end(
         JSON.stringify({
           error: "ServerUnavailable",
-          message: "Server failed to start",
+          message: "Server is starting up — please retry in a moment",
         }),
       );
     }
   }
 }
-
