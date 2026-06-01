@@ -553,7 +553,15 @@ export default function BookingPage() {
     },
   });
 
-  const sessionTypeOptions: { value: SessionTypeChoice; label: string; disabled?: boolean; hint?: string }[] = [
+  const sessionTypeOptions: {
+    value: SessionTypeChoice;
+    label: string;
+    disabled?: boolean;
+    hint?: string;
+    subtitle?: string;
+    micro?: string;
+    badge?: string;
+  }[] = [
     {
       value: "package",
       label: t("booking.sessionPackage"),
@@ -567,7 +575,16 @@ export default function BookingPage() {
       value: "trial",
       label: t("booking.sessionTrial"),
       disabled: !isAdmin && hasUsedFreeTrial,
-      hint: hasUsedFreeTrial && !isAdmin ? t("booking.hintAlreadyUsed") : t("booking.hintNewClientsOnly"),
+      // Used-trial state: collapse to a single hint line
+      hint: hasUsedFreeTrial && !isAdmin ? t("booking.hintAlreadyUsed") : undefined,
+      // Premium 3-level hierarchy for new clients
+      subtitle: hasUsedFreeTrial && !isAdmin
+        ? undefined
+        : t("booking.trialSubtitle", "Movement & Fitness Assessment"),
+      micro: hasUsedFreeTrial && !isAdmin
+        ? undefined
+        : t("booking.trialMicro", "Goal Review • Movement Screening • Training Recommendations"),
+      badge: hasUsedFreeTrial && !isAdmin ? undefined : "FREE",
     },
     { value: "duo", label: t("booking.sessionDuo"), hint: t("booking.hintTrainPartner") },
   ];
@@ -1052,7 +1069,7 @@ export default function BookingPage() {
                 title={t("booking.sessionTypeLabel")}
                 subtitle={t(
                   "booking.sessionTypeHelp",
-                  "Choose how this session will be booked.",
+                  "Choose your preferred session type.",
                 )}
                 required={false}
                 fulfilled={!!sessionType}
@@ -1060,7 +1077,7 @@ export default function BookingPage() {
                 <div
                   role="radiogroup"
                   aria-label={t("booking.sessionTypeLabel")}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                 >
                   {sessionTypeOptions.map((opt) => {
                     const active = sessionType === opt.value;
@@ -1078,7 +1095,7 @@ export default function BookingPage() {
                           opt.disabled
                             ? "bg-white/[0.02] border-white/5 opacity-50 cursor-not-allowed"
                             : active
-                              ? "bg-primary/10 border-primary/50 shadow-[0_0_18px_-8px_hsl(183_100%_60%/0.55)]"
+                              ? "bg-primary/10 border-primary/50 shadow-[0_0_22px_-6px_hsl(183_100%_60%/0.65)]"
                               : "bg-white/[0.03] border-white/10 hover:bg-white/[0.06] hover:border-white/20"
                         }`}
                       >
@@ -1092,16 +1109,36 @@ export default function BookingPage() {
                           <Icon size={16} />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span
-                            className={`block text-sm font-semibold ${active ? "text-primary" : "text-foreground"}`}
-                          >
-                            {opt.label}
+                          {/* Title row — label + optional FREE badge */}
+                          <span className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`text-sm font-semibold leading-snug ${active ? "text-primary" : "text-foreground"}`}
+                            >
+                              {opt.label}
+                            </span>
+                            {opt.badge && !opt.disabled && (
+                              <span className="inline-flex items-center text-[9px] font-bold uppercase tracking-widest px-1.5 py-[3px] rounded border border-primary/40 bg-primary/10 text-primary leading-none shrink-0">
+                                {opt.badge}
+                              </span>
+                            )}
                           </span>
-                          {opt.hint && (
+                          {/* 3-level hierarchy: subtitle → micro → fallback hint */}
+                          {opt.subtitle ? (
+                            <>
+                              <span className="block text-[11.5px] font-medium text-muted-foreground mt-0.5 leading-snug">
+                                {opt.subtitle}
+                              </span>
+                              {opt.micro && (
+                                <span className="block text-[10px] text-muted-foreground/60 mt-0.5 leading-snug">
+                                  {opt.micro}
+                                </span>
+                              )}
+                            </>
+                          ) : opt.hint ? (
                             <span className="block text-[11px] text-muted-foreground mt-0.5 leading-snug">
                               {opt.hint}
                             </span>
-                          )}
+                          ) : null}
                         </span>
                         {active && (
                           <CheckCircle2

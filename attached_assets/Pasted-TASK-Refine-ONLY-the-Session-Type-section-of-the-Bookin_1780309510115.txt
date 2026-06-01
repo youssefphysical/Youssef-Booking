@@ -1,0 +1,188 @@
+TASK: Refine ONLY the Session Type section of the Booking Page.
+
+IMPORTANT:
+Do NOT modify any other part of the page.
+Do NOT change booking logic.
+Do NOT change database fields.
+Do NOT change validation.
+Do NOT change package logic.
+Do NOT change colors globally.
+Do NOT redesign the page.
+
+Only improve the content, hierarchy, wording, and luxury presentation of the Session Type area while preserving the existing Tron Legacy visual language.
+
+GOAL:
+Make the Session Type section feel more premium, luxury, professional, and high-end while remaining clean and concise.
+
+---
+
+SECTION TITLE
+
+Keep:
+
+Session Type
+
+Subtitle:
+
+Choose your preferred session type.
+
+---
+
+PACKAGE SESSION
+
+Title:
+Package Session
+
+Description:
+Multiple sessions
+
+Keep unchanged.
+
+---
+
+SINGLE SESSION
+
+Replace:
+
+One-time private session
+
+With:
+
+Private 1-on-1 Coaching
+
+Keep AED 375 visible.
+
+---
+
+FREE TRIAL SESSION
+
+Replace completely.
+
+Title:
+Free Trial Session
+
+Premium Subtitle:
+Movement & Fitness Assessment
+
+Micro Description:
+Goal Review • Movement Screening • Training Recommendations
+
+Add a small premium badge on the right:
+
+FREE
+
+Badge style:
+
+- Small
+- Elegant
+- Luxury
+- Tron cyan accent
+- Same quality level as package badges
+- Not oversized
+- Not flashy
+- Premium sticker feel
+
+Visual hierarchy:
+
+Free Trial Session
+Movement & Fitness Assessment
+Goal Review • Movement Screening • Training Recommendations
+
+The title should remain the primary focus.
+
+The subtitle should be slightly smaller.
+
+The micro description should be smallest.
+
+---
+
+DUO PACKAGE SESSION
+
+Replace:
+
+Train with a partner
+
+With:
+
+Partner Training Session
+
+---
+
+INFO CARD BELOW SESSION TYPES
+
+Replace the entire message with:
+
+Try a free assessment first.
+Upgrade anytime if we're the right fit for your goals.
+
+Style requirements:
+
+- Luxury
+- Clean
+- Confident
+- Professional
+- No sales pressure
+- No excessive marketing language
+
+---
+
+TRON LEGACY LUXURY TOUCH
+
+Apply ONLY inside Session Type section.
+
+Requirements:
+
+- Slightly improve spacing between cards.
+- Improve visual hierarchy.
+- Give selected cards a premium cyan glow.
+- Keep glow subtle.
+- No excessive neon.
+- Luxury > Gaming.
+
+Selected card should feel:
+
+Premium
+Exclusive
+High-end
+Professional
+
+Not:
+
+Aggressive
+Over-glowing
+Arcade-style
+
+---
+
+RESPONSIVE REQUIREMENTS
+
+Verify on:
+
+- Android phones
+- iPhone Safari
+- Samsung Internet
+- Tablets
+- iPad
+- MacBook
+- Windows laptops
+- Desktop monitors
+
+No overflow.
+No clipping.
+No wrapping issues.
+No badge overlap.
+
+---
+
+FINAL VALIDATION
+
+Confirm:
+
+✓ Only Session Type section changed
+✓ No booking functionality changed
+✓ No database changes
+✓ No package logic changes
+✓ No styling changes outside Session Type
+✓ FREE badge visible and elegant
+✓ Luxury Tron Legacy appearance achieved
+✓ Fully responsive across all devices
