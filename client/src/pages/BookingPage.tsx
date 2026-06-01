@@ -65,7 +65,6 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { CoachAvailabilityChip } from "@/components/CoachAvailabilityChip";
 import { useTranslation } from "@/i18n";
 import { ShieldCheck, ChevronDown } from "lucide-react";
-import { setPageCtaHeight } from "@/lib/fab-offset";
 import {
   Accordion,
   AccordionContent,
@@ -199,16 +198,6 @@ export default function BookingPage() {
     };
   }, []);
 
-  // Lift the HelpFab above the sticky booking CTA when a slot is selected.
-  // Booking CTA: pt-3(12) + h-14(56) + pb-5(20) = 88px + 8px margin = 96px.
-  // setPageCtaHeight is a zero-dep pub-sub; HelpFab subscribes via usePageCtaHeight.
-  const ctaVisible = !!(selectedSlot && date);
-  useEffect(() => {
-    // CTA top = --booking-cta-bottom (140px) + CTA height (~88px) = ~228px.
-    // FAB base = 140px.  Lift 100px → FAB sits at ~240px — 12px above CTA top.
-    setPageCtaHeight(ctaVisible ? 100 : 0);
-    return () => setPageCtaHeight(0);
-  }, [ctaVisible]);
 
   const { toast: showToast } = useToast();
   const [sessionType, setSessionType] = useState<SessionTypeChoice>("package");
@@ -724,12 +713,7 @@ export default function BookingPage() {
   return (
     <div
       className="max-w-3xl mx-auto px-5 pt-24"
-      style={{ paddingBottom: ctaVisible
-        /* nav(86) + overhang(34) + CTA height(88) + gap(32) ≈ 240px — content clears CTA */
-        ? "calc(var(--bottom-nav-height) + var(--center-fab-overhang) + 120px + env(safe-area-inset-bottom, 0px))"
-        /* nav(86) + overhang(34) + breathing room(24px) — content clears + button */
-        : "calc(var(--bottom-nav-height) + var(--center-fab-overhang) + 24px + env(safe-area-inset-bottom, 0px))"
-      }}
+      style={{ paddingBottom: "calc(var(--bottom-nav-height) + var(--center-fab-overhang) + 24px + env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="flex items-center gap-4 mb-8">
         <div className="p-3 bg-primary/15 rounded-2xl text-primary">
@@ -1266,51 +1250,40 @@ export default function BookingPage() {
                 data-testid="input-booking-notes"
               />
             </div>
+
+            {/* ── Inline Continue CTA — appears once date + slot are chosen ── */}
+            {selectedSlot && date && (
+              <div className="pt-2">
+                <Button
+                  onClick={() => {
+                    if (!canContinue) {
+                      setAttemptedContinue(true);
+                      requestAnimationFrame(() => {
+                        const target =
+                          (!isAdmin && !sessionFocus && document.querySelector('[data-testid="hint-focus-required"]')) ||
+                          (!isAdmin && !trainingGoal && document.querySelector('[data-testid="hint-goal-required"]')) ||
+                          document.getElementById("booking-confirm-panel");
+                        (target as HTMLElement | null)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      });
+                      return;
+                    }
+                    setIsConfirmOpen(true);
+                  }}
+                  aria-disabled={!canContinue}
+                  data-testid="button-open-confirm"
+                  className={`w-full h-14 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 transition-opacity ${
+                    canContinue ? "" : "opacity-50"
+                  }`}
+                >
+                  {canContinue
+                    ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))
+                    : t("booking.completeRequired", "Complete required fields to continue")}
+                </Button>
+              </div>
+            )}
           </motion.div>
         )}
       </div>
-
-      <AnimatePresence>
-        {selectedSlot && date && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed left-0 right-0 px-5 pb-5 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent z-40"
-            style={{ bottom: "var(--booking-cta-bottom)" }}
-          >
-            <div className="max-w-3xl mx-auto">
-              <Button
-                onClick={() => {
-                  if (!canContinue) {
-                    setAttemptedContinue(true);
-                    // Scroll to the first missing field so the user sees the
-                    // inline hint instead of staring at a disabled button.
-                    requestAnimationFrame(() => {
-                      const target =
-                        (!isAdmin && !sessionFocus && document.querySelector('[data-testid="hint-focus-required"]')) ||
-                        (!isAdmin && !trainingGoal && document.querySelector('[data-testid="hint-goal-required"]')) ||
-                        document.getElementById("booking-confirm-panel");
-                      (target as HTMLElement | null)?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    });
-                    return;
-                  }
-                  setIsConfirmOpen(true);
-                }}
-                aria-disabled={!canContinue}
-                data-testid="button-open-confirm"
-                className={`w-full h-14 text-base font-bold rounded-2xl shadow-2xl shadow-primary/20 transition-opacity ${
-                  canContinue ? "" : "opacity-60"
-                }`}
-              >
-                {canContinue
-                  ? t("booking.continueAt").replace("{date}", format(date, "MMM d")).replace("{time}", formatTime12(selectedSlot ?? ""))
-                  : t("booking.completeRequired", "Complete required fields to continue")}
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Unified booking confirmation + consent gate.
           One modal only — booking details + training waiver + cancellation
