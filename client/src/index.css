@@ -3145,10 +3145,33 @@ body::before {
   .ag-cta-sheen::after { animation: none; opacity: 0; }
 }
 
-/* HelpFab clearance: on mobile the bottom nav is ~60 px tall.
-   Spec requires minimum 90 px above the nav → bottom ~90px on mobile.
-   md+ the nav is hidden so we drop back to the standard 1rem offset. */
-:root { --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px); }
+/* ── Bottom-nav / Booking-CTA geometry ────────────────────────────────────
+   Single source of truth so the CTA bar, HelpFab, and page content all
+   agree on vertical clearance and never collide with the raised + button.
+
+   --bottom-nav-height   86px  nav bar itself (pt-2 + items + pb-safe)
+   --center-fab-overhang 34px  the + button protrudes this far above the nav
+   --booking-cta-gap     20px  breathing room between CTA bottom and nav top
+   --booking-cta-bottom        = nav + overhang + gap + safe-area
+                                 keeps the CTA fully above the + button
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+  --bottom-nav-height:   86px;
+  --center-fab-overhang: 34px;
+  --booking-cta-gap:     20px;
+  --booking-cta-bottom:  calc(
+    var(--bottom-nav-height) +
+    var(--center-fab-overhang) +
+    var(--booking-cta-gap) +
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* HelpFab clearance: on mobile the bottom nav + raised + button reach
+   120 px above the screen floor. Base the FAB 20 px above that (140 px)
+   so it never covers the + button or the booking CTA bar.
+   md+ the client nav is hidden so we drop back to 1 rem. */
+:root { --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 140px); }
 @media (min-width: 768px) {
   :root { --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); }
 }

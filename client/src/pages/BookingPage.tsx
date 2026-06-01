@@ -204,7 +204,9 @@ export default function BookingPage() {
   // setPageCtaHeight is a zero-dep pub-sub; HelpFab subscribes via usePageCtaHeight.
   const ctaVisible = !!(selectedSlot && date);
   useEffect(() => {
-    setPageCtaHeight(ctaVisible ? 130 : 0);
+    // CTA top = --booking-cta-bottom (140px) + CTA height (~88px) = ~228px.
+    // FAB base = 140px.  Lift 100px → FAB sits at ~240px — 12px above CTA top.
+    setPageCtaHeight(ctaVisible ? 100 : 0);
     return () => setPageCtaHeight(0);
   }, [ctaVisible]);
 
@@ -722,7 +724,12 @@ export default function BookingPage() {
   return (
     <div
       className="max-w-3xl mx-auto px-5 pt-24"
-      style={{ paddingBottom: ctaVisible ? "calc(env(safe-area-inset-bottom, 0px) + 220px)" : "calc(env(safe-area-inset-bottom, 0px) + 160px)" }}
+      style={{ paddingBottom: ctaVisible
+        /* nav(86) + overhang(34) + CTA height(88) + gap(32) ≈ 240px — content clears CTA */
+        ? "calc(var(--bottom-nav-height) + var(--center-fab-overhang) + 120px + env(safe-area-inset-bottom, 0px))"
+        /* nav(86) + overhang(34) + breathing room(24px) — content clears + button */
+        : "calc(var(--bottom-nav-height) + var(--center-fab-overhang) + 24px + env(safe-area-inset-bottom, 0px))"
+      }}
     >
       <div className="flex items-center gap-4 mb-8">
         <div className="p-3 bg-primary/15 rounded-2xl text-primary">
@@ -1270,7 +1277,7 @@ export default function BookingPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             className="fixed left-0 right-0 px-5 pb-5 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent z-40"
-            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 68px)" }}
+            style={{ bottom: "var(--booking-cta-bottom)" }}
           >
             <div className="max-w-3xl mx-auto">
               <Button
