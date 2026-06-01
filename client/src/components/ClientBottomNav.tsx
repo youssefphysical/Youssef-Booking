@@ -152,7 +152,7 @@ export function ClientBottomNav() {
           <BottomNavItem
             icon={CalendarDays}
             label={t("nav.training", "Training")}
-            href="/dashboard#bookings"
+            href="/dashboard?tab=bookings"
             active={false}
             testId="nav-training"
           />
@@ -172,7 +172,7 @@ export function ClientBottomNav() {
           <BottomNavItem
             icon={TrendingUp}
             label={t("nav.progress", "Progress")}
-            href="/dashboard#progress"
+            href="/dashboard?tab=progress"
             active={false}
             testId="nav-progress"
           />

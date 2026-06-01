@@ -116,8 +116,8 @@ export function RecoveryReadinessCard() {
     unknown: "Log today's check-in",
   }[tier]);
 
-  const size = 120;
-  const stroke = 10;
+  const size = 96;
+  const stroke = 9;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const offset = c - ((score ?? 0) / 100) * c;
@@ -139,7 +139,7 @@ export function RecoveryReadinessCard() {
         />
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-4">
         <div className="relative shrink-0" style={{ width: size, height: size }}>
           <svg width={size} height={size} className="-rotate-90">
             <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} fill="none" />
@@ -177,11 +177,6 @@ export function RecoveryReadinessCard() {
             {tier === "easy" && <BatteryCharging size={12} />}
             <span data-testid="text-readiness-interpretation">{interpretation}</span>
           </div>
-          <p className="text-sm text-white/60 mt-2 leading-relaxed">
-            {today
-              ? t("dashboard.recovery.basedOn", "Based on today's sleep, hydration, recovery & energy.")
-              : t("dashboard.recovery.cta", "Log a quick 4-field check-in to get your daily score.")}
-          </p>
           <Button
             type="button"
             size="sm"

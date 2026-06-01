@@ -246,18 +246,27 @@ export default function ClientDashboard() {
   // section without forcing a new route. Initial value mirrors the
   // previous defaultValue. URL hash sync so external deep links
   // (e.g. /dashboard#progress from a notification email) still work.
+  const VALID_TABS = ["bookings","packages","progress","activity"] as const;
   const [tab, setTab] = useState<string>(() => {
     if (typeof window === "undefined") return "bookings";
+    // Check ?tab= search param first (set by bottom nav links)
+    const sp = new URLSearchParams(window.location.search);
+    const paramTab = sp.get("tab");
+    if (paramTab && (VALID_TABS as readonly string[]).includes(paramTab)) return paramTab;
+    // Fall back to hash
     const h = window.location.hash.replace(/^#/, "");
-    return h && ["bookings","packages","progress","activity"].includes(h)
-      ? h
-      : "bookings";
+    return h && (VALID_TABS as readonly string[]).includes(h) ? h : "bookings";
   });
+
+  // Auto-expand Show More when navigated from bottom nav (?tab= param)
+  const forceShowMore = typeof window !== "undefined"
+    && !!(new URLSearchParams(window.location.search).get("tab"));
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onHash = () => {
       const h = window.location.hash.replace(/^#/, "");
-      if (h && ["bookings","packages","progress","activity"].includes(h)) {
+      if (h && (VALID_TABS as readonly string[]).includes(h)) {
         setTab(h);
       }
     };
@@ -282,64 +291,68 @@ export default function ClientDashboard() {
     <div className="dashboard-shell min-h-screen">
       <div className="max-w-5xl mx-auto px-5 pt-24 pb-6">
       {/* =========================================================
-          Dashboard hierarchy (refined UX spec):
+          Dashboard hierarchy (final UX restructure spec):
             (1) Status banner — sticky eligibility alert
-            (2) Profile identity — who am I, what package, sessions left
-            (3) Snapshot grid — Next Session / Sessions Left / Weekly Goal / Streak
-            (4) Quick Actions — Book / Message / Check-In / Progress (above promotional cards)
-            (5) Package confidence + Streaks
-            (6) Guidance banners + What's Next
-            (7) Progress ring (compact)
-          Secondary content (behind "Show more"):
-            MotivationLine, RecoveryDashboardTile, SessionTimeline,
-            RecoveryReadinessCard, SecondaryInsights, MembershipBlock,
-            DuoPartnersBlock, Tabs
+            (2) Client Profile Card
+            (3) Snapshot Card — 2×2 stat grid
+            (4) Primary Goal Card — ring progress
+            (5) Upcoming Session Card — prep tips (conditional)
+            (6) Quick Actions Card
+            (7) Package Summary Card — compact
+            (8) Recovery Summary Card — compact readiness
+
+          Secondary content (behind "Show more", accessible via bottom nav):
+            StreakStrip, PackageGuidedBanner, CoachAvailabilityChip,
+            WhatsNext, MotivationLine, RecoveryDashboardTile,
+            SessionTimeline, SecondaryInsights, MembershipBlock,
+            DuoPartnersBlock, Tabs (Training / Package / Progress / Activity)
           ========================================================= */}
+
       {/* (1) Status banner */}
       <BookingEligibilityBanner userId={user.id} user={user} />
 
-      {/* (2) Profile identity card — top of page */}
+      {/* (2) Client Profile Card */}
       <ProfileHero user={user} />
 
-      {/* (3) Today snapshot grid */}
+      {/* (3) Snapshot Card */}
       <div className="mb-6">
         <TodayHero
           name={user.fullName}
           sessionsLeft={dashSessionsLeft}
           weeklyTarget={dashWeeklyTarget}
         />
-        <SessionPrepCard userId={user.id} />
       </div>
 
-      {/* (4) Quick Actions — before promotional cards */}
-      <QuickActionsGrid onJump={jumpToTab} />
-
-      {/* (5) Package confidence + Streaks */}
-      <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
-      <StreakStrip />
-
-      {/* Package guidance banner */}
-      <PackageGuidedBanner userId={user.id} />
-
-      {/* (6) What's Next + coach availability chip */}
-      <div className="mb-4 flex justify-center">
-        <CoachAvailabilityChip />
-      </div>
-      <WhatsNext />
-
-      {/* (7) Progress ring (compact) */}
+      {/* (4) Primary Goal Card */}
       <div className="mb-6">
         <GoalProgressRing user={user} />
       </div>
 
+      {/* (5) Upcoming Session Card — conditional (shows when session booked) */}
+      <SessionPrepCard userId={user.id} />
+
+      {/* (6) Quick Actions Card */}
+      <QuickActionsGrid onJump={jumpToTab} />
+
+      {/* (7) Package Summary Card */}
+      <PackageStatusHero userId={user.id} onRenew={() => jumpToTab("packages")} />
+
+      {/* (8) Recovery Summary Card */}
+      <div className="mb-6">
+        <RecoveryReadinessCard />
+      </div>
+
       {/* ===== Secondary content — gated behind "Show more" ===== */}
-      <DashboardShowMore userId={user.id}>
+      <DashboardShowMore userId={user.id} forceOpen={forceShowMore}>
+        <StreakStrip />
+        <PackageGuidedBanner userId={user.id} />
+        <div className="mb-4 flex justify-center">
+          <CoachAvailabilityChip />
+        </div>
+        <WhatsNext />
         <MotivationLine />
         <RecoveryDashboardTile />
         <SessionTimeline userId={user.id} onJump={jumpToTab} />
-        <div className="mb-6">
-          <RecoveryReadinessCard />
-        </div>
         <SecondaryInsights firstName={user.fullName.split(" ")[0]} userId={user.id} />
         <MembershipBlock user={user} />
         <DuoPartnersBlock />
@@ -409,12 +422,20 @@ function useShowMore(userId: number): [boolean, (next: boolean) => void] {
 function DashboardShowMore({
   userId,
   children,
+  forceOpen = false,
 }: {
   userId: number;
   children: React.ReactNode;
+  forceOpen?: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useShowMore(userId);
+
+  // Auto-expand when navigated from bottom nav (?tab= param present)
+  useEffect(() => {
+    if (forceOpen && !open) setOpen(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forceOpen]);
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;

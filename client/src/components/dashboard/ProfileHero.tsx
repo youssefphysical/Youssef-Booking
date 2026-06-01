@@ -125,7 +125,7 @@ export function ProfileHero({
               <UserAvatar
                 src={user.profilePictureUrl}
                 name={user.fullName}
-                size={92}
+                size={108}
                 testId="img-hero-avatar"
               />
             </div>

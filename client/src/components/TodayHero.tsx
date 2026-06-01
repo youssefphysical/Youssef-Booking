@@ -68,21 +68,21 @@ function Stat({
 }) {
   return (
     <div
-      className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.06] hover:border-primary/20"
+      className="flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-[1.1rem] min-h-[5.25rem] transition-colors hover:bg-white/[0.06] hover:border-primary/20"
       data-testid={testId}
     >
-      <span className="mt-0.5 grid h-9 w-9 place-items-center rounded-xl bg-primary/[0.08] ring-1 ring-primary/25 text-primary">
+      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/[0.08] ring-1 ring-primary/25 text-primary">
         <Icon size={16} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="tron-eyebrow text-[10px] font-semibold">{label}</p>
         <p
-          className={`mt-0.5 truncate text-lg font-display font-semibold tabular-nums ${tone}`}
+          className={`mt-0.5 text-base font-display font-semibold tabular-nums leading-tight break-words line-clamp-2 ${tone}`}
           data-testid={`${testId}-value`}
         >
           {value}
         </p>
-        {sub ? <p className="text-xs text-muted-foreground/85 mt-0.5">{sub}</p> : null}
+        {sub ? <p className="text-[11px] text-muted-foreground/80 mt-0.5 leading-snug line-clamp-2">{sub}</p> : null}
       </div>
     </div>
   );

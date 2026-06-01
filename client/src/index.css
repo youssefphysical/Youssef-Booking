@@ -3145,6 +3145,14 @@ body::before {
   .ag-cta-sheen::after { animation: none; opacity: 0; }
 }
 
+/* HelpFab clearance: on mobile the bottom nav is ~60 px tall.
+   Spec requires minimum 90 px above the nav → bottom ~90px on mobile.
+   md+ the nav is hidden so we drop back to the standard 1rem offset. */
+:root { --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px); }
+@media (min-width: 768px) {
+  :root { --fab-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); }
+}
+
 /* Apple Pay-style sheet entrance: short fade + soft upscale + tiny
    upward translate, on Apple's signature spring-out easing. */
 @keyframes agSheetIn {

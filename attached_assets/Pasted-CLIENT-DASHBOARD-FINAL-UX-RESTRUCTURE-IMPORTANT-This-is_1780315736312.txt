@@ -1,0 +1,231 @@
+CLIENT DASHBOARD FINAL UX RESTRUCTURE
+
+IMPORTANT:
+This is a UX hierarchy and spacing improvement only.
+
+Do NOT redesign.
+Do NOT change colors.
+Do NOT change Tron Legacy branding.
+Do NOT modify functionality.
+
+====================================================
+
+GOAL
+
+Transform the Client Dashboard into a true mobile-first dashboard.
+
+Reduce visual overload.
+
+Remove duplicated content.
+
+Improve hierarchy.
+
+Improve readability.
+
+====================================================
+
+SECTION ORDER
+
+Move sections into this exact order:
+
+1. Client Profile Card
+
+2. Snapshot Card
+
+3. Primary Goal Card
+
+4. Upcoming Session Card
+
+5. Quick Actions Card
+
+6. Package Summary Card
+
+7. Recovery Summary Card
+
+====================================================
+
+REMOVE DUPLICATES
+
+The following content must NOT appear on Home if already accessible from Bottom Navigation:
+
+Training History
+
+Past Sessions
+
+Detailed Progress
+
+Package Details
+
+Deep Recovery Metrics
+
+Move these into their dedicated pages.
+
+====================================================
+
+SNAPSHOT CARD
+
+Increase inner stat card height by 10–15%.
+
+Prevent text truncation.
+
+Ensure all stat labels remain readable on:
+
+Android
+
+iPhone
+
+Tablet
+
+Desktop
+
+====================================================
+
+CLIENT PROFILE CARD
+
+Increase profile image size slightly.
+
+Increase client name prominence.
+
+Reduce secondary text length.
+
+Keep card compact.
+
+====================================================
+
+PRIMARY GOAL
+
+Move directly under Snapshot.
+
+This is one of the most important client metrics.
+
+====================================================
+
+UPCOMING SESSION
+
+Move above Package Summary.
+
+Upcoming session information must be visible before package information.
+
+====================================================
+
+PACKAGE SUMMARY
+
+Reduce card height.
+
+Replace long paragraphs with:
+
+Status
+
+Package Name
+
+Remaining Sessions
+
+Expiry
+
+One action button
+
+Maximum 2 text lines.
+
+====================================================
+
+RECOVERY SUMMARY
+
+Reduce card height by approximately 20%.
+
+Keep only key readiness information.
+
+Remove unnecessary descriptive text.
+
+====================================================
+
+TRAINING LEVEL
+
+Convert long text blocks into compact badges.
+
+Avoid paragraphs.
+
+Improve scanning speed.
+
+====================================================
+
+BOTTOM NAVIGATION
+
+All buttons must be fully functional.
+
+Home → Dashboard
+
+Training → Training Page
+
+Book → Booking Page
+
+Progress → Progress Page
+
+More → More Menu
+
+Verify routing on:
+
+Android Chrome
+
+iPhone Safari
+
+Samsung Internet
+
+Desktop Chrome
+
+Desktop Edge
+
+Desktop Safari
+
+====================================================
+
+FLOATING CHAT BUTTON
+
+Must never overlap Bottom Navigation.
+
+Must never cover "More".
+
+Minimum spacing:
+90px above bottom navigation.
+
+====================================================
+
+RESPONSIVE QA
+
+Test:
+
+320px
+360px
+375px
+390px
+414px
+768px
+1024px
+1280px
+
+No text overlap.
+
+No card overflow.
+
+No cropped content.
+
+No horizontal scrolling.
+
+No visual collisions.
+
+====================================================
+
+FINAL VALIDATION
+
+Provide proof that:
+
+No duplicated dashboard content remains.
+
+Navigation works.
+
+No overlapping elements.
+
+All cards fit cleanly.
+
+All layouts responsive.
+
+All pages pass QA.
