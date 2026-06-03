@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSettings } from "@/hooks/use-settings";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
@@ -105,6 +106,12 @@ export default function AuthPage({
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
+  const qc = useQueryClient();
+  // Force a fresh settings fetch every time the auth page mounts so that a
+  // logo uploaded in the admin panel is visible immediately — even within the
+  // 60-second staleTime window.
+  useEffect(() => { qc.invalidateQueries({ queryKey: ["/api/settings"] }); }, [qc]);
+
   const { data: authSettings } = useSettings();
   const logoSrc = authSettings?.logoAuthUrl || authSettings?.logoIconUrl || "/ye-logo-primary.png";
 
@@ -187,32 +194,33 @@ export default function AuthPage({
           <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
-          <div className="relative flex flex-col items-center mb-2">
-            {/* Ambient glow — scales with the logo */}
+          {/* min-h-[160px] + py-6/8 gives the logo clear vertical breathing room
+              so it never feels squeezed inside the card. */}
+          <div className="relative flex flex-col items-center justify-center min-h-[160px] py-6 sm:py-8">
+            {/* Ambient glow */}
             <div
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              className="pointer-events-none absolute inset-0 rounded-full"
               style={{
-                width: "120%",
-                height: "120%",
                 background: "radial-gradient(circle, rgba(0,212,255,0.10) 0%, transparent 70%)",
                 filter: "blur(28px)",
               }}
             />
-            {/* Floating + pulse logo — fills hero card width.
-                Scale + maxWidth driven by "login" logo slot CSS vars (Admin → Media → Branding → Logo Controls).
-                Defaults: zoom=1.08, wMobile=460px, wDesktop=520px, vpos=0px. */}
+            {/* Mobile logo — max-height 120px prevents squeezing / card overflow.
+                Width + scale driven by Admin → Media → Logo Controls CSS vars.
+                Defaults are conservative (260px / 1.0×) so logos fit all phone widths
+                without overflowing the card's overflow-hidden boundary. */}
             <div
               className="relative sm:hidden"
               style={{
-                width: "96%",
-                maxWidth: "var(--brand-login-w-mobile, 460px)",
-                transform: "scale(var(--brand-login-zoom, 1.08)) translateY(var(--brand-login-vpos, 0px))",
+                width: "70%",
+                maxWidth: "var(--brand-login-w-mobile, 260px)",
+                transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
                 transformOrigin: "center center",
-                overflow: "visible",
               }}
             >
               <motion.img
+                key={logoSrc}
                 src={logoSrc}
                 alt="Youssef Elite"
                 data-testid="img-auth-logo"
@@ -225,20 +233,21 @@ export default function AuthPage({
                   ],
                 }}
                 transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ objectFit: "contain", width: "100%", display: "block" }}
+                style={{ objectFit: "contain", width: "100%", maxHeight: "120px", display: "block" }}
               />
             </div>
+            {/* Desktop logo — slightly taller cap, wider default */}
             <div
               className="relative hidden sm:block"
               style={{
-                width: "94%",
-                maxWidth: "var(--brand-login-w-desktop, 520px)",
-                transform: "scale(var(--brand-login-zoom, 1.08)) translateY(var(--brand-login-vpos, 0px))",
+                width: "68%",
+                maxWidth: "var(--brand-login-w-desktop, 320px)",
+                transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
                 transformOrigin: "center center",
-                overflow: "visible",
               }}
             >
               <motion.img
+                key={`${logoSrc}-desktop`}
                 src={logoSrc}
                 alt="Youssef Elite"
                 aria-hidden="true"
@@ -251,7 +260,7 @@ export default function AuthPage({
                   ],
                 }}
                 transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ objectFit: "contain", width: "100%", display: "block" }}
+                style={{ objectFit: "contain", width: "100%", maxHeight: "140px", display: "block" }}
               />
             </div>
 

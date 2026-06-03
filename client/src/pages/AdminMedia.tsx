@@ -1237,11 +1237,11 @@ const LOGO_SLOTS: {
   },
   {
     key: "auth",
-    label: "Auth / Hero Logo",
-    desc: "Auth page hero, onboarding screens",
+    label: "Client Portal Logo",
+    desc: "/auth · Login & registration card",
     fallback: "/ye-logo-primary.png",
-    hint: "Full brand logo. Used on the login / registration pages.",
-    maxLabel: "600 × 600 px",
+    hint: "800×400 PNG/WebP with transparent background. Shown in the Client Portal card on the login page. Falls back to Icon Logo if empty.",
+    maxLabel: "800 × 400 px",
   },
 ];
 

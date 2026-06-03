@@ -1,0 +1,83 @@
+Fix the Auth / Client Portal logo card and logo persistence.
+
+Page:
+"/auth"
+
+Problems:
+
+1. The logo card at the top of the Client Portal card is too compressed.
+2. The logo needs more vertical breathing space and better proportional sizing.
+3. When I change the logo from the admin control panel / Media Center, the logo later returns back to the old one.
+4. The auth page seems to still use a hardcoded/fallback logo instead of the active Media Center logo.
+
+Required fixes:
+
+AUTH LOGO CARD LAYOUT:
+
+- Give the logo area its own clear top section inside the portal card.
+- Add professional vertical spacing above and below the logo.
+- The logo must not feel squeezed.
+- The logo must be centered.
+- The logo container should auto-size on all mobile screens.
+- Keep the premium Tron Legacy styling.
+- Do not let the logo overflow or crop.
+- Do not let the card become too tall.
+- Recommended mobile logo area:
+  - min-height: 160px
+  - padding top/bottom: 24px–32px
+  - logo max-width: 70% of card width
+  - logo max-height: 120px
+  - object-fit: contain
+
+DESKTOP/TABLET:
+
+- Keep the logo centered.
+- Use proportional sizing.
+- Avoid oversized logo on large screens.
+- Maintain balanced spacing between:
+  - Back to home
+  - logo card
+  - CLIENT PORTAL title
+  - tabs
+
+LOGO SOURCE / PERSISTENCE:
+
+- Remove any hardcoded auth page logo references.
+- Auth page must use the active logo selected from Media Center.
+- Prefer the correct asset category:
+  "Brand Assets > Client Portal Logo"
+  or fallback to:
+  "Brand Assets > Primary Logo"
+- Do not fallback to the old logo unless no Media Center logo exists.
+- When admin replaces the logo, update the auth page immediately.
+- Persist selected logo in database/storage.
+- Prevent old cached logo from returning after refresh/redeploy.
+- Add cache-busting using updatedAt/version if needed.
+- Make sure Vercel/Replit production uses the same saved media asset.
+
+MEDIA CENTER REQUIREMENT:
+
+- Add/confirm a dedicated asset slot:
+  "Client Portal Logo"
+- Show recommended size:
+  800x400 PNG/WebP transparent background
+- Allow replace/preview/delete/copy URL
+- Show where used:
+  "/auth Client Portal card"
+- If Client Portal Logo is empty, use Primary Logo.
+- If Primary Logo is empty, use safe text fallback only.
+
+TESTING:
+
+- Upload/replace logo from Admin Media Center.
+- Open "/auth".
+- Confirm new logo appears.
+- Refresh page.
+- Confirm logo stays.
+- Redeploy/restart.
+- Confirm logo still stays.
+- Test on mobile 360px, 390px, 412px, 768px, desktop.
+- Confirm no cropping, no overflow, no broken image, no old logo return.
+
+Do not redesign the whole auth page.
+Only fix the logo card spacing, logo sizing, and logo persistence source.
