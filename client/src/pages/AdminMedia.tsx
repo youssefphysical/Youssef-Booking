@@ -79,6 +79,7 @@ import {
   GripVertical,
   Lock,
   LockOpen,
+  Info,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -1661,6 +1662,57 @@ function getLogoSrcForSlot(settings: Settings | undefined, slot: BrandLogoSlot):
   return s?.logoIconUrl || "/ye-logo.png";
 }
 
+// ─── Per-slot source metadata (for the Usage / Source debug panel) ──────────
+const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
+  usedIn: string;
+  uploadSlot: string;
+  storageKey: string;
+  fallbackChain: string[];
+}> = {
+  navbar:    {
+    usedIn:        "Navigation bar — desktop & tablet",
+    uploadSlot:    "Horizontal Logo",
+    storageKey:    "logoNavbarUrl",
+    fallbackChain: ["Horizontal Logo (logoNavbarUrl)", "Icon Logo (logoIconUrl)", "/ye-logo.png"],
+  },
+  mobile:    {
+    usedIn:        "Navigation bar — mobile phones",
+    uploadSlot:    "Icon Logo",
+    storageKey:    "logoIconUrl",
+    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+  },
+  login:     {
+    usedIn:        "/auth — login & register card hero",
+    uploadSlot:    "Login / Auth Hero Logo",
+    storageKey:    "logoLoginUrl",
+    fallbackChain: ["Login/Auth Hero Logo (logoLoginUrl)", "Client Portal Logo (logoAuthUrl)", "Icon Logo (logoIconUrl)", "Text mark \"YE\""],
+  },
+  dashboard: {
+    usedIn:        "Client dashboard header & admin sidebar",
+    uploadSlot:    "Icon Logo",
+    storageKey:    "logoIconUrl",
+    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+  },
+  footer:    {
+    usedIn:        "Page footer stamp",
+    uploadSlot:    "Icon Logo",
+    storageKey:    "logoIconUrl",
+    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+  },
+  favicon:   {
+    usedIn:        "Browser tab & OS bookmark icon",
+    uploadSlot:    "— (static file, not DB-controlled)",
+    storageKey:    "— (hardcoded in index.html)",
+    fallbackChain: ["/ye-logo.png (static only)"],
+  },
+  splash:    {
+    usedIn:        "Full-screen loader at app boot",
+    uploadSlot:    "Icon Logo",
+    storageKey:    "logoIconUrl",
+    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+  },
+};
+
 // ─── Logo controls panel (7 independent slots, 9 sliders each) ─────────────
 function LogoControlsPanel() {
   const { toast } = useToast();
@@ -1997,6 +2049,59 @@ function LogoControlsPanel() {
                       ↺ Reset {meta.label} to defaults
                     </button>
                   )}
+
+                  {/* ── Usage / Source debug info ─────────────────────────── */}
+                  {(() => {
+                    const src = SLOT_SOURCE_INFO[slot];
+                    const isCustomAsset = imgSrc && !imgSrc.startsWith("/ye-logo");
+                    const displayUrl = isCustomAsset ? imgSrc : "Default (static file)";
+                    return (
+                      <div
+                        data-testid={`source-info-${slot}`}
+                        className="rounded-lg border border-white/[0.05] bg-white/[0.015] p-3 space-y-2"
+                      >
+                        <p className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-wider flex items-center gap-1.5">
+                          <Info size={10} /> Usage · Source
+                        </p>
+                        <div className="space-y-1 text-[11px]">
+                          <div className="flex gap-2">
+                            <span className="text-muted-foreground/35 w-20 shrink-0">Used in</span>
+                            <span className="text-muted-foreground/70">{src.usedIn}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-muted-foreground/35 w-20 shrink-0">Upload slot</span>
+                            <span className="text-muted-foreground/70">{src.uploadSlot}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-muted-foreground/35 w-20 shrink-0">DB key</span>
+                            <code className="text-primary/60 font-mono text-[10px]">{src.storageKey}</code>
+                          </div>
+                          <div className="flex gap-2 items-start">
+                            <span className="text-muted-foreground/35 w-20 shrink-0 mt-px">Asset URL</span>
+                            <span
+                              className="text-muted-foreground/55 font-mono text-[10px] break-all leading-snug"
+                              title={displayUrl}
+                            >
+                              {isCustomAsset && displayUrl.length > 48
+                                ? `…${displayUrl.slice(-44)}`
+                                : displayUrl}
+                            </span>
+                          </div>
+                          <div className="pt-0.5">
+                            <span className="text-muted-foreground/35 text-[10px]">Fallback chain</span>
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              {src.fallbackChain.map((step, i) => (
+                                <span key={i} className="flex items-center gap-0.5">
+                                  {i > 0 && <span className="text-muted-foreground/25 text-[10px] px-0.5">→</span>}
+                                  <span className="bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/50 leading-none">{step}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

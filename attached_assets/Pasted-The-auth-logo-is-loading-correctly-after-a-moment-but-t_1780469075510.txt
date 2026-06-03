@@ -1,0 +1,70 @@
+The "/auth" logo is loading correctly after a moment, but the visible skeleton/empty logo box appears first.
+
+I want to fix this loading behavior and also verify that all logos are truly connected to Media Center.
+
+PART 1 — AUTH LOGO LOADING:
+
+- Remove the visible empty dark skeleton box from the "/auth" logo area.
+- During loading, either:
+  1. keep the space reserved but transparent, or
+  2. show a very subtle shimmer that matches the final logo size without looking like an empty card.
+- The user should not see a big empty box before the logo appears.
+- Once loaded, render the selected Login/Auth Hero Logo normally.
+- No old logo should appear.
+- No logo swap/flicker.
+- No empty placeholder/card.
+
+PART 2 — VERIFY MEDIA CENTER LOGO CONNECTIONS:
+Please audit and confirm every logo source in the app.
+
+Check these logo placements:
+
+1. Navbar logo
+2. Mobile navbar logo
+3. Login/Auth Hero Logo on "/auth"
+4. Client Portal Logo
+5. Dashboard logo
+6. Footer logo
+7. Favicon
+8. Splash screen logo
+9. Email header logo
+10. Email footer logo
+
+For each one, confirm:
+
+- Which Media Center slot controls it
+- Which DB/storage key is used
+- Whether it has any hardcoded fallback
+- Whether it uses cache-busting updatedAt/version
+- Whether it persists after refresh/redeploy
+- Whether changing the Media Center asset actually updates the live page
+
+PART 3 — ADD ADMIN DEBUG INFO:
+In Media Center > Branding > Logo Controls, add a small “Usage / Source” debug display for each logo control:
+
+Example:
+
+- Used in: "/auth"
+- Media slot: "Login / Auth Hero Logo"
+- Storage key: "loginAuthHeroLogo"
+- Current asset URL: ...
+- Last updated: ...
+- Fallback chain: Login/Auth Hero Logo → Client Portal Logo → Primary Logo → Text fallback
+
+PART 4 — TESTING:
+Perform these tests:
+
+1. Change Navbar Logo only.
+2. Confirm "/auth" logo does not change.
+3. Change Login/Auth Hero Logo only.
+4. Confirm "/auth" logo changes.
+5. Refresh "/auth" multiple times.
+6. Confirm no visible empty box before logo loads.
+7. Restart/redeploy.
+8. Confirm all selected logos stay connected to Media Center.
+9. Confirm no old static logo returns.
+10. Confirm no hardcoded image is still used unless it is the final emergency fallback.
+
+Do not redesign the auth page.
+Do not redesign Media Center.
+Only fix loading behavior and verify/control all logo source connections.

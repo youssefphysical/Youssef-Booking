@@ -211,12 +211,13 @@ export default function AuthPage({
               }}
             />
 
-            {/* STATE 1: loading — Tron skeleton, no real img, no wrong src */}
+            {/* STATE 1: loading — space reserved but invisible; no dark box, no flicker.
+                The parent's min-h-[160px] holds the vertical height so layout
+                never shifts when the logo arrives. */}
             {settingsLoading && (
               <div
                 aria-hidden
                 data-testid="skeleton-auth-logo"
-                className="admin-shimmer rounded-xl"
                 style={{ width: "60%", maxWidth: "240px", height: "100px" }}
               />
             )}
