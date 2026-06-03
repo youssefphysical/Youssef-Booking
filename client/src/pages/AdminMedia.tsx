@@ -1209,7 +1209,7 @@ function ServicesSection({ settings }: { settings: Settings }) {
 }
 
 // ─── Logo Manager (Branding section) ──────────────────────────────────────────
-type LogoSlot = "icon" | "navbar" | "auth";
+type LogoSlot = "icon" | "navbar" | "auth" | "login";
 
 const LOGO_SLOTS: {
   key: LogoSlot;
@@ -1238,9 +1238,17 @@ const LOGO_SLOTS: {
   {
     key: "auth",
     label: "Client Portal Logo",
-    desc: "/auth · Login & registration card",
+    desc: "/auth · Login & registration card (fallback)",
     fallback: "/ye-logo-primary.png",
-    hint: "800×400 PNG/WebP with transparent background. Shown in the Client Portal card on the login page. Falls back to Icon Logo if empty.",
+    hint: "800×400 PNG/WebP with transparent background. Used as fallback on the login page when no Login/Auth Hero Logo is set.",
+    maxLabel: "800 × 400 px",
+  },
+  {
+    key: "login",
+    label: "Login / Auth Hero Logo",
+    desc: "/auth · Client Portal card hero — fully independent",
+    fallback: "/ye-logo-primary.png",
+    hint: "800×400 PNG/WebP with transparent background. Used exclusively inside the /auth page hero area. Takes priority over Client Portal Logo. Falls back to Client Portal Logo, then Icon Logo.",
     maxLabel: "800 × 400 px",
   },
 ];
@@ -1649,7 +1657,7 @@ const LOGO_SLOT_META: Record<BrandLogoSlot, LogoSlotMeta> = {
 function getLogoSrcForSlot(settings: Settings | undefined, slot: BrandLogoSlot): string {
   const s = settings as any;
   if (slot === "navbar") return s?.logoNavbarUrl || "/ye-logo-horizontal.png";
-  if (slot === "login")  return s?.logoAuthUrl   || "/ye-logo-primary.png";
+  if (slot === "login")  return s?.logoLoginUrl  || s?.logoAuthUrl || "/ye-logo-primary.png";
   return s?.logoIconUrl || "/ye-logo.png";
 }
 
@@ -2055,7 +2063,16 @@ function BrandingSection() {
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
         return res.json();
       },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Auth logo updated" }); },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo updated" }); },
+      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+    }),
+    login: useMutation({
+      mutationFn: async (dataUrl: string) => {
+        const res = await apiRequest("POST", "/api/admin/media/logo/login", { imageDataUrl: dataUrl });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+        return res.json();
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo updated" }); },
       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
     }),
   };
@@ -2081,7 +2098,15 @@ function BrandingSection() {
         const res = await apiRequest("DELETE", "/api/admin/media/logo/auth");
         if (!res.ok) throw new Error("Remove failed");
       },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Auth logo removed — default restored" }); },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo removed — default restored" }); },
+      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
+    }),
+    login: useMutation({
+      mutationFn: async () => {
+        const res = await apiRequest("DELETE", "/api/admin/media/logo/login");
+        if (!res.ok) throw new Error("Remove failed");
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo removed — fallback restored" }); },
       onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
     }),
   };

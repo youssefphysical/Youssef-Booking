@@ -5001,7 +5001,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   });
 
   // POST /api/admin/media/logo/:slot — upload a custom logo variant.
-  // slot: "icon" | "navbar" | "auth"
+  // slot: "icon" | "navbar" | "auth" | "login"
   // Accepts a base64 data URL. Processes with sharp (preserve transparency,
   // resize to reasonable max), stores as base64 WebP in settings.
   app.post("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
@@ -5009,11 +5009,11 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     if (!checkUploadRateLimit(ip)) {
       return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again." });
     }
-    const VALID_SLOTS = ["icon", "navbar", "auth"] as const;
+    const VALID_SLOTS = ["icon", "navbar", "auth", "login"] as const;
     type LogoSlot = (typeof VALID_SLOTS)[number];
     const slot = req.params.slot as LogoSlot;
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
-      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, or auth." });
+      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, auth, or login." });
     }
     const schema = z.object({ imageDataUrl: z.string().min(40) });
     const parsed = schema.safeParse(req.body);
@@ -5036,6 +5036,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       icon:   { w: 400,  h: 400 },
       navbar: { w: 800,  h: 300 },
       auth:   { w: 600,  h: 600 },
+      login:  { w: 800,  h: 400 },
     };
     const { w: maxW, h: maxH } = MAX_DIM[slot];
 
@@ -5055,6 +5056,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
       icon:   "logoIconUrl",
       navbar: "logoNavbarUrl",
       auth:   "logoAuthUrl",
+      login:  "logoLoginUrl",
     };
 
     // Permanent architecture: write to disk, store file URL — no base64 blobs in DB
@@ -5074,12 +5076,12 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
   // DELETE /api/admin/media/logo/:slot — remove custom logo, revert to static file.
   app.delete("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
-    const VALID_SLOTS = ["icon", "navbar", "auth"] as const;
-    const slot = req.params.slot as "icon" | "navbar" | "auth";
+    const VALID_SLOTS = ["icon", "navbar", "auth", "login"] as const;
+    const slot = req.params.slot as "icon" | "navbar" | "auth" | "login";
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
       return res.status(400).json({ success: false, error: "Invalid slot." });
     }
-    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl" };
+    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl", login: "logoLoginUrl" };
     // Clean up disk file if present
     const prevSettings = await storage.getSettings();
     const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;

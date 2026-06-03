@@ -111,9 +111,10 @@ export default function AuthPage({
   // Resolved only once settings have arrived — null means "not known yet" or
   // "no custom logo" (text fallback). Never "/ye-logo-primary.png" here so
   // the img is never rendered with a wrong src first.
+  // Priority: Login/Auth Hero Logo → Client Portal Logo → Icon Logo → text fallback
   const logoSrc: string | null = settingsLoading
     ? null
-    : (authSettings?.logoAuthUrl || authSettings?.logoIconUrl || null);
+    : (authSettings?.logoLoginUrl || authSettings?.logoAuthUrl || authSettings?.logoIconUrl || null);
 
   useEffect(() => {
     if (!user) return;

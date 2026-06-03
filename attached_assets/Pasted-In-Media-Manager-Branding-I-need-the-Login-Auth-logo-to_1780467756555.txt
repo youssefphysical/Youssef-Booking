@@ -1,0 +1,178 @@
+In Media Manager > Branding, I need the Login/Auth logo to become a fully independent controllable asset.
+
+Current situation:
+I can see Branding has:
+
+- Icon logo
+- Horizontal logo
+- Client Portal Logo
+- Logo Controls list including Navbar Logo, Mobile Logo, Login Logo, Dashboard Logo, Footer Logo, Favicon, Splash Screen
+
+Required change:
+Create a dedicated section/card for:
+
+"Login / Auth Hero Logo"
+
+This logo is used ONLY on:
+"/auth" inside the Client Portal login/create account card.
+
+It must NOT be linked to:
+
+- Navbar logo
+- Mobile logo
+- Dashboard logo
+- Footer logo
+- Primary logo
+- Horizontal logo
+- Client Portal logo unless used only as fallback
+
+MEDIA SLOT REQUIREMENTS:
+Under Media Manager > Branding, add a clear upload card:
+Title:
+"Login / Auth Hero Logo"
+
+Description:
+"Used only inside the /auth Client Portal card hero area."
+
+Recommended size:
+"800x400 PNG/WebP transparent background"
+
+Controls:
+
+- Upload
+- Replace
+- Remove
+- Preview
+- Copy URL
+- Active/inactive
+- Save
+- Reset to default
+
+LOGO CONTROL REQUIREMENTS:
+In Logo Controls, make "Login Logo" open its own dedicated control panel with:
+
+1. Source
+
+- Selected image preview
+- Change image
+- Remove image
+- fallback order:
+  1. Login / Auth Hero Logo
+  2. Client Portal Logo
+  3. Horizontal Logo
+  4. Text fallback
+
+2. Size controls
+
+- Width slider
+- Height slider
+- Max width slider
+- Max height slider
+- Scale slider
+- Mobile width slider
+- Mobile height slider
+- Tablet width slider
+- Desktop width slider
+
+3. Position controls
+
+- Align left / center / right
+- Vertical position slider
+- Horizontal position slider
+- Top padding
+- Bottom padding
+- Left padding
+- Right padding
+
+4. Fit controls
+
+- object-fit: contain / cover
+- object-position presets:
+  center
+  top
+  bottom
+  left
+  right
+- prevent crop toggle
+- keep aspect ratio toggle
+
+5. Container controls
+
+- Container min-height
+- Container max-height
+- Container background opacity
+- Container border radius
+- Container glow intensity
+- Container border visibility
+- Container padding
+
+6. Responsive preview
+   Show preview buttons:
+
+- 360px mobile
+- 390px iPhone
+- 412px Android
+- 768px tablet
+- desktop
+
+7. Save behavior
+
+- Save only affects Login/Auth logo.
+- Does NOT affect Navbar logo.
+- Does NOT affect Dashboard logo.
+- Does NOT affect Footer logo.
+- Does NOT affect Client Portal logo unless fallback is used.
+- Persist settings in database/storage.
+- Add updatedAt/version cache-busting.
+
+AUTH PAGE REQUIREMENTS:
+On "/auth":
+
+- Use only the saved Login Logo settings.
+- No hardcoded auth logo.
+- No old static fallback logo.
+- No navbar logo source.
+- No flicker between two logos.
+- Show skeleton while loading.
+- Then render the selected Login / Auth Hero Logo once.
+- Respect all saved controls:
+  width, height, max size, padding, position, object fit, container height.
+- Logo must never crop unless crop/cover is intentionally selected.
+- Logo must never overflow card.
+- Logo must remain centered and professional on mobile.
+
+IMPORTANT UI FIX:
+The login logo area inside "/auth" needs proper breathing space:
+
+- top/bottom spacing must look premium
+- logo container must not feel squeezed
+- CLIENT PORTAL title must stay below with balanced spacing
+- login tabs must stay below with balanced spacing
+- no cut cards
+- no overflowing text
+- no horizontal scroll
+
+TESTING:
+
+1. Upload new Login / Auth Hero Logo.
+2. Adjust width/height/position/padding.
+3. Save.
+4. Open "/auth".
+5. Confirm only Login Logo changed.
+6. Change Navbar logo.
+7. Confirm Login/Auth logo does not change.
+8. Refresh "/auth" 5 times.
+9. Confirm no logo flicker and no wrong logo appears.
+10. Test mobile sizes:
+
+- 360px
+- 390px
+- 412px
+- 768px
+- desktop
+
+11. Restart/redeploy and confirm settings persist.
+
+Do not redesign the whole Media Manager.
+Do not redesign the whole Auth page.
+Only add/fix independent Login/Auth Hero Logo upload and its controls.

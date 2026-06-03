@@ -776,7 +776,8 @@ export const settings = pgTable("settings", {
   // Stored as base64 WebP data URLs (same pattern as hero/service images).
   logoIconUrl:    text("logo_icon_url"),    // icon-only (navbar, sidebar, footer, loader)
   logoNavbarUrl:  text("logo_navbar_url"),  // horizontal icon+text logo (admin brand preview)
-  logoAuthUrl:    text("logo_auth_url"),    // full-brand logo (auth hero, loading screen)
+  logoAuthUrl:    text("logo_auth_url"),    // full-brand logo (client portal / fallback)
+  logoLoginUrl:   text("logo_login_url"),   // login/auth hero — /auth card only, fully independent
   // ====== Website Content Management — public-facing text overrides ======
   // Keys: servicePtTitle, servicePtBody, serviceNutritionTitle, serviceNutritionBody,
   //       serviceSupplementTitle, serviceSupplementBody, ctaEyebrow, ctaTitle, ctaSubtitle,
