@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSettings } from "@/hooks/use-settings";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
@@ -106,14 +105,15 @@ export default function AuthPage({
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
-  const qc = useQueryClient();
-  // Force a fresh settings fetch every time the auth page mounts so that a
-  // logo uploaded in the admin panel is visible immediately — even within the
-  // 60-second staleTime window.
-  useEffect(() => { qc.invalidateQueries({ queryKey: ["/api/settings"] }); }, [qc]);
-
-  const { data: authSettings } = useSettings();
-  const logoSrc = authSettings?.logoAuthUrl || authSettings?.logoIconUrl || "/ye-logo-primary.png";
+  // isLoading = true only on the very first fetch (no cache yet).
+  // We use it to show a skeleton instead of the wrong fallback logo.
+  const { data: authSettings, isLoading: settingsLoading } = useSettings();
+  // Resolved only once settings have arrived — null means "not known yet" or
+  // "no custom logo" (text fallback). Never "/ye-logo-primary.png" here so
+  // the img is never rendered with a wrong src first.
+  const logoSrc: string | null = settingsLoading
+    ? null
+    : (authSettings?.logoAuthUrl || authSettings?.logoIconUrl || null);
 
   useEffect(() => {
     if (!user) return;
@@ -194,10 +194,13 @@ export default function AuthPage({
           <span aria-hidden className="pointer-events-none absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-primary/40 rounded-br-3xl" />
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
-          {/* min-h-[160px] + py-6/8 gives the logo clear vertical breathing room
-              so it never feels squeezed inside the card. */}
+          {/* Three states:
+              1. settingsLoading → cyan skeleton shimmer (no img rendered, no flicker)
+              2. logoSrc resolved → animated img, rendered exactly once with the correct src
+              3. no custom logo   → premium "YE" text mark (clean text-only fallback)
+              min-h-[160px] + py-6/8 gives consistent vertical breathing room across all states. */}
           <div className="relative flex flex-col items-center justify-center min-h-[160px] py-6 sm:py-8">
-            {/* Ambient glow */}
+            {/* Ambient glow — always present for premium atmosphere */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-full"
@@ -206,67 +209,93 @@ export default function AuthPage({
                 filter: "blur(28px)",
               }}
             />
-            {/* Mobile logo — max-height 120px prevents squeezing / card overflow.
-                Width + scale driven by Admin → Media → Logo Controls CSS vars.
-                Defaults are conservative (260px / 1.0×) so logos fit all phone widths
-                without overflowing the card's overflow-hidden boundary. */}
-            <div
-              className="relative sm:hidden"
-              style={{
-                width: "70%",
-                maxWidth: "var(--brand-login-w-mobile, 260px)",
-                transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
-                transformOrigin: "center center",
-              }}
-            >
-              <motion.img
-                key={logoSrc}
-                src={logoSrc}
-                alt="Youssef Elite"
-                data-testid="img-auth-logo"
-                animate={{
-                  y: [0, -4, 0],
-                  filter: [
-                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                    "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
-                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                  ],
-                }}
-                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ objectFit: "contain", width: "100%", maxHeight: "120px", display: "block" }}
-              />
-            </div>
-            {/* Desktop logo — slightly taller cap, wider default */}
-            <div
-              className="relative hidden sm:block"
-              style={{
-                width: "68%",
-                maxWidth: "var(--brand-login-w-desktop, 320px)",
-                transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
-                transformOrigin: "center center",
-              }}
-            >
-              <motion.img
-                key={`${logoSrc}-desktop`}
-                src={logoSrc}
-                alt="Youssef Elite"
-                aria-hidden="true"
-                animate={{
-                  y: [0, -4, 0],
-                  filter: [
-                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                    "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
-                    "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
-                  ],
-                }}
-                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ objectFit: "contain", width: "100%", maxHeight: "140px", display: "block" }}
-              />
-            </div>
 
-            {/* Portal badge — brand name already inside logo, no duplication */}
+            {/* STATE 1: loading — Tron skeleton, no real img, no wrong src */}
+            {settingsLoading && (
+              <div
+                aria-hidden
+                data-testid="skeleton-auth-logo"
+                className="admin-shimmer rounded-xl"
+                style={{ width: "60%", maxWidth: "240px", height: "100px" }}
+              />
+            )}
+
+            {/* STATE 2: logo resolved — rendered ONCE with the confirmed src.
+                key= forces a clean mount whenever the URL changes (e.g. admin swap)
+                without a visible flash because the new src replaces the old atomically. */}
+            {!settingsLoading && logoSrc && (
+              <>
+                {/* Mobile */}
+                <div
+                  className="relative sm:hidden"
+                  style={{
+                    width: "70%",
+                    maxWidth: "var(--brand-login-w-mobile, 260px)",
+                    transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <motion.img
+                    key={logoSrc}
+                    src={logoSrc}
+                    alt="Youssef Elite"
+                    data-testid="img-auth-logo"
+                    animate={{
+                      y: [0, -4, 0],
+                      filter: [
+                        "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                        "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                        "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                      ],
+                    }}
+                    transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ objectFit: "contain", width: "100%", maxHeight: "120px", display: "block" }}
+                  />
+                </div>
+                {/* Desktop */}
+                <div
+                  className="relative hidden sm:block"
+                  style={{
+                    width: "68%",
+                    maxWidth: "var(--brand-login-w-desktop, 320px)",
+                    transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <motion.img
+                    key={`${logoSrc}-desktop`}
+                    src={logoSrc}
+                    alt="Youssef Elite"
+                    aria-hidden="true"
+                    animate={{
+                      y: [0, -4, 0],
+                      filter: [
+                        "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                        "drop-shadow(0 0 26px rgba(0,212,255,0.68))",
+                        "drop-shadow(0 0 18px rgba(0,212,255,0.50))",
+                      ],
+                    }}
+                    transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ objectFit: "contain", width: "100%", maxHeight: "140px", display: "block" }}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* STATE 3: loaded, no custom logo — premium text mark */}
+            {!settingsLoading && !logoSrc && (
+              <p
+                data-testid="text-auth-logo-fallback"
+                className="font-display font-black tracking-[0.12em] text-primary"
+                style={{ fontSize: "clamp(32px, 10vw, 52px)", lineHeight: 1 }}
+              >
+                YE
+              </p>
+            )}
+
+            {/* Portal badge */}
             <p
-              className="uppercase font-semibold mt-1 sm:mt-2"
+              className="uppercase font-semibold mt-3 sm:mt-4"
               style={{
                 fontSize: "clamp(16px, 4.5vw, 24px)",
                 letterSpacing: "0.18em",
