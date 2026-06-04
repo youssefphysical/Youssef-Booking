@@ -105,16 +105,44 @@ export default function AuthPage({
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
-  // isLoading = true only on the very first fetch (no cache yet).
-  // We use it to show a skeleton instead of the wrong fallback logo.
   const { data: authSettings, isLoading: settingsLoading } = useSettings();
-  // Resolved only once settings have arrived — null means "not known yet" or
-  // "no custom logo" (text fallback). Never "/ye-logo-primary.png" here so
-  // the img is never rendered with a wrong src first.
-  // Priority: Login/Auth Hero Logo → Client Portal Logo → Icon Logo → text fallback
-  const logoSrc: string | null = settingsLoading
-    ? null
-    : (authSettings?.logoLoginUrl || authSettings?.logoAuthUrl || authSettings?.logoIconUrl || null);
+
+  // ── Auth logo cache ──────────────────────────────────────────────────────
+  // Read synchronously (useState initializer) — populated by the effect below
+  // after every settings fetch. On warm refresh the URL is non-null so the
+  // logo renders in the very first React paint with zero network wait.
+  const [cachedAuthLogoUrl] = useState<string | null>(() => {
+    try { return localStorage.getItem("ye_auth_logo_url") || null; } catch { return null; }
+  });
+
+  // Priority: fresh settings (authoritative) → localStorage cache (warm load) → null (cold load)
+  // "null on cold load" is only possible on a user's very first ever visit to this page.
+  const logoSrc: string | null = authSettings
+    ? ((authSettings as any).logoLoginUrl || (authSettings as any).logoAuthUrl || (authSettings as any).logoIconUrl || null)
+    : cachedAuthLogoUrl;
+
+  // Persist for next visit after each successful settings fetch.
+  useEffect(() => {
+    if (!authSettings) return;
+    const url = (authSettings as any).logoLoginUrl
+      || (authSettings as any).logoAuthUrl
+      || (authSettings as any).logoIconUrl
+      || null;
+    try {
+      if (url) localStorage.setItem("ye_auth_logo_url", url);
+      else localStorage.removeItem("ye_auth_logo_url");
+    } catch {}
+  }, [
+    (authSettings as any)?.logoLoginUrl,
+    (authSettings as any)?.logoAuthUrl,
+    (authSettings as any)?.logoIconUrl,
+  ]);
+
+  // Gate: card entrance is held until we know the logo state.
+  //   • warm load  → cachedAuthLogoUrl set → isCardReady=true immediately
+  //   • cold load  → wait until settingsLoading=false (first ever visit, no cache)
+  // This prevents the card from ever appearing with an empty logo slot.
+  const isCardReady = !!logoSrc || !settingsLoading;
 
   useEffect(() => {
     if (!user) return;
@@ -159,7 +187,8 @@ export default function AuthPage({
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={isCardReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+        transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
         className="relative w-full max-w-lg"
       >
         <Link
@@ -196,10 +225,12 @@ export default function AuthPage({
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
           {/* Three states:
-              1. settingsLoading → cyan skeleton shimmer (no img rendered, no flicker)
-              2. logoSrc resolved → animated img, rendered exactly once with the correct src
-              3. no custom logo   → premium "YE" text mark (clean text-only fallback)
-              min-h-[160px] + py-6/8 gives consistent vertical breathing room across all states. */}
+              1. cold load only (no cache + still fetching) → invisible spacer to hold height
+              2. logoSrc known (from cache OR fresh settings) → logo, rendered in first paint
+              3. loaded, no custom logo → premium "YE" text mark
+              min-h-[160px] + py-6/8 gives consistent vertical breathing room across all states.
+              For warm loads (returning user, most refreshes) the cache means logoSrc is non-null
+              from the very first render, so STATE 1 never appears. */}
           <div className="relative flex flex-col items-center justify-center min-h-[160px] py-6 sm:py-8">
             {/* Ambient glow — always present for premium atmosphere */}
             <div
@@ -211,10 +242,12 @@ export default function AuthPage({
               }}
             />
 
-            {/* STATE 1: loading — space reserved but invisible; no dark box, no flicker.
-                The parent's min-h-[160px] holds the vertical height so layout
-                never shifts when the logo arrives. */}
-            {settingsLoading && (
+            {/* STATE 1: cold load only — invisible spacer, no dark box.
+                Only shown on first-ever visit (no localStorage cache yet).
+                The card entrance is held at opacity:0 by isCardReady, so the
+                user never actually sees this placeholder — it just keeps the
+                layout stable while waiting for the settings API response. */}
+            {settingsLoading && !logoSrc && (
               <div
                 aria-hidden
                 data-testid="skeleton-auth-logo"
@@ -222,10 +255,10 @@ export default function AuthPage({
               />
             )}
 
-            {/* STATE 2: logo resolved — rendered ONCE with the confirmed src.
-                key= forces a clean mount whenever the URL changes (e.g. admin swap)
-                without a visible flash because the new src replaces the old atomically. */}
-            {!settingsLoading && logoSrc && (
+            {/* STATE 2: logo known — rendered from first paint on warm loads (cache hit),
+                from settings API on cold loads. key= triggers clean remount only when
+                the URL changes (e.g. admin uploads a new logo). */}
+            {logoSrc && (
               <>
                 {/* Mobile */}
                 <div

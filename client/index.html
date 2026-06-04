@@ -401,6 +401,34 @@
       })();
     </script>
 
+    <!-- ===== AUTH LOGO PRELOAD — flicker-free /auth logo =====
+         Reads the last-known auth logo URL written by AuthPage.tsx after each
+         successful settings load (localStorage key "ye_auth_logo_url") and
+         injects a <link rel="preload"> so the image file is fetched at the
+         highest priority BEFORE the JS bundle evaluates.
+
+         Combined with the localStorage-seeded initial state in AuthPage.tsx
+         this makes the logo appear in the very first React paint on warm
+         refreshes — no 300 ms gap while the /api/settings call resolves.
+
+         Safety: only preloads relative /uploads/ or / paths — never an
+         arbitrary user-supplied URL. -->
+    <script>
+      (function () {
+        try {
+          var url = localStorage.getItem("ye_auth_logo_url");
+          if (url && typeof url === "string" && url.charAt(0) === "/") {
+            var link = document.createElement("link");
+            link.rel  = "preload";
+            link.as   = "image";
+            link.href = url;
+            link.setAttribute("fetchpriority", "high");
+            document.head.appendChild(link);
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- ===== FONTS (May 2026, "fonts diet") =====
          Audited and trimmed from 24 families to 2 — the only ones the
          design system actually uses:
