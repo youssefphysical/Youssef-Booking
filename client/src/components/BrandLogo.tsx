@@ -1,17 +1,17 @@
 /**
  * BrandLogo — Youssef Elite unified brand identity component.
  *
- * Brand hierarchy (all read from settings, fall back to static assets):
- *  "navbar"  — desktop: logoNavbarUrl, driven by --brand-navbar-* slot vars.
- *              mobile:  logoIconUrl,   driven by --brand-mobile-* slot vars.
- *  "sidebar" — logoIconUrl. Size/glow from --brand-sidebar-* (aliased from dashboard slot).
- *  "footer"  — logoIconUrl. Size/glow from --brand-footer-* slot vars.
- *  "icon"    — logoIconUrl. Size from --brand-icon-h-desktop (default 36px).
+ * Image source hierarchy (all read from settings, fall back to static assets):
+ *  "navbar"  — desktop: logoNavbarUrl → logoIconUrl → /ye-logo.png
+ *              mobile:  logoMobileUrl → logoIconUrl → /ye-logo.png
+ *  "sidebar" — logoDashboardUrl → logoIconUrl → /ye-logo.png
+ *  "footer"  — logoFooterUrl   → logoIconUrl → /ye-logo.png
+ *  "icon"    — logoIconUrl     → /ye-logo.png
  *
- * CSS var authorship: applyLogoSlotCSSVars() in lib/brandSettings.ts sets all
- * --brand-{slot}-* vars on every settings load and on every live slider change.
- * Per-slot vars take precedence over the legacy flat vars (--brand-logo-glow etc.)
- * via CSS var() fallback chaining.
+ * Size / glow / offset — CSS vars set by applyLogoSlotCSSVars() (brandSettings.ts):
+ *  desktop navbar: --brand-navbar-*   mobile navbar: --brand-mobile-*
+ *  sidebar:        --brand-sidebar-*  footer:        --brand-footer-*
+ *  icon:           --brand-icon-*
  *
  * Cache: shares the /api/settings TanStack Query cache with useSettings() — invalidating
  * that cache (after logo upload or Save All) propagates immediately.
@@ -33,11 +33,14 @@ const DEFAULT_SIZES: Record<Exclude<NonNullable<BrandLogoProps["variant"]>, "nav
 export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps) {
   const { data: settings } = useSettings();
 
-  const bs         = (settings?.brandSettings ?? {}) as Record<string, number>;
-  const iconSrc    = settings?.logoIconUrl    || "/ye-logo.png";
-  const navbarSrc  = settings?.logoNavbarUrl  || settings?.logoIconUrl || "/ye-logo.png";
-  const showNavbar = (bs.logoShowNavbar ?? 1) !== 0;
-  const showFooter = (bs.logoShowFooter ?? 1) !== 0;
+  const bs          = (settings?.brandSettings ?? {}) as Record<string, number>;
+  const iconSrc     = settings?.logoIconUrl     || "/ye-logo.png";
+  const navbarSrc   = settings?.logoNavbarUrl   || iconSrc;
+  const mobileSrc   = settings?.logoMobileUrl   || iconSrc;
+  const sidebarSrc  = settings?.logoDashboardUrl || iconSrc;
+  const footerSrc   = settings?.logoFooterUrl   || iconSrc;
+  const showNavbar  = (bs.logoShowNavbar ?? 1) !== 0;
+  const showFooter  = (bs.logoShowFooter ?? 1) !== 0;
 
   if (variant === "navbar") {
     if (!showNavbar) return null;
@@ -47,9 +50,9 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         aria-label="Youssef Elite"
         style={{ overflow: "visible" }}
       >
-        {/* Mobile — icon only, driven by "mobile" logo slot */}
+        {/* Mobile — logoMobileUrl slot, falls back to iconSrc */}
         <img
-          src={iconSrc}
+          src={mobileSrc}
           alt=""
           aria-hidden="true"
           className="object-contain shrink-0 transition-transform duration-300 ease-out hover:scale-[1.04] block md:hidden"
@@ -86,6 +89,11 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
 
   const fallbackSize = DEFAULT_SIZES[variant];
   const cssVar       = `var(--brand-${variant}-h-desktop, ${fallbackSize}px)`;
+  // Each variant reads from its dedicated Media Manager slot first, then falls
+  // back to the generic icon logo so every upload is always visible somewhere.
+  const variantSrc   = variant === "sidebar" ? sidebarSrc
+                     : variant === "footer"  ? footerSrc
+                     : iconSrc;
 
   return (
     <span
@@ -93,7 +101,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
       aria-label="Youssef Elite"
     >
       <img
-        src={iconSrc}
+        src={variantSrc}
         alt=""
         aria-hidden="true"
         className="object-contain shrink-0"

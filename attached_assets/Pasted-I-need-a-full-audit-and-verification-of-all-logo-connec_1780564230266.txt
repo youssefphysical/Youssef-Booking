@@ -1,0 +1,73 @@
+I need a full audit and verification of all logo connections between Media Manager and the live website.
+
+Current concern:
+I see a logo on the Login/Auth page that is different from the logo I set in Media Manager. I need to confirm that every logo slot actually controls the real live placement.
+
+Do NOT redesign anything.
+Do NOT change the UI unless required to fix the connection.
+Do NOT add new features.
+Only audit, verify, and fix logo source connections.
+
+Required audit:
+
+Check every logo placement:
+
+1. Navbar Logo
+2. Mobile Logo
+3. Login Logo / Auth Hero Logo on "/auth"
+4. Client Portal Logo
+5. Dashboard Logo
+6. Footer Logo
+7. Favicon / browser icon
+8. Splash Screen Logo
+9. Email Header Logo
+10. Email Footer Logo
+
+For each placement, confirm:
+
+- Which Media Manager slot controls it
+- Which DB key/storage key controls it
+- Which component/page renders it
+- Whether it has any hardcoded static image fallback
+- Whether it has any old imported image
+- Whether it uses cache busting with updatedAt/version
+- Whether it updates immediately after saving in Media Manager
+- Whether it persists after refresh and redeploy
+
+Important fix rules:
+
+- Remove any old hardcoded logo from live pages.
+- Remove old static fallback logos unless used only as final emergency text/image fallback.
+- "/auth" Login Logo must use ONLY the Media Manager Login Logo/Auth Hero Logo slot first.
+- If Login Logo is empty, fallback order must be:
+  Login Logo → Client Portal Logo → Primary/Icon Logo → text fallback.
+- Navbar must use Navbar Logo only.
+- Mobile navbar must use Mobile Logo only.
+- Dashboard must use Dashboard Logo only.
+- Footer must use Footer Logo only.
+- Favicon must use Favicon slot only.
+
+Testing requirement:
+For each logo slot:
+
+1. Temporarily change the logo to a clearly different test image.
+2. Save.
+3. Open the live page where it is used.
+4. Confirm the correct logo changes.
+5. Confirm other logo placements do NOT change accidentally.
+6. Refresh the page.
+7. Confirm the correct logo stays.
+8. Restart/redeploy if needed.
+9. Confirm it still stays.
+10. Revert to the original logo after testing.
+
+Add a short internal report after audit:
+
+- Slot name
+- Live placement
+- Status: Connected / Not connected
+- Fixed: Yes/No
+- Notes
+
+Final result:
+Every logo shown on the live site must come from Media Manager, not from hardcoded assets.

@@ -12,7 +12,8 @@ import { useSettings } from "@/hooks/use-settings";
  * brand logo + spinner appear.
  *
  * Respects:
- *  - settings.logoIconUrl        — custom logo upload (falls back to /ye-logo.png)
+ *  - settings.logoSplashUrl      — dedicated splash slot (Media Manager → Splash Screen Logo)
+ *  - settings.logoIconUrl        — fallback when no splash logo uploaded
  *  - settings.brandSettings.logoShowLoading — visibility toggle from Logo Manager
  *
  * Uses the shared useSettings() cache so logo changes after an admin upload
@@ -23,7 +24,7 @@ export function PremiumPageLoader() {
   const { data: settings } = useSettings();
 
   const bs          = (settings?.brandSettings ?? {}) as Record<string, number>;
-  const logoSrc     = settings?.logoIconUrl || "/ye-logo.png";
+  const logoSrc     = settings?.logoSplashUrl || settings?.logoIconUrl || "/ye-logo.png";
   const showLoading = (bs.logoShowLoading ?? 1) !== 0;
 
   useEffect(() => {
