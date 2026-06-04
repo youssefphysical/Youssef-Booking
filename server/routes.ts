@@ -5001,19 +5001,19 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   });
 
   // POST /api/admin/media/logo/:slot — upload a custom logo variant.
-  // slot: "icon" | "navbar" | "auth" | "login"
+  // slot: "icon" | "navbar" | "auth" | "login" | "favicon"
   // Accepts a base64 data URL. Processes with sharp (preserve transparency,
-  // resize to reasonable max), stores as base64 WebP in settings.
+  // resize to reasonable max), stores as file URL in settings.
   app.post("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
     const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
     if (!checkUploadRateLimit(ip)) {
       return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again." });
     }
-    const VALID_SLOTS = ["icon", "navbar", "auth", "login"] as const;
+    const VALID_SLOTS = ["icon", "navbar", "auth", "login", "favicon"] as const;
     type LogoSlot = (typeof VALID_SLOTS)[number];
     const slot = req.params.slot as LogoSlot;
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
-      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, auth, or login." });
+      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, auth, login, or favicon." });
     }
     const schema = z.object({ imageDataUrl: z.string().min(40) });
     const parsed = schema.safeParse(req.body);
@@ -5033,10 +5033,11 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
     // Max dimensions per slot
     const MAX_DIM: Record<LogoSlot, { w: number; h: number }> = {
-      icon:   { w: 400,  h: 400 },
-      navbar: { w: 800,  h: 300 },
-      auth:   { w: 600,  h: 600 },
-      login:  { w: 800,  h: 400 },
+      icon:    { w: 400,  h: 400 },
+      navbar:  { w: 800,  h: 300 },
+      auth:    { w: 600,  h: 600 },
+      login:   { w: 800,  h: 400 },
+      favicon: { w: 512,  h: 512 },
     };
     const { w: maxW, h: maxH } = MAX_DIM[slot];
 
@@ -5053,10 +5054,11 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     }
 
     const SLOT_KEY: Record<LogoSlot, string> = {
-      icon:   "logoIconUrl",
-      navbar: "logoNavbarUrl",
-      auth:   "logoAuthUrl",
-      login:  "logoLoginUrl",
+      icon:    "logoIconUrl",
+      navbar:  "logoNavbarUrl",
+      auth:    "logoAuthUrl",
+      login:   "logoLoginUrl",
+      favicon: "logoFaviconUrl",
     };
 
     // Permanent architecture: write to disk, store file URL — no base64 blobs in DB
@@ -5076,12 +5078,12 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
   // DELETE /api/admin/media/logo/:slot — remove custom logo, revert to static file.
   app.delete("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
-    const VALID_SLOTS = ["icon", "navbar", "auth", "login"] as const;
-    const slot = req.params.slot as "icon" | "navbar" | "auth" | "login";
+    const VALID_SLOTS = ["icon", "navbar", "auth", "login", "favicon"] as const;
+    const slot = req.params.slot as "icon" | "navbar" | "auth" | "login" | "favicon";
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
       return res.status(400).json({ success: false, error: "Invalid slot." });
     }
-    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl", login: "logoLoginUrl" };
+    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl", login: "logoLoginUrl", favicon: "logoFaviconUrl" };
     // Clean up disk file if present
     const prevSettings = await storage.getSettings();
     const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;

@@ -160,18 +160,27 @@ function Router() {
     if (settings === undefined) return;
     applyBrandCSSVars(settings.brandSettings as Record<string, number | string> | null);
   }, [settings]);
-  // Dynamic favicon — update <link rel="icon"> whenever the admin uploads a
-  // new logo. Falls back to the static /ye-logo.png baked into the HTML.
+  // Dynamic favicon — update <link rel="icon"> when the admin uploads a
+  // custom favicon from Media Center. Falls back to the static /favicon-*.png
+  // files baked into the build (which are always correctly sized 16/32/48/180 px).
   useEffect(() => {
     if (!settings) return;
-    const faviconHref = settings.logoIconUrl || "/ye-logo.png";
-    const setLink = (sel: string, href: string) => {
-      const el = document.querySelector<HTMLLinkElement>(sel);
+    const custom = (settings as any).logoFaviconUrl as string | null | undefined;
+    if (!custom) return; // static files already served by index.html — nothing to do
+    // Append a cache-buster so Chrome re-fetches after an upload
+    const bust = `${custom}?v=${encodeURIComponent(custom.split("-").pop()?.split(".")[0] ?? "1")}`;
+    const setLink = (id: string, href: string) => {
+      const el = document.getElementById(id) as HTMLLinkElement | null;
       if (el) el.href = href;
     };
-    setLink("link[rel='icon']", faviconHref);
-    setLink("link[rel='apple-touch-icon']", faviconHref);
-  }, [settings?.logoIconUrl]);
+    setLink("favicon-16",    bust);
+    setLink("favicon-32",    bust);
+    setLink("favicon-48",    bust);
+    setLink("favicon-apple", bust);
+    // Also update the href-less <link rel="icon" href="/favicon.ico">
+    const ico = document.querySelector<HTMLLinkElement>("link[href='/favicon.ico']");
+    if (ico) ico.href = bust;
+  }, [(settings as any)?.logoFaviconUrl]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
   const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
   const showMaintenance = maintenance && !allowBypass;

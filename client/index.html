@@ -3,10 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <link rel="icon" type="image/png" href="/ye-logo.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/ye-logo.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <!-- Favicons — all sizes generated from the YE brand icon (512×512 source).
+         /favicon.ico     = 32×32 PNG (Chrome auto-request fallback)
+         /favicon-16.png  = browser tab (low-DPI)
+         /favicon-32.png  = browser tab (Retina / hi-DPI)
+         /favicon-48.png  = Windows taskbar / pinned site
+         /apple-touch-icon.png = iOS home screen / Safari tab
+         /icon-192.png    = Android home-screen shortcut (PWA)
+         /icon-512.png    = PWA splash / maskable icon
+         React updates these href values live after settings load
+         (see FaviconSync in App.tsx) so a Media Center upload takes
+         effect immediately without a page reload. -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" id="favicon-16" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" id="favicon-32" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" id="favicon-48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" id="favicon-apple" />
 
     <!-- ===== PWA / installable app ===== -->
     <link rel="manifest" href="/manifest.webmanifest" />

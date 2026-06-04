@@ -778,6 +778,7 @@ export const settings = pgTable("settings", {
   logoNavbarUrl:  text("logo_navbar_url"),  // horizontal icon+text logo (admin brand preview)
   logoAuthUrl:    text("logo_auth_url"),    // full-brand logo (client portal / fallback)
   logoLoginUrl:   text("logo_login_url"),   // login/auth hero — /auth card only, fully independent
+  logoFaviconUrl: text("logo_favicon_url"), // browser favicon / PWA icon — overrides static /favicon*.png
   // ====== Website Content Management — public-facing text overrides ======
   // Keys: servicePtTitle, servicePtBody, serviceNutritionTitle, serviceNutritionBody,
   //       serviceSupplementTitle, serviceSupplementBody, ctaEyebrow, ctaTitle, ctaSubtitle,

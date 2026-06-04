@@ -1210,7 +1210,7 @@ function ServicesSection({ settings }: { settings: Settings }) {
 }
 
 // ─── Logo Manager (Branding section) ──────────────────────────────────────────
-type LogoSlot = "icon" | "navbar" | "auth" | "login";
+type LogoSlot = "icon" | "navbar" | "auth" | "login" | "favicon";
 
 const LOGO_SLOTS: {
   key: LogoSlot;
@@ -1251,6 +1251,14 @@ const LOGO_SLOTS: {
     fallback: "/ye-logo-primary.png",
     hint: "800×400 PNG/WebP with transparent background. Used exclusively inside the /auth page hero area. Takes priority over Client Portal Logo. Falls back to Client Portal Logo, then Icon Logo.",
     maxLabel: "800 × 400 px",
+  },
+  {
+    key: "favicon",
+    label: "Favicon / Browser Icon",
+    desc: "Browser tab, Chrome suggestions, mobile shortcut, PWA icon",
+    fallback: "/favicon-32.png",
+    hint: "Upload a 512×512 PNG with a transparent background. The server generates 16/32/48/180/192/512 px sizes automatically. Falls back to the static /favicon-*.png files baked into the build.",
+    maxLabel: "512 × 512 px",
   },
 ];
 
@@ -1700,10 +1708,10 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
     fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
   },
   favicon:   {
-    usedIn:        "Browser tab & OS bookmark icon",
-    uploadSlot:    "— (static file, not DB-controlled)",
-    storageKey:    "— (hardcoded in index.html)",
-    fallbackChain: ["/ye-logo.png (static only)"],
+    usedIn:        "Browser tab · Chrome mobile suggestions · PWA install icon · iOS home screen",
+    uploadSlot:    "Favicon / Browser Icon",
+    storageKey:    "logoFaviconUrl",
+    fallbackChain: ["Favicon / Browser Icon (logoFaviconUrl)", "/favicon-32.png (static)", "/favicon.ico (static)"],
   },
   splash:    {
     usedIn:        "Full-screen loader at app boot",
@@ -2180,6 +2188,15 @@ function BrandingSection() {
       onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo updated" }); },
       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
     }),
+    favicon: useMutation({
+      mutationFn: async (dataUrl: string) => {
+        const res = await apiRequest("POST", "/api/admin/media/logo/favicon", { imageDataUrl: dataUrl });
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+        return res.json();
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Favicon updated — browser tab & mobile shortcut will refresh" }); },
+      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+    }),
   };
   const removeMutations = {
     icon: useMutation({
@@ -2212,6 +2229,14 @@ function BrandingSection() {
         if (!res.ok) throw new Error("Remove failed");
       },
       onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo removed — fallback restored" }); },
+      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
+    }),
+    favicon: useMutation({
+      mutationFn: async () => {
+        const res = await apiRequest("DELETE", "/api/admin/media/logo/favicon");
+        if (!res.ok) throw new Error("Remove failed");
+      },
+      onSuccess: () => { invalidateMedia(); toast({ title: "Custom favicon removed — static default restored" }); },
       onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
     }),
   };

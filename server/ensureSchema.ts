@@ -93,10 +93,11 @@ async function run(): Promise<void> {
 
     -- Global Logo Manager — uploadable brand logo variants (override static /ye-logo*.png)
     ALTER TABLE IF EXISTS settings
-      ADD COLUMN IF NOT EXISTS logo_icon_url   text,
-      ADD COLUMN IF NOT EXISTS logo_navbar_url text,
-      ADD COLUMN IF NOT EXISTS logo_auth_url   text,
-      ADD COLUMN IF NOT EXISTS logo_login_url  text;
+      ADD COLUMN IF NOT EXISTS logo_icon_url    text,
+      ADD COLUMN IF NOT EXISTS logo_navbar_url  text,
+      ADD COLUMN IF NOT EXISTS logo_auth_url    text,
+      ADD COLUMN IF NOT EXISTS logo_login_url   text,
+      ADD COLUMN IF NOT EXISTS logo_favicon_url text;
 
     -- Website Content Management — public-facing text overrides
     ALTER TABLE IF EXISTS settings
