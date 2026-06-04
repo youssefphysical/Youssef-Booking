@@ -1769,7 +1769,7 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
   },
 };
 
-// ─── Logo controls panel (7 independent slots, 9 sliders each) ─────────────
+// ─── Logo controls panel (7 independent slots, 10 sliders each) ────────────
 function LogoControlsPanel() {
   const { toast } = useToast();
   const { data, isLoading } = useMediaData();
@@ -2788,7 +2788,7 @@ function BrandingSection() {
         </div>
       )}
 
-      {/* ── Logo Controls (7 independent slots, 9 sliders each) ─────────── */}
+      {/* ── Logo Controls (7 independent slots, 10 sliders each) ────────── */}
       <LogoControlsPanel />
     </div>
     </>

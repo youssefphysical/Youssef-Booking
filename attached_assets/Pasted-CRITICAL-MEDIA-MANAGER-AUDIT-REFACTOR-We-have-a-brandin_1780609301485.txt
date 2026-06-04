@@ -1,0 +1,374 @@
+CRITICAL MEDIA MANAGER AUDIT & REFACTOR
+
+We have a branding/media architecture issue that appears in Login Logo and may exist across the entire logo system.
+
+This task is NOT a UI redesign.
+
+This task is a full architecture audit, data binding audit, storage audit, persistence audit, and end-to-end verification for every logo slot in the Media Manager.
+
+==================================================
+OBJECTIVE
+==================================================
+
+Ensure that EVERY logo slot uses a single source of truth.
+
+For every logo:
+
+Upload Image
+↓
+Database Record
+↓
+Media Preview
+↓
+Editing Controls
+↓
+Live Website Component
+
+must all point to the EXACT SAME ASSET and EXACT SAME DB KEY.
+
+No duplicate sources.
+No hidden fallbacks.
+No stale assets.
+No cached overrides.
+No mismatched bindings.
+
+==================================================
+LOGO SLOTS TO AUDIT
+==================================================
+
+Audit ALL logo slots:
+
+- Icon Logo
+- Client Portal Logo
+- Navbar Logo
+- Mobile Logo
+- Login Logo
+- Dashboard Logo
+- Footer Logo
+- Favicon
+- Splash Screen Logo
+
+Also search for any additional logo slot not visible in UI.
+
+==================================================
+PART 1 — DATABASE AUDIT
+==================================================
+
+Search entire codebase for:
+
+logo
+Logo
+branding
+Branding
+media
+Media
+asset
+Asset
+heroLogo
+loginLogo
+clientPortalLogo
+navbarLogo
+mobileLogo
+dashboardLogo
+footerLogo
+favicon
+splashLogo
+
+Locate ALL:
+
+- DB keys
+- Settings keys
+- Branding settings
+- Fallback settings
+- Local storage references
+- Cache references
+- Hardcoded asset URLs
+- Static image references
+
+Generate a mapping of:
+
+Logo Slot
+DB Key
+Storage Path
+Preview Source
+Live Component
+
+==================================================
+PART 2 — REMOVE SOURCE MISMATCHES
+==================================================
+
+For EACH logo slot:
+
+Verify:
+
+Upload Card Image
+=
+Preview Image
+=
+Control Editor Preview
+=
+Rendered Site Logo
+
+using the SAME asset URL.
+
+If upload uses one key
+and preview uses another key
+and site uses another key
+
+consolidate them into ONE source.
+
+Single source of truth only.
+
+==================================================
+PART 3 — LOGIN LOGO SPECIAL FIX
+==================================================
+
+Current issue:
+
+Login Logo upload area
+and Login Logo editable preview
+can show different images.
+
+This must be fixed.
+
+Requirements:
+
+Login Logo Upload
+Login Logo Replace
+Login Logo Remove
+Login Logo Copy URL
+Login Logo Preview
+Login Logo Controls
+/auth Login Hero
+
+must all read from the SAME DB KEY.
+
+No exceptions.
+
+==================================================
+PART 4 — CLIENT PORTAL LOGO AUDIT
+==================================================
+
+Verify Client Portal Logo.
+
+Currently suspected:
+
+Client Portal Logo may not be connected to the actual component using it.
+
+Verify:
+
+Upload
+Preview
+Editor
+Live Component
+
+all use same source.
+
+==================================================
+PART 5 — CONTROL BINDING AUDIT
+==================================================
+
+For EVERY logo slot verify:
+
+Width
+Height
+Zoom
+Horizontal Offset
+Vertical Offset
+Padding
+Glow
+
+actually affect:
+
+1. Preview
+2. Live Component
+
+and persist after refresh.
+
+No fake controls.
+No preview-only controls.
+
+==================================================
+PART 6 — CACHE AUDIT
+==================================================
+
+Search for:
+
+- Browser cache
+- Asset cache
+- Query string cache
+- Versioning
+- LocalStorage overrides
+- SessionStorage overrides
+
+Issue observed:
+
+Some logos appear after refresh,
+then change a second later.
+
+This indicates:
+
+- hydration mismatch
+- stale asset
+- delayed DB fetch
+- fallback override
+
+Find root cause.
+
+Fix root cause.
+
+Do NOT hide it.
+
+==================================================
+PART 7 — AUTH PAGE LOGO SYSTEM
+==================================================
+
+For /auth page:
+
+Current design requirement:
+
+NO "CLIENT PORTAL" title.
+
+The uploaded Login Hero Logo itself should act as the visual hero.
+
+The hero card should automatically size itself based on the logo dimensions.
+
+Requirements:
+
+- Dynamic height
+- Dynamic container sizing
+- No forced crop
+- No forced stretch
+- object-fit: contain
+- Maintain aspect ratio
+
+The logo should always look correct regardless of uploaded dimensions.
+
+==================================================
+PART 8 — STORAGE AUDIT
+==================================================
+
+Verify uploads system:
+
+Check:
+
+/uploads
+/uploads/brand
+
+Ensure:
+
+Directories are auto-created.
+
+Prevent:
+
+ENOENT
+Missing folder
+Broken uploads
+
+Verify all upload routes.
+
+==================================================
+PART 9 — END-TO-END TESTING
+==================================================
+
+For EACH logo slot:
+
+TEST A
+
+Upload completely different temporary logo.
+
+Verify:
+
+Upload card updates.
+
+TEST B
+
+Verify preview updates.
+
+TEST C
+
+Verify editor preview updates.
+
+TEST D
+
+Verify live website updates.
+
+TEST E
+
+Refresh page.
+
+Verify persistence.
+
+TEST F
+
+Hard refresh.
+
+Verify persistence.
+
+TEST G
+
+Navigate away and return.
+
+Verify persistence.
+
+TEST H
+
+Redeploy if necessary.
+
+Verify persistence.
+
+TEST I
+
+Restore original logo.
+
+Verify all references restored.
+
+==================================================
+PART 10 — FINAL REPORT
+==================================================
+
+Provide final audit report table:
+
+Logo Slot
+DB Key
+Storage Path
+Preview Source
+Live Component
+Control Binding
+Persistence Status
+
+PASS only if:
+
+Upload
+=
+Preview
+=
+Controls
+=
+Live Website
+
+using same asset URL and same DB key.
+
+Do NOT close task until EVERY logo slot passes.
+
+==================================================
+SUCCESS CRITERIA
+==================================================
+
+1. No logo source mismatch anywhere.
+
+2. No hidden fallback overriding uploaded logos.
+
+3. No logo changing after refresh.
+
+4. No preview showing different image than uploaded image.
+
+5. No control panel editing different asset than rendered asset.
+
+6. Upload card, preview, controls, and live website all use the same source.
+
+7. All logo controls persist.
+
+8. All branding assets survive refresh, restart, and redeploy.
+
+Run full audit, fix all findings, then provide final verification report.

@@ -7,7 +7,7 @@
  * Uses jsdom (vitest environment) so document.documentElement is available.
  *
  * Coverage:
- *   A. applyLogoSlotCSSVars sets correct CSS vars for all 9 controls
+ *   A. applyLogoSlotCSSVars sets correct CSS vars for all 10 controls
  *   B. dashboard slot alias populates --brand-sidebar-* vars
  *   C. applyBrandCSSVars with logos object applies per-slot vars
  *   D. applyBrandCSSVars without logos emits safe defaults
@@ -15,7 +15,7 @@
  *   F. Login slot defaults produce correct auth zoom value (1.08)
  *   G. buildLogos merges stored values over defaults correctly
  *   H. Reset to defaults produces default values
- *   I. Save payload structure includes all 7 slots × 9 fields
+ *   I. Save payload structure includes all 7 slots × 10 fields
  *   J. Lock/unlock semantics
  *   K. localStorage cache (persistBrandSettingsCache)
  *   L. Preview mode dimensions (desktop vs mobile)
@@ -61,10 +61,10 @@ function buildLogos(
 describe("applyLogoSlotCSSVars — CSS var correctness", () => {
   beforeEach(clearVars);
 
-  it("sets all 9 CSS vars for the navbar slot", () => {
+  it("sets all 10 CSS vars for the navbar slot", () => {
     const c: LogoBrandControls = {
       wDesktop: 200, hDesktop: 60, wMobile: 100, hMobile: 44,
-      zoom: 120, hOffset: 10, vOffset: -5, padding: 8, glow: 50,
+      zoom: 120, hOffset: 10, vOffset: -5, padding: 8, glow: 50, minHeroH: 0,
     };
     applyLogoSlotCSSVars("navbar", c);
 
@@ -79,10 +79,10 @@ describe("applyLogoSlotCSSVars — CSS var correctness", () => {
     expect(getVar("--brand-navbar-glow")).toBe("0.5");
   });
 
-  it("sets all 9 CSS vars for the login slot", () => {
+  it("sets all 10 CSS vars for the login slot", () => {
     const c: LogoBrandControls = {
       wDesktop: 480, hDesktop: 0, wMobile: 360, hMobile: 0,
-      zoom: 108, hOffset: 0, vOffset: 20, padding: 0, glow: 40,
+      zoom: 108, hOffset: 0, vOffset: 20, padding: 0, glow: 40, minHeroH: 280,
     };
     applyLogoSlotCSSVars("login", c);
 
@@ -252,10 +252,10 @@ describe("buildLogos — merge logic", () => {
     expect(result.login).toEqual(LOGO_BRAND_SLOT_DEFAULTS.login);
   });
 
-  it("fully overrides all 9 fields when stored has all 9", () => {
+  it("fully overrides all 10 fields when stored has all 10", () => {
     const custom: LogoBrandControls = {
       wDesktop: 111, hDesktop: 222, wMobile: 333, hMobile: 444,
-      zoom: 55, hOffset: 6, vOffset: 7, padding: 8, glow: 9,
+      zoom: 55, hOffset: 6, vOffset: 7, padding: 8, glow: 9, minHeroH: 0,
     };
     const result = buildLogos({ splash: custom });
     expect(result.splash).toEqual(custom);
@@ -268,7 +268,7 @@ describe("Reset to defaults", () => {
   it("resetting a slot returns exactly the default values", () => {
     const modified: LogoBrandControls = {
       wDesktop: 999, hDesktop: 888, wMobile: 777, hMobile: 666,
-      zoom: 55, hOffset: 10, vOffset: -10, padding: 20, glow: 100,
+      zoom: 55, hOffset: 10, vOffset: -10, padding: 20, glow: 100, minHeroH: 0,
     };
     const reset = { ...LOGO_BRAND_SLOT_DEFAULTS.navbar };
     expect(reset).toEqual(LOGO_BRAND_SLOT_DEFAULTS.navbar);
@@ -436,7 +436,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("desktop preview uses wDesktop/hDesktop values", () => {
     const c: LogoBrandControls = {
       wDesktop: 400, hDesktop: 80, wMobile: 200, hMobile: 44,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30, minHeroH: 0,
     };
     const previewMode: "desktop" | "mobile" = "desktop";
 
@@ -454,7 +454,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("mobile preview uses wMobile/hMobile values", () => {
     const c: LogoBrandControls = {
       wDesktop: 400, hDesktop: 80, wMobile: 200, hMobile: 44,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30, minHeroH: 0,
     };
     const previewMode: "desktop" | "mobile" = "mobile";
 
@@ -472,7 +472,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("mobile preview caps width at 300 and height at 110", () => {
     const c: LogoBrandControls = {
       wDesktop: 600, hDesktop: 200, wMobile: 500, hMobile: 200,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0, minHeroH: 0,
     };
     const previewMode: "desktop" | "mobile" = "mobile";
 
@@ -490,7 +490,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("desktop preview caps width at 500 and height at 140", () => {
     const c: LogoBrandControls = {
       wDesktop: 600, hDesktop: 200, wMobile: 500, hMobile: 200,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 0, minHeroH: 0,
     };
     const previewMode: "desktop" | "mobile" = "desktop";
 
@@ -508,7 +508,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("preview returns 'auto' when dimension is 0", () => {
     const c: LogoBrandControls = {
       wDesktop: 0, hDesktop: 60, wMobile: 0, hMobile: 44,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30, minHeroH: 0,
     };
 
     const desktopW = c.wDesktop > 0 ? Math.min(c.wDesktop, 500) : "auto";
@@ -521,7 +521,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("changing hMobile only affects mobile preview, not desktop", () => {
     const base: LogoBrandControls = {
       wDesktop: 300, hDesktop: 60, wMobile: 150, hMobile: 44,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30, minHeroH: 0,
     };
     const modified = { ...base, hMobile: 70 };
 
@@ -535,7 +535,7 @@ describe("Preview mode dimensions — desktop vs mobile", () => {
   it("changing hDesktop only affects desktop preview, not mobile", () => {
     const base: LogoBrandControls = {
       wDesktop: 300, hDesktop: 60, wMobile: 150, hMobile: 44,
-      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30,
+      zoom: 100, hOffset: 0, vOffset: 0, padding: 0, glow: 30, minHeroH: 0,
     };
     const modified = { ...base, hDesktop: 90 };
 
