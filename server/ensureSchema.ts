@@ -1146,6 +1146,14 @@ async function run(): Promise<void> {
       ALTER TABLE IF EXISTS hero_images
         ADD COLUMN IF NOT EXISTS image_url text,
         ADD COLUMN IF NOT EXISTS mobile_url text;
+
+      -- June 2026: additional logo upload slots (mobile, dashboard, footer, splash).
+      -- These are independent slots used by BrandLogo & LogoControlsPanel.
+      ALTER TABLE IF EXISTS settings
+        ADD COLUMN IF NOT EXISTS logo_mobile_url text,
+        ADD COLUMN IF NOT EXISTS logo_dashboard_url text,
+        ADD COLUMN IF NOT EXISTS logo_footer_url text,
+        ADD COLUMN IF NOT EXISTS logo_splash_url text;
     `);
 
     console.log("[ensureSchema] OK");

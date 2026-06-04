@@ -5001,19 +5001,19 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
   });
 
   // POST /api/admin/media/logo/:slot — upload a custom logo variant.
-  // slot: "icon" | "navbar" | "auth" | "login" | "favicon"
+  // slot: "icon" | "navbar" | "mobile" | "auth" | "login" | "dashboard" | "footer" | "favicon" | "splash"
   // Accepts a base64 data URL. Processes with sharp (preserve transparency,
-  // resize to reasonable max), stores as file URL in settings.
+  // resize to reasonable max), stores as file URL (or base64 fallback on serverless) in settings.
   app.post("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
     const ip = String((req as any).ip ?? (req.socket as any)?.remoteAddress ?? "unknown");
     if (!checkUploadRateLimit(ip)) {
       return res.status(429).json({ success: false, error: "Too many uploads — wait a few minutes and try again." });
     }
-    const VALID_SLOTS = ["icon", "navbar", "auth", "login", "favicon"] as const;
+    const VALID_SLOTS = ["icon", "navbar", "mobile", "auth", "login", "dashboard", "footer", "favicon", "splash"] as const;
     type LogoSlot = (typeof VALID_SLOTS)[number];
     const slot = req.params.slot as LogoSlot;
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
-      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, auth, login, or favicon." });
+      return res.status(400).json({ success: false, error: "Invalid slot. Must be icon, navbar, mobile, auth, login, dashboard, footer, favicon, or splash." });
     }
     const schema = z.object({ imageDataUrl: z.string().min(40) });
     const parsed = schema.safeParse(req.body);
@@ -5025,7 +5025,7 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     if (!match) return res.status(400).json({ success: false, error: "Invalid image data URL." });
     const mime = match[1];
     const ALLOWED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
-    if (!ALLOWED_MIMES.includes(mime)) return res.status(400).json({ success: false, error: "Unsupported image type." });
+    if (!ALLOWED_MIMES.includes(mime)) return res.status(400).json({ success: false, error: "Unsupported image type. Use PNG, JPEG, WebP, or SVG." });
 
     // Size limit: 5 MB for logos
     const raw = Buffer.from(match[2], "base64");
@@ -5033,11 +5033,15 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
 
     // Max dimensions per slot
     const MAX_DIM: Record<LogoSlot, { w: number; h: number }> = {
-      icon:    { w: 400,  h: 400 },
-      navbar:  { w: 800,  h: 300 },
-      auth:    { w: 600,  h: 600 },
-      login:   { w: 800,  h: 400 },
-      favicon: { w: 512,  h: 512 },
+      icon:      { w: 400,  h: 400 },
+      navbar:    { w: 800,  h: 300 },
+      mobile:    { w: 400,  h: 200 },
+      auth:      { w: 600,  h: 600 },
+      login:     { w: 800,  h: 400 },
+      dashboard: { w: 400,  h: 200 },
+      footer:    { w: 400,  h: 200 },
+      favicon:   { w: 512,  h: 512 },
+      splash:    { w: 800,  h: 800 },
     };
     const { w: maxW, h: maxH } = MAX_DIM[slot];
 
@@ -5054,36 +5058,57 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     }
 
     const SLOT_KEY: Record<LogoSlot, string> = {
-      icon:    "logoIconUrl",
-      navbar:  "logoNavbarUrl",
-      auth:    "logoAuthUrl",
-      login:   "logoLoginUrl",
-      favicon: "logoFaviconUrl",
+      icon:      "logoIconUrl",
+      navbar:    "logoNavbarUrl",
+      mobile:    "logoMobileUrl",
+      auth:      "logoAuthUrl",
+      login:     "logoLoginUrl",
+      dashboard: "logoDashboardUrl",
+      footer:    "logoFooterUrl",
+      favicon:   "logoFaviconUrl",
+      splash:    "logoSplashUrl",
     };
 
-    // Permanent architecture: write to disk, store file URL — no base64 blobs in DB
+    // Write to disk when possible; fall back to inline base64 on read-only serverless
+    // filesystems (e.g. Vercel /var/task). The settings column accepts either a
+    // /uploads/brand/* file URL or a data: URL — both render correctly as <img src>.
     const ext = mime === "image/svg+xml" ? "svg" : "webp";
     const filename = `logo-${slot}-${Date.now()}.${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_ROOT, "brand", filename), outputBuffer);
-    // Remove previous file if one was stored
-    const prevSettings = await storage.getSettings();
-    const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;
-    if (prevUrl?.startsWith("/uploads/brand/")) {
-      try { fs.unlinkSync(path.join(UPLOAD_ROOT, "brand", path.basename(prevUrl))); } catch {}
+    let fileUrl: string;
+    try {
+      const brandDir = path.join(UPLOAD_ROOT, "brand");
+      if (!fs.existsSync(brandDir)) fs.mkdirSync(brandDir, { recursive: true });
+      fs.writeFileSync(path.join(brandDir, filename), outputBuffer);
+      // Remove previous file if stored on disk
+      const prevSettings = await storage.getSettings();
+      const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;
+      if (prevUrl?.startsWith("/uploads/brand/")) {
+        try { fs.unlinkSync(path.join(UPLOAD_ROOT, "brand", path.basename(prevUrl))); } catch {}
+      }
+      fileUrl = `/uploads/brand/${filename}`;
+    } catch (diskErr) {
+      // Serverless / read-only filesystem — store as inline base64 (Vercel-safe, same as profile photos).
+      console.warn("[logo-upload] disk write failed, using inline base64:", (diskErr as Error).message);
+      const b64Mime = mime === "image/svg+xml" ? "image/svg+xml" : "image/webp";
+      fileUrl = `data:${b64Mime};base64,${outputBuffer.toString("base64")}`;
     }
-    const fileUrl = `/uploads/brand/${filename}`;
     await storage.updateSettings({ [SLOT_KEY[slot]]: fileUrl } as any);
     return res.json({ success: true, url: fileUrl });
   });
 
   // DELETE /api/admin/media/logo/:slot — remove custom logo, revert to static file.
   app.delete("/api/admin/media/logo/:slot", requireAdmin, async (req, res) => {
-    const VALID_SLOTS = ["icon", "navbar", "auth", "login", "favicon"] as const;
-    const slot = req.params.slot as "icon" | "navbar" | "auth" | "login" | "favicon";
+    const VALID_SLOTS = ["icon", "navbar", "mobile", "auth", "login", "dashboard", "footer", "favicon", "splash"] as const;
+    type DelSlot = (typeof VALID_SLOTS)[number];
+    const slot = req.params.slot as DelSlot;
     if (!(VALID_SLOTS as readonly string[]).includes(slot)) {
       return res.status(400).json({ success: false, error: "Invalid slot." });
     }
-    const SLOT_KEY = { icon: "logoIconUrl", navbar: "logoNavbarUrl", auth: "logoAuthUrl", login: "logoLoginUrl", favicon: "logoFaviconUrl" };
+    const SLOT_KEY: Record<DelSlot, string> = {
+      icon: "logoIconUrl", navbar: "logoNavbarUrl", mobile: "logoMobileUrl",
+      auth: "logoAuthUrl", login: "logoLoginUrl", dashboard: "logoDashboardUrl",
+      footer: "logoFooterUrl", favicon: "logoFaviconUrl", splash: "logoSplashUrl",
+    };
     // Clean up disk file if present
     const prevSettings = await storage.getSettings();
     const prevUrl = (prevSettings as any)[SLOT_KEY[slot]] as string | null | undefined;

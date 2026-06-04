@@ -80,6 +80,7 @@ import {
   Lock,
   LockOpen,
   Info,
+  Copy,
 } from "lucide-react";
 
 // ─── Data hook ────────────────────────────────────────────────────────────────
@@ -1210,7 +1211,7 @@ function ServicesSection({ settings }: { settings: Settings }) {
 }
 
 // ─── Logo Manager (Branding section) ──────────────────────────────────────────
-type LogoSlot = "icon" | "navbar" | "auth" | "login" | "favicon";
+type LogoSlot = "icon" | "navbar" | "mobile" | "auth" | "login" | "dashboard" | "footer" | "favicon" | "splash";
 
 const LOGO_SLOTS: {
   key: LogoSlot;
@@ -1219,46 +1220,88 @@ const LOGO_SLOTS: {
   fallback: string;
   hint: string;
   maxLabel: string;
+  settingsKey: string;
 }[] = [
   {
     key: "icon",
     label: "Icon Logo",
-    desc: "Navbar, sidebar, footer, loading screen",
+    desc: "Sidebar, footer, loading screen",
     fallback: "/ye-logo.png",
     hint: "Square or icon format recommended. PNG with transparency works best.",
     maxLabel: "400 × 400 px",
+    settingsKey: "logoIconUrl",
   },
   {
     key: "navbar",
     label: "Horizontal Logo",
-    desc: "Admin brand preview (Settings → Brand)",
+    desc: "Desktop & tablet navigation bar",
     fallback: "/ye-logo-horizontal.png",
     hint: "Wide format with text. PNG with transparent background.",
     maxLabel: "800 × 300 px",
+    settingsKey: "logoNavbarUrl",
+  },
+  {
+    key: "mobile",
+    label: "Mobile Logo",
+    desc: "Navigation bar on phones — independent of Icon Logo",
+    fallback: "/ye-logo.png",
+    hint: "Square or compact logo. PNG with transparent background. Falls back to Icon Logo.",
+    maxLabel: "400 × 200 px",
+    settingsKey: "logoMobileUrl",
   },
   {
     key: "auth",
     label: "Client Portal Logo",
     desc: "/auth · Login & registration card (fallback)",
     fallback: "/ye-logo-primary.png",
-    hint: "800×400 PNG/WebP with transparent background. Used as fallback on the login page when no Login/Auth Hero Logo is set.",
-    maxLabel: "800 × 400 px",
+    hint: "800×400 PNG/WebP with transparent background. Used as fallback when no Login/Auth Hero Logo is set.",
+    maxLabel: "600 × 600 px",
+    settingsKey: "logoAuthUrl",
   },
   {
     key: "login",
     label: "Login / Auth Hero Logo",
     desc: "/auth · Client Portal card hero — fully independent",
     fallback: "/ye-logo-primary.png",
-    hint: "800×400 PNG/WebP with transparent background. Used exclusively inside the /auth page hero area. Takes priority over Client Portal Logo. Falls back to Client Portal Logo, then Icon Logo.",
+    hint: "800×400 PNG/WebP with transparent background. Used exclusively inside the /auth page hero area. Takes priority over Client Portal Logo.",
     maxLabel: "800 × 400 px",
+    settingsKey: "logoLoginUrl",
+  },
+  {
+    key: "dashboard",
+    label: "Dashboard Logo",
+    desc: "Client dashboard header & admin sidebar",
+    fallback: "/ye-logo.png",
+    hint: "Compact logo. PNG with transparent background. Falls back to Icon Logo.",
+    maxLabel: "400 × 200 px",
+    settingsKey: "logoDashboardUrl",
+  },
+  {
+    key: "footer",
+    label: "Footer Logo",
+    desc: "Page footer stamp",
+    fallback: "/ye-logo.png",
+    hint: "Small icon-format logo. PNG with transparent background. Falls back to Icon Logo.",
+    maxLabel: "400 × 200 px",
+    settingsKey: "logoFooterUrl",
   },
   {
     key: "favicon",
     label: "Favicon / Browser Icon",
     desc: "Browser tab, Chrome suggestions, mobile shortcut, PWA icon",
     fallback: "/favicon-32.png",
-    hint: "Upload a 512×512 PNG with a transparent background. The server generates 16/32/48/180/192/512 px sizes automatically. Falls back to the static /favicon-*.png files baked into the build.",
+    hint: "Upload a 512×512 PNG with a transparent background. Falls back to the static /favicon-*.png files.",
     maxLabel: "512 × 512 px",
+    settingsKey: "logoFaviconUrl",
+  },
+  {
+    key: "splash",
+    label: "Splash Screen Logo",
+    desc: "Full-screen loader at app boot",
+    fallback: "/ye-logo.png",
+    hint: "Large logo displayed on the full-screen loading screen. PNG with transparent background. Falls back to Icon Logo.",
+    maxLabel: "800 × 800 px",
+    settingsKey: "logoSplashUrl",
   },
 ];
 
@@ -1665,8 +1708,13 @@ const LOGO_SLOT_META: Record<BrandLogoSlot, LogoSlotMeta> = {
 
 function getLogoSrcForSlot(settings: Settings | undefined, slot: BrandLogoSlot): string {
   const s = settings as any;
-  if (slot === "navbar") return s?.logoNavbarUrl || "/ye-logo-horizontal.png";
-  if (slot === "login")  return s?.logoLoginUrl  || s?.logoAuthUrl || "/ye-logo-primary.png";
+  if (slot === "navbar")    return s?.logoNavbarUrl    || "/ye-logo-horizontal.png";
+  if (slot === "mobile")    return s?.logoMobileUrl    || s?.logoIconUrl || "/ye-logo.png";
+  if (slot === "login")     return s?.logoLoginUrl     || s?.logoAuthUrl || "/ye-logo-primary.png";
+  if (slot === "dashboard") return s?.logoDashboardUrl || s?.logoIconUrl || "/ye-logo.png";
+  if (slot === "footer")    return s?.logoFooterUrl    || s?.logoIconUrl || "/ye-logo.png";
+  if (slot === "favicon")   return s?.logoFaviconUrl   || "/ye-logo.png";
+  if (slot === "splash")    return s?.logoSplashUrl    || s?.logoIconUrl || "/ye-logo.png";
   return s?.logoIconUrl || "/ye-logo.png";
 }
 
@@ -1685,9 +1733,9 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
   },
   mobile:    {
     usedIn:        "Navigation bar — mobile phones",
-    uploadSlot:    "Icon Logo",
-    storageKey:    "logoIconUrl",
-    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+    uploadSlot:    "Mobile Logo",
+    storageKey:    "logoMobileUrl",
+    fallbackChain: ["Mobile Logo (logoMobileUrl)", "Icon Logo (logoIconUrl)", "/ye-logo.png"],
   },
   login:     {
     usedIn:        "/auth — login & register card hero",
@@ -1697,15 +1745,15 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
   },
   dashboard: {
     usedIn:        "Client dashboard header & admin sidebar",
-    uploadSlot:    "Icon Logo",
-    storageKey:    "logoIconUrl",
-    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+    uploadSlot:    "Dashboard Logo",
+    storageKey:    "logoDashboardUrl",
+    fallbackChain: ["Dashboard Logo (logoDashboardUrl)", "Icon Logo (logoIconUrl)", "/ye-logo.png"],
   },
   footer:    {
     usedIn:        "Page footer stamp",
-    uploadSlot:    "Icon Logo",
-    storageKey:    "logoIconUrl",
-    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+    uploadSlot:    "Footer Logo",
+    storageKey:    "logoFooterUrl",
+    fallbackChain: ["Footer Logo (logoFooterUrl)", "Icon Logo (logoIconUrl)", "/ye-logo.png"],
   },
   favicon:   {
     usedIn:        "Browser tab · Chrome mobile suggestions · PWA install icon · iOS home screen",
@@ -1715,9 +1763,9 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
   },
   splash:    {
     usedIn:        "Full-screen loader at app boot",
-    uploadSlot:    "Icon Logo",
-    storageKey:    "logoIconUrl",
-    fallbackChain: ["Icon Logo (logoIconUrl)", "/ye-logo.png"],
+    uploadSlot:    "Splash Screen Logo",
+    storageKey:    "logoSplashUrl",
+    fallbackChain: ["Splash Screen Logo (logoSplashUrl)", "Icon Logo (logoIconUrl)", "/ye-logo.png"],
   },
 };
 
@@ -1739,7 +1787,7 @@ function LogoControlsPanel() {
   const storedLogos = ((data?.settings?.brandSettings ?? {}) as any).logos as StoredLogos | undefined;
 
   const [logos, setLogos]           = useState<Record<BrandLogoSlot, LogoBrandControls>>(() => buildLogos(storedLogos));
-  const [activeSlot, setActiveSlot]   = useState<BrandLogoSlot | null>("navbar");
+  const [activeSlot, setActiveSlot]   = useState<string | null>("navbar");
   const [unlockedSlot, setUnlockedSlot] = useState<BrandLogoSlot | null>(null);
   const [dirty, setDirty]             = useState(false);
   const [initialised, setInitialised] = useState(false);
@@ -1759,6 +1807,80 @@ function LogoControlsPanel() {
   useEffect(() => {
     setPreviewMode("desktop");
   }, [activeSlot]);
+
+  // ── Helpers for per-slot upload/remove mutation functions ─────────────────
+  function makeUpMutFn(slot: string) {
+    return async (dataUrl: string) => {
+      const res = await apiRequest("POST", `/api/admin/media/logo/${slot}`, { imageDataUrl: dataUrl });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
+      return res.json();
+    };
+  }
+  function makeRmMutFn(slot: string) {
+    return async () => {
+      const res = await apiRequest("DELETE", `/api/admin/media/logo/${slot}`);
+      if (!res.ok) throw new Error("Remove failed");
+    };
+  }
+
+  // ── Upload / remove mutations — all 9 logo slots (called unconditionally) ─
+  const upIcon      = useMutation({ mutationFn: makeUpMutFn("icon"),      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo updated" }); },                                          onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upNavbar    = useMutation({ mutationFn: makeUpMutFn("navbar"),    onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo updated" }); },                                    onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upMobile    = useMutation({ mutationFn: makeUpMutFn("mobile"),    onSuccess: () => { invalidateMedia(); toast({ title: "Mobile logo updated" }); },                                       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upAuth      = useMutation({ mutationFn: makeUpMutFn("auth"),      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo updated" }); },                                onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upLogin     = useMutation({ mutationFn: makeUpMutFn("login"),     onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo updated" }); },                            onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upDashboard = useMutation({ mutationFn: makeUpMutFn("dashboard"), onSuccess: () => { invalidateMedia(); toast({ title: "Dashboard logo updated" }); },                                    onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upFooter    = useMutation({ mutationFn: makeUpMutFn("footer"),    onSuccess: () => { invalidateMedia(); toast({ title: "Footer logo updated" }); },                                       onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upFavicon   = useMutation({ mutationFn: makeUpMutFn("favicon"),   onSuccess: () => { invalidateMedia(); toast({ title: "Favicon updated — browser tab & shortcut will refresh" }); },   onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+  const upSplash    = useMutation({ mutationFn: makeUpMutFn("splash"),    onSuccess: () => { invalidateMedia(); toast({ title: "Splash screen logo updated" }); },                                onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }) });
+
+  const rmIcon      = useMutation({ mutationFn: makeRmMutFn("icon"),      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo removed — default restored" }); },                    onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmNavbar    = useMutation({ mutationFn: makeRmMutFn("navbar"),    onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo removed — default restored" }); },                onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmMobile    = useMutation({ mutationFn: makeRmMutFn("mobile"),    onSuccess: () => { invalidateMedia(); toast({ title: "Mobile logo removed — default restored" }); },                   onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmAuth      = useMutation({ mutationFn: makeRmMutFn("auth"),      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo removed — default restored" }); },            onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmLogin     = useMutation({ mutationFn: makeRmMutFn("login"),     onSuccess: () => { invalidateMedia(); toast({ title: "Login logo removed — fallback restored" }); },                   onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmDashboard = useMutation({ mutationFn: makeRmMutFn("dashboard"), onSuccess: () => { invalidateMedia(); toast({ title: "Dashboard logo removed — default restored" }); },                onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmFooter    = useMutation({ mutationFn: makeRmMutFn("footer"),    onSuccess: () => { invalidateMedia(); toast({ title: "Footer logo removed — default restored" }); },                   onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmFavicon   = useMutation({ mutationFn: makeRmMutFn("favicon"),   onSuccess: () => { invalidateMedia(); toast({ title: "Custom favicon removed — static default restored" }); },        onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+  const rmSplash    = useMutation({ mutationFn: makeRmMutFn("splash"),    onSuccess: () => { invalidateMedia(); toast({ title: "Splash logo removed — default restored" }); },                   onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }) });
+
+  const uploadMuts: Record<string, any> = {
+    icon: upIcon, navbar: upNavbar, mobile: upMobile, auth: upAuth, login: upLogin,
+    dashboard: upDashboard, footer: upFooter, favicon: upFavicon, splash: upSplash,
+  };
+  const removeMuts: Record<string, any> = {
+    icon: rmIcon, navbar: rmNavbar, mobile: rmMobile, auth: rmAuth, login: rmLogin,
+    dashboard: rmDashboard, footer: rmFooter, favicon: rmFavicon, splash: rmSplash,
+  };
+
+  // Map from slot key → settings column that stores the custom URL
+  const SLOT_SETTINGS_KEY: Record<string, string> = {
+    icon: "logoIconUrl", navbar: "logoNavbarUrl", mobile: "logoMobileUrl",
+    auth: "logoAuthUrl", login: "logoLoginUrl",   dashboard: "logoDashboardUrl",
+    footer: "logoFooterUrl", favicon: "logoFaviconUrl", splash: "logoSplashUrl",
+  };
+
+  // Upload-only slots — no brand size/glow controls (icon & auth)
+  const UPLOAD_ONLY_SLOTS = [
+    { key: "icon",  label: "Icon Logo",          desc: "Sidebar · footer · loading screen",          fallback: "/ye-logo.png",         maxLabel: "400 × 400 px" },
+    { key: "auth",  label: "Client Portal Logo", desc: "/auth — fallback when no Login Hero Logo",   fallback: "/ye-logo-primary.png", maxLabel: "600 × 600 px" },
+  ];
+
+  function handleLogoFile(slot: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 5 MB.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      if (dataUrl) uploadMuts[slot]?.mutate(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
 
   function setSlotVal(slot: BrandLogoSlot, key: keyof LogoBrandControls, v: number) {
     setLogos(prev => {
@@ -1823,6 +1945,122 @@ function LogoControlsPanel() {
 
       {/* ── Accordion: one card per slot ───────────────────────────────────── */}
       <div className="space-y-2">
+
+        {/* Upload-only slots: icon & auth (no brand size/glow controls) */}
+        {UPLOAD_ONLY_SLOTS.map(({ key: uSlot, label: uLabel, desc: uDesc, fallback: uFallback, maxLabel: uMax }) => {
+          const uSrc     = (settings as any)?.[SLOT_SETTINGS_KEY[uSlot]] || uFallback;
+          const uIsOpen  = activeSlot === uSlot;
+          const hasCustom = !!(settings as any)?.[SLOT_SETTINGS_KEY[uSlot]];
+          return (
+            <div key={uSlot} className="rounded-xl border border-white/[0.07] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setActiveSlot(uIsOpen ? null : uSlot)}
+                data-testid={`button-brand-slot-${uSlot}`}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] transition-colors text-left"
+              >
+                <div className="w-14 h-9 rounded-lg bg-black/60 flex items-center justify-center shrink-0 border border-white/[0.06] overflow-hidden">
+                  <img src={uSrc} alt="" style={{ maxWidth: 50, maxHeight: 30, objectFit: "contain" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold leading-none">{uLabel}</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{uDesc}</p>
+                </div>
+                {hasCustom && (
+                  <span className="text-[9px] font-semibold text-primary/70 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full shrink-0">Custom</span>
+                )}
+                <span className="text-[10px] text-muted-foreground/30 shrink-0 hidden sm:block">{uMax}</span>
+                <ChevronDown size={14} className={`shrink-0 text-muted-foreground/40 transition-transform duration-200 ${uIsOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {uIsOpen && (
+                <div className="border-t border-white/[0.06] bg-black/20 px-4 pb-5 pt-4 space-y-4">
+                  {/* Upload / Replace / Remove */}
+                  <div className="space-y-3">
+                    <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
+                      <UploadCloud size={11} /> Image
+                    </p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-20 h-14 rounded-lg bg-black/60 flex items-center justify-center border border-white/[0.06] overflow-hidden shrink-0">
+                        <img src={uSrc} alt="" className="max-w-full max-h-full object-contain"
+                          onError={(ev) => { (ev.target as HTMLImageElement).src = uFallback; }} />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="file"
+                          id={`logo-file-${uSlot}`}
+                          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                          className="hidden"
+                          onChange={(ev) => handleLogoFile(uSlot, ev)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            data-testid={`button-logo-upload-${uSlot}`}
+                            disabled={uploadMuts[uSlot]?.isPending}
+                            onClick={() => document.getElementById(`logo-file-${uSlot}`)?.click()}
+                            className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-primary/12 hover:bg-primary/20 border border-primary/25 text-primary text-[11px] font-semibold transition-all duration-150 disabled:opacity-40"
+                          >
+                            {uploadMuts[uSlot]?.isPending
+                              ? <><RefreshCw size={11} className="animate-spin" /> Uploading…</>
+                              : <><UploadCloud size={11} /> {hasCustom ? "Replace" : "Upload"}</>
+                            }
+                          </button>
+                          {hasCustom && (
+                            <>
+                              <button
+                                type="button"
+                                data-testid={`button-logo-remove-${uSlot}`}
+                                disabled={removeMuts[uSlot]?.isPending}
+                                onClick={() => removeMuts[uSlot]?.mutate()}
+                                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-red-500/8 hover:bg-red-500/14 border border-red-500/18 text-red-400 text-[11px] font-semibold transition-all duration-150 disabled:opacity-40"
+                              >
+                                {removeMuts[uSlot]?.isPending
+                                  ? <><RefreshCw size={11} className="animate-spin" /> Removing…</>
+                                  : <><Trash2 size={11} /> Remove</>
+                                }
+                              </button>
+                              <button
+                                type="button"
+                                data-testid={`button-logo-copy-url-${uSlot}`}
+                                onClick={() => {
+                                  const url = (settings as any)?.[SLOT_SETTINGS_KEY[uSlot]] ?? "";
+                                  const full = url.startsWith("data:") ? "(base64 blob)" : (window.location.origin + url);
+                                  navigator.clipboard.writeText(full).then(() => toast({ title: "URL copied" })).catch(() => {});
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-white/[0.04] border border-white/[0.08] text-muted-foreground/60 text-[11px] font-semibold transition-all duration-150 hover:bg-white/[0.08]"
+                              >
+                                <Copy size={11} /> Copy URL
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/40">{uMax} · PNG · WEBP · SVG · JPEG · Max 5 MB</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Usage note */}
+                  <div className="rounded-lg border border-white/[0.05] bg-white/[0.015] p-3 space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-wider flex items-center gap-1.5">
+                      <Info size={10} /> Usage
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/60 leading-snug">
+                      {uSlot === "icon"
+                        ? "Used in the sidebar, footer, and loading screen. General-purpose fallback for placements without a dedicated slot."
+                        : "Used on /auth when no Login Hero Logo is uploaded. Priority: Login Logo → Client Portal Logo → Icon Logo."}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground/30 text-[10px]">DB key</span>
+                      <code className="text-primary/50 font-mono text-[10px]">{SLOT_SETTINGS_KEY[uSlot]}</code>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Brand-controlled slots: 7 slots with size/glow sliders */}
         {BRAND_LOGO_SLOTS.map(slot => {
           const meta   = LOGO_SLOT_META[slot];
           const c      = logos[slot];
@@ -1903,6 +2141,76 @@ function LogoControlsPanel() {
               {/* Slot body */}
               {isOpen && (
                 <div className="border-t border-white/[0.06] bg-black/20 px-4 pb-5 pt-4 space-y-5">
+
+                  {/* ── Upload section ─────────────────────────────────────── */}
+                  <div className="space-y-3 pb-4 border-b border-white/[0.06]">
+                    <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">
+                      <UploadCloud size={11} /> Image
+                    </p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-20 h-14 rounded-lg bg-black/60 flex items-center justify-center border border-white/[0.06] overflow-hidden shrink-0">
+                        <img src={imgSrc} alt="" className="max-w-full max-h-full object-contain"
+                          onError={(ev) => { (ev.target as HTMLImageElement).src = meta.fallback; }} />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="file"
+                          id={`logo-file-${slot}`}
+                          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                          className="hidden"
+                          onChange={(ev) => handleLogoFile(slot, ev)}
+                        />
+                        {(() => {
+                          const hasCustom = !!(settings as any)?.[SLOT_SETTINGS_KEY[slot]];
+                          return (
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                data-testid={`button-logo-upload-${slot}`}
+                                disabled={uploadMuts[slot]?.isPending}
+                                onClick={() => document.getElementById(`logo-file-${slot}`)?.click()}
+                                className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-primary/12 hover:bg-primary/20 border border-primary/25 text-primary text-[11px] font-semibold transition-all duration-150 disabled:opacity-40"
+                              >
+                                {uploadMuts[slot]?.isPending
+                                  ? <><RefreshCw size={11} className="animate-spin" /> Uploading…</>
+                                  : <><UploadCloud size={11} /> {hasCustom ? "Replace" : "Upload"}</>
+                                }
+                              </button>
+                              {hasCustom && (
+                                <>
+                                  <button
+                                    type="button"
+                                    data-testid={`button-logo-remove-${slot}`}
+                                    disabled={removeMuts[slot]?.isPending}
+                                    onClick={() => removeMuts[slot]?.mutate()}
+                                    className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-red-500/8 hover:bg-red-500/14 border border-red-500/18 text-red-400 text-[11px] font-semibold transition-all duration-150 disabled:opacity-40"
+                                  >
+                                    {removeMuts[slot]?.isPending
+                                      ? <><RefreshCw size={11} className="animate-spin" /> Removing…</>
+                                      : <><Trash2 size={11} /> Remove</>
+                                    }
+                                  </button>
+                                  <button
+                                    type="button"
+                                    data-testid={`button-logo-copy-url-${slot}`}
+                                    onClick={() => {
+                                      const url = (settings as any)?.[SLOT_SETTINGS_KEY[slot]] ?? "";
+                                      const full = url.startsWith("data:") ? "(base64 blob)" : (window.location.origin + url);
+                                      navigator.clipboard.writeText(full).then(() => toast({ title: "URL copied" })).catch(() => {});
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 h-7 rounded-lg bg-white/[0.04] border border-white/[0.08] text-muted-foreground/60 text-[11px] font-semibold transition-all duration-150 hover:bg-white/[0.08]"
+                                  >
+                                    <Copy size={11} /> Copy URL
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        <p className="text-[10px] text-muted-foreground/40">PNG · WEBP · SVG · JPEG · Max 5 MB</p>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Lock notice banner */}
                   {!isUnlocked && (
@@ -2150,102 +2458,13 @@ function BrandingSection() {
   const { data, isLoading } = useMediaData();
   const settings = data?.settings;
 
-  // ── Upload / remove mutations (unchanged) ─────────────────────────────────
-  const uploadMutations = {
-    icon: useMutation({
-      mutationFn: async (dataUrl: string) => {
-        const res = await apiRequest("POST", "/api/admin/media/logo/icon", { imageDataUrl: dataUrl });
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
-        return res.json();
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo updated" }); },
-      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-    }),
-    navbar: useMutation({
-      mutationFn: async (dataUrl: string) => {
-        const res = await apiRequest("POST", "/api/admin/media/logo/navbar", { imageDataUrl: dataUrl });
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
-        return res.json();
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo updated" }); },
-      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-    }),
-    auth: useMutation({
-      mutationFn: async (dataUrl: string) => {
-        const res = await apiRequest("POST", "/api/admin/media/logo/auth", { imageDataUrl: dataUrl });
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
-        return res.json();
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo updated" }); },
-      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-    }),
-    login: useMutation({
-      mutationFn: async (dataUrl: string) => {
-        const res = await apiRequest("POST", "/api/admin/media/logo/login", { imageDataUrl: dataUrl });
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
-        return res.json();
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo updated" }); },
-      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-    }),
-    favicon: useMutation({
-      mutationFn: async (dataUrl: string) => {
-        const res = await apiRequest("POST", "/api/admin/media/logo/favicon", { imageDataUrl: dataUrl });
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error((e as any).error || "Upload failed"); }
-        return res.json();
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Favicon updated — browser tab & mobile shortcut will refresh" }); },
-      onError: (e: Error) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
-    }),
-  };
-  const removeMutations = {
-    icon: useMutation({
-      mutationFn: async () => {
-        const res = await apiRequest("DELETE", "/api/admin/media/logo/icon");
-        if (!res.ok) throw new Error("Remove failed");
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Icon logo removed — default restored" }); },
-      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
-    }),
-    navbar: useMutation({
-      mutationFn: async () => {
-        const res = await apiRequest("DELETE", "/api/admin/media/logo/navbar");
-        if (!res.ok) throw new Error("Remove failed");
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Horizontal logo removed — default restored" }); },
-      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
-    }),
-    auth: useMutation({
-      mutationFn: async () => {
-        const res = await apiRequest("DELETE", "/api/admin/media/logo/auth");
-        if (!res.ok) throw new Error("Remove failed");
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Client Portal logo removed — default restored" }); },
-      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
-    }),
-    login: useMutation({
-      mutationFn: async () => {
-        const res = await apiRequest("DELETE", "/api/admin/media/logo/login");
-        if (!res.ok) throw new Error("Remove failed");
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Login / Auth Hero logo removed — fallback restored" }); },
-      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
-    }),
-    favicon: useMutation({
-      mutationFn: async () => {
-        const res = await apiRequest("DELETE", "/api/admin/media/logo/favicon");
-        if (!res.ok) throw new Error("Remove failed");
-      },
-      onSuccess: () => { invalidateMedia(); toast({ title: "Custom favicon removed — static default restored" }); },
-      onError: (e: Error) => toast({ title: "Remove failed", description: e.message, variant: "destructive" }),
-    }),
-  };
+  // Upload / remove mutations moved to LogoControlsPanel (all 9 slots live there).
 
   // ── Logo config state ─────────────────────────────────────────────────────
   const [cfg, setCfg]                       = useState<LogoConfig>(DEFAULT_LOGO_CONFIG);
   const [isDirty, setIsDirty]               = useState(false);
   const { guard: brandingUnsavedGuard }     = useUnsavedChanges(isDirty);
-  const [activeTab, setActiveTab]           = useState<"uploads"|"preview"|"settings"|"export">("uploads");
+  const [activeTab, setActiveTab]           = useState<"preview"|"settings"|"export">("preview");
   const [exportingPreset, setExportingPreset] = useState<string | null>(null);
 
   useEffect(() => {
@@ -2278,7 +2497,6 @@ function BrandingSection() {
   const iconLogoSrc = (settings as any)?.logoIconUrl || "/ye-logo.png";
 
   const TAB_LABELS: Record<typeof activeTab, string> = {
-    uploads:  "Logo Uploads",
     preview:  "Live Preview",
     settings: "Visibility & Padding",
     export:   "Export Presets",
@@ -2296,9 +2514,12 @@ function BrandingSection() {
         </p>
       </div>
 
+      {/* Unified Logo Manager: upload + controls for all 9 slots */}
+      <LogoControlsPanel />
+
       {/* Sub-tabs */}
       <div className="flex gap-2 flex-wrap" data-testid="logo-manager-tabs">
-        {(["uploads","preview","settings","export"] as const).map(t => (
+        {(["preview","settings","export"] as const).map(t => (
           <button
             key={t}
             type="button"
@@ -2314,34 +2535,6 @@ function BrandingSection() {
           </button>
         ))}
       </div>
-
-      {/* ── Tab: Logo Uploads ─────────────────────────────────────────────── */}
-      {activeTab === "uploads" && (
-        isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {[0,1,2].map(i => <div key={i} className="admin-shimmer h-64 rounded-2xl" />)}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {LOGO_SLOTS.map(({ key, label, desc, fallback, hint, maxLabel }) => (
-              <LogoSlotCard
-                key={key}
-                slot={key}
-                label={label}
-                desc={desc}
-                fallback={fallback}
-                hint={hint}
-                maxLabel={maxLabel}
-                currentUrl={(settings as any)?.[`logo${key.charAt(0).toUpperCase()}${key.slice(1)}Url`]}
-                onUpload={(dataUrl) => uploadMutations[key].mutate(dataUrl)}
-                onRemove={() => removeMutations[key].mutate()}
-                uploading={uploadMutations[key].isPending}
-                removing={removeMutations[key].isPending}
-              />
-            ))}
-          </div>
-        )
-      )}
 
       {/* ── Tab: Live Preview ─────────────────────────────────────────────── */}
       {activeTab === "preview" && (

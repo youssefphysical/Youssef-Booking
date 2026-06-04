@@ -1,0 +1,139 @@
+Fix Media Manager logo upload failure and simplify logo controls.
+
+Current upload error:
+"500: ENOENT: no such file or directory, open '/var/task/uploads/brand/logo-auth-xxxx.webp'"
+
+This means the upload API is trying to write to a missing or invalid local folder in production.
+
+PART 1 — FIX UPLOAD PIPELINE
+
+Required:
+
+1. Do NOT write uploads directly to "/var/task/uploads/..." unless the directory is guaranteed to exist and writable.
+2. Ensure upload directories are created before writing:
+   - "/uploads"
+   - "/uploads/brand"
+   - "/uploads/media"
+3. If running on Vercel/serverless production, do NOT rely on local filesystem persistence.
+4. Use the project’s existing persistent storage solution for uploaded media.
+5. If persistent object storage is not configured yet, store files safely in the existing working upload system or database-backed media storage.
+6. Return a clear error if storage is unavailable.
+7. Never show raw ENOENT errors to the admin.
+8. Validate:
+   - PNG
+   - JPG/JPEG
+   - WEBP
+   - SVG only if safely sanitized
+9. Max file size: 5 MB for logos.
+10. Convert/optimize large images when possible.
+11. Save media metadata:
+
+- slot key
+- asset URL
+- filename
+- mime type
+- size
+- dimensions
+- updatedAt
+- version/cache buster
+
+12. After upload, immediately update the selected logo slot.
+13. Refresh preview without page reload.
+14. Make sure uploaded logos persist after refresh/redeploy.
+
+PART 2 — FIX BRANDING LOGO UPLOAD SLOTS
+
+All logo upload slots must work:
+
+- Navbar Logo
+- Mobile Logo
+- Login / Auth Hero Logo
+- Client Portal Logo
+- Dashboard Logo
+- Footer Logo
+- Favicon / Browser Icon
+- Splash Screen Logo
+- Email Header Logo
+- Email Footer Logo
+
+Each upload must save to its own independent slot.
+Changing one must not change the others unless intentionally selected as fallback.
+
+PART 3 — SIMPLIFY UI: UPLOAD + CONTROLS TOGETHER
+
+Right now there are separate upload cards and separate logo control cards, which creates clutter.
+
+Please combine them.
+
+For each logo slot, create one expandable card containing:
+
+1. Current preview
+2. Upload / Replace button
+3. Remove button
+4. Copy URL
+5. Used in
+6. Recommended size
+7. Active/inactive
+8. Size controls
+9. Position controls
+10. Container controls
+11. Responsive controls
+12. Save / Reset
+
+So for example:
+"Login / Auth Hero Logo" card should contain both:
+
+- upload/replace image
+- width/height/max-width/max-height controls
+- mobile/tablet/desktop size controls
+- padding controls
+- object-fit controls
+- alignment controls
+- container height/background/glow controls
+
+Do NOT split upload and controls into separate sections anymore.
+
+PART 4 — MOBILE UI REQUIREMENTS
+
+Media Manager must be easy on mobile:
+
+- Logo cards should be collapsed by default
+- Tapping a logo card opens details
+- Use accordion sections
+- No long duplicated lists
+- No horizontal scroll
+- Controls must be touch-friendly
+- Sliders must fit mobile width
+- Save button must be visible
+- Preview must not be cropped
+- Cards must not overlap the bottom nav
+
+PART 5 — AUTH LOGO CONNECTION
+
+After fixing upload:
+
+- Upload a new "Login / Auth Hero Logo"
+- Confirm "/auth" uses it
+- Confirm it does not flicker
+- Confirm it does not show empty placeholder
+- Confirm it persists after refresh and redeploy
+
+PART 6 — TESTING
+
+Test:
+
+1. Upload PNG logo
+2. Upload WEBP logo
+3. Upload oversized file and confirm friendly validation
+4. Upload Login/Auth Hero Logo
+5. Confirm "/auth"
+6. Upload Navbar Logo
+7. Confirm navbar only
+8. Upload Favicon
+9. Confirm favicon route works
+10. Hard refresh
+11. Restart/redeploy
+12. Confirm all uploaded assets persist
+
+Do not redesign the whole admin.
+Only fix the upload storage bug and combine logo upload + controls into clean expandable cards.
