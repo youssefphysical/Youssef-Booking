@@ -225,14 +225,15 @@ export default function AuthPage({
 
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
           {/* Three states:
-              1. cold load only (no cache + still fetching) → invisible spacer to hold height
-              2. logoSrc known (from cache OR fresh settings) → logo, rendered in first paint
+              1. cold load only (no cache + still fetching) → transparent spacer (card hidden by isCardReady)
+              2. logoSrc known (cache hit OR fresh settings) → logo with contain sizing, no fixed height
               3. loaded, no custom logo → premium "YE" text mark
-              min-h-[160px] + py-6/8 gives consistent vertical breathing room across all states.
-              For warm loads (returning user, most refreshes) the cache means logoSrc is non-null
-              from the very first render, so STATE 1 never appears. */}
-          <div className="relative flex flex-col items-center justify-center min-h-[160px] py-6 sm:py-8">
-            {/* Ambient glow — always present for premium atmosphere */}
+              py-5/7 gives 20–28px padding. No min-height — the container auto-sizes to the logo. */}
+          <div
+            data-testid="container-auth-logo"
+            className="relative flex flex-col items-center justify-center py-5 sm:py-7"
+          >
+            {/* Ambient glow — always present */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-full"
@@ -242,29 +243,25 @@ export default function AuthPage({
               }}
             />
 
-            {/* STATE 1: cold load only — invisible spacer, no dark box.
-                Only shown on first-ever visit (no localStorage cache yet).
-                The card entrance is held at opacity:0 by isCardReady, so the
-                user never actually sees this placeholder — it just keeps the
-                layout stable while waiting for the settings API response. */}
+            {/* STATE 1: cold load only — transparent spacer so card has some height before logo loads.
+                The card entrance is held at opacity:0 by isCardReady so the user never sees this. */}
             {settingsLoading && !logoSrc && (
               <div
                 aria-hidden
                 data-testid="skeleton-auth-logo"
-                style={{ width: "60%", maxWidth: "240px", height: "100px" }}
+                style={{ width: "60%", maxWidth: "240px", height: "80px" }}
               />
             )}
 
-            {/* STATE 2: logo known — rendered from first paint on warm loads (cache hit),
-                from settings API on cold loads. key= triggers clean remount only when
-                the URL changes (e.g. admin uploads a new logo). */}
+            {/* STATE 2: logo known — first paint on warm loads (localStorage cache),
+                API response on cold loads. key= triggers clean remount when URL changes. */}
             {logoSrc && (
               <>
-                {/* Mobile */}
+                {/* Mobile — max 75% card width, max 160px tall */}
                 <div
                   className="relative sm:hidden"
                   style={{
-                    width: "70%",
+                    width: "75%",
                     maxWidth: "var(--brand-login-w-mobile, 260px)",
                     transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
                     transformOrigin: "center center",
@@ -284,14 +281,14 @@ export default function AuthPage({
                       ],
                     }}
                     transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ objectFit: "contain", width: "100%", maxHeight: "120px", display: "block" }}
+                    style={{ objectFit: "contain", width: "100%", maxHeight: "160px", display: "block" }}
                   />
                 </div>
-                {/* Desktop */}
+                {/* Desktop — max 60% card width, max 160px tall */}
                 <div
                   className="relative hidden sm:block"
                   style={{
-                    width: "68%",
+                    width: "60%",
                     maxWidth: "var(--brand-login-w-desktop, 320px)",
                     transform: "scale(var(--brand-login-zoom, 1.0)) translateY(var(--brand-login-vpos, 0px))",
                     transformOrigin: "center center",
@@ -311,7 +308,7 @@ export default function AuthPage({
                       ],
                     }}
                     transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ objectFit: "contain", width: "100%", maxHeight: "140px", display: "block" }}
+                    style={{ objectFit: "contain", width: "100%", maxHeight: "160px", display: "block" }}
                   />
                 </div>
               </>
@@ -327,18 +324,6 @@ export default function AuthPage({
                 YE
               </p>
             )}
-
-            {/* Portal badge */}
-            <p
-              className="uppercase font-semibold mt-3 sm:mt-4"
-              style={{
-                fontSize: "clamp(16px, 4.5vw, 24px)",
-                letterSpacing: "0.18em",
-                color: "rgba(255,255,255,0.75)",
-              }}
-            >
-              {mode === "admin-login" ? t("auth.adminAccess") : t("auth.clientPortal")}
-            </p>
           </div>
 
           {mode !== "admin-login" && !adminOnly && (

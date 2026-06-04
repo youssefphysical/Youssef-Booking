@@ -1,0 +1,87 @@
+I need you to audit and fix the Client Portal/Login logo connection and layout.
+
+Current issue:
+I suspect the "Client Portal Logo" in Media Manager is not actually connected to the logo shown on the "/auth" login page.
+
+Also, the "/auth" card currently shows the text "CLIENT PORTAL", and I want that removed.
+
+Do NOT redesign the whole auth page.
+Do NOT change the public website design.
+Do NOT change login/register logic.
+Only fix logo connection, logo sizing, and remove the "CLIENT PORTAL" text.
+
+Required fixes:
+
+1. CLIENT PORTAL LOGO CONNECTION
+
+- Check the logo shown inside the "/auth" login/register card.
+- Confirm which Media Manager slot currently controls it.
+- If it is not connected to "Client Portal Logo", connect it correctly.
+- The "/auth" card logo should use this fallback priority:
+  1. Login/Auth Hero Logo, if it exists
+  2. Client Portal Logo
+  3. Primary/Icon Logo
+  4. Text fallback only if no logo exists
+- Remove any old hardcoded logo source from "/auth".
+- Remove any old static fallback image unless it is the final emergency fallback.
+- Make sure changing the Client Portal Logo in Media Manager updates "/auth" after save/refresh.
+- Make sure changing other logos does not accidentally change the "/auth" logo unless fallback is used.
+- Add cache-busting using updatedAt/version.
+
+2. REMOVE CLIENT PORTAL TEXT
+
+- Remove the visible "CLIENT PORTAL" heading/text from the "/auth" card.
+- Do not leave empty vertical space where the text was.
+- The logo/image should become the main visual identity of the login card.
+- Keep the login/create account tabs directly below the logo area with clean spacing.
+
+3. AUTO-SIZING LOGO CARD
+
+- The logo container inside "/auth" must adapt to the real logo/image size.
+- Do not force a huge empty card if the logo is small.
+- Do not crop the logo.
+- Do not stretch the logo.
+- Use "object-fit: contain".
+- Keep aspect ratio.
+- Container height should be based on the selected logo plus padding.
+- Add minimum and maximum height limits so it stays professional.
+- Suggested behavior:
+  - mobile max logo width: 75% of card width
+  - desktop/tablet max logo width: 60% of card width
+  - max logo height: 160px
+  - min logo area height: only what is needed for logo + padding
+  - top/bottom padding: 20px–28px
+- The card should not show a blank skeleton box after loading.
+- If loading is needed, keep the whole auth card subtly loading or reserve transparent space only.
+
+4. MEDIA MANAGER CONTROLS
+
+- Make sure Media Manager clearly shows which logo is used by "/auth".
+- In the Client Portal Logo or Login/Auth Hero Logo control, show:
+  - Used in: "/auth login/register card"
+  - Current asset URL
+  - DB/storage key
+  - Fallback chain
+  - Last updated
+- Make sure upload/replace works and persists.
+- Make sure refresh/redeploy does not return the old logo.
+
+5. TESTING
+   Please test this exact flow:
+
+- Upload/change "Client Portal Logo".
+- Open "/auth".
+- Confirm the correct logo appears.
+- Confirm "CLIENT PORTAL" text is removed.
+- Confirm the logo area auto-sizes nicely.
+- Refresh "/auth" multiple times.
+- Confirm no wrong logo appears.
+- Confirm no empty placeholder appears.
+- Change Navbar Logo.
+- Confirm "/auth" logo does not change unless it is using fallback.
+- Test mobile sizes:
+  360px, 390px, 412px, 768px, desktop.
+- Confirm no cropping, no overflow, no huge empty space, no horizontal scroll.
+
+Final result:
+The "/auth" login/register card should show only the selected logo/image from Media Manager, auto-sized professionally, with no "CLIENT PORTAL" text, and all changes must persist live.
