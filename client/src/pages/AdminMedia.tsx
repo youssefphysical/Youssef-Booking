@@ -2325,6 +2325,22 @@ function LogoControlsPanel() {
                     </div>
                   </div>
 
+                  {/* ── Hero Layout (login slot only) ────────────────────────── */}
+                  {slot === "login" && (
+                    <div className="space-y-3">
+                      <p
+                        data-testid={`text-hero-layout-controls-${slot}`}
+                        className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2"
+                      >
+                        <Maximize2 size={11} /> Hero Layout
+                      </p>
+                      <SliderRow
+                        label="Min Hero Height" value={c.minHeroH} min={160} max={500} step={10} unit="px" disabled={!isUnlocked}
+                        onChange={v => setSlotVal(slot, "minHeroH", v)} testId={`slider-${slot}-min-hero-h`}
+                      />
+                    </div>
+                  )}
+
                   {/* ── Transform & Style ─────────────────────────────────────── */}
                   <div className="space-y-3">
                     <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-2">

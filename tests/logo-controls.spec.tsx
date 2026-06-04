@@ -296,11 +296,11 @@ describe("Save payload structure", () => {
     expect(Object.keys(logos)).toHaveLength(LOGO_SLOTS.length);
   });
 
-  it("each slot includes all 9 control fields", () => {
+  it("each slot includes all 10 control fields", () => {
     const logos = buildLogos();
     const expectedFields: Array<keyof LogoBrandControls> = [
       "wDesktop", "hDesktop", "wMobile", "hMobile",
-      "zoom", "hOffset", "vOffset", "padding", "glow",
+      "zoom", "hOffset", "vOffset", "padding", "glow", "minHeroH",
     ];
     for (const slot of LOGO_SLOTS) {
       for (const field of expectedFields) {

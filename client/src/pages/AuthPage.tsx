@@ -226,12 +226,16 @@ export default function AuthPage({
           {/* ── HERO LOGO AREA ─────────────────────────────────────────── */}
           {/* Three states:
               1. cold load only (no cache + still fetching) → transparent spacer (card hidden by isCardReady)
-              2. logoSrc known (cache hit OR fresh settings) → logo with contain sizing, no fixed height
+              2. logoSrc known (cache hit OR fresh settings) → logo with contain sizing, auto height
               3. loaded, no custom logo → premium "YE" text mark
-              py-5/7 gives 20–28px padding. No min-height — the container auto-sizes to the logo. */}
+              py-10/py-14 gives 40–56px padding so the logo breathes.
+              minHeight comes from --brand-login-min-hero-h (default 280px) set by Media Manager.
+              maxHeight is intentionally absent from <img> — the container min-height creates space,
+              the logo auto-sizes based on its aspect ratio within its maxWidth constraint. */}
           <div
             data-testid="container-auth-logo"
-            className="relative flex flex-col items-center justify-center py-5 sm:py-7"
+            className="relative flex flex-col items-center justify-center py-10 sm:py-14"
+            style={{ minHeight: "max(var(--brand-login-min-hero-h, 280px), 220px)" }}
           >
             {/* Ambient glow — always present */}
             <div
@@ -281,10 +285,10 @@ export default function AuthPage({
                       ],
                     }}
                     transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ objectFit: "contain", width: "100%", maxHeight: "160px", display: "block" }}
+                    style={{ objectFit: "contain", width: "100%", height: "auto", display: "block" }}
                   />
                 </div>
-                {/* Desktop — max 60% card width, max 160px tall */}
+                {/* Desktop — max 60% card width, height auto (container min-height creates space) */}
                 <div
                   className="relative hidden sm:block"
                   style={{
@@ -308,7 +312,7 @@ export default function AuthPage({
                       ],
                     }}
                     transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ objectFit: "contain", width: "100%", maxHeight: "160px", display: "block" }}
+                    style={{ objectFit: "contain", width: "100%", height: "auto", display: "block" }}
                   />
                 </div>
               </>

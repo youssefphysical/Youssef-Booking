@@ -18,15 +18,16 @@ export interface BrandSettings {
 
 // ─── Per-logo independent controls ─────────────────────────────────────────
 export interface LogoBrandControls {
-  wDesktop: number;   // px  (0 = auto)
-  hDesktop: number;   // px  (0 = auto)
-  wMobile:  number;   // px  (0 = auto)
-  hMobile:  number;   // px  (0 = auto)
-  zoom:     number;   // %   (100 = 1x)
-  hOffset:  number;   // px
-  vOffset:  number;   // px
-  padding:  number;   // px
-  glow:     number;   // 0-100 %
+  wDesktop:  number;   // px  (0 = auto)
+  hDesktop:  number;   // px  (0 = auto)
+  wMobile:   number;   // px  (0 = auto)
+  hMobile:   number;   // px  (0 = auto)
+  zoom:      number;   // %   (100 = 1x)
+  hOffset:   number;   // px
+  vOffset:   number;   // px
+  padding:   number;   // px
+  glow:      number;   // 0-100 %
+  minHeroH:  number;   // px  — login hero container min-height (0 = use CSS fallback)
 }
 
 export type LogoSlot =
@@ -43,14 +44,15 @@ export const LOGO_SLOTS: LogoSlot[] = [
 ];
 
 export const LOGO_BRAND_SLOT_DEFAULTS: Record<LogoSlot, LogoBrandControls> = {
-  navbar:    { wDesktop:   0, hDesktop:  60, wMobile:   0, hMobile:  52, zoom: 100, hOffset: 0, vOffset: 0, padding: 5,  glow: 35 },
-  mobile:    { wDesktop:   0, hDesktop:  52, wMobile:   0, hMobile:  44, zoom: 100, hOffset: 0, vOffset: 0, padding: 4,  glow: 25 },
+  navbar:    { wDesktop:   0, hDesktop:  60, wMobile:   0, hMobile:  52, zoom: 100, hOffset: 0, vOffset: 0, padding: 5,  glow: 35, minHeroH:   0 },
+  mobile:    { wDesktop:   0, hDesktop:  52, wMobile:   0, hMobile:  44, zoom: 100, hOffset: 0, vOffset: 0, padding: 4,  glow: 25, minHeroH:   0 },
   // zoom: 108 matches the existing AuthPage scale(1.08) so saved default = visual default
-  login:     { wDesktop: 480, hDesktop:   0, wMobile: 360, hMobile:   0, zoom: 108, hOffset: 0, vOffset: 0, padding: 0,  glow: 40 },
-  dashboard: { wDesktop:   0, hDesktop:  48, wMobile:   0, hMobile:  40, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 20 },
-  footer:    { wDesktop:   0, hDesktop:  22, wMobile:   0, hMobile:  20, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 25 },
-  favicon:   { wDesktop:  32, hDesktop:  32, wMobile:  16, hMobile:  16, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow:  0 },
-  splash:    { wDesktop:   0, hDesktop:   0, wMobile:   0, hMobile:   0, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 50 },
+  // minHeroH: 280 — login hero container minimum height (gives logo breathing room)
+  login:     { wDesktop: 480, hDesktop:   0, wMobile: 360, hMobile:   0, zoom: 108, hOffset: 0, vOffset: 0, padding: 0,  glow: 40, minHeroH: 280 },
+  dashboard: { wDesktop:   0, hDesktop:  48, wMobile:   0, hMobile:  40, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 20, minHeroH:   0 },
+  footer:    { wDesktop:   0, hDesktop:  22, wMobile:   0, hMobile:  20, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 25, minHeroH:   0 },
+  favicon:   { wDesktop:  32, hDesktop:  32, wMobile:  16, hMobile:  16, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow:  0, minHeroH:   0 },
+  splash:    { wDesktop:   0, hDesktop:   0, wMobile:   0, hMobile:   0, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 50, minHeroH:   0 },
 };
 
 // ─── Theme token overrides ──────────────────────────────────────────────────
@@ -136,8 +138,9 @@ export function applyLogoSlotCSSVars(slot: LogoSlot, c: LogoBrandControls) {
   root.style.setProperty(`${p}-zoom`,    String(c.zoom / 100));
   root.style.setProperty(`${p}-hpos`,    `${c.hOffset}px`);
   root.style.setProperty(`${p}-vpos`,    `${c.vOffset}px`);
-  root.style.setProperty(`${p}-padding`, `${c.padding}px`);
-  root.style.setProperty(`${p}-glow`,    String(c.glow / 100));
+  root.style.setProperty(`${p}-padding`,    `${c.padding}px`);
+  root.style.setProperty(`${p}-glow`,       String(c.glow / 100));
+  root.style.setProperty(`${p}-min-hero-h`, `${c.minHeroH > 0 ? c.minHeroH : 0}px`);
 
   // "dashboard" slot drives the admin sidebar (BrandLogo variant="sidebar" reads --brand-sidebar-*)
   if (slot === "dashboard") {
