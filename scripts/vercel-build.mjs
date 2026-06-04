@@ -11,8 +11,9 @@
  *   3. inject-hero.mjs                  (refresh dist/public/hero-initial.webp from Neon)
  *   4. generate-og-hero.mjs             (build dist/public/og-hero-current.jpg
  *                                        from same hero + stamp ?v=<hash> into HTML)
+ *   5. inject-brand-logos.mjs           (sync static brand logos → Neon settings table)
  *
- * Steps 3 and 4 are designed to always exit 0 — they never break the deploy.
+ * Steps 3-5 are designed to always exit 0 — they never break the deploy.
  */
 
 import { spawnSync } from "node:child_process";
@@ -43,5 +44,6 @@ run("npx", [
 run("npx", ["vite", "build"]);
 run("node", ["scripts/inject-hero.mjs"], { allowFail: true });
 run("node", ["scripts/generate-og-hero.mjs"], { allowFail: true });
+run("node", ["scripts/inject-brand-logos.mjs"], { allowFail: true });
 
 console.log("\n[vercel-build] OK");
