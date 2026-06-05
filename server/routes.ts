@@ -5027,30 +5027,36 @@ Respond ONLY with raw JSON, no markdown, no commentary.`,
     const ALLOWED_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/svg+xml"];
     if (!ALLOWED_MIMES.includes(mime)) return res.status(400).json({ success: false, error: "Unsupported image type. Use PNG, JPEG, WebP, or SVG." });
 
-    // Size limit: 5 MB for logos
+    // Size limit: 25 MB for logos (supports high-res PNG/WebP with transparency)
     const raw = Buffer.from(match[2], "base64");
-    if (raw.length > 5 * 1024 * 1024) return res.status(400).json({ success: false, error: "Logo too large (max 5 MB)." });
+    if (raw.length > 25 * 1024 * 1024) return res.status(400).json({ success: false, error: "Logo too large (max 25 MB)." });
 
-    // Max dimensions per slot
+    // Max dimensions per slot — sized for retina/3x HiDPI displays.
+    // These are 2-4x the previous values so a logo displayed at 60px CSS height
+    // is served from a 400-800px source (sufficient for 3x retina).
     const MAX_DIM: Record<LogoSlot, { w: number; h: number }> = {
-      icon:      { w: 400,  h: 400 },
-      navbar:    { w: 800,  h: 300 },
-      mobile:    { w: 400,  h: 200 },
-      auth:      { w: 600,  h: 600 },
-      login:     { w: 800,  h: 400 },
-      dashboard: { w: 400,  h: 200 },
-      footer:    { w: 400,  h: 200 },
-      favicon:   { w: 512,  h: 512 },
-      splash:    { w: 800,  h: 800 },
+      icon:      { w: 800,  h: 800  },  // was 400×400
+      navbar:    { w: 2000, h: 800  },  // was 800×300
+      mobile:    { w: 1000, h: 500  },  // was 400×200
+      auth:      { w: 1200, h: 1200 },  // was 600×600
+      login:     { w: 2000, h: 1200 },  // was 800×400
+      dashboard: { w: 1000, h: 500  },  // was 400×200
+      footer:    { w: 1000, h: 500  },  // was 400×200
+      favicon:   { w: 512,  h: 512  },  // unchanged
+      splash:    { w: 2000, h: 2000 },  // was 800×800
     };
     const { w: maxW, h: maxH } = MAX_DIM[slot];
 
     let outputBuffer: Buffer = raw;
     if (_sharp && mime !== "image/svg+xml") {
       try {
-        outputBuffer = await _sharp(raw, { failOn: "none" })
+        // PNG inputs use lossless WebP encoding to preserve transparency and
+        // sharp glow/neon edges exactly — lossy compression destroys fine gradients.
+        // JPEG/WebP inputs use high-quality lossy (95) for good compression ratio.
+        const isPng = mime === "image/png";
+        outputBuffer = await _sharp(raw, { failOn: "none", limitInputPixels: 100_000_000 })
           .resize({ width: maxW, height: maxH, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 92, effort: 4 })
+          .webp(isPng ? { lossless: true, effort: 4 } : { quality: 95, effort: 4 })
           .toBuffer();
       } catch (e) {
         console.warn("[logo-upload] sharp processing failed, using original:", (e as Error).message);

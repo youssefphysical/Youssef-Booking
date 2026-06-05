@@ -1227,8 +1227,8 @@ const LOGO_SLOTS: {
     label: "Icon Logo",
     desc: "Sidebar, footer, loading screen",
     fallback: "/ye-logo.png",
-    hint: "Square or icon format recommended. PNG with transparency works best.",
-    maxLabel: "400 × 400 px",
+    hint: "Square or icon format. PNG with transparency is losslessly preserved — ideal for neon/glow logos. Up to 25 MB.",
+    maxLabel: "800 × 800 px",
     settingsKey: "logoIconUrl",
   },
   {
@@ -1236,8 +1236,8 @@ const LOGO_SLOTS: {
     label: "Horizontal Logo",
     desc: "Desktop & tablet navigation bar",
     fallback: "/ye-logo-horizontal.png",
-    hint: "Wide format with text. PNG with transparent background.",
-    maxLabel: "800 × 300 px",
+    hint: "Wide format with text. PNG with transparent background — stored losslessly. Up to 25 MB.",
+    maxLabel: "2000 × 800 px",
     settingsKey: "logoNavbarUrl",
   },
   {
@@ -1245,8 +1245,8 @@ const LOGO_SLOTS: {
     label: "Mobile Logo",
     desc: "Navigation bar on phones — independent of Icon Logo",
     fallback: "/ye-logo.png",
-    hint: "Square or compact logo. PNG with transparent background. Falls back to Icon Logo.",
-    maxLabel: "400 × 200 px",
+    hint: "Square or compact logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
+    maxLabel: "1000 × 500 px",
     settingsKey: "logoMobileUrl",
   },
   {
@@ -1254,8 +1254,8 @@ const LOGO_SLOTS: {
     label: "Client Portal Logo",
     desc: "/auth · Login & registration card (fallback)",
     fallback: "/ye-logo-primary.png",
-    hint: "800×400 PNG/WebP with transparent background. Used as fallback when no Login/Auth Hero Logo is set.",
-    maxLabel: "600 × 600 px",
+    hint: "PNG/WebP with transparent background — stored losslessly for PNG. Used as fallback when no Login Hero Logo is set. Up to 25 MB.",
+    maxLabel: "1200 × 1200 px",
     settingsKey: "logoAuthUrl",
   },
   {
@@ -1263,8 +1263,8 @@ const LOGO_SLOTS: {
     label: "Login / Auth Hero Logo",
     desc: "/auth · Client Portal card hero — fully independent",
     fallback: "/ye-logo-primary.png",
-    hint: "800×400 PNG/WebP with transparent background. Used exclusively inside the /auth page hero area. Takes priority over Client Portal Logo.",
-    maxLabel: "800 × 400 px",
+    hint: "PNG with transparent background recommended — stored losslessly to preserve glow and sharp edges. Takes priority over Client Portal Logo. Up to 25 MB.",
+    maxLabel: "2000 × 1200 px",
     settingsKey: "logoLoginUrl",
   },
   {
@@ -1272,8 +1272,8 @@ const LOGO_SLOTS: {
     label: "Dashboard Logo",
     desc: "Client dashboard header & admin sidebar",
     fallback: "/ye-logo.png",
-    hint: "Compact logo. PNG with transparent background. Falls back to Icon Logo.",
-    maxLabel: "400 × 200 px",
+    hint: "Compact logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
+    maxLabel: "1000 × 500 px",
     settingsKey: "logoDashboardUrl",
   },
   {
@@ -1281,8 +1281,8 @@ const LOGO_SLOTS: {
     label: "Footer Logo",
     desc: "Page footer stamp",
     fallback: "/ye-logo.png",
-    hint: "Small icon-format logo. PNG with transparent background. Falls back to Icon Logo.",
-    maxLabel: "400 × 200 px",
+    hint: "Small icon-format logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
+    maxLabel: "1000 × 500 px",
     settingsKey: "logoFooterUrl",
   },
   {
@@ -1299,8 +1299,8 @@ const LOGO_SLOTS: {
     label: "Splash Screen Logo",
     desc: "Full-screen loader at app boot",
     fallback: "/ye-logo.png",
-    hint: "Large logo displayed on the full-screen loading screen. PNG with transparent background. Falls back to Icon Logo.",
-    maxLabel: "800 × 800 px",
+    hint: "Large logo for the full-screen loading screen. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
+    maxLabel: "2000 × 2000 px",
     settingsKey: "logoSplashUrl",
   },
 ];
@@ -1333,8 +1333,8 @@ function LogoSlotCard({
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Logo must be under 5 MB.", variant: "destructive" });
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 25 MB.", variant: "destructive" });
       return;
     }
     const reader = new FileReader();
@@ -1870,8 +1870,8 @@ function LogoControlsPanel() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Logo must be under 5 MB.", variant: "destructive" });
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Logo must be under 25 MB.", variant: "destructive" });
       return;
     }
     const reader = new FileReader();

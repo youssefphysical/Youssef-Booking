@@ -69,17 +69,16 @@ export async function createApp(httpServer?: Server): Promise<Express> {
 
   const app = express();
 
-  // Profile pictures, hero photos and transformation photos are sent as
-  // base64 data URLs in JSON bodies. The cropper emits WebP at 0.95 (and
-  // a JPEG fallback at 0.96 for legacy Safari). At 1920×1080 cover that
-  // tops out around 1.5–2MB for WebP and ~3–3.5MB for JPEG worst-case.
-  // A 10MB ceiling gives comfortable headroom for the JPEG fallback path
-  // without risking a JSON-payload-too-large rejection during the upload
-  // round-trip — the server then sharp-recompresses to ~600–900KB before
-  // persisting, so on-the-wire/storage cost stays sane.
+  // Logo uploads accept up to 25 MB raw PNG/WebP files. A 25 MB binary file
+  // encodes to ~34 MB as base64, so the JSON body parser ceiling is set to
+  // 40 MB to give comfortable headroom. The logo upload route enforces its
+  // own per-route 25 MB raw-bytes check after decoding, so no oversized image
+  // ever reaches the sharp pipeline through this limit alone.
+  // Profile/hero/transformation images are smaller (1-5 MB) and fit well within
+  // this ceiling; the server sharp-recompresses them to ≤1 MB before persisting.
   app.use(
     express.json({
-      limit: "10mb",
+      limit: "40mb",
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },

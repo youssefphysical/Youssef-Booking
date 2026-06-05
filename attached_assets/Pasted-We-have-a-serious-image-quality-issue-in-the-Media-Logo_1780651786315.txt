@@ -1,0 +1,104 @@
+We have a serious image quality issue in the Media / Logo upload system.
+
+Problem:
+When I upload high-quality logos or hero images, the website displays them in lower quality, blurry, compressed, or scaled down. This is especially visible on the Login Hero logo and small header logo.
+
+Required Fix:
+Audit and fix the entire image upload, storage, optimization, and display pipeline for all Media uploads.
+
+Main Goals:
+1. Preserve original image quality after upload.
+2. Do not compress logos aggressively.
+3. Do not downscale uploaded logos unless absolutely necessary.
+4. Support high-resolution PNG/WebP images with transparency.
+5. Keep transparent PNG alpha channel intact.
+6. Display logos sharp on mobile, tablet, and desktop.
+7. Fix hero login logo quality.
+8. Fix header logo quality.
+9. Fix every logo/media area that uses uploaded images.
+
+Technical Requirements:
+- Store the original uploaded file at full resolution.
+- Create optional optimized versions, but never replace the original.
+- For logos, use lossless PNG/WebP when transparency exists.
+- Avoid JPEG conversion for logos.
+- Avoid canvas compression that damages neon glow.
+- Avoid CSS stretching from a tiny source image.
+- Use proper srcset / high-DPI handling for retina screens.
+- Use image-rendering quality-friendly CSS.
+- Ensure object-fit and sizing do not blur the image.
+- Prevent the system from generating small thumbnails and using them in hero sections.
+- Hero/Login section must always use the highest quality available image.
+- Header logo can use optimized size, but must stay sharp on high-DPI phones.
+- If the uploaded image is 4000px, keep the original 4000px file available.
+- Maximum upload limit should allow at least 10MB–25MB for PNG/WebP logo files.
+
+Specific Areas to Check:
+- Media upload component.
+- Brand logo upload.
+- Login Hero logo upload.
+- Header logo.
+- Favicon/source logo.
+- Admin Media preview.
+- Client-facing login page.
+- Mobile display.
+- Desktop display.
+- Any image cropper/resize tool.
+- Any backend upload route.
+- Any database field storing media URL.
+- Any middleware that compresses or converts images.
+- Any frontend component that chooses image size.
+
+Important:
+The logo is a neon Tron-style logo with blue glow. Compression destroys the glow and makes it blurry. The system must preserve glow quality and sharp edges.
+
+Implementation:
+- Add an image asset model that stores:
+  originalUrl
+  optimizedUrl
+  thumbnailUrl
+  width
+  height
+  mimeType
+  fileSize
+  hasTransparency
+  uploadedAt
+
+- For logo/hero usage:
+  always use originalUrl or highQualityUrl.
+- For small previews only:
+  use thumbnailUrl.
+- Never use thumbnailUrl in Hero/Login page.
+
+CSS Requirements:
+- Do not force the logo into a very small rendered size from a low-res image.
+- Use max-width: 100%;
+- Use height: auto;
+- Use object-fit: contain;
+- Use transform: translateZ(0) only if it does not blur.
+- Avoid filter effects that reduce sharpness.
+- Avoid opacity layers that make the logo look washed out.
+
+Testing Required:
+1. Upload a 4000x4000 transparent PNG logo.
+2. Confirm the stored original file keeps the same resolution.
+3. Confirm transparency is preserved.
+4. Confirm Hero Login page uses the high-quality/original file.
+5. Confirm header logo is sharp on mobile.
+6. Confirm no black background appears.
+7. Confirm no quality loss after saving/reloading.
+8. Confirm uploaded image preview matches live website exactly.
+9. Test on mobile, tablet, and desktop.
+10. Test with PNG, WebP, and JPG.
+11. Test with neon glow logos specifically.
+12. Inspect network tab and confirm Hero logo is not loading a small thumbnail.
+
+Do not change the logo design.
+Do not redesign the login page.
+Only fix media upload quality, storage, optimization, and display logic.
+
+After finishing, provide a clear report:
+- What was causing the quality loss.
+- What files/components were changed.
+- How the original quality is preserved.
+- Which pages were tested.
