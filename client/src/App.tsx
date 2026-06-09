@@ -30,7 +30,7 @@ import { OfflineQueueBanner } from "@/components/OfflineQueueBanner";
 import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 import { useFeatureFlag } from "@/lib/featureFlags";
 import { useSettings } from "@/hooks/use-settings";
-import { applyBrandCSSVars, persistLogoUrlsCache } from "@/lib/brandSettings";
+import { applyBrandCSSVars } from "@/lib/brandSettings";
 
 // ===== Lazy-loaded routes (split into per-page chunks) =====
 // Every other page is loaded on demand. This keeps the initial JS
@@ -159,19 +159,6 @@ function Router() {
   useEffect(() => {
     if (settings === undefined) return;
     applyBrandCSSVars(settings.brandSettings as Record<string, number | string> | null);
-    // Cache logo URLs so BrandLogo reads the correct src on the very next
-    // hard refresh — before the /api/settings response arrives.
-    persistLogoUrlsCache({
-      icon:      (settings as any).logoIconUrl      ?? null,
-      navbar:    (settings as any).logoNavbarUrl    ?? null,
-      mobile:    (settings as any).logoMobileUrl    ?? null,
-      dashboard: (settings as any).logoDashboardUrl ?? null,
-      footer:    (settings as any).logoFooterUrl    ?? null,
-      favicon:   (settings as any).logoFaviconUrl   ?? null,
-      splash:    (settings as any).logoSplashUrl    ?? null,
-      login:     (settings as any).logoLoginUrl     ?? null,
-      auth:      (settings as any).logoAuthUrl      ?? null,
-    });
   }, [settings]);
   // Dynamic favicon — update <link rel="icon"> when the admin uploads a
   // custom favicon from Media Center. Falls back to the static /favicon-*.png

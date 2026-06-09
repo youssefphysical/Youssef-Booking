@@ -107,40 +107,31 @@ export default function AuthPage({
   const { t } = useTranslation();
   const { data: authSettings, isLoading: settingsLoading } = useSettings();
 
-  // ── Auth logo cache ──────────────────────────────────────────────────────
-  // Read synchronously (useState initializer) — populated by the effect below
-  // after every settings fetch. On warm refresh the URL is non-null so the
-  // logo renders in the very first React paint with zero network wait.
-  const [cachedAuthLogoUrl] = useState<string | null>(() => {
-    try { return localStorage.getItem("ye_auth_logo_url") || null; } catch { return null; }
+  // ── Auth logo — zero-localStorage approach ───────────────────────────────
+  // index.html boots a fetch("/api/settings") at HTML parse time.  The result
+  // lands in window.__YE_INITIAL_SETTINGS__ and useSettings() exposes it via
+  // initialData — so on fast networks authSettings is already non-null on the
+  // very first React render and logoSrc is known before this component paints.
+  //
+  // Read the window global synchronously (useState initializer) as a fallback
+  // for the rare case where the boot fetch resolves before React mounts but
+  // after useSettings()'s initialData function ran.
+  const [bootLogoUrl] = useState<string | null>(() => {
+    try {
+      const s = (window as any).__YE_INITIAL_SETTINGS__;
+      if (!s) return null;
+      return (s as any).logoLoginUrl || (s as any).logoAuthUrl || (s as any).logoIconUrl || null;
+    } catch { return null; }
   });
 
-  // Priority: fresh settings (authoritative) → localStorage cache (warm load) → null (cold load)
-  // "null on cold load" is only possible on a user's very first ever visit to this page.
+  // Priority: fresh settings (authoritative) → boot global (fast-network warm load) → null
   const logoSrc: string | null = authSettings
     ? ((authSettings as any).logoLoginUrl || (authSettings as any).logoAuthUrl || (authSettings as any).logoIconUrl || null)
-    : cachedAuthLogoUrl;
-
-  // Persist for next visit after each successful settings fetch.
-  useEffect(() => {
-    if (!authSettings) return;
-    const url = (authSettings as any).logoLoginUrl
-      || (authSettings as any).logoAuthUrl
-      || (authSettings as any).logoIconUrl
-      || null;
-    try {
-      if (url) localStorage.setItem("ye_auth_logo_url", url);
-      else localStorage.removeItem("ye_auth_logo_url");
-    } catch {}
-  }, [
-    (authSettings as any)?.logoLoginUrl,
-    (authSettings as any)?.logoAuthUrl,
-    (authSettings as any)?.logoIconUrl,
-  ]);
+    : bootLogoUrl;
 
   // Gate: card entrance is held until we know the logo state.
-  //   • warm load  → cachedAuthLogoUrl set → isCardReady=true immediately
-  //   • cold load  → wait until settingsLoading=false (first ever visit, no cache)
+  //   • fast network → authSettings already set (initialData) → isCardReady=true immediately
+  //   • slow network → wait until settingsLoading=false (logo appears once settings arrive)
   // This prevents the card from ever appearing with an empty logo slot.
   const isCardReady = !!logoSrc || !settingsLoading;
 

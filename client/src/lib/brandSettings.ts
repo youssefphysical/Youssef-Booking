@@ -121,42 +121,6 @@ export function persistBrandSettingsCache(raw: Record<string, unknown> | null | 
   } catch (_) {}
 }
 
-// ─── Logo URL cache (flicker-free first paint) ──────────────────────────────
-// Written by App.tsx after every /api/settings fetch. Read synchronously by
-// BrandLogo.tsx at module load so the correct logo is shown on the very first
-// render — before the API response arrives — without flashing the static fallback.
-export const YE_LOGO_URLS_KEY = "ye_logo_urls";
-
-export interface LogoUrlsCache {
-  icon?:      string | null;
-  navbar?:    string | null;
-  mobile?:    string | null;
-  dashboard?: string | null;
-  footer?:    string | null;
-  favicon?:   string | null;
-  splash?:    string | null;
-  login?:     string | null;
-  auth?:      string | null;
-}
-
-/** Persist logo URLs so BrandLogo can paint the correct image on first render. */
-export function persistLogoUrlsCache(urls: LogoUrlsCache): void {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.setItem(YE_LOGO_URLS_KEY, JSON.stringify(urls));
-  } catch (_) {}
-}
-
-/** Read the logo URL cache synchronously (returns {} if empty or unavailable). */
-export function readLogoUrlsCache(): LogoUrlsCache {
-  if (typeof localStorage === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(YE_LOGO_URLS_KEY);
-    return raw ? (JSON.parse(raw) as LogoUrlsCache) : {};
-  } catch (_) {
-    return {};
-  }
-}
 
 // ─── Emit one slot's CSS vars (also called live from the admin panel) ───────
 //

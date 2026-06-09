@@ -402,31 +402,73 @@
       })();
     </script>
 
-    <!-- ===== AUTH LOGO PRELOAD — flicker-free /auth logo =====
-         Reads the last-known auth logo URL written by AuthPage.tsx after each
-         successful settings load (localStorage key "ye_auth_logo_url") and
-         injects a <link rel="preload"> so the image file is fetched at the
-         highest priority BEFORE the JS bundle evaluates.
+    <!-- ===== SETTINGS BOOT — zero-localStorage logo preload =====
+         Fires a fetch("/api/settings") the instant the HTML parser sees this
+         script — in parallel with the JS bundle download, font CSS, and the
+         hero-images fetch above.  Goal: by the time React mounts (~200-500 ms
+         later on a fast connection) the promise has already resolved and the
+         logo images are already in the browser's HTTP cache.
 
-         Combined with the localStorage-seeded initial state in AuthPage.tsx
-         this makes the logo appear in the very first React paint on warm
-         refreshes — no 300 ms gap while the /api/settings call resolves.
+         Two globals are set so useSettings() can consume the result without
+         opening a second TCP connection:
+           window.__YE_SETTINGS_BOOT__     — the in-flight Promise<Settings|null>
+           window.__YE_INITIAL_SETTINGS__  — the resolved Settings object (or null)
 
-         Safety: only preloads relative /uploads/ or / paths — never an
-         arbitrary user-supplied URL. -->
+         On resolve, preload links are injected for every custom logo URL that
+         the admin has configured (navbar, mobile, auth/login icons).  A
+         cache-busting ?v=<ms> token is derived from settings.updatedAt so
+         stale images never stick.
+
+         Safety: only relative paths (starting with /) are preloaded — no
+         arbitrary user-supplied external URLs ever touch the preload list.
+         The script is best-effort: any failure leaves the app working normally
+         via useSettings()'s standard fallback fetch. -->
     <script>
       (function () {
         try {
-          var url = localStorage.getItem("ye_auth_logo_url");
-          if (url && typeof url === "string" && url.charAt(0) === "/") {
-            var link = document.createElement("link");
-            link.rel  = "preload";
-            link.as   = "image";
-            link.href = url;
-            link.setAttribute("fetchpriority", "high");
-            document.head.appendChild(link);
-          }
-        } catch (e) {}
+          window.__YE_SETTINGS_BOOT__ = fetch("/api/settings", { credentials: "include" })
+            .then(function (r) {
+              if (!r.ok) throw new Error("settings " + r.status);
+              return r.json();
+            })
+            .then(function (s) {
+              window.__YE_INITIAL_SETTINGS__ = s;
+
+              // Cache-bust suffix derived from server updatedAt timestamp
+              var bust = (s && s.updatedAt)
+                ? ("?v=" + new Date(s.updatedAt).getTime())
+                : "";
+
+              // Collect unique logo URLs to preload (navbar + mobile + auth/login)
+              var seen = {};
+              var toPreload = [
+                s.logoNavbarUrl  || s.logoIconUrl  || null,
+                s.logoMobileUrl  || s.logoIconUrl  || null,
+                s.logoLoginUrl   || s.logoAuthUrl  || s.logoIconUrl || null,
+              ];
+
+              for (var i = 0; i < toPreload.length; i++) {
+                var url = toPreload[i];
+                if (url && typeof url === "string" && url.charAt(0) === "/" && !seen[url]) {
+                  seen[url] = 1;
+                  var link = document.createElement("link");
+                  link.rel = "preload";
+                  link.as  = "image";
+                  link.href = url + bust;
+                  link.setAttribute("fetchpriority", "high");
+                  document.head.appendChild(link);
+                }
+              }
+
+              return s;
+            })
+            .catch(function () {
+              window.__YE_INITIAL_SETTINGS__ = null;
+              return null;
+            });
+        } catch (e) {
+          window.__YE_INITIAL_SETTINGS__ = null;
+        }
       })();
     </script>
 

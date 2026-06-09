@@ -8,25 +8,28 @@
  *  "footer"  — logoFooterUrl   → logoIconUrl → /ye-logo.png
  *  "icon"    — logoIconUrl     → /ye-logo.png
  *
- * Flicker prevention:
- *  App.tsx writes `ye_logo_urls` to localStorage after every /api/settings load.
- *  This module reads that cache synchronously at import time so the correct URL
- *  is available on the very first render — before the API response arrives.
- *  While settings is loading, the cache is used; no static fallback is shown.
- *  Static fallbacks (/ye-logo.png) only activate after settings has fully loaded
- *  AND the admin has not uploaded a custom logo for that slot.
+ * Flicker prevention — zero-localStorage approach:
+ *  index.html boots a fetch("/api/settings") at HTML parse time (before the JS
+ *  bundle even downloads).  The resolved data is stored on window.__YE_INITIAL_SETTINGS__
+ *  and useSettings() picks it up via initialData — so on fast networks, settings
+ *  is non-undefined on the very FIRST React render and the correct logo URL is
+ *  known before the component paints.
+ *
+ *  While settings is loading (slow network / first cold visit):
+ *  • The navbar wrapper is rendered with visibility:hidden so it occupies the
+ *    correct space (CSS vars are applied synchronously by the index.html boot
+ *    script from ye_brand_settings) but nothing is visible — no wrong logo,
+ *    no layout shift.
+ *  • Static fallbacks (/ye-logo.png) are NEVER shown during loading; they only
+ *    activate once settings has fully loaded AND no custom logo was uploaded.
  *
  * Size / glow / offset — CSS vars set by applyLogoSlotCSSVars() (brandSettings.ts):
  *  desktop navbar: --brand-navbar-*   mobile navbar: --brand-mobile-*
  *  sidebar:        --brand-sidebar-*  footer:        --brand-footer-*
  *  icon:           --brand-icon-*
- *
- * Cache: shares the /api/settings TanStack Query cache with useSettings() — invalidating
- * that cache (after logo upload or Save All) propagates immediately.
  */
 
 import { useSettings } from "@/hooks/use-settings";
-import { readLogoUrlsCache, type LogoUrlsCache } from "@/lib/brandSettings";
 
 interface BrandLogoProps {
   variant?: "navbar" | "sidebar" | "footer" | "icon";
@@ -39,12 +42,6 @@ const DEFAULT_SIZES: Record<Exclude<NonNullable<BrandLogoProps["variant"]>, "nav
   icon:    36,
 };
 
-// Read the URL cache once at module load — synchronous, no network wait.
-// This value is the localStorage snapshot written by App.tsx after the previous
-// session's /api/settings call.  It will be up-to-date on every hard refresh
-// because App.tsx always writes it before the React tree unmounts.
-const _urlCache: LogoUrlsCache = readLogoUrlsCache();
-
 export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps) {
   const { data: settings } = useSettings();
 
@@ -52,47 +49,51 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
   const bs       = (settings?.brandSettings ?? {}) as Record<string, number>;
 
   // ── Resolve source URLs ──────────────────────────────────────────────────
-  // Phase A (isLoaded=false): settings still in flight → use localStorage cache.
-  //   If the cache is empty (first ever visit) the src will be null and no <img>
-  //   renders at all — blank space is correct per user requirement.
-  // Phase B (isLoaded=true): API has responded → use the authoritative URL.
-  //   Only now do static fallbacks kick in, because they are the intended default
-  //   when no custom logo has been uploaded, NOT a loading placeholder.
-
-  const iconSrc    = isLoaded
-    ? (settings.logoIconUrl     || "/ye-logo.png")
-    : (_urlCache.icon           ?? null);
-
-  const navbarSrc  = isLoaded
-    ? (settings.logoNavbarUrl   || iconSrc)
-    : (_urlCache.navbar         ?? iconSrc);
-
-  const mobileSrc  = isLoaded
-    ? (settings.logoMobileUrl   || iconSrc)
-    : (_urlCache.mobile         ?? iconSrc);
-
-  const sidebarSrc = isLoaded
-    ? (settings.logoDashboardUrl || iconSrc)
-    : (_urlCache.dashboard       ?? iconSrc);
-
-  const footerSrc  = isLoaded
-    ? (settings.logoFooterUrl   || iconSrc)
-    : (_urlCache.footer         ?? iconSrc);
+  // Only populate when settings has arrived from the server.
+  // No localStorage, no static-file fallback while loading.
+  const iconSrc    = isLoaded ? (settings.logoIconUrl     || "/ye-logo.png")  : null;
+  const navbarSrc  = isLoaded ? (settings.logoNavbarUrl   || iconSrc)         : null;
+  const mobileSrc  = isLoaded ? (settings.logoMobileUrl   || iconSrc)         : null;
+  const sidebarSrc = isLoaded ? (settings.logoDashboardUrl || iconSrc)        : null;
+  const footerSrc  = isLoaded ? (settings.logoFooterUrl   || iconSrc)         : null;
 
   const showNavbar = isLoaded ? ((bs.logoShowNavbar ?? 1) !== 0) : true;
   const showFooter = isLoaded ? ((bs.logoShowFooter ?? 1) !== 0) : true;
 
   // ── Navbar variant ───────────────────────────────────────────────────────
   if (variant === "navbar") {
+    // Settings hidden once loaded + flag false → completely absent
     if (isLoaded && !showNavbar) return null;
+
+    // While settings is loading: invisible wrapper with reserved dimensions
+    // (CSS vars already applied by the index.html boot script, so height is
+    // correct — no layout shift when the logo appears).
+    if (!isLoaded) {
+      return (
+        <span
+          className={`inline-flex items-center justify-center shrink-0 ${className}`}
+          aria-hidden="true"
+          style={{
+            overflow:   "visible",
+            visibility: "hidden",
+            // Inline fallbacks keep the navbar from collapsing if the CSS
+            // vars haven't been written yet (very first cold visit).
+            minWidth: "60px",
+          }}
+        >
+          <span className="hidden md:block" style={{ height: "var(--brand-navbar-h-desktop, 60px)", width: "80px" }} />
+          <span className="block md:hidden"  style={{ height: "var(--brand-mobile-h-mobile, 44px)",  width: "60px" }} />
+        </span>
+      );
+    }
+
     return (
       <span
         className={`inline-flex items-center justify-center shrink-0 ${className}`}
         aria-label="Youssef Elite"
         style={{ overflow: "visible" }}
       >
-        {/* Mobile — logoMobileUrl slot, falls back to iconSrc.
-            Render nothing (no broken-image icon) when src is null. */}
+        {/* Mobile — logoMobileUrl slot, falls back to iconSrc */}
         {mobileSrc && (
           <img
             src={mobileSrc}
@@ -141,6 +142,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
     <span
       className={`inline-flex items-center justify-center ${className}`}
       aria-label="Youssef Elite"
+      style={!isLoaded ? { visibility: "hidden" } : undefined}
     >
       {variantSrc && (
         <img
