@@ -541,6 +541,76 @@ check("BrandLogo desktop height CSS fallback is 60px (matches navbar slot defaul
   );
 });
 
+// ── 11. BrandLogo.tsx — no visibility:hidden / always renders ─────────────
+console.log("\n[11] BrandLogo.tsx — never hides logo, always renders an <img>");
+
+check("BrandLogo does NOT use visibility:hidden (removed in flicker fix)", () => {
+  assert(
+    !brandLogoSrc.includes('visibility: "hidden"') &&
+    !brandLogoSrc.includes("visibility:'hidden'") &&
+    !brandLogoSrc.includes('visibility: "hidden"'),
+    "BrandLogo must NOT set visibility:hidden on any branch. Using " +
+    "visibility:hidden when settings is undefined causes the logo to disappear " +
+    "whenever TanStack Query replaces initialData with the queryFn result (~1 s " +
+    "after mount). Use a static fallback src instead.",
+  );
+});
+
+check("BrandLogo uses STATIC_FALLBACK constant for /ye-logo.png", () => {
+  assert(
+    brandLogoSrc.includes('STATIC_FALLBACK') ||
+    brandLogoSrc.includes('"/ye-logo.png"'),
+    "BrandLogo must define a static fallback URL ('/ye-logo.png') that is " +
+    "used when settings is undefined, so the logo is always visible.",
+  );
+});
+
+check("BrandLogo mobile falls back to navbarSrc (not just iconSrc)", () => {
+  assert(
+    brandLogoSrc.includes("mobileSrc") &&
+    brandLogoSrc.includes("navbarSrc") &&
+    // The mobile fallback chain must include navbarSrc (mobile → navbar → icon → static)
+    /logoMobileUrl\s*\|\|\s*navbarSrc/.test(brandLogoSrc),
+    "BrandLogo mobileSrc must fall back to navbarSrc before iconSrc: " +
+    "'settings?.logoMobileUrl || navbarSrc'. This ensures that when only a " +
+    "navbar (horizontal) logo is uploaded, mobile shows the same logo instead " +
+    "of the smaller icon-only fallback.",
+  );
+});
+
+check("BrandLogo mobile img always renders (no {mobileSrc && <img>} gate)", () => {
+  // The conditional render {mobileSrc && <img>} would hide the mobile logo
+  // whenever mobileSrc is falsy. Since we now always compute a non-falsy src,
+  // the conditional gate is no longer needed and must be absent.
+  assert(
+    !brandLogoSrc.includes("{mobileSrc && (") &&
+    !brandLogoSrc.includes("{mobileSrc&&("),
+    "BrandLogo must NOT conditionally render {mobileSrc && <img>}. " +
+    "mobileSrc is always non-empty (static fallback guarantees it), so the " +
+    "img must render unconditionally to prevent an empty navbar logo area.",
+  );
+});
+
+check("BrandLogo navbar img always renders (no {navbarSrc && <img>} gate)", () => {
+  assert(
+    !brandLogoSrc.includes("{navbarSrc && (") &&
+    !brandLogoSrc.includes("{navbarSrc&&("),
+    "BrandLogo must NOT conditionally render {navbarSrc && <img>}. " +
+    "navbarSrc is always non-empty (falls back to iconSrc → static).",
+  );
+});
+
+check("BrandLogo sources use optional-chaining on settings (graceful when undefined)", () => {
+  assert(
+    brandLogoSrc.includes("settings?.logoIconUrl") &&
+    brandLogoSrc.includes("settings?.logoNavbarUrl") &&
+    brandLogoSrc.includes("settings?.logoMobileUrl"),
+    "BrandLogo must access logo URLs via optional-chaining (settings?.logoX) " +
+    "so the fallback chain activates when settings is undefined, rather than " +
+    "throwing a TypeError that crashes the navbar.",
+  );
+});
+
 // ── Summary ───────────────────────────────────────────────────────────────
 console.log("\n" + "─".repeat(60));
 if (failed > 0) {
