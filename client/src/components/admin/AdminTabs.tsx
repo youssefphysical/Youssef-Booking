@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  Home,
   Users,
   LayoutDashboard,
   Calendar,
@@ -51,10 +52,17 @@ type TabSpec = {
   superAdminOnly?: boolean;
 };
 
-// 5-tab strip: Dashboard | Clients | Bookings | Media | More
+// 6-tab strip: Home | Dashboard | Clients | Bookings | Media | More
 // All secondary tools (Analytics, Leads, Settings, etc.) live behind
 // the More hub at /admin/more — see AdminMore.tsx.
 const ADMIN_TABS: TabSpec[] = [
+  {
+    href: "/",
+    labelKey: "admin.tabs.home",
+    fallback: "Home",
+    icon: <Home size={15} />,
+    matches: () => false,
+  },
   {
     href: "/admin",
     labelKey: "admin.tabs.overview",
