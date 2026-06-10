@@ -116,17 +116,28 @@ export default function AuthPage({
   // Read the window global synchronously (useState initializer) as a fallback
   // for the rare case where the boot fetch resolves before React mounts but
   // after useSettings()'s initialData function ran.
+  // Cache-bust helper — uses settings.updatedAt so browsers re-fetch after admin uploads.
+  function authBustUrl(url: string | null, updatedAt: unknown): string | null {
+    if (!url) return null;
+    const v = updatedAt ? new Date(updatedAt as string).getTime() : NaN;
+    if (!v || isNaN(v)) return url;
+    return url.includes("?") ? `${url}&v=${v}` : `${url}?v=${v}`;
+  }
+
   const [bootLogoUrl] = useState<string | null>(() => {
     try {
       const s = (window as any).__YE_INITIAL_SETTINGS__;
       if (!s) return null;
-      return (s as any).logoLoginUrl || (s as any).logoAuthUrl || (s as any).logoIconUrl || null;
+      const raw = (s as any).logoLoginUrl || (s as any).logoAuthUrl || (s as any).logoIconUrl || null;
+      return authBustUrl(raw, (s as any).updatedAt);
     } catch { return null; }
   });
 
   // Priority: fresh settings (authoritative) → boot global (fast-network warm load) → null
+  // Cache-bust appended so browsers re-fetch after admin logo uploads.
+  const ua = (authSettings as any)?.updatedAt;
   const logoSrc: string | null = authSettings
-    ? ((authSettings as any).logoLoginUrl || (authSettings as any).logoAuthUrl || (authSettings as any).logoIconUrl || null)
+    ? authBustUrl((authSettings as any).logoLoginUrl || (authSettings as any).logoAuthUrl || (authSettings as any).logoIconUrl || null, ua)
     : bootLogoUrl;
 
   // Gate: card entrance is held until we know the logo state.

@@ -11,21 +11,30 @@ import { useSettings } from "@/hooks/use-settings";
  * Only on genuinely slow responses (cold-start serverless, slow 3G) does the
  * brand logo + spinner appear.
  *
+ * Source chain: logoSplashUrl → logoIconUrl → (none — spinner only)
+ * Static /ye-logo.png is NOT a fallback. If no MM logo is configured, only
+ * the spinner is shown (no stale old asset).
+ *
+ * Cache-busting: settings.updatedAt is appended as ?v={ms}.
+ *
  * Respects:
  *  - settings.logoSplashUrl      — dedicated splash slot (Media Manager → Splash Screen Logo)
  *  - settings.logoIconUrl        — fallback when no splash logo uploaded
  *  - settings.brandSettings.logoShowLoading — visibility toggle from Logo Manager
- *
- * Uses the shared useSettings() cache so logo changes after an admin upload
- * propagate immediately (no independent staleTime).
  */
 export function PremiumPageLoader() {
   const [visible, setVisible] = useState(false);
   const { data: settings } = useSettings();
 
-  const bs          = (settings?.brandSettings ?? {}) as Record<string, number>;
-  const logoSrc     = settings?.logoSplashUrl || settings?.logoIconUrl || "/ye-logo.png";
+  const bs = (settings?.brandSettings ?? {}) as Record<string, number>;
   const showLoading = (bs.logoShowLoading ?? 1) !== 0;
+
+  // MM-only chain — no static /ye-logo.png fallback
+  const ua        = settings ? (settings as any).updatedAt : null;
+  const rawSrc    = settings?.logoSplashUrl || settings?.logoIconUrl || null;
+  const logoSrc: string | null = rawSrc
+    ? (ua ? (rawSrc.includes("?") ? `${rawSrc}&v=${new Date(ua).getTime()}` : `${rawSrc}?v=${new Date(ua).getTime()}`) : rawSrc)
+    : null;
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 700);
@@ -41,7 +50,7 @@ export function PremiumPageLoader() {
       role="status"
       aria-label="Loading"
     >
-      {showLoading && (
+      {showLoading && logoSrc && (
         <div className="relative flex items-center justify-center">
           <div
             aria-hidden

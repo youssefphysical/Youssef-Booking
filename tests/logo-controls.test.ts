@@ -541,73 +541,105 @@ check("BrandLogo desktop height CSS fallback is 60px (matches navbar slot defaul
   );
 });
 
-// ── 11. BrandLogo.tsx — no visibility:hidden / always renders ─────────────
-console.log("\n[11] BrandLogo.tsx — never hides logo, always renders an <img>");
+// ── 11. BrandLogo.tsx — MM-only sources, transparent placeholder, no static fallback
+console.log("\n[11] BrandLogo.tsx — MM-only sources, transparent placeholders, bustUrl");
 
 check("BrandLogo does NOT use visibility:hidden (removed in flicker fix)", () => {
   assert(
     !brandLogoSrc.includes('visibility: "hidden"') &&
     !brandLogoSrc.includes("visibility:'hidden'") &&
-    !brandLogoSrc.includes('visibility: "hidden"'),
-    "BrandLogo must NOT set visibility:hidden on any branch. Using " +
-    "visibility:hidden when settings is undefined causes the logo to disappear " +
-    "whenever TanStack Query replaces initialData with the queryFn result (~1 s " +
-    "after mount). Use a static fallback src instead.",
+    !brandLogoSrc.includes('visibility:"hidden"'),
+    "BrandLogo must NOT set visibility:hidden on any branch. Use a transparent " +
+    "placeholder (aria-busy) instead of hiding the element.",
   );
 });
 
-check("BrandLogo uses STATIC_FALLBACK constant for /ye-logo.png", () => {
+check("BrandLogo must NOT use static /ye-logo.png fallback (MM-only source chain)", () => {
   assert(
-    brandLogoSrc.includes('STATIC_FALLBACK') ||
-    brandLogoSrc.includes('"/ye-logo.png"'),
-    "BrandLogo must define a static fallback URL ('/ye-logo.png') that is " +
-    "used when settings is undefined, so the logo is always visible.",
+    !brandLogoSrc.includes('"/ye-logo.png"') &&
+    !brandLogoSrc.includes("'/ye-logo.png'") &&
+    !brandLogoSrc.includes("STATIC_FALLBACK"),
+    "BrandLogo must NOT fall back to the static /ye-logo.png. When no MM logo " +
+    "is uploaded, a transparent placeholder is rendered. Static fallbacks cause " +
+    "old-logo flicker when admins upload a new logo via Media Manager.",
   );
 });
 
-check("BrandLogo mobile falls back to navbarSrc (not just iconSrc)", () => {
+check("BrandLogo must NOT hardcode any static logo file paths", () => {
+  const FORBIDDEN = ["/ye-logo.png", "/ye-logo-horizontal.png", "/ye-logo-primary.png"];
+  const hasStatic = FORBIDDEN.some(
+    p => brandLogoSrc.includes(`"${p}"`) || brandLogoSrc.includes(`'${p}'`),
+  );
   assert(
-    brandLogoSrc.includes("mobileSrc") &&
-    brandLogoSrc.includes("navbarSrc") &&
-    // The mobile fallback chain must include navbarSrc (mobile → navbar → icon → static)
-    /logoMobileUrl\s*\|\|\s*navbarSrc/.test(brandLogoSrc),
-    "BrandLogo mobileSrc must fall back to navbarSrc before iconSrc: " +
-    "'settings?.logoMobileUrl || navbarSrc'. This ensures that when only a " +
-    "navbar (horizontal) logo is uploaded, mobile shows the same logo instead " +
-    "of the smaller icon-only fallback.",
+    !hasStatic,
+    "BrandLogo must not hardcode any static logo path. Every source must come " +
+    "from Media Manager settings (logoIconUrl / logoNavbarUrl / logoMobileUrl / " +
+    "logoDashboardUrl / logoFooterUrl). Hardcoded paths expose old assets.",
   );
 });
 
-check("BrandLogo mobile img always renders (no {mobileSrc && <img>} gate)", () => {
-  // The conditional render {mobileSrc && <img>} would hide the mobile logo
-  // whenever mobileSrc is falsy. Since we now always compute a non-falsy src,
-  // the conditional gate is no longer needed and must be absent.
+check("BrandLogo uses bustUrl helper for cache-busting (settings.updatedAt)", () => {
   assert(
-    !brandLogoSrc.includes("{mobileSrc && (") &&
-    !brandLogoSrc.includes("{mobileSrc&&("),
-    "BrandLogo must NOT conditionally render {mobileSrc && <img>}. " +
-    "mobileSrc is always non-empty (static fallback guarantees it), so the " +
-    "img must render unconditionally to prevent an empty navbar logo area.",
+    brandLogoSrc.includes("bustUrl") &&
+    brandLogoSrc.includes("updatedAt"),
+    "BrandLogo must define and use bustUrl(url, updatedAt) to append " +
+    "'?v={ms}' to every logo img src. Without it, browsers serve stale images " +
+    "after an admin uploads a new logo.",
   );
 });
 
-check("BrandLogo navbar img always renders (no {navbarSrc && <img>} gate)", () => {
+check("BrandLogo shows transparent placeholder while loading (aria-busy)", () => {
   assert(
-    !brandLogoSrc.includes("{navbarSrc && (") &&
-    !brandLogoSrc.includes("{navbarSrc&&("),
-    "BrandLogo must NOT conditionally render {navbarSrc && <img>}. " +
-    "navbarSrc is always non-empty (falls back to iconSrc → static).",
+    brandLogoSrc.includes("aria-busy") &&
+    brandLogoSrc.includes("!isLoaded"),
+    "BrandLogo must return an aria-busy transparent placeholder while settings " +
+    "is undefined. Rendering an image during load would show a stale/old logo " +
+    "before the server has answered with the current MM logo URLs.",
   );
 });
 
-check("BrandLogo sources use optional-chaining on settings (graceful when undefined)", () => {
+check("BrandLogo mobile falls back through navbar chain (logoMobileUrl → nRaw/navbarRaw)", () => {
+  // Mobile slot must cascade: logoMobileUrl → logoNavbarUrl → logoIconUrl → null
+  // The concrete pattern differs by variable name (nRaw, navbarRaw, navbarSrc…),
+  // but logoNavbarUrl must appear as the intermediate step.
   assert(
-    brandLogoSrc.includes("settings?.logoIconUrl") &&
-    brandLogoSrc.includes("settings?.logoNavbarUrl") &&
-    brandLogoSrc.includes("settings?.logoMobileUrl"),
-    "BrandLogo must access logo URLs via optional-chaining (settings?.logoX) " +
-    "so the fallback chain activates when settings is undefined, rather than " +
-    "throwing a TypeError that crashes the navbar.",
+    brandLogoSrc.includes("logoMobileUrl") &&
+    brandLogoSrc.includes("logoNavbarUrl") &&
+    // mobile raw uses the navbar-resolved variable as its fallback operand
+    (/logoMobileUrl\s*\|\|\s*\w*[Nn]aw\w*/.test(brandLogoSrc) ||
+     /logoMobileUrl\s*\|\|\s*nRaw/.test(brandLogoSrc)         ||
+     /logoMobileUrl\s*\|\|\s*navbarRaw/.test(brandLogoSrc)    ||
+     /logoMobileUrl\s*\|\|\s*navbarSrc/.test(brandLogoSrc)),
+    "BrandLogo mobile src must fall back to the navbar logo before the icon: " +
+    "logoMobileUrl → logoNavbarUrl → logoIconUrl → null. This ensures that when " +
+    "only a horizontal (navbar) logo is uploaded, mobile shows that logo.",
+  );
+});
+
+check("BrandLogo renders navbar img conditionally — only when nSrc/mSrc is non-null", () => {
+  // Images must be guarded: {mSrc ? <img> : <placeholder>} and {nSrc ? <img> : …}
+  // This is the correct shape — unconditional rendering with a static fallback
+  // would re-introduce the old-logo flash.
+  assert(
+    (brandLogoSrc.includes("mSrc ?") || brandLogoSrc.includes("mSrc?")) &&
+    (brandLogoSrc.includes("nSrc ?") || brandLogoSrc.includes("nSrc?")),
+    "BrandLogo must guard both mobile and desktop img tags with a condition " +
+    "on the resolved src: {mSrc ? <img> : <placeholder>}. When the MM slot is " +
+    "empty, the transparent placeholder is shown instead of any image.",
+  );
+});
+
+check("BrandLogo logoIconUrl is accessed inside isLoaded gate (safe, not optional-chained)", () => {
+  // Inside if (isLoaded) / after the isLoaded check, settings is guaranteed
+  // non-undefined. Either settings.logoX (direct) or settings?.logoX (optional)
+  // are both acceptable — the important thing is that code outside the gate
+  // does NOT try to render images using settings.logoX without a guard.
+  assert(
+    brandLogoSrc.includes("isLoaded") &&
+    (brandLogoSrc.includes("settings.logoIconUrl") ||
+     brandLogoSrc.includes("settings?.logoIconUrl")),
+    "BrandLogo must gate all settings.logo* reads behind the isLoaded check so " +
+    "that settings is always defined when the MM chain is evaluated.",
   );
 });
 

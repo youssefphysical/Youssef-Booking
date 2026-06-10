@@ -167,8 +167,12 @@ function Router() {
     if (!settings) return;
     const custom = (settings as any).logoFaviconUrl as string | null | undefined;
     if (!custom) return; // static files already served by index.html — nothing to do
-    // Append a cache-buster so Chrome re-fetches after an upload
-    const bust = `${custom}?v=${encodeURIComponent(custom.split("-").pop()?.split(".")[0] ?? "1")}`;
+    // Cache-bust: prefer settings.updatedAt (exact timestamp when admin last saved),
+    // fall back to the ms-timestamp embedded in the upload filename.
+    const ua = (settings as any).updatedAt;
+    const v  = ua ? new Date(ua).getTime()
+                  : encodeURIComponent(custom.split("-").pop()?.split(".")[0] ?? "1");
+    const bust = `${custom}?v=${v}`;
     const setLink = (id: string, href: string) => {
       const el = document.getElementById(id) as HTMLLinkElement | null;
       if (el) el.href = href;
@@ -180,7 +184,7 @@ function Router() {
     // Also update the href-less <link rel="icon" href="/favicon.ico">
     const ico = document.querySelector<HTMLLinkElement>("link[href='/favicon.ico']");
     if (ico) ico.href = bust;
-  }, [(settings as any)?.logoFaviconUrl]);
+  }, [(settings as any)?.logoFaviconUrl, (settings as any)?.updatedAt]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
   const allowBypass = user?.role === "admin" || authBypassPaths.includes(pathname);
   const showMaintenance = maintenance && !allowBypass;

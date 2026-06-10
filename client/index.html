@@ -439,12 +439,27 @@
                 ? ("?v=" + new Date(s.updatedAt).getTime())
                 : "";
 
-              // Collect unique logo URLs to preload (navbar + mobile + auth/login)
+              // Collect unique logo URLs to preload — all 8 slots so every
+              // placement gets a warm browser cache before React mounts.
+              // Each entry mirrors the MM fallback chain used in the components:
+              //   Navbar desktop : logoNavbarUrl  → logoIconUrl
+              //   Mobile         : logoMobileUrl  → logoNavbarUrl → logoIconUrl
+              //   Auth / Login   : logoLoginUrl   → logoAuthUrl   → logoIconUrl
+              //   Sidebar        : logoDashboardUrl → logoIconUrl
+              //   Footer         : logoFooterUrl  → logoIconUrl
+              //   Splash screen  : logoSplashUrl  → logoIconUrl
+              //   Favicon        : logoFaviconUrl (standalone, no chain)
+              //   Icon (base)    : logoIconUrl
               var seen = {};
               var toPreload = [
-                s.logoNavbarUrl  || s.logoIconUrl  || null,
-                s.logoMobileUrl  || s.logoIconUrl  || null,
-                s.logoLoginUrl   || s.logoAuthUrl  || s.logoIconUrl || null,
+                s.logoNavbarUrl    || s.logoIconUrl  || null,
+                s.logoMobileUrl    || s.logoNavbarUrl || s.logoIconUrl || null,
+                s.logoLoginUrl     || s.logoAuthUrl  || s.logoIconUrl || null,
+                s.logoDashboardUrl || s.logoIconUrl  || null,
+                s.logoFooterUrl    || s.logoIconUrl  || null,
+                s.logoSplashUrl    || s.logoIconUrl  || null,
+                s.logoFaviconUrl   || null,
+                s.logoIconUrl      || null,
               ];
 
               for (var i = 0; i < toPreload.length; i++) {
