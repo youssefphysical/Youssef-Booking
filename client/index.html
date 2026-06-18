@@ -290,13 +290,13 @@
           var root = document.documentElement;
           var slots = ['navbar','mobile','login','dashboard','footer','favicon','splash'];
           var defs = {
-            navbar:    {wDesktop:0,  hDesktop:60, wMobile:0,   hMobile:52, zoom:100,hOffset:0,vOffset:0,padding:5, glow:35},
-            mobile:    {wDesktop:0,  hDesktop:52, wMobile:0,   hMobile:44, zoom:100,hOffset:0,vOffset:0,padding:4, glow:25},
-            login:     {wDesktop:480,hDesktop:0,  wMobile:360, hMobile:0,  zoom:108,hOffset:0,vOffset:0,padding:0, glow:40},
-            dashboard: {wDesktop:0,  hDesktop:48, wMobile:0,   hMobile:40, zoom:100,hOffset:0,vOffset:0,padding:0, glow:20},
-            footer:    {wDesktop:0,  hDesktop:22, wMobile:0,   hMobile:20, zoom:100,hOffset:0,vOffset:0,padding:0, glow:25},
-            favicon:   {wDesktop:32, hDesktop:32, wMobile:16,  hMobile:16, zoom:100,hOffset:0,vOffset:0,padding:0, glow:0 },
-            splash:    {wDesktop:0,  hDesktop:0,  wMobile:0,   hMobile:0,  zoom:100,hOffset:0,vOffset:0,padding:0, glow:50},
+            navbar:    {wDesktop:0,  hDesktop:60, wMobile:0,   hMobile:52, zoom:100,hOffset:0,vOffset:0,padding:5, glow:35,minHeroH:0  },
+            mobile:    {wDesktop:0,  hDesktop:52, wMobile:0,   hMobile:44, zoom:100,hOffset:0,vOffset:0,padding:4, glow:25,minHeroH:0  },
+            login:     {wDesktop:480,hDesktop:0,  wMobile:360, hMobile:0,  zoom:108,hOffset:0,vOffset:0,padding:0, glow:40,minHeroH:280},
+            dashboard: {wDesktop:0,  hDesktop:48, wMobile:0,   hMobile:40, zoom:100,hOffset:0,vOffset:0,padding:0, glow:20,minHeroH:0  },
+            footer:    {wDesktop:0,  hDesktop:36, wMobile:0,   hMobile:30, zoom:100,hOffset:0,vOffset:0,padding:0, glow:25,minHeroH:0  },
+            favicon:   {wDesktop:32, hDesktop:32, wMobile:16,  hMobile:16, zoom:100,hOffset:0,vOffset:0,padding:0, glow:0, minHeroH:0  },
+            splash:    {wDesktop:0,  hDesktop:0,  wMobile:0,   hMobile:0,  zoom:100,hOffset:0,vOffset:0,padding:0, glow:50,minHeroH:0  },
           };
           for (var i = 0; i < slots.length; i++) {
             var slot = slots[i];
@@ -314,6 +314,7 @@
             root.style.setProperty(p+'-vpos',    c.vOffset+'px');
             root.style.setProperty(p+'-padding', c.padding+'px');
             root.style.setProperty(p+'-glow',    String(c.glow / 100));
+            root.style.setProperty(p+'-min-hero-h', (c.minHeroH > 0 ? c.minHeroH : 0)+'px');
             if (slot === 'dashboard') {
               root.style.setProperty('--brand-sidebar-h-desktop', c.hDesktop > 0 ? c.hDesktop+'px' : 'auto');
               root.style.setProperty('--brand-sidebar-glow',      String(c.glow / 100));
@@ -449,53 +450,6 @@
       })();
     </script>
 
-
-    <!-- ===== BRAND SETTINGS BOOT — flicker-free logo sizing =====
-         Reads the JSON cached by persistBrandSettingsCache() and emits
-         --brand-{slot}-* CSS vars SYNCHRONOUSLY before any font/React load.
-         Without this, logos paint at default size then jump to saved size
-         once settings load from the API (~300–600 ms later).
-         Key must stay in sync with YE_BRAND_SETTINGS_KEY in brandSettings.ts. -->
-    <script>
-      (function () {
-        try {
-          var raw = localStorage.getItem("ye_brand_settings");
-          var logos = null;
-          try { var data = raw ? JSON.parse(raw) : null; logos = data && data.logos || null; } catch (e) {}
-          var SLOTS = ["navbar","mobile","login","dashboard","footer","favicon","splash"];
-          var DEFS = {
-            navbar:    { wDesktop:0,  hDesktop:60,  wMobile:0,  hMobile:52,  zoom:100, hOffset:0, vOffset:0, padding:5,  glow:35, minHeroH:0   },
-            mobile:    { wDesktop:0,  hDesktop:52,  wMobile:0,  hMobile:44,  zoom:100, hOffset:0, vOffset:0, padding:4,  glow:25, minHeroH:0   },
-            login:     { wDesktop:480,hDesktop:0,   wMobile:360,hMobile:0,   zoom:108, hOffset:0, vOffset:0, padding:0,  glow:40, minHeroH:280 },
-            dashboard: { wDesktop:0,  hDesktop:48,  wMobile:0,  hMobile:40,  zoom:100, hOffset:0, vOffset:0, padding:0,  glow:20, minHeroH:0   },
-            footer:    { wDesktop:0,  hDesktop:22,  wMobile:0,  hMobile:20,  zoom:100, hOffset:0, vOffset:0, padding:0,  glow:25, minHeroH:0   },
-            favicon:   { wDesktop:32, hDesktop:32,  wMobile:16, hMobile:16,  zoom:100, hOffset:0, vOffset:0, padding:0,  glow:0,  minHeroH:0   },
-            splash:    { wDesktop:0,  hDesktop:0,   wMobile:0,  hMobile:0,   zoom:100, hOffset:0, vOffset:0, padding:0,  glow:50, minHeroH:0   }
-          };
-          var root = document.documentElement;
-          for (var i = 0; i < SLOTS.length; i++) {
-            var slot = SLOTS[i];
-            var def = DEFS[slot];
-            var c = Object.assign({}, def, logos[slot] || {});
-            var p = "--brand-" + slot;
-            root.style.setProperty(p + "-w-desktop", c.wDesktop > 0 ? c.wDesktop + "px" : "auto");
-            root.style.setProperty(p + "-h-desktop", c.hDesktop > 0 ? c.hDesktop + "px" : "auto");
-            root.style.setProperty(p + "-w-mobile",  c.wMobile  > 0 ? c.wMobile  + "px" : "auto");
-            root.style.setProperty(p + "-h-mobile",  c.hMobile  > 0 ? c.hMobile  + "px" : "auto");
-            root.style.setProperty(p + "-zoom",    String(c.zoom / 100));
-            root.style.setProperty(p + "-hpos",    c.hOffset + "px");
-            root.style.setProperty(p + "-vpos",    c.vOffset + "px");
-            root.style.setProperty(p + "-padding",    c.padding + "px");
-            root.style.setProperty(p + "-glow",       String(c.glow / 100));
-            root.style.setProperty(p + "-min-hero-h", (c.minHeroH > 0 ? c.minHeroH : 0) + "px");
-            if (slot === "dashboard") {
-              root.style.setProperty("--brand-sidebar-h-desktop", c.hDesktop > 0 ? c.hDesktop + "px" : "auto");
-              root.style.setProperty("--brand-sidebar-glow", String(c.glow / 100));
-            }
-          }
-        } catch (e) {}
-      })();
-    </script>
 
     <!-- ===== SETTINGS BOOT — zero-localStorage logo preload =====
          Fires a fetch("/api/settings") the instant the HTML parser sees this

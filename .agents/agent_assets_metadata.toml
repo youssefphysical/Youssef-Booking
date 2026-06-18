@@ -71,3 +71,9 @@ id = "3za-ltpBgxPEVXQDIpyc0"
 uri = "file://attached_assets/screenshots/prod-icon-192.png"
 type = "image"
 title = "icon-192.png fetched live from production (192×192, transparent bg)"
+
+[[outputs]]
+id = "o72EtffmmYf-AV2UzvVmA"
+uri = "file://attached_assets/screenshots/ye-icon-contact-sheet.png"
+type = "image"
+title = "YE icon contact sheet — optimized at 512 / 192 / 96 / 48 / 32 / 16 px"
