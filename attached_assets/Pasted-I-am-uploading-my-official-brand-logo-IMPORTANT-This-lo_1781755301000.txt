@@ -1,0 +1,118 @@
+I am uploading my official brand logo.
+
+IMPORTANT:
+This logo must become the single global brand asset across the entire website.
+
+Use this exact logo everywhere branding is required.
+
+Requirements:
+
+1. Global Logo System
+- Create a centralized logo component.
+- Every logo instance on the website must reference the same uploaded logo file.
+- No duplicate logo assets.
+- No alternative logos.
+- No generated logos.
+- No placeholders.
+
+2. Header / Navigation
+- Display the logo in the navbar.
+- Responsive sizing:
+  - Desktop: larger professional size.
+  - Tablet: medium size.
+  - Mobile: optimized smaller size.
+- Keep proportions locked.
+- Never stretch or distort.
+
+3. Browser Assets
+- Generate favicon versions from the uploaded logo.
+- Add:
+  - favicon.ico
+  - 32x32
+  - 16x16
+  - Apple Touch Icon
+  - Android icons
+  - PWA icons
+
+4. Search & SEO
+- Use the logo as:
+  - Website logo
+  - Open Graph image (when appropriate)
+  - Structured data organization logo
+  - Search engine brand logo
+
+5. Authentication Pages
+- Login page
+- Register page
+- Forgot password page
+
+All must display the logo with proper responsive sizing.
+
+6. Client Dashboard
+- Display logo in dashboard header.
+- Display logo in mobile menu.
+
+7. Admin Dashboard
+- Display logo in admin header.
+- Display logo in sidebar.
+- Responsive scaling.
+
+8. Email Templates
+Use the same logo in:
+- Welcome Email
+- Booking Confirmation
+- Reminder Email
+- Reschedule Email
+- Cancellation Email
+- Password Reset Email
+
+9. Loading Screens
+- Use logo as branded loading element.
+- Keep proportions exactly the same.
+
+10. Footer
+- Display logo in footer.
+- Responsive sizing.
+
+11. Responsive Logo Sizes
+Create professional variants:
+
+XS = Favicon
+SM = Mobile
+MD = Tablet
+LG = Desktop Header
+XL = Hero Section
+XXL = Marketing Sections
+
+All variants must preserve:
+- Exact proportions
+- Exact colors
+- Exact transparency
+- Exact glow effects
+- Exact branding
+
+12. Technical Rules
+- Use a single source file.
+- No hardcoded copies.
+- No duplicated image files.
+- No SVG regeneration.
+- No AI recreation.
+- No redesign.
+
+13. Performance
+- Optimize delivery.
+- Use responsive image sizes.
+- Lazy load where appropriate.
+- Preserve visual quality.
+
+14. Final Verification
+Check every page and component to ensure:
+- The uploaded logo appears everywhere branding is expected.
+- No missing logo locations.
+- No inconsistent sizes.
+- No distorted proportions.
+- No color changes.
+- No transparency issues.
+
+Use the uploaded logo exactly as provided.
+Do not modify the logo in any way.

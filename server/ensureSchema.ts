@@ -1154,6 +1154,22 @@ async function run(): Promise<void> {
         ADD COLUMN IF NOT EXISTS logo_dashboard_url text,
         ADD COLUMN IF NOT EXISTS logo_footer_url text,
         ADD COLUMN IF NOT EXISTS logo_splash_url text;
+
+      -- June 2026: seed default brand logo across all 9 logo slots so that
+      -- fresh installs and Vercel preview deployments show the brand immediately
+      -- without an admin needing to upload via Media Manager first.
+      -- COALESCE ensures already-uploaded custom logos are never overwritten.
+      UPDATE settings SET
+        logo_icon_url     = COALESCE(logo_icon_url,     '/brand-logo.png'),
+        logo_navbar_url   = COALESCE(logo_navbar_url,   '/brand-logo.png'),
+        logo_auth_url     = COALESCE(logo_auth_url,     '/brand-logo.png'),
+        logo_login_url    = COALESCE(logo_login_url,    '/brand-logo.png'),
+        logo_favicon_url  = COALESCE(logo_favicon_url,  '/brand-logo.png'),
+        logo_mobile_url   = COALESCE(logo_mobile_url,   '/brand-logo.png'),
+        logo_dashboard_url= COALESCE(logo_dashboard_url,'/brand-logo.png'),
+        logo_footer_url   = COALESCE(logo_footer_url,   '/brand-logo.png'),
+        logo_splash_url   = COALESCE(logo_splash_url,   '/brand-logo.png')
+      WHERE id = 1;
     `);
 
     console.log("[ensureSchema] OK");
