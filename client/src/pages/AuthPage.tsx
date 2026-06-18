@@ -124,6 +124,7 @@ export default function AuthPage({
   const AUTH_CANONICAL_PATHS = [
     "/brand-logo.png", "/ye-logo.png",
     "/ye-logo-horizontal.png", "/ye-logo-primary.png",
+    "/brand/logo-login.png", "/brand/logo-auth.png",
   ];
 
   // Cache-bust helper — returns the fixed canonical URL for the canonical logo

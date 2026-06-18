@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SERVICE_CARD_SLIDER_FIELDS } from "@/lib/service-card-fields";
+import { BRAND_ASSETS } from "@/config/brandAssets";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1226,7 +1227,7 @@ const LOGO_SLOTS: {
     key: "icon",
     label: "Icon Logo",
     desc: "Sidebar, footer, loading screen",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoNavbar,
     hint: "Square or icon format. PNG with transparency is losslessly preserved — ideal for neon/glow logos. Up to 25 MB.",
     maxLabel: "800 × 800 px",
     settingsKey: "logoIconUrl",
@@ -1235,7 +1236,7 @@ const LOGO_SLOTS: {
     key: "navbar",
     label: "Horizontal Logo",
     desc: "Desktop & tablet navigation bar",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoNavbar,
     hint: "Wide format with text. PNG with transparent background — stored losslessly. Up to 25 MB.",
     maxLabel: "2000 × 800 px",
     settingsKey: "logoNavbarUrl",
@@ -1244,7 +1245,7 @@ const LOGO_SLOTS: {
     key: "mobile",
     label: "Mobile Logo",
     desc: "Navigation bar on phones — independent of Icon Logo",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoNavbar,
     hint: "Square or compact logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
     maxLabel: "1000 × 500 px",
     settingsKey: "logoMobileUrl",
@@ -1253,7 +1254,7 @@ const LOGO_SLOTS: {
     key: "auth",
     label: "Client Portal Logo",
     desc: "/auth · Login & registration card (fallback)",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoAuth,
     hint: "PNG/WebP with transparent background — stored losslessly for PNG. Used as fallback when no Login Hero Logo is set. Up to 25 MB.",
     maxLabel: "1200 × 1200 px",
     settingsKey: "logoAuthUrl",
@@ -1262,7 +1263,7 @@ const LOGO_SLOTS: {
     key: "login",
     label: "Login / Auth Hero Logo",
     desc: "/auth · Client Portal card hero — fully independent",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoAuth,
     hint: "PNG with transparent background recommended — stored losslessly to preserve glow and sharp edges. Takes priority over Client Portal Logo. Up to 25 MB.",
     maxLabel: "2000 × 1200 px",
     settingsKey: "logoLoginUrl",
@@ -1271,7 +1272,7 @@ const LOGO_SLOTS: {
     key: "dashboard",
     label: "Dashboard Logo",
     desc: "Client dashboard header & admin sidebar",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoNavbar,
     hint: "Compact logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
     maxLabel: "1000 × 500 px",
     settingsKey: "logoDashboardUrl",
@@ -1280,7 +1281,7 @@ const LOGO_SLOTS: {
     key: "footer",
     label: "Footer Logo",
     desc: "Page footer stamp",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoNavbar,
     hint: "Small icon-format logo. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
     maxLabel: "1000 × 500 px",
     settingsKey: "logoFooterUrl",
@@ -1289,7 +1290,7 @@ const LOGO_SLOTS: {
     key: "favicon",
     label: "Favicon / Browser Icon",
     desc: "Browser tab, Chrome suggestions, mobile shortcut, PWA icon",
-    fallback: "/favicon-32.png",
+    fallback: BRAND_ASSETS.favicon,
     hint: "Upload a 512×512 PNG with a transparent background. Falls back to the static /favicon-*.png files.",
     maxLabel: "512 × 512 px",
     settingsKey: "logoFaviconUrl",
@@ -1298,7 +1299,7 @@ const LOGO_SLOTS: {
     key: "splash",
     label: "Splash Screen Logo",
     desc: "Full-screen loader at app boot",
-    fallback: "/brand-logo.png",
+    fallback: BRAND_ASSETS.logoAuth,
     hint: "Large logo for the full-screen loading screen. PNG with transparent background — stored losslessly. Falls back to Icon Logo. Up to 25 MB.",
     maxLabel: "2000 × 2000 px",
     settingsKey: "logoSplashUrl",
@@ -1697,25 +1698,25 @@ function LogoLivePreview({ logoSrc, config }: { logoSrc: string; config: LogoCon
 // ─── Per-logo slot metadata ────────────────────────────────────────────────
 interface LogoSlotMeta { label: string; desc: string; fallback: string; }
 const LOGO_SLOT_META: Record<BrandLogoSlot, LogoSlotMeta> = {
-  navbar:    { label: "Navbar Logo",    desc: "Horizontal bar · desktop & tablet",    fallback: "/brand-logo.png" },
-  mobile:    { label: "Mobile Logo",    desc: "Navbar icon on phones",                fallback: "/brand-logo.png" },
-  login:     { label: "Login Logo",     desc: "Auth page hero image",                 fallback: "/brand-logo.png" },
-  dashboard: { label: "Dashboard Logo", desc: "Client home · top-header logo",        fallback: "/brand-logo.png" },
-  footer:    { label: "Footer Logo",    desc: "Page footer icon stamp",               fallback: "/brand-logo.png" },
-  favicon:   { label: "Favicon",        desc: "Browser tab & bookmark icon",          fallback: "/brand-logo.png" },
-  splash:    { label: "Splash Screen",  desc: "Full-screen loader at app boot",       fallback: "/brand-logo.png" },
+  navbar:    { label: "Navbar Logo",    desc: "Horizontal bar · desktop & tablet",    fallback: BRAND_ASSETS.logoNavbar },
+  mobile:    { label: "Mobile Logo",    desc: "Navbar icon on phones",                fallback: BRAND_ASSETS.logoNavbar },
+  login:     { label: "Login Logo",     desc: "Auth page hero image",                 fallback: BRAND_ASSETS.logoAuth   },
+  dashboard: { label: "Dashboard Logo", desc: "Client home · top-header logo",        fallback: BRAND_ASSETS.logoNavbar },
+  footer:    { label: "Footer Logo",    desc: "Page footer icon stamp",               fallback: BRAND_ASSETS.logoNavbar },
+  favicon:   { label: "Favicon",        desc: "Browser tab & bookmark icon",          fallback: BRAND_ASSETS.favicon    },
+  splash:    { label: "Splash Screen",  desc: "Full-screen loader at app boot",       fallback: BRAND_ASSETS.logoAuth   },
 };
 
 function getLogoSrcForSlot(settings: Settings | undefined, slot: BrandLogoSlot): string {
   const s = settings as any;
-  if (slot === "navbar")    return s?.logoNavbarUrl    || "/brand-logo.png";
-  if (slot === "mobile")    return s?.logoMobileUrl    || s?.logoIconUrl || "/brand-logo.png";
-  if (slot === "login")     return s?.logoLoginUrl     || s?.logoAuthUrl || "/brand-logo.png";
-  if (slot === "dashboard") return s?.logoDashboardUrl || s?.logoIconUrl || "/brand-logo.png";
-  if (slot === "footer")    return s?.logoFooterUrl    || s?.logoIconUrl || "/brand-logo.png";
-  if (slot === "favicon")   return s?.logoFaviconUrl   || "/brand-logo.png";
-  if (slot === "splash")    return s?.logoSplashUrl    || s?.logoIconUrl || "/brand-logo.png";
-  return s?.logoIconUrl || "/brand-logo.png";
+  if (slot === "navbar")    return s?.logoNavbarUrl    || BRAND_ASSETS.logoNavbar;
+  if (slot === "mobile")    return s?.logoMobileUrl    || s?.logoIconUrl || BRAND_ASSETS.logoNavbar;
+  if (slot === "login")     return s?.logoLoginUrl     || s?.logoAuthUrl || BRAND_ASSETS.logoAuth;
+  if (slot === "dashboard") return s?.logoDashboardUrl || s?.logoIconUrl || BRAND_ASSETS.logoNavbar;
+  if (slot === "footer")    return s?.logoFooterUrl    || s?.logoIconUrl || BRAND_ASSETS.logoNavbar;
+  if (slot === "favicon")   return s?.logoFaviconUrl   || BRAND_ASSETS.favicon;
+  if (slot === "splash")    return s?.logoSplashUrl    || s?.logoIconUrl || BRAND_ASSETS.logoAuth;
+  return s?.logoIconUrl || BRAND_ASSETS.logoNavbar;
 }
 
 // ─── Per-slot source metadata (for the Usage / Source debug panel) ──────────
@@ -1729,13 +1730,13 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
     usedIn:        "Navigation bar — desktop & tablet",
     uploadSlot:    "Horizontal Logo",
     storageKey:    "logoNavbarUrl",
-    fallbackChain: ["Horizontal Logo (logoNavbarUrl)", "Icon Logo (logoIconUrl)", "/brand-logo.png"],
+    fallbackChain: ["Horizontal Logo (logoNavbarUrl)", "Icon Logo (logoIconUrl)", "logo-navbar.png (static)"],
   },
   mobile:    {
     usedIn:        "Navigation bar — mobile phones",
     uploadSlot:    "Mobile Logo",
     storageKey:    "logoMobileUrl",
-    fallbackChain: ["Mobile Logo (logoMobileUrl)", "Icon Logo (logoIconUrl)", "/brand-logo.png"],
+    fallbackChain: ["Mobile Logo (logoMobileUrl)", "Icon Logo (logoIconUrl)", "logo-navbar.png (static)"],
   },
   login:     {
     usedIn:        "/auth — login & register card hero",
@@ -1747,13 +1748,13 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
     usedIn:        "Client dashboard header & admin sidebar",
     uploadSlot:    "Dashboard Logo",
     storageKey:    "logoDashboardUrl",
-    fallbackChain: ["Dashboard Logo (logoDashboardUrl)", "Icon Logo (logoIconUrl)", "/brand-logo.png"],
+    fallbackChain: ["Dashboard Logo (logoDashboardUrl)", "Icon Logo (logoIconUrl)", "logo-navbar.png (static)"],
   },
   footer:    {
     usedIn:        "Page footer stamp",
     uploadSlot:    "Footer Logo",
     storageKey:    "logoFooterUrl",
-    fallbackChain: ["Footer Logo (logoFooterUrl)", "Icon Logo (logoIconUrl)", "/brand-logo.png"],
+    fallbackChain: ["Footer Logo (logoFooterUrl)", "Icon Logo (logoIconUrl)", "logo-navbar.png (static)"],
   },
   favicon:   {
     usedIn:        "Browser tab · Chrome mobile suggestions · PWA install icon · iOS home screen",
@@ -1765,7 +1766,7 @@ const SLOT_SOURCE_INFO: Record<BrandLogoSlot, {
     usedIn:        "Full-screen loader at app boot",
     uploadSlot:    "Splash Screen Logo",
     storageKey:    "logoSplashUrl",
-    fallbackChain: ["Splash Screen Logo (logoSplashUrl)", "Icon Logo (logoIconUrl)", "/brand-logo.png"],
+    fallbackChain: ["Splash Screen Logo (logoSplashUrl)", "Icon Logo (logoIconUrl)", "logo-navbar.png (static)"],
   },
 };
 
@@ -1862,8 +1863,8 @@ function LogoControlsPanel() {
 
   // Upload-only slots — no brand size/glow controls (icon & auth)
   const UPLOAD_ONLY_SLOTS = [
-    { key: "icon",  label: "Icon Logo",          desc: "Sidebar · footer · loading screen",          fallback: "/brand-logo.png", maxLabel: "400 × 400 px" },
-    { key: "auth",  label: "Client Portal Logo", desc: "/auth — fallback when no Login Hero Logo",   fallback: "/brand-logo.png", maxLabel: "600 × 600 px" },
+    { key: "icon",  label: "Icon Logo",          desc: "Sidebar · footer · loading screen",          fallback: BRAND_ASSETS.logoNavbar, maxLabel: "400 × 400 px" },
+    { key: "auth",  label: "Client Portal Logo", desc: "/auth — fallback when no Login Hero Logo",   fallback: BRAND_ASSETS.logoAuth,   maxLabel: "600 × 600 px" },
   ];
 
   function handleLogoFile(slot: string, e: React.ChangeEvent<HTMLInputElement>) {
@@ -2510,7 +2511,7 @@ function BrandingSection() {
     onError: (e: Error) => toast({ title: "Save failed", description: e.message, variant: "destructive" }),
   });
 
-  const iconLogoSrc = (settings as any)?.logoIconUrl || "/brand-logo.png";
+  const iconLogoSrc = (settings as any)?.logoIconUrl || BRAND_ASSETS.logoNavbar;
 
   const TAB_LABELS: Record<typeof activeTab, string> = {
     preview:  "Live Preview",

@@ -1,0 +1,252 @@
+FINAL WEBSITE CLEANUP — LOGO AUDIT + REMOVE GRID BACKGROUND
+
+The website is almost complete, but there are TWO final issues that must be resolved professionally.
+
+==================================================
+ISSUE #1 — FULL LOGO AUDIT (NO OLD LOGOS ANYWHERE)
+
+I want a COMPLETE logo audit of the entire project.
+
+The goal is to guarantee that there is NOT a single old logo remaining anywhere in the website, production build, cache, metadata, icons, or hidden assets.
+
+Do NOT assume everything is fixed.
+
+Perform a complete search across the entire codebase and project structure.
+
+Search for:
+
+logo
+Logo
+brand
+Brand
+brandLogo
+BrandLogo
+footerLogo
+navbarLogo
+authLogo
+siteLogo
+appIcon
+favicon
+apple-touch-icon
+manifest
+og:image
+twitter:image
+defaultLogo
+fallbackLogo
+uploadedLogo
+mediaLogo
+oldLogo
+old-logo
+logo-old
+brand-old
+/brand/
+/uploads/
+/attached_assets/
+.png
+.webp
+.svg
+.ico
+
+Check ALL locations:
+
+- Navbar
+- Mobile Navbar
+- Footer
+- Mobile Footer
+- Desktop Footer
+- Home Page
+- Login Page
+- Register Page
+- Auth Layout
+- Dashboard
+- Admin Dashboard
+- Client Dashboard
+- Splash Screen
+- Loading Screen
+- Media Library
+- Brand Settings
+- Database Logo Fields
+- Uploaded Assets
+- SEO Metadata
+- Open Graph Image
+- Twitter Card Image
+- Structured Data (JSON-LD)
+- Manifest Icons
+- Apple Touch Icons
+- Favicon
+- PWA Icons
+- Service Worker Cache
+- Cache Storage
+- LocalStorage
+- SessionStorage
+- Email Templates
+- index.html preload links
+
+==================================================
+LOGO STANDARDIZATION
+
+Every visible logo must use ONLY the final approved logo.
+
+No exceptions.
+
+No fallback logos.
+No uploaded media overrides.
+No database overrides.
+No hidden logo sources.
+No old logo files.
+
+All logo references must come from:
+
+BRAND_ASSETS.logoMaster
+BRAND_ASSETS.logoNavbar
+BRAND_ASSETS.logoAuth
+BRAND_ASSETS.logoOg
+BRAND_ASSETS.favicon
+BRAND_ASSETS.appleTouchIcon
+BRAND_ASSETS.icon192
+BRAND_ASSETS.icon512
+
+==================================================
+REMOVE OLD LOGO FILES
+
+Search all directories for old logo files.
+
+If an old logo file exists:
+
+- Remove it if unused.
+- Move it out of public access if necessary.
+- Rename/archive it so it cannot be accidentally served.
+
+There must be NO publicly accessible old logo asset.
+
+==================================================
+LOGO DISPLAY RULES
+
+All logos must:
+
+- Use transparent background
+- No black background added
+- No cropping
+- No distortion
+- No stretching
+- No pixelation
+- No loading flicker
+- No disappearing after refresh
+- No logo swap after hydration
+- No delay before appearing
+
+Navbar logo must appear immediately on page refresh.
+
+==================================================
+ISSUE #2 — REMOVE GRID / SQUARE BACKGROUND
+
+There is still a visible square/grid pattern behind cards and page sections.
+
+This pattern does not match the premium look of the brand.
+
+Remove ALL visible:
+
+- grid backgrounds
+- square patterns
+- tile patterns
+- cyber-grid overlays
+- scanline overlays
+- repeating background textures
+
+Search for:
+
+background-image
+linear-gradient
+radial-gradient
+grid
+pattern
+cyber-grid
+bg-grid
+tiles
+square
+overlay
+scanlines
+::before
+::after
+
+Check:
+
+- Login page
+- Register page
+- Auth pages
+- Dashboard pages
+- Sections behind cards
+- Card wrappers
+- Background containers
+- Mobile layouts
+- Desktop layouts
+
+==================================================
+NEW BACKGROUND STYLE
+
+Replace the grid pattern with a premium smooth background:
+
+- Deep black
+- Very dark navy tones
+- Soft cyan glow accents
+- Smooth gradients
+- Clean modern appearance
+- Premium Tron-inspired atmosphere
+- No visible squares
+- No visible grid
+- No harsh lines
+- No noisy texture
+
+The background should feel:
+
+Premium
+Luxury
+Clean
+Modern
+Smooth
+
+==================================================
+DO NOT CHANGE
+
+Do NOT modify:
+
+- Logo design
+- Logo colors
+- Buttons
+- Layout structure
+- Card sizes
+- Typography
+- Language switcher
+- Navigation
+- Spacing
+- Existing branding
+
+Only remove the grid pattern and keep the premium cyan/black theme.
+
+==================================================
+FINAL VERIFICATION REQUIRED
+
+Before marking complete:
+
+1. Show search results proving no old logo references remain.
+2. List all files modified.
+3. Confirm all logos use the new final assets only.
+4. Confirm no old logo files are publicly reachable.
+5. Screenshot Navbar.
+6. Screenshot Footer.
+7. Screenshot Login/Auth page.
+8. Screenshot Mobile view.
+9. Confirm production deployment succeeded.
+10. Confirm testing was done on the LIVE production website.
+
+EXPECTED RESULT:
+
+✓ No old logos anywhere.
+✓ One unified logo system.
+✓ No logo flicker.
+✓ No disappearing after refresh.
+✓ No logo swaps.
+✓ No black backgrounds behind logos.
+✓ No grid/square backgrounds.
+✓ Smooth premium black/cyan Tron-style UI.
+✓ Consistent branding across the entire website.

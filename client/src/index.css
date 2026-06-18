@@ -924,20 +924,6 @@ html[dir="rtl"] .hero-eyebrow-rule {
    instead of arcade. All animations honour prefers-reduced-motion via
    the global block at the bottom of this file. */
 
-/* Soft 1px cyan grid — meant to be overlaid on dark hero/panel surfaces. */
-.tron-grid {
-  background-image:
-    linear-gradient(to right, hsl(183 100% 50% / 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(183 100% 50% / 0.07) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: -1px -1px;
-}
-.tron-grid-fine {
-  background-image:
-    linear-gradient(to right, hsl(183 100% 50% / 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(183 100% 50% / 0.05) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
 
 /* Radial vignette — darken the corners so overlay text always reads. */
 .tron-vignette {

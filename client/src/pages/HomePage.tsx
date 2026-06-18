@@ -529,8 +529,7 @@ export default function HomePage() {
       {/* BOOK & CONTACT CTA */}
       <section className="max-w-5xl mx-auto px-5 py-14 md:py-20" id="contact">
         <div className="tron-card rounded-3xl p-6 sm:p-8 md:p-12 relative overflow-hidden">
-          {/* Subtle TRON layers — grid wash, blue corner glow, top neon beam. */}
-          <div className="absolute inset-0 tron-grid-fine opacity-30 pointer-events-none" aria-hidden="true" />
+          {/* Subtle TRON layers — corner glow, top neon beam. */}
           <div className="absolute -right-20 -bottom-20 w-72 h-72 bg-primary/15 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute left-6 right-6 top-0 tron-beam pointer-events-none" />
           <div className="relative">
