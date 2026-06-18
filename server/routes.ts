@@ -1948,7 +1948,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     );
     if ((fullDayBlock || slotBlock) && me.role !== "admin") {
       const reason = fullDayBlock
-        ? "Youssef Fitness is unavailable on this day."
+        ? "Youssef Elite is unavailable on this day."
         : "This time slot is unavailable.";
       return res.status(400).json({ message: reason, blockType: fullDayBlock?.blockType ?? null });
     }
@@ -2261,13 +2261,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return res.status(400).json({ message: "Provide a valid `to` email address." });
     }
-    const subject = String(req.body?.subject ?? "Youssef Fitness email test").slice(0, 200);
+    const subject = String(req.body?.subject ?? "Youssef Elite email test").slice(0, 200);
     const stamp = new Date().toISOString();
     const result = await sendEmail({
       to,
       subject,
       text:
-        `This is a delivery test from the Youssef Fitness booking system.\n\n` +
+        `This is a delivery test from the Youssef Elite booking system.\n\n` +
         `Sent at: ${stamp}\nFrom env EMAIL_FROM: ${process.env.EMAIL_FROM ? "custom" : "default"}\n\n` +
         `If you received this, transactional email is working.`,
       html:
@@ -3200,15 +3200,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         : trainerEmail();
     const result = await sendEmail({
       to,
-      subject: "Youssef Fitness — email delivery test",
+      subject: "Youssef Elite — email delivery test",
       text:
-        `This is a test email from the Youssef Fitness admin diagnostic endpoint.\n\n` +
+        `This is a test email from the Youssef Elite admin diagnostic endpoint.\n\n` +
         `If you received this, Resend + EMAIL_FROM are wired correctly.\n\n` +
         `Sent at ${new Date().toISOString()}.`,
       html:
         `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#111;max-width:520px">` +
         `<h2 style="margin:0 0 12px;color:#0a7d4f">Email delivery test</h2>` +
-        `<p style="margin:0 0 12px">This is a test email from the Youssef Fitness admin diagnostic endpoint.</p>` +
+        `<p style="margin:0 0 12px">This is a test email from the Youssef Elite admin diagnostic endpoint.</p>` +
         `<p style="margin:0;color:#666;font-size:13px">Sent at ${new Date().toISOString()}.</p>` +
         `</div>`,
     });
@@ -3621,7 +3621,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               `  ${booking.date} at ${timeDualNotif} (Dubai time)\n\n` +
               `Spots go fast — book it now: ${bookUrl}\n\n` +
               `If you've changed your mind, you can leave the waitlist from your dashboard.\n\n` +
-              `— Youssef Fitness`;
+              `— Youssef Elite`;
             const html =
               `<div style="font-family:system-ui,-apple-system,sans-serif;background:#050505;color:#e4e4e4;padding:32px;border-radius:16px;max-width:520px;margin:auto">` +
               `<h2 style="color:#5ee7ff;margin:0 0 12px">A spot opened up</h2>` +

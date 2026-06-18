@@ -41,7 +41,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Each session is 1 hour.",
     rule2: "Cancel or reschedule at least 3 hours in advance.",
     rule3: "Any extra time must be agreed with Youssef in advance.",
-    closing: "See you soon,\nYoussef Fitness",
+    closing: "See you soon,\nYoussef Elite",
   },
   ar: {
     subject: "تم تأكيد حجزك — {date} الساعة {time}",
@@ -58,7 +58,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "مدة كل جلسة ساعة واحدة.",
     rule2: "يجب الإلغاء أو إعادة الجدولة قبل 3 ساعات على الأقل.",
     rule3: "أي وقت إضافي يجب الاتفاق عليه مسبقاً مع Youssef.",
-    closing: "إلى اللقاء قريباً،\nYoussef Fitness",
+    closing: "إلى اللقاء قريباً،\nYoussef Elite",
   },
   fr: {
     subject: "Réservation confirmée — {date} à {time}",
@@ -75,7 +75,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Chaque séance dure 1 heure.",
     rule2: "Annulez ou reprogrammez au moins 3 heures à l'avance.",
     rule3: "Tout temps supplémentaire doit être convenu à l'avance avec Youssef.",
-    closing: "À bientôt,\nYoussef Fitness",
+    closing: "À bientôt,\nYoussef Elite",
   },
   es: {
     subject: "Reserva confirmada — {date} a las {time}",
@@ -92,7 +92,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Cada sesión dura 1 hora.",
     rule2: "Cancela o reprograma con al menos 3 horas de antelación.",
     rule3: "Cualquier tiempo adicional debe acordarse previamente con Youssef.",
-    closing: "Hasta pronto,\nYoussef Fitness",
+    closing: "Hasta pronto,\nYoussef Elite",
   },
   de: {
     subject: "Buchung bestätigt — {date} um {time}",
@@ -109,7 +109,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Jede Session dauert 1 Stunde.",
     rule2: "Mindestens 3 Stunden vorher absagen oder umplanen.",
     rule3: "Zusatzzeit muss vorab mit Youssef vereinbart werden.",
-    closing: "Bis bald,\nYoussef Fitness",
+    closing: "Bis bald,\nYoussef Elite",
   },
   it: {
     subject: "Prenotazione confermata — {date} alle {time}",
@@ -126,7 +126,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Ogni sessione dura 1 ora.",
     rule2: "Annulla o riprogramma almeno 3 ore prima.",
     rule3: "Eventuale tempo aggiuntivo va concordato in anticipo con Youssef.",
-    closing: "A presto,\nYoussef Fitness",
+    closing: "A presto,\nYoussef Elite",
   },
   ru: {
     subject: "Бронирование подтверждено — {date} в {time}",
@@ -143,7 +143,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Каждая сессия длится 1 час.",
     rule2: "Отмена или перенос — минимум за 3 часов.",
     rule3: "Дополнительное время согласуется с Youssef заранее.",
-    closing: "До встречи,\nYoussef Fitness",
+    closing: "До встречи,\nYoussef Elite",
   },
   zh: {
     subject: "预约已确认 — {date} {time}",
@@ -160,7 +160,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "每节课时长1小时。",
     rule2: "请至少提前3小时取消或改期。",
     rule3: "如需延长时间，请提前与 Youssef 协商。",
-    closing: "期待与您见面，\nYoussef Fitness",
+    closing: "期待与您见面，\nYoussef Elite",
   },
   hi: {
     subject: "बुकिंग कन्फर्म हो गई — {date} को {time} बजे",
@@ -177,7 +177,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "हर सेशन 1 घंटे का होता है।",
     rule2: "कम से कम 3 घंटे पहले कैंसल या रीशेड्यूल करें।",
     rule3: "अतिरिक्त समय के लिए Youssef से पहले से सहमति लें।",
-    closing: "जल्द ही मिलते हैं,\nYoussef Fitness",
+    closing: "जल्द ही मिलते हैं,\nYoussef Elite",
   },
   tr: {
     subject: "Rezervasyon onaylandı — {date} {time}",
@@ -194,7 +194,7 @@ export const CLIENT_BOOKING_EMAIL_I18N: Record<string, ClientEmailI18n> = {
     rule1: "Her seans 1 saattir.",
     rule2: "En az 3 saat önceden iptal veya yeniden planlama yap.",
     rule3: "Ek süre için önceden Youssef ile anlaş.",
-    closing: "Yakında görüşmek üzere,\nYoussef Fitness",
+    closing: "Yakında görüşmek üzere,\nYoussef Elite",
   },
 };
 

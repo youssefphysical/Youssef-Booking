@@ -1,5 +1,24 @@
 User-agent: *
 Allow: /
+
+# Public brand assets — must remain crawlable for search/social discovery
+Allow: /brand-logo.png
+Allow: /og-brand.jpg
+Allow: /favicon.ico
+Allow: /favicon-16.png
+Allow: /favicon-32.png
+Allow: /favicon-48.png
+Allow: /favicon-180.png
+Allow: /favicon-192.png
+Allow: /favicon-512.png
+Allow: /apple-touch-icon.png
+Allow: /icon-192.png
+Allow: /icon-512.png
+Allow: /icon-512-maskable.png
+Allow: /manifest.webmanifest
+Allow: /sitemap.xml
+
+# Private routes — no indexing
 Disallow: /admin
 Disallow: /admin/
 Disallow: /admin-access

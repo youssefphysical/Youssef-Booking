@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
   <!-- ── Homepage ───────────────────────────────────────────────────────── -->
   <url>
@@ -20,6 +21,16 @@
     <xhtml:link rel="alternate" hreflang="zh"        href="https://youssefelite.com/"/>
     <xhtml:link rel="alternate" hreflang="hi"        href="https://youssefelite.com/"/>
     <xhtml:link rel="alternate" hreflang="tr"        href="https://youssefelite.com/"/>
+    <image:image>
+      <image:loc>https://youssefelite.com/brand-logo.png</image:loc>
+      <image:title>Youssef Elite official logo</image:title>
+      <image:caption>Youssef Elite — official brand logo for premium personal training in Dubai</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://youssefelite.com/og-brand.jpg</image:loc>
+      <image:title>Youssef Elite — Premium Personal Training Dubai</image:title>
+      <image:caption>Youssef Elite social preview card — science-based personal training in Dubai</image:caption>
+    </image:image>
   </url>
 
   <!-- ── How it Works ───────────────────────────────────────────────────── -->

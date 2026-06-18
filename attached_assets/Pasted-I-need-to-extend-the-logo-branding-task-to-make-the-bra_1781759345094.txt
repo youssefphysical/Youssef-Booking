@@ -1,0 +1,263 @@
+I need to extend the logo/branding task to make the brand logo discoverable, professional, and correctly displayed across search engines, AI search engines, social previews, browser previews, and all external discovery systems.
+
+IMPORTANT:
+Use the current uploaded brand logo as the official canonical brand logo.
+Do not redesign it.
+Do not crop it.
+Do not distort it.
+Do not remove glow.
+Do not change colors.
+Do not replace it with any old logo.
+
+Goal:
+When anyone searches for the website, brand, coach, personal training service, or asks AI/search systems about the brand, the correct professional logo should be available, indexed, and displayed with proper sizing wherever supported.
+
+Required implementation:
+
+1. Canonical Brand Logo
+- Keep `/brand-logo.png` as the single canonical logo source.
+- Make sure it is publicly accessible with a clean absolute URL.
+- Example:
+  `https://YOUR-DOMAIN.com/brand-logo.png`
+- The image must return HTTP 200.
+- It must not require login.
+- It must not be blocked by robots.txt.
+- It must have correct image MIME type.
+
+2. Search Engine Logo Support
+Add the brand logo to all search-engine-readable metadata:
+
+- Organization JSON-LD logo
+- WebSite JSON-LD logo if applicable
+- LocalBusiness / SportsActivityLocation / ProfessionalService schema logo if applicable
+- SameAs links if available
+- Publisher logo if blog/articles exist
+- Author/Person schema image if the brand is personal-coach based
+
+The JSON-LD logo must use the full absolute HTTPS URL, not a relative path.
+
+Example:
+`"logo": "https://YOUR-DOMAIN.com/brand-logo.png"`
+
+3. AI Search Engine Readability
+Optimize the website so AI search systems can clearly identify the brand logo.
+
+Make sure the logo is referenced in:
+- JSON-LD schema
+- Open Graph metadata
+- Twitter/X card metadata
+- Main header image alt text
+- Website manifest
+- Sitemap if image sitemap is supported
+- Public brand/about section
+
+Use clear alt text:
+`Youssef Elite official logo`
+or
+`Youssef Elite Personal Training official brand logo`
+
+4. Open Graph / Social Sharing
+Use a properly sized brand social preview image for sharing.
+
+Create or confirm:
+- `og:image`
+- `og:image:secure_url`
+- `og:image:width`
+- `og:image:height`
+- `og:image:alt`
+
+Required social preview size:
+- 1200 × 630 px
+- Professional dark background
+- Brand logo centered
+- No cropping
+- No distorted glow
+- Premium clean preview
+
+Use this for:
+- WhatsApp previews
+- Facebook previews
+- LinkedIn previews
+- Telegram previews
+- X/Twitter previews
+
+5. Twitter / X Cards
+Add or verify:
+
+- `twitter:card = summary_large_image`
+- `twitter:image`
+- `twitter:image:alt`
+- `twitter:title`
+- `twitter:description`
+
+The Twitter image must use the same professional 1200×630 brand preview.
+
+6. Google Search Appearance
+Improve the chance that Google can recognize and display the logo correctly.
+
+Requirements:
+- Organization schema with logo
+- LocalBusiness or ProfessionalService schema if relevant
+- Person schema for the coach if relevant
+- Website schema
+- Correct favicon
+- Correct Apple touch icon
+- Correct PWA icons
+- Clean robots.txt
+- Clean sitemap.xml
+- Public image URLs
+- No old logo references
+- No blocked assets
+
+7. AI Search / Answer Engines
+Make the brand easy for AI systems to understand.
+
+Add or verify a clear public brand identity section containing:
+- Brand name: Youssef Elite
+- Service: Personal Training, Online Coaching, Nutrition Plans
+- Location: Dubai, UAE
+- Official logo reference
+- Official website URL
+- Contact / WhatsApp if already used on website
+
+Make sure schema and page text consistently use the same brand name:
+`Youssef Elite`
+
+Avoid mixed names like:
+- Youssef Fitness
+- YE Logo
+- Old logo names
+unless used only internally.
+
+8. Image Sitemap
+If possible, add the logo and social preview image to sitemap/image metadata.
+
+Include:
+- `/brand-logo.png`
+- `/og-brand.jpg` or current OG image
+- favicon/icon assets if appropriate
+
+Make sure they are crawlable.
+
+9. Robots.txt
+Verify robots.txt does not block:
+- `/brand-logo.png`
+- `/og-brand.jpg`
+- `/icons/`
+- `/favicon.ico`
+- `/manifest.webmanifest`
+- `/sitemap.xml`
+
+10. Manifest / PWA
+Update web manifest:
+
+- name: Youssef Elite
+- short_name: Youssef Elite
+- icons generated from the official logo
+- 192x192
+- 512x512
+- maskable icon if supported
+- correct theme_color
+- correct background_color
+
+11. Browser / App Icons
+Verify all icons are generated from the current logo:
+
+- favicon.ico
+- favicon-16x16
+- favicon-32x32
+- apple-touch-icon 180x180
+- android-chrome-192x192
+- android-chrome-512x512
+- maskable icon if needed
+
+Remove any old icon/logo references.
+
+12. Logo Sizing Rules
+Across all search/social/app systems, avoid using the raw detailed logo where it becomes too small and unreadable.
+
+Use:
+- Favicon/icon version for small browser icons.
+- 1200×630 branded card for social previews.
+- Transparent PNG for website UI.
+- Square 1024×1024 or 512×512 version for app/PWA/search logo usage.
+
+The logo must always:
+- Keep proportions
+- Stay centered
+- Preserve glow
+- Avoid edge clipping
+- Have safe padding
+- Look professional on dark and light previews
+
+13. Alt Text / Accessibility
+Every visible logo must include useful alt text:
+
+`Youssef Elite official logo`
+
+Do not use generic alt text like:
+- logo
+- image
+- icon
+
+14. Cache Busting
+Add versioning/cache busting for all logo assets.
+
+Examples:
+- `/brand-logo.png?v=2026-06-logo`
+- `/og-brand.jpg?v=2026-06-logo`
+- `/favicon.ico?v=2026-06-logo`
+
+Make sure returning visitors see the latest logo.
+
+15. Final Global Scan
+Run a full codebase scan for old references:
+
+Search for:
+- ye-logo
+- old logo
+- logo.png
+- favicon
+- apple-touch-icon
+- og-hero
+- hero-current
+- Youssef Fitness
+
+Replace outdated public references with the current brand assets where appropriate.
+
+16. Validation Required
+After implementation, validate:
+
+- Google Rich Results schema
+- Schema.org JSON-LD structure
+- Open Graph tags
+- Twitter Card tags
+- WhatsApp preview image
+- LinkedIn preview image
+- Telegram preview image
+- Browser favicon
+- PWA install icon
+- Mobile home screen icon
+- robots.txt
+- sitemap.xml
+
+17. Final Report
+After completing the task, provide a final PASS/FAIL report with:
+
+- Google Search logo readiness
+- AI search readiness
+- JSON-LD logo status
+- Open Graph image status
+- Twitter/X card status
+- WhatsApp preview status
+- LinkedIn preview status
+- Telegram preview status
+- Favicon status
+- PWA icon status
+- Robots.txt status
+- Sitemap status
+- Old logo references status
+- Final asset URLs
+
+Important note:
+I understand no developer can force Google, AI engines, or social platforms to instantly display the logo. But the website must be technically optimized so all major search engines, AI search tools, social previews, and browser/app systems can correctly discover, index, and display the professional logo when supported.

@@ -1,6 +1,6 @@
 {
   "name": "Youssef Elite",
-  "short_name": "YE",
+  "short_name": "Youssef Elite",
   "description": "Science-based personal training in Dubai for fat loss, muscle gain, movement quality, and long-term performance.",
   "start_url": "/",
   "scope": "/",
@@ -25,10 +25,18 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-brand.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "label": "Youssef Elite — Premium Personal Training Dubai"
     }
   ],
   "shortcuts": [
