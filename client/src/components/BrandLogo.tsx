@@ -76,6 +76,11 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
     // Loading state — aria-busy wrapper with canonical logo on both slots.
     // The canonical URL is already in the browser cache (preloaded in index.html)
     // so this renders the logo on frame 0 with no network round-trip.
+    //
+    // IMPORTANT: styles must be IDENTICAL to the loaded-state img styles
+    // (same filter/padding/transform CSS vars) so there is zero visual change
+    // when isLoaded flips to true. Any style difference between loading and
+    // loaded states causes a visible layout shift the user sees as a logo swap.
     if (!isLoaded) {
       return (
         <span
@@ -88,13 +93,25 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             src={CANONICAL_LOGO}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 block md:hidden"
-            style={{ height: mH, width: "auto" }}
+            style={{
+              height:    mH,
+              width:     "auto",
+              filter:    "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-mobile-glow, var(--brand-logo-glow, 0.35))))",
+              padding:   "var(--brand-mobile-padding,  var(--brand-logo-padding, 4px))",
+              transform: "translateY(var(--brand-mobile-vpos, var(--brand-logo-voffset, 0px)))",
+            }}
           />
           <img
             src={CANONICAL_LOGO}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 hidden md:block"
-            style={{ height: dH, width: "auto" }}
+            style={{
+              height:    dH,
+              width:     "auto",
+              filter:    "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-navbar-glow, var(--brand-logo-glow, 0.35))))",
+              padding:   "var(--brand-navbar-padding,  var(--brand-logo-padding, 5px))",
+              transform: "translateY(var(--brand-navbar-vpos, var(--brand-logo-voffset, 0px)))",
+            }}
           />
         </span>
       );

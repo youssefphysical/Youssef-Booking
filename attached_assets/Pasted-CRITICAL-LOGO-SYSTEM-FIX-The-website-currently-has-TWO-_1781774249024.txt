@@ -1,0 +1,181 @@
+CRITICAL LOGO SYSTEM FIX
+
+The website currently has TWO MAJOR LOGO PROBLEMS that must be fixed permanently.
+
+==================================================
+PROBLEM #1 — OLD LOGO APPEARS IN NAVBAR
+==================================================
+
+The Navbar is still loading an OLD logo asset.
+
+Observed:
+- Login/Auth page uses the new logo.
+- Navbar uses an older logo.
+- Different pages are using different logo files.
+
+This creates inconsistent branding.
+
+==================================================
+PROBLEM #2 — LOGO SWAPS AFTER PAGE LOAD
+==================================================
+
+Observed behavior:
+
+1. Page opens.
+2. Logo appears.
+3. Loading spinner appears.
+4. Navbar re-renders.
+5. Logo changes.
+6. Old logo replaces the new logo.
+
+This indicates that another logo source is overriding the initial logo after hydration or data loading.
+
+==================================================
+REQUIRED INVESTIGATION
+==================================================
+
+Search the ENTIRE project for ALL logo references:
+
+- Navbar
+- Mobile Navbar
+- Auth Page
+- Login Page
+- Register Page
+- Home Page
+- Footer
+- Media Library
+- Brand Settings
+- Database
+- CMS Settings
+- Local Storage
+- Session Storage
+- Service Worker
+- PWA Manifest
+- Favicon
+- Apple Touch Icon
+- Open Graph Image
+- Structured Data
+- SEO Metadata
+
+Search for:
+
+logo
+brand
+favicon
+icon
+og:image
+apple-touch-icon
+manifest
+site-logo
+defaultLogo
+fallbackLogo
+
+==================================================
+REQUIRED FIX
+==================================================
+
+Create ONE SINGLE SOURCE OF TRUTH.
+
+Example:
+
+const MAIN_LOGO = "/brand/logo.png?v=2026-final";
+
+Every component must use ONLY this logo.
+
+Use it everywhere:
+
+- Navbar
+- Mobile Navbar
+- Auth/Login
+- Register
+- Home
+- Footer
+- SEO
+- OG Image
+- Structured Data
+- PWA Icons
+
+==================================================
+REMOVE ALL OLD REFERENCES
+==================================================
+
+Delete or replace:
+
+- Old logo files
+- Old logo URLs
+- Hardcoded logo paths
+- Default logo imports
+- Fallback logo references
+- Database logo references pointing to old assets
+
+If Brand Settings contain an old logo URL,
+replace it automatically with:
+
+/brand/logo.png?v=2026-final
+
+==================================================
+CACHE & PWA FIX
+==================================================
+
+Clear:
+
+- Service Worker cache
+- Cache Storage
+- PWA cached assets
+- Browser cached logo files
+
+Force cache busting:
+
+logo.png?v=2026-final
+
+==================================================
+HYDRATION / RE-RENDER FIX
+==================================================
+
+Verify that Navbar does NOT receive a different logo after hydration.
+
+Add debugging logs:
+
+console.log("Navbar Logo:", logoUrl);
+console.log("Brand Logo:", brand.logo);
+console.log("Media Logo:", media.logo);
+
+Track if logo URL changes after initial render.
+
+If it changes:
+identify the exact component, API call, database value, or state update causing the replacement.
+
+==================================================
+EXPECTED RESULT
+==================================================
+
+✓ Same logo everywhere
+✓ Navbar logo = Login logo
+✓ No old logo anywhere
+✓ No logo flicker
+✓ No delayed logo replacement
+✓ No blank logo period
+✓ No hydration swap
+✓ No cache issues
+✓ No fallback logo loading
+✓ No duplicate logo assets
+
+FINAL TESTS REQUIRED
+
+- Desktop Chrome
+- Mobile Chrome
+- Safari
+- Incognito Mode
+- Hard Refresh
+- After Login
+- After Logout
+- Route Changes
+- Wait 10+ seconds after page load
+
+Result must be:
+
+ONE LOGO.
+ONE SOURCE.
+NO SWAPS.
+NO OLD LOGO.
+NO FLICKER.
