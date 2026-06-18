@@ -50,7 +50,7 @@ export const LOGO_BRAND_SLOT_DEFAULTS: Record<LogoSlot, LogoBrandControls> = {
   // minHeroH: 280 — login hero container minimum height (gives logo breathing room)
   login:     { wDesktop: 480, hDesktop:   0, wMobile: 360, hMobile:   0, zoom: 108, hOffset: 0, vOffset: 0, padding: 0,  glow: 40, minHeroH: 280 },
   dashboard: { wDesktop:   0, hDesktop:  48, wMobile:   0, hMobile:  40, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 20, minHeroH:   0 },
-  footer:    { wDesktop:   0, hDesktop:  22, wMobile:   0, hMobile:  20, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 25, minHeroH:   0 },
+  footer:    { wDesktop:   0, hDesktop:  36, wMobile:   0, hMobile:  30, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 25, minHeroH:   0 },
   favicon:   { wDesktop:  32, hDesktop:  32, wMobile:  16, hMobile:  16, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow:  0, minHeroH:   0 },
   splash:    { wDesktop:   0, hDesktop:   0, wMobile:   0, hMobile:   0, zoom: 100, hOffset: 0, vOffset: 0, padding: 0,  glow: 50, minHeroH:   0 },
 };

@@ -46,8 +46,8 @@ function bustUrl(url: string | null | undefined, updatedAt: unknown): string | n
 }
 
 const VARIANT_HEIGHT: Record<Exclude<NonNullable<BrandLogoProps["variant"]>, "navbar">, string> = {
-  sidebar: "var(--brand-sidebar-h-desktop, 32px)",
-  footer:  "var(--brand-footer-h-desktop,  22px)",
+  sidebar: "var(--brand-sidebar-h-desktop, 48px)",
+  footer:  "var(--brand-footer-h-desktop,  36px)",
   icon:    "var(--brand-icon-h-desktop,    36px)",
 };
 
@@ -145,6 +145,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         className={`inline-flex items-center justify-center ${className}`}
         aria-label="Youssef Elite"
         aria-busy="true"
+        style={{ overflow: "visible" }}
       >
         <span style={{ height: heightVar, width: heightVar, minWidth: "1px" }} />
       </span>
@@ -167,6 +168,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
       <span
         className={`inline-flex items-center justify-center ${className}`}
         aria-label="Youssef Elite"
+        style={{ overflow: "visible" }}
       >
         <span style={{ height: heightVar, width: heightVar, minWidth: "1px" }} />
       </span>
@@ -177,6 +179,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
     <span
       className={`inline-flex items-center justify-center ${className}`}
       aria-label="Youssef Elite"
+      style={{ overflow: "visible" }}
     >
       <img
         src={variantSrc}
@@ -184,9 +187,10 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         aria-hidden="true"
         className="object-contain shrink-0"
         style={{
-          height: heightVar,
-          width:  heightVar,
-          filter: `drop-shadow(0 0 7px rgba(0,212,255,var(--brand-${variant}-glow, var(--brand-logo-glow, 0.35))))`,
+          height:   heightVar,
+          width:    heightVar,
+          overflow: "visible",
+          filter:   `drop-shadow(0 0 7px rgba(0,212,255,var(--brand-${variant}-glow, var(--brand-logo-glow, 0.35))))`,
         }}
       />
     </span>
