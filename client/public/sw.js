@@ -19,12 +19,11 @@
  * Bumping CACHE_VERSION invalidates ALL caches → safe escape hatch.
  */
 
-// Bumped 2026-06-18 (v30) to force-evict old favicon/icon assets.
-// All small icons (favicon.ico, favicon-*.png, icon-192.png, icon-512.png,
-// icon-512-maskable.png, apple-touch-icon.png) replaced with the new
-// YE simplified icon. Cache bust token: ye-icon-final-2026.
-// v29 → v30: new icon assets must be served fresh on all clients.
-const CACHE_VERSION = "v30-ye-icon-final-2026";
+// Bumped 2026-06-18 (v31) — optimized YE icon set (larger fill, sharper
+// downscaling, post-resize sharpen for ≤48 px). New files: icon-192-maskable,
+// favicon-96. Cache bust: ye-icon-optimized-final-2026.
+// v30 → v31: re-evict all icon assets so clients get the optimized versions.
+const CACHE_VERSION = "v31-ye-icon-optimized-final-2026";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
