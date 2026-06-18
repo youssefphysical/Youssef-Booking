@@ -53,3 +53,21 @@ id = "acfebNHtXgBOsxoukx1PS"
 uri = "file://docs/email-design-system-step2.md"
 type = "text"
 title = "Email Design System Blueprint — Step 2"
+
+[[outputs]]
+id = "YHeexbARBv-4AygjEkMQP"
+uri = "file://attached_assets/screenshots/youssef-booking-j7iuuqulo-youssefs-projects-e1fd19e3_vercel_app.png"
+type = "image"
+title = "Production site — live Vercel deployment"
+
+[[outputs]]
+id = "i-yEE3MvS9A8qZrbwRXFh"
+uri = "file://attached_assets/screenshots/prod-favicon-32.png"
+type = "image"
+title = "favicon-32.png fetched live from production (32×32, transparent bg)"
+
+[[outputs]]
+id = "3za-ltpBgxPEVXQDIpyc0"
+uri = "file://attached_assets/screenshots/prod-icon-192.png"
+type = "image"
+title = "icon-192.png fetched live from production (192×192, transparent bg)"
