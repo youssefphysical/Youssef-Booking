@@ -118,7 +118,7 @@ export default function AuthPage({
   // after useSettings()'s initialData function ran.
   // Canonical logo URL — identical to BrandLogo.tsx CANONICAL_LOGO so every
   // placement uses the same versioned URL and the browser only caches one copy.
-  const AUTH_CANONICAL_LOGO = "/brand-logo.png?v=2026-06-logo";
+  const AUTH_CANONICAL_LOGO = "/brand-logo.png?v=2026-06-final-force";
   // Paths that resolve to the canonical file — dynamic timestamp would create a
   // different SW cache entry and could serve stale content from an old SW cache.
   const AUTH_CANONICAL_PATHS = [

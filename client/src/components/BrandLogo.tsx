@@ -38,7 +38,7 @@ interface BrandLogoProps {
 }
 
 /** Fixed canonical navbar logo — always the new official brand mascot. */
-const CANONICAL_LOGO = "/brand-logo.png?v=2026-06-logo";
+const CANONICAL_LOGO = "/brand-logo.png?v=2026-06-final-force";
 
 /**
  * Append ?v=<updatedAt ms> for cache-busting of custom uploaded paths.

@@ -1,0 +1,89 @@
+The issue is NOT fixed.
+
+I tested again:
+1. Navbar logo still disappears and appears again on refresh.
+2. The logo that appears is still the OLD logo.
+3. This means the problem is NOT only CSS padding/glow/transform.
+4. There is still an old logo source, old cache, or old asset being rendered.
+
+Do not explain. Fix it.
+
+Required actions:
+
+1. Remove all logo loading states.
+   The navbar logo must render instantly with a stable image.
+   No conditional logo rendering.
+   No isLoaded logo swap.
+   No fade-in.
+   No transition.
+   No skeleton.
+   No spinner affecting logo.
+
+2. Hard replace the navbar logo source only with the new final logo:
+   /brand-logo.png?v=2026-06-final-force
+
+3. Add this directly in the Navbar component:
+   img src="/brand-logo.png?v=2026-06-final-force"
+
+4. Do not read navbar logo from:
+   - database
+   - brand settings
+   - localStorage
+   - sessionStorage
+   - uploaded media
+   - fallback logo
+   - old cached config
+
+5. Delete or rename every old logo file from public/build/assets/uploads.
+
+6. Search the whole project for old logo references and remove them:
+   logo
+   brand-logo
+   old-logo
+   navbar-logo
+   uploaded
+   media
+   fallbackLogo
+   defaultLogo
+   splash
+   icon
+
+7. Disable service worker caching for logo images completely.
+
+For all logo files, add:
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+
+8. Force unregister old service worker on app start:
+navigator.serviceWorker.getRegistrations().then(regs =>
+  regs.forEach(reg => reg.unregister())
+);
+
+9. Clear Cache Storage:
+caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+
+10. Remove image transitions:
+transition: none !important;
+animation: none !important;
+opacity: 1 !important;
+visibility: visible !important;
+transform: none !important;
+
+11. Navbar logo CSS must be stable before and after page load:
+same width
+same height
+same padding
+same filter
+same transform
+same object-fit
+
+12. After fix, prove it with logs:
+console.log("NAVBAR LOGO FINAL SRC:", img.src);
+
+Expected result:
+- New logo appears immediately.
+- No old logo ever appears.
+- No disappearing.
+- No flicker.
+- No refresh swap.
+- No loading swap.
+- Navbar and auth logo match.

@@ -27,7 +27,8 @@ import {
 } from "@/components/admin/AdminNavigation";
 import { useTranslation } from "@/i18n";
 import { useFeatureFlag } from "@/lib/featureFlags";
-import { BrandLogo } from "@/components/BrandLogo";
+// BrandLogo removed from navbar — logo is now a direct hardcoded img
+// so it is immune to settings-load re-renders and SW cache swaps.
 
 export function Navigation() {
   const [location, navigate] = useLocation();
@@ -230,7 +231,22 @@ export function Navigation() {
           className="min-w-0 shrink-0"
           data-testid="link-brand"
         >
-          <BrandLogo variant="navbar" />
+          {/* HARDCODED navbar logo — no DB / settings / SW involvement.
+              Same URL, same styles on every render, zero loading states. */}
+          <img
+            src="/brand-logo.png?v=2026-06-final-force"
+            alt="Youssef Elite"
+            data-testid="img-navbar-logo"
+            className="h-[44px] md:h-[60px] w-auto object-contain block"
+            style={{
+              filter:    "drop-shadow(0 0 10px rgba(0,212,255,0.35))",
+              padding:   "4px",
+              transform: "none",
+            }}
+            onLoad={(e) =>
+              console.log("NAVBAR LOGO FINAL SRC:", (e.target as HTMLImageElement).src)
+            }
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
