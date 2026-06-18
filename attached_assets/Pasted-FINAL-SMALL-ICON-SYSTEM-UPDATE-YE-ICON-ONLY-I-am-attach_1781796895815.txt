@@ -1,0 +1,136 @@
+FINAL SMALL ICON SYSTEM UPDATE — YE ICON ONLY
+
+I am attaching the final YE simplified icon.
+
+VERY IMPORTANT:
+This YE icon is ONLY for small browser/app/icon placements.
+It is NOT the main website logo.
+
+DO NOT replace the full website logo in:
+- Navbar
+- Mobile navbar
+- Home page
+- Login/Auth page
+- Register page
+- Footer
+- Dashboard headers
+- Admin header
+- Client dashboard
+- Open Graph/social preview
+- WhatsApp preview
+- Email headers
+
+Keep the full logo exactly as it is in all large branding areas.
+
+==================================================
+USE THE ATTACHED YE ICON ONLY FOR SMALL ICONS
+==================================================
+
+Replace/create ALL small icon assets:
+
+- favicon.ico
+- favicon-16x16.png
+- favicon-32x32.png
+- favicon-48x48.png
+- apple-touch-icon.png
+- android-chrome-192x192.png
+- android-chrome-512x512.png
+- icon-192.png
+- icon-512.png
+- maskable-icon-192.png
+- maskable-icon-512.png
+- safari-pinned-tab.svg if used
+- shortcut icons
+- browser tab icon
+- bookmark/favorites icon
+- Chrome search suggestion icon
+- Google search result favicon
+- PWA app icon
+- Android add-to-home-screen icon
+- iOS add-to-home-screen icon
+- installed web app icon
+- notification icon if available
+
+==================================================
+UPDATE ALL REFERENCES
+==================================================
+
+Update:
+
+- index.html favicon links
+- apple-touch-icon link
+- manifest.json
+- site.webmanifest
+- browserconfig.xml if exists
+- service worker precache list
+- PWA icon references
+- metadata icon references
+- theme/app icon references
+
+Add cache busting everywhere:
+
+?v=ye-icon-final-2026
+
+==================================================
+VISUAL RULES
+==================================================
+
+Use the attached YE icon exactly.
+
+DO NOT:
+- redesign it
+- redraw it
+- change colors
+- change proportions
+- add black background
+- add white background
+- crop the glow
+- stretch it
+- compress it
+- add new effects
+
+For all PNG icon sizes:
+- transparent background where supported
+- centered
+- visually large
+- safe padding
+- sharp at small size
+- cyan glow preserved
+- no clipping
+
+For maskable icons:
+- add enough safe area so rounded Android icons do not cut the logo.
+
+==================================================
+CACHE FIX
+==================================================
+
+- Update service worker cache version.
+- Remove old favicon/icon paths from cache.
+- Force new icon paths with version query.
+- Make sure old small icons cannot reappear.
+
+==================================================
+FINAL PROOF REQUIRED
+==================================================
+
+Before saying done, verify on LIVE production:
+
+1. Browser tab shows YE icon.
+2. Chrome address/search suggestion shows YE icon.
+3. Bookmark/favorite shows YE icon.
+4. Android home screen/PWA uses YE icon.
+5. Apple touch icon uses YE icon.
+6. Manifest icons use YE icon.
+7. No old favicon remains.
+8. Full logo remains unchanged in Navbar/Login/Home/Footer.
+9. Production deployment succeeds.
+10. Test after hard refresh and incognito.
+
+EXPECTED RESULT:
+Small icons = YE simplified icon.
+Main website branding = full logo.
+No old icon.
+No black background.
+No missing icon.
+No cache issue.

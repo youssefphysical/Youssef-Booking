@@ -19,14 +19,12 @@
  * Bumping CACHE_VERSION invalidates ALL caches → safe escape hatch.
  */
 
-// Bumped 2026-05-22 (v26) to force-evict stale wizard bundles. Real
-// mobile users were stuck on a pre-fix TrainingLocationWizard build
-// where "Submit for approval" returned silently with no toast / no
-// navigate — the SW was happily serving the old script chunk. Bumping
-// CACHE_VERSION drops the runtime cache on the next activate(), so
-// the next /sw.js fetch (revalidated every visit) triggers a full
-// reload of static assets. Pairs with registerSW.ts's update poll.
-const CACHE_VERSION = "v29-final-2026-06-reset";
+// Bumped 2026-06-18 (v30) to force-evict old favicon/icon assets.
+// All small icons (favicon.ico, favicon-*.png, icon-192.png, icon-512.png,
+// icon-512-maskable.png, apple-touch-icon.png) replaced with the new
+// YE simplified icon. Cache bust token: ye-icon-final-2026.
+// v29 → v30: new icon assets must be served fresh on all clients.
+const CACHE_VERSION = "v30-ye-icon-final-2026";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 

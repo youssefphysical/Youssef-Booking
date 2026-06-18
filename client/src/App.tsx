@@ -185,8 +185,8 @@ function Router() {
     setLink("favicon-32",    bust);
     setLink("favicon-48",    bust);
     setLink("favicon-apple", bust);
-    // Also update the href-less <link rel="icon" href="/favicon.ico">
-    const ico = document.querySelector<HTMLLinkElement>("link[href='/favicon.ico']");
+    // Also update the <link rel="icon" sizes="any"> (favicon.ico entry)
+    const ico = document.querySelector<HTMLLinkElement>('link[rel="icon"][sizes="any"]');
     if (ico) ico.href = bust;
   }, [(settings as any)?.logoFaviconUrl, (settings as any)?.updatedAt]);
   const authBypassPaths = ["/auth", "/admin-access", "/reset-password"];
