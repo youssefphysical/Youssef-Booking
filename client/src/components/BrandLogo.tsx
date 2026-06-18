@@ -1,33 +1,31 @@
 /**
  * BrandLogo — renders logo images from the Media Manager (MM).
  *
- * CANONICAL LOGO: BRAND_ASSETS.logoNavbar (/brand/logo-navbar.png?v=final-2026-06-reset)
- *  This fixed-version URL is used as the immediate fallback for every render
- *  state — loading, empty slot, and first paint. Using a fixed ?v= string
- *  (not a dynamic timestamp) ensures the URL never changes between the
- *  loading state and the post-settings state, which prevents Chrome from
- *  blanking the <img> element and re-fetching.
+ * CANONICAL LOGOS (BRAND_ASSETS):
+ *  logoNavbar — horizontal brand mark. Fallback for the navbar slot.
+ *  logoIcon   — compact YE mark (transparent + cyan glow). Fallback for all
+ *               small placements: footer, sidebar, icon.
  *
  * SOURCE HIERARCHY:
- *  "navbar"  — desktop: logoNavbarUrl  → logoIconUrl → CANONICAL_LOGO
- *              mobile:  logoMobileUrl  → logoNavbarUrl → logoIconUrl → CANONICAL_LOGO
- *  "sidebar" — logoDashboardUrl → logoIconUrl → CANONICAL_LOGO
- *  "footer"  — logoFooterUrl   → logoIconUrl → CANONICAL_LOGO
- *  "icon"    — logoIconUrl → CANONICAL_LOGO
+ *  "navbar"  — desktop: logoNavbarUrl  → logoIconUrl → CANONICAL_NAVBAR
+ *              mobile:  logoMobileUrl  → logoNavbarUrl → logoIconUrl → CANONICAL_NAVBAR
+ *  "sidebar" — logoDashboardUrl → logoIconUrl → CANONICAL_ICON
+ *  "footer"  — logoFooterUrl   → logoIconUrl → CANONICAL_ICON
+ *  "icon"    — logoIconUrl → CANONICAL_ICON
  *
  * LOADING STATE (settings === undefined, !isLoaded):
- *  Returns an aria-busy span containing <img src={CANONICAL_LOGO}> immediately.
+ *  Returns an aria-busy span containing <img src={CANONICAL_*}> immediately.
  *  Dimensions are reserved via CSS vars set synchronously at boot by index.html
  *  from localStorage, so there is zero layout shift on first render.
  *
  * EMPTY STATE (MM slot null after load):
- *  {nSrc ? <img src={nSrc}> : <img src={CANONICAL_LOGO}>}
- *  The canonical logo fills any empty slot so the navbar never goes blank.
+ *  Navbar → CANONICAL_NAVBAR; all others → CANONICAL_ICON.
+ *  The canonical logo fills any empty slot so areas never go blank.
  *
  * CACHE-BUSTING for custom uploads:
  *  settings.updatedAt is appended as ?v={ms} for /uploads/ paths.
- * The canonical logo always uses the fixed BRAND_VERSION token so
- *  the URL is stable across loading→loaded transitions.
+ *  Canonical logos always use the fixed BRAND_VERSION token so the URL is
+ *  stable across loading→loaded transitions (no Chrome blank-and-refetch).
  */
 
 import { useSettings } from "@/hooks/use-settings";
@@ -38,19 +36,18 @@ interface BrandLogoProps {
   className?: string;
 }
 
-/** Fixed canonical logo — single source of truth (BRAND_ASSETS). */
-const CANONICAL_LOGO = BRAND_ASSETS.logoNavbar;
+/** Fixed canonical logos — never change between loading and loaded states. */
+const CANONICAL_NAVBAR = BRAND_ASSETS.logoNavbar;
+const CANONICAL_ICON   = BRAND_ASSETS.logoIcon;
 
 /**
  * Append ?v=<updatedAt ms> for cache-busting of custom uploaded paths.
- * Returns CANONICAL_LOGO when url is falsy or when url is the default
- * /brand-logo.png (so the URL stays stable across loading→loaded states).
+ * Returns null when url is falsy.
+ * Returns CANONICAL_NAVBAR for legacy /brand-logo.png references.
  */
 function bustUrl(url: string | null | undefined, updatedAt: unknown): string | null {
   if (!url) return null;
-  // Canonical static file — always use the fixed version string so the URL
-  // never changes between the loading placeholder and post-settings render.
-  if (url === "/brand-logo.png") return CANONICAL_LOGO;
+  if (url === "/brand-logo.png") return CANONICAL_NAVBAR;
   const v = updatedAt ? new Date(updatedAt as string).getTime() : NaN;
   if (!v || isNaN(v)) return url;
   return url.includes("?") ? `${url}&v=${v}` : `${url}?v=${v}`;
@@ -91,7 +88,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           style={{ overflow: "visible" }}
         >
           <img
-            src={CANONICAL_LOGO}
+            src={CANONICAL_NAVBAR}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 block md:hidden"
             style={{
@@ -103,7 +100,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             }}
           />
           <img
-            src={CANONICAL_LOGO}
+            src={CANONICAL_NAVBAR}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 hidden md:block"
             style={{
@@ -132,7 +129,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         aria-label="Youssef Elite"
         style={{ overflow: "visible" }}
       >
-        {/* Mobile slot — canonical logo when MM slot is empty */}
+        {/* Mobile slot — canonical navbar logo when MM slot is empty */}
         {mSrc ? (
           <img
             src={mSrc}
@@ -148,13 +145,13 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           />
         ) : (
           <img
-            src={CANONICAL_LOGO}
+            src={CANONICAL_NAVBAR}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 block md:hidden"
             style={{ height: mH, width: "auto" }}
           />
         )}
-        {/* Desktop slot — canonical logo when MM slot is empty */}
+        {/* Desktop slot — canonical navbar logo when MM slot is empty */}
         {nSrc ? (
           <img
             src={nSrc}
@@ -170,7 +167,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
           />
         ) : (
           <img
-            src={CANONICAL_LOGO}
+            src={CANONICAL_NAVBAR}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 hidden md:block"
             style={{ height: dH, width: "auto" }}
@@ -181,11 +178,12 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
   }
 
   // ── FOOTER / SIDEBAR / ICON variants ─────────────────────────────────────
+  // All small-placement variants fall back to CANONICAL_ICON (compact YE mark).
   if (variant === "footer" && isLoaded && (bs.logoShowFooter ?? 1) === 0) return null;
 
   const heightVar = VARIANT_HEIGHT[variant];
 
-  // Loading state — canonical logo with reserved dimensions
+  // Loading state — compact YE icon with reserved dimensions
   if (!isLoaded) {
     return (
       <span
@@ -195,7 +193,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         style={{ overflow: "visible" }}
       >
         <img
-          src={CANONICAL_LOGO}
+          src={CANONICAL_ICON}
           alt="Youssef Elite official logo"
           className="object-contain shrink-0"
           style={{ height: heightVar, width: heightVar }}
@@ -235,10 +233,14 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
         />
       ) : (
         <img
-          src={CANONICAL_LOGO}
+          src={CANONICAL_ICON}
           alt="Youssef Elite official logo"
           className="object-contain shrink-0"
-          style={{ height: heightVar, width: heightVar }}
+          style={{
+            height:   heightVar,
+            width:    heightVar,
+            filter:   "drop-shadow(0 0 7px rgba(0,212,255,0.35))",
+          }}
         />
       )}
     </span>
