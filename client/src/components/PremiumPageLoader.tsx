@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
+import { BRAND_ASSETS } from "@/config/brandAssets";
 
 /**
  * Non-blocking page loader.
@@ -29,12 +30,16 @@ export function PremiumPageLoader() {
   const bs = (settings?.brandSettings ?? {}) as Record<string, number>;
   const showLoading = (bs.logoShowLoading ?? 1) !== 0;
 
-  // MM-only chain — no static /ye-logo.png fallback
+  // Source chain: genuine admin upload (/uploads/…) → otherwise the single
+  // canonical master logo (BRAND_ASSETS). Default DB paths resolve to the one
+  // final logo so the splash never swaps versions after settings hydrate.
+  const CANONICAL_PATHS = ["/brand-logo.png", "/ye-logo.png", "/ye-logo-horizontal.png", "/ye-logo-primary.png"];
   const ua        = settings ? (settings as any).updatedAt : null;
   const rawSrc    = settings?.logoSplashUrl || settings?.logoIconUrl || null;
-  const logoSrc: string | null = rawSrc
-    ? (ua ? (rawSrc.includes("?") ? `${rawSrc}&v=${new Date(ua).getTime()}` : `${rawSrc}?v=${new Date(ua).getTime()}`) : rawSrc)
-    : null;
+  const logoSrc: string =
+    !rawSrc || CANONICAL_PATHS.includes(rawSrc)
+      ? BRAND_ASSETS.logoMaster
+      : (ua ? (rawSrc.includes("?") ? `${rawSrc}&v=${new Date(ua).getTime()}` : `${rawSrc}?v=${new Date(ua).getTime()}`) : rawSrc);
 
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 700);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSettings } from "@/hooks/use-settings";
+import { BRAND_ASSETS } from "@/config/brandAssets";
 import { CyanHairline } from "@/components/ui/CyanHairline";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,9 +117,8 @@ export default function AuthPage({
   // Read the window global synchronously (useState initializer) as a fallback
   // for the rare case where the boot fetch resolves before React mounts but
   // after useSettings()'s initialData function ran.
-  // Canonical logo URL — identical to BrandLogo.tsx CANONICAL_LOGO so every
-  // placement uses the same versioned URL and the browser only caches one copy.
-  const AUTH_CANONICAL_LOGO = "/brand-logo.png?v=2026-06-final-force";
+  // Canonical auth logo — single source of truth (BRAND_ASSETS.logoAuth).
+  const AUTH_CANONICAL_LOGO = BRAND_ASSETS.logoAuth;
   // Paths that resolve to the canonical file — dynamic timestamp would create a
   // different SW cache entry and could serve stale content from an old SW cache.
   const AUTH_CANONICAL_PATHS = [
@@ -293,6 +293,9 @@ export default function AuthPage({
                     src={logoSrc}
                     alt="Youssef Elite"
                     data-testid="img-auth-logo"
+                    loading="eager"
+                    decoding="sync"
+                    {...({ fetchpriority: "high" } as Record<string, string>)}
                     animate={{
                       y: [0, -4, 0],
                       filter: [
@@ -320,6 +323,9 @@ export default function AuthPage({
                     src={logoSrc}
                     alt="Youssef Elite"
                     aria-hidden="true"
+                    loading="eager"
+                    decoding="sync"
+                    {...({ fetchpriority: "high" } as Record<string, string>)}
                     animate={{
                       y: [0, -4, 0],
                       filter: [

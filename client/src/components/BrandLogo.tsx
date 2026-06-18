@@ -1,7 +1,7 @@
 /**
  * BrandLogo — renders logo images from the Media Manager (MM).
  *
- * CANONICAL LOGO: /brand-logo.png?v=2026-06-logo
+ * CANONICAL LOGO: BRAND_ASSETS.logoNavbar (/brand/logo-navbar.png?v=final-2026-06-reset)
  *  This fixed-version URL is used as the immediate fallback for every render
  *  state — loading, empty slot, and first paint. Using a fixed ?v= string
  *  (not a dynamic timestamp) ensures the URL never changes between the
@@ -26,19 +26,20 @@
  *
  * CACHE-BUSTING for custom uploads:
  *  settings.updatedAt is appended as ?v={ms} for /uploads/ paths.
- *  The canonical /brand-logo.png always uses the fixed ?v=2026-06-logo so
+ * The canonical logo always uses the fixed BRAND_VERSION token so
  *  the URL is stable across loading→loaded transitions.
  */
 
 import { useSettings } from "@/hooks/use-settings";
+import { BRAND_ASSETS } from "@/config/brandAssets";
 
 interface BrandLogoProps {
   variant?: "navbar" | "sidebar" | "footer" | "icon";
   className?: string;
 }
 
-/** Fixed canonical navbar logo — always the new official brand mascot. */
-const CANONICAL_LOGO = "/brand-logo.png?v=2026-06-final-force";
+/** Fixed canonical logo — single source of truth (BRAND_ASSETS). */
+const CANONICAL_LOGO = BRAND_ASSETS.logoNavbar;
 
 /**
  * Append ?v=<updatedAt ms> for cache-busting of custom uploaded paths.

@@ -27,8 +27,9 @@ import {
 } from "@/components/admin/AdminNavigation";
 import { useTranslation } from "@/i18n";
 import { useFeatureFlag } from "@/lib/featureFlags";
-// BrandLogo removed from navbar — logo is now a direct hardcoded img
-// so it is immune to settings-load re-renders and SW cache swaps.
+import { BRAND_ASSETS } from "@/config/brandAssets";
+// BrandLogo removed from navbar — logo is now a direct static img from
+// BRAND_ASSETS so it is immune to settings-load re-renders and SW cache swaps.
 
 export function Navigation() {
   const [location, navigate] = useLocation();
@@ -231,21 +232,28 @@ export function Navigation() {
           className="min-w-0 shrink-0"
           data-testid="link-brand"
         >
-          {/* HARDCODED navbar logo — no DB / settings / SW involvement.
-              Same URL, same styles on every render, zero loading states. */}
+          {/* STATIC navbar logo — single source (BRAND_ASSETS), no DB / settings / SW.
+              Same URL + same styles on every render. Paints immediately, never swaps. */}
           <img
-            src="/brand-logo.png?v=2026-06-final-force"
+            src={BRAND_ASSETS.logoNavbar}
             alt="Youssef Elite"
             data-testid="img-navbar-logo"
-            className="h-[44px] md:h-[60px] w-auto object-contain block"
+            width={72}
+            height={72}
+            loading="eager"
+            decoding="sync"
+            {...({ fetchpriority: "high" } as Record<string, string>)}
+            className="logo-navbar h-16 w-16 md:h-[72px] md:w-[72px]"
             style={{
-              filter:    "drop-shadow(0 0 10px rgba(0,212,255,0.35))",
-              padding:   "4px",
-              transform: "none",
+              objectFit:  "contain",
+              filter:     "drop-shadow(0 0 10px rgba(0,212,255,0.35))",
+              opacity:    1,
+              visibility: "visible",
+              transition: "none",
+              animation:  "none",
+              transform:  "none",
+              background: "transparent",
             }}
-            onLoad={(e) =>
-              console.log("NAVBAR LOGO FINAL SRC:", (e.target as HTMLImageElement).src)
-            }
           />
         </Link>
 

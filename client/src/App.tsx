@@ -166,7 +166,11 @@ function Router() {
   useEffect(() => {
     if (!settings) return;
     const custom = (settings as any).logoFaviconUrl as string | null | undefined;
-    if (!custom) return; // static files already served by index.html — nothing to do
+    // Skip canonical default paths — index.html already serves the BRAND_ASSETS
+    // favicons (versioned). Only a genuine admin upload (/uploads/…) overrides them,
+    // so the favicon never swaps to a stale/legacy asset after settings hydrate.
+    const CANONICAL_FAVICONS = ["/brand-logo.png", "/ye-logo.png", "/ye-logo-horizontal.png", "/ye-logo-primary.png"];
+    if (!custom || CANONICAL_FAVICONS.includes(custom)) return;
     // Cache-bust: prefer settings.updatedAt (exact timestamp when admin last saved),
     // fall back to the ms-timestamp embedded in the upload filename.
     const ua = (settings as any).updatedAt;

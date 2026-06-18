@@ -1,0 +1,311 @@
+FULL LOGO RESET — START FROM ZERO
+
+I am attaching the FINAL logo file.
+
+Ignore all previous logo logic, old logo files, uploaded logos, brand settings logos, fallback logos, cached logos, and database logo values.
+
+Your task is to rebuild the logo system from zero using ONLY the attached final logo.
+
+==================================================
+MAIN GOAL
+==================================================
+
+Use the attached logo as the ONLY logo across the entire website.
+
+Replace every existing logo image with this exact attached logo.
+
+Do NOT add a black background behind it.
+Do NOT place it inside a black box.
+Do NOT crop it.
+Do NOT redraw it.
+Do NOT recolor it.
+Do NOT regenerate it.
+Do NOT change glow, blur, face, body, YE, barbell, portal, colors, or lighting.
+
+Use the logo exactly as provided.
+
+==================================================
+PLACE THE LOGO EVERYWHERE
+==================================================
+
+Replace all logos in:
+
+- Navbar desktop
+- Navbar mobile
+- Auth page
+- Login page
+- Register page
+- Home page
+- Footer
+- Splash/loading screen
+- PWA icon
+- App icon
+- Favicon
+- Apple touch icon
+- Manifest icons
+- SEO image
+- Open Graph image
+- Twitter card image
+- Structured data logo
+- Admin panel logo
+- Client dashboard logo
+- Any brand/media/logo settings
+
+There must be NO old logo anywhere.
+
+==================================================
+CREATE PROPER LOGO VERSIONS
+==================================================
+
+From the attached master logo, create optimized versions:
+
+1. /public/brand/logo-master.png
+   - Original uploaded logo
+   - No background added
+   - Used for large areas
+
+2. /public/brand/logo-navbar.png
+   - Optimized for small navbar display
+   - Transparent background
+   - High clarity at small size
+   - No black background
+   - No cropping
+   - Preserve full logo shape and glow
+
+3. /public/brand/logo-auth.png
+   - Optimized for login/register large display
+   - Transparent background
+   - Sharp and premium
+
+4. /public/brand/logo-og.png
+   - For SEO/Open Graph
+   - Proper social preview size
+   - Use logo centered cleanly
+   - No ugly crop
+
+5. /public/favicon.ico
+6. /public/apple-touch-icon.png
+7. /public/icon-192.png
+8. /public/icon-512.png
+
+Important:
+For favicon/app icons only, crop safely if required, but keep the logo recognizable and centered.
+
+==================================================
+ONE SOURCE CONFIG
+==================================================
+
+Create one central file:
+
+src/config/brandAssets.ts
+
+It must contain:
+
+export const BRAND_ASSETS = {
+  logoMaster: "/brand/logo-master.png?v=final-2026-06-reset",
+  logoNavbar: "/brand/logo-navbar.png?v=final-2026-06-reset",
+  logoAuth: "/brand/logo-auth.png?v=final-2026-06-reset",
+  logoOg: "/brand/logo-og.png?v=final-2026-06-reset",
+  favicon: "/favicon.ico?v=final-2026-06-reset",
+  appleTouchIcon: "/apple-touch-icon.png?v=final-2026-06-reset",
+  icon192: "/icon-192.png?v=final-2026-06-reset",
+  icon512: "/icon-512.png?v=final-2026-06-reset"
+};
+
+All components must import from this file only.
+
+No hardcoded old logo paths anywhere.
+
+==================================================
+NAVBAR LOGO RULES
+==================================================
+
+Navbar logo must:
+
+- Appear immediately on refresh
+- Never disappear
+- Never fade in
+- Never wait for settings
+- Never wait for API
+- Never wait for database
+- Never wait for image onLoad state
+- Never switch after hydration
+- Never use old fallback logo
+
+Use a normal static img tag immediately:
+
+<img
+  src={BRAND_ASSETS.logoNavbar}
+  alt="Youssef Elite"
+  width="72"
+  height="72"
+  loading="eager"
+  decoding="sync"
+  fetchpriority="high"
+/>
+
+CSS must be stable:
+
+.logo-navbar {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  background: transparent !important;
+}
+
+Mobile can use 64px if needed, but it must stay clear and sharp.
+
+==================================================
+AUTH / LOGIN LOGO RULES
+==================================================
+
+Auth logo must use logoAuth.
+
+It should be large, sharp, centered, and premium.
+
+No black background wrapper.
+No crop.
+No forced square if it damages the logo.
+No blur.
+No layout shift after loading.
+
+Use:
+
+loading="eager"
+decoding="sync"
+fetchpriority="high"
+
+==================================================
+REMOVE OLD SYSTEM
+==================================================
+
+Completely remove or bypass:
+
+- BrandLogo component if it causes loading states
+- isLoaded logo logic
+- logo fade animation
+- logo skeleton
+- logo spinner
+- database logo override
+- localStorage logo override
+- sessionStorage logo override
+- uploaded media logo override
+- fallbackLogo
+- defaultLogo
+- old logo imports
+- old logo files
+- service worker cached logos
+
+Search and remove all old references:
+
+logo
+brand-logo
+old-logo
+navbar-logo
+defaultLogo
+fallbackLogo
+uploadedLogo
+mediaLogo
+siteLogo
+appIcon
+favicon
+og:image
+manifest
+
+==================================================
+REFRESH / CACHE FIX
+==================================================
+
+The logo must appear instantly after refresh like it is part of the page itself.
+
+Do this:
+
+1. Preload navbar logo in index.html:
+
+<link
+  rel="preload"
+  as="image"
+  href="/brand/logo-navbar.png?v=final-2026-06-reset"
+  fetchpriority="high"
+/>
+
+2. Disable lazy loading for all above-the-fold logos.
+
+3. Remove any loading spinner that affects the navbar.
+
+4. Remove any conditional rendering around the navbar logo.
+
+5. Unregister old service workers once.
+
+6. Delete old Cache Storage once.
+
+7. Update manifest icons to the new files.
+
+8. Add cache busting version:
+?v=final-2026-06-reset
+
+==================================================
+VISUAL QUALITY RULES
+==================================================
+
+Small logo:
+- Must be clear in navbar
+- Must not look compressed
+- Must not look dark or hidden
+- Must preserve cyan glow
+- Must not have black square behind it
+
+Large logo:
+- Must be sharp
+- Must preserve all detail
+- Must not pixelate
+- Must not be stretched
+
+All logos:
+- transparent background
+- object-fit: contain
+- no forced crop
+- no extra black background
+- no color changes
+- no AI redesign
+
+==================================================
+FINAL PROOF REQUIRED
+==================================================
+
+Before marking done, provide proof:
+
+1. Screenshot of navbar after hard refresh.
+2. Screenshot of auth page.
+3. Screenshot of mobile navbar.
+4. Screenshot of desktop navbar.
+5. Screenshot of favicon/app icon.
+6. Show all final logo URLs.
+7. Confirm no old logo files are referenced.
+8. Confirm no logo disappears after refresh.
+9. Confirm no logo swaps after 10 seconds.
+10. Confirm live production site, not only localhost.
+
+Test on:
+- Mobile Chrome
+- Desktop Chrome
+- Incognito
+- Hard refresh
+- After route change
+- After login/logout
+
+Expected result:
+
+ONE FINAL LOGO SYSTEM.
+ONLY THE ATTACHED LOGO.
+NO OLD LOGO.
+NO BLACK BACKGROUND.
+NO FLICKER.
+NO DISAPPEARING.
+NO DELAY AFTER REFRESH.
+LOGO APPEARS IMMEDIATELY.

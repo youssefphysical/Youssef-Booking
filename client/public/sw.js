@@ -26,7 +26,7 @@
 // CACHE_VERSION drops the runtime cache on the next activate(), so
 // the next /sw.js fetch (revalidated every visit) triggers a full
 // reload of static assets. Pairs with registerSW.ts's update poll.
-const CACHE_VERSION = "v28-2026-06-final-force";
+const CACHE_VERSION = "v29-final-2026-06-reset";
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
