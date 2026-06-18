@@ -521,6 +521,15 @@
     <script>
       (function () {
         try {
+          // ── Synchronous boot: restore cached full settings from localStorage.
+          // useSettings() reads window.__YE_INITIAL_SETTINGS__ as initialData,
+          // so setting it here makes isLoaded = true on React's very first render
+          // for every return visit — the loading placeholder is never shown.
+          try {
+            var _cached = localStorage.getItem("ye_settings_full");
+            if (_cached) window.__YE_INITIAL_SETTINGS__ = JSON.parse(_cached);
+          } catch (_e) {}
+
           window.__YE_SETTINGS_BOOT__ = fetch("/api/settings", { credentials: "include" })
             .then(function (r) {
               if (!r.ok) throw new Error("settings " + r.status);
@@ -528,6 +537,8 @@
             })
             .then(function (s) {
               window.__YE_INITIAL_SETTINGS__ = s;
+              // Persist fresh full settings so the next page load is instant.
+              try { localStorage.setItem("ye_settings_full", JSON.stringify(s)); } catch (_e) {}
 
               // Cache-bust suffix derived from server updatedAt timestamp
               var bust = (s && s.updatedAt)
