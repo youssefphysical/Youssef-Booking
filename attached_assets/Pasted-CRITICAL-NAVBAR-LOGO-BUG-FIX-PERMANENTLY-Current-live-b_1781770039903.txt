@@ -1,0 +1,163 @@
+CRITICAL NAVBAR LOGO BUG — FIX PERMANENTLY.
+
+Current live behavior:
+- On page load, the navbar shows NO logo for about 3 seconds.
+- After that, the OLD logo appears in the navbar.
+- This happens specifically in the navbar/header area.
+
+This must be fixed completely, not patched visually.
+
+GOAL:
+The navbar must show the NEW official logo immediately on first render and must never switch to the old logo.
+
+Official navbar logo source:
+`/brand-logo.png?v=2026-06-logo`
+
+Required fix:
+
+1. Audit the navbar/header component only
+Inspect every navbar/header/logo component used on:
+- Desktop navbar
+- Mobile navbar
+- Sticky header
+- Logged-out header
+- Logged-in client header
+- Admin header if shared
+- Mobile drawer/menu header
+
+2. Remove all old navbar logo sources
+Search and remove/replace any navbar reference to:
+- ye-logo
+- old logo
+- logo.png
+- headerLogo
+- navbarLogo
+- brandSettings.logo
+- brandSettings.navbarLogo
+- brandSettings.headerLogo
+- media.logo
+- siteLogo
+- uploadedLogo
+- localStorage logo
+- cached logo URL
+- fallbackLogo
+- defaultLogo
+
+3. Canonical logo must win
+Navbar must NOT wait for:
+- API response
+- Brand Settings
+- DB settings
+- Admin media settings
+- localStorage
+- service worker cache
+
+The navbar must render this immediately:
+`/brand-logo.png?v=2026-06-logo`
+
+If any async setting returns an old logo later, ignore it for navbar.
+
+4. Fix first render loading
+No empty logo state is allowed.
+
+Bad:
+- logoSrc = null
+- logoSrc = undefined
+- wait for useEffect
+- wait for brand settings fetch
+- show nothing until API loads
+
+Good:
+- navbar logo src is hard defaulted immediately to `/brand-logo.png?v=2026-06-logo`
+- image has fixed width and height
+- image renders on first frame
+
+5. Prevent logo swap after hydration
+Check React hydration/client-side updates.
+
+The navbar logo must not change after:
+- hydration
+- useEffect
+- brand settings load
+- user session load
+- admin settings load
+- mobile menu open
+- route change
+
+6. Clear navbar-specific overrides
+If there is any saved navbar logo in DB/admin settings, replace it with:
+`/brand-logo.png?v=2026-06-logo`
+
+If localStorage/sessionStorage contains old navbar logo values, clear them automatically.
+
+If service worker/PWA cache contains old logo files, invalidate it.
+
+7. Add preload
+Add logo preload in document head:
+
+`<link rel="preload" as="image" href="/brand-logo.png?v=2026-06-logo">`
+
+8. Add dimensions to prevent layout shift
+Navbar logo image must have reserved dimensions.
+
+Example:
+- Desktop navbar height: 40–56px max
+- Mobile navbar height: 32–44px max
+- object-fit: contain
+- no cropping
+- no stretching
+- no layout jump
+
+9. Use one NavbarLogo component
+Create or enforce one shared `NavbarLogo` component.
+
+All navbar locations must import this same component.
+
+The component should:
+- always use `/brand-logo.png?v=2026-06-logo`
+- never accept old DB logo props
+- never fall back to old assets
+- never return null
+- include correct alt text:
+  `Youssef Elite official logo`
+
+10. Add automated test
+Add a test that verifies:
+- navbar logo src contains `/brand-logo.png`
+- navbar logo is visible immediately
+- navbar logo does not change after 5 seconds
+- no old logo src appears in navbar DOM
+- no broken image is rendered
+
+11. Manual verification required
+Test:
+- Hard refresh
+- Incognito
+- Desktop Chrome
+- Mobile browser
+- Logged out homepage
+- Login page
+- Client dashboard
+- Admin area
+- Mobile menu open/close
+- Route change between pages
+
+Expected result:
+- Logo visible immediately.
+- No 3-second blank space.
+- New logo stays permanently.
+- Old logo never appears in navbar.
+- No layout shift.
+- No metadata-only changes.
+
+Important:
+Do not only update SEO, favicon, schema, or Open Graph.
+The issue is the ACTUAL RENDERED NAVBAR UI.
+
+Final report required:
+- Navbar component file fixed
+- Old source causing override
+- Whether DB/admin/localStorage/service worker caused it
+- Final navbar logo src
+- Test result after 5 seconds
+- Screenshots of first render and after 5 seconds
