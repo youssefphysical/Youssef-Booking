@@ -14,6 +14,10 @@
          React updates these href values live after settings load
          (see FaviconSync in App.tsx) so a Media Center upload takes
          effect immediately without a page reload. -->
+    <!-- Brand logo preloaded as highest-priority image so it is in the
+         HTTP cache before React's first render — eliminates the 1-2 s
+         FOLC (Flash Of Missing Logo Content) on cold load. -->
+    <link rel="preload" as="image" href="/brand-logo.png" fetchpriority="high" />
     <link rel="icon" href="/favicon.ico?v=2026-06-logo" sizes="any" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=2026-06-logo" id="favicon-16" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2026-06-logo" id="favicon-32" />
