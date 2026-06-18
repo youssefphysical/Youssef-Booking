@@ -116,9 +116,22 @@ export default function AuthPage({
   // Read the window global synchronously (useState initializer) as a fallback
   // for the rare case where the boot fetch resolves before React mounts but
   // after useSettings()'s initialData function ran.
-  // Cache-bust helper — uses settings.updatedAt so browsers re-fetch after admin uploads.
+  // Canonical logo URL — identical to BrandLogo.tsx CANONICAL_LOGO so every
+  // placement uses the same versioned URL and the browser only caches one copy.
+  const AUTH_CANONICAL_LOGO = "/brand-logo.png?v=2026-06-logo";
+  // Paths that resolve to the canonical file — dynamic timestamp would create a
+  // different SW cache entry and could serve stale content from an old SW cache.
+  const AUTH_CANONICAL_PATHS = [
+    "/brand-logo.png", "/ye-logo.png",
+    "/ye-logo-horizontal.png", "/ye-logo-primary.png",
+  ];
+
+  // Cache-bust helper — returns the fixed canonical URL for the canonical logo
+  // files; appends ?v=<updatedAt ms> for custom /uploads/ paths so browsers
+  // re-fetch after admin logo uploads.
   function authBustUrl(url: string | null, updatedAt: unknown): string | null {
     if (!url) return null;
+    if (AUTH_CANONICAL_PATHS.includes(url)) return AUTH_CANONICAL_LOGO;
     const v = updatedAt ? new Date(updatedAt as string).getTime() : NaN;
     if (!v || isNaN(v)) return url;
     return url.includes("?") ? `${url}&v=${v}` : `${url}?v=${v}`;
@@ -127,10 +140,12 @@ export default function AuthPage({
   const [bootLogoUrl] = useState<string | null>(() => {
     try {
       const s = (window as any).__YE_INITIAL_SETTINGS__;
-      if (!s) return null;
+      // No window global yet (cold load before boot fetch resolves) →
+      // use the canonical logo so the auth card never shows a blank slot.
+      if (!s) return AUTH_CANONICAL_LOGO;
       const raw = (s as any).logoLoginUrl || (s as any).logoAuthUrl || (s as any).logoIconUrl || null;
       return authBustUrl(raw, (s as any).updatedAt);
-    } catch { return null; }
+    } catch { return AUTH_CANONICAL_LOGO; }
   });
 
   // Priority: fresh settings (authoritative) → boot global (fast-network warm load) → null
