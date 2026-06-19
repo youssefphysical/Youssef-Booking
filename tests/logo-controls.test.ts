@@ -467,10 +467,10 @@ check("Bootstrap uses logos = null pattern (always runs the slot loop)", () => {
   );
 });
 
-check("Bootstrap default mobile.hMobile is 44 (matches LOGO_BRAND_SLOT_DEFAULTS)", () => {
+check("Bootstrap default mobile.hMobile is 54 (matches LOGO_BRAND_SLOT_DEFAULTS)", () => {
   assert(
-    indexHtmlSrc.includes("hMobile:44"),
-    "index.html bootstrap defs.mobile.hMobile must be 44 to match " +
+    indexHtmlSrc.includes("hMobile:54"),
+    "index.html bootstrap defs.mobile.hMobile must be 54 to match " +
     "LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile — the two values must be identical " +
     "so the CSS var is the same before and after React hydrates.",
   );
@@ -515,11 +515,11 @@ check("App.tsx applyBrandCSSVars useEffect depends on [settings] (not [settings?
 console.log("\n[10] BrandLogo.tsx — mobile logo CSS fallback matches LOGO_BRAND_SLOT_DEFAULTS");
 // brandLogoSrc is already declared at the top of this file (BRAND_LOGO_PATH)
 
-check("BrandLogo mobile height CSS fallback is 44px (matches mobile slot default)", () => {
+check("BrandLogo mobile height CSS fallback is 54px (matches mobile slot default)", () => {
   assert(
-    brandLogoSrc.includes("var(--brand-mobile-h-mobile, 44px)"),
-    "BrandLogo mobile img height must be 'var(--brand-mobile-h-mobile, 44px)'. " +
-    "The fallback 44px matches LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile so even " +
+    brandLogoSrc.includes("var(--brand-mobile-h-mobile, 54px)"),
+    "BrandLogo mobile img height must be 'var(--brand-mobile-h-mobile, 54px)'. " +
+    "The fallback 54px matches LOGO_BRAND_SLOT_DEFAULTS.mobile.hMobile so even " +
     "if the CSS var system fails, the logo renders at the correct default size.",
   );
 });

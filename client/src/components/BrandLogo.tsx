@@ -43,11 +43,12 @@ const CANONICAL_ICON   = BRAND_ASSETS.logoIcon;
 /**
  * Append ?v=<updatedAt ms> for cache-busting of custom uploaded paths.
  * Returns null when url is falsy.
- * Returns CANONICAL_NAVBAR for legacy /brand-logo.png references.
+ * Returns CANONICAL_NAVBAR for legacy /brand-logo.png references on navbar variant,
+ * CANONICAL_ICON for all other placements (footer, sidebar, icon).
  */
-function bustUrl(url: string | null | undefined, updatedAt: unknown): string | null {
+function bustUrl(url: string | null | undefined, updatedAt: unknown, forNavbar = false): string | null {
   if (!url) return null;
-  if (url === "/brand-logo.png") return CANONICAL_NAVBAR;
+  if (url === "/brand-logo.png") return forNavbar ? CANONICAL_NAVBAR : CANONICAL_ICON;
   const v = updatedAt ? new Date(updatedAt as string).getTime() : NaN;
   if (!v || isNaN(v)) return url;
   return url.includes("?") ? `${url}&v=${v}` : `${url}?v=${v}`;
@@ -68,7 +69,7 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
   if (variant === "navbar") {
     if (isLoaded && (bs.logoShowNavbar ?? 1) === 0) return null;
 
-    const mH = "var(--brand-mobile-h-mobile, 44px)";
+    const mH = "var(--brand-mobile-h-mobile, 54px)";
     const dH = "var(--brand-navbar-h-desktop, 60px)";
 
     // Loading state — aria-busy wrapper with canonical logo on both slots.
@@ -94,8 +95,8 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             style={{
               height:    mH,
               width:     "auto",
-              filter:    "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-mobile-glow, var(--brand-logo-glow, 0.35))))",
-              padding:   "var(--brand-mobile-padding,  var(--brand-logo-padding, 4px))",
+              filter:    "drop-shadow(0 0 5px rgba(0,212,255,var(--brand-mobile-glow, 0.18)))",
+              padding:   "var(--brand-mobile-padding,  var(--brand-logo-padding, 2px))",
               transform: "translateY(var(--brand-mobile-vpos, var(--brand-logo-voffset, 0px)))",
             }}
           />
@@ -120,8 +121,8 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
     const nRaw    = settings.logoNavbarUrl  || iconRaw;
     const mRaw    = settings.logoMobileUrl  || nRaw;
 
-    const nSrc = bustUrl(nRaw, ua);
-    const mSrc = bustUrl(mRaw, ua);
+    const nSrc = bustUrl(nRaw, ua, true);
+    const mSrc = bustUrl(mRaw, ua, true);
 
     return (
       <span
@@ -138,8 +139,8 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             style={{
               height:    mH,
               width:     "auto",
-              filter:    "drop-shadow(0 0 10px rgba(0,212,255,var(--brand-mobile-glow, var(--brand-logo-glow, 0.35))))",
-              padding:   "var(--brand-mobile-padding,  var(--brand-logo-padding, 4px))",
+              filter:    "drop-shadow(0 0 5px rgba(0,212,255,var(--brand-mobile-glow, 0.18)))",
+              padding:   "var(--brand-mobile-padding,  var(--brand-logo-padding, 2px))",
               transform: "translateY(var(--brand-mobile-vpos, var(--brand-logo-voffset, 0px)))",
             }}
           />
@@ -148,7 +149,12 @@ export function BrandLogo({ variant = "navbar", className = "" }: BrandLogoProps
             src={CANONICAL_NAVBAR}
             alt="Youssef Elite official logo"
             className="object-contain shrink-0 block md:hidden"
-            style={{ height: mH, width: "auto" }}
+            style={{
+              height:    mH,
+              width:     "auto",
+              filter:    "drop-shadow(0 0 5px rgba(0,212,255,0.18))",
+              padding:   "2px",
+            }}
           />
         )}
         {/* Desktop slot — canonical navbar logo when MM slot is empty */}
